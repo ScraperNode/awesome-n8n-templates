@@ -1,0 +1,589 @@
+{
+  "id": "gqu5n9yXGwrXkwLD",
+  "meta": {
+    "instanceId": "e21631593c665e575c87e460dd8681c44b1aaa7afc3347cf8214a1b5119341f4",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Ingredients Analyst",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "fc0ac288-3105-47a1-aa92-d76440e02c93",
+      "name": "Data Aggregation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        672,
+        -80
+      ],
+      "parameters": {
+        "jsCode": "// Get data from previous nodes\n// Note: Ensure your input nodes are named 'Watchlist' and 'Preferences'\nconst watchlistItems = $('Watchlist').all();\nconst prefItems = $('Preferences').all();\n\n// 1. Extract Persona & Language\n// Finds the row where Key is 'Persona' or 'Language'\nconst persona = prefItems.find(i => i.json.Key === 'Persona')?.json.Value || \"A helpful assistant\";\nconst language = prefItems.find(i => i.json.Key === 'Language')?.json.Value || \"English\";\n\n// 2. Sort Ingredients into Categories\n// We only want 'Active' items\nconst activeItems = watchlistItems.filter(i => i.json.Status === 'Active');\n\nconst badStuff = activeItems\n  .filter(i => i.json.Type === 'Bad Stuff')\n  .map(i => i.json['Ingredient Name'])\n  .join(\", \");\n\nconst goodStuff = activeItems\n  .filter(i => i.json.Type === 'Good Stuff')\n  .map(i => i.json['Ingredient Name'])\n  .join(\", \");\n\n// 3. Return Clean Data for the AI\nreturn {\n  json: {\n    persona: persona,\n    target_language: language,\n    bad_list: badStuff,\n    good_list: goodStuff\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "bee23e18-c3ae-4bd4-be5c-8b93d1b42817",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1472,
+        -80
+      ],
+      "parameters": {
+        "text": "=You are a verbose {{ $('Data Aggregation').item.json.persona }}. Answer in {{ $('Data Aggregation').item.json.target_language }}.\n\n**YOUR TASK:**\nAnalyze the provided OCR text from a product label. \nCompare it strictly against the user's lists using FUZZY MATCHING (e.g. \"E120\" = \"Carmine\").\n\n**\ud83d\udd34 BAD LIST (The Veto):** {{ $('Data Aggregation').item.json.bad_list }}\n**\ud83d\udfe2 GOOD LIST (The Preference):** {{ $('Data Aggregation').item.json.good_list }}\n\n**\u26a0\ufe0f THE CONSTITUTION (Logic Rules):**\n1. **Bad Stuff overrides Good Stuff.** If an ingredient is on the Good List (e.g., \"Egg\") but the label contains a specific derivative on the Bad List (e.g., \"Albumin\"), the product is **UNSAFE**.\n2. **The \"Safe\" Verdict:** The product is ONLY \"safe\" if ZERO items from the Bad List are found.\n3. **Contradictions:** If an item appears to be in both categories due to fuzzy matching, treat it as **BAD**.\n\n**OCR TEXT TO ANALYZE:**\n\"\"\"\n{{ $json.output }}\n\"\"\"\n\n**OUTPUT FORMAT (HTML ONLY):**\nReturn ONLY a JSON object.\n{\n  \"detected_bad\": [\"List exactly what was found\"],\n  \"detected_good\": [\"List exactly what was found\"],\n  \"is_safe\": true/false,\n  \"summary_msg\": \"Your response in HTML. Use <b>bold</b> for emphasis. Start with \ud83d\udea8 foe unsafe and \u2705 for safe. If unsafe, explain WHICH ingredient triggered the veto. Use lots of emojies, making the summary understood fast.\"\n}\n",
+        "options": {},
+        "promptType": "define"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "086c3b46-dcc5-48f3-be8a-ff555aa587ff",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1192,
+        144
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "benhaotang/Nanonets-OCR-s:F16"
+        },
+        "options": {
+          "responseFormat": "text"
+        },
+        "responsesApiEnabled": false
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "credential-id",
+          "name": "openAiApi Credential"
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "0dcc9287-6d9f-4db5-afdd-eb8cfaf39efd",
+      "name": "AI OCR Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1120,
+        -80
+      ],
+      "parameters": {
+        "text": "Extract the full text as output from the document as if you were reading it.",
+        "options": {
+          "passthroughBinaryImages": true
+        },
+        "promptType": "define",
+        "needsFallback": true
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "303f78e7-1295-43ca-8c28-6f6e118412e3",
+      "name": "JSON Parse & Routing",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1824,
+        -80
+      ],
+      "parameters": {
+        "jsCode": "// The AI Agent node places the final text in the 'output' field\nconst content = $input.item.json.output;\n\n// Logic to find the JSON object within the text (in case the AI adds chatter)\n// This regex looks for content between { and }\nconst jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n\nif (jsonMatch) {\n  // Parse the found JSON string\n  const cleanJson = jsonMatch[0];\n  return { json: JSON.parse(cleanJson) };\n} else {\n  // Fallback if no JSON found (prevents workflow crash)\n  return {\n    json: {\n      is_safe: false,\n      summary_msg: \"\u26a0\ufe0f AI Error: Could not parse analysis results.\",\n      detected_bad: [],\n      detected_good: []\n    }\n  };\n}"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "06fe722f-1a28-4f0f-bd28-35781ba23a0f",
+      "name": "Send a text message",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        2048,
+        -80
+      ],
+      "webhookId": "88ee2395-23a7-4ff1-bf49-5b8b4bbc5db6",
+      "parameters": {
+        "text": "={{ $json.summary_msg }}\n\n\nDetected Bad Items: {{ $('JSON Parse & Routing').item.json.detected_bad.join(\", \") }}\n\nDetected Good Items: {{ $('JSON Parse & Routing').item.json.detected_good.join(\", \") }}",
+        "chatId": "={{ $('Telegram Trigger').last().json.message.chat.id }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "reply_to_message_id": "={{ $('Telegram Trigger').last().json.message.message_id }}"
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "credential-id",
+          "name": "telegramApi Credential"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "a3c9ec6b-5bb2-42f3-a96f-95f4835f399f",
+      "name": "Create a record",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        2272,
+        -80
+      ],
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appwuO8h6qLVULY20",
+          "cachedResultUrl": "https://airtable.com/appwuO8h6qLVULY20",
+          "cachedResultName": "Ingredients Brain"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tblxNCYzl618GOEeW",
+          "cachedResultUrl": "https://airtable.com/appwuO8h6qLVULY20/tblxNCYzl618GOEeW",
+          "cachedResultName": "Logs"
+        },
+        "columns": {
+          "value": {
+            "Message ID": "={{ $json.result.message_id.toString() }}",
+            "AI Response": "={{ $('JSON Parse & Routing').item.json.summary_msg }}",
+            "Detected Stuff": "={{ $('JSON Parse & Routing').item.json.detected_bad.join(\", \") }}"
+          },
+          "schema": [
+            {
+              "id": "Message ID",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Message ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "readOnly": true,
+              "required": false,
+              "displayName": "Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Detected Stuff",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Detected Stuff",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Response",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "AI Response",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": true
+        },
+        "operation": "create"
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "credential-id",
+          "name": "airtableTokenApi Credential"
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "964083b7-e40b-4255-af7f-3c0474a34d44",
+      "name": "Get a file",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        896,
+        -80
+      ],
+      "webhookId": "9efc3cb4-7a89-4ca0-b9f0-6854368ecbbb",
+      "parameters": {
+        "fileId": "={{ $('Telegram Trigger').last().json.message.photo[$('Telegram Trigger').last().json.message.photo.length - 1].file_id }}",
+        "resource": "file",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "credential-id",
+          "name": "telegramApi Credential"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "12d12ac3-5d1c-4123-b677-a8b6dd55ec6b",
+      "name": "Watchlist",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        240,
+        -80
+      ],
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appwuO8h6qLVULY20",
+          "cachedResultUrl": "https://airtable.com/appwuO8h6qLVULY20",
+          "cachedResultName": "Ingredients Brain"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tblcSxoDacaEYM72z",
+          "cachedResultUrl": "https://airtable.com/appwuO8h6qLVULY20/tblcSxoDacaEYM72z",
+          "cachedResultName": "Watchlist"
+        },
+        "options": {},
+        "operation": "search",
+        "filterByFormula": "Status = \"Active\""
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "credential-id",
+          "name": "airtableTokenApi Credential"
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "54b17913-0126-48cb-9667-43fce3b35fb1",
+      "name": "Preferences",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        448,
+        -80
+      ],
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appwuO8h6qLVULY20",
+          "cachedResultUrl": "https://airtable.com/appwuO8h6qLVULY20",
+          "cachedResultName": "Ingredients Brain"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tblg4MpqDoqodiGO7",
+          "cachedResultUrl": "https://airtable.com/appwuO8h6qLVULY20/tblg4MpqDoqodiGO7",
+          "cachedResultName": "Preferences"
+        },
+        "options": {},
+        "operation": "search"
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "credential-id",
+          "name": "airtableTokenApi Credential"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 2.1
+    },
+    {
+      "id": "3d8804b2-8fb4-4306-a556-5c2304f6b1ed",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        -16,
+        -80
+      ],
+      "webhookId": "cddd30ff-c082-4577-abc2-b7a1772b561b",
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "credential-id",
+          "name": "telegramApi Credential"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "5354c9c0-b24b-4b63-8d59-7fa0f23ad727",
+      "name": "Done!",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        2496,
+        -80
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "d4c3a9f7-190a-4517-ae8c-9f552768662b",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        1544,
+        144
+      ],
+      "parameters": {
+        "options": {
+          "temperature": 0.2
+        },
+        "modelName": "models/gemini-2.0-flash-lite-001"
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "credential-id",
+          "name": "googlePalmApi Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6f47bacb-c8bc-4d40-8316-24072891976c",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -896,
+        -464
+      ],
+      "parameters": {
+        "width": 720,
+        "height": 848,
+        "content": "# \ud83d\udee1\ufe0f Personal Ingredient Bodyguard\n**Turn Telegram into a smart food safety scanner!**\n\nThis workflow takes a photo from Telegram, reads the text using Local OCR, and uses Gemini to cross-reference it against your personal **Good** & **Bad** ingredient lists.\n\n### \ud83d\ude80 **Quick Start Guide**\n\n**1. Get the Database **\nYou need the specific Airtable configuration for this to work.\n\ud83d\udc49 [**Click here to Copy the Base**](https://airtable.com/appwuO8h6qLVULY20/shrYVCqWgPtFDPz0q)\n*(Don't have an account? [Sign up for Airtable here](https://airtable.com/invite/r/Isr7G94S))*\n\n**2. Connect n8n to Airtable**\nNeed help with the API key?\n\ud83d\udcfa [**Watch this 5-min Setup Tutorial**](https://www.youtube.com/watch?v=xFFfkBeI2rQ)\n\n**3. Customize**\nGo to the **Preferences** table in your new base to change the AI's \"Persona\" (e.g., Sarcastic Bodyguard) and Language!\n\n---\n### \u26a0\ufe0f **IMPORTANT DISCLAIMER**\n> **This tool is for informational purposes only.**\n>\n> 1. **Not Medical Advice:** Do not rely on this for life-threatening allergies.\n> 2. **AI Limitations:** OCR can misread text, and AI can hallucinate.\n> 3. **Verify:** Always double-check the physical product label.\n>\n> *Use at your own risk.*"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2e13f201-9837-4b12-8355-4232bc6aeaf4",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -144,
+        -608
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 336,
+        "height": 1184,
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n# \ud83e\udd16 Telegram nodes: Input & Output\n**Connect your Telegram Bot**\n\n1. Talk to **@BotFather** on Telegram to create a new bot.\n2. Copy the **API Token**.\n3. Create a **Telegram Credential** in n8n and paste the token.\n\n**Nodes in this group:**\n* **Trigger:** Listens for incoming photos.\n* **Get File:** Downloads the highest resolution image for the OCR.\n* **Send Message:** Replies to the user with the result (HTML formatted)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1efcac35-a3d8-4a78-a9a0-5eebb9fbe7f9",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1088,
+        -512
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 640,
+        "height": 992,
+        "content": "# \ud83d\udc41\ufe0f Vision & Logic\n**Hybrid AI Architecture**\n\nThis section splits the work to save costs and increase privacy.\n\n**1. The Eyes (OCR)** \ud83d\udc41\ufe0f\n* **Node:** `AI OCR Agent` + `OpenAI Chat Model`\n* **Config:** This is set up to use a **Local Model** (`benhaotang/Nanonets-OCR-s:F16`) via an OpenAI-compatible endpoint.\n* *Tip: If you don't host this model locally, swap the Chat Model node for a standard GPT-4o or Gemini Vision node.*\n\n**2. The Brain (Analyst)** \ud83e\udde0\n* **Node:** `AI Agent` + `Google Gemini`\n* **Config:** This uses **Gemini Flash/Pro** to analyze the text. It strictly follows the \"Veto Rules\" defined in your Airtable."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a73a681e-a824-4c00-a3ac-28d329d19996",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        224,
+        -608
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1776,
+        "height": 1184,
+        "content": "# \u2699\ufe0f Data Processing\n\n* **Data Aggregation:** Pulls your `Active` watchlist and `Preferences` from Airtable and formats them into a prompt for the AI.\n* **JSON Parse:** Cleans the AI's output to ensure n8n can read the `Safe/Unsafe` verdict correctly.\n\n> **Logic Note:** The code enforces that **Bad Stuff** always overrides **Good Stuff**."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "fbf54b05-040a-4166-a8d3-2fb7c7aca150",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2384,
+        -608
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 352,
+        "height": 1184,
+        "content": "# \u2705 Workflow Complete!\n**Cycle Finished Successfully**\n\nIf the execution reaches this node:\n1. \ud83d\udcf8 Image was processed.\n2. \ud83e\uddea Ingredients were analyzed.\n3. \ud83d\udcf2 User received the Telegram reply.\n4. \ud83d\udcdd Result was logged to Airtable.\n\n---\n**Ready for the next scan!**"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c784db38-81b1-4126-b8b8-6e73cb5b6a26",
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "JSON Parse & Routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Watchlist": {
+      "main": [
+        [
+          {
+            "node": "Preferences",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "AI OCR Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preferences": {
+      "main": [
+        [
+          {
+            "node": "Data Aggregation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI OCR Agent": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a record": {
+      "main": [
+        [
+          {
+            "node": "Done!",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Aggregation": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Watchlist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI OCR Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI OCR Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Create a record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Parse & Routing": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

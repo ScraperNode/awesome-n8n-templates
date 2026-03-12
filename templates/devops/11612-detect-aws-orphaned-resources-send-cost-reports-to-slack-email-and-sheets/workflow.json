@@ -1,0 +1,1090 @@
+{
+  "id": "RjLEqDb42X0MVizx",
+  "meta": {
+    "instanceId": "49386a3d65752a7f465dacecb1dd1f3b806bfa1e37367e1fff29b9f44511e2c9"
+  },
+  "name": "AWS Orphaned Resource Detector & Cost Optimizer",
+  "tags": [
+    {
+      "id": "4qsF1cDh1AwiMBCq",
+      "name": "cloud-ops",
+      "createdAt": "2025-12-06T23:25:44.704Z",
+      "updatedAt": "2025-12-06T23:25:44.704Z"
+    },
+    {
+      "id": "9DUS2jf1ifrTTedP",
+      "name": "finops",
+      "createdAt": "2025-12-06T23:25:44.645Z",
+      "updatedAt": "2025-12-06T23:25:44.645Z"
+    },
+    {
+      "id": "aIRFxZYaTQ43AnTc",
+      "name": "aws",
+      "createdAt": "2025-12-06T23:25:44.674Z",
+      "updatedAt": "2025-12-06T23:25:44.674Z"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "3547928a-cd56-4422-ac30-fc2504f42dee",
+      "name": "Workflow Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -912,
+        -16
+      ],
+      "parameters": {
+        "width": 540,
+        "height": 556,
+        "content": "## \ud83d\udea8 AWS ORPHANED RESOURCES DETECTOR\n\n**Use this n8n template to identify orphaned resources across all regions of your AWS account. This workflow helps you maintain inventory and control costs by detecting the most expensive waste in your environment, including unattached EBS volumes, old snapshots (>90 days), and unassociated Elastic IPs.**\n\n### OUTPUTS\n\ud83d\udcb0 Typical Savings: $50-10K/month\n\ud83d\udcca Outputs: Slack + Email + Google Sheets\n\ud83d\udd12 Read-only, secure, compliant\n\n### \ud83d\ude80 QUICK START:\n1. Configure \"Initialize Config\" node\n2. Set region in \"Set Region Variables\"\n3. Connect all credentials\n4. Test: Click \"Execute Workflow\"\n5. Verify: Check Slack/Email/Sheets\n6. Enable: \"Weekly Scan Trigger\"\n\nFirst run? \u2192 See Prerequisites note\nIssues? \u2192 Check Troubleshooting note\n\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3d5fa748-6e6b-4187-8ce1-48af53a7c922",
+      "name": "Weekly Scan Trigger1",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -336,
+        576
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "3beec422-ef8f-4be8-8793-162f5c6e71e3",
+      "name": "Initialize Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -128,
+        576
+      ],
+      "parameters": {
+        "mode": "raw",
+        "options": {},
+        "jsonOutput": "{\n  \"awsRegions\": [\"us-east-1\", \"us-west-2\"],\n  \"slackChannel\": \"#cloud-ops\",\n  \"emailRecipients\": \"user@example.com\",\n  \"requiredTags\": [\"Environment\", \"Owner\", \"CostCenter\"],\n  \"snapshotAgeDays\": 90,\n  \"stoppedInstanceDays\": 30,\n  \"ebsCostPerGbMonth\": 0.1,\n  \"snapshotCostPerGbMonth\": 0.05,\n  \"elasticIpCostPerMonth\": 3.6,\n  \"enableCleanup\": false\n}"
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "24b793a7-c33c-4fba-a1be-42edcf171d38",
+      "name": "Aggregate All Resources",
+      "type": "n8n-nodes-base.aggregate",
+      "position": [
+        944,
+        576
+      ],
+      "parameters": {
+        "options": {},
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "=data"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ca8a6e8b-3160-4fe8-ab25-6208f0e78220",
+      "name": "Calculate Summary Stats",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1168,
+        576
+      ],
+      "parameters": {
+        "jsCode": "// Get the aggregated data from previous node\nconst aggregatedData = $input.first().json.data;\n\n// Initialize totals\nlet totalMonthlyCost = 0;\nlet totalAnnualCost = 0;\nlet totalResourceCount = 0;\nlet resourcesWithMissingTags = 0;\nlet totalResourcesScanned = 0;\n\n// Initialize breakdown structures\nconst byType = {};\nconst byRegion = {};\nconst allExpensiveResources = [];\n\n// Process each resource type\naggregatedData.forEach(item => {\n  const resourceType = item.resourceType;\n  const region = item.region;\n  \n  // Add to totals\n  totalMonthlyCost += item.monthlyCost || 0;\n  totalAnnualCost += item.annualCost || 0;\n  totalResourceCount += item.totalCount || 0;\n  \n  // Group by resource type\n  if (!byType[resourceType]) {\n    byType[resourceType] = { count: 0, cost: 0 };\n  }\n  byType[resourceType].count += item.totalCount || 0;\n  byType[resourceType].cost += item.monthlyCost || 0;\n  \n  // Group by region\n  if (!byRegion[region]) {\n    byRegion[region] = { count: 0, cost: 0 };\n  }\n  byRegion[region].count += item.totalCount || 0;\n  byRegion[region].cost += item.monthlyCost || 0;\n  \n  // Process resources for top expensive list\n  if (item.resources && Array.isArray(item.resources)) {\n    totalResourcesScanned += item.resources.length;\n    \n    item.resources.forEach(resource => {\n      // Count missing tags\n      if (resource.missingTags && resource.missingTags.length > 0) {\n        resourcesWithMissingTags++;\n      }\n      \n      // Add to expensive resources list\n      let resourceInfo = {\n        type: resourceType,\n        cost: resource.monthlyCost || 0,\n        region: region\n      };\n      \n      if (resourceType === 'volumes') {\n        resourceInfo.id = resource.volumeId;\n        resourceInfo.details = `${resource.size} GB in ${resource.availabilityZone}`;\n      } else if (resourceType === 'snapshots') {\n        resourceInfo.id = resource.snapshotId;\n        resourceInfo.details = `${resource.size} GB, ${resource.ageInDays} days old`;\n      } else if (resourceType === 'addresses') {\n        resourceInfo.id = resource.publicIp;\n        resourceInfo.details = 'Unassociated Elastic IP';\n      }\n      \n      allExpensiveResources.push(resourceInfo);\n    });\n  }\n});\n\n// Sort and get top 5 most expensive resources\nconst top5Expensive = allExpensiveResources\n  .sort((a, b) => b.cost - a.cost)\n  .slice(0, 5);\n\n// Calculate compliance rate\nconst complianceRate = totalResourcesScanned > 0 \n  ? ((totalResourcesScanned - resourcesWithMissingTags) / totalResourcesScanned * 100).toFixed(1)\n  : 100;\n\n// Calculate savings opportunity (annual cost)\nconst savingsOpportunity = totalAnnualCost;\n\n// Build summary statistics\nreturn {\n  json: {\n    scanDate: new Date().toISOString(),\n    scanTime: new Date().toLocaleString('en-US', { \n      timeZone: 'America/New_York',\n      dateStyle: 'full',\n      timeStyle: 'short'\n    }),\n    \n    // High-level summary\n    summary: {\n      totalResourcesFound: totalResourceCount,\n      totalResourcesScanned: totalResourcesScanned,\n      monthlyCost: parseFloat(totalMonthlyCost.toFixed(2)),\n      annualCost: parseFloat(totalAnnualCost.toFixed(2)),\n      savingsOpportunity: parseFloat(savingsOpportunity.toFixed(2)),\n      resourcesWithMissingTags: resourcesWithMissingTags,\n      complianceRate: parseFloat(complianceRate)\n    },\n    \n    // Breakdown by resource type\n    byType: {\n      volumes: {\n        count: byType['volumes']?.count || 0,\n        monthlyCost: parseFloat((byType['volumes']?.cost || 0).toFixed(2))\n      },\n      snapshots: {\n        count: byType['snapshots']?.count || 0,\n        monthlyCost: parseFloat((byType['snapshots']?.cost || 0).toFixed(2))\n      },\n      elasticIPs: {\n        count: byType['addresses']?.count || 0,\n        monthlyCost: parseFloat((byType['addresses']?.cost || 0).toFixed(2))\n      }\n    },\n    \n    // Breakdown by region\n    byRegion: Object.keys(byRegion).map(region => ({\n      region: region,\n      count: byRegion[region].count,\n      monthlyCost: parseFloat(byRegion[region].cost.toFixed(2))\n    })),\n    \n    // Top 5 most expensive resources\n    topExpensive: top5Expensive,\n    \n    // Full details for downstream nodes\n    fullData: aggregatedData\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c22d8fc7-1419-4566-af3f-dac69d52d295",
+      "name": "Generate HTML Report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1760,
+        480
+      ],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\n// Helper function to format currency\nconst formatCurrency = (amount) => `$${amount.toFixed(2)}`;\n\n// Helper function to determine status color\nconst getStatusColor = (complianceRate) => {\n  if (complianceRate >= 80) return '#10b981'; // Green\n  if (complianceRate >= 50) return '#f59e0b'; // Orange\n  return '#ef4444'; // Red\n};\n\n// Build top expensive resources HTML\nconst topExpensiveHTML = data.topExpensive.map((resource, index) => `\n  <tr style=\"border-bottom: 1px solid #e5e7eb;\">\n    <td style=\"padding: 12px; font-weight: 600;\">${index + 1}</td>\n    <td style=\"padding: 12px;\">\n      <span style=\"background: #eff6ff; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;\">\n        ${resource.type}\n      </span>\n    </td>\n    <td style=\"padding: 12px; font-family: 'Courier New', monospace; font-size: 13px;\">${resource.id}</td>\n    <td style=\"padding: 12px; color: #6b7280;\">${resource.details}</td>\n    <td style=\"padding: 12px; font-weight: 600; color: #dc2626;\">${formatCurrency(resource.cost)}/mo</td>\n  </tr>\n`).join('');\n\n// Build resource type breakdown\nconst resourceTypeHTML = `\n  <tr>\n    <td style=\"padding: 12px; border-bottom: 1px solid #e5e7eb;\">\n      <span style=\"font-weight: 500;\">\ud83d\udce6 Unattached EBS Volumes</span>\n    </td>\n    <td style=\"padding: 12px; text-align: center; border-bottom: 1px solid #e5e7eb; font-weight: 600;\">\n      ${data.byType.volumes.count}\n    </td>\n    <td style=\"padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #dc2626;\">\n      ${formatCurrency(data.byType.volumes.monthlyCost)}\n    </td>\n  </tr>\n  <tr>\n    <td style=\"padding: 12px; border-bottom: 1px solid #e5e7eb;\">\n      <span style=\"font-weight: 500;\">\ud83d\udcbe Old Snapshots (&gt;90 days)</span>\n    </td>\n    <td style=\"padding: 12px; text-align: center; border-bottom: 1px solid #e5e7eb; font-weight: 600;\">\n      ${data.byType.snapshots.count}\n    </td>\n    <td style=\"padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #dc2626;\">\n      ${formatCurrency(data.byType.snapshots.monthlyCost)}\n    </td>\n  </tr>\n  <tr>\n    <td style=\"padding: 12px;\">\n      <span style=\"font-weight: 500;\">\ud83c\udf10 Unassociated Elastic IPs</span>\n    </td>\n    <td style=\"padding: 12px; text-align: center; font-weight: 600;\">\n      ${data.byType.elasticIPs.count}\n    </td>\n    <td style=\"padding: 12px; text-align: right; font-weight: 600; color: #dc2626;\">\n      ${formatCurrency(data.byType.elasticIPs.monthlyCost)}\n    </td>\n  </tr>\n`;\n\n// Build region breakdown\nconst regionHTML = data.byRegion.map(region => `\n  <tr>\n    <td style=\"padding: 12px; border-bottom: 1px solid #e5e7eb;\">\n      <span style=\"font-family: 'Courier New', monospace; background: #f3f4f6; padding: 4px 8px; border-radius: 4px;\">\n        ${region.region}\n      </span>\n    </td>\n    <td style=\"padding: 12px; text-align: center; border-bottom: 1px solid #e5e7eb; font-weight: 600;\">\n      ${region.count}\n    </td>\n    <td style=\"padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #dc2626;\">\n      ${formatCurrency(region.monthlyCost)}\n    </td>\n  </tr>\n`).join('');\n\n// Generate complete HTML report\nconst htmlReport = `\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>AWS Orphaned Resources Report</title>\n</head>\n<body style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;\">\n  \n  <div style=\"max-width: 800px; margin: 40px auto; background: white; border-radius: 8px; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);\">\n    \n    <!-- Header -->\n    <div style=\"background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 32px; border-radius: 8px 8px 0 0;\">\n      <h1 style=\"margin: 0 0 8px 0; font-size: 28px; font-weight: 700;\">\ud83d\udea8 AWS Orphaned Resources Report</h1>\n      <p style=\"margin: 0; opacity: 0.9; font-size: 14px;\">Generated on ${data.scanTime}</p>\n    </div>\n    \n    <!-- Summary Cards -->\n    <div style=\"display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; padding: 24px; background: #f9fafb; border-bottom: 1px solid #e5e7eb;\">\n      \n      <!-- Total Resources -->\n      <div style=\"background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;\">\n        <div style=\"color: #6b7280; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;\">Total Resources Found</div>\n        <div style=\"font-size: 32px; font-weight: 700; color: #dc2626;\">${data.summary.totalResourcesFound}</div>\n        <div style=\"color: #6b7280; font-size: 13px; margin-top: 4px;\">Orphaned resources detected</div>\n      </div>\n      \n      <!-- Monthly Cost -->\n      <div style=\"background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;\">\n        <div style=\"color: #6b7280; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;\">Monthly Waste</div>\n        <div style=\"font-size: 32px; font-weight: 700; color: #dc2626;\">${formatCurrency(data.summary.monthlyCost)}</div>\n        <div style=\"color: #6b7280; font-size: 13px; margin-top: 4px;\">Per month</div>\n      </div>\n      \n      <!-- Annual Cost -->\n      <div style=\"background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;\">\n        <div style=\"color: #6b7280; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;\">Annual Waste</div>\n        <div style=\"font-size: 32px; font-weight: 700; color: #dc2626;\">${formatCurrency(data.summary.annualCost)}</div>\n        <div style=\"color: #6b7280; font-size: 13px; margin-top: 4px;\">Per year</div>\n      </div>\n      \n      <!-- Compliance Rate -->\n      <div style=\"background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;\">\n        <div style=\"color: #6b7280; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;\">Tag Compliance</div>\n        <div style=\"font-size: 32px; font-weight: 700; color: ${getStatusColor(data.summary.complianceRate)};\">${data.summary.complianceRate}%</div>\n        <div style=\"color: #6b7280; font-size: 13px; margin-top: 4px;\">${data.summary.resourcesWithMissingTags} missing tags</div>\n      </div>\n      \n    </div>\n    \n    <!-- Top 5 Most Expensive Resources -->\n    <div style=\"padding: 24px;\">\n      <h2 style=\"margin: 0 0 16px 0; font-size: 20px; font-weight: 700; color: #111827;\">\ud83d\udcb0 Top 5 Most Expensive Resources</h2>\n      <table style=\"width: 100%; border-collapse: collapse; background: white; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;\">\n        <thead>\n          <tr style=\"background: #f9fafb; border-bottom: 2px solid #e5e7eb;\">\n            <th style=\"padding: 12px; text-align: left; font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase;\">#</th>\n            <th style=\"padding: 12px; text-align: left; font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase;\">Type</th>\n            <th style=\"padding: 12px; text-align: left; font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase;\">Resource ID</th>\n            <th style=\"padding: 12px; text-align: left; font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase;\">Details</th>\n            <th style=\"padding: 12px; text-align: left; font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase;\">Monthly Cost</th>\n          </tr>\n        </thead>\n        <tbody>\n          ${topExpensiveHTML || '<tr><td colspan=\"5\" style=\"padding: 24px; text-align: center; color: #6b7280;\">No resources found</td></tr>'}\n        </tbody>\n      </table>\n    </div>\n    \n    <!-- Resource Type Breakdown -->\n    <div style=\"padding: 24px; background: #f9fafb;\">\n      <h2 style=\"margin: 0 0 16px 0; font-size: 20px; font-weight: 700; color: #111827;\">\ud83d\udcca Breakdown by Resource Type</h2>\n      <table style=\"width: 100%; border-collapse: collapse; background: white; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;\">\n        <thead>\n          <tr style=\"background: #f9fafb; border-bottom: 2px solid #e5e7eb;\">\n            <th style=\"padding: 12px; text-align: left; font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase;\">Resource Type</th>\n            <th style=\"padding: 12px; text-align: center; font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase;\">Count</th>\n            <th style=\"padding: 12px; text-align: right; font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase;\">Monthly Cost</th>\n          </tr>\n        </thead>\n        <tbody>\n          ${resourceTypeHTML}\n        </tbody>\n      </table>\n    </div>\n    \n    <!-- Region Breakdown -->\n    <div style=\"padding: 24px;\">\n      <h2 style=\"margin: 0 0 16px 0; font-size: 20px; font-weight: 700; color: #111827;\">\ud83c\udf0d Breakdown by Region</h2>\n      <table style=\"width: 100%; border-collapse: collapse; background: white; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;\">\n        <thead>\n          <tr style=\"background: #f9fafb; border-bottom: 2px solid #e5e7eb;\">\n            <th style=\"padding: 12px; text-align: left; font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase;\">Region</th>\n            <th style=\"padding: 12px; text-align: center; font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase;\">Count</th>\n            <th style=\"padding: 12px; text-align: right; font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase;\">Monthly Cost</th>\n          </tr>\n        </thead>\n        <tbody>\n          ${regionHTML}\n        </tbody>\n      </table>\n    </div>\n    \n    <!-- Footer -->\n    <div style=\"padding: 24px; background: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;\">\n      <p style=\"margin: 0 0 8px 0; color: #6b7280; font-size: 14px;\">\n        \u26a1 <strong>Action Required:</strong> Review these orphaned resources and consider cleanup to reduce costs.\n      </p>\n      <p style=\"margin: 0; color: #6b7280; font-size: 13px;\">\n        \ud83d\udce7 This report was automatically generated by your n8n AWS Resource Scanner workflow.\n      </p>\n    </div>\n    \n  </div>\n  \n</body>\n</html>\n`;\n\nreturn {\n  json: {\n    html: htmlReport,\n    subject: `\ud83d\udea8 AWS Orphaned Resources Alert - ${formatCurrency(data.summary.annualCost)}/year waste detected`,\n    summary: data.summary\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "4a98e778-f771-4bbd-a8bd-c540ba354b69",
+      "name": "Generate CSV Export",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1712,
+        336
+      ],
+      "parameters": {
+        "jsCode": "// Get data from Calculate Summary Stats\nconst data = $input.first().json;\nconst fullData = data.fullData;\n\n// CSV header\nconst csvHeader = 'Resource Type,Region,Resource ID,Monthly Cost,Annual Cost,Risk Score,Compliance,Missing Tags,Age (Days),Create Date\\n';\n\n// Generate CSV rows from all resources\nconst csvRows = [];\n\nfullData.forEach(item => {\n  const resourceType = item.resourceType;\n  const region = item.region;\n  \n  if (item.resources && Array.isArray(item.resources)) {\n    item.resources.forEach(resource => {\n      let row = {};\n      \n      // Common fields\n      row.resourceType = resourceType;\n      row.region = region;\n      row.monthlyCost = resource.monthlyCost || 0;\n      row.annualCost = (resource.monthlyCost || 0) * 12;\n      row.complianceStatus = resource.missingTags?.length === 0 ? 'COMPLIANT' : 'NON-COMPLIANT';\n      row.missingTags = resource.missingTags?.join('; ') || 'N/A';\n      \n      // Resource-type specific fields\n      if (resourceType === 'volumes') {\n        row.id = resource.volumeId;\n        row.riskScore = resource.monthlyCost > 5 ? 'HIGH' : resource.monthlyCost > 2 ? 'MEDIUM' : 'LOW';\n        row.ageDays = 'N/A';\n        row.createDate = resource.created || 'N/A';\n      } else if (resourceType === 'snapshots') {\n        row.id = resource.snapshotId;\n        row.riskScore = resource.ageInDays > 365 ? 'HIGH' : resource.ageInDays > 180 ? 'MEDIUM' : 'LOW';\n        row.ageDays = resource.ageInDays;\n        row.createDate = resource.created || 'N/A';\n      } else if (resourceType === 'addresses') {\n        row.id = resource.publicIp;\n        row.riskScore = 'MEDIUM';\n        row.ageDays = 'N/A';\n        row.createDate = 'N/A';\n      }\n      \n      csvRows.push(row);\n    });\n  }\n});\n\n// Convert to CSV string\nconst csv = csvHeader + csvRows.map(r => \n  `\"${r.resourceType}\",\"${r.region}\",\"${r.id}\",${r.monthlyCost.toFixed(2)},${r.annualCost.toFixed(2)},\"${r.riskScore}\",\"${r.complianceStatus}\",\"${r.missingTags}\",\"${r.ageDays}\",\"${r.createDate}\"`\n).join('\\n');\n\n// Return both CSV string and structured data for Google Sheets\nreturn {\n  json: {\n    // For potential file attachment\n    csv: csv,\n    csvFilename: `aws-orphaned-resources-${new Date().toISOString().split('T')[0]}.csv`,\n    \n    // For Google Sheets (structured data)\n    data: csvRows,\n    \n    // Summary for reference\n    summary: {\n      totalRows: csvRows.length,\n      scanDate: data.scanDate,\n      totalMonthlyCost: data.summary.monthlyCost,\n      totalAnnualCost: data.summary.annualCost\n    }\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "63654b23-50e4-4f19-92ed-c78e0468c182",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1712,
+        176
+      ],
+      "webhookId": "c12814a7-5891-45e9-8d37-f02d0427ac9c",
+      "parameters": {
+        "text": "=:warning: *AWS Orphaned Resource Alert* :warning:\n\n*Summary for {{ $json.scanTime.split(' at ')[0] }}:*\n- Total Resources: *{{ $json.summary.totalResourcesFound }}*\n- Monthly Waste: *${{ $json.summary.monthlyCost }}*\n- Annual Impact: *${{ $json.summary.annualCost }}*\n- Compliance Rate: *{{ $json.summary.complianceRate }}%* {{ $json.summary.complianceRate < 50 ? ':x:' : $json.summary.complianceRate < 80 ? ':warning:' : ':white_check_mark:' }}\n\n:fire: *Top Offenders by Risk:*\n{{ $json.topExpensive.length > 0 ? $json.topExpensive.slice(0, 5).map((r, i) => `${i+1}. \\`${r.id}\\` | ${r.type} | $${r.cost}/mo | ${r.details}`).join('\\n') : '_No resources found_' }}\n\n:moneybag: *Breakdown by Type:*\n- EBS Volumes: {{ $json.byType.volumes.count }} resources, ${{ $json.byType.volumes.monthlyCost }}/mo\n- Snapshots: {{ $json.byType.snapshots.count }} resources, ${{ $json.byType.snapshots.monthlyCost }}/mo\n- Elastic IPs: {{ $json.byType.elasticIPs.count }} resources, ${{ $json.byType.elasticIPs.monthlyCost }}/mo\n\n:round_pushpin: *By Region:*\n{{ $json.byRegion.map(r => `\u2022 ${r.region}: ${r.count} resources, $${r.monthlyCost}/mo`).join('\\n') }}\n\n---\n:point_right: <https://console.aws.amazon.com/ec2/home|View in AWS Console>\n_Full HTML report will be emailed to FinOps team_",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "otherOptions": {}
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "20e3faca-3d0c-449d-831f-43cb1931ad96",
+      "name": "Send Email Report",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1968,
+        480
+      ],
+      "webhookId": "76d16998-c96e-4cf8-acf4-2407893a4c68",
+      "parameters": {
+        "sendTo": "={{ $('Initialize Config').item.json.emailRecipients }}",
+        "message": "={{ $json.html }}",
+        "options": {},
+        "subject": "=AWS Orphaned Resources Report - ${{ $('Calculate Summary Stats').item.json.summary.annualCost }}/year waste"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "gmailOAuth2 Credential"
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "90ea04a7-1b68-4ae9-8a04-e09667d9d0c0",
+      "name": "Set Region Variables",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        80,
+        576
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+              "name": "currentRegion",
+              "type": "string",
+              "value": "={{ $json.awsRegions[0] }}"
+            },
+            {
+              "id": "b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e",
+              "name": "scanStartTime",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "f367ac05-a9aa-4484-b3c3-d2c982e2df95",
+      "name": "Scan Elastic IPs",
+      "type": "n8n-nodes-base.awsLambda",
+      "position": [
+        352,
+        768
+      ],
+      "parameters": {
+        "payload": "={\n  \"region\": \"{{ $json.currentRegion }}\",\n  \"resourceType\": \"addresses\"\n}",
+        "function": "aws-orphaned-resource-scanner"
+      },
+      "credentials": {
+        "aws": {
+          "id": "credential-id",
+          "name": "aws Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "486471fa-5ca8-4dd0-91f1-01f4032a216f",
+      "name": "Scan EBS Snapshots",
+      "type": "n8n-nodes-base.awsLambda",
+      "position": [
+        352,
+        576
+      ],
+      "parameters": {
+        "payload": "={\n  \"region\": \"{{ $json.currentRegion }}\",\n  \"resourceType\": \"snapshots\"\n}",
+        "function": "aws-orphaned-resource-scanner"
+      },
+      "credentials": {
+        "aws": {
+          "id": "credential-id",
+          "name": "aws Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "7216ce14-d4f9-46f9-b45b-ad67ba633a46",
+      "name": "Scan unattached EBS Volumes",
+      "type": "n8n-nodes-base.awsLambda",
+      "position": [
+        352,
+        368
+      ],
+      "parameters": {
+        "payload": "={\n  \"region\": \"{{ $json.currentRegion }}\",\n  \"resourceType\": \"volumes\"\n}",
+        "function": "aws-orphaned-resource-scanner"
+      },
+      "credentials": {
+        "aws": {
+          "id": "credential-id",
+          "name": "aws Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1d52b733-68e8-43c1-be04-70600ea0da46",
+      "name": "Process Snapshots",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        640,
+        576
+      ],
+      "parameters": {
+        "jsCode": "const response = $input.item.json.result;\nconst data = JSON.parse(response.body);\n\n// Calculate snapshot costs (snapshots cost $0.05/GB-month)\nconst snapshotCostPerGb = 0.05;\nconst totalSize = data.resources.reduce((sum, snap) => sum + snap.VolumeSize, 0);\nconst monthlyCost = totalSize * snapshotCostPerGb;\nconst annualCost = monthlyCost * 12;\n\n// Check for missing tags and age\nconst requiredTags = ['Environment', 'Owner', 'CostCenter'];\nconst processedSnapshots = data.resources.map(snap => {\n  const existingTags = snap.Tags || [];\n  const tagKeys = existingTags.map(t => t.Key);\n  const missingTags = requiredTags.filter(tag => !tagKeys.includes(tag));\n  \n  // Calculate age in days\n  const ageInDays = Math.floor((new Date() - new Date(snap.StartTime)) / (1000 * 60 * 60 * 24));\n  \n  return {\n    snapshotId: snap.SnapshotId,\n    volumeId: snap.VolumeId,\n    size: snap.VolumeSize,\n    state: snap.State,\n    created: snap.StartTime,\n    ageInDays: ageInDays,\n    description: snap.Description || 'No description',\n    missingTags: missingTags,\n    monthlyCost: snap.VolumeSize * snapshotCostPerGb\n  };\n});\n\nreturn {\n  json: {\n    region: data.region,\n    resourceType: data.resourceType,\n    totalCount: data.count,\n    totalSize: totalSize,\n    monthlyCost: parseFloat(monthlyCost.toFixed(2)),\n    annualCost: parseFloat(annualCost.toFixed(2)),\n    resources: processedSnapshots\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "3ad9f8e4-25ea-470a-909a-ea28dcfb7b6a",
+      "name": "Process EBS Volumes",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        640,
+        368
+      ],
+      "parameters": {
+        "jsCode": "const response = $input.item.json.result;\nconst data = JSON.parse(response.body);\n\n// Calculate monthly cost\nconst ebsCostPerGb = 0.1;\nconst totalSize = data.resources.reduce((sum, vol) => sum + vol.Size, 0);\nconst monthlyCost = totalSize * ebsCostPerGb;\nconst annualCost = monthlyCost * 12;\n\n// Check for missing tags\nconst requiredTags = ['Environment', 'Owner', 'CostCenter'];\nconst resourcesWithMissingTags = data.resources.map(vol => {\n  const existingTags = vol.Tags || [];\n  const tagKeys = existingTags.map(t => t.Key);\n  const missingTags = requiredTags.filter(tag => !tagKeys.includes(tag));\n  \n  return {\n    volumeId: vol.VolumeId,\n    size: vol.Size,\n    state: vol.State,\n    created: vol.CreateTime,\n    availabilityZone: vol.AvailabilityZone,\n    missingTags: missingTags,\n    monthlyCost: vol.Size * ebsCostPerGb\n  };\n});\n\nreturn {\n  json: {\n    region: data.region,\n    resourceType: data.resourceType,\n    totalCount: data.count,\n    totalSize: totalSize,\n    monthlyCost: monthlyCost,\n    annualCost: annualCost,\n    resources: resourcesWithMissingTags\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "20f26193-ae74-42c8-876e-9d18c8b13e3e",
+      "name": "Process Elastic IPs",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        640,
+        768
+      ],
+      "parameters": {
+        "jsCode": "const response = $input.item.json.result;\nconst data = JSON.parse(response.body);\n\n// Unassociated Elastic IPs cost $3.60/month ($0.005/hour)\nconst elasticIpCostPerMonth = 3.60;\nconst totalCount = data.resources.length;\nconst monthlyCost = totalCount * elasticIpCostPerMonth;\nconst annualCost = monthlyCost * 12;\n\n// Check for missing tags\nconst requiredTags = ['Environment', 'Owner', 'CostCenter'];\nconst processedIPs = data.resources.map(ip => {\n  const existingTags = ip.Tags || [];\n  const tagKeys = existingTags.map(t => t.Key);\n  const missingTags = requiredTags.filter(tag => !tagKeys.includes(tag));\n  \n  return {\n    allocationId: ip.AllocationId,\n    publicIp: ip.PublicIp,\n    domain: ip.Domain,\n    networkBorderGroup: ip.NetworkBorderGroup,\n    missingTags: missingTags,\n    monthlyCost: elasticIpCostPerMonth\n  };\n});\n\nreturn {\n  json: {\n    region: data.region,\n    resourceType: data.resourceType,\n    totalCount: data.count,\n    monthlyCost: parseFloat(monthlyCost.toFixed(2)),\n    annualCost: parseFloat(annualCost.toFixed(2)),\n    resources: processedIPs\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "6538af51-e139-4586-9ea0-ba644a405d4d",
+      "name": "None Found Slack Message",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1712,
+        832
+      ],
+      "webhookId": "c12814a7-5891-45e9-8d37-f02d0427ac9c",
+      "parameters": {
+        "text": "=\u2705 *AWS Cloud Waste Scan Complete - Zero Waste Detected*\n\n*Scan Date:* {{ $('Calculate Summary Stats').item.json.scanTime }}\n*Region(s) Scanned:* {{ $('Set Region Variables').item.json.region }}\n\n\ud83c\udf89 *Excellent news - no orphaned resources found!*\n\n*What we checked:*\n\u2713 Unattached EBS volumes\n\u2713 Snapshots older than 90 days\n\u2713 Unassociated Elastic IPs\n\n*Compliance Status:* \n\u2705 All resources properly tagged\n\u2705 No cloud waste detected\n\u2705 Cost optimization maintained\n\n\ud83d\udcb0 *Estimated monthly savings from past cleanups: Continue monitoring*\n\n_Automated scan by n8n AWS Resource Scanner | Next scan: {{ $now.plus({ weeks: 1 }).format('MMM DD') }}_",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "otherOptions": {}
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "aacbb9eb-02ca-4a81-926c-5a53baa3d3c7",
+      "name": "Clean Scan CSV Export",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1712,
+        1040
+      ],
+      "parameters": {
+        "jsCode": "// Get data from Calculate Summary Stats\nconst data = $input.first().json;\n\n// Create a single \"clean scan\" log entry\nconst scanEntry = {\n  scanDate: new Date().toISOString(),\n  scanTime: new Date().toLocaleString('en-US', { \n    timeZone: 'America/New_York',\n    dateStyle: 'full',\n    timeStyle: 'short'\n  }),\n  region: data.byRegion && data.byRegion.length > 0 ? data.byRegion[0].region : 'us-east-1',\n  status: 'CLEAN',\n  totalResourcesFound: 0,\n  volumesFound: 0,\n  snapshotsFound: 0,\n  elasticIPsFound: 0,\n  monthlyCost: 0.00,\n  annualCost: 0.00,\n  complianceRate: 100,\n  resourcesWithMissingTags: 0,\n  notes: 'No orphaned resources detected - all systems compliant'\n};\n\n// CSV header for clean scans\nconst csvHeader = 'Scan Date,Scan Time,Region,Status,Total Resources,Volumes,Snapshots,Elastic IPs,Monthly Cost,Annual Cost,Compliance Rate,Missing Tags,Notes\\n';\n\n// CSV row\nconst csvRow = `\"${scanEntry.scanDate}\",\"${scanEntry.scanTime}\",\"${scanEntry.region}\",\"${scanEntry.status}\",${scanEntry.totalResourcesFound},${scanEntry.volumesFound},${scanEntry.snapshotsFound},${scanEntry.elasticIPsFound},${scanEntry.monthlyCost.toFixed(2)},${scanEntry.annualCost.toFixed(2)},${scanEntry.complianceRate},${scanEntry.resourcesWithMissingTags},\"${scanEntry.notes}\"`;\n\nconst csv = csvHeader + csvRow;\n\n// Return data for Google Sheets\nreturn {\n  json: {\n    // For CSV export if needed\n    csv: csv,\n    csvFilename: `aws-clean-scan-${new Date().toISOString().split('T')[0]}.csv`,\n    \n    // Structured data for Google Sheets\n    scanDate: scanEntry.scanDate,\n    scanTime: scanEntry.scanTime,\n    region: scanEntry.region,\n    status: scanEntry.status,\n    totalResourcesFound: scanEntry.totalResourcesFound,\n    volumesFound: scanEntry.volumesFound,\n    snapshotsFound: scanEntry.snapshotsFound,\n    elasticIPsFound: scanEntry.elasticIPsFound,\n    monthlyCost: scanEntry.monthlyCost,\n    annualCost: scanEntry.annualCost,\n    complianceRate: scanEntry.complianceRate,\n    resourcesWithMissingTags: scanEntry.resourcesWithMissingTags,\n    notes: scanEntry.notes\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e2dbbe1f-d985-4b59-8a76-4e3950fa5e7e",
+      "name": "Append or update row in sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1952,
+        1040
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Region": "={{ $('Set Region Variables').item.json.currentRegion }}",
+            "Status": "={{ $json.status }}",
+            "Volumes": "={{ $('Process EBS Volumes').item.json.totalCount }}",
+            "Scan Date": "={{ $('Calculate Summary Stats').item.json.scanDate }}",
+            "Scan Time": "={{ $('Calculate Summary Stats').item.json.scanTime }}",
+            "Snapshots": "={{ $('Process Snapshots').item.json.totalCount }}",
+            "Annual Cost": "={{ $('Calculate Summary Stats').item.json.summary.annualCost }}",
+            "Elastic IPs": "={{ $('Process Elastic IPs').item.json.totalCount }}",
+            "Missing Tags": "={{ $('Aggregate All Resources').item.json.data[0].resources[0].missingTags }}",
+            "Monthly Cost": "={{ $('Calculate Summary Stats').item.json.summary.monthlyCost }}",
+            "Compliance Rate": "={{ $('Calculate Summary Stats').item.json.summary.complianceRate }}",
+            "Total Resources": "={{ $('Aggregate All Resources').item.json.data[0].totalCount }}"
+          },
+          "schema": [
+            {
+              "id": "Scan Date",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Scan Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Scan Time",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Scan Time",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Region",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Region",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total Resources",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Total Resources",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Volumes",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Volumes",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Snapshots",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Snapshots",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Elastic IPs",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Elastic IPs",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Monthly Cost",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Monthly Cost",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Annual Cost",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Annual Cost",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Compliance Rate",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Compliance Rate",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Missing Tags",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Missing Tags",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Notes",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1k80AyEcKtuJkGn07peE2M1uzZcYJYtJ2TGDnooUa_G0/edit#gid=0",
+          "cachedResultName": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1k80AyEcKtuJkGn07peE2M1uzZcYJYtJ2TGDnooUa_G0",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1k80AyEcKtuJkGn07peE2M1uzZcYJYtJ2TGDnooUa_G0/edit?usp=drivesdk",
+          "cachedResultName": "Clean Scans"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "b0b31aac-0677-4105-b24c-fd9b2e231c48",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -320,
+        -16
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 416,
+        "height": 432,
+        "content": "## \u2699\ufe0f PREREQUISITES CHECKLIST:\n### AWS:\n\u2610 IAM User: n8n-resource-scanner\n\u2610 Lambda: aws-orphaned-resource-scanner\n\u2610 Permissions: EC2 read + Lambda invoke\n\n### n8n:\n\u2610 AWS IAM credentials\n\u2610 Slack OAuth/Webhook\n\u2610 Gmail OAuth\n\u2610 Google Sheets OAuth\n\n### Setup:\n\u2610 Google Sheet with headers\n\u2610 Lambda function deployed\n\u2610 All credentials tested"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f0ad80cd-6aeb-4a6f-ad76-56cfddfb52de",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -912,
+        592
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 352,
+        "height": 368,
+        "content": "## \ud83d\udd27 CONFIGURATION:\n### Required Tags:\n- Environment\n- Owner  \n- CostCenter\n\n### Settings:\n- Snapshot Age: >90 days\n- Regions: us-east-1 (add more in config)\n- Schedule: Mondays 8 AM UTC\n- Alerts: #cloud-ops Slack channel\n\nUpdate in: \"Initialize Config\" node"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a7e7a864-ceba-4e68-bf71-a015872b623b",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2256,
+        480
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 352,
+        "height": 384,
+        "content": "## \ud83c\udd98 COMMON ISSUES:\n### Lambda 403 Error:\n\u2192 Check IAM policy includes :* wildcard\n\n### No Email Received:\n\u2192 Verify Gmail OAuth permissions\n\n### Google Sheets Empty:\n\u2192 Sheet name must match exactly\n\n### Workflow Fails:\n\u2192 Test each credential individually"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f5c51923-1760-42fd-ac09-da42b5fbe609",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        288,
+        224
+      ],
+      "parameters": {
+        "color": 7,
+        "height": 768,
+        "content": "### 1. Lambda Scans\nScan the AWS region for unattached EBS volumes, snapshots, and Elastic IPs using the Lambda script [here](https://github.com/chadmcrowell/lambda-function-for-aws-orphaned-resource-scanner)"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d371c1be-2818-4404-ac25-286125b12729",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        576,
+        224
+      ],
+      "parameters": {
+        "color": 7,
+        "height": 768,
+        "content": "### 2. Process Scans\nParse the Lambda responses from each resource type and calculate the cost while checking for missing tags."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "73f05071-d12c-45e3-9524-91abcccd5753",
+      "name": "If Resources Found",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1376,
+        576
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "b2370ee5-02fd-4f3e-ad4f-e85d00b4b21c",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $json.summary.totalResourcesFound }}",
+              "rightValue": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "21157b04-65f1-445c-84a5-8a9db65209c6",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        864,
+        448
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 672,
+        "height": 304,
+        "content": "### 3. Combine and Summarize\nCombine volumes, snapshots, and Elastic IPs into a single array. Sums total montly/annual cost across all resources. Ranks top 5 most expensive resources. Outputs strucutres summary for alerts."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "77aa964a-91df-4179-93ca-0c316c526bc1",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1632,
+        -16
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 544,
+        "height": 672,
+        "content": "### Multi-Channel Alerts (Resources Found)\n\nParallel execution of three outputs:\n- Slack: Immediate alert with top 5 offenders (~1 sec)\n- Email: Professional HTML report with cost breakdown\n- Google Sheets: Detailed audit log with all resource metadata"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5cd575f2-2151-414b-8c5d-0e44de0f153a",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1632,
+        672
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 544,
+        "height": 576,
+        "content": "### Multi-Channel Alerts (No Resources Found)\n\nParallel execution of two outputs:\n- Slack: \"All Clear\" confirmation message\n- Google Sheets: Audit trail entry"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cefddfd2-b177-4fe6-9d31-b33b15050548",
+      "name": "Log to Google Sheets (Found)",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1952,
+        288
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Region": "={{ $('Set Region Variables').item.json.currentRegion }}",
+            "Status": "={{ $json.status }}",
+            "Volumes": "={{ $('Process EBS Volumes').item.json.totalCount }}",
+            "Scan Date": "={{ $('Calculate Summary Stats').item.json.scanDate }}",
+            "Scan Time": "={{ $('Calculate Summary Stats').item.json.scanTime }}",
+            "Snapshots": "={{ $('Process Snapshots').item.json.totalCount }}",
+            "Annual Cost": "={{ $('Calculate Summary Stats').item.json.summary.annualCost }}",
+            "Elastic IPs": "={{ $('Process Elastic IPs').item.json.totalCount }}",
+            "Missing Tags": "={{ $('Aggregate All Resources').item.json.data[0].resources[0].missingTags }}",
+            "Monthly Cost": "={{ $('Calculate Summary Stats').item.json.summary.monthlyCost }}",
+            "Compliance Rate": "={{ $('Calculate Summary Stats').item.json.summary.complianceRate }}",
+            "Total Resources": "={{ $('Aggregate All Resources').item.json.data[0].totalCount }}"
+          },
+          "schema": [
+            {
+              "id": "Scan Date",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Scan Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Scan Time",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Scan Time",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Region",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Region",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total Resources",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Total Resources",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Volumes",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Volumes",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Snapshots",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Snapshots",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Elastic IPs",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Elastic IPs",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Monthly Cost",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Monthly Cost",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Annual Cost",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Annual Cost",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Compliance Rate",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Compliance Rate",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Missing Tags",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Missing Tags",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Notes",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1k80AyEcKtuJkGn07peE2M1uzZcYJYtJ2TGDnooUa_G0/edit#gid=0",
+          "cachedResultName": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1k80AyEcKtuJkGn07peE2M1uzZcYJYtJ2TGDnooUa_G0",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1k80AyEcKtuJkGn07peE2M1uzZcYJYtJ2TGDnooUa_G0/edit?usp=drivesdk",
+          "cachedResultName": "Clean Scans"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      },
+      "typeVersion": 4.7
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8ccf18e0-5317-41ed-afa2-eba0346781ff",
+  "connections": {
+    "Scan Elastic IPs": {
+      "main": [
+        [
+          {
+            "node": "Process Elastic IPs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Slack Alert": {
+      "main": [
+        []
+      ]
+    },
+    "Initialize Config": {
+      "main": [
+        [
+          {
+            "node": "Set Region Variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Snapshots": {
+      "main": [
+        [
+          {
+            "node": "Aggregate All Resources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email Report": {
+      "main": [
+        []
+      ]
+    },
+    "If Resources Found": {
+      "main": [
+        [
+          {
+            "node": "Generate HTML Report",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate CSV Export",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "None Found Slack Message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Clean Scan CSV Export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scan EBS Snapshots": {
+      "main": [
+        [
+          {
+            "node": "Process Snapshots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate CSV Export": {
+      "main": [
+        [
+          {
+            "node": "Log to Google Sheets (Found)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process EBS Volumes": {
+      "main": [
+        [
+          {
+            "node": "Aggregate All Resources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Elastic IPs": {
+      "main": [
+        [
+          {
+            "node": "Aggregate All Resources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate HTML Report": {
+      "main": [
+        [
+          {
+            "node": "Send Email Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Region Variables": {
+      "main": [
+        [
+          {
+            "node": "Scan unattached EBS Volumes",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Scan EBS Snapshots",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Scan Elastic IPs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly Scan Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Initialize Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Scan CSV Export": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate All Resources": {
+      "main": [
+        [
+          {
+            "node": "Calculate Summary Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Summary Stats": {
+      "main": [
+        [
+          {
+            "node": "If Resources Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "None Found Slack Message": {
+      "main": [
+        []
+      ]
+    },
+    "Scan unattached EBS Volumes": {
+      "main": [
+        [
+          {
+            "node": "Process EBS Volumes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

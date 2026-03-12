@@ -1,0 +1,649 @@
+{
+  "id": "I7d4x1yTzFgp0Eib",
+  "meta": {
+    "instanceId": "dd69efaf8212c74ad206700d104739d3329588a6f3f8381a46a481f34c9cc281",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Automate inventory replenishment with AI demand forecasting and Mistral",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "b36149ae-0be9-48a9-9f78-a3f3c430cdb6",
+      "name": "Run inventory check every 6 hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        1200,
+        -576
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "c0c65c6d-fffb-44f8-be73-1d9ed2e4b73b",
+      "name": "Query ERP for low stock items",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1424,
+        -576
+      ],
+      "parameters": {
+        "query": "SELECT \n  p.product_id,\n  p.product_name,\n  p.sku,\n  p.category,\n  i.current_stock,\n  i.reorder_point,\n  i.reorder_quantity,\n  i.lead_time_days,\n  i.supplier_id,\n  s.supplier_name,\n  s.supplier_email,\n  p.unit_cost,\n  p.last_purchase_price\nFROM products p\nJOIN inventory i ON p.product_id = i.product_id\nJOIN suppliers s ON i.supplier_id = s.supplier_id\nWHERE i.current_stock <= i.reorder_point\nAND i.status = 'active'",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "credential-id",
+          "name": "Postgres-test"
+        }
+      },
+      "typeVersion": 2.4
+    },
+    {
+      "id": "f9124775-b962-44cc-9085-d57a43c6ecf0",
+      "name": "Fetch 90-day sales velocity data",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1648,
+        -576
+      ],
+      "parameters": {
+        "query": "SELECT \n  product_id,\n  DATE_TRUNC('day', sale_date) as day,\n  SUM(quantity_sold) as daily_sales,\n  AVG(quantity_sold) as avg_daily_sales\nFROM sales_transactions\nWHERE sale_date >= CURRENT_DATE - INTERVAL '90 days'\nAND product_id IN ({{ $json.map(item => item.product_id).join(',') }})\nGROUP BY product_id, DATE_TRUNC('day', sale_date)\nORDER BY product_id, day DESC",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "credential-id",
+          "name": "travel-terminus-stage-db"
+        }
+      },
+      "typeVersion": 2.4
+    },
+    {
+      "id": "a23c9f1e-5edc-4f52-8f49-e1035a047295",
+      "name": "Combine stock and sales data",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1872,
+        -576
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "combineBy": "combineByPosition"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "a59003d0-86a9-4071-973b-f936e2e92970",
+      "name": "Calculate sales velocity and stockout risk",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2096,
+        -576
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Prepare data for AI Agent analysis\nconst lowStockItems = $('Query ERP for low stock items').all();\nconst salesData = $('Fetch 90-day sales velocity data').all();\n\n// Group sales by product\nconst salesByProduct = {};\nsalesData.forEach(sale => {\n  if (!salesByProduct[sale.json.product_id]) {\n    salesByProduct[sale.json.product_id] = [];\n  }\n  salesByProduct[sale.json.product_id].push({\n    day: sale.json.day,\n    dailySales: sale.json.daily_sales,\n    avgDailySales: sale.json.avg_daily_sales\n  });\n});\n\n// Create comprehensive dataset for AI\nconst inventoryAnalysis = lowStockItems.map(item => {\n  const productSales = salesByProduct[item.json.product_id] || [];\n  \n  // Calculate basic metrics\n  const totalSales90Days = productSales.reduce((sum, s) => sum + parseFloat(s.dailySales || 0), 0);\n  const avgDailySales = totalSales90Days / 90;\n  const salesVelocity = avgDailySales * 30; // Monthly velocity\n  \n  // Calculate trend (last 30 days vs previous 60 days)\n  const recent30 = productSales.slice(0, 30).reduce((sum, s) => sum + parseFloat(s.dailySales || 0), 0) / 30;\n  const previous60 = productSales.slice(30, 90).reduce((sum, s) => sum + parseFloat(s.dailySales || 0), 0) / 60;\n  const trendPercentage = previous60 > 0 ? ((recent30 - previous60) / previous60 * 100).toFixed(2) : 0;\n  \n  return {\n    productId: item.json.product_id,\n    productName: item.json.product_name,\n    sku: item.json.sku,\n    category: item.json.category,\n    currentStock: item.json.current_stock,\n    reorderPoint: item.json.reorder_point,\n    suggestedReorderQty: item.json.reorder_quantity,\n    leadTimeDays: item.json.lead_time_days,\n    supplierId: item.json.supplier_id,\n    supplierName: item.json.supplier_name,\n    supplierEmail: item.json.supplier_email,\n    unitCost: item.json.unit_cost,\n    lastPurchasePrice: item.json.last_purchase_price,\n    salesMetrics: {\n      avgDailySales: avgDailySales.toFixed(2),\n      monthlyVelocity: salesVelocity.toFixed(2),\n      total90DaySales: totalSales90Days,\n      trendPercentage: trendPercentage,\n      trendDirection: trendPercentage > 5 ? 'increasing' : trendPercentage < -5 ? 'decreasing' : 'stable'\n    },\n    stockoutRisk: calculateStockoutRisk(item.json.current_stock, avgDailySales, item.json.lead_time_days)\n  };\n});\n\nfunction calculateStockoutRisk(currentStock, avgDailySales, leadTime) {\n  const daysOfStock = avgDailySales > 0 ? currentStock / avgDailySales : 999;\n  if (daysOfStock < leadTime) return 'CRITICAL';\n  if (daysOfStock < leadTime * 1.5) return 'HIGH';\n  if (daysOfStock < leadTime * 2) return 'MEDIUM';\n  return 'LOW';\n}\n\nreturn {\n  json: {\n    analysisDate: new Date().toISOString(),\n    totalLowStockItems: inventoryAnalysis.length,\n    criticalItems: inventoryAnalysis.filter(i => i.stockoutRisk === 'CRITICAL').length,\n    inventoryData: inventoryAnalysis\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1a014efa-2e1c-4b7c-8889-60f8632bff79",
+      "name": "Generate optimized purchase orders with Mistral AI",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        2376,
+        -576
+      ],
+      "parameters": {
+        "text": "=You are an expert inventory management AI assistant specialized in demand forecasting and purchase order optimization.\n\nAnalyze this inventory dataset and create intelligent purchase orders:\n\n{{ JSON.stringify($json, null, 2) }}\n\nFor each low-stock item, you must:\n\n1. **Forecast Demand**: Analyze sales velocity, trends, and seasonality to predict next 60-day demand\n2. **Calculate Optimal Order Quantity**: Consider:\n   - Forecasted demand + safety stock (20% buffer)\n   - Lead time consumption\n   - Stockout risk level\n   - Economic order quantity principles\n   - Storage capacity constraints\n\n3. **Prioritize Orders**: Rank by urgency (CRITICAL > HIGH > MEDIUM > LOW)\n\n4. **Cost Optimization**: Suggest bulk order discounts where applicable\n\n5. **Generate PO Details**: Create complete purchase order with:\n   - Product details\n   - Recommended order quantity (with justification)\n   - Expected delivery date\n   - Estimated cost\n   - Priority level\n   - Special notes/warnings\n\nYou have access to tools:\n- **get_supplier_catalog**: Fetch current supplier pricing and minimum order quantities\n- **check_budget_availability**: Verify if budget exists for purchase\n\nProvide response in JSON format:\n{\n  \"purchaseOrders\": [\n    {\n      \"productId\": \"ID\",\n      \"productName\": \"Name\",\n      \"sku\": \"SKU\",\n      \"supplierId\": \"ID\",\n      \"supplierName\": \"Name\",\n      \"supplierEmail\": \"email@supplier.com\",\n      \"recommendedOrderQty\": number,\n      \"justification\": \"Why this quantity\",\n      \"forecastedDemand60Days\": number,\n      \"safetyStockAdded\": number,\n      \"unitCost\": number,\n      \"totalCost\": number,\n      \"priority\": \"CRITICAL|HIGH|MEDIUM|LOW\",\n      \"expectedDeliveryDate\": \"ISO date\",\n      \"specialInstructions\": \"Any notes\"\n    }\n  ],\n  \"summary\": {\n    \"totalPOs\": number,\n    \"totalEstimatedCost\": number,\n    \"criticalOrders\": number,\n    \"recommendedApproval\": boolean\n  }\n}\n\nBe strategic, data-driven, and cost-conscious.",
+        "agent": "conversationalAgent",
+        "options": {
+          "systemMessage": "You are an AI inventory specialist. Always provide detailed, justified recommendations based on data analysis."
+        },
+        "promptType": "define",
+        "hasOutputParser": true
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "d6889999-4f50-40b9-9ad7-e19639bbb404",
+      "name": "Tool: Get supplier catalog",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "position": [
+        2576,
+        -352
+      ],
+      "parameters": {
+        "name": "get_supplier_catalog",
+        "workflowId": "={{ $('Get Supplier Catalog Tool').first().json.workflowId }}",
+        "description": "Fetches current supplier pricing, minimum order quantities, and bulk discounts for a specific product"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "21015b7d-d6c5-43a8-a4be-4fee097afa02",
+      "name": "Tool: Check budget availability",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "position": [
+        2320,
+        -352
+      ],
+      "parameters": {
+        "name": "check_budget_availability",
+        "workflowId": "={{ $('Check Budget Tool').first().json.workflowId }}",
+        "description": "Checks if sufficient budget is available in the procurement budget for the purchase"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "b3a325f3-83a1-461d-adb8-b7e1482f81c4",
+      "name": "Parse and validate AI response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2784,
+        -576
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Parse AI Agent output\nconst agentOutput = $input.item.json.output || $input.item.json.text || $input.item.json;\nlet poData;\n\ntry {\n  // Handle if output is string JSON\n  if (typeof agentOutput === 'string') {\n    const cleaned = agentOutput.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n    poData = JSON.parse(cleaned);\n  } else {\n    poData = agentOutput;\n  }\n} catch (error) {\n  throw new Error(`Failed to parse AI output: ${error.message}`);\n}\n\nif (!poData.purchaseOrders || !Array.isArray(poData.purchaseOrders)) {\n  throw new Error('Invalid AI response structure');\n}\n\n// Add metadata\npoData.generatedAt = new Date().toISOString();\npoData.generatedBy = 'Mistral_AI_Agent';\npoData.status = 'pending_approval';\n\nreturn { json: poData };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7c81f63c-dbbf-4408-9d6a-5794440f0e21",
+      "name": "Route based on approval criteria",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3008,
+        -576
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "id": "approval-check",
+              "operator": {
+                "type": "number",
+                "operation": "smaller"
+              },
+              "leftValue": "={{ $json.summary.totalEstimatedCost }}",
+              "rightValue": 50000
+            },
+            {
+              "id": "critical-check",
+              "operator": {
+                "type": "number",
+                "operation": "larger"
+              },
+              "leftValue": "={{ $json.summary.criticalOrders }}",
+              "rightValue": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9b485c17-f4bb-4bd8-ad7c-ab88eb6576cc",
+      "name": "Insert approved POs into ERP database",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        3232,
+        -672
+      ],
+      "parameters": {
+        "query": "=INSERT INTO purchase_orders \n  (po_number, supplier_id, supplier_name, product_id, product_name, sku, \n   quantity, unit_cost, total_cost, priority, status, expected_delivery, \n   special_instructions, created_by, created_at)\nVALUES\n{{ $json.purchaseOrders.map((po, idx) => \n  `('PO-${Date.now()}-${idx}', '${po.supplierId}', '${po.supplierName}', \n    '${po.productId}', '${po.productName}', '${po.sku}', \n    ${po.recommendedOrderQty}, ${po.unitCost}, ${po.totalCost}, \n    '${po.priority}', 'approved', '${po.expectedDeliveryDate}', \n    '${po.specialInstructions || 'N/A'}', 'Mistral_AI_System', NOW())`\n).join(',\\n') }}\nRETURNING *",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "credential-id",
+          "name": "travel-terminus-stage-db"
+        }
+      },
+      "typeVersion": 2.4
+    },
+    {
+      "id": "09c226ba-ffae-467d-818a-ccb3f6fc95eb",
+      "name": "Update inventory with pending orders",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        3456,
+        -672
+      ],
+      "parameters": {
+        "query": "=UPDATE inventory \nSET \n  pending_orders = pending_orders + po.quantity,\n  last_order_date = NOW(),\n  updated_at = NOW()\nFROM (\n  VALUES \n  {{ $('Parse and validate AI response').item.json.purchaseOrders.map(po => \n    `('${po.productId}', ${po.recommendedOrderQty})`\n  ).join(',\\n  ') }}\n) AS po(product_id, quantity)\nWHERE inventory.product_id = po.product_id",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "credential-id",
+          "name": "travel-terminus-stage-db"
+        }
+      },
+      "typeVersion": 2.4
+    },
+    {
+      "id": "5fc35c33-ee54-4592-b04b-6cf902469819",
+      "name": "Group purchase orders by supplier",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3680,
+        -672
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Generate supplier email for each PO\nconst poData = $('Parse and validate AI response').item.json;\nconst createdPOs = $('Insert approved POs into ERP database').all();\n\nconst emailsBySupplier = {};\n\n// Group POs by supplier\npoData.purchaseOrders.forEach((po, idx) => {\n  if (!emailsBySupplier[po.supplierEmail]) {\n    emailsBySupplier[po.supplierEmail] = {\n      supplierName: po.supplierName,\n      supplierId: po.supplierId,\n      items: []\n    };\n  }\n  \n  emailsBySupplier[po.supplierEmail].items.push({\n    poNumber: createdPOs[idx]?.json.po_number || `PO-${Date.now()}-${idx}`,\n    productName: po.productName,\n    sku: po.sku,\n    quantity: po.recommendedOrderQty,\n    unitCost: po.unitCost,\n    totalCost: po.totalCost,\n    priority: po.priority,\n    expectedDelivery: po.expectedDeliveryDate,\n    instructions: po.specialInstructions || 'Standard delivery'\n  });\n});\n\nreturn Object.keys(emailsBySupplier).map(email => ({\n  json: {\n    supplierEmail: email,\n    supplierName: emailsBySupplier[email].supplierName,\n    supplierId: emailsBySupplier[email].supplierId,\n    items: emailsBySupplier[email].items,\n    totalItems: emailsBySupplier[email].items.length,\n    totalCost: emailsBySupplier[email].items.reduce((sum, item) => sum + item.totalCost, 0).toFixed(2)\n  }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "d0860da8-af85-4cec-a78b-5a79512cbb43",
+      "name": "Email purchase order to supplier",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        3904,
+        -672
+      ],
+      "webhookId": "8b3d8dca-b890-4f46-9599-c76602998488",
+      "parameters": {
+        "options": {},
+        "subject": "=Purchase Order - {{ $json.totalItems }} Item(s) - Total: ${{ $json.totalCost }}",
+        "toEmail": "={{ $json.supplierEmail }}",
+        "fromEmail": "user@example.com"
+      },
+      "credentials": {
+        "smtp": {
+          "id": "credential-id",
+          "name": "SMTP -test"
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "d720c6c4-4958-4f19-9905-ccca3bac9918",
+      "name": "Create audit log for compliance",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        4128,
+        -672
+      ],
+      "parameters": {
+        "query": "=INSERT INTO po_audit_log \n  (po_number, action, status, total_cost, created_by, created_at, notes)\nSELECT \n  po_number, \n  'created' as action,\n  'sent_to_supplier' as status,\n  total_cost,\n  'Mistral_AI_System' as created_by,\n  NOW() as created_at,\n  'Auto-generated by Mistral AI demand forecasting' as notes\nFROM purchase_orders\nWHERE created_at >= NOW() - INTERVAL '1 minute'",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "credential-id",
+          "name": "travel-terminus-stage-db"
+        }
+      },
+      "typeVersion": 2.4
+    },
+    {
+      "id": "a2f03549-544c-476b-a4a9-724b8caa3f66",
+      "name": "Send summary notification to Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        4352,
+        -672
+      ],
+      "webhookId": "43fdb604-7376-4cf3-8e69-c3ac686e68da",
+      "parameters": {
+        "text": "=\ud83c\udfaf *AI Inventory Replenishment Complete*\n\n\ud83d\udcca *Summary:*\n\u2022 Total POs Created: {{ $('Parse and validate AI response').item.json.summary.totalPOs }}\n\u2022 Critical Orders: {{ $('Parse and validate AI response').item.json.summary.criticalOrders }}\n\u2022 Total Cost: ${{ $('Parse and validate AI response').item.json.summary.totalEstimatedCost.toFixed(2) }}\n\u2022 Status: \u2705 Auto-Approved & Sent to Suppliers\n\n\ud83d\udce6 *Top Priority Items:*\n{{ $('Parse and validate AI response').item.json.purchaseOrders\n  .filter(po => po.priority === 'CRITICAL')\n  .slice(0, 3)\n  .map(po => `\u2022 ${po.productName} (${po.sku}) - Qty: ${po.recommendedOrderQty}`)\n  .join('\\n') || 'No critical items' }}\n\n\ud83e\udd16 Powered by Mistral AI\n\ud83d\udd17 View details in ERP dashboard",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "C12345678"
+        },
+        "otherOptions": {}
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "credential-id",
+          "name": "Slack account - test "
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "4ee8b65b-3bb3-49e8-8143-ed184f7b2e3b",
+      "name": "Flag for manager approval",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3232,
+        -480
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "manual-review",
+              "name": "requiresManualReview",
+              "type": "boolean",
+              "value": true
+            },
+            {
+              "id": "review-reason",
+              "name": "reviewReason",
+              "type": "string",
+              "value": "=High cost order (${{ $json.summary.totalEstimatedCost.toFixed(2) }}) requires manager approval"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "c5d69cdb-4e01-4e68-a028-c6c90191aa60",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        416,
+        -1040
+      ],
+      "parameters": {
+        "width": 612,
+        "height": 1040,
+        "content": "## Automate inventory replenishment with AI demand forecasting and Mistral\n\nMonitor warehouse stock levels, forecast demand with Mistral AI, and automatically generate and send optimized purchase orders to suppliers with full ERP integration.\n\n### How it works\n\n1. **Monitor inventory** - Schedule trigger runs every 6 hours to check stock levels\n2. **Fetch data** - Queries ERP database for items below reorder point and 90-day sales history\n3. **Analyze trends** - Calculates sales velocity, trends, and stockout risk for each product\n4. **AI forecasting** - Mistral AI analyzes data, forecasts 60-day demand, and generates optimized purchase orders\n5. **Smart approval** - Auto-approves orders under $50K or with critical items; flags high-value orders for review\n6. **ERP integration** - Creates POs in database and updates pending inventory counts\n7. **Supplier communication** - Sends formatted emails to suppliers with complete order details\n8. **Audit trail** - Logs all transactions for compliance and notifies team via Slack\n\n### Setup steps\n\n1. **Import workflow** and configure PostgreSQL credentials for your ERP database\n2. **Add Mistral AI credentials** - Get API key from Mistral Cloud dashboard\n3. **Configure email** - Set up SMTP credentials for supplier communication\n4. **Setup Slack** - Add OAuth2 credentials and configure channel for notifications\n5. **Create tool workflows** - Build supporting workflows for `get_supplier_catalog` and `check_budget_availability`\n6. **Customize thresholds** - Adjust auto-approval limits and safety stock percentages in relevant nodes\n7. **Test workflow** - Run manually with sample data to verify all integrations\n8. **Activate** - Enable schedule trigger for automated 6-hour checks\n\n### Key features\n\n- **Mistral AI forecasting** - Advanced demand prediction with trend analysis\n- **Smart auto-approval** - Orders under $50K or critical items approved automatically\n- **Multi-supplier support** - Groups orders and emails each supplier separately\n- **Full audit trail** - Complete transaction logging for compliance\n- **Real-time notifications** - Instant Slack alerts with order summaries\n- **ERP integration** - Seamless database updates for inventory and purchase orders"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8548fa90-66dc-4aad-8e1f-9ce73f4a0bce",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1136,
+        -848
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 672,
+        "height": 596,
+        "content": "## 1. Data collection\n\nFetches low-stock items and sales history"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "521e3c3d-02e9-4abd-9949-808a3ef4e0f1",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1840,
+        -768
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 1056,
+        "height": 596,
+        "content": "## 2. AI analysis and forecasting\n\nMistral AI analyzes data and creates optimized POs"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "aa58e39a-743c-4dc7-a3c4-7f6830e20678",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2928,
+        -932
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 480,
+        "height": 612,
+        "content": "## 3. Approval and ERP sync\n\nAuto-approves qualifying orders, logs in ERP"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8f4384f9-4d30-4cb4-81d4-6ec31d50707c",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3440,
+        -944
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 1120,
+        "height": 612,
+        "content": "## 4. Communication and logging\n\nEmails suppliers, creates audit trail, notifies team"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "82713cd2-28c1-48b6-aefb-73acd57a01e5",
+      "name": "Mistral AI language model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "position": [
+        2448,
+        -352
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "credential-id",
+          "name": "Mistral Cloud - test"
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "030dfeaa-237c-4702-936c-d5ae2c436766",
+  "connections": {
+    "Mistral AI language model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate optimized purchase orders with Mistral AI",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Get supplier catalog": {
+      "ai_tool": [
+        [
+          {
+            "node": "Generate optimized purchase orders with Mistral AI",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine stock and sales data": {
+      "main": [
+        [
+          {
+            "node": "Calculate sales velocity and stockout risk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query ERP for low stock items": {
+      "main": [
+        [
+          {
+            "node": "Fetch 90-day sales velocity data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse and validate AI response": {
+      "main": [
+        [
+          {
+            "node": "Route based on approval criteria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create audit log for compliance": {
+      "main": [
+        [
+          {
+            "node": "Send summary notification to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Check budget availability": {
+      "ai_tool": [
+        [
+          {
+            "node": "Generate optimized purchase orders with Mistral AI",
+            "type": "ai_tool",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Email purchase order to supplier": {
+      "main": [
+        [
+          {
+            "node": "Create audit log for compliance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch 90-day sales velocity data": {
+      "main": [
+        [
+          {
+            "node": "Combine stock and sales data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route based on approval criteria": {
+      "main": [
+        [
+          {
+            "node": "Insert approved POs into ERP database",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Flag for manager approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Group purchase orders by supplier": {
+      "main": [
+        [
+          {
+            "node": "Email purchase order to supplier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run inventory check every 6 hours": {
+      "main": [
+        [
+          {
+            "node": "Query ERP for low stock items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update inventory with pending orders": {
+      "main": [
+        [
+          {
+            "node": "Group purchase orders by supplier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert approved POs into ERP database": {
+      "main": [
+        [
+          {
+            "node": "Update inventory with pending orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate sales velocity and stockout risk": {
+      "main": [
+        [
+          {
+            "node": "Generate optimized purchase orders with Mistral AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate optimized purchase orders with Mistral AI": {
+      "main": [
+        [
+          {
+            "node": "Parse and validate AI response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

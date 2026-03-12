@@ -1,0 +1,519 @@
+{
+  "id": "YQ6uiRRihKswuBXx",
+  "meta": {
+    "instanceId": "14e4c77104722ab186539dfea5182e419aecc83d85963fe13f6de862c875ebfa",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Zoho CRM - Audit Log and Suspicious Activity Alert.",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "5ef1f081-7c24-4f08-a87b-f4532fd20d09",
+      "name": "Compute Time Window",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        304,
+        432
+      ],
+      "parameters": {
+        "functionCode": "// Compute from/to in local ISO8601 with timezone\nconst sd = this.getWorkflowStaticData('global');\nconst now = new Date();\nconst pollMinutes = 5; // adjust if you change cron\nlet fromDate;\nif (sd.lastRun) fromDate = new Date(sd.lastRun); else fromDate = new Date(now.getTime() - (pollMinutes + 1) * 60000);\n// helper to produce local ISO without ms +TZ\nfunction toLocalISO(date) {\n  const off = -date.getTimezoneOffset();\n  const sign = off >= 0 ? '+' : '-';\n  const pad = n => String(Math.floor(Math.abs(n))).padStart(2, '0');\n  const hrs = pad(off / 60);\n  const mins = pad(off % 60);\n  return date.toISOString().split('.')[0] + sign + hrs + ':' + mins;\n}\nconst from = toLocalISO(fromDate);\nconst to = toLocalISO(now);\n// don't update lastRun here \u2014 update after processing to avoid gaps\nreturn [{ json: { from, to } }];"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c481ce0d-a3aa-4426-8f25-77829b5f841a",
+      "name": "SET - Workflow Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        528,
+        432
+      ],
+      "parameters": {
+        "values": {
+          "number": [],
+          "string": [
+            {
+              "name": "pollMinutes",
+              "value": "5"
+            },
+            {
+              "name": "requiredModules",
+              "value": "Leads,Contacts,Accounts,Deals"
+            },
+            {
+              "name": "sheetId",
+              "value": "1i_fwIeqtrTcqnFfWtnAYsrwPxG9eYi7q9T4O_K-vchY"
+            },
+            {
+              "name": "sheetName",
+              "value": "Sheet1"
+            },
+            {
+              "name": "dryRun",
+              "value": "true"
+            },
+            {
+              "name": "batchSize",
+              "value": "100"
+            },
+            {
+              "name": "workflow_overview",
+              "value": "How it works:\\nThis workflow polls Zoho CRM modules for recent changes, normalizes the returned records, analyzes them for suspicious patterns (deletions, owner/email/role changes, or many fields changed), generates an audit JSON attachment, logs events to a Google Sheet, and notifies the security team by email for suspicious events. Timing is tracked using 'lastRun' stored in workflow static data so only new changes are processed.\\n\\nSetup steps:\\n1) Add / verify the Zoho OAuth2 credentials and ensure API scopes include CRM read access.\\n2) Set Google Sheets and Gmail credentials and update the 'sheetId' in SET node.\\n3) Optionally change 'pollMinutes', 'requiredModules', or 'dryRun' in the SET node.\\n4) Run the workflow manually once to confirm permissions, then enable scheduled trigger (cron) as needed."
+            },
+            {
+              "name": "group_stickies",
+              "value": "1) API & Module discovery: Lists modules and fetches modified records.\\n2) Processing & Logging: Normalizes items, analyzes suspicious patterns, creates audit file, logs to sheet & notifies."
+            }
+          ],
+          "boolean": []
+        },
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "97f137c1-9f6e-49c0-a169-7e85e8f2bc39",
+      "name": "Zoho: List Modules",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        752,
+        432
+      ],
+      "parameters": {
+        "url": "=https://www.zohoapis.in/crm/v8/settings/modules",
+        "options": {},
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cbb2d34e-3f83-43f4-9d91-de65f90b0c32",
+      "name": "Prepare Modules List",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        976,
+        432
+      ],
+      "parameters": {
+        "functionCode": "// Build one item per module from modules list response\nconst res = items[0] && items[0].json ? items[0].json : {};\nconst modulesRaw = Array.isArray(res.modules) ? res.modules : (res.modules || []);\n// Filter out system modules optionally (blacklist) - you can adjust this array if needed\nconst requiredModule = ['Leads','Contacts','Accounts','Deals'];\nconst modules = modulesRaw.map(m => m.api_name || m.module_name).filter(m => m && requiredModule.includes(m));\nconst from = $json.from || new Date().toISOString();\nreturn modules.map(m => ({ json: { module: m, from_local: from } }));"
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "408d09ed-d78d-4021-88b8-de30f8dfa8e0",
+      "name": "Zoho: Search Module Records",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1200,
+        432
+      ],
+      "parameters": {
+        "url": "=https://www.zohoapis.in/crm/v8/{{$json[\"module\"]}}/search?criteria=(Modified_Time:less_equal:{{encodeURIComponent(new Date($json[\"from_local\"]).toISOString().split('.')[0] + \"+05:30\")}})",
+        "options": {},
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2692224b-d028-4242-bf9f-0b7697de695e",
+      "name": "Normalize Module Records",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        1424,
+        432
+      ],
+      "parameters": {
+        "functionCode": "// Expand responses into records and set module by index\nconst out = [];\nconst requiredModule = ['Leads','Contacts','Accounts','Deals'];\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  const resp = item.json || {};\n  const body = resp.body || resp;\n\n  // module name: prefer requiredModule by index, else any module field in response, else Unknown\n  const moduleName = requiredModule[i] || body.module || resp.module || item?.pairedItem?.json?.module || 'Unknown';\n\n  // Get records array from body.data (Zoho response) or resp.data\n  const records = Array.isArray(body.data) ? body.data : (Array.isArray(resp.data) ? resp.data : []);\n\n  if (!records || records.length === 0) continue;\n\n  for (const rec of records) {\n    const r = { ...rec };\n    r.module = moduleName;\n    r.recordId = r.id || r.ID || r.record_id || r.recordId || '';\n    r.timestamp = r.Modified_Time || r.Created_Time || new Date().toISOString();\n    out.push({ json: r });\n  }\n}\n\nreturn out;\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5bcb91fa-e14e-44b4-91f5-2c4611b51195",
+      "name": "Analyze for Suspicious Activity",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        1648,
+        432
+      ],
+      "parameters": {
+        "functionCode": "// Detect unusual patterns (module-agnostic) - unchanged but robustified\nfor (const item of items) {\n  const entry = item.json;\n  const changed = (entry.changed_fields || entry.Changed_Fields || entry.changedFields || '').toString().toLowerCase();\n  const event = (entry.event || entry.Action || '').toString().toLowerCase();\n  let suspicious = false;\n  const reasons = [];\n  if (event.includes('delete')) { suspicious = true; reasons.push('deletion'); }\n  if (changed.includes('owner') || changed.includes('assigned_to') || changed.includes('owner_id')) { suspicious = true; reasons.push('owner_changed'); }\n  if (changed.includes('email') || changed.includes('contact_email')) { suspicious = true; reasons.push('email_changed'); }\n  if (changed.includes('role') || changed.includes('is_admin') || changed.includes('profile')) { suspicious = true; reasons.push('role_or_privilege_change'); }\n  const fieldsCount = changed ? changed.split(',').filter(f => f.trim()).length : 0;\n  if (fieldsCount >= 10) { suspicious = true; reasons.push('many_fields_changed'); }\n  entry.suspicious = suspicious;\n  entry.suspicious_reasons = reasons.join(',');\n  entry.fields_changed_count = fieldsCount;\n  entry.module = entry.module || entry.Module || 'Unknown';\n  entry.recordId = entry.recordId || entry.id || entry.ID || entry.record_id || '';\n  entry.timestamp = entry.timestamp || entry.Modified_Time || entry.Created_Time || new Date().toISOString();\n}\nreturn items;"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b5452522-ad2e-46f6-a826-e242e3f4e8c1",
+      "name": "Create Audit Attachment (JSON)",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        1872,
+        240
+      ],
+      "parameters": {
+        "functionCode": "// Create audit JSON file as binary attachment for each item\nfor (const item of items) {\n  const data = JSON.stringify(item.json, null, 2);\n  const b64 = Buffer.from(data).toString('base64');\n  item.binary = { audit: { data: b64, fileName: 'audit-' + (item.json.timestamp || new Date().toISOString()).replace(/[:.]/g, '-') + '.json', mimeType: 'application/json' } };\n}\nreturn items;"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9a1f02c1-55d2-4812-8868-541eb5c52da1",
+      "name": "Log to Google Sheet (append/update)",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1872,
+        432
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Email": "= {{$json.Email || \"-\"}}",
+            "Module": "= {{$json.module}}",
+            "Record Id": "= {{$json.recordId}}",
+            "Timestamp": "= {{$json.timestamp}}",
+            "User Name": "= {{$json.Full_Name || $json.Contact_Name?.name ||  $json.Owner?.name}}",
+            "Company Name": "= {{$json.Company || $json.Account_Name?.name || \"-\"}}",
+            "Is Suspicious": "= {{$json.suspicious == false ? \"No\" : \"Yes\"}}",
+            "Field Changes Count": "= {{$json.fields_changed_count}}"
+          },
+          "schema": [
+            {
+              "id": "Timestamp",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Timestamp",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Module",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Module",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Record Id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Record Id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "User Name",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "User Name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company Name",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Company Name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Email",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Field Changes Count",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Field Changes Count",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Is Suspicious",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Is Suspicious",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Record Id"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{$node[\"SET - Workflow Config\"].json[\"sheetName\"] || \"Sheet1\"}}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{$node[\"SET - Workflow Config\"].json[\"sheetId\"] || \"1i_fwIeqtrTcqnFfWtnAYsrwPxG9eYi7q9T4O_K-vchY\"}}"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "5684e67f-30f6-4de0-9f8e-3e9f0b84d563",
+      "name": "Check Suspicious? (If)",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1872,
+        624
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "1d6b463f-40cd-4948-a1d5-189b1821ff74",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.suspicious }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "95254954-ae02-4cb3-bc40-e84f8110dcbd",
+      "name": "Notify Security (Email)",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        2096,
+        560
+      ],
+      "parameters": {
+        "toList": [
+          ""
+        ],
+        "message": "=",
+        "subject": "=Zoho CRM Suspicious activity: {{$json.module}} - {{$json.recordId}}",
+        "resource": "message",
+        "htmlMessage": "=<!-- Paste into Gmail node htmlMessage (Expression mode) -->\n<div style=\"font-family: Arial, Helvetica, sans-serif; color: #222; line-height:1.4;\">\n  <div style=\"background:#f8f9fb; padding:12px 16px; border-radius:8px; border:1px solid #e6e9ef;\">\n    <h2 style=\"margin:0 0 6px 0; font-size:18px;\">\ud83d\udd14 Suspicious activity detected in Zoho CRM</h2>\n    <div style=\"color:#555; font-size:13px;\">Automatic alert from <strong>Zoho CRM Security Automation</strong></div>\n  </div>\n\n  <div style=\"margin-top:14px; padding:12px; border-radius:6px; background:#ffffff; border:1px solid #eee;\">\n    <table cellpadding=\"6\" cellspacing=\"0\" width=\"100%\" style=\"border-collapse:collapse;\">\n      <tbody>\n        <tr>\n          <td style=\"width:160px; font-weight:600; color:#333; vertical-align:top\">Detected On</td>\n          <td style=\"color:#222\">\n            {{\n              (() => {\n                const ts = $json[\"timestamp\"] || $json[\"Modified_Time\"] || '';\n                if (!ts) return '';\n                const date = new Date(ts);\n                const options = { hour12: true, hour: '2-digit', minute: '2-digit' };\n                const time = date.toLocaleTimeString('en-IN', options);\n                const formatted = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${time}`;\n                return formatted;\n              })()\n            }}\n          </td>\n        </tr>\n\n        <tr>\n          <td style=\"font-weight:600; color:#333; vertical-align:top\">Module</td>\n          <td style=\"color:#222\">{{$json[\"module\"] || $json[\"Module\"] || ''}}</td>\n        </tr>\n\n        <tr>\n          <td style=\"font-weight:600; color:#333; vertical-align:top\">Record ID</td>\n          <td style=\"color:#222\">{{$json[\"recordId\"] || $json[\"id\"] || ''}}</td>\n        </tr>\n\n        <tr>\n          <td style=\"font-weight:600; color:#333; vertical-align:top\">User</td>\n          <td style=\"color:#222\">\n            {{$json[\"User_Name\"] || ($json[\"Owner\"] && $json[\"Owner\"].name) || ''}}\n            <div style=\"font-size:12px; color:#666;\">{{$json[\"User_Email\"] || ($json[\"Owner\"] && $json[\"Owner\"].email) || ''}}</div>\n          </td>\n        </tr>\n\n        <tr>\n          <td style=\"font-weight:600; color:#333; vertical-align:top\">Company / Name</td>\n          <td style=\"color:#222\">{{$json[\"Company\"] || $json[\"Full_Name\"] || ''}}</td>\n        </tr>\n\n        <tr>\n          <td style=\"font-weight:600; color:#333; vertical-align:top\">Suspicious</td>\n          <td style=\"color:{{$json[\"suspicious\"]===true ? '#b02' : '#227a2c'}}; font-weight:600;\">\n            {{$json[\"suspicious\"]===true ? 'Yes' : 'No'}}\n          </td>\n        </tr>\n      </tbody>\n    </table>\n\n    <div style=\"margin-top:12px; padding:10px; border-radius:6px; background:#fffbe6; border:1px solid #fff0c2;\">\n      <strong style=\"color:#7a5200\">Recommended action</strong>\n      <ul style=\"margin:8px 12px; color:#444; font-size:13px;\">\n        <li>Review the record in Zoho immediately using the link above.</li>\n        <li>If changes are unauthorized \u2014 disable or suspend the user and reset credentials.</li>\n        <li>Check recent login and API activity for the user account.</li>\n      </ul>\n    </div>\n\n    <div style=\"margin-top:12px; font-size:12px; color:#666;\">\n      This alert was automatically generated by the Zoho CRM Security Workflow. If you believe this is a false positive, mark it as reviewed and add a short note.\n    </div>\n  </div>\n\n  <div style=\"margin-top:14px; font-size:12px; color:#999;\">\n    &copy; {{new Date().getFullYear()}} Zoho CRM Security Automation \u2014 Automated alert. Do not reply to this email.\n  </div>\n</div>",
+        "includeHtml": true,
+        "additionalFields": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "97529820-0972-47a6-8c73-2a207949ccae",
+      "name": "Update lastRun (staticData)",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        2320,
+        624
+      ],
+      "parameters": {
+        "functionCode": "// Update lastRun after processing (use UTC ISO for storage)\nconst sd = this.getWorkflowStaticData('global');\nsd.lastRun = new Date().toISOString();\nreturn items;"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "007a26cb-e928-4ea5-adc0-dba5a2ad80f8",
+      "name": "Manual Trigger (Run Now)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        80,
+        432
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "1000b339-0979-4e4b-8432-a8319f9b7b84",
+      "name": "Sticky - Main (Yellow)",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -832,
+        -544
+      ],
+      "parameters": {
+        "color": "yellow",
+        "width": 800,
+        "height": 1328,
+        "content": "\ud83d\udfe7 How It Works\n\nThis workflow continuously monitors your Zoho CRM modules (Leads, Contacts, Accounts, Deals) to detect record modifications, identify suspicious changes, log them into Google Sheets, generate audit JSON files, and send email alerts for high-risk events.\n\nEvery time the workflow runs:\n\nIt calculates the time window (last run \u2192 now).\n\nFetches enabled CRM modules from Zoho.\n\nSearches each module for records modified within the time window.\n\nExtracts the updated records and normalizes the fields.\n\nRuns pattern-detection logic to identify suspicious activity:\n\nMass field changes\n\nRole or privilege modifications\n\nOwner reassignment\n\nEmail changes\n\nDelete-related actions\n\nCreates an Audit JSON file for each processed record.\n\nLogs clean data into Google Sheets.\n\nIf suspicious, sends a detailed HTML email alert to your Security Team.\n\nUpdates the internal timestamp for the next run.\n\nThis workflow provides a lightweight access-control monitoring system for Zoho CRM without needing any external audit tools.\n\n\ud83d\udfe9 Setup Steps\n1. Configure OAuth in Zoho CRM\n\nCreate an OAuth client for n8n\n\nAdd callback URL: https://<your-n8n>/rest/oauth2-credential/callback\n\n2. Add Zoho OAuth Credentials to n8n\n\nRequired scopes:\nZohoCRM.modules.ALL, ZohoCRM.settings.all\n\n3. Add Gmail OAuth Credentials (for security alerts)\n4. Add Google Sheets OAuth Credentials\n\nEnsure the sheet has the following columns:\nTimestamp, Record Id, Module, Field Changes Count, Is Suspicious, Company Name, Email, User Name\n\n5. Set Up the Workflow Trigger\n\nUse Manual Trigger for testing\n\nAdd Cron (optional) for automation (every 5 minutes or as needed)\n\n6. Customize Suspicious Pattern Rules (optional)\n\nModify inside Detect Unusual Patterns node.\n\n7. Enable & Activate Workflow"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "15d060c9-ee91-4f6e-aea0-d1e8f6e381c7",
+      "name": "Sticky - API & Modules (Grey)",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -16,
+        -272
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 2512,
+        "height": 1056,
+        "content": "**Manual Trigger (Run Now)** \u2014 Starts the workflow manually for testing or on-demand execution.\n\n**Compute Time Window** \u2014 Calculates the \u2018from\u2019 and \u2018to\u2019 timestamps used to fetch recently modified CRM records.\n\n**SET - Workflow Config** \u2014 Central configuration for modules, sheet IDs, batch size, dry-run mode, and workflow metadata.\n\n**Zoho: List Modules** \u2014 Retrieves the list of Zoho CRM modules via API before filtering.\n\n**Prepare Modules List** \u2014 Filters allowed modules and prepares one item per module for sequential searching.\n\n**Zoho: Search Module Records** \u2014 Fetches recently modified CRM records for each module within the time window.\n\n**Normalize Module Records** \u2014 Standardizes Zoho responses and extracts record-level fields for unified processing.\n\n**Analyze for Suspicious Activity** \u2014 Detects unusual change patterns such as deletions, owner/email/role changes, or bulk edits.\n\n**Create Audit Attachment (JSON)** \u2014 Generates a binary JSON audit file for each processed record.\n\n**Log to Google Sheet (append/update)** \u2014 Writes or updates the audit information into Google Sheets as a structured log entry.\n\n**Check Suspicious? (If)** \u2014 Routes items to alerting flow if suspicious=true, otherwise continues to finalization.\n\n**Notify Security (Email)** \u2014 Sends a formatted HTML alert email to the security team for suspicious CRM events.\n\n**Update lastRun (staticData)** \u2014 Stores the current execution timestamp to ensure future runs only process new changes.\n"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fa977a1e-33a4-4e93-9331-24e35e34dcf8",
+  "connections": {
+    "Zoho: List Modules": {
+      "main": [
+        [
+          {
+            "node": "Prepare Modules List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Time Window": {
+      "main": [
+        [
+          {
+            "node": "SET - Workflow Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Modules List": {
+      "main": [
+        [
+          {
+            "node": "Zoho: Search Module Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Workflow Config": {
+      "main": [
+        [
+          {
+            "node": "Zoho: List Modules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Suspicious? (If)": {
+      "main": [
+        [
+          {
+            "node": "Notify Security (Email)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update lastRun (staticData)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Security (Email)": {
+      "main": [
+        [
+          {
+            "node": "Update lastRun (staticData)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger (Run Now)": {
+      "main": [
+        [
+          {
+            "node": "Compute Time Window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Module Records": {
+      "main": [
+        [
+          {
+            "node": "Analyze for Suspicious Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zoho: Search Module Records": {
+      "main": [
+        [
+          {
+            "node": "Normalize Module Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze for Suspicious Activity": {
+      "main": [
+        [
+          {
+            "node": "Create Audit Attachment (JSON)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log to Google Sheet (append/update)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check Suspicious? (If)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

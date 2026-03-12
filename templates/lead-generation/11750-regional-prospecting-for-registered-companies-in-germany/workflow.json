@@ -1,0 +1,682 @@
+{
+  "meta": {
+    "instanceId": "4ceda4926e528030b63d1e667414f37860970ebeb79b51bb0265d85b2e1b47dc"
+  },
+  "nodes": [
+    {
+      "id": "5c81e0ee-d2d7-46f9-99e8-2861efa92786",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -80,
+        -128
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "0b5f2983-31cf-49c5-9eec-9e05cf6dfc67",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        640,
+        -128
+      ],
+      "parameters": {
+        "jsCode": "// Validate input parameters\nconst input = $input.first().json;\n\nif (!input.query || input.query.trim() === '') {\n  throw new Error('Search query is required');\n}\n\nif (!input.regionCode || input.regionCode.trim() === '') {\n  throw new Error('Region code is required');\n}\n\nif (input.pageSize < 1 || input.pageSize > 1000) {\n  throw new Error('Page size must be between 1 and 1000');\n}\n\nconsole.log('\u2705 Input validation passed');\nconsole.log('Query: ' + input.query);\nconsole.log('Region: ' + input.regionCode);\nconsole.log('Industry: ' + (input.industryCode || 'None'));\nconsole.log('Page size: ' + input.pageSize);\n\nreturn [{ json: input }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "846dbd75-4471-45bf-b1b9-2da595edf01d",
+      "name": "Search Success?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1088,
+        -128
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "has_body",
+              "operator": {
+                "type": "array",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.companies }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ec7aeb15-a6f7-4e18-9b95-9c4e444726bc",
+      "name": "Normalize & Score Results",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        144,
+        224
+      ],
+      "parameters": {
+        "jsCode": "// Process and normalize search results\nconst response = $input.first().json;\n\n// Implisense /search returns a SearchResult object.\n// In deinem Beispiel ist das Ergebnis zus\u00e4tzlich in einem Array gekapselt.\n// Wir holen uns robust den eigentlichen Body:\nlet body;\n\nif (Array.isArray(response)) {\n  // Fall: HTTP Node liefert direkt das Array wie im Beispiel\n  body = response[0] || {};\n} else if (response && typeof response === 'object' && response.body) {\n  // Fall: Response ist { body: SearchResult, ... }\n  body = response.body;\n} else {\n  // Fall: Response ist direkt das SearchResult-Objekt\n  body = response || {};\n}\n\nconst companies = body.companies || body.results || [];\n// Implisense SearchResult hat das Feld \"size\" = total number of matches\n// https://docs.implisense.com/api/ :contentReference[oaicite:0]{index=0}\nconst total = (typeof body.size === 'number')\n  ? body.size\n  : (body.total || companies.length);\n\nconsole.log('\u2705 Search API Success: ' + companies.length + ' companies found (total: ' + total + ')');\n\nif (companies.length === 0) {\n  console.warn('\u26a0\ufe0f No companies found for the given criteria');\n  return [{\n    json: {\n      workflow_run_id: $('Prepare Search Input').first().json.workflow_run_id,\n      warning: 'No companies found',\n      query: $('Prepare Search Input').first().json.query,\n      regionCode: $('Prepare Search Input').first().json.regionCode,\n      timestamp: new Date().toISOString(),\n      total: total,\n    }\n  }];\n}\n\n// Normalize and enrich company data\nconst normalized = companies.map(function(company, idx) {\n  // Calculate relevance score based on multiple factors\n  let relevanceScore = company.score || 0;\n  \n  // Boost score if company is active\n  if (company.active === true) {\n    relevanceScore += 10;\n  }\n  \n  // Boost score if website exists\n  if (company.url && company.url.trim() !== '') {\n    relevanceScore += 5;\n  }\n  \n  // Boost score if full address available\n  if (company.street && company.zip && company.city) {\n    relevanceScore += 3;\n  }\n  \n  return {\n    idx: idx,\n    implisenseId: company.id,\n    name: company.name || '',\n    street: company.street || '',\n    zip: company.zip || '',\n    city: company.city || '',\n    url: company.url || '',\n    active: company.active !== false,\n    rawScore: company.score || 0,\n    relevanceScore: relevanceScore,\n    targetRegion: $('Prepare Search Input').first().json.regionCode,\n    industryCode: $('Prepare Search Input').first().json.industryCode,\n    source: 'search_api',\n    workflow_run_id: $('Prepare Search Input').first().json.workflow_run_id,\n    processed_at: new Date().toISOString(),\n    // Optional: total result size aus Implisense-Search (f\u00fcr sp\u00e4tere Steps hilfreich)\n    search_total: total,\n  };\n});\n\nconsole.log('\ud83d\udcca Normalized ' + normalized.length + ' companies with relevance scoring');\n\nreturn normalized.map(function(c) { return { json: c }; });\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e4b78b13-2c9b-4f79-909e-1344de81476e",
+      "name": "Sort by Relevance",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        368,
+        224
+      ],
+      "parameters": {
+        "jsCode": "// Sort by relevance score (descending)\nconst items = $input.all();\n\nconst sorted = items.sort(function(a, b) {\n  const scoreA = a.json.relevanceScore || 0;\n  const scoreB = b.json.relevanceScore || 0;\n  return scoreB - scoreA;\n});\n\nconsole.log('\ud83d\udd04 Sorted ' + sorted.length + ' companies by relevance score');\nif (sorted.length > 0) {\n  console.log('   Top company: ' + sorted[0].json.name + ' (score: ' + sorted[0].json.relevanceScore + ')');\n}\n\nreturn sorted;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "bbd15aab-8ba1-4d87-b243-64bebc7d620f",
+      "name": "High Quality Leads?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        640,
+        224
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "high_relevance",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "leftValue": "={{ $json.relevanceScore }}",
+              "rightValue": 15
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9e74d70d-2e9e-43d5-95d7-e27d36fc67ba",
+      "name": "Prepare High Quality Payload",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        864,
+        128
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "company_name",
+              "name": "companyName",
+              "type": "string",
+              "value": "={{ $json.name }}"
+            },
+            {
+              "id": "website",
+              "name": "website",
+              "type": "string",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "id": "full_address",
+              "name": "fullAddress",
+              "type": "string",
+              "value": "={{ $json.street ? ($json.street + ', ' + $json.zip + ' ' + $json.city) : ($json.zip + ' ' + $json.city) }}"
+            },
+            {
+              "id": "zip_region",
+              "name": "zipRegion",
+              "type": "string",
+              "value": "={{ $json.targetRegion }}"
+            },
+            {
+              "id": "industry",
+              "name": "industryCode",
+              "type": "string",
+              "value": "={{ $json.industryCode }}"
+            },
+            {
+              "id": "implisense_id",
+              "name": "implisenseId",
+              "type": "string",
+              "value": "={{ $json.implisenseId }}"
+            },
+            {
+              "id": "relevance_score",
+              "name": "relevanceScore",
+              "type": "number",
+              "value": "={{ $json.relevanceScore }}"
+            },
+            {
+              "id": "lead_quality",
+              "name": "leadQuality",
+              "type": "string",
+              "value": "high"
+            },
+            {
+              "id": "is_active",
+              "name": "isActive",
+              "type": "boolean",
+              "value": "={{ $json.active }}"
+            },
+            {
+              "id": "source_system",
+              "name": "sourceSystem",
+              "type": "string",
+              "value": "implisense_geotargeting"
+            },
+            {
+              "id": "enriched_at",
+              "name": "enrichedAt",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.3
+    },
+    {
+      "id": "0d691397-b02d-4062-bb1d-954582d0fb82",
+      "name": "Prepare Medium Quality Payload",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        864,
+        320
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "company_name",
+              "name": "companyName",
+              "type": "string",
+              "value": "={{ $json.name }}"
+            },
+            {
+              "id": "website",
+              "name": "website",
+              "type": "string",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "id": "full_address",
+              "name": "fullAddress",
+              "type": "string",
+              "value": "={{ $json.street ? ($json.street + ', ' + $json.zip + ' ' + $json.city) : ($json.zip + ' ' + $json.city) }}"
+            },
+            {
+              "id": "zip_region",
+              "name": "zipRegion",
+              "type": "string",
+              "value": "={{ $json.targetRegion }}"
+            },
+            {
+              "id": "industry",
+              "name": "industryCode",
+              "type": "string",
+              "value": "={{ $json.industryCode }}"
+            },
+            {
+              "id": "implisense_id",
+              "name": "implisenseId",
+              "type": "string",
+              "value": "={{ $json.implisenseId }}"
+            },
+            {
+              "id": "relevance_score",
+              "name": "relevanceScore",
+              "type": "number",
+              "value": "={{ $json.relevanceScore }}"
+            },
+            {
+              "id": "lead_quality",
+              "name": "leadQuality",
+              "type": "string",
+              "value": "medium"
+            },
+            {
+              "id": "is_active",
+              "name": "isActive",
+              "type": "boolean",
+              "value": "={{ $json.active }}"
+            },
+            {
+              "id": "source_system",
+              "name": "sourceSystem",
+              "type": "string",
+              "value": "implisense_geotargeting"
+            },
+            {
+              "id": "enriched_at",
+              "name": "enrichedAt",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.3,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "77d5ddae-690c-4822-a66f-e0a64f60ae55",
+      "name": "Merge & Log Results",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1088,
+        224
+      ],
+      "parameters": {
+        "jsCode": "// Merge and prepare final output\nconst items = $input.all();\n\nconsole.log('\u2705 Total qualified leads: ' + items.length);\n\nconst highQuality = items.filter(function(item) {\n  return item.json.leadQuality === 'high';\n}).length;\n\nconst mediumQuality = items.filter(function(item) {\n  return item.json.leadQuality === 'medium';\n}).length;\n\nconsole.log('   High quality: ' + highQuality);\nconsole.log('   Medium quality: ' + mediumQuality);\n\nreturn items;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f75de453-9a23-4a6c-aacf-a9f7af87ad0f",
+      "name": "Generate Summary Report",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1328,
+        224
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "summary",
+              "name": "summary",
+              "type": "object",
+              "value": "={{ {\n  workflow_run_id: $('Prepare Search Input').first().json.workflow_run_id,\n  started_at: $('Prepare Search Input').first().json.started_at,\n  completed_at: $now.toISO(),\n  input: {\n    query: $('Prepare Search Input').first().json.query,\n    regionCode: $('Prepare Search Input').first().json.regionCode,\n    industryCode: $('Prepare Search Input').first().json.industryCode,\n    pageSize: $('Prepare Search Input').first().json.pageSize\n  },\n  results: {\n    totalFound: $('Normalize & Score Results').all().length || 0,\n    highQualityLeads: $('Prepare High Quality Payload').all().length || 0,\n    // mediumQualityLeads: $('Prepare Medium Quality Payload').all().length || 0,\n    totalQualified: $('Merge & Log Results').all().length || 0\n  }\n} }}"
+            },
+            {
+              "id": "leads",
+              "name": "leads",
+              "type": "array",
+              "value": "={{ $('Merge & Log Results').all().map(function(item) { return item.json; }) }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.3
+    },
+    {
+      "id": "2f9c851f-932f-42a7-a071-2c43cbf77e73",
+      "name": "\ud83c\udfd7\ufe0f Architecture Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -704,
+        -192
+      ],
+      "parameters": {
+        "width": 544,
+        "height": 1008,
+        "content": "# Regional Prospecting for registered Companies in Germany\n\nFind and qualify registered companies in specific regions using Implisense Search API (Handelsregister). This API provides all officially registered companies in Germany (about 2,5 million).\n\n**Input Parameters:**\n- `query`: Search terms (e.g., \"software OR it\")\n- `regionCode`: ZIP/postal code region (e.g., \"de-10\")\n- `industryCode`: NACE industry code (e.g., \"J62\")\n- `pageSize`: Max results (1-1000)\n\n**Quality Levels:**\n- **High:** Score \u226515 (active, website, full address)\n- **Medium:** Score <15\n\n## How it works\n\nPhase 1: Init\nPhase 2: Search\nPhase 3: Vetting\n\n## Setup steps\n\n### 1.  **Configure Credentials**: Set up RapidAPI API credentials\n   - Create an account on RapidAPI  (free tier available)\n   - Insert your RapidAPI x-rapidapi-key as password\n\n### 2. Configure Search Parameters\nsee above.\n\n### 3. Connect CRM/Database\nAfter \"Merge & Log Results\" node, add:\n- HTTP Request node for REST API\n- Database node for direct insertion\n- Or CRM-specific integration node"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "506eb039-8030-4b54-b5e3-7b0627f757d8",
+      "name": "Implisense Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        864,
+        -128
+      ],
+      "parameters": {
+        "url": "https://german-company-data.p.rapidapi.com/search",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{ {\n  \"query\": $json.query,\n  \"from\": 0,\n  \"size\": $json.pageSize,\n  \"explain\": false\n} }}",
+        "sendBody": true,
+        "sendQuery": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "explain",
+              "value": "true"
+            },
+            {
+              "name": "from",
+              "value": "0"
+            },
+            {
+              "name": "size",
+              "value": "3"
+            }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "x-rapidapi-host",
+              "value": "german-company-data.p.rapidapi.com"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "={{ $('Authorization').item.json['x-rapidapi-key'] }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.3
+    },
+    {
+      "id": "55cd99e5-efc0-4cd4-91c5-dc3017a7ac17",
+      "name": "Authorization",
+      "type": "n8n-nodes-base.set",
+      "notes": "Get API key here:\n\nhttps://rapidapi.com/Implisense/api/german-company-data/playground",
+      "position": [
+        144,
+        -128
+      ],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "x-rapidapi-key",
+              "value": "XXXX"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "f5f0a2aa-1925-4ed7-b1b0-f924bdb4d6d1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -128,
+        -192
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 672,
+        "height": 256,
+        "content": "## Init\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1efcd31d-27e1-4181-9137-1f87ab56493c",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        560,
+        -192
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 944,
+        "height": 256,
+        "content": "## Search\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a136c8fa-71a9-4dc7-a52e-a97ed46318da",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -128,
+        80
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1344,
+        "height": 432,
+        "content": "## Vetting\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b259d5d7-d6dc-40ee-bc67-5e1b34d5da33",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1232,
+        80
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 272,
+        "height": 432,
+        "content": "## Output\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1080cd5a-eb6d-4530-826a-00bef910d5a3",
+      "name": "Prepare Search Input",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        368,
+        -128
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "workflow_run_id",
+              "name": "workflow_run_id",
+              "type": "string",
+              "value": "={{ $execution.id }}"
+            },
+            {
+              "id": "started_at",
+              "name": "started_at",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            },
+            {
+              "id": "search_query",
+              "name": "query",
+              "type": "string",
+              "value": "={{ $json.query || 'hubspot AND chat' }}"
+            },
+            {
+              "id": "region_code",
+              "name": "regionCode",
+              "type": "string",
+              "value": "={{ $json.regionCode || 'de-10' }}"
+            },
+            {
+              "id": "industry_code",
+              "name": "industryCode",
+              "type": "string",
+              "value": "={{ $json.industryCode || 'J62' }}"
+            },
+            {
+              "id": "page_size",
+              "name": "pageSize",
+              "type": "number",
+              "value": "={{ $json.pageSize || 100 }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.3
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Authorization": {
+      "main": [
+        [
+          {
+            "node": "Prepare Search Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Authorization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Implisense Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Success?": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Score Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Implisense Search": {
+      "main": [
+        [
+          {
+            "node": "Search Success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort by Relevance": {
+      "main": [
+        [
+          {
+            "node": "High Quality Leads?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "High Quality Leads?": {
+      "main": [
+        [
+          {
+            "node": "Prepare High Quality Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Medium Quality Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge & Log Results": {
+      "main": [
+        [
+          {
+            "node": "Generate Summary Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Search Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize & Score Results": {
+      "main": [
+        [
+          {
+            "node": "Sort by Relevance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare High Quality Payload": {
+      "main": [
+        [
+          {
+            "node": "Merge & Log Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Medium Quality Payload": {
+      "main": [
+        [
+          {
+            "node": "Merge & Log Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

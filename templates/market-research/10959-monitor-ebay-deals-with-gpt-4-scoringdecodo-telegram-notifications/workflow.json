@@ -1,0 +1,399 @@
+{
+  "id": "bhtlWAZtWOfJNbdR",
+  "meta": {
+    "instanceId": "4e4083555a8b04da6ca272b4d16899e878b7d29349c1be92689fb39d8714b96d",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Automated eBay Deals Monitoring with AI Scoring",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "01fb9a7a-bca2-417a-ba7c-8305afce9e87",
+      "name": "When clicking \u2018Execute workflow\u2019",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        48,
+        268
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "8cfb215d-975c-4f69-8869-902c134bc4b6",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        784,
+        304
+      ],
+      "parameters": {
+        "text": "=HTML:{{ $json.compact_text }}\nNOW_ISO: {{$now}}\n",
+        "options": {
+          "systemMessage": "You are an enrichment model.\n\nYou will receive a compact, pre-extracted list of eBay deals (NOT raw HTML). Each line contains:\nID, TITLE, PRICE, CURRENCY, ORIGINAL_PRICE, URL, IMG.\n\nTask:\nFor each item, return JSON with ONLY these fields:\n{\n  \"listing_id\": string,\n  \"category_ai\": \"tech\"|\"home\"|\"fashion\"|\"other\",\n  \"deal_score\": number,          // 0..10\n  \"score_reason\": string         // max 120 chars, no emojis\n}\n\nRules:\n- Return an array of objects.\n- listing_id must match the ID from input.\n- category_ai must be EXACTLY one of: tech, home, fashion, other.\n- deal_score:\n  - If title is missing or too generic -> score <= 4.\n  - If price looks unusually low for the product type -> +2.\n  - If title contains clear brand/model -> +1.\n  - If original_price exists and discount seems strong -> +1.\n  - Clamp 0..10.\n- score_reason: 1 short sentence explaining the score.\n- Output must be pure JSON only (no markdown, no extra text).\n"
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "e895bafe-82b3-49d6-9345-6f96892fc0dd",
+      "name": "Code in JavaScript",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1248,
+        320
+      ],
+      "parameters": {
+        "jsCode": "/**\n * POST-LMM JOIN (NO FILTERING)\n * Expects (after MERGE):\n * - $json.pre_extracted : array base items\n * - $json.output : string with JSON array from LLM\n *\n * Returns: ALL items (one n8n item per product) with enrichment fields.\n */\n\nfunction stripCodeFences(s) {\n  if (typeof s !== \"string\") return s;\n  const t = s.trim();\n  if (!t.startsWith(\"```\")) return t;\n  let body = t.replace(/^```(?:json)?\\s*/i, \"\");\n  if (body.endsWith(\"```\")) body = body.slice(0, -3);\n  return body.trim();\n}\n\nfunction tryParseJSON(text) {\n  if (Array.isArray(text)) return text;\n  if (typeof text !== \"string\") return null;\n  try { return JSON.parse(text); } catch {}\n  const m = text.match(/(\\[[\\s\\S]*\\]|\\{[\\s\\S]*\\})/);\n  if (m) {\n    try { return JSON.parse(m[1]); } catch {}\n  }\n  return null;\n}\n\nfunction clamp(n, min, max) {\n  return Math.max(min, Math.min(max, n));\n}\n\nfunction toNumberOrNull(v) {\n  if (v === null || v === undefined) return null;\n  if (typeof v === \"number\") return Number.isFinite(v) ? v : null;\n  const s = String(v);\n  const m = s.match(/(\\d{1,6}(?:[.,]\\d{1,2})?)/);\n  if (!m) return null;\n  const f = parseFloat(m[1].replace(\",\", \".\"));\n  return Number.isFinite(f) ? f : null;\n}\n\n// thresholds (4 categor\u00edas)\nconst thresholdsByCategory = { tech: 30, home: 20, fashion: 15, other: 20 };\n\n// base items (from pre-extract)\nconst base = Array.isArray($json.pre_extracted) ? $json.pre_extracted : [];\n\n// LLM output (string) -> array\nconst llmStr = $json.output || \"\";\nconst enrichedArr = tryParseJSON(stripCodeFences(llmStr)) || [];\nconst enrichedList = Array.isArray(enrichedArr) ? enrichedArr : [enrichedArr];\n\n// index enriched by listing_id\nconst enrichedById = new Map();\nfor (const e of enrichedList) {\n  const id = (e?.listing_id ?? \"\").toString().trim();\n  if (!id) continue;\n\n  let category_ai = (e?.category_ai ?? \"other\").toString().trim().toLowerCase();\n  if (![\"tech\", \"home\", \"fashion\", \"other\"].includes(category_ai)) category_ai = \"other\";\n\n  let deal_score = toNumberOrNull(e?.deal_score);\n  deal_score = deal_score === null ? 5 : clamp(deal_score, 0, 10);\n\n  const score_reason = (e?.score_reason ?? \"\")\n    .toString()\n    .trim()\n    .replace(/\\s+/g, \" \")\n    .slice(0, 120) || \"No reason provided.\";\n\n  enrichedById.set(id, { category_ai, deal_score, score_reason });\n}\n\nconst nowISO = new Date().toISOString();\n\nconst out = [];\nconst seen = new Set();\n\nfor (const it of base) {\n  const listing_id = (it?.listing_id ?? \"\").toString().trim();\n  if (!listing_id || seen.has(listing_id)) continue;\n  seen.add(listing_id);\n\n  const title = (it?.title ?? null)?.toString()?.trim() || null;\n  const price = toNumberOrNull(it?.price);\n  const currency = (it?.currency ?? null)?.toString()?.trim()?.toUpperCase() || null;\n  const original_price = toNumberOrNull(it?.original_price);\n  const url = (it?.url ?? null)?.toString()?.trim() || null;\n  const image_url = (it?.image_url ?? null)?.toString()?.trim() || null;\n\n  const enrich = enrichedById.get(listing_id) || {\n    category_ai: \"other\",\n    deal_score: 5,\n    score_reason: \"No LLM enrichment (fallback).\"\n  };\n\n  const effective_threshold = thresholdsByCategory[enrich.category_ai] ?? 20;\n  const price_below_threshold = Boolean(currency === \"EUR\" && price !== null && price < effective_threshold);\n\n  // discount %\n  let discount_pct = null;\n  if (price !== null && original_price !== null && original_price > 0 && original_price > price) {\n    discount_pct = clamp(((original_price - price) / original_price) * 100, 0, 99.9);\n    discount_pct = Math.round(discount_pct * 10) / 10;\n  }\n\n  out.push({\n    listing_id,\n    title,\n    price,\n    currency,\n    original_price,\n    discount_pct,\n    url,\n    image_url,\n\n    category_ai: enrich.category_ai,\n    deal_score: enrich.deal_score,\n    score_reason: enrich.score_reason,\n\n    effective_threshold,\n    price_below_threshold,\n\n    scraped_at: nowISO\n  });\n}\n\n// \u2705 DEVOLVEMOS TODOS, SIN FILTRAR\nreturn out.map(x => ({ json: x }));\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "81532dcb-26f5-4b6a-abe5-3a0719956a2b",
+      "name": "Send a text message",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1744,
+        364
+      ],
+      "webhookId": "b9c39926-3965-46a4-9b6a-11b4a2ec2e3d",
+      "parameters": {
+        "text": "=\ud83d\udd25 eBay Deal Alert (AI Filtered)\n\n\ud83d\uded2 {{ $json.title || 'Product' }}\n\ud83d\udcb6 Price: \u20ac{{ $json.price }} ({{ $json.currency }})\n\ud83c\udff7\ufe0f Category (AI): {{ $json.category_ai }}\n\ud83c\udfaf Threshold: \u20ac{{ $json.effective_threshold }}\n\n{{ $json.discount_pct ? ('\ud83d\udcb8 Discount: ' + $json.discount_pct + '% (was \u20ac' + $json.original_price + ')') : '' }}\n\n\u2b50 Deal Score: {{ $json.deal_score }}/10\n\ud83e\udde0 Why: {{ $json.score_reason }}\n\n\ud83d\udd17 {{ $json.url }}\n\ud83d\udd52 Scraped: {{ $json.scraped_at }}\n",
+        "chatId": "123456789",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "credential-id",
+          "name": "telegramApi Credential"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "3d7f517f-b1a2-453b-a52a-6b628f78b01d",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1424,
+        352
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "72e30794-f836-4252-9373-5b9e003a21dd",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              },
+              "leftValue": "={{ $json.price }}",
+              "rightValue": 100
+            },
+            {
+              "id": "e498c8fb-af42-496e-99e5-4557bd337184",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $json.deal_score }}",
+              "rightValue": 7
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "4a4d3e65-b267-45ea-b919-ec191a45b5ca",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        48,
+        464
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 3
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "b99e0a63-9200-4e88-8175-dcc0b1057ad2",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -400,
+        -80
+      ],
+      "parameters": {
+        "height": 1040,
+        "content": "## What this workflow does\nThis workflow automatically monitors **eBay Deals** and sends **Telegram alerts** when relevant, high-quality deals are detected.\n\nIt combines:\n- **Web scraping with Decodo**\n- **JavaScript pre-processing (no raw HTML sent to the LLM)**\n- **AI-based product classification and deal scoring**\n- **Rule-based filtering using price and score**\n\nOnly valuable deals reach the final notification.\n## How to configure it\n### 1. Decodo\n- Add your **Decodo API credentials** to the Decodo node.\n- Optionally change the target eBay URL.\n### 2. AI Agent\n- Add your LLM credentials (e.g. Google Gemini).\n- No HTML is sent to the model \u2014 only compact, structured data.\n### 3. Telegram\n- Add your **Telegram Bot Token**.\n- Set your **chat_id** in the Telegram node.\n- Customize the alert message if needed.\n### 4. Filtering rules\n- Adjust price limits and minimum deal score in the **IF node**.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5909fa1f-93b5-4250-82b5-00e9b471ad5e",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        304,
+        128
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 256,
+        "height": 112,
+        "content": "The workflow starts manually or on a schedule.\nDecodo is used to scrape the eBay Deals page reliably, handling proxies and anti-bot protections."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "45ff29ea-83a1-4f66-aea1-6c8c75d49fbe",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        784,
+        128
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 336,
+        "height": 96,
+        "content": "Raw HTML is reduced using JavaScript to extract only key product data.\nAn AI Agent enriches each item with category classification and deal quality scoring."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8d6e218d-b169-4302-9e56-653a6e594cd0",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1264,
+        128
+      ],
+      "parameters": {
+        "color": 7,
+        "height": 128,
+        "content": "Business rules are applied using price and score conditions.\nOnly high-quality deals pass the filter and trigger a Telegram alert."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "dfc6b969-e588-403c-afdc-13259c754669",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        640,
+        560
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-nano",
+          "cachedResultName": "gpt-4.1-nano"
+        },
+        "options": {},
+        "builtInTools": {}
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "credential-id",
+          "name": "openAiApi Credential"
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "cb3da9a8-f39c-4931-89b1-35cc9c8a32e6",
+      "name": "Code in JavaScript1",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        496,
+        364
+      ],
+      "parameters": {
+        "jsCode": "/**\n * PRE-EXTRACT for eBay Deals (dne-itemtile blocks)\n * Input:  $json.results[0].content (HTML)\n * Output: compact_text + pre_extracted + stats\n */\n\nfunction decodeHtml(s) {\n  if (!s || typeof s !== \"string\") return s;\n  return s\n    .replace(/&amp;/g, \"&\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/&lt;/g, \"<\")\n    .replace(/&gt;/g, \">\")\n    .replace(/&#(\\d+);/g, (_, code) => String.fromCharCode(Number(code)));\n}\n\nfunction cleanText(s, maxLen = 200) {\n  if (!s) return null;\n  return decodeHtml(String(s))\n    .replace(/<[^>]*>/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim()\n    .slice(0, maxLen) || null;\n}\n\nfunction parsePriceNumber(priceStr) {\n  if (!priceStr) return null;\n  // \"245,25 EUR\" -> 245.25 | \"19,99 \u20ac\" -> 19.99\n  const raw = String(priceStr).trim();\n  const m = raw.match(/(\\d{1,4}(?:[.,]\\d{1,2})?)/);\n  if (!m) return null;\n  const n = m[1].replace(\",\", \".\");\n  const f = parseFloat(n);\n  return Number.isFinite(f) ? f : null;\n}\n\nfunction normalizeCurrency(curStr, fallbackChunk = \"\") {\n  if (curStr) {\n    const u = String(curStr).trim().toUpperCase();\n    if (u.includes(\"EUR\")) return \"EUR\";\n    if (u.includes(\"USD\")) return \"USD\";\n    return u;\n  }\n  if (fallbackChunk.includes(\"\u20ac\") || /\\bEUR\\b/i.test(fallbackChunk)) return \"EUR\";\n  if (fallbackChunk.includes(\"$\") || /\\bUSD\\b/i.test(fallbackChunk)) return \"USD\";\n  return null;\n}\n\nfunction normalizeUrl(url) {\n  if (!url) return null;\n  if (url.startsWith(\"http\")) return url;\n  if (url.startsWith(\"//\")) return \"https:\" + url;\n  if (url.startsWith(\"/\")) return \"https://www.ebay.es\" + url;\n  return \"https://www.ebay.es/\" + url.replace(/^\\s+/, \"\");\n}\n\nconst html = $json?.results?.[0]?.content;\nif (!html || typeof html !== \"string\") {\n  return [{ json: { compact_text: \"NO_HTML_INPUT\", pre_extracted: [], stats: { html_len: 0, items: 0 } } }];\n}\n\nconst htmlLen = html.length;\n\n// Capturamos bloques que tengan data-listing-id y la clase dne-itemtile\n// Nota: el HTML es grande; hacemos un match \u201ccontenedor\u201d razonable alrededor del listing.\nconst blockRegex = /data-listing-id=(\\d{9,15})[\\s\\S]{0,6000}?class=\"[^\"]*dne-itemtile[^\"]*\"|class=\"[^\"]*dne-itemtile[^\"]*\"[\\s\\S]{0,6000}?data-listing-id=(\\d{9,15})/g;\n\nconst items = [];\nconst seen = new Set();\n\nlet match;\nwhile ((match = blockRegex.exec(html)) !== null) {\n  const listing_id = match[1] || match[2];\n  if (!listing_id || seen.has(listing_id)) continue;\n  seen.add(listing_id);\n\n  // Cogemos una \u201cventana\u201d alrededor del match para parsear detalles del tile\n  const idx = match.index;\n  const start = Math.max(0, idx - 1500);\n  const end = Math.min(html.length, idx + 6000);\n  const chunk = html.slice(start, end);\n\n  // URL del item\n  let url = null;\n  // suele venir: href=https://www.ebay.es/itm/336061318758?... (a veces sin comillas)\n  const urlMatch =\n    chunk.match(new RegExp(`href=([^\\\\s>]{0,300}/itm/${listing_id}[^\\\\s>]*)`, \"i\")) ||\n    chunk.match(new RegExp(`href=\"([^\"]{0,300}/itm/${listing_id}[^\"]*)\"`, \"i\"));\n  if (urlMatch) url = normalizeUrl(urlMatch[1]);\n  if (!url) url = `https://www.ebay.es/itm/${listing_id}`;\n\n  // Title: suele venir en h3 title=\"...\"\n  let title = null;\n  const titleMatch = chunk.match(/dne-itemtile-title[\\s\\S]{0,400}?title=\"([^\"]{3,220})\"/i);\n  if (titleMatch) title = cleanText(titleMatch[1], 220);\n\n  // Currency: meta itemprop=priceCurrency content=EUR\n  let currency = null;\n  const curMatch = chunk.match(/itemprop=priceCurrency\\s+content=([A-Z]{3})/i);\n  if (curMatch) currency = normalizeCurrency(curMatch[1], chunk);\n\n  // Price: <span itemprop=price class=first>245,25 EUR</span>\n  let price_text = null;\n  const priceMatch = chunk.match(/itemprop=price[^>]*>\\s*([^<]{1,40})</i);\n  if (priceMatch) price_text = cleanText(priceMatch[1], 40);\n\n  const price = parsePriceNumber(price_text);\n  currency = normalizeCurrency(currency, price_text || chunk);\n\n  // Original price (si existe): itemtile-price-strikethrough>327,00 EUR\n  let original_price_text = null;\n  const origMatch = chunk.match(/itemtile-price-strikethrough[^>]*>\\s*([^<]{1,40})</i);\n  if (origMatch) original_price_text = cleanText(origMatch[1], 40);\n  const original_price = parsePriceNumber(original_price_text);\n\n  // Image url (suele ser: <img src=https://i.ebayimg.com/images/...>\n  let image_url = null;\n  const imgMatch =\n    chunk.match(/<img\\s+[^>]*src=([^\\s>]+ebayimg\\.com[^\\s>]+)\\s/i) ||\n    chunk.match(/<img\\s+[^>]*src=\"([^\"]+ebayimg\\.com[^\"]+)\"/i);\n  if (imgMatch) image_url = normalizeUrl(imgMatch[1]);\n\n  items.push({\n    listing_id,\n    title,\n    price,\n    currency,\n    price_text,\n    original_price,\n    original_price_text,\n    url,\n    image_url,\n  });\n\n  if (items.length >= 60) break;\n}\n\n// compact payload para el LLM (barato en tokens)\nconst lines = [];\nlines.push(\"SOURCE: eBay Deals (pre-extracted from dne-itemtile)\");\nlines.push(`ITEMS: ${items.length}`);\nlines.push(\"---\");\nfor (const it of items) {\n  lines.push(\n    [\n      `ID=${it.listing_id}`,\n      `TITLE=${it.title ?? \"null\"}`,\n      `PRICE=${it.price ?? \"null\"}`,\n      `CURRENCY=${it.currency ?? \"null\"}`,\n      `ORIGINAL_PRICE=${it.original_price ?? \"null\"}`,\n      `URL=${it.url ?? \"null\"}`,\n      `IMG=${it.image_url ?? \"null\"}`,\n    ].join(\" | \")\n  );\n}\n\nreturn [\n  {\n    json: {\n      compact_text: lines.join(\"\\n\"),\n      pre_extracted: items,\n      stats: { html_len: htmlLen, items: items.length, unique_ids: seen.size },\n    },\n  },\n];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "0ef01345-c99a-4fa8-bbba-6f2135016305",
+      "name": "Decodo",
+      "type": "@decodo/n8n-nodes-decodo.decodo",
+      "position": [
+        272,
+        364
+      ],
+      "parameters": {
+        "geo": "en",
+        "url": "https://www.ebay.es/deals",
+        "headless": false
+      },
+      "credentials": {
+        "decodoApi": {
+          "id": "credential-id",
+          "name": "decodoApi Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "44c2c592-6541-4263-a3cf-69197987323e",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1136,
+        416
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "combineBy": "combineByPosition"
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "0e045b88-6180-48e7-a5b1-b8766fed4c27",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1952,
+        -32
+      ],
+      "parameters": {
+        "width": 656,
+        "height": 624,
+        "content": "##  Output\n![txt](https://ik.imagekit.io/agbb7sr41/telegram_output.png)"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "12e94952-9a8b-4253-8778-d23bd7dd21d2",
+  "connections": {
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decodo": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Decodo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "When clicking \u2018Execute workflow\u2019": {
+      "main": [
+        [
+          {
+            "node": "Decodo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

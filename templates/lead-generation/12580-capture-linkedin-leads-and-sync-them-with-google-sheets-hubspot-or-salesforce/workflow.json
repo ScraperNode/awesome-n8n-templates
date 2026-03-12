@@ -1,0 +1,792 @@
+{
+  "id": "LrskkBbaZsY3L3gB",
+  "meta": {
+    "instanceId": "dd69efaf8212c74ad206700d104739d3329588a6f3f8381a46a481f34c9cc281",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Capture LinkedIn leads, sync to Google Sheets and CRM",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "8f5eb460-4b05-4838-8ec1-5f499ef87465",
+      "name": "Check for new leads every 15 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        144,
+        1072
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "e236d3de-6635-4965-ac85-ae576ba50e77",
+      "name": "Fetch new LinkedIn connections",
+      "type": "n8n-nodes-base.linkedIn",
+      "position": [
+        368,
+        976
+      ],
+      "parameters": {
+        "operation": "getProfile",
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "7b87ea71-6a16-47dd-82c2-8c31a9839585",
+      "name": "Fetch post engagement data",
+      "type": "n8n-nodes-base.linkedIn",
+      "position": [
+        368,
+        1168
+      ],
+      "parameters": {
+        "operation": "getAll",
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "80ee7ce9-b843-40d6-9fb1-84476eb15d29",
+      "name": "Merge connections and engagements",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        592,
+        1072
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "2b16af01-8cef-4b4c-a9f8-0068b4aec301",
+      "name": "Extract and score lead data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        816,
+        1072
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Extract and enrich lead data\nconst leadData = $input.item.json;\n\n// Get profile information\nconst firstName = leadData.firstName || leadData.author?.firstName || 'Unknown';\nconst lastName = leadData.lastName || leadData.author?.lastName || '';\nconst headline = leadData.headline || leadData.author?.headline || 'Not provided';\nconst profileUrl = leadData.profileUrl || leadData.vanityName ? `https://linkedin.com/in/${leadData.vanityName}` : 'N/A';\nconst company = leadData.company || extractCompanyFromHeadline(headline);\nconst location = leadData.location || 'Unknown';\n\n// Determine lead source\nlet leadSource = 'Unknown';\nlet engagementType = 'None';\nlet engagementScore = 0;\n\nif (leadData.connectionStatus) {\n  leadSource = 'New Connection';\n  engagementScore = 50;\n} \n\nif (leadData.text || leadData.commentText) {\n  leadSource = leadData.connectionStatus ? 'Connection + Engagement' : 'Post Engagement';\n  engagementType = 'Comment';\n  engagementScore += 30;\n}\n\nif (leadData.reaction || leadData.liked) {\n  if (leadSource === 'Unknown') leadSource = 'Post Engagement';\n  engagementType = engagementType === 'Comment' ? 'Comment + Like' : 'Like';\n  engagementScore += 10;\n}\n\n// Calculate lead quality score (0-100)\nlet qualityScore = engagementScore;\n\n// Bonus points for complete profile\nif (headline !== 'Not provided') qualityScore += 10;\nif (company !== 'Unknown') qualityScore += 10;\nif (location !== 'Unknown') qualityScore += 5;\n\n// Determine lead temperature\nlet leadTemperature = 'Cold';\nif (qualityScore >= 70) leadTemperature = 'Hot';\nelse if (qualityScore >= 50) leadTemperature = 'Warm';\n\n// Extract company from headline helper function\nfunction extractCompanyFromHeadline(headline) {\n  const patterns = [\n    /at ([^|\u2022]+)/i,\n    /@ ([^|\u2022]+)/i,\n    /\\| ([^|\u2022]+)/i\n  ];\n  \n  for (const pattern of patterns) {\n    const match = headline.match(pattern);\n    if (match) return match[1].trim();\n  }\n  \n  return 'Unknown';\n}\n\n// Create timestamp\nconst timestamp = new Date().toISOString();\nconst dateAdded = new Date().toLocaleDateString('en-US');\n\n// Build enriched lead object\nreturn {\n  json: {\n    // Basic Info\n    leadId: leadData.id || `lead_${Date.now()}`,\n    firstName,\n    lastName,\n    fullName: `${firstName} ${lastName}`.trim(),\n    email: leadData.email || '',\n    phone: leadData.phone || '',\n    \n    // Professional Info\n    headline,\n    company,\n    position: headline.split('at')[0]?.trim() || headline.split('|')[0]?.trim() || 'Not specified',\n    location,\n    profileUrl,\n    \n    // Lead Intelligence\n    leadSource,\n    leadTemperature,\n    qualityScore,\n    engagementType,\n    engagementScore,\n    \n    // Engagement Details\n    commentText: leadData.text || leadData.commentText || '',\n    reactionType: leadData.reaction || '',\n    postUrl: leadData.postUrl || '',\n    \n    // Metadata\n    dateAdded,\n    timestamp,\n    lastUpdated: timestamp,\n    status: 'New',\n    assignedTo: '',\n    notes: '',\n    \n    // Original data for reference\n    originalData: leadData\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "74b8382e-4e5d-48b5-a010-4e65e43e3638",
+      "name": "Filter out duplicate leads",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1040,
+        1072
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Check if lead already exists in our system\nconst leadId = $input.item.json.leadId;\nconst profileUrl = $input.item.json.profileUrl;\n\n// Use workflow static data to track processed leads\nconst processedLeads = $getWorkflowStaticData('global').processedLeads || {};\n\n// Create unique identifier (prefer profileUrl, fallback to leadId)\nconst uniqueId = profileUrl !== 'N/A' ? profileUrl : leadId;\n\nif (processedLeads[uniqueId]) {\n  // Lead exists - update engagement data only\n  const existing = processedLeads[uniqueId];\n  \n  return {\n    json: {\n      ...$input.item.json,\n      isDuplicate: true,\n      isUpdate: true,\n      existingData: existing,\n      action: 'update'\n    }\n  };\n}\n\n// New lead - add to tracking\nprocessedLeads[uniqueId] = {\n  timestamp: new Date().toISOString(),\n  leadId,\n  profileUrl,\n  firstName: $input.item.json.firstName,\n  lastName: $input.item.json.lastName,\n  company: $input.item.json.company\n};\n\n// Clean up old entries (older than 90 days)\nconst ninetyDaysAgo = Date.now() - (90 * 24 * 60 * 60 * 1000);\nfor (const key in processedLeads) {\n  const entryTime = new Date(processedLeads[key].timestamp).getTime();\n  if (entryTime < ninetyDaysAgo) {\n    delete processedLeads[key];\n  }\n}\n\n// Save back to static data\n$getWorkflowStaticData('global').processedLeads = processedLeads;\n\nreturn {\n  json: {\n    ...$input.item.json,\n    isDuplicate: false,\n    isUpdate: false,\n    action: 'create'\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a6d50787-0e41-4698-9038-327c7fc3a9d6",
+      "name": "Route to create or update path",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1264,
+        1072
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "New Lead",
+              "conditions": {
+                "options": {
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "create"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Update Existing",
+              "conditions": {
+                "options": {
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "update"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "8c6de56f-78bf-4753-816f-cb372de710e7",
+      "name": "Append new lead to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1712,
+        1168
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "email": "={{ $json.email }}",
+            "notes": "={{ $json.notes }}",
+            "phone": "={{ $json.phone }}",
+            "leadId": "={{ $json.leadId }}",
+            "status": "={{ $json.status }}",
+            "company": "={{ $json.company }}",
+            "fullName": "={{ $json.fullName }}",
+            "headline": "={{ $json.headline }}",
+            "lastName": "={{ $json.lastName }}",
+            "location": "={{ $json.location }}",
+            "position": "={{ $json.position }}",
+            "dateAdded": "={{ $json.dateAdded }}",
+            "firstName": "={{ $json.firstName }}",
+            "assignedTo": "={{ $json.assignedTo }}",
+            "leadSource": "={{ $json.leadSource }}",
+            "profileUrl": "={{ $json.profileUrl }}",
+            "commentText": "={{ $json.commentText }}",
+            "qualityScore": "={{ $json.qualityScore }}",
+            "engagementType": "={{ $json.engagementType }}",
+            "leadTemperature": "={{ $json.leadTemperature }}"
+          },
+          "mappingMode": "defineBelow"
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Sheet1",
+          "cachedResultName": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "cachedResultName": "LinkedIn Leads Database"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "5874b966-2b8a-42eb-a677-9a52c17ba8a4",
+      "name": "Update existing lead in Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1488,
+        1384
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Sheet1",
+          "cachedResultName": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "cachedResultName": "LinkedIn Leads Database"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "c6bc352c-79ab-4c3c-9cb2-dc9d712386cc",
+      "name": "Create new contact in HubSpot",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1712,
+        784
+      ],
+      "parameters": {
+        "url": "https://api.hubspot.com/crm/v3/objects/contacts",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "authentication": "predefinedCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "properties",
+              "value": "={{ {\"firstname\": $json.firstName, \"lastname\": $json.lastName, \"email\": $json.email, \"phone\": $json.phone, \"company\": $json.company, \"jobtitle\": $json.position, \"linkedin_url\": $json.profileUrl, \"lead_source\": $json.leadSource, \"lead_temperature\": $json.leadTemperature, \"quality_score\": $json.qualityScore, \"city\": $json.location, \"hs_lead_status\": \"NEW\"} }}"
+            }
+          ]
+        },
+        "nodeCredentialType": "hubspotApi"
+      },
+      "credentials": {
+        "hubspotApi": {
+          "id": "credential-id",
+          "name": "HubSpot account -test"
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "88ab09ba-8bf7-4907-8f5c-e705e64360a5",
+      "name": "Update existing contact in HubSpot",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1712,
+        1456
+      ],
+      "parameters": {
+        "url": "=https://api.hubspot.com/crm/v3/objects/contacts/{{ $json.existingData.crmContactId }}",
+        "method": "PATCH",
+        "options": {},
+        "sendBody": true,
+        "authentication": "predefinedCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "properties",
+              "value": "={{ {\"engagement_type\": $json.engagementType, \"last_engagement_date\": $json.timestamp, \"quality_score\": $json.qualityScore, \"notes\": $json.commentText} }}"
+            }
+          ]
+        },
+        "nodeCredentialType": "hubspotApi"
+      },
+      "credentials": {
+        "hubspotApi": {
+          "id": "credential-id",
+          "name": "HubSpot account -test"
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "97e12c88-da38-4965-887c-618dc1de4af8",
+      "name": "Create new lead in Salesforce",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1712,
+        976
+      ],
+      "parameters": {
+        "url": "https://YOUR_SALESFORCE_INSTANCE.salesforce.com/services/data/v58.0/sobjects/Lead/",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "authentication": "predefinedCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "FirstName",
+              "value": "={{ $json.firstName }}"
+            },
+            {
+              "name": "LastName",
+              "value": "={{ $json.lastName }}"
+            },
+            {
+              "name": "Email",
+              "value": "={{ $json.email }}"
+            },
+            {
+              "name": "Company",
+              "value": "={{ $json.company }}"
+            },
+            {
+              "name": "Title",
+              "value": "={{ $json.position }}"
+            },
+            {
+              "name": "LeadSource",
+              "value": "LinkedIn"
+            },
+            {
+              "name": "Status",
+              "value": "={{ $json.leadTemperature === 'Hot' ? 'Working' : 'Open' }}"
+            },
+            {
+              "name": "Rating",
+              "value": "={{ $json.leadTemperature }}"
+            },
+            {
+              "name": "Description",
+              "value": "={{ $json.commentText }}"
+            }
+          ]
+        },
+        "nodeCredentialType": "salesforceOAuth2Api"
+      },
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "credential-id",
+          "name": "Salesforce account"
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "1053898c-6b2b-42ca-ae7f-f821b5e0accd",
+      "name": "Build notification message",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1936,
+        1168
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Generate notification message\nconst lead = $input.item.json;\n\nlet message = `\ud83c\udf89 NEW LINKEDIN LEAD CAPTURED!\\n\\n`;\nmessage += `\ud83d\udc64 Name: ${lead.fullName}\\n`;\nmessage += `\ud83c\udfe2 Company: ${lead.company}\\n`;\nmessage += `\ud83d\udcbc Position: ${lead.position}\\n`;\nmessage += `\ud83c\udf21\ufe0f Temperature: ${lead.leadTemperature}\\n`;\nmessage += `\u2b50 Quality Score: ${lead.qualityScore}/100\\n`;\nmessage += `\ud83d\udccd Source: ${lead.leadSource}\\n`;\n\nif (lead.engagementType !== 'None') {\n  message += `\ud83d\udcac Engagement: ${lead.engagementType}\\n`;\n}\n\nif (lead.commentText) {\n  message += `\\n\ud83d\udcad Comment: \"${lead.commentText.substring(0, 100)}${lead.commentText.length > 100 ? '...' : ''}\"\\n`;\n}\n\nmessage += `\\n\ud83d\udd17 Profile: ${lead.profileUrl}\\n`;\nmessage += `\\n\u2705 Added to: Google Sheets${lead.action === 'create' ? ' + CRM' : ' (Updated)'}\\n`;\nmessage += `\u23f0 Captured: ${lead.dateAdded}`;\n\nreturn {\n  json: {\n    ...lead,\n    notificationMessage: message,\n    notificationTitle: `${lead.leadTemperature} Lead: ${lead.fullName}`,\n    shouldNotify: lead.leadTemperature === 'Hot' || lead.leadTemperature === 'Warm'\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9070e69e-38c5-4be4-8d3d-5b565de34150",
+      "name": "Filter for hot and warm leads only",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        2160,
+        1168
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": false,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "notify-condition",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.shouldNotify }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "2c7fdf98-5b29-4a84-b894-0cd2d290072e",
+      "name": "Send Slack notification to sales team",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2384,
+        1072
+      ],
+      "parameters": {
+        "url": "YOUR_SLACK_WEBHOOK_URL",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.notificationTitle }}"
+            },
+            {
+              "name": "blocks",
+              "value": "={{ [{\"type\": \"section\", \"text\": {\"type\": \"mrkdwn\", \"text\": $json.notificationMessage}}] }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "b6103563-6cda-4137-91fc-e9ceb74c35d4",
+      "name": "Send email notification to sales team",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        2384,
+        1264
+      ],
+      "webhookId": "886f5793-cf7d-462c-bd09-485ab58f763e",
+      "parameters": {
+        "options": {},
+        "subject": "={{ $json.notificationTitle }}",
+        "toEmail": "user@example.com",
+        "fromEmail": "user@example.com"
+      },
+      "credentials": {
+        "smtp": {
+          "id": "credential-id",
+          "name": "SMTP account"
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "baa6718d-dbc7-4d9a-991e-472b776b6370",
+      "name": "Log success and track statistics",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2608,
+        1168
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Log successful processing\nconst timestamp = new Date().toISOString();\nconst lead = $input.item.json;\n\nconsole.log(`\u2705 SUCCESS: ${lead.action === 'create' ? 'Created' : 'Updated'} lead: ${lead.fullName} | Company: ${lead.company} | Score: ${lead.qualityScore} | Temperature: ${lead.leadTemperature} | Source: ${lead.leadSource} | Time: ${timestamp}`);\n\n// Track statistics\nconst stats = $getWorkflowStaticData('global').stats || {\n  totalLeads: 0,\n  hotLeads: 0,\n  warmLeads: 0,\n  coldLeads: 0,\n  lastProcessed: null\n};\n\nif (lead.action === 'create') {\n  stats.totalLeads++;\n  if (lead.leadTemperature === 'Hot') stats.hotLeads++;\n  else if (lead.leadTemperature === 'Warm') stats.warmLeads++;\n  else stats.coldLeads++;\n}\n\nstats.lastProcessed = timestamp;\n$getWorkflowStaticData('global').stats = stats;\n\nreturn {\n  json: {\n    success: true,\n    action: lead.action,\n    leadId: lead.leadId,\n    leadName: lead.fullName,\n    leadTemperature: lead.leadTemperature,\n    qualityScore: lead.qualityScore,\n    timestamp,\n    cumulativeStats: stats\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e5230041-45d5-442a-ae2f-e49fd3d374e4",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -896,
+        528
+      ],
+      "parameters": {
+        "width": 924,
+        "height": 868,
+        "content": "## Capture LinkedIn leads, sync to Google Sheets and CRM\n\nAutomatically captures and syncs LinkedIn leads with intelligent scoring, duplicate prevention, and multi-platform integration.\n\n### How it works\n\n1. **Monitor LinkedIn** - Checks every 15 minutes for new connections and post engagements\n2. **Extract data** - Pulls profile information, company, position from multiple sources\n3. **Score leads** - Calculates quality score (0-100) and assigns temperature (Hot/Warm/Cold)\n4. **Prevent duplicates** - Tracks leads for 90 days to avoid duplicate entries\n5. **Sync to platforms** - Saves to Google Sheets and your CRM (HubSpot or Salesforce)\n6. **Smart notifications** - Alerts sales team via Slack/Email for Hot and Warm leads only\n\n### Setup steps\n\n1. **Connect LinkedIn** - Add OAuth2 credentials to both LinkedIn nodes\n2. **Setup Google Sheets** - Create spreadsheet with these columns: leadId, fullName, firstName, lastName, email, phone, company, position, headline, location, profileUrl, leadSource, leadTemperature, qualityScore, engagementType, commentText, dateAdded, status, assignedTo, notes, lastUpdated\n3. **Choose CRM** - Enable either HubSpot OR Salesforce nodes (disable the other)\n4. **Configure alerts** - Add Slack webhook URL and/or email settings\n5. **Test workflow** - Run manually first to verify all connections\n6. **Activate** - Turn on for automatic lead capture\n\n### Key features\n\n- **Smart scoring**: Quality score based on engagement level and profile completeness\n- **Temperature labels**: Hot (70+), Warm (50-69), Cold (<50) for prioritization\n- **No duplicates**: 90-day tracking prevents duplicate entries\n- **Multi-CRM support**: Works with HubSpot or Salesforce\n- **Analytics built-in**: Tracks total leads and temperature distribution"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3d47a360-012d-48dd-bdf1-d4b77b078434",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        70,
+        879
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 468,
+        "height": 353,
+        "content": "## 1. Capture leads\n\nMonitors LinkedIn connections and post engagements"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "309eea4a-a388-489e-aec5-ee14f738e76e",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        530,
+        879
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 668,
+        "height": 353,
+        "content": "## 2. Process and score\n\nEnriches data, assigns quality scores, detects duplicates"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c5809a23-1862-49ac-abcb-a60ef7edc1da",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1242,
+        775
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 588,
+        "height": 553,
+        "content": "## 3. Sync to platforms\n\nSaves to Google Sheets and CRM with create/update logic"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e7f5ea63-6031-44c5-aa94-286b544fe151",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1864,
+        871
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 688,
+        "height": 553,
+        "content": "## 4. Notify sales team\n\nAlerts for hot and warm leads only with complete context"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "80ef221d-8a47-44b5-9021-30e03455cf54",
+  "connections": {
+    "Build notification message": {
+      "main": [
+        [
+          {
+            "node": "Filter for hot and warm leads only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch post engagement data": {
+      "main": [
+        [
+          {
+            "node": "Merge connections and engagements",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Filter out duplicate leads": {
+      "main": [
+        [
+          {
+            "node": "Route to create or update path",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract and score lead data": {
+      "main": [
+        [
+          {
+            "node": "Filter out duplicate leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create new contact in HubSpot": {
+      "main": [
+        [
+          {
+            "node": "Build notification message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create new lead in Salesforce": {
+      "main": [
+        [
+          {
+            "node": "Build notification message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch new LinkedIn connections": {
+      "main": [
+        [
+          {
+            "node": "Merge connections and engagements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route to create or update path": {
+      "main": [
+        [
+          {
+            "node": "Append new lead to Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create new contact in HubSpot",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create new lead in Salesforce",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update existing lead in Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append new lead to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Build notification message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge connections and engagements": {
+      "main": [
+        [
+          {
+            "node": "Extract and score lead data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter for hot and warm leads only": {
+      "main": [
+        [
+          {
+            "node": "Send Slack notification to sales team",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send email notification to sales team",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update existing contact in HubSpot": {
+      "main": [
+        [
+          {
+            "node": "Build notification message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for new leads every 15 minutes": {
+      "main": [
+        [
+          {
+            "node": "Fetch new LinkedIn connections",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch post engagement data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Slack notification to sales team": {
+      "main": [
+        [
+          {
+            "node": "Log success and track statistics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send email notification to sales team": {
+      "main": [
+        [
+          {
+            "node": "Log success and track statistics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update existing lead in Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Build notification message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update existing contact in HubSpot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,121 @@
+# 🔌 Auto-fixing Output Parser
+
+> **107 templates** using **Auto-fixing Output Parser** in n8n workflows.
+
+[⬅️ Back to main index](../../README.md) · [📂 Browse by category](../../templates/)
+
+## 📋 Templates
+
+| # | Template | Category | 👀 Views |
+|--:|----------|----------|-------:|
+| 🏆 1 | [Proxmox AI agent with n8n and generative AI integration](../../templates/devops/2749-proxmox-ai-agent-with-n8n-and-generative-ai-integration/) | ⚙️ DevOps & CI/CD | 80,869 |
+| 🥇 2 | [Ai prompt generator workflow](../../templates/engineering/5045-ai-prompt-generator-workflow/) | ⚒️ Engineering | 51,745 |
+| 🥈 3 | [Notion AI assistant generator](../../templates/internal-wiki/2415-notion-ai-assistant-generator/) | 📖 Internal Wiki & Knowledge Base | 48,744 |
+| 🥉 4 | [Track SEO keyword rankings with Bright Data MCP and GPT-5.2 AI analysis](../../templates/market-research/5962-track-seo-keyword-rankings-with-bright-data-mcp-and-gpt-52-ai-analysis/) | 📊 Market Research & Insights | 43,587 |
+| 5 | [Handling appointment leads and follow-up with Twilio, Cal.com and AI](../../templates/lead-nurturing/2342-handling-appointment-leads-and-follow-up-with-twilio-calcom-and-ai/) | 💬 Lead Nurturing & AI Sales Agents | 28,321 |
+| 6 | [Allow your AI to call an API to fetch data](../../templates/engineering/2094-allow-your-ai-to-call-an-api-to-fetch-data/) | ⚒️ Engineering | 23,149 |
+| 7 | [Automated competitor pricing monitor with Bright Data MCP & OpenAI](../../templates/market-research/5948-automated-competitor-pricing-monitor-with-bright-data-mcp-openai/) | 📊 Market Research & Insights | 18,781 |
+| 8 | [Extract data from resume and create PDF with Gotenberg](../../templates/hr/2170-extract-data-from-resume-and-create-pdf-with-gotenberg/) | 👥 HR & Recruitment | 16,658 |
+| 9 | [Explore n8n nodes in a visual reference library](../../templates/miscellaneous/3891-explore-n8n-nodes-in-a-visual-reference-library/) | 🔧 Miscellaneous | 16,330 |
+| 10 | [Force AI to use a specific output format](../../templates/engineering/1957-force-ai-to-use-a-specific-output-format/) | ⚒️ Engineering | 15,941 |
+| 11 | [GitLab merge request review & risk analysis with Claude/GPT AI](../../templates/devops/3997-gitlab-merge-request-review-risk-analysis-with-claudegpt-ai/) | ⚙️ DevOps & CI/CD | 12,155 |
+| 12 | [📚 Auto-generate documentation for n8n workflows with GPT and Docsify](../../templates/internal-wiki/2669-auto-generate-documentation-for-n8n-workflows-with-gpt-and-docsify/) | 📖 Internal Wiki & Knowledge Base | 12,006 |
+| 13 | [Generate & publish SEO articles with Claude AI, Webflow & image generation](../../templates/content-creation/5374-generate-publish-seo-articles-with-claude-ai-webflow-image-generation/) | 🎬 Content Creation & Video | 11,550 |
+| 14 | [Create faceless videos with Gemini, ElevenLabs, Leonardo AI & Shotstack](../../templates/content-creation/6014-create-faceless-videos-with-gemini-elevenlabs-leonardo-ai-shotstack/) | 🎬 Content Creation & Video | 10,119 |
+| 15 | [Auto-tag blog posts in WordPress with AI](../../templates/content-creation/2816-auto-tag-blog-posts-in-wordpress-with-ai/) | 🎬 Content Creation & Video | 7,903 |
+| 16 | [Startup funding research automation with Claude, Perplexity AI, and Airtable](../../templates/market-research/3107-startup-funding-research-automation-with-claude-perplexity-ai-and-airtable/) | 📊 Market Research & Insights | 7,096 |
+| 17 | [Automate email campaign analysis & smart follow-ups with Bright Data & OpenAI](../../templates/social-media/5953-automate-email-campaign-analysis-smart-follow-ups-with-bright-data-openai/) | 📱 Social Media & Email Marketing | 6,224 |
+| 18 | [Extract personal data with self-hosted LLM Mistral NeMo](../../templates/document-extraction/2766-extract-personal-data-with-self-hosted-llm-mistral-nemo/) | 🔬 Document Extraction & Analysis | 6,049 |
+| 19 | [AI-powered lead enrichment with Bright Data MCP and Google Sheets](../../templates/lead-generation/4589-ai-powered-lead-enrichment-with-bright-data-mcp-and-google-sheets/) | 🎣 Lead Generation & Enrichment | 5,280 |
+| 20 | [Intelligent web query and semantic re-ranking flow using Brave and Google Gemini](../../templates/market-research/2643-intelligent-web-query-and-semantic-re-ranking-flow-using-brave-and-google-gemini/) | 📊 Market Research & Insights | 5,257 |
+| 21 | [Weekly SEO keyword research & competitor analysis with GPT-4 and Bright Data](../../templates/market-research/5945-weekly-seo-keyword-research-competitor-analysis-with-gpt-4-and-bright-data/) | 📊 Market Research & Insights | 4,940 |
+| 22 | [Dynamic AI model router for query optimization with OpenRouter](../../templates/engineering/4237-dynamic-ai-model-router-for-query-optimization-with-openrouter/) | ⚒️ Engineering | 4,768 |
+| 23 | [Android to n8n automation \| Save links to with Readeck, Openrouter, SerpAPI](../../templates/personal-productivity/3117-android-to-n8n-automation-save-links-to-with-readeck-openrouter-serpapi/) | ⚡ Personal Productivity | 3,714 |
+| 24 | [BambooHR AI-powered company policies and benefits chatbot](../../templates/internal-wiki/2850-bamboohr-ai-powered-company-policies-and-benefits-chatbot/) | 📖 Internal Wiki & Knowledge Base | 3,557 |
+| 25 | [AI-powered salon booking with GPT, Google Calendar & email confirmations](../../templates/ai-chatbots/7783-ai-powered-salon-booking-with-gpt-google-calendar-email-confirmations/) | 🤖 AI Chatbots & Agents | 3,404 |
+| 26 | [Generate AI prompts with Google Gemini and store them in Airtable](../../templates/engineering/3027-generate-ai-prompts-with-google-gemini-and-store-them-in-airtable/) | ⚒️ Engineering | 2,974 |
+| 27 | [Extract customer pain points from support forums with Bright Data & GPT-4](../../templates/market-research/5952-extract-customer-pain-points-from-support-forums-with-bright-data-gpt-4/) | 📊 Market Research & Insights | 2,889 |
+| 28 | [AI-powered restaurant booking system with Telegram, Calendar & Email notifications](../../templates/ai-chatbots/7769-ai-powered-restaurant-booking-system-with-telegram-calendar-email-notifications/) | 🤖 AI Chatbots & Agents | 2,660 |
+| 29 | [Get daily exercise plan with Flex Message via LINE](../../templates/social-media/2988-get-daily-exercise-plan-with-flex-message-via-line/) | 📱 Social Media & Email Marketing | 2,481 |
+| 30 | [Automated LinkedIn job hunter: get your best daily job matches by email](../../templates/personal-productivity/3543-automated-linkedin-job-hunter-get-your-best-daily-job-matches-by-email/) | ⚡ Personal Productivity | 2,396 |
+| 31 | [Test webhooks in n8n without changing WEBHOOK_URL (PostBin & BambooHR example)](../../templates/engineering/2869-test-webhooks-in-n8n-without-changing-webhookurl-postbin-bamboohr-example/) | ⚒️ Engineering | 2,019 |
+| 32 | [Scrape & summarize industry news with Bright Data & OpenAI](../../templates/market-research/5977-scrape-summarize-industry-news-with-bright-data-openai/) | 📊 Market Research & Insights | 1,860 |
+| 33 | [Generate Shopify product listings from images with Gemini AI and Airtable](../../templates/content-creation/10008-generate-shopify-product-listings-from-images-with-gemini-ai-and-airtable/) | 🎬 Content Creation & Video | 1,803 |
+| 34 | [Scrape local business directories with Bright Data & OpenAI for lead generation](../../templates/lead-generation/5971-scrape-local-business-directories-with-bright-data-openai-for-lead-generation/) | 🎣 Lead Generation & Enrichment | 1,700 |
+| 35 | [Generate SaaS product ideas from market gaps with OpenAI and Bright Data](../../templates/market-research/5970-generate-saas-product-ideas-from-market-gaps-with-openai-and-bright-data/) | 📊 Market Research & Insights | 1,608 |
+| 36 | [Discover hidden website API endpoints using regex and AI](../../templates/engineering/4627-discover-hidden-website-api-endpoints-using-regex-and-ai/) | ⚒️ Engineering | 1,597 |
+| 37 | [Auto-generate and post tweet threads based on Google Trends using Gemini AI](../../templates/social-media/3978-auto-generate-and-post-tweet-threads-based-on-google-trends-using-gemini-ai/) | 📱 Social Media & Email Marketing | 1,502 |
+| 38 | [Track Google Trends search data locally with Bright Data MCP & AI analysis](../../templates/market-research/5964-track-google-trends-search-data-locally-with-bright-data-mcp-ai-analysis/) | 📊 Market Research & Insights | 1,479 |
+| 39 | [Analyze Amazon purchase trends with Bright Data, OpenAI and Google Sheets](../../templates/market-research/5961-analyze-amazon-purchase-trends-with-bright-data-openai-and-google-sheets/) | 📊 Market Research & Insights | 1,395 |
+| 40 | [AI recruiting pipeline: Job to candidate shortlist with Apollo & Airtable](../../templates/hr/8292-ai-recruiting-pipeline-job-to-candidate-shortlist-with-apollo-airtable/) | 👥 HR & Recruitment | 1,356 |
+| 41 | [Create daily Gmail summaries with Google Gemini AI](../../templates/personal-productivity/4915-create-daily-gmail-summaries-with-google-gemini-ai/) | ⚡ Personal Productivity | 1,194 |
+| 42 | [Automate Instagram profile analysis with Airtop scraping and GPT-4o intelligence](../../templates/ai-tools/7481-automate-instagram-profile-analysis-with-airtop-scraping-and-gpt-4o-intelligence/) | 🎯 AI Summarization & Classification | 1,192 |
+| 43 | [Scrape event data from 10times with Bright Data MCP, AI & Google Sheets](../../templates/market-research/5947-scrape-event-data-from-10times-with-bright-data-mcp-ai-google-sheets/) | 📊 Market Research & Insights | 1,181 |
+| 44 | [Track brand mentions with sentiment analysis using Bright Data & OpenAI](../../templates/market-research/5951-track-brand-mentions-with-sentiment-analysis-using-bright-data-openai/) | 📊 Market Research & Insights | 1,170 |
+| 45 | [🧠 Build AI agents with Think-Plan-Act architecture using Llama-4 reasoning](../../templates/engineering/3489-build-ai-agents-with-think-plan-act-architecture-using-llama-4-reasoning/) | ⚒️ Engineering | 1,140 |
+| 46 | [Smart email manager with Gmail, GPT-4 classification & auto-responses](../../templates/ai-chatbots/7855-smart-email-manager-with-gmail-gpt-4-classification-auto-responses/) | 🤖 AI Chatbots & Agents | 1,111 |
+| 47 | [Analyze & Tag User Feedback in Notion with GPT-4 Sentiment Analysis](../../templates/market-research/3689-analyze-tag-user-feedback-in-notion-with-gpt-4-sentiment-analysis/) | 📊 Market Research & Insights | 1,083 |
+| 48 | [Monitor marketing job boards with Bright Data & GPT-4o for growing companies](../../templates/lead-generation/5946-monitor-marketing-job-boards-with-bright-data-gpt-4o-for-growing-companies/) | 🎣 Lead Generation & Enrichment | 1,072 |
+| 49 | [Analyze competitor Facebook ads with AI (GPT-4 & Gemini) & email reports](../../templates/market-research/3839-analyze-competitor-facebook-ads-with-ai-gpt-4-gemini-email-reports/) | 📊 Market Research & Insights | 1,051 |
+| 50 | [Automated Amazon stock level tracker with Bright Data MCP and OpenAI](../../templates/engineering/5960-automated-amazon-stock-level-tracker-with-bright-data-mcp-and-openai/) | ⚒️ Engineering | 1,035 |
+| 51 | [Track & analyze sales performance with AI insights and Google Sheets](../../templates/crm/5975-track-analyze-sales-performance-with-ai-insights-and-google-sheets/) | 🤝 CRM & Sales Operations | 1,030 |
+| 52 | [Analyze website conversion funnels with GPT-4o, Bright Data & Google Sheets](../../templates/market-research/5955-analyze-website-conversion-funnels-with-gpt-4o-bright-data-google-sheets/) | 📊 Market Research & Insights | 1,028 |
+| 53 | [Monitor LinkedIn competitor engagement & analysis with Bright Data & AI](../../templates/market-research/5949-monitor-linkedin-competitor-engagement-analysis-with-bright-data-ai/) | 📊 Market Research & Insights | 1,026 |
+| 54 | [Automated daily AI summaries from WhatsApp groups](../../templates/market-research/8442-automated-daily-ai-summaries-from-whatsapp-groups/) | 📊 Market Research & Insights | 976 |
+| 55 | [Automated website change monitoring with Bright Data, GPT-4.1 & Google Workspace](../../templates/market-research/4382-automated-website-change-monitoring-with-bright-data-gpt-41-google-workspace/) | 📊 Market Research & Insights | 975 |
+| 56 | [Track and analyze backlink opportunities with Bright Data MCP and GPT-4o](../../templates/market-research/5958-track-and-analyze-backlink-opportunities-with-bright-data-mcp-and-gpt-4o/) | 📊 Market Research & Insights | 968 |
+| 57 | [Comprehensive contact enrichment with Apollo, LinkedIn, and GPT-4o for HubSpot](../../templates/lead-generation/6103-comprehensive-contact-enrichment-with-apollo-linkedin-and-gpt-4o-for-hubspot/) | 🎣 Lead Generation & Enrichment | 959 |
+| 58 | [Analyze competitor LinkedIn posts with Bright Data + Google Gemini to Google Sheets](../../templates/market-research/6619-analyze-competitor-linkedin-posts-with-bright-data-google-gemini-to-google-sheet/) | 📊 Market Research & Insights | 956 |
+| 59 | [Discover trending topics with Bright Data MCP, GPT analysis & Trello integration](../../templates/market-research/5956-discover-trending-topics-with-bright-data-mcp-gpt-analysis-trello-integration/) | 📊 Market Research & Insights | 944 |
+| 60 | [Real-time sales pipeline analytics with Bright Data, OpenAI, and Google Sheets](../../templates/crm/5974-real-time-sales-pipeline-analytics-with-bright-data-openai-and-google-sheets/) | 🤝 CRM & Sales Operations | 867 |
+| 61 | [Route user requests to specialized agents with GPT-4o Mini](../../templates/personal-productivity/4150-route-user-requests-to-specialized-agents-with-gpt-4o-mini/) | ⚡ Personal Productivity | 837 |
+| 62 | [Email parser for RAG agent powered by Gmail and Mem0](../../templates/document-extraction/7150-email-parser-for-rag-agent-powered-by-gmail-and-mem0/) | 🔬 Document Extraction & Analysis | 831 |
+| 63 | [AI-powered CV filtering with Llama3.1 LLM, Google Drive & Sheets](../../templates/hr/6696-ai-powered-cv-filtering-with-llama31-llm-google-drive-sheets/) | 👥 HR & Recruitment | 818 |
+| 64 | [Generate LinkedIn posts from Wikipedia with GPT-4 summaries and Ideogram images](../../templates/social-media/6433-generate-linkedin-posts-from-wikipedia-with-gpt-4-summaries-and-ideogram-images/) | 📱 Social Media & Email Marketing | 817 |
+| 65 | [Turn new Shopify products into SEO blogs with Perplexity, Gemini and Sheets](../../templates/content-creation/12286-turn-new-shopify-products-into-seo-blogs-with-perplexity-gemini-and-sheets/) | 🎬 Content Creation & Video | 797 |
+| 66 | [Extract & analyze competitor backlink data with Bright Data MCP & GPT](../../templates/market-research/5963-extract-analyze-competitor-backlink-data-with-bright-data-mcp-gpt/) | 📊 Market Research & Insights | 791 |
+| 67 | [Ai-powered multi-stage web search and research suite](../../templates/market-research/2539-ai-powered-multi-stage-web-search-and-research-suite/) | 📊 Market Research & Insights | 783 |
+| 68 | [Analyze competitor content performance with Bright Data MCP & GPT-4o](../../templates/market-research/5957-analyze-competitor-content-performance-with-bright-data-mcp-gpt-4o/) | 📊 Market Research & Insights | 740 |
+| 69 | [Scrape developer profiles from Stack Overflow for lead generation with OpenAI & Bright Data](../../templates/lead-generation/5944-scrape-developer-profiles-from-stack-overflow-for-lead-generation-with-openai-br/) | 🎣 Lead Generation & Enrichment | 738 |
+| 70 | [Automatically monitor competitor pricing with Bright Data MCP & Google Sheets](../../templates/market-research/5959-automatically-monitor-competitor-pricing-with-bright-data-mcp-google-sheets/) | 📊 Market Research & Insights | 734 |
+| 71 | [Reddit comment sentiment analysis with Bright Data and Gemini AI to Google Sheets](../../templates/market-research/6620-reddit-comment-sentiment-analysis-with-bright-data-and-gemini-ai-to-google-sheet/) | 📊 Market Research & Insights | 674 |
+| 72 | [Ai email triage & alert system with GPT-4 and Telegram notifications](../../templates/ticket-management/3968-ai-email-triage-alert-system-with-gpt-4-and-telegram-notifications/) | 🎫 Ticket Management & Triage | 670 |
+| 73 | [Segment PDFs by table of contents with Gemini AI and Chunkr.ai](../../templates/document-extraction/4697-segment-pdfs-by-table-of-contents-with-gemini-ai-and-chunkrai/) | 🔬 Document Extraction & Analysis | 662 |
+| 74 | [Analyze & target high-value customers with GPT-4 and Bright Data MCP](../../templates/market-research/5966-analyze-target-high-value-customers-with-gpt-4-and-bright-data-mcp/) | 📊 Market Research & Insights | 625 |
+| 75 | [Analyze sales territory performance with Bright Data MCP & GPT-4o](../../templates/crm/5976-analyze-sales-territory-performance-with-bright-data-mcp-gpt-4o/) | 🤝 CRM & Sales Operations | 610 |
+| 76 | [Monitor competitor financial performance with Bright Data MCP, OpenAI & Google Sheets](../../templates/market-research/5978-monitor-competitor-financial-performance-with-bright-data-mcp-openai-google-shee/) | 📊 Market Research & Insights | 606 |
+| 77 | [Track customer NPS scores across platforms with Bright Data and OpenAI](../../templates/market-research/5967-track-customer-nps-scores-across-platforms-with-bright-data-and-openai/) | 📊 Market Research & Insights | 606 |
+| 78 | [Automated US stock portfolio analysis with Telegram, Perplexity AI & PDF reports](../../templates/crypto-trading/5687-automated-us-stock-portfolio-analysis-with-telegram-perplexity-ai-pdf-reports/) | 📈 Crypto Trading & Stock Market | 573 |
+| 79 | [Multi-modal expense tracking with Telegram, Gemini AI & Google Sheets](../../templates/personal-productivity/10155-multi-modal-expense-tracking-with-telegram-gemini-ai-google-sheets/) | ⚡ Personal Productivity | 571 |
+| 80 | [Monitor & alert on social media ad performance with Bright Data MCP](../../templates/market-research/5954-monitor-alert-on-social-media-ad-performance-with-bright-data-mcp/) | 📊 Market Research & Insights | 563 |
+| 81 | [Instant competitor product launch monitor with Bright Data & OpenAI to email/sheets](../../templates/market-research/5969-instant-competitor-product-launch-monitor-with-bright-data-openai-to-emailsheets/) | 📊 Market Research & Insights | 554 |
+| 82 | [Automate Google Meet notes with GPT-4.1-mini, Notion, Slack & Gmail distribution](../../templates/document-extraction/9849-automate-google-meet-notes-with-gpt-41-mini-notion-slack-gmail-distribution/) | 🔬 Document Extraction & Analysis | 553 |
+| 83 | [Automated local event monitor with Bright Data MCP and OpenAI analysis](../../templates/market-research/5972-automated-local-event-monitor-with-bright-data-mcp-and-openai-analysis/) | 📊 Market Research & Insights | 544 |
+| 84 | [Automate feature request collection & analysis from reviews to Jira with AI](../../templates/market-research/5968-automate-feature-request-collection-analysis-from-reviews-to-jira-with-ai/) | 📊 Market Research & Insights | 541 |
+| 85 | [Track regional sentiment from social media with Bright Data & OpenAI](../../templates/market-research/5973-track-regional-sentiment-from-social-media-with-bright-data-openai/) | 📊 Market Research & Insights | 529 |
+| 86 | [An AI agent to create faceless YouTube videos](../../templates/content-creation/2875-an-ai-agent-to-create-faceless-youtube-videos/) | 🎬 Content Creation & Video | 521 |
+| 87 | [Audit & generate JSON-LD schema markup for SEO with GPT-4.1-mini + Gmail](../../templates/market-research/3980-audit-generate-json-ld-schema-markup-for-seo-with-gpt-41-mini-gmail/) | 📊 Market Research & Insights | 514 |
+| 88 | [Trustpilot review sentiment analysis with OpenAI & Bright Data to Google Sheets](../../templates/market-research/5950-trustpilot-review-sentiment-analysis-with-openai-bright-data-to-google-sheets/) | 📊 Market Research & Insights | 494 |
+| 89 | [Stock fundamental analysis & AI-powered reports with Mistral and AlphaVantage](../../templates/crypto-trading/5710-stock-fundamental-analysis-ai-powered-reports-with-mistral-and-alphavantage/) | 📈 Crypto Trading & Stock Market | 468 |
+| 90 | [Monitor customer churn indicators with Bright Data MCP and OpenAI](../../templates/crm/5965-monitor-customer-churn-indicators-with-bright-data-mcp-and-openai/) | 🤝 CRM & Sales Operations | 432 |
+| 91 | [Automated academic paper metadata & variable extraction with Gemini to Google Sheets](../../templates/document-extraction/9994-automated-academic-paper-metadata-variable-extraction-with-gemini-to-google-shee/) | 🔬 Document Extraction & Analysis | 431 |
+| 92 | [Generate contextual recommendations from Slack using Pinecone](../../templates/internal-wiki/6018-generate-contextual-recommendations-from-slack-using-pinecone/) | 📖 Internal Wiki & Knowledge Base | 417 |
+| 93 | [Automate sleep meditation content creation with ElevenLabs V3 & DeepSeek AI](../../templates/ai-and-llm/4762-automate-sleep-meditation-content-creation-with-elevenlabs-v3-deepseek-ai/) | ✨ AI & LLMs | 398 |
+| 94 | [Monitor e-commerce price changes with Decodo Scraper, OpenAI & Google Sheets](../../templates/market-research/10414-monitor-e-commerce-price-changes-with-decodo-scraper-openai-google-sheets/) | 📊 Market Research & Insights | 395 |
+| 95 | [Automated expense tracking with AI receipt analysis & Google Sheets](../../templates/invoice-processing/5442-automated-expense-tracking-with-ai-receipt-analysis-google-sheets/) | 🧾 Invoice Processing | 357 |
+| 96 | [Create a context-aware Slack assistant with Google Sheets, Pinecone & GPT-4o](../../templates/internal-wiki/6020-create-a-context-aware-slack-assistant-with-google-sheets-pinecone-gpt-4o/) | 📖 Internal Wiki & Knowledge Base | 322 |
+| 97 | [Bulk YouTube channel content analysis with Apify & DeepSeek AI to Google Sheets](../../templates/market-research/9869-bulk-youtube-channel-content-analysis-with-apify-deepseek-ai-to-google-sheets/) | 📊 Market Research & Insights | 267 |
+| 98 | [Automated CV anonymization for GDPR compliance with GPT-4 and Stirling PDF](../../templates/hr/11816-automated-cv-anonymization-for-gdpr-compliance-with-gpt-4-and-stirling-pdf/) | 👥 HR & Recruitment | 194 |
+| 99 | [Automated Twitter intelligence digest with Gemini 2.5 Pro to WhatsApp groups](../../templates/ai-tools/7852-automated-twitter-intelligence-digest-with-gemini-25-pro-to-whatsapp-groups/) | 🎯 AI Summarization & Classification | 190 |
+| 100 | [Automate Shopify product CSV from images using Gemini, GPT-4o, Google Drive & Sheets](../../templates/content-creation/12120-automate-shopify-product-csv-from-images-using-gemini-gpt-4o-google-drive-sheets/) | 🎬 Content Creation & Video | 182 |
+| 101 | [Generate Shopify collection blog posts with Perplexity, Gemini and Google Sheets](../../templates/content-creation/12694-generate-shopify-collection-blog-posts-with-perplexity-gemini-and-google-sheets/) | 🎬 Content Creation & Video | 130 |
+| 102 | [Synchronize Slack status updates with Pinecone, Google Sheets & GPT-4o](../../templates/document-extraction/6019-synchronize-slack-status-updates-with-pinecone-google-sheets-gpt-4o/) | 🔬 Document Extraction & Analysis | 97 |
+| 103 | [Curate and generate an AI newsletter from RSS feeds with OpenAI and Slack](../../templates/content-creation/12533-curate-and-generate-an-ai-newsletter-from-rss-feeds-with-openai-and-slack/) | 🎬 Content Creation & Video | 91 |
+| 104 | [Adaptive email auto-responder with GPT-4, RAG and human feedback loop](../../templates/ticket-management/8802-adaptive-email-auto-responder-with-gpt-4-rag-and-human-feedback-loop/) | 🎫 Ticket Management & Triage | 80 |
+| 105 | [Interactive structured prompt builder with GPT-4.1-mini and guided questions](../../templates/content-creation/11361-interactive-structured-prompt-builder-with-gpt-41-mini-and-guided-questions/) | 🎬 Content Creation & Video | 35 |
+| 106 | [Turn Telegram into an AI assistant with OpenAI voice, memory and tools](../../templates/personal-productivity/13748-turn-telegram-into-an-ai-assistant-with-openai-voice-memory-and-tools/) | ⚡ Personal Productivity | 32 |
+| 107 | [Generate workflow documentation and node names with GPT‑4.1‑mini](../../templates/document-extraction/13768-generate-workflow-documentation-and-node-names-with-gpt41mini/) | 🔬 Document Extraction & Analysis | 0 |
+
+---
+
+📥 **How to use**: Download any `workflow.json` file and import it into n8n via `Workflow menu → Import from File`.

@@ -1,0 +1,552 @@
+{
+  "nodes": [
+    {
+      "id": "c239871e-9ce0-40a1-b1b1-cd4bdf13051d",
+      "name": "Unstructured Extract",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        940,
+        -80
+      ],
+      "parameters": {
+        "url": "http://unstructured:8000/general/v0/general",
+        "method": "POST",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "strategy",
+              "value": "fast"
+            },
+            {
+              "name": "languages",
+              "value": "[\"eng\"]"
+            },
+            {
+              "name": "files",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "chunking_strategy",
+              "value": "by_title"
+            },
+            {
+              "name": "max_characters",
+              "value": "3000"
+            },
+            {
+              "name": "new_after_n_chars",
+              "value": "1800"
+            },
+            {
+              "name": "combine_under_n_chars",
+              "value": "1200"
+            },
+            {
+              "name": "overlap",
+              "value": "300"
+            },
+            {
+              "name": "include_orig_elements",
+              "value": "false"
+            },
+            {
+              "name": "unique_element_ids",
+              "value": "true"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4
+    },
+    {
+      "id": "b3eeb274-649c-46c1-979d-88dadfa60817",
+      "name": "Map Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1160,
+        -80
+      ],
+      "parameters": {
+        "jsCode": "// --- Helpers ---------------------------------------------------------------\n\n/** Extract an array of Unstructured elements from various possible shapes */\nfunction extractElements(obj) {\n  if (!obj || typeof obj !== \"object\") return [];\n  // Some HTTP Request nodes return data under json.body / json.response / json.data\n  const candidates = [obj, obj.body, obj.response, obj.data];\n  for (const c of candidates) {\n    if (Array.isArray(c)) return c;\n  }\n  // Single element fallback: an object with .type and .text\n  if (obj.type && typeof obj.text === \"string\") return [obj];\n  return [];\n}\n\n// --- Main ------------------------------------------------------------------\n\nconst rawItems = $input.all();\n\nlet elements = [];\nfor (const item of rawItems) {\n  const base = item?.json ?? {};\n  const found = extractElements(base);\n  if (found.length === 0) {\n    // Extra fallbacks: sometimes APIs return { result: [...] } or { elements: [...] }\n    const fallback =\n      (Array.isArray(base?.result) && base.result) ||\n      (Array.isArray(base?.elements) && base.elements) ||\n      [];\n    elements.push(...fallback);\n  } else {\n    elements.push(...found);\n  }\n}\n\n// Defensive flatten & null filtering\nelements = elements.flat().filter(Boolean);\n\n// Transform Unstructured elements -> Documents\nconst docs = [];\nfor (const element of elements) {\n  const txt = (element?.text ?? \"\").trim();\n  if (!txt) continue; // skip empty strings only\n\n  const md = element?.metadata || {};\n  // Remove very heavy fields that shouldn't be indexed\n  if (\"orig_elements\" in md) delete md.orig_elements;\n\n  docs.push({\n    element_id: element.element_id,\n    type: element.type,\n    text: txt,\n    filename: md.filename,\n    page_number: md.page_number\n  });\n}\n\n// Emit one item per document for the Default Data Loader\nreturn docs.map(d => ({ json: d }));"
+      },
+      "typeVersion": 2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "cc926be9-fd29-4f12-abe9-852ae5075bc4",
+      "name": "HTTP OpenAI Embeddings",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1600,
+        -80
+      ],
+      "parameters": {
+        "url": "https://api.openai.com/v1/embeddings",
+        "method": "POST",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendBody": true,
+        "authentication": "predefinedCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "text-embedding-3-small"
+            },
+            {
+              "name": "input",
+              "value": "={{ $json.texts }}"
+            }
+          ]
+        },
+        "nodeCredentialType": "openAiApi"
+      },
+      "executeOnce": false,
+      "typeVersion": 4,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "b0217a06-9ef1-4e33-aa02-5c1a2ff5307d",
+      "name": "Pack",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1380,
+        -80
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (!items.length) {\n  return [{ json: { texts: [], metas: [] } }];\n}\n\nreturn [{\n  json: {\n    texts: items.map(i => i.json.text ?? ''),\n    metas: items.map(i => {\n      const meta = i.json || {};\n      return meta;\n    }),\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cd7aed40-4265-4c52-b071-af9a93b03f0c",
+      "name": "Re-expand",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1820,
+        -80
+      ],
+      "parameters": {
+        "jsCode": "const embsObj = $json;\nconst embsArr = embsObj?.data || [];\n\nlet metas = embsObj?.metas;\nif (!Array.isArray(metas)) {\n  metas = $item(0).$node[\"Pack\"]?.json?.metas;\n}\nif (!Array.isArray(metas)) metas = [];\n\nconst n = Math.min(embsArr.length, metas.length);\nconst out = [];\n\nfor (let i = 0; i < n; i++) {\n  const m = metas[i] || {};\n  const emb = embsArr[i]?.embedding || [];\n\n  out.push({\n    json: {\n      element_id: m.element_id,\n      type: m.type,\n      filename: m.filename,\n      page_number: m.page_number,\n      text: m.text,\n      embedding: emb\n    }\n  });\n}\n\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "3c12d55e-b805-4fce-b557-eb073bedafcb",
+      "name": "Pinecone Upsert",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2260,
+        -80
+      ],
+      "parameters": {
+        "url": "=https://test.pinecone.io/vectors/upsert",
+        "method": "POST",
+        "options": {
+          "response": {}
+        },
+        "sendBody": true,
+        "authentication": "predefinedCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "namespace",
+              "value": "default"
+            },
+            {
+              "name": "vectors",
+              "value": "={{ $input.all().map(i => ({ id: i.json.id, values: i.json.values, metadata: i.json.metadata })) }}"
+            }
+          ]
+        },
+        "nodeCredentialType": "pineconeApi"
+      },
+      "typeVersion": 4
+    },
+    {
+      "id": "e125a7b5-0432-4288-8ba0-3f9c4f599088",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1040,
+        180
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 614,
+        "height": 667,
+        "content": "## Chat with file"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "87120e99-26d3-499a-b7fa-9bbbca9b2f54",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "position": [
+        880,
+        280
+      ],
+      "webhookId": "dec328cc-f47e-4727-b1c5-7370be86a958",
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "8a69a9a2-f625-43b4-a6e8-d482c035e5a7",
+      "name": "Question & Answer",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1120,
+        280
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "761e0a3a-7df0-4bf8-b3d3-83f91bbd2ba5",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1100,
+        500
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "7c812119-60b0-4ebe-aaaa-7b296ff1c0bc",
+      "name": "Pinecone Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "position": [
+        1340,
+        500
+      ],
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "topK": 5,
+        "options": {
+          "pineconeNamespace": "default"
+        },
+        "toolName": "ai_paper",
+        "pineconeIndex": {
+          "__rl": true,
+          "mode": "id",
+          "value": "test"
+        },
+        "toolDescription": "Call this tool to retrieve facts from the AI article"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ada50c98-aa1f-4e62-b5e8-28f7f9c13ee9",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "position": [
+        1420,
+        700
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "cc354270-cfae-4cf7-957a-216c580a871e",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        1220,
+        500
+      ],
+      "parameters": {},
+      "typeVersion": 1.3
+    },
+    {
+      "id": "4c9f9191-caba-4a11-bfcb-fc9259bc8943",
+      "name": "Prepare Data for Upsert",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2040,
+        -80
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1567a322-058c-4145-bb80-52157c1a728b",
+              "name": "id",
+              "type": "string",
+              "value": "={{ $json.element_id }}"
+            },
+            {
+              "id": "06feabfb-fac2-4b34-92d7-c86d02174ec6",
+              "name": "=values",
+              "type": "array",
+              "value": "={{ $json.embedding }}"
+            },
+            {
+              "id": "6f4da657-2332-41f1-8fb4-70cf12791e08",
+              "name": "metadata",
+              "type": "object",
+              "value": "={{ {\n  element_id: $json.element_id,\n  type: $json.type,\n  filename: $json.filename,\n  page: $json.page_number,\n  text: $json.text\n} }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "34f487ca-ba5f-432d-a538-ad09d59f05ee",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        320,
+        -180
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 2180,
+        "height": 300,
+        "content": "## Load data into Pinecone database"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "7ea68f94-e6dd-4a19-a601-5b202fd42574",
+      "name": "Google Drive Download",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        720,
+        -80
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{$json[\"id\"]}}"
+        },
+        "options": {},
+        "operation": "download"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "334a60c7-133f-4d32-b4f5-c2e914191ede",
+      "name": "Google Drive Trigger",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        500,
+        -80
+      ],
+      "parameters": {
+        "event": "fileCreated",
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "mode": "list",
+          "value": "15EtBxkQ5kDWr3ky1kTPMwjjUz3DqWiqH",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/15EtBxkQ5kDWr3ky1kTPMwjjUz3DqWiqH",
+          "cachedResultName": "wiki"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0b30e8cd-6fea-4d00-bc89-5e6a38f6a7bb",
+      "name": "Sticky \u2014 Template Overview (Global)",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -320,
+        -180
+      ],
+      "parameters": {
+        "width": 560,
+        "height": 600,
+        "content": "## Try it out!\nThis n8n template monitors a Google Drive folder, converts PDF documents into clean text chunks with Unstructured, generates OpenAI embeddings and upserts vectors into Pinecone.\n\n## How it works\n1) Google Drive Trigger detects new files in a selected folder and downloads them.\n2) The files are sent to Unstructured where they are split into smaller pieces (chunks).\n3) The chunks are prepared to be sent to OpenAI where they are converted into vectors (embeddings).\n4) The embeddings are recombined with their original data and the payload is prepared for upsert into the Pinecone index.\n\n## Set up steps\n1) In Pinecone, create an index with 1536 dimensions and configure it for `text-embedding-3-small`.\n2) Copy the host url and paste it on the 'Pinecone Upsert' node. It should look something like this: https://{your-index-name}.pinecone.io/vectors/upsert.\n3) Add Google Drive, OpenAI and Pinecone credentials in n8n.\n4) Populate Pinecone database by clicking the 'Test workflow' button or by uploading a file into a Google Drive folder.\n5) Click the 'Open chat' button and ask a question related to the file's information."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Pack": {
+      "main": [
+        [
+          {
+            "node": "HTTP OpenAI Embeddings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Data": {
+      "main": [
+        [
+          {
+            "node": "Pack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-expand": {
+      "main": [
+        [
+          {
+            "node": "Prepare Data for Upsert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Question & Answer",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Question & Answer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Drive Download",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unstructured Extract": {
+      "main": [
+        [
+          {
+            "node": "Map Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive Download": {
+      "main": [
+        [
+          {
+            "node": "Unstructured Extract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "Question & Answer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP OpenAI Embeddings": {
+      "main": [
+        [
+          {
+            "node": "Re-expand",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data for Upsert": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Upsert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Question & Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

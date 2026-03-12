@@ -1,0 +1,601 @@
+{
+  "id": "hKrx6Vbl4FlVrO0G",
+  "meta": {
+    "instanceId": "c2650793f644091dc80fb900fe63448ad1f4b774008de9608064d67294f8307c"
+  },
+  "name": "Decodo Instant Shopping Insights - Amazon Product Recommender",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "27d87950-96a2-4fe5-9e42-ca1106a93831",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        752,
+        528
+      ],
+      "webhookId": "3c2e5166-ae50-4765-9e90-b6d9dc691e9a",
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "credential-id",
+          "name": "telegramApi Credential"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "f150d08d-0690-4980-9288-2b5ae06e61f4",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "position": [
+        768,
+        1024
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "624ba616-679c-4ede-822f-a2f83cc6a146",
+      "name": "Extract Chat & Query",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1536,
+        480
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "97558f42-95e0-4069-a0dd-797082ab30ca",
+              "name": "chatId",
+              "type": "string",
+              "value": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+            },
+            {
+              "id": "f5221be7-a62c-43dd-8753-72db6062d98b",
+              "name": "message",
+              "type": "string",
+              "value": "={{ $json.output.keyword.replaceAll(' ','+') }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "2f2cfc04-08d9-49f0-aa25-decbcef3db59",
+      "name": "Decodo API",
+      "type": "@decodo/n8n-nodes-decodo.decodo",
+      "position": [
+        1808,
+        480
+      ],
+      "parameters": {
+        "url": "=https://www.amazon.com/s?k={{ $json.message }}",
+        "operation": "amazon"
+      },
+      "credentials": {
+        "decodoApi": {
+          "id": "credential-id",
+          "name": "decodoApi Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "252f89f4-54a2-4ea1-9ed4-92773c3d9b1b",
+      "name": "Process Product Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2000,
+        480
+      ],
+      "parameters": {
+        "jsCode": "// Enhanced: Extract, Clean, and Format for AI with Sales Volume + CLEAN URLS\nconst inputData = $input.all();\nconst products = [];\n\n// Helper: Clean Amazon URL - remove UTM parameters\nfunction cleanAmazonURL(url) {\n  if (!url) return '';\n  \n  // Remove everything after \"?\" (UTM parameters)\n  const cleanUrl = url.split('?')[0];\n  \n  // Extract ASIN for shortest possible URL\n  const asinMatch = cleanUrl.match(/\\/dp\\/([A-Z0-9]{10})/i) || \n                    cleanUrl.match(/\\/gp\\/product\\/([A-Z0-9]{10})/i) ||\n                    cleanUrl.match(/\\/([A-Z0-9]{10})\\//i);\n  \n  if (asinMatch) {\n    return `https://www.amazon.com/dp/${asinMatch[1]}`;\n  }\n  \n  // If no ASIN found, return cleaned URL without params\n  return cleanUrl.startsWith('http') ? cleanUrl : `https://www.amazon.com${cleanUrl}`;\n}\n\n// Helper function to parse sales volume into numeric value for sorting\nfunction parseSalesVolume(salesText) {\n  if (!salesText) return 0;\n  \n  const text = salesText.toLowerCase();\n  \n  // Extract number\n  const match = text.match(/(\\d+\\.?\\d*)([km]?)\\+?/i);\n  if (!match) return 0;\n  \n  let value = parseFloat(match[1]);\n  const multiplier = match[2];\n  \n  // Apply multiplier\n  if (multiplier === 'k') value *= 1000;\n  if (multiplier === 'm') value *= 1000000;\n  \n  return Math.floor(value);\n}\n\n// Helper function to format sales volume for display\nfunction formatSalesVolume(salesText) {\n  if (!salesText) return 'N/A';\n  return salesText.replace(/bought in past month/gi, '').trim();\n}\n\n// Calculate product score (for smart ranking)\nfunction calculateProductScore(product, salesNumeric) {\n  const rating = product.rating || 0;\n  const reviews = product.reviews_count || 0;\n  const discount = product.price_strikethrough ? \n    ((product.price_strikethrough - product.price) / product.price_strikethrough) : 0;\n  \n  // Weighted scoring\n  const ratingScore = rating * 20; // Max 100\n  const reviewScore = Math.min(reviews / 100, 50); // Max 50\n  const salesScore = Math.min(salesNumeric / 1000, 30); // Max 30\n  const discountScore = discount * 20; // Max 20\n  \n  // Bonus for badges\n  const badgeBonus = (product.is_amazons_choice ? 10 : 0) + \n                     (product.best_seller ? 10 : 0);\n  \n  return ratingScore + reviewScore + salesScore + discountScore + badgeBonus;\n}\n\n// Extract all products\nfor (const item of inputData) {\n  const results = item.json.results?.[0]?.content?.results?.results;\n  if (!results) continue;\n  \n  // Combine paid and organic products\n  const allProducts = [\n    ...(results.paid || []),\n    ...(results.organic || []),\n    ...(results.amazons_choices || [])\n  ];\n  \n  allProducts.forEach(p => {\n    // Skip if missing critical data\n    if (!p.title || !p.price) return;\n    \n    const salesVolume = parseSalesVolume(p.sales_volume);\n    \n    products.push({\n      title: p.title,\n      price: p.price,\n      original_price: p.price_strikethrough || null,\n      rating: p.rating || 0,\n      reviews: p.reviews_count || 0,\n      \n      // Sales data\n      sales_volume_raw: p.sales_volume || 'N/A',\n      sales_volume_display: formatSalesVolume(p.sales_volume),\n      sales_volume_numeric: salesVolume,\n      \n      // Discount calculation\n      discount: p.price_strikethrough ? \n        Math.round(((p.price_strikethrough - p.price) / p.price_strikethrough) * 100) : 0,\n      savings: p.price_strikethrough ? \n        (p.price_strikethrough - p.price).toFixed(2) : 0,\n      \n      // CLEAN URL - remove UTM parameters and extract ASIN\n      url: cleanAmazonURL(p.url?.startsWith('http') ? p.url : `https://www.amazon.com${p.url}`),\n      \n      // Badges\n      is_amazons_choice: p.is_amazons_choice || false,\n      is_bestseller: p.best_seller || false,\n      is_sponsored: p.is_sponsored || false,\n      \n      // Image\n      image: p.url_image || null,\n      \n      // Manufacturer\n      brand: p.manufacturer || 'Generic',\n      \n      // Shipping\n      shipping: p.shipping_information || 'See Amazon',\n      \n      // Calculated score for ranking (weighted)\n      score: calculateProductScore(p, salesVolume)\n    });\n  });\n}\n\n// Remove duplicates (same ASIN)\nconst uniqueProducts = products.reduce((acc, product) => {\n  const exists = acc.find(p => p.title === product.title && p.price === product.price);\n  if (!exists) acc.push(product);\n  return acc;\n}, []);\n\n// Sort by calculated score (best overall value)\nuniqueProducts.sort((a, b) => b.score - a.score);\n\n// Get query\nconst query = $('Extract Chat & Query').first().json.message.replaceAll('+', ' ');\n\n// Calculate statistics\nconst avgPrice = uniqueProducts.reduce((sum, p) => sum + p.price, 0) / uniqueProducts.length;\nconst avgRating = uniqueProducts.reduce((sum, p) => sum + p.rating, 0) / uniqueProducts.length;\nconst totalSales = uniqueProducts.reduce((sum, p) => sum + p.sales_volume_numeric, 0);\n\n// Create AI-ready output with enhanced categorization\nreturn [{\n  json: {\n    query: query,\n    total: uniqueProducts.length,\n    \n    // Statistics\n    stats: {\n      avg_price: avgPrice.toFixed(2),\n      min_price: Math.min(...uniqueProducts.map(p => p.price)),\n      max_price: Math.max(...uniqueProducts.map(p => p.price)),\n      avg_rating: avgRating.toFixed(2),\n      total_reviews: uniqueProducts.reduce((sum, p) => sum + p.reviews, 0),\n      total_sales: totalSales\n    },\n    \n    // Top picks (by overall score)\n    top_picks: uniqueProducts.slice(0, 10).map(p => ({\n      title: p.title,\n      price: p.price,\n      rating: p.rating,\n      reviews: p.reviews,\n      sales: p.sales_volume_display,\n      discount: p.discount > 0 ? `${p.discount}% off` : null,\n      badges: {\n        choice: p.is_amazons_choice,\n        bestseller: p.is_bestseller\n      },\n      url: p.url  // Already cleaned by cleanAmazonURL function\n    })),\n    \n    // Budget options (under $30, sorted by rating)\n    budget_options: uniqueProducts\n      .filter(p => p.price < 30)\n      .sort((a, b) => b.rating - a.rating || b.reviews - a.reviews)\n      .slice(0, 5)\n      .map(p => ({\n        title: p.title,\n        price: p.price,\n        rating: p.rating,\n        reviews: p.reviews,\n        sales: p.sales_volume_display,\n        url: p.url\n      })),\n    \n    // Premium options ($50+, sorted by rating)\n    premium_options: uniqueProducts\n      .filter(p => p.price >= 50)\n      .sort((a, b) => b.rating - a.rating)\n      .slice(0, 5)\n      .map(p => ({\n        title: p.title,\n        price: p.price,\n        rating: p.rating,\n        reviews: p.reviews,\n        sales: p.sales_volume_display,\n        url: p.url\n      })),\n    \n    // Best rated (4.5+ stars, sorted by reviews)\n    best_rated: uniqueProducts\n      .filter(p => p.rating >= 4.5)\n      .sort((a, b) => b.reviews - a.reviews)\n      .slice(0, 5)\n      .map(p => ({\n        title: p.title,\n        price: p.price,\n        rating: p.rating,\n        reviews: p.reviews,\n        sales: p.sales_volume_display,\n        url: p.url\n      })),\n    \n    // Best value (highest discount with good rating)\n    best_value: uniqueProducts\n      .filter(p => p.discount > 0 && p.rating >= 4.0)\n      .sort((a, b) => b.discount - a.discount)\n      .slice(0, 5)\n      .map(p => ({\n        title: p.title,\n        price: p.price,\n        original_price: p.original_price,\n        discount: `${p.discount}%`,\n        savings: `$${p.savings}`,\n        rating: p.rating,\n        reviews: p.reviews,\n        url: p.url\n      })),\n    \n    // Most popular (by sales volume)\n    most_popular: uniqueProducts\n      .filter(p => p.sales_volume_numeric > 0)\n      .sort((a, b) => b.sales_volume_numeric - a.sales_volume_numeric)\n      .slice(0, 5)\n      .map(p => ({\n        title: p.title,\n        price: p.price,\n        rating: p.rating,\n        sales: p.sales_volume_display,\n        sales_count: p.sales_volume_numeric,\n        url: p.url\n      })),\n    \n    // Amazon's Choice products\n    amazons_choice: uniqueProducts\n      .filter(p => p.is_amazons_choice)\n      .slice(0, 3)\n      .map(p => ({\n        title: p.title,\n        price: p.price,\n        rating: p.rating,\n        reviews: p.reviews,\n        sales: p.sales_volume_display,\n        url: p.url\n      })),\n    \n    // All products (for reference)\n    all_products: uniqueProducts\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ad548326-555c-41e0-b406-5a6cce340b84",
+      "name": "Generate Recommendations",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        2224,
+        480
+      ],
+      "parameters": {
+        "text": "=You are a product recommendation expert analyzing {{ $json.query }}.\n\nAVAILABLE DATA:\n- Total Products: {{ $json.total }}\n- Price Range: ${{ $json.stats.min_price }} - ${{ $json.stats.max_price }} (avg: ${{ $json.stats.avg_price }})\n- Average Rating: {{ $json.stats.avg_rating }}/5\n- Total Reviews: {{ $json.stats.total_reviews }}\n\nCATEGORIES:\n- Top Picks: {{ $json.top_picks.length }}\n- Budget (<$30): {{ $json.budget_options.length }}\n- Premium ($50+): {{ $json.premium_options.length }}\n- Best Value: {{ $json.best_value.length }}\n- Most Popular: {{ $json.most_popular.length }}\n\nCRITICAL RULES:\n1. MAX 2500 characters\n2. Use TELEGRAM MARKDOWN (legacy):\n   - *bold* for headers only\n   - No special escaping needed\n   - Plain URLs on new lines\n3. SHORTEN product names to max 50 chars\n4. Each product MUST include its Amazon URL\n5. Be DYNAMIC - adapt language to product type\n6. VARIED symbols: \ud83d\udcb5\ud83d\udcca\ud83d\udd25\ud83d\udcb0\u26a1\ud83c\udf92\ud83d\udcf1\ud83c\udf4e\u2713\n\nOUTPUT FORMAT:\n\n*\ud83c\udfc6 TOP 3 PICKS*\n\n*1. [Short Product Name]*\n\ud83d\udcb5 $[XX] | \ud83d\udcca [X.X]/5 ([XX]K reviews) | \ud83d\udd25 [Sales]\n\u2713 [Key unique feature in 5-8 words]\n\u2713 [Value reason in 10-15 words]\n\ud83d\udd17 [Full Amazon URL]\n\n*2. [Short Product Name]*\n\ud83d\udcb5 $[XX] | \ud83d\udcca [X.X]/5 ([XX]K reviews) | \ud83d\udd25 [Sales]\n\u2713 [Key unique feature in 5-8 words]\n\u2713 [Value reason in 10-15 words]\n\ud83d\udd17 [Full Amazon URL]\n\n*3. [Short Product Name]*\n\ud83d\udcb5 $[XX] | \ud83d\udcca [X.X]/5 ([XX]K reviews) | \ud83d\udd25 [Sales]\n\u2713 [Key unique feature in 5-8 words]\n\u2713 [Value reason in 10-15 words]\n\ud83d\udd17 [Full Amazon URL]\n\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n*\ud83d\udcb0 BEST BUDGET*\n[Product Name - shortened]\n\ud83d\udcb5 $[XX] (was $[Original]) | \ud83d\udcca [X.X]/5 | \ud83d\udcb0 Save $[XX]\nPerfect for: [User type in 8-12 words]\nTrade-off: [What's missing vs premium in 6-10 words]\n\ud83d\udd17 [Full Amazon URL]\n\n*\ud83d\udc8e BEST PREMIUM*\n[Product Name - shortened]\n\ud83d\udcb5 $[XX] | \ud83d\udcca [X.X]/5 ([XX] reviews)\nWorth it: [Premium features in 12-15 words]\nBest for: [Specific user scenario in 8-10 words]\n\ud83d\udd17 [Full Amazon URL]\n\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n*\ud83d\udcca QUICK STATS*\n\n\ud83d\udcb8 Cheapest: [Name] - $[XX]\n\u2b50 Top Rated: [Name] - [X.X]/5\n\ud83d\udd25 Most Popular: [Name] - [Sales]\n\ud83d\udcb0 Best Deal: [Name] - [XX]% off\n\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n*\ud83c\udfaf PICK BY NEED*\n\n\u26a1 [Primary feature need] \u2192 [Product]\n\ud83d\udd17 [URL]\n\n\ud83c\udf92 [Secondary feature need] \u2192 [Product]\n\ud83d\udd17 [URL]\n\n\ud83d\udcf1 [Third feature need] \u2192 [Product]\n\ud83d\udd17 [URL]\n\n\ud83d\udcb5 Best Value \u2192 [Product]\n\ud83d\udd17 [URL]\n\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nDYNAMIC LANGUAGE RULES:\n- For electronics: mention wattage, ports, compatibility\n- For accessories: mention material, compatibility, durability\n- For apparel: mention fit, material, style\n- For home goods: mention size, material, features\n- Adapt \"need\" categories to product type\n- Use product-specific terminology\n\nFORMATTING CHECKLIST:\n\u2713 Product names shortened to 50 chars max\n\u2713 Every product has Amazon URL with \ud83d\udd17\n\u2713 Use *bold* only for section headers\n\u2713 Plain text for everything else\n\u2713 URLs on separate lines after product\n\u2713 Real data from JSON (prices, ratings, reviews, sales)\n\u2713 Specific features, not generic \"high quality\"\n\u2713 Total output under 2500 characters\n\nEXTRACT FROM DATA:\n- Use {{ $json.top_picks[0].title }} for product names\n- Use {{ $json.top_picks[0].url }} for Amazon links\n- Use {{ $json.top_picks[0].price }} for prices\n- Use {{ $json.top_picks[0].rating }} for ratings\n- Use {{ $json.top_picks[0].reviews }} for review counts\n- Use {{ $json.top_picks[0].sales }} for sales volume\n\nStart writing now. Be concise, specific, and dynamic!",
+        "batching": {},
+        "promptType": "define"
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "50f0c091-0af8-4256-8431-795e9cc17ce6",
+      "name": "Send Final Response",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        2576,
+        480
+      ],
+      "webhookId": "2cb3ea86-e1ec-430c-9267-13a5a79eaf40",
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "chatId": "={{ $('Extract Chat & Query').item.json.chatId }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "credential-id",
+          "name": "telegramApi Credential"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "9208513e-437e-4274-8715-87cb477323cf",
+      "name": "Validate Product Input",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        928,
+        528
+      ],
+      "parameters": {
+        "text": "={{ $json.message.text }}",
+        "batching": {},
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are a product validator.  \nCheck if the user input contains a valid product name.  \n- If the input is ambiguous or includes extra descriptive words (e.g. color, speed, or adjectives), extract only the **core product name**.  \n- If there is no identifiable product, mark it as invalid.  \n\nExample:  \nInput: \"I want a blue fast charging iPhone 11 256GB\"  \nOutput:  \n{\n  \"keyword\": \"iPhone 11 256GB\",\n  \"status\": \"VALID\"\n}\n\nExample:  \nInput: \"I want something nice\"  \nOutput:  \n{\n  \"keyword\": \"\",\n  \"status\": \"INVALID\"\n}\n\nReturn the result **exactly** in this JSON structure:\n{\n  \"keyword\": \"<product_name_or_empty>\",\n  \"status\": \"VALID\" or \"INVALID\"\n}\n"
+            }
+          ]
+        },
+        "promptType": "define",
+        "hasOutputParser": true
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "02a37df9-d6ff-434e-843d-933ad2bdd6c5",
+      "name": "Parse Validation Output",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        1072,
+        688
+      ],
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"keyword\": \"<product_name_or_empty>\",\n  \"status\": \"VALID or INVALID\"\n}"
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "116fcd7b-6fa1-44e4-bb30-05d6a45a1ce1",
+      "name": "Check Product Validity",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1280,
+        528
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "1753216c-c3c5-4617-a940-f5049cf2679e",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.output.status }}",
+              "rightValue": "=VALID"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "16886532-c324-4c53-9341-6d3484ca2ec9",
+      "name": "Send Invalid Message",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1536,
+        672
+      ],
+      "webhookId": "2cb3ea86-e1ec-430c-9267-13a5a79eaf40",
+      "parameters": {
+        "text": "=no product detected on your input, please try again",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "credential-id",
+          "name": "telegramApi Credential"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "4c71756c-42d1-436b-8583-2aa39e20376d",
+      "name": "Send Processing Status",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1168,
+        352
+      ],
+      "webhookId": "2cb3ea86-e1ec-430c-9267-13a5a79eaf40",
+      "parameters": {
+        "text": "=Processing your input...",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "credential-id",
+          "name": "telegramApi Credential"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "f913fe74-be48-4a9a-8f04-0f7cf536f5c3",
+      "name": "Send Valid Confirmation",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1536,
+        288
+      ],
+      "webhookId": "2cb3ea86-e1ec-430c-9267-13a5a79eaf40",
+      "parameters": {
+        "text": "=Input <b>Valid</b> | keyword: <b>{{ $json.output.keyword }}</b>\n\n<i>processing your request...</i>",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "credential-id",
+          "name": "telegramApi Credential"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "636f1157-1f2a-44d8-b6c7-8e6cb4aea604",
+      "name": "Gemini 2.5 Flash",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        2368,
+        640
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "credential-id",
+          "name": "googlePalmApi Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "07556ea8-f88a-4720-84b2-cfbc651c9a05",
+      "name": "Give Delay",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        976,
+        352
+      ],
+      "webhookId": "02c14419-de38-4993-bc63-8d68dc734828",
+      "parameters": {
+        "amount": 2
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "fd75b467-fc1f-4389-a169-4dee1e67c218",
+      "name": "Format Error Notification",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        992,
+        1024
+      ],
+      "parameters": {
+        "jsCode": "// Optimized error handler - clean & informative\nconst errorData = $input.first().json;\n\nfunction getNestedValue(obj, path, defaultValue = 'Unknown') {\n  return path.split('.').reduce((curr, prop) => \n    curr?.[prop], obj) || defaultValue;\n}\n\nconst workflowName = getNestedValue(errorData, 'workflow.name', 'Unknown Workflow');\nconst nodeName = getNestedValue(errorData, 'execution.error.node.name', 'Unknown Node');\nconst errorMessage = getNestedValue(errorData, 'execution.error.message', 'No error message');\nconst timestamp = getNestedValue(errorData, 'execution.startedAt', new Date().toISOString());\nconst executionId = getNestedValue(errorData, 'execution.id', 'Unknown');\n\n// Tangkap error details\nconst errorObj = errorData.execution?.error || {};\nconst errorDescription = errorObj.description || '';\nconst errorHttpCode = errorObj.httpCode || '';\n\n// Stack trace - ambil HANYA baris pertama yang paling penting\nconst errorStack = errorObj.stack || '';\nconst mainError = errorStack.split('\\n')[0] || '';\n\n// Format detail yang clean\nlet errorDetails = [];\nif (errorDescription && errorDescription !== errorMessage) {\n  errorDetails.push(errorDescription);\n}\nif (errorHttpCode) {\n  errorDetails.push(`HTTP ${errorHttpCode}`);\n}\n\nconst detailText = errorDetails.length > 0 \n  ? errorDetails.join(' | ') \n  : 'No additional details';\n\n// Main error dari stack (tanpa \"NodeApiError: \" prefix)\nconst cleanMainError = mainError.replace(/^(NodeApiError|Error):\\s*/, '').trim();\n\n// Build message - COMPACT VERSION\nconst message = `\ud83d\udea8 <b>WORKFLOW ERROR</b>\\n\\n` +\n  `\ud83d\udccb <b>${workflowName}</b>\\n` +\n  `\u2699\ufe0f Node: <code>${nodeName}</code>\\n\\n` +\n  `\u274c <b>${errorMessage}</b>\\n` +\n  `\ud83d\udca1 ${detailText}\\n\\n` +\n  `\ud83d\udd50 ${new Date(timestamp).toLocaleString('id-ID', { \n    day: '2-digit', \n    month: 'short', \n    hour: '2-digit', \n    minute: '2-digit' \n  })}\\n` +\n  `\ud83d\udd17 Exec: <code>${executionId}</code>`;\n\nreturn {\n  json: {\n    message: message\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "2cca63a2-4999-48c6-8f7b-c8871a8a9ccb",
+      "name": "Notify Admin",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1216,
+        1024
+      ],
+      "webhookId": "13c616bf-a3ad-4035-998a-1dfe6021b89f",
+      "parameters": {
+        "text": "={{ $json.message }}",
+        "chatId": "YOUR-CHAT-ID",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "credential-id",
+          "name": "telegramApi Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f6a35c5d-e285-43e2-af4a-62d890977c1c",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1440,
+        896
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 496,
+        "height": 288,
+        "content": "## DECODO CREDENTIALS SETUP\n\n1. Go to: https://decodo.com\n2. Sign up / Login\n3. Navigate to: **Dashboard \u2192 Scraping APIs \u2192 Web Advanced**\n4. Click: **BASIC AUTH. TOKEN** (Automated copy)\n\n**In n8n:**\n- Go to: Credentials \u2192 Add Credential\n- Search: \"Decodo\"\n- Paste API key \u2192 Save"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0b0e83e4-8a0b-4c8e-a49f-4038fddbb092",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        720,
+        896
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 688,
+        "height": 288,
+        "content": "## Error Handling\n\nCatches workflow failures, formats error details, sends Telegram alerts to admin."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ee7dadc9-d140-4d2f-8473-ce3114526735",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1760,
+        416
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 1024,
+        "height": 368,
+        "content": "## Process Data"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3d4464c7-2f04-4093-ab3d-5752cead363d",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        160,
+        240
+      ],
+      "parameters": {
+        "width": 500,
+        "height": 622,
+        "content": "## Decodo Instant Amazon Recommender\n\n### How it works\n1. User sends a product query in Telegram; an LLM validates the input and confirms a clean search keyword.\n2. The workflow calls Decodo to scrape Amazon search results for the validated query.\n3. A processing step cleans URLs, parses sales volume, removes duplicates, computes scores, and groups products into categories (top picks, budget, premium, best value).\n4. An LLM composes a Telegram-ready recommendation (top 3 picks, budget/premium highlights, quick stats, pick-by-need) following formatting rules.\n5. The workflow returns the formatted recommendation to the user; failures generate an admin alert via Telegram.\n\n### Setup\n- [ ] Connect your Telegram bot credential to the workflow\n- [ ] Add and verify your Decodo API key in n8n credentials\n- [ ] Add LLM credentials (LangChain/Gemini/OpenAI) used for validation and message generation\n- [ ] Set the Telegram webhook so the bot forwards messages to this workflow\n- [ ] Configure an admin Telegram chat ID to receive error notifications\n- [ ] (Optional) Adjust ranking thresholds or scoring logic in the product processing code to tune recommendations\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2ea0f5fe-02a5-43a8-9bc9-3f087bd3a52f",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        880,
+        256
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 544,
+        "height": 576,
+        "content": "## Validate Input"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "cf1555ce-e5cf-4e0e-a4e4-cd1beb01b5d0",
+  "connections": {
+    "Decodo API": {
+      "main": [
+        [
+          {
+            "node": "Process Product Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Give Delay": {
+      "main": [
+        [
+          {
+            "node": "Send Processing Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Error Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini 2.5 Flash": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Recommendations",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Validate Product Input",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Product Input",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Give Delay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Chat & Query": {
+      "main": [
+        [
+          {
+            "node": "Decodo API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Product Data": {
+      "main": [
+        [
+          {
+            "node": "Generate Recommendations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Product Validity": {
+      "main": [
+        [
+          {
+            "node": "Extract Chat & Query",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Valid Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Invalid Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Product Input": {
+      "main": [
+        [
+          {
+            "node": "Check Product Validity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Validation Output": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Validate Product Input",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Recommendations": {
+      "main": [
+        [
+          {
+            "node": "Send Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error Notification": {
+      "main": [
+        [
+          {
+            "node": "Notify Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,1171 @@
+{
+  "id": "U7DxutTrX9dYZsYT",
+  "meta": {
+    "instanceId": "b91e510ebae4127f953fd2f5f8d40d58ca1e71c746d4500c12ae86aad04c1502",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "AI-GROK-4 COE Price Tracker with Smart Buy/Wait Recommendations",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "432d1c6a-17ae-44a4-adce-06152589e2f1",
+      "name": "Schedule Trigger - Bi-Weekly COE Scraping",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        112,
+        464
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 20 * * 3"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "c6e3d1b9-c26d-4007-a2b2-6303b0f637c7",
+      "name": "Scrape COE Data from OneMotoring",
+      "type": "n8n-nodes-base.httpRequest",
+      "disabled": true,
+      "position": [
+        400,
+        432
+      ],
+      "parameters": {
+        "url": "https://onemotoring.lta.gov.sg/content/onemotoring/home/buying/upfront-vehicle-costs/certificate-of-entitlement--coe-.html",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "13595ddf-b04a-405a-a432-bcdc24b4d442",
+      "name": "Extract COE Price Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        608,
+        576
+      ],
+      "parameters": {
+        "jsCode": "const html = $input.item.json.data;\nconst cheerio = require('cheerio');\nconst $ = cheerio.load(html);\n\nconst categories = ['Category A', 'Category B', 'Category C', 'Category D', 'Category E'];\nconst coeData = [];\nconst biddingDate = new Date().toISOString().split('T')[0];\n\n$('table tbody tr').each((index, row) => {\n  const cells = $(row).find('td');\n  if (cells.length >= 4) {\n    const category = $(cells[0]).text().trim();\n    const quotaPremium = parseFloat($(cells[1]).text().replace(/[^0-9.]/g, ''));\n    const quotaAvailable = parseInt($(cells[2]).text().replace(/[^0-9]/g, ''));\n    const bidsReceived = parseInt($(cells[3]).text().replace(/[^0-9]/g, ''));\n    \n    if (categories.some(cat => category.includes(cat))) {\n      coeData.push({\n        biddingDate,\n        category,\n        quotaPremium,\n        quotaAvailable,\n        bidsReceived,\n        timestamp: new Date().toISOString(),\n        biddingRound: new Date().getDate() <= 15 ? 1 : 2\n      });\n    }\n  }\n});\n\nif (coeData.length === 0) {\n  throw new Error('No COE data extracted - possible website structure change');\n}\n\nreturn coeData.map(item => ({ json: item }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7230f728-2dd1-435c-a96a-e3e843eac3e4",
+      "name": "Store in Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1136,
+        576
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "category": "={{ $json.category }}",
+            "timestamp": "={{ $json.timestamp }}",
+            "biddingDate": "={{ $json.biddingDate }}",
+            "biddingRound": "={{ $json.biddingRound }}",
+            "bidsReceived": "={{ $json.bidsReceived }}",
+            "quotaPremium": "={{ $json.quotaPremium }}",
+            "quotaAvailable": "={{ $json.quotaAvailable }}"
+          },
+          "mappingMode": "defineBelow"
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "COE Historical Data"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "{{ $json.spreadsheetId }}"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "9747556f-348f-42cd-b254-80b1cf954789",
+      "name": "Retrieve Historical COE Data",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1376,
+        784
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "COE Historical Data"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.spreadsheetId }}"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "googleSheetsOAuth2Api Credential"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "8b3ef486-ec56-4eab-be32-69adfa2509ce",
+      "name": "Calculate Technical Indicators",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1584,
+        768
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst categories = ['Category A', 'Category B', 'Category C', 'Category D', 'Category E'];\n\nconst processedData = {};\n\ncategories.forEach(category => {\n  const categoryData = items.filter(item => \n    item.json.category && item.json.category.includes(category)\n  ).sort((a, b) => new Date(a.json.biddingDate) - new Date(b.json.biddingDate));\n  \n  if (categoryData.length < 4) {\n    processedData[category] = { error: 'Insufficient data' };\n    return;\n  }\n  \n  const prices = categoryData.map(item => item.json.quotaPremium);\n  const latestPrice = prices[prices.length - 1];\n  \n  const ma4 = prices.slice(-4).reduce((a, b) => a + b, 0) / 4;\n  const ma12 = prices.length >= 12 ? prices.slice(-12).reduce((a, b) => a + b, 0) / 12 : ma4;\n  const ma26 = prices.length >= 26 ? prices.slice(-26).reduce((a, b) => a + b, 0) / 26 : ma12;\n  \n  const rateOfChange = prices.length >= 5 ? ((latestPrice - prices[prices.length - 5]) / prices[prices.length - 5]) * 100 : 0;\n  \n  const variance = prices.slice(-12).reduce((sum, price) => sum + Math.pow(price - ma12, 2), 0) / Math.min(12, prices.length);\n  const volatility = Math.sqrt(variance);\n  \n  const now = new Date();\n  const month = now.getMonth() + 1;\n  const quarter = Math.ceil(month / 3);\n  const isCNYPeriod = month === 1 || month === 2;\n  const isYearEnd = month === 11 || month === 12;\n  const biddingRound = categoryData[categoryData.length - 1].json.biddingRound || 1;\n  \n  processedData[category] = {\n    latestPrice,\n    ma4,\n    ma12,\n    ma26,\n    rateOfChange,\n    volatility,\n    month,\n    quarter,\n    isCNYPeriod,\n    isYearEnd,\n    biddingRound,\n    historicalPrices: prices.slice(-26),\n    dataPoints: categoryData.length\n  };\n});\n\nreturn [{ json: processedData }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "62064423-11e3-4c12-890d-39febc727275",
+      "name": "Prepare AI Prediction Prompt",
+      "type": "n8n-nodes-base.set",
+      "disabled": true,
+      "position": [
+        1888,
+        576
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "predictionPrompt",
+              "type": "string",
+              "value": "=You are a Singapore COE market analysis expert. Analyze the following COE data and provide detailed price predictions:\n\n{{ Object.keys($json).map(category => {\n  const data = $json[category];\n  return `${category}:\n- Latest Price: $${data.latestPrice}\n- 4-week MA: $${data.ma4?.toFixed(0)}\n- 12-week MA: $${data.ma12?.toFixed(0)}\n- 26-week MA: $${data.ma26?.toFixed(0)}\n- Rate of Change: ${data.rateOfChange?.toFixed(2)}%\n- Volatility: $${data.volatility?.toFixed(0)}\n- Current Period: Q${data.quarter}, Month ${data.month}\n- CNY Period: ${data.isCNYPeriod}\n- Year-End Period: ${data.isYearEnd}\n- Historical Prices (last 26 weeks): ${data.historicalPrices?.join(', ')}`;\n}).join('\\n\\n') }}\n\nProvide:\n1. Price predictions for next 6 bidding rounds (3 months) for each category\n2. Confidence levels (High/Medium/Low) for each prediction\n3. Market trend analysis (uptrend/downtrend/consolidation)\n4. Seasonal factors impact\n5. Risk assessment\n\nFormat as JSON:\n{\n  \"predictions\": {\n    \"Category A\": [{\"round\": 1, \"predictedPrice\": 95000, \"confidence\": \"High\", \"lower\": 92000, \"upper\": 98000}, ...],\n    ...\n  },\n  \"trends\": {\"Category A\": \"uptrend\", ...},\n  \"seasonalImpact\": \"High impact expected due to...\",\n  \"riskLevel\": \"Medium\"\n}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "4fc3d93a-3ccc-40bd-bf7f-bc3f235d2f2c",
+      "name": "AI Agent - COE Analysis",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        2640,
+        544
+      ],
+      "parameters": {
+        "text": "={{ $json.predictionPrompt }}",
+        "options": {}
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "55d5e431-97e4-4094-8339-8490b48b8f0d",
+      "name": "Generate Buy Recommendations",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3200,
+        752
+      ],
+      "parameters": {
+        "jsCode": "const technicalData = $('Calculate Technical Indicators').first().json;\nconst aiPrediction = $input.first().json;\n\nconst categories = Object.keys(technicalData);\nconst recommendations = {};\n\ncategories.forEach(category => {\n  const tech = technicalData[category];\n  if (tech.error) {\n    recommendations[category] = { action: 'Insufficient Data', reasoning: tech.error };\n    return;\n  }\n  \n  let score = 50;\n  let reasoning = [];\n  \n  if (tech.latestPrice < tech.ma12) {\n    score += 15;\n    reasoning.push('Price below 12-week average (bullish signal)');\n  } else if (tech.latestPrice > tech.ma12 * 1.1) {\n    score -= 15;\n    reasoning.push('Price significantly above moving average (overheated)');\n  }\n  \n  if (tech.rateOfChange < -5) {\n    score += 20;\n    reasoning.push(`Strong downward momentum (${tech.rateOfChange.toFixed(1)}%)`);\n  } else if (tech.rateOfChange > 10) {\n    score -= 20;\n    reasoning.push(`Strong upward momentum (${tech.rateOfChange.toFixed(1)}%) - avoid buying`);\n  }\n  \n  if (tech.isCNYPeriod) {\n    score -= 10;\n    reasoning.push('CNY period typically sees higher prices');\n  }\n  \n  if (tech.isYearEnd) {\n    score -= 5;\n    reasoning.push('Year-end period - slightly elevated demand');\n  }\n  \n  if (tech.volatility > tech.ma12 * 0.15) {\n    score -= 10;\n    reasoning.push('High volatility - uncertain market conditions');\n  }\n  \n  let action, timingAdvice, potentialSavings;\n  if (score >= 70) {\n    action = 'BUY NOW';\n    timingAdvice = 'Strong buying opportunity. Market conditions favorable.';\n    potentialSavings = 0;\n  } else if (score >= 50) {\n    action = 'MONITOR CLOSELY';\n    timingAdvice = 'Market at neutral position. Consider waiting 2-4 weeks.';\n    potentialSavings = Math.round(tech.latestPrice * 0.03);\n  } else {\n    action = 'WAIT';\n    const weeksToWait = score < 30 ? 8 : 4;\n    timingAdvice = `Wait ${weeksToWait} weeks. Market showing unfavorable conditions.`;\n    potentialSavings = Math.round(tech.latestPrice * 0.08);\n  }\n  \n  recommendations[category] = {\n    action,\n    score,\n    currentPrice: tech.latestPrice,\n    timingAdvice,\n    potentialSavings,\n    reasoning: reasoning.join('; '),\n    trend: tech.rateOfChange > 5 ? 'Uptrend' : tech.rateOfChange < -5 ? 'Downtrend' : 'Consolidation',\n    volatilityLevel: tech.volatility > tech.ma12 * 0.15 ? 'High' : tech.volatility > tech.ma12 * 0.08 ? 'Medium' : 'Low'\n  };\n});\n\nconst bestCategory = Object.entries(recommendations)\n  .filter(([_, rec]) => !rec.reasoning.includes('Insufficient'))\n  .sort((a, b) => b[1].score - a[1].score)[0];\n\nreturn [{\n  json: {\n    recommendations,\n    bestCategory: bestCategory ? bestCategory[0] : 'None',\n    bestCategoryScore: bestCategory ? bestCategory[1].score : 0,\n    analysisDate: new Date().toISOString(),\n    marketOverview: {\n      averageVolatility: Object.values(recommendations)\n        .filter(r => r.volatilityLevel)\n        .reduce((sum, r) => sum + (r.volatilityLevel === 'High' ? 3 : r.volatilityLevel === 'Medium' ? 2 : 1), 0) / categories.length,\n      dominantTrend: Object.values(recommendations)\n        .filter(r => r.trend)\n        .reduce((acc, r) => {\n          acc[r.trend] = (acc[r.trend] || 0) + 1;\n          return acc;\n        }, {})\n    }\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "fe4d8755-6dab-4329-b760-9d22b9236d75",
+      "name": "Format HTML Report",
+      "type": "n8n-nodes-base.code",
+      "disabled": true,
+      "position": [
+        3728,
+        224
+      ],
+      "parameters": {
+        "jsCode": "const recommendations = $input.first().json.recommendations;\nconst bestCategory = $input.first().json.bestCategory;\nconst analysisDate = new Date($input.first().json.analysisDate).toLocaleDateString('en-SG');\n\nlet htmlReport = `\n<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }\n    .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }\n    h1 { color: #d32f2f; border-bottom: 3px solid #d32f2f; padding-bottom: 10px; }\n    h2 { color: #1976d2; margin-top: 30px; }\n    .category-card { background: #f9f9f9; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 5px solid #1976d2; }\n    .buy-now { border-left-color: #4caf50; background: #e8f5e9; }\n    .wait { border-left-color: #f44336; background: #ffebee; }\n    .monitor { border-left-color: #ff9800; background: #fff3e0; }\n    .action { font-size: 24px; font-weight: bold; margin-bottom: 10px; }\n    .action.buy { color: #4caf50; }\n    .action.wait { color: #f44336; }\n    .action.monitor { color: #ff9800; }\n    .price { font-size: 32px; font-weight: bold; color: #333; }\n    .metric { display: inline-block; margin: 10px 20px 10px 0; }\n    .metric-label { font-weight: bold; color: #666; }\n    .savings { background: #4caf50; color: white; padding: 10px 15px; border-radius: 5px; display: inline-block; margin-top: 10px; }\n    .reasoning { background: white; padding: 15px; border-radius: 5px; margin-top: 10px; font-size: 14px; color: #555; }\n    .best-pick { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin: 20px 0; }\n    .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee; color: #999; font-size: 12px; text-align: center; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <h1>\ud83d\ude97 Singapore COE Price Analysis & Recommendations</h1>\n    <p><strong>Analysis Date:</strong> ${analysisDate}</p>\n    \n    <div class=\"best-pick\">\n      <h2 style=\"color: white; margin-top: 0;\">\u2b50 Best Category to Consider</h2>\n      <p style=\"font-size: 20px; margin: 10px 0;\">${bestCategory}</p>\n      <p>Highest recommendation score based on current market conditions</p>\n    </div>\n`;\n\nObject.entries(recommendations).forEach(([category, rec]) => {\n  if (rec.reasoning && rec.reasoning.includes('Insufficient')) {\n    htmlReport += `\n    <div class=\"category-card\">\n      <h2>${category}</h2>\n      <p>${rec.reasoning}</p>\n    </div>\n    `;\n    return;\n  }\n  \n  const cardClass = rec.action === 'BUY NOW' ? 'buy-now' : rec.action === 'WAIT' ? 'wait' : 'monitor';\n  const actionClass = rec.action === 'BUY NOW' ? 'buy' : rec.action === 'WAIT' ? 'wait' : 'monitor';\n  \n  htmlReport += `\n    <div class=\"category-card ${cardClass}\">\n      <h2>${category}</h2>\n      <div class=\"action ${actionClass}\">${rec.action === 'BUY NOW' ? '\u2705' : rec.action === 'WAIT' ? '\u23f8\ufe0f' : '\ud83d\udc40'} ${rec.action}</div>\n      <div class=\"price\">$${rec.currentPrice.toLocaleString('en-SG')}</div>\n      <div class=\"metric\">\n        <span class=\"metric-label\">Score:</span> ${rec.score}/100\n      </div>\n      <div class=\"metric\">\n        <span class=\"metric-label\">Trend:</span> ${rec.trend}\n      </div>\n      <div class=\"metric\">\n        <span class=\"metric-label\">Volatility:</span> ${rec.volatilityLevel}\n      </div>\n      <p><strong>Timing Advice:</strong> ${rec.timingAdvice}</p>\n      ${rec.potentialSavings > 0 ? `<div class=\"savings\">\ud83d\udcb0 Potential Savings: $${rec.potentialSavings.toLocaleString('en-SG')}</div>` : ''}\n      <div class=\"reasoning\">\n        <strong>Analysis:</strong><br>\n        ${rec.reasoning}\n      </div>\n    </div>\n  `;\n});\n\nhtmlReport += `\n    <div class=\"footer\">\n      <p>This analysis is based on historical COE data and market trends. Actual prices may vary.</p>\n      <p>Data source: LTA OneMotoring Portal | Generated by n8n Automation</p>\n    </div>\n  </div>\n</body>\n</html>\n`;\n\nreturn [{ json: { htmlReport, subject: `COE Analysis Report - ${analysisDate}` } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1576e59a-54ba-452c-938c-547410701201",
+      "name": "Send Email Report",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        3952,
+        384
+      ],
+      "webhookId": "544f77f9-a89e-44c1-ab6b-d8f851e044ed",
+      "parameters": {
+        "options": {},
+        "subject": "={{ $json.subject }}",
+        "toEmail": "user@example.com",
+        "fromEmail": "user@example.com"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "9e03ad9e-4bbb-4fbc-9ba5-4af04a292f67",
+      "name": "Check for Buy Opportunities",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3392,
+        368
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "id": "1",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.recommendations['Category A'].action }}",
+              "rightValue": "BUY NOW"
+            },
+            {
+              "id": "2",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.recommendations['Category B'].action }}",
+              "rightValue": "BUY NOW"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "3229f007-f192-4562-8827-d4ddf27fa55d",
+      "name": "Send Telegram Alert",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        3728,
+        368
+      ],
+      "webhookId": "d7647f8a-1cc1-45dd-a198-5291e568e5f8",
+      "parameters": {
+        "text": "=\ud83d\udea8 *COE BUY ALERT* \ud83d\udea8\n\nOptimal buying opportunity detected!\n\n{{ Object.entries($json.recommendations)\n  .filter(([_, rec]) => rec.action === 'BUY NOW')\n  .map(([cat, rec]) => `*${cat}*: $${rec.currentPrice.toLocaleString('en-SG')}\\nScore: ${rec.score}/100\\n${rec.timingAdvice}`)\n  .join('\\n\\n') }}\n\nView full report in your email.",
+        "chatId": "{{ $('Schedule Trigger - Bi-Weekly COE Scraping').item.json.telegramChatId }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "1483eee4-c8b9-459e-bc32-06daa16fed6e",
+      "name": "Generate Dashboard Summary",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3392,
+        1328
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "dashboardSummary",
+              "type": "string",
+              "value": "=## Singapore COE Dashboard - {{ new Date().toLocaleDateString('en-SG') }}\n\n### Current Prices\n{{ Object.entries($('Generate Buy Recommendations').first().json.recommendations)\n  .map(([cat, rec]) => `**${cat}**: $${rec.currentPrice?.toLocaleString('en-SG') || 'N/A'}`)\n  .join('\\n') }}\n\n### Top Recommendation\n**{{ $('Generate Buy Recommendations').first().json.bestCategory }}** (Score: {{ $('Generate Buy Recommendations').first().json.bestCategoryScore }}/100)\n\n### Market Overview\n- Dominant Trend: {{ Object.entries($('Generate Buy Recommendations').first().json.marketOverview.dominantTrend).sort((a,b) => b[1] - a[1])[0][0] }}\n- Average Volatility: {{ $('Generate Buy Recommendations').first().json.marketOverview.averageVolatility > 2.5 ? 'High' : $('Generate Buy Recommendations').first().json.marketOverview.averageVolatility > 1.5 ? 'Medium' : 'Low' }}\n\n### Action Items\n{{ Object.entries($('Generate Buy Recommendations').first().json.recommendations)\n  .map(([cat, rec]) => `- **${cat}**: ${rec.action} - ${rec.timingAdvice}`)\n  .join('\\n') }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "e8bc3153-c4ff-4a6a-a99d-48bd76e89479",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "position": [
+        2656,
+        752
+      ],
+      "parameters": {
+        "model": "z-ai/glm-4.5",
+        "options": {}
+      },
+      "credentials": {
+        "openRouterApi": {
+          "id": "credential-id",
+          "name": "openRouterApi Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "06db176e-bf96-42d6-a1b0-7a896a4f3b32",
+      "name": "Airtable - Store COE Data",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        1120,
+        720
+      ],
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "name",
+          "value": "COE Historical Data"
+        },
+        "operation": "append"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "852583f1-d3e8-4178-8bd2-041dff8976cd",
+      "name": "Data Validation Check",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        848,
+        672
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "1",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $json.quotaPremium }}",
+              "rightValue": 0
+            },
+            {
+              "id": "2",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              },
+              "leftValue": "={{ $json.category }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "6e63dc80-1123-4e59-bbdb-ada1db7fd8f8",
+      "name": "Error Handler - Retry Scraping",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1120,
+        912
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "b9dad53a-81b4-4bf1-83f5-53561e2e8f04",
+      "name": "Scrape with Retry Logic",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        400,
+        624
+      ],
+      "parameters": {
+        "jsCode": "const maxRetries = 3;\nconst retryDelay = 5000;\n\nfor (let attempt = 1; attempt <= maxRetries; attempt++) {\n  try {\n    const response = await this.helpers.httpRequest({\n      method: 'GET',\n      url: 'https://onemotoring.lta.gov.sg/content/onemotoring/home/buying/upfront-vehicle-costs/certificate-of-entitlement--coe-.html',\n      timeout: 30000\n    });\n    \n    if (response && response.length > 1000) {\n      return [{ json: { data: response, success: true, attempts: attempt } }];\n    }\n  } catch (error) {\n    if (attempt === maxRetries) {\n      throw new Error(`Scraping failed after ${maxRetries} attempts: ${error.message}`);\n    }\n    await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));\n  }\n}\n\nthrow new Error('Scraping failed: Invalid response');"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "213dea78-48e3-4b49-9d97-2db358bd2a90",
+      "name": "Extract Economic Indicators",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1728,
+        912
+      ],
+      "parameters": {
+        "url": "https://eservices.mas.gov.sg/api/action/datastore/search.json?resource_id=key-economic-indicators",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "b78e4004-1b1f-4916-9b2f-16583905b966",
+      "name": "Process Economic Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1920,
+        912
+      ],
+      "parameters": {
+        "jsCode": "const economicData = $input.first().json;\nconst coeData = $('Calculate Technical Indicators').first().json;\n\nlet gdpGrowth = 0;\nlet interestRate = 0;\n\ntry {\n  if (economicData && economicData.result && economicData.result.records) {\n    const records = economicData.result.records;\n    const latestGdp = records.find(r => r.indicator === 'GDP Growth');\n    const latestRate = records.find(r => r.indicator === 'Prime Lending Rate');\n    \n    gdpGrowth = latestGdp ? parseFloat(latestGdp.value) : 0;\n    interestRate = latestRate ? parseFloat(latestRate.value) : 0;\n  }\n} catch (error) {\n  gdpGrowth = 0;\n  interestRate = 0;\n}\n\nreturn [{\n  json: {\n    ...coeData,\n    economicIndicators: {\n      gdpGrowth,\n      interestRate,\n      impactScore: gdpGrowth > 3 ? 'Positive' : gdpGrowth < 1 ? 'Negative' : 'Neutral'\n    }\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "452a530e-af62-4a66-bedc-9416449bf4e2",
+      "name": "Enhanced AI Prompt with Economics",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2400,
+        848
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "enhancedPrompt",
+              "type": "string",
+              "value": "=You are a Singapore automotive market economist specializing in COE price forecasting.\n\n**Historical COE Data:**\n{{ Object.keys($json).filter(k => k !== 'economicIndicators').map(category => {\n  const data = $json[category];\n  return `${category}:\n- Latest: $${data.latestPrice}\n- 4w MA: $${data.ma4?.toFixed(0)} | 12w MA: $${data.ma12?.toFixed(0)} | 26w MA: $${data.ma26?.toFixed(0)}\n- ROC: ${data.rateOfChange?.toFixed(2)}% | Volatility: $${data.volatility?.toFixed(0)}\n- Period: Q${data.quarter}, Month ${data.month} (CNY: ${data.isCNYPeriod}, YE: ${data.isYearEnd})`;\n}).join('\\n\\n') }}\n\n**Economic Context:**\n- GDP Growth: {{ $json.economicIndicators.gdpGrowth }}%\n- Interest Rate: {{ $json.economicIndicators.interestRate }}%\n- Economic Outlook: {{ $json.economicIndicators.impactScore }}\n\n**Task:** Provide 6-round price predictions (3 months) for each category with:\n1. Predicted prices with 95% confidence intervals (lower/upper bounds)\n2. Confidence levels: High (>80%), Medium (60-80%), Low (<60%)\n3. Trend classification: Uptrend/Downtrend/Consolidation\n4. Key risk factors (economic shocks, policy changes, seasonal effects)\n5. Best-case, worst-case, most-likely scenarios\n\n**Output Format (strict JSON):**\n{\n  \"predictions\": {\n    \"Category A\": [\n      {\"round\": 1, \"predictedPrice\": 95000, \"confidence\": \"High\", \"lower\": 92000, \"upper\": 98000, \"scenario\": \"most-likely\"},\n      {\"round\": 1, \"predictedPrice\": 88000, \"confidence\": \"Medium\", \"lower\": 85000, \"upper\": 91000, \"scenario\": \"best-case\"},\n      {\"round\": 1, \"predictedPrice\": 102000, \"confidence\": \"Medium\", \"lower\": 98000, \"upper\": 106000, \"scenario\": \"worst-case\"}\n    ]\n  },\n  \"trends\": {\"Category A\": \"uptrend\"},\n  \"riskFactors\": [\"CNY demand spike\", \"Interest rate hikes\"],\n  \"economicImpact\": \"Moderate upward pressure from GDP growth\"\n}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "68c8abd0-8c25-4591-94c9-4222364d640f",
+      "name": "Multi-Scenario Analysis",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2976,
+        816
+      ],
+      "parameters": {
+        "jsCode": "const aiPrediction = $input.first().json;\nconst categories = Object.keys(aiPrediction.predictions || {});\n\nconst scenarioAnalysis = {};\n\ncategories.forEach(category => {\n  const predictions = aiPrediction.predictions[category] || [];\n  \n  const mostLikely = predictions.filter(p => p.scenario === 'most-likely');\n  const bestCase = predictions.filter(p => p.scenario === 'best-case');\n  const worstCase = predictions.filter(p => p.scenario === 'worst-case');\n  \n  const avgMostLikely = mostLikely.reduce((sum, p) => sum + p.predictedPrice, 0) / mostLikely.length;\n  const avgBestCase = bestCase.reduce((sum, p) => sum + p.predictedPrice, 0) / bestCase.length;\n  const avgWorstCase = worstCase.reduce((sum, p) => sum + p.predictedPrice, 0) / worstCase.length;\n  \n  scenarioAnalysis[category] = {\n    mostLikely: { avg: Math.round(avgMostLikely), predictions: mostLikely },\n    bestCase: { avg: Math.round(avgBestCase), predictions: bestCase },\n    worstCase: { avg: Math.round(avgWorstCase), predictions: worstCase },\n    savingsPotential: Math.round(avgWorstCase - avgBestCase),\n    optimalRound: bestCase.reduce((min, p) => p.predictedPrice < min.predictedPrice ? p : min, bestCase[0]).round\n  };\n});\n\nreturn [{ json: { scenarioAnalysis, riskFactors: aiPrediction.riskFactors } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "2ca62cf3-3060-4086-be65-4eb6202576f3",
+      "name": "ROI Calculator",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3392,
+        656
+      ],
+      "parameters": {
+        "jsCode": "const recommendations = $('Generate Buy Recommendations').first().json.recommendations;\nconst scenarios = $input.first().json.scenarioAnalysis;\n\nconst categories = Object.keys(recommendations).filter(k => !recommendations[k].reasoning?.includes('Insufficient'));\nconst roiAnalysis = {};\n\ncategories.forEach(category => {\n  const rec = recommendations[category];\n  const scenario = scenarios[category];\n  \n  const carPrice = category.includes('A') ? 80000 : category.includes('B') ? 120000 : 50000;\n  const loanRate = 0.028;\n  const loanTenure = 7;\n  const depreciation = carPrice * 0.6;\n  \n  const coeNow = rec.currentPrice;\n  const coeBestCase = scenario.bestCase.avg;\n  const coeWorstCase = scenario.worstCase.avg;\n  \n  const totalCostNow = coeNow + carPrice + (carPrice * loanRate * loanTenure) - depreciation;\n  const totalCostBest = coeBestCase + carPrice + (carPrice * loanRate * loanTenure) - depreciation;\n  const totalCostWorst = coeWorstCase + carPrice + (carPrice * loanRate * loanTenure) - depreciation;\n  \n  roiAnalysis[category] = {\n    buyNowCost: Math.round(totalCostNow),\n    bestCaseWaitCost: Math.round(totalCostBest),\n    worstCaseWaitCost: Math.round(totalCostWorst),\n    potentialSavings: Math.round(totalCostNow - totalCostBest),\n    potentialLoss: Math.round(totalCostWorst - totalCostNow),\n    recommendation: totalCostNow < totalCostBest ? 'Buy Now - Lower Total Cost' : `Wait ${scenario.optimalRound * 2} weeks - Save $${Math.round(totalCostNow - totalCostBest)}`,\n    breakdownNow: {\n      coe: coeNow,\n      carPrice,\n      interestPaid: Math.round(carPrice * loanRate * loanTenure),\n      depreciation: Math.round(depreciation)\n    }\n  };\n});\n\nreturn [{ json: { roiAnalysis } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "053b7e99-50c7-45ce-846c-e4d1f5d6ec2a",
+      "name": "Check Significant Price Movement",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3392,
+        944
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "id": "1",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ Math.abs($json.recommendations['Category A']?.rateOfChange || 0) }}",
+              "rightValue": 10
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "069afeb1-8f92-4475-ac73-8be8a376be8d",
+      "name": "Urgent Market Alert",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        3728,
+        944
+      ],
+      "webhookId": "f23f85fc-86a1-499a-b980-c2f064a49aec",
+      "parameters": {
+        "text": "=\ud83d\udea8 *URGENT: Significant COE Price Movement Detected* \ud83d\udea8\n\n{{ Object.entries($json.recommendations)\n  .filter(([_, rec]) => Math.abs(rec.rateOfChange || 0) > 10)\n  .map(([cat, rec]) => `*${cat}*: ${rec.rateOfChange > 0 ? '\ud83d\udcc8' : '\ud83d\udcc9'} ${Math.abs(rec.rateOfChange).toFixed(1)}% change\\nCurrent: $${rec.currentPrice.toLocaleString('en-SG')}\\nAction: ${rec.action}`)\n  .join('\\n\\n') }}\n\nImmediate review recommended.",
+        "chatId": "{{ $('Schedule Trigger - Bi-Weekly COE Scraping').item.json.telegramChatId }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "e2540cb4-60ad-4689-8e3e-f791fb8fbd0c",
+      "name": "Daily Prediction Update Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        1120,
+        1104
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "dc79a47d-0b19-4a1c-94e0-30c983fccbf0",
+      "name": "Check Market Volatility",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3392,
+        1136
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "1",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $json.marketOverview.averageVolatility }}",
+              "rightValue": 2.5
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "df67db2f-8535-4d28-a838-2ebe6d4c4b25",
+      "name": "Enhanced Dashboard Report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3728,
+        576
+      ],
+      "parameters": {
+        "jsCode": "const recommendations = $('Generate Buy Recommendations').first().json.recommendations;\nconst scenarios = $('Multi-Scenario Analysis').first().json.scenarioAnalysis;\nconst roi = $('ROI Calculator').first().json.roiAnalysis;\nconst analysisDate = new Date().toLocaleDateString('en-SG');\n\nlet htmlReport = `\n<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }\n    .container { max-width: 1400px; margin: 0 auto; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }\n    h1 { color: #d32f2f; border-bottom: 4px solid #d32f2f; padding-bottom: 15px; font-size: 36px; }\n    h2 { color: #1976d2; margin-top: 35px; font-size: 28px; }\n    h3 { color: #555; margin-top: 25px; font-size: 22px; }\n    .category-card { background: #f9f9f9; padding: 25px; margin: 20px 0; border-radius: 10px; border-left: 6px solid #1976d2; }\n    .buy-now { border-left-color: #4caf50; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); }\n    .wait { border-left-color: #f44336; background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); }\n    .monitor { border-left-color: #ff9800; background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); }\n    .action { font-size: 28px; font-weight: bold; margin-bottom: 15px; }\n    .action.buy { color: #4caf50; }\n    .action.wait { color: #f44336; }\n    .action.monitor { color: #ff9800; }\n    .price { font-size: 36px; font-weight: bold; color: #333; margin: 10px 0; }\n    .metric { display: inline-block; margin: 12px 25px 12px 0; font-size: 16px; }\n    .metric-label { font-weight: bold; color: #666; }\n    .savings { background: #4caf50; color: white; padding: 12px 20px; border-radius: 8px; display: inline-block; margin-top: 12px; font-size: 18px; }\n    .roi-box { background: #e3f2fd; padding: 20px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #2196f3; }\n    .scenario-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px; }\n    .scenario-card { background: white; padding: 18px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }\n    .scenario-best { border-top: 4px solid #4caf50; }\n    .scenario-likely { border-top: 4px solid #2196f3; }\n    .scenario-worst { border-top: 4px solid #f44336; }\n    .best-pick { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px; margin: 25px 0; }\n    .footer { margin-top: 50px; padding-top: 25px; border-top: 2px solid #eee; color: #999; font-size: 13px; text-align: center; }\n    .chart-placeholder { background: #f5f5f5; padding: 40px; text-align: center; color: #999; border-radius: 8px; margin: 20px 0; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <h1>\ud83d\ude97 Singapore COE Comprehensive Market Analysis</h1>\n    <p style=\"font-size: 18px;\"><strong>Analysis Date:</strong> ${analysisDate}</p>\n    \n    <div class=\"best-pick\">\n      <h2 style=\"color: white; margin-top: 0;\">\u2b50 Best Category - Data-Driven Recommendation</h2>\n      <p style=\"font-size: 24px; margin: 12px 0;\">${$('Generate Buy Recommendations').first().json.bestCategory}</p>\n      <p style=\"font-size: 16px;\">Highest overall score: ${$('Generate Buy Recommendations').first().json.bestCategoryScore}/100</p>\n    </div>\n`;\n\nObject.entries(recommendations).forEach(([category, rec]) => {\n  if (rec.reasoning && rec.reasoning.includes('Insufficient')) {\n    htmlReport += `<div class=\"category-card\"><h2>${category}</h2><p>${rec.reasoning}</p></div>`;\n    return;\n  }\n  \n  const cardClass = rec.action === 'BUY NOW' ? 'buy-now' : rec.action === 'WAIT' ? 'wait' : 'monitor';\n  const actionClass = rec.action === 'BUY NOW' ? 'buy' : rec.action === 'WAIT' ? 'wait' : 'monitor';\n  const scenario = scenarios[category];\n  const roiData = roi[category];\n  \n  htmlReport += `\n    <div class=\"category-card ${cardClass}\">\n      <h2>${category}</h2>\n      <div class=\"action ${actionClass}\">${rec.action === 'BUY NOW' ? '\u2705' : rec.action === 'WAIT' ? '\u23f8\ufe0f' : '\ud83d\udc40'} ${rec.action}</div>\n      <div class=\"price\">$${rec.currentPrice.toLocaleString('en-SG')}</div>\n      <div class=\"metric\"><span class=\"metric-label\">Score:</span> ${rec.score}/100</div>\n      <div class=\"metric\"><span class=\"metric-label\">Trend:</span> ${rec.trend}</div>\n      <div class=\"metric\"><span class=\"metric-label\">Volatility:</span> ${rec.volatilityLevel}</div>\n      <p style=\"font-size: 16px; margin-top: 15px;\"><strong>Timing Advice:</strong> ${rec.timingAdvice}</p>\n      \n      <h3>\ud83d\udcb0 Total Cost of Ownership Analysis</h3>\n      <div class=\"roi-box\">\n        <p><strong>Buy Now Total Cost:</strong> $${roiData.buyNowCost.toLocaleString('en-SG')}</p>\n        <p><strong>Best-Case Wait Cost:</strong> $${roiData.bestCaseWaitCost.toLocaleString('en-SG')}</p>\n        <p><strong>Potential Savings:</strong> <span style=\"color: #4caf50; font-weight: bold;\">$${roiData.potentialSavings.toLocaleString('en-SG')}</span></p>\n        <p><strong>Risk (Worst Case):</strong> <span style=\"color: #f44336;\">-$${roiData.potentialLoss.toLocaleString('en-SG')}</span></p>\n        <p style=\"margin-top: 15px; font-size: 18px;\"><strong>ROI Recommendation:</strong> ${roiData.recommendation}</p>\n      </div>\n      \n      <h3>\ud83d\udcca Price Prediction Scenarios (Next 3 Months)</h3>\n      <div class=\"scenario-grid\">\n        <div class=\"scenario-card scenario-best\">\n          <h4 style=\"margin-top: 0; color: #4caf50;\">Best Case \ud83d\udfe2</h4>\n          <p style=\"font-size: 20px; font-weight: bold;\">$${scenario.bestCase.avg.toLocaleString('en-SG')}</p>\n          <p style=\"font-size: 14px; color: #666;\">Optimal Round: ${scenario.optimalRound}</p>\n        </div>\n        <div class=\"scenario-card scenario-likely\">\n          <h4 style=\"margin-top: 0; color: #2196f3;\">Most Likely \ud83d\udd35</h4>\n          <p style=\"font-size: 20px; font-weight: bold;\">$${scenario.mostLikely.avg.toLocaleString('en-SG')}</p>\n          <p style=\"font-size: 14px; color: #666;\">Baseline forecast</p>\n        </div>\n        <div class=\"scenario-card scenario-worst\">\n          <h4 style=\"margin-top: 0; color: #f44336;\">Worst Case \ud83d\udd34</h4>\n          <p style=\"font-size: 20px; font-weight: bold;\">$${scenario.worstCase.avg.toLocaleString('en-SG')}</p>\n          <p style=\"font-size: 14px; color: #666;\">Maximum risk exposure</p>\n        </div>\n      </div>\n      \n      ${rec.potentialSavings > 0 ? `<div class=\"savings\">\ud83d\udcb0 Potential Timing Savings: $${rec.potentialSavings.toLocaleString('en-SG')}</div>` : ''}\n    </div>\n  `;\n});\n\nhtmlReport += `\n    <div class=\"chart-placeholder\">\n      \ud83d\udcc8 Interactive price charts and trend visualization would appear here<br>\n      (Integrate with Chart.js or similar library for production)\n    </div>\n    \n    <div class=\"footer\">\n      <p><strong>Risk Factors:</strong> ${$('Multi-Scenario Analysis').first().json.riskFactors?.join(', ') || 'None identified'}</p>\n      <p>This analysis combines historical data, AI predictions, and economic indicators. Market conditions may change rapidly.</p>\n      <p>Data source: LTA OneMotoring Portal & MAS Economic Indicators | Powered by n8n + AI</p>\n    </div>\n  </div>\n</body>\n</html>\n`;\n\nreturn [{ json: { htmlReport, subject: `COE Comprehensive Analysis - ${analysisDate}` } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "48ef07ff-cf0a-4f8c-b86e-4b3ad76f48b8",
+      "name": "Merge Economic Data",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        2176,
+        848
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "87a9c973-2735-436f-b42c-aa7d9ac6ef28",
+      "name": "Alternative Category Suggester",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3728,
+        768
+      ],
+      "parameters": {
+        "jsCode": "const recommendations = $input.first().json.recommendations;\nconst categories = Object.keys(recommendations).filter(k => !recommendations[k].reasoning?.includes('Insufficient'));\n\nconst alternatives = {};\n\ncategories.forEach(primaryCategory => {\n  const primaryRec = recommendations[primaryCategory];\n  const alternativeOptions = [];\n  \n  categories.forEach(altCategory => {\n    if (altCategory === primaryCategory) return;\n    \n    const altRec = recommendations[altCategory];\n    const priceDiff = altRec.currentPrice - primaryRec.currentPrice;\n    const scoreDiff = altRec.score - primaryRec.score;\n    \n    if (scoreDiff > 10 || (scoreDiff > 0 && Math.abs(priceDiff) < 10000)) {\n      alternativeOptions.push({\n        category: altCategory,\n        priceDiff: Math.round(priceDiff),\n        scoreDiff,\n        reasoning: scoreDiff > 15 ? 'Significantly better market conditions' : 'Comparable conditions with different pricing'\n      });\n    }\n  });\n  \n  alternatives[primaryCategory] = alternativeOptions.sort((a, b) => b.scoreDiff - a.scoreDiff);\n});\n\nreturn [{ json: { alternatives } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9c13a0c9-5903-4649-9ddb-60a31d11e9f0",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        272,
+        0
+      ],
+      "parameters": {
+        "width": 1408,
+        "height": 352,
+        "content": "## Introduction\nAutomates Singapore COE price tracking with AI forecasts and buy/wait recommendations. Weekly scraping collects LTA data, enriches with economic indicators, predicts 6-month trends, and alerts users via Telegram/email\u2014helping car buyers and fleet managers make data-driven purchase decisions while avoiding manual tracking.\n\n## How it Works\nWeekly trigger scrapes LTA COE \u2192 validates \u2192 stores in Google Sheets \u2192 calculates indicators \u2192 AI forecasts trends \u2192 multi-scenario analysis \u2192 generates buy/wait signals \u2192 sends actionable alerts.\n\n## Setup Steps\n1. Add OpenAI/NVIDIA API credentials in n8n\n2. Authenticate Google Sheets and create spreadsheet\n3. Configure Telegram bot or Gmail SMTP\n4. Set weekly trigger (Thursday 9AM SGT post-bidding)\n5. Adjust alert thresholds in conditional nodes\n\n\n\n\n\n\n\n\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3d015ecf-03a3-4892-83ac-3f053d099a60",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1712,
+        0
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 672,
+        "height": 240,
+        "content": "## Prerequisites\nOpenAI/NVIDIA API key, Google Sheets access, Telegram bot token or Gmail, basic COE category understanding\n\n## Use Cases\nFirst-time buyers timing purchases, fleet operators coordinating bulk acquisitions"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e9250a46-284e-4031-beb5-3fe4db34171c",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2416,
+        0
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 528,
+        "height": 208,
+        "content": "## Customization\nAdd SMS alerts via Twilio, integrate loan calculators for total cost analysis\n\n## Benefits\nSaves 5+ hours monthly, captures 10\u201318% price dips, provides predictive insights (potential $10K\u2013$25K savings)\n \n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f15a58ad-3b4c-479b-ab7d-5fde49487373",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        64,
+        368
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 224,
+        "height": 496,
+        "content": "## Weekly COE Check Trigger\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nLaunches workflow every Thursday 9AM SGT, right after LTA bidding closes\nWhy: Captures price data at the moment it matters most\u2014fresh results mean your forecast starts with the latest market signal before prices shift"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9d882ef7-7853-4912-96bb-bd09d2cbc505",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        304,
+        368
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 448,
+        "height": 592,
+        "content": "## Scrape LTA COE Data\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nFetches official COE results with retry logic to handle connection issues\nWhy: LTA is the authoritative source; automated scraping eliminates manual checking while retry logic ensures you never miss a bidding round due to network hiccups"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e61894a5-ab0c-4556-91eb-0e41990e75e6",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        768,
+        368
+      ],
+      "parameters": {
+        "color": 5,
+        "height": 480,
+        "content": "## Validate Data Completeness\nChecks that all COE categories arrived and flags any anomalies or missing records\nWhy: Bad data breaks forecasts\u2014catching incomplete records here prevents misleading buy/wait signals downstream"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "45d278ef-4c62-4bbd-baf5-6e479d1f0afa",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1024,
+        368
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 288,
+        "height": 896,
+        "content": "## Store Data\nAppends timestamped COE records to your spreadsheet with category breakdown\nWhy: Creates permanent audit trail; you can always trace back why a recommendation was made, and historical data feeds better AI predictions over time"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a2381f74-7fa3-4eb8-8537-6a906b577f30",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1328,
+        384
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 214,
+        "height": 720,
+        "content": "## Fetch Historical Baseline\nRetrieves previous 12+ months of COE data to establish trends\nWhy: AI needs context\u2014knowing if prices are historically high or low makes 6-month forecasts meaningful, not just noise\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "58ce40c0-5080-4b0f-8080-333fe72d8fa2",
+      "name": "Sticky Note8",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1568,
+        384
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 1312,
+        "height": 720,
+        "content": "## Market Indicators & AI Forecasting- Processing\n\nBuilds key indicators (averages, volatility, seasonality, trends) and uses them to predict COE prices 6 months out.\n**Why:** Converts raw data into fast, clear signals and forecasts so users can judge market direction and decide if waiting helps or hurts.\n\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "877a0f53-544d-4193-aabc-0cab7547e3ae",
+      "name": "Sticky Note9",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2096,
+        688
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 480,
+        "height": 352,
+        "content": "\n## Merge Economic Indicators\nEnriches COE data with interest rates, vehicle import taxes, fuel costs, and market sentiment\nWhy: COE doesn't exist in a vacuum\u2014economic context explains why prices move; better forecasts come from understanding the full picture"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9e1a93a8-4fd9-443a-bb9f-35c5cb7461e4",
+      "name": "Sticky Note10",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2896,
+        384
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 272,
+        "height": 672,
+        "content": "## Multi-Scenario Analysis\n\nGenerates three outcomes: best case (wait scenario), base case (realistic), worst case (buy now)\nWhy: Removes false certainty\u2014you see the range of possibilities and can decide your own risk tolerance instead of following one rigid signal"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "852fb988-0a1b-49b2-a690-30052e911113",
+      "name": "Sticky Note11",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3200,
+        16
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 416,
+        "height": 1488,
+        "content": "## Threshold Comparison & COE Dashboard\n\nChecks forecasts against your custom buy/wait rules, then compiles prices, predictions, recommendations, and confidence levels into a single dashboard.\n**Why:** Supports different decision styles\u2014whether it\u2019s \u201cbuy if >15% savings expected\u201d or \u201cwait if volatility <8%\u201d\u2014and gives stakeholders one clear view without digging through spreadsheets.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "20ea90b4-1802-4093-bb10-bc9910441ea0",
+      "name": "Sticky Note12",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3632,
+        16
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 464,
+        "height": 1088,
+        "content": "## Send Telegram/Email Alerts\nDelivers your recommendation, key price changes, and next review date via your preferred channel\nWhy: Information reaches you where you check it\u2014whether you're a solo buyer or coordinating fleet-wide purchases, you stay informed without manual monitoring\n"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "aea095b0-d476-4f66-afab-fe7253eca58e",
+  "connections": {
+    "ROI Calculator": {
+      "main": [
+        [
+          {
+            "node": "Enhanced Dashboard Report",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Alternative Category Suggester",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format HTML Report": {
+      "main": [
+        [
+          {
+            "node": "Send Email Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Economic Data": {
+      "main": [
+        [
+          {
+            "node": "Enhanced AI Prompt with Economics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Validation Check": {
+      "main": [
+        [
+          {
+            "node": "Store in Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Airtable - Store COE Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Handler - Retry Scraping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent - COE Analysis",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Economic Data": {
+      "main": [
+        [
+          {
+            "node": "Merge Economic Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Extract COE Price Data": {
+      "main": [
+        [
+          {
+            "node": "Store in Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Data Validation Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store in Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Retrieve Historical COE Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - COE Analysis": {
+      "main": [
+        [
+          {
+            "node": "Generate Buy Recommendations",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Multi-Scenario Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Multi-Scenario Analysis": {
+      "main": [
+        [
+          {
+            "node": "Generate Buy Recommendations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape with Retry Logic": {
+      "main": [
+        [
+          {
+            "node": "Extract COE Price Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enhanced Dashboard Report": {
+      "main": [
+        [
+          {
+            "node": "Send Email Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for Buy Opportunities": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Economic Indicators": {
+      "main": [
+        [
+          {
+            "node": "Process Economic Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Buy Recommendations": {
+      "main": [
+        [
+          {
+            "node": "Format HTML Report",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check for Buy Opportunities",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Dashboard Summary",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "ROI Calculator",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check Significant Price Movement",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check Market Volatility",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare AI Prediction Prompt": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - COE Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Historical COE Data": {
+      "main": [
+        [
+          {
+            "node": "Calculate Technical Indicators",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Technical Indicators": {
+      "main": [
+        [
+          {
+            "node": "Prepare AI Prediction Prompt",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Economic Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extract Economic Indicators",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Prediction Update Trigger": {
+      "main": [
+        [
+          {
+            "node": "Retrieve Historical COE Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Significant Price Movement": {
+      "main": [
+        [
+          {
+            "node": "Urgent Market Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape COE Data from OneMotoring": {
+      "main": [
+        [
+          {
+            "node": "Extract COE Price Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enhanced AI Prompt with Economics": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - COE Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger - Bi-Weekly COE Scraping": {
+      "main": [
+        [
+          {
+            "node": "Scrape COE Data from OneMotoring",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Scrape with Retry Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

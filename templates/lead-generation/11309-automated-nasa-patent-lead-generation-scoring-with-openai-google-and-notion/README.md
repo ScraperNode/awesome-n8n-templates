@@ -1,0 +1,54 @@
+# 🎣 Automated NASA patent lead generation & scoring with OpenAI, Google, and Notion
+
+> ⚡ **102 views** · 🎣 [Lead Generation & Enrichment](../)
+
+## Description
+
+## Who is this for
+This workflow is designed for **Innovation Managers**, **Tech Transfer Offices**, and **Business Development Representatives** looking to find commercial partners for new technologies.
+
+## What it does
+This template automates the process of scouting startups that might be a good fit for NASA patents.
+
+1. **Search**: It fetches patents from the NASA Tech Transfer API based on a keyword you define.
+2. **Find**: It searches Google to identify startups operating in related fields.
+3. **Enrich**: It crawls the identified startup's website to extract context about their business.
+4. **Analyze**: Using OpenAI, it scores the "fit" between the patent and the startup and drafts a personalized outreach email.
+5. **Save**: High-scoring leads are enriched with LinkedIn company pages and saved directly to a Notion database.
+
+## How to set up
+1. **Configuration**: In the **Configuration** node, set the `keyword` variable to the technology topic you want to search for (e.g., "robotics").
+2. **NASA API**: Get a free API key from `api.nasa.gov` and enter it in the **NASA Patents API** node parameters.
+3. **Apify**: Connect your Apify account credential. You will need credits to run the `google-search-scraper` and `website-content-crawler` actors.
+4. **OpenAI**: Connect your OpenAI credential.
+5. **Notion**: Create a database with the following properties and connect it in the **Create Notion Lead** node:
+   - `Company` (Text)
+   - `Website` (URL)
+   - `LinkedIn` (URL)
+   - `Email` (Email)
+   - `Score` (Number)
+   - `Draft Email` (Text)
+   - `NASA Tech` (Text)
+
+## Requirements
+- **NASA API Key**: Free to obtain.
+- **Apify Account**: Requires `google-search-scraper` and `website-content-crawler` actors.
+- **OpenAI API Key**: For analysis and text generation.
+- **Notion Account**: To store the leads.
+
+## 🔗 Nodes Used
+
+HTTP Request, Notion, OpenAI
+
+## 📥 Import
+
+Download [`workflow.json`](workflow.json) and import into n8n:
+**Workflow menu → Import from File**
+
+[📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
+
+---
+
+## 💡 Pro Tip
+
+For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.

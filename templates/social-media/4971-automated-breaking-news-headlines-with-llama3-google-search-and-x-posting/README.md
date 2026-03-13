@@ -2,6 +2,8 @@
 
 > ⚡ **4,335 views** · 📱 [Social Media & Email Marketing](../)
 
+> 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
+
 ## Description
 
 This n8n workflow automates the process of finding, summarizing, and posting breaking news headlines on X (formerly Twitter). It combines Google Custom Search for finding the latest news articles with Groq's LLaMA 3 model to generate short, engaging headlines — complete with hashtags — and posts them on your X account.
@@ -91,9 +93,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.

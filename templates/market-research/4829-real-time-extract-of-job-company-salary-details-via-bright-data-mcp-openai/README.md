@@ -2,6 +2,8 @@
 
 > ⚡ **880 views** · 📊 [Market Research & Insights](../)
 
+> 💡 **Pro Tip** — Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.
+
 ## Description
 
 ![Realtime Extract of Job Description, Salary Details via Bright Data MCP  OpenAI 4o mini.png](fileId:1579)
@@ -145,9 +147,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.

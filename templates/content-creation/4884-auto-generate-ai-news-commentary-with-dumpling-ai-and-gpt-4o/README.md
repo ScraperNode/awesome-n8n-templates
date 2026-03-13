@@ -2,6 +2,8 @@
 
 > ⚡ **594 views** · 🎬 [Content Creation & Video](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This workflow turns trending news into thoughtful first-person commentary for platforms like LinkedIn. It uses **Dumpling AI’s News Search and Scraping APIs** to find and extract article content, then feeds the cleaned text to **GPT-4o** to write personalized insights. The final output is saved back to **Google Sheets** as a draft for easy review or posting.

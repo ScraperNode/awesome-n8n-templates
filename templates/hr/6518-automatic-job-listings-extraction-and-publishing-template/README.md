@@ -2,6 +2,8 @@
 
 > ⚡ **1,291 views** · 👥 [HR & Recruitment](../)
 
+> 💡 **Pro Tip** — Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.
+
 ## Description
 
 Automatically extract job listings from any website URL, format them with AI, and publish directly to WordPress. Just send a URL via Telegram, and watch as the workflow scrapes the job details, enhances the content with GPT, and creates a polished post on your site.
@@ -101,9 +103,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.

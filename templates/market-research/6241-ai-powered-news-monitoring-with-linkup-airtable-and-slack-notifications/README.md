@@ -2,6 +2,8 @@
 
 > ⚡ **1,098 views** · 📊 [Market Research & Insights](../)
 
+> 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
+
 ## Description
 
 This template provides a fully automated system for monitoring news on any topic you choose. It leverages Linkup's AI-powered web search to find recent, relevant articles, extracts key information like the title, date, and summary, and then neatly organizes everything in an Airtable base.
@@ -60,9 +62,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.

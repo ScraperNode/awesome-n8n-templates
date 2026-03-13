@@ -2,6 +2,8 @@
 
 > ⚡ **837 views** · 🔬 [Document Extraction & Analysis](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This n8n template empowers you to instantly summarize long pieces of text by sending a simple webhook request. By integrating with ApyHub's summarization API, you can distil complex articles, reports, or messages into concise summaries, significantly boosting efficiency across various domains.
@@ -111,9 +113,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.

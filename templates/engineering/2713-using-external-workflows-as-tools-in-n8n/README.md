@@ -2,6 +2,8 @@
 
 > ⚡ **3,940 views** · ⚒️ [Engineering](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This guide will show you how to use a workflow as a reusable tool in n8n, such as integrating an AI Agent or other specialized processes into your workflows.

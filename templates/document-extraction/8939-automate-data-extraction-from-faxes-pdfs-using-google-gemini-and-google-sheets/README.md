@@ -2,6 +2,8 @@
 
 > ⚡ **742 views** · 🔬 [Document Extraction & Analysis](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 ## This n8n template from [Intuz](https://www.intuz.com/) provides a complete solution to automate the extraction of critical information from PDF documents like faxes, or any PDFs. 

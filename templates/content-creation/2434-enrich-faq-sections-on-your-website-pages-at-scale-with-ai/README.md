@@ -2,6 +2,8 @@
 
 > ⚡ **10,202 views** · 🎬 [Content Creation & Video](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This n8n workflow template lets you easily generate comprehensive FAQ (Frequently Asked Questions) content for multiple services (or any items or pages you need to add the FAQs to). Simply provide the Google Sheets document containing the items to scrape, and the workflow automatically creates detailed, AI-enhanced FAQ documents.

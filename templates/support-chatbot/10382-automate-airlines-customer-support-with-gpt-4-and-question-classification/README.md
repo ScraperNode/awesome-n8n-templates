@@ -2,6 +2,8 @@
 
 > ⚡ **258 views** · 💬 [Support Chatbots](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This n8n workflow automates airline customer support by classifying travel-related questions, fetching relevant information, generating AI answers, and delivering structured responses to users. It ensures accurate travel information delivery, tracks user satisfaction, and logs interactions for future insights — reducing manual support load and improving customer experience.

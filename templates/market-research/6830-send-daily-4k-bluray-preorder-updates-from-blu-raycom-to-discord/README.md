@@ -2,6 +2,8 @@
 
 > ⚡ **209 views** · 📊 [Market Research & Insights](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This is a simple webpage scraper that  specifically grabs today's newest 4K Bluray Preorders as listed on the Blu-ray.com website.  This is a scheduled workflow that can run every day and will post a formatted summary message of links to a Discord channel of your choice.

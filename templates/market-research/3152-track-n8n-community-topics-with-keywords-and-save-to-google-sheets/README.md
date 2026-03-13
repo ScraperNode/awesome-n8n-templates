@@ -2,6 +2,8 @@
 
 > ⚡ **929 views** · 📊 [Market Research & Insights](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This template is designed for community managers, developers, and enthusiasts who want to monitor and capture discussions on the n8n community forum by specific keywords. By tracking new topics that match your provided keyword, the workflow automatically logs them into a Google Sheet, helping you keep a pulse on trending discussions and manage community insights effortlessly.

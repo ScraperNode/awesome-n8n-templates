@@ -2,6 +2,8 @@
 
 > ⚡ **386 views** · 🎯 [AI Summarization & Classification](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 Estimate **embodied carbon (CO2e)** for grouped BIM/CAD elements. The workflow accepts an existing **XLSX** (grouped element data) or, if missing, can trigger a local **RvtExporter.exe** to generate one. It detects category fields, filters out non-building elements, infers **aggregation rules** with AI, computes **CO2** using densities & emission factors, and exports a **multi-sheet Excel** plus a clean **HTML** report.

@@ -2,6 +2,8 @@
 
 > ⚡ **168 views** · 👥 [HR & Recruitment](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 Eliminate weeks of waiting and mountains of paperwork with intelligent expense automation that processes reimbursements in 72 hours instead of 2–3 weeks — delivering 90% reduction in manual processing time.

@@ -2,6 +2,8 @@
 
 > ⚡ **775 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
+> 💡 **Pro Tip** — Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.
+
 ## Description
 
 Part two of the Indeed Job Scraper, Filter, and Enrichment workflow, this workflow takes information about the scraped and filtered job listings on Indeed via Apify, which is stored in Google Sheets to generate a customized, five-line email icebreaker that implies the rest of the icebreaker is personalized. Personalized IJSFE (Indeed Job Scraper For Enrichment). ++ I am an engineering student, so I love my acronyms.
@@ -102,9 +104,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.

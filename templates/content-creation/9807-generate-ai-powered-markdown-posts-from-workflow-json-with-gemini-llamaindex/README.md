@@ -2,6 +2,8 @@
 
 > ⚡ **244 views** · 🎬 [Content Creation & Video](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This AI-powered workflow transforms n8n workflow JSON files into publication-ready, SEO-optimized markdown posts for the n8n community. Simply upload your workflow's JSON, and let Google Gemini 2.5 Pro, guided by a LlamaIndex-powered knowledge base of best practices, automatically generate compelling content. 

@@ -2,6 +2,8 @@
 
 > ⚡ **3,352 views** · 🎣 [Lead Generation & Enrichment](../)
 
+> 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
+
 ## Description
 
 Drive-to-Store is a multi-channel marketing strategy that includes both the web and the physical context, with the aim of increasing the number of customers and sales in physical stores. This strategy guides potential customers from the online world to the physical point of sale through the provision of a coupon that can be spent in the store or on an e-commerce site.
@@ -77,9 +79,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.

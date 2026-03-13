@@ -2,6 +2,8 @@
 
 > ⚡ **127 views** · 📊 [Market Research & Insights](../)
 
+> 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
+
 ## Description
 
 This workflow is the AI analysis and alerting engine for a complete social media monitoring system. It's designed to work with data scraped from X (formerly Twitter) using a tool like the **Apify Tweet Scraper**, which logs the data into a Google Sheet. The workflow then automatically analyzes new tweets with Google Gemini and sends tailored alerts to Slack.
@@ -42,9 +44,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.

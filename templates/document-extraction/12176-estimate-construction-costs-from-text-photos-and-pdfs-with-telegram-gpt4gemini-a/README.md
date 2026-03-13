@@ -2,6 +2,8 @@
 
 > ⚡ **169 views** · 🔬 [Document Extraction & Analysis](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 A **full-featured Telegram bot** that accepts **text descriptions**, **photos**, or **PDF floor plans** and returns detailed **cost estimates** with work breakdown. Powered by **GPT-4 Vision / Gemini 2.0**, vector search, and the open-source **DDC CWICR** database (55,000+ construction rates).

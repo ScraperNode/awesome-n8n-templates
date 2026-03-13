@@ -2,6 +2,8 @@
 
 > ⚡ **350 views** · 📱 [Social Media & Email Marketing](../)
 
+> 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
+
 ## Description
 
 This n8n template demonstrates a complete AI-driven content pipeline for social media. It automatically generates captions and hashtags for new product images, collects human approval via Telegram, and publishes approved content to Twitter. It’s ideal for marketers, e-commerce businesses, and creators who want to speed up content creation while keeping human oversight.
@@ -50,9 +52,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.

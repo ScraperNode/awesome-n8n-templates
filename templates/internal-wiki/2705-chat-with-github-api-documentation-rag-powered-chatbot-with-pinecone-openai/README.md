@@ -2,6 +2,8 @@
 
 > ⚡ **30,077 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
+> 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
+
 ## Description
 
 This workflow demonstrates a Retrieval Augmented Generation (RAG) chatbot that lets you chat with the GitHub API Specification (documentation) using natural language. Built with n8n, OpenAI's LLMs and the Pinecone vector database, it provides accurate and context-aware responses to your questions about how to use the GitHub API.
@@ -42,9 +44,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.

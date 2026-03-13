@@ -2,6 +2,8 @@
 
 > ⚡ **647 views** · 🔬 [Document Extraction & Analysis](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 Transform month-end reporting from manual drudgery to automated intelligence - automatically pull P&L data from accounting systems, detect financial anomalies, generate AI-powered insights, calculate health scores, and distribute professional reports with conditional CFO review and smart team alerts.

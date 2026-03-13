@@ -2,6 +2,8 @@
 
 > ⚡ **9 views** · 📊 [Market Research & Insights](../)
 
+> 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
+
 ## Description
 
 Monitors brand mentions across Twitter/X, Reddit, and News APIs in real-time (or scheduled), fetches mentions in parallel, normalizes data, uses AI to analyze sentiment/urgency/topics, detects duplicates, filters critical mentions, logs everything to Airtable, posts alerts to Slack, and emails daily HTML digest reports to the marketing team.
@@ -101,9 +103,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.

@@ -2,6 +2,8 @@
 
 > ⚡ **1,078 views** · 🎯 [AI Summarization & Classification](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 Estimate **material price** and **total cost** for grouped BIM/CAD elements using an **LLM-driven** analysis. The workflow accepts an existing **XLSX** (from your model) or, if missing, can trigger a local **RvtExporter.exe** to generate one. It enriches each element group with quantities, pricing, confidence, and produces a **multi-sheet Excel** report plus a polished **HTML executive report**.

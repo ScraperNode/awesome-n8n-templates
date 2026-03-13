@@ -2,6 +2,8 @@
 
 > ⚡ **2,465 views** · ⚡ [Personal Productivity](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This workflow template, "Personal Assistant to Note Messages and Extract Namecard Information" is designed to streamline the processing of incoming messages on the LINE messaging platform. It integrates with powerful tools like Microsoft Teams , Microsoft To Do , OneDrive , and OpenRouter.ai to handle tasks such as saving notes, extracting namecard information, and organizing images. Whether you’re managing personal productivity or automating workflows for teams, this template offers a versatile and customizable solution.

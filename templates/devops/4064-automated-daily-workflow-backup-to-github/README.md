@@ -2,6 +2,8 @@
 
 > ⚡ **9,712 views** · ⚙️ [DevOps & CI/CD](../)
 
+> 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
+
 ## Description
 
 This workflow provides a robust solution for automatically backing up all your n8n workflows to a designated GitHub repository on a daily basis. By leveraging the n8n API and GitHub API, it ensures your workflows are version-controlled and securely stored, safeguarding against data loss and facilitating disaster recovery.
@@ -119,9 +121,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.

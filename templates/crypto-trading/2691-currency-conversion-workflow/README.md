@@ -2,6 +2,8 @@
 
 > ⚡ **1,030 views** · 📈 [Crypto Trading & Stock Market](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 **Purpose:** This workflow exemplifies a sophisticated yet pragmatic mechanism for automating currency conversions by leveraging simple HTTP queries routed through a webhook. By intercepting user requests, sourcing real-time exchange rate data via Google search results, and formatting the data into actionable responses, it obviates the reliance on third-party APIs. This efficiency renders it an indispensable instrument for diverse applications, including dynamic pricing strategies for AI-driven systems, financial data automation, and real-time currency computation within complex workflows. The workflow's architectural simplicity ensures seamless integration across professional and academic domains, optimizing both scalability and reliability.

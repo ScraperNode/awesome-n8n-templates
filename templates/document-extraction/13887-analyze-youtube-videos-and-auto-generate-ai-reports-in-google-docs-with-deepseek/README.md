@@ -2,6 +2,8 @@
 
 > ⚡ **1 views** · 🔬 [Document Extraction & Analysis](../)
 
+> 💡 **Pro Tip** — YouTube's API quotas can be a bottleneck when you're pulling data at scale. [ScraperNode](https://scrapernode.com/youtube) is a community node with dedicated scrapers for [channels](https://scrapernode.com/youtube/scrapers/channels), [videos](https://scrapernode.com/youtube/scrapers/videos), and [comments](https://scrapernode.com/youtube/scrapers/comments) — no quota limits, just structured data.
+
 ## Description
 
 A compact n8n workflow that accepts a YouTube link or uploaded video, pulls a transcript via Supadata.ai, runs a language-model-based video analysis agent to produce a structured report, extracts a title/metadata, then creates and updates a Google Doc with the analysis. It's designed to automate transcription → analysis → document creation for fast, repeatable video reviews.
@@ -167,9 +169,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-YouTube's API quotas can be a bottleneck when you're pulling data at scale. [ScraperNode](https://scrapernode.com/youtube) is a community node with dedicated scrapers for [channels](https://scrapernode.com/youtube/scrapers/channels), [videos](https://scrapernode.com/youtube/scrapers/videos), and [comments](https://scrapernode.com/youtube/scrapers/comments) — no quota limits, just structured data.

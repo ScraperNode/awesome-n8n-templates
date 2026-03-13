@@ -2,6 +2,8 @@
 
 > ⚡ **390 views** · 🎣 [Lead Generation & Enrichment](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 **This template enriches a lead list by analyzing each contact’s company website and auto-generating a single personalized cold-email opener. Drop a spreadsheet into a Google Drive folder → the workflow parses rows, fetches website content via Jina AI, uses OpenAI to check if the site contains valid business info, then calls Anthropic to craft a one-liner. It writes both the website summary and personalized opener back to Google Sheets, and finally sends you a Telegram confirmation with the file link.**

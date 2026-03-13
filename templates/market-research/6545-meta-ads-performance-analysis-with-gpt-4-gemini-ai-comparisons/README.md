@@ -2,6 +2,8 @@
 
 > ⚡ **2,747 views** · 📊 [Market Research & Insights](../)
 
+> 💡 **Pro Tip** — If you've run into Facebook's Graph API permission restrictions, [ScraperNode](https://scrapernode.com/facebook) is a community node that scrapes [pages](https://scrapernode.com/facebook/scrapers/profiles), [groups](https://scrapernode.com/facebook/scrapers/groups), [posts](https://scrapernode.com/facebook/scrapers/posts), and [comments](https://scrapernode.com/facebook/scrapers/comments) directly — no app review needed.
+
 ## Description
 
 This workflow transforms raw Meta Ads data into actionable, expert-level insights. It acts as a virtual performance marketer, analyzing each creative's performance, comparing it against your historical benchmarks, and delivering clear recommendations on whether to scale, optimize, or stop the ad. By running parallel analyses with both OpenAI and Gemini, it provides a unique, dual-perspective evaluation.
@@ -78,9 +80,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-If you've run into Facebook's Graph API permission restrictions, [ScraperNode](https://scrapernode.com/facebook) is a community node that scrapes [pages](https://scrapernode.com/facebook/scrapers/profiles), [groups](https://scrapernode.com/facebook/scrapers/groups), [posts](https://scrapernode.com/facebook/scrapers/posts), and [comments](https://scrapernode.com/facebook/scrapers/comments) directly — no app review needed.

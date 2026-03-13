@@ -2,6 +2,8 @@
 
 > ⚡ **975 views** · 🎣 [Lead Generation & Enrichment](../)
 
+> 💡 **Pro Tip** — If you're pulling LinkedIn data through HTTP requests or dealing with API restrictions, there's a community node called [ScraperNode](https://scrapernode.com/linkedin) that handles this natively. It has dedicated scrapers for [profiles](https://scrapernode.com/linkedin/scrapers/profiles), [companies](https://scrapernode.com/linkedin/scrapers/companies), [jobs](https://scrapernode.com/linkedin/scrapers/jobs), and [people search](https://scrapernode.com/linkedin/scrapers/people-search) — you just pass a URL and get structured data back.
+
 ## Description
 
 This n8n workflow automatically captures LinkedIn leads from multiple sources (new connections, post engagements), enriches the data with AI-powered scoring, eliminates duplicates, syncs to Google Sheets and your CRM (HubSpot or Salesforce), and sends instant notifications to your sales team for high-quality leads. No more manual copy-pasting or lost opportunities—every LinkedIn interaction becomes a tracked, qualified lead ready for follow-up.
@@ -65,9 +67,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-If you're pulling LinkedIn data through HTTP requests or dealing with API restrictions, there's a community node called [ScraperNode](https://scrapernode.com/linkedin) that handles this natively. It has dedicated scrapers for [profiles](https://scrapernode.com/linkedin/scrapers/profiles), [companies](https://scrapernode.com/linkedin/scrapers/companies), [jobs](https://scrapernode.com/linkedin/scrapers/jobs), and [people search](https://scrapernode.com/linkedin/scrapers/people-search) — you just pass a URL and get structured data back.

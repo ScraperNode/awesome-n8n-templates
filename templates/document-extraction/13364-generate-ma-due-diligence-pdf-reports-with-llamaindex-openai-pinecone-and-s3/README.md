@@ -2,6 +2,8 @@
 
 > ⚡ **38 views** · 🔬 [Document Extraction & Analysis](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 Streamline M&A due diligence with AI. This n8n workflow automatically parses financial documents using LlamaIndex, embeds data into Pinecone, and generates comprehensive, AI-driven reports with GPT-5-mini, saving hours of manual review and ensuring consistent, data-backed insights.

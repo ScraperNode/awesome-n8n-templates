@@ -2,6 +2,8 @@
 
 > ⚡ **6,049 views** · 🔬 [Document Extraction & Analysis](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This workflow shows how to use a self-hosted Large Language Model (LLM) with n8n's LangChain integration to extract personal information from user input. This is particularly useful for enterprise environments where data privacy is crucial, as it allows sensitive information to be processed locally.

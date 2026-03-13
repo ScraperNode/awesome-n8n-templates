@@ -2,6 +2,8 @@
 
 > ⚡ **563 views** · 📊 [Market Research & Insights](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This workflow automatically monitors social media advertising performance across platforms to track campaign effectiveness and ROI. It saves you time by eliminating the need to manually check multiple ad platforms and provides consolidated performance data for all your social media campaigns.

@@ -2,6 +2,8 @@
 
 > ⚡ **270 views** · 📊 [Market Research & Insights](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 Automatically gather hundreds of real customer reviews from five major platforms in one run using [Thordata](https://www.thordata.com/?ls=n8n&lk=reviewmonitor) API and Proxy — Trustpilot, Capterra, Chrome Web Store, TrustRadius, and Product Hunt — then let GPT-4.1 perform deep collective sentiment analysis, uncover common praises & complaints, flag critical issues, assess churn risk, and deliver actionable recommendations straight to your inbox as a stunning executive HTML report.
@@ -47,9 +49,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.

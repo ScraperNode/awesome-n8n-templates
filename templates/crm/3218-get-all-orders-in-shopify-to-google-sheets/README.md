@@ -2,6 +2,8 @@
 
 > ⚡ **1,599 views** · 🤝 [CRM & Sales Operations](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This workflow retrieves all Shopify Orders and saves them into a Google Sheets spreadsheet using the [Shopify Admin REST API](https://shopify.dev/docs/api/admin-rest/2025-01/resources/order#get-orders?status=any). It uses [pagination](https://shopify.dev/docs/api/admin-rest/usage/pagination) to ensure all orders are collected efficiently.

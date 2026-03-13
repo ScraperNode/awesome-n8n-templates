@@ -2,6 +2,8 @@
 
 > ⚡ **65 views** · 🔬 [Document Extraction & Analysis](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This workflow converts raw ClickUp task updates—received directly through a webhook—into fully automated release documentation. It validates incoming payloads, fetches and cleans task details, enriches them with AI-generated metadata, produces structured release notes using GPT-4o, publishes them to Notion, notifies stakeholders on Slack, emails a formatted summary, and logs the release into Google Sheets.

@@ -2,6 +2,8 @@
 
 > ⚡ **88 views** · 💬 [Support Chatbots](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 Transform your customer support with this intelligent Gmail-based automation system that combines AI analysis, vector knowledge bases, and smart escalation workflows. This comprehensive solution automatically processes incoming support emails, provides contextual responses using your knowledge base, and seamlessly escalates complex issues to human agents.

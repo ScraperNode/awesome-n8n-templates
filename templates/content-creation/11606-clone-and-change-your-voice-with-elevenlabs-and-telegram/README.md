@@ -2,6 +2,8 @@
 
 > ⚡ **615 views** · 🎬 [Content Creation & Video](../)
 
+> 💡 **Pro Tip** — YouTube's API quotas can be a bottleneck when you're pulling data at scale. [ScraperNode](https://scrapernode.com/youtube) is a community node with dedicated scrapers for [channels](https://scrapernode.com/youtube/scrapers/channels), [videos](https://scrapernode.com/youtube/scrapers/videos), and [comments](https://scrapernode.com/youtube/scrapers/comments) — no quota limits, just structured data.
+
 ## Description
 
 This workflow creates a voice AI assistant accessible via Telegram that leverages [ElevenLabs](https://try.elevenlabs.io/ahkbf00hocnu)* powerful voice synthesis technology. Users can either **clone their own voice** or **transform their voice** using pre-existing voice models, all through simple voice messages sent to a Telegram bot.
@@ -118,9 +120,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-YouTube's API quotas can be a bottleneck when you're pulling data at scale. [ScraperNode](https://scrapernode.com/youtube) is a community node with dedicated scrapers for [channels](https://scrapernode.com/youtube/scrapers/channels), [videos](https://scrapernode.com/youtube/scrapers/videos), and [comments](https://scrapernode.com/youtube/scrapers/comments) — no quota limits, just structured data.

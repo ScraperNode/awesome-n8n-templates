@@ -2,6 +2,8 @@
 
 > ⚡ **2,103 views** · 📈 [Crypto Trading & Stock Market](../)
 
+> 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
+
 ## Description
 
 The **AI-Powered Financial Chart Analyzer** is a cutting-edge automation tool that streamlines financial analysis using n8n workflows, AI agents, and **MacOS Shortcuts**. It enables users to capture, process, and analyze candlestick charts for both **stocks and cryptocurrencies**. By integrating powerful tools like **ChatGPT-4o-mini** (via **OpenRouter**), **MarketStack**, and **SerpAPI**, this automation provides real-time market insights, technical analysis, and AI-driven stock trend predictions.
@@ -79,9 +81,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.

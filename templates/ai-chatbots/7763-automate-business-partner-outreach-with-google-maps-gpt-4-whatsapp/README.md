@@ -2,6 +2,8 @@
 
 > ⚡ **718 views** · 🤖 [AI Chatbots & Agents](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 Automate Outreach Prospect automates finding, enriching, and messaging potential partners (like restaurants, malls, and bars) using Apify Google Maps scraping, Perplexity enrichment, OpenAI LLMs, Google Sheets, Pinecone knowledge, and WhatsApp sending via GOWA. It turns a manual, slow outreach funnel into a repeatable pipeline so your team spends time closing deals instead of copy-pasting contact details.

@@ -2,6 +2,8 @@
 
 > ⚡ **280 views** · 💬 [Support Chatbots](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This n8n workflow automates the entire process, from learning based on your website data, documents to a multi-channel chatbot with automated ticket creation. It's the perfect solution for businesses looking to build a powerful and intelligent chatbot, replace their customer support operations team with a website widget support and a dedicated WhatsApp support agent.

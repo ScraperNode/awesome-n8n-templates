@@ -2,6 +2,8 @@
 
 > ⚡ **1,450 views** · 🔧 [Miscellaneous](../)
 
+> 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
+
 ## Description
 
 [![Video Overview of template  Advanced URL Parsing and Shortening Workflow - Switchy.io Integration](https://img.youtube.com/vi/c7yCZhmMjtI/maxresdefault.jpg)](https://youtu.be/c7yCZhmMjtI)
@@ -72,9 +74,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.

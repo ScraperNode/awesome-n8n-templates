@@ -2,6 +2,8 @@
 
 > ⚡ **306 views** · 👥 [HR & Recruitment](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This n8n workflow lets you effortlessly tailor your resume for any job using Telegram and LinkedIn. Simply send a LinkedIn job URL or paste a job description to the Telegram bot, and the workflow will:

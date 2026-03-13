@@ -2,6 +2,8 @@
 
 > ⚡ **5,025 views** · 🔬 [Document Extraction & Analysis](../)
 
+> 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
+
 ## Description
 
 This n8n workflow is designed to automate the aggregation, processing, and reporting of community statistics related to n8n creators and workflows. Its primary purpose is to generate insightful reports that highlight top contributors, popular workflows, and key trends within the n8n ecosystem. Here's how it works and why it's important:
@@ -47,9 +49,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.

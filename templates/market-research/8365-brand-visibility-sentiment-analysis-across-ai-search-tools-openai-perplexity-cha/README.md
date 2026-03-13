@@ -2,6 +2,8 @@
 
 > ⚡ **935 views** · 📊 [Market Research & Insights](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This n8n template demonstrates how to audit your brand’s visibility across multiple AI systems and automatically log the results to Google Sheets. It sends the same prompt to OpenAI, Perplexity, and (optionally) a ChatGPT web actor, then runs sentiment and brand-hierarchy analysis on the responses. 

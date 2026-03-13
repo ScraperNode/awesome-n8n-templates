@@ -2,6 +2,8 @@
 
 > ⚡ **815 views** · 🔧 [Miscellaneous](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This workflow automates flight price comparison across multiple booking platforms (Kayak, Skyscanner, Expedia, Google Flights). It accepts natural language queries, extracts flight details using NLP, scrapes prices in parallel, identifies the best deals, and sends professional email reports with comprehensive price breakdowns and booking links.

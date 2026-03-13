@@ -2,6 +2,8 @@
 
 > ⚡ **6,130 views** · ⚙️ [DevOps & CI/CD](../)
 
+> 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
+
 ## Description
 
 This template is inspired by [Save your workflows into a GitHub repository](https://n8n.io/workflows/817-save-your-workflows-into-a-github-repository/) by [hikerspath](https://n8n.io/creators/hikerspath/) and [Back Up Your n8n Workflows To Github](https://n8n.io/workflows/1534-back-up-your-n8n-workflows-to-github/) by [jon-n8n](https://n8n.io/creators/jon-n8n/).
@@ -51,9 +53,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.

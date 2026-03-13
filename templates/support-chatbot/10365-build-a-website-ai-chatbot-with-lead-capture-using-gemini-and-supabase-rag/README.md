@@ -2,6 +2,8 @@
 
 > ⚡ **556 views** · 💬 [Support Chatbots](../)
 
+> 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
+
 ## Description
 
 This workflow deploys a fully customizable AI chatbot that can be embedded on any website, from custom-coded sites to platforms like WordPress. The chatbot is powered by n8n, uses Supabase for memory and RAG, and integrates SerpAPI, Google Calendar, SMTP, and Google Sheets to automate responses, collect leads, and follow up intelligently.
@@ -106,9 +108,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.

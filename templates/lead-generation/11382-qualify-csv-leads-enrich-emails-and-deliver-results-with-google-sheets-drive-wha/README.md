@@ -2,6 +2,8 @@
 
 > ⚡ **76 views** · 🎣 [Lead Generation & Enrichment](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This automated n8n workflow transforms raw CSV data into qualified, enriched lead databases with verified emails and AI-generated personalization. It processes uploaded CSV files through multiple validation, enrichment, and sorting stages before delivering organized results via Google Drive, WhatsApp, or Google Sheets.

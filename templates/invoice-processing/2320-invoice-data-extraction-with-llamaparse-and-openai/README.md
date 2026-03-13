@@ -2,6 +2,8 @@
 
 > ⚡ **45,414 views** · 🧾 [Invoice Processing](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This n8n workflow automates the process of parsing and extracting data from PDF invoices. With this workflow, accounts and finance people can realise huge time and cost savings in their busy schedules.

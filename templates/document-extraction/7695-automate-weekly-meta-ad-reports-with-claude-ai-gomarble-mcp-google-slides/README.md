@@ -2,6 +2,8 @@
 
 > ⚡ **545 views** · 🔬 [Document Extraction & Analysis](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This automation workflow transforms Meta advertising data into executive ready presentation decks, eliminating manual report creation while ensuring stakeholders receive consistent performance insights. It generates professional Google Slides presentations from your ad campaigns and delivers them automatically via email to designated recipients. By combining scheduled data extraction with AI-powered analysis and automated presentation building, you'll receive polished, actionable reports that facilitate strategic advertising decisions and client communication

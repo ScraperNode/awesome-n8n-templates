@@ -2,6 +2,8 @@
 
 > ⚡ **257 views** · 📈 [Crypto Trading & Stock Market](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This workflow acts as an automated market analyst for educational purposes. It scans Binance Futures (Testnet) for high-volume pairs, applies custom technical analysis (RSI, Bollinger Bands, EMA, ATR) using JavaScript, and uses AI to validate trends against recent news sentiment.

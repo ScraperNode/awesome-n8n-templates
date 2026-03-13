@@ -2,6 +2,8 @@
 
 > ⚡ **49 views** · 🎣 [Lead Generation & Enrichment](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This workflow automates the process of identifying local businesses with a weak digital presence to offer them specialized marketing services. By combining real-time data from Google Maps with the analytical power of Gemini AI, it transforms raw search results into a structured sales pipeline.

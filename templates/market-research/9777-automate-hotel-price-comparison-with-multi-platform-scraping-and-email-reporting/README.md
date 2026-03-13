@@ -2,6 +2,8 @@
 
 > ⚡ **1,026 views** · 📊 [Market Research & Insights](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This is a **production-ready, end-to-end workflow** that automatically compares hotel prices across multiple booking platforms and delivers beautiful email reports to users. Unlike basic building blocks, this workflow is a complete solution ready to deploy.

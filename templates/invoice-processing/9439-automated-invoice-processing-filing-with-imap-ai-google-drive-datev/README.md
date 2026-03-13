@@ -2,6 +2,8 @@
 
 > ⚡ **1,008 views** · 🧾 [Invoice Processing](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 ## This n8n template demonstrates how to automatically process incoming invoice emails using AI to extract structured data, organize files in Google Drive, log everything in Google Sheets, and forward to your accounting system, completely hands-free.

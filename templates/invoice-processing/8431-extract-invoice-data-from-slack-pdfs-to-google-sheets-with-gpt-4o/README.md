@@ -2,6 +2,8 @@
 
 > ⚡ **291 views** · 🧾 [Invoice Processing](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 Managing invoices manually can be time-consuming and error-prone. This workflow automates the process by extracting key invoice details from PDFs shared in Slack, structuring the information with AI, saving it to Google Sheets, and sending a confirmation back to Slack. It’s a seamless way to keep your financial records organized without manual data entry.

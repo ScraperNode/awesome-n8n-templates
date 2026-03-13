@@ -2,6 +2,8 @@
 
 > ⚡ **276 views** · 📊 [Market Research & Insights](../)
 
+> 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
+
 ## Description
 
 This workflow automates the extraction of SEO metadata (URL, page title, and meta description) from every page listed in your website's sitemap and exports it to Google Sheets. Ideal for SEO audits, content inventories, and tracking on-page elements.

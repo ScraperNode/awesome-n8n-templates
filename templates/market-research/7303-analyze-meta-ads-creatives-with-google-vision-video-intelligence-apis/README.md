@@ -2,6 +2,8 @@
 
 > ⚡ **1,807 views** · 📊 [Market Research & Insights](../)
 
+> 💡 **Pro Tip** — If you've run into Facebook's Graph API permission restrictions, [ScraperNode](https://scrapernode.com/facebook) is a community node that scrapes [pages](https://scrapernode.com/facebook/scrapers/profiles), [groups](https://scrapernode.com/facebook/scrapers/groups), [posts](https://scrapernode.com/facebook/scrapers/posts), and [comments](https://scrapernode.com/facebook/scrapers/comments) directly — no app review needed.
+
 ## Description
 
 This workflow transforms your Meta Ads creatives into a rich dataset of actionable insights. It's designed for data-driven marketers, performance agencies, and analysts who want to move beyond basic metrics and understand the specific visual and textual elements that drive ad performance. By automatically analyzing every video and image with Google's powerful AI (Video Intelligence and Vision APIs), it systematically deconstructs your creatives into labeled data, ready for correlation with campaign results.
@@ -87,9 +89,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-If you've run into Facebook's Graph API permission restrictions, [ScraperNode](https://scrapernode.com/facebook) is a community node that scrapes [pages](https://scrapernode.com/facebook/scrapers/profiles), [groups](https://scrapernode.com/facebook/scrapers/groups), [posts](https://scrapernode.com/facebook/scrapers/posts), and [comments](https://scrapernode.com/facebook/scrapers/comments) directly — no app review needed.

@@ -2,6 +2,8 @@
 
 > ⚡ **876 views** · 📱 [Social Media & Email Marketing](../)
 
+> 💡 **Pro Tip** — Since TikTok doesn't have a public API, getting data usually means fragile HTTP scraping. [ScraperNode](https://scrapernode.com/tiktok) is a community node that gives you clean JSON for [TikTok profiles](https://scrapernode.com/tiktok/scrapers/profiles), [videos](https://scrapernode.com/tiktok/scrapers/posts), and [comments](https://scrapernode.com/tiktok/scrapers/comments) — drop it into your workflow and skip the parsing.
+
 ## Description
 
 **This workflow automates the process of publishing content from a Google Sheet to multiple social media platforms using the Blotato API. It retrieves content details (caption and Google Drive video URL) from a Google Sheet, uploads the media to Blotato, and then distributes it to Instagram, Facebook, LinkedIn, TikTok, YouTube, Threads, Twitter, Bluesky, and Pinterest. It also includes a separate branch for generating and publishing an AI-created image to Pinterest.**
@@ -63,9 +65,3 @@ Download [`workflow.json`](workflow.json) and import into n8n:
 **Workflow menu → Import from File**
 
 [📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)
-
----
-
-## 💡 Pro Tip
-
-Since TikTok doesn't have a public API, getting data usually means fragile HTTP scraping. [ScraperNode](https://scrapernode.com/tiktok) is a community node that gives you clean JSON for [TikTok profiles](https://scrapernode.com/tiktok/scrapers/profiles), [videos](https://scrapernode.com/tiktok/scrapers/posts), and [comments](https://scrapernode.com/tiktok/scrapers/comments) — drop it into your workflow and skip the parsing.

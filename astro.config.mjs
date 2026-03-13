@@ -24,7 +24,7 @@ function remarkRemoveMissingImages() {
 
 export default defineConfig({
   site: 'https://scrapernode.github.io',
-  base: '/awesome-n8n-templates',
+  base: '/awesome-n8n-templates/',
   integrations: [sitemap()],
   build: {
     format: 'directory',

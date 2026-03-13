@@ -4,6 +4,25 @@
 
 [⬅️ Back to main index](../../README.md)
 
+## AI Content Creation with n8n
+
+AI content creation tools turn raw inputs — a topic, a URL, a product name — into finished assets: blog posts, social captions, short-form video scripts, email copy, or product descriptions. n8n builds the pipeline around the AI call: fetch the source material, send it to an LLM, format the output, and publish or store it — all in one workflow run.
+
+This is the largest category in the collection, with 1,173 templates. It covers AI copywriting workflows for every major content type, video automation using Seedance, Kling AI, and VEO3, automated blog publishing to WordPress, and multi-platform content repurposing.
+
+### What You Can Do
+
+- **Blog and article generation** — take a keyword or outline, generate a full post with GPT-4 or Claude, and publish directly to WordPress or Ghost with a single workflow trigger
+- **Social media content automation** — generate platform-specific captions for LinkedIn, Instagram, Twitter/X, and TikTok from the same source content, then schedule or post immediately
+- **AI video generation pipelines** — combine a script writer, a video generation API (Seedance, VEO3), and a publisher node to create and upload short-form videos to TikTok, YouTube, and Instagram automatically
+- **Content repurposing** — convert long-form content (blog posts, YouTube videos, podcasts) into multiple shorter assets: threads, clips, summaries, and newsletters — all from one trigger
+
+### Getting Started
+
+The [AI copywriting tools](../ai-tools/) category has classification and summarization workflows that work well alongside content creation pipelines. Download any template and configure your LLM credentials using the [credential setup guide](../../docs/credential-setup/).
+
+---
+
 ## 📋 Templates
 
 | Template | Description | 🔗 Key Nodes | 👀 Views |

@@ -4,6 +4,25 @@
 
 [⬅️ Back to main index](../../README.md) · [📂 Browse by category](../../templates/) · [🔌 Browse by integration](../../integrations/)
 
+## AI Automation Workflows with n8n
+
+AI automation tools go beyond simple if-then rules. Instead of just connecting two apps, you give your workflows reasoning ability — they can classify inputs, write responses, extract structured data from unstructured text, or make decisions based on context. n8n connects directly to OpenAI, Anthropic, Google Gemini, Ollama, and dozens of other LLM providers, so you can build AI workflow automation without leaving the canvas.
+
+With 5,942 templates, this is the largest use case collection in this repo. It covers AI agents that can use tools, RAG chatbots for internal documents, content generation pipelines, image analysis workflows, and intelligent routing systems.
+
+### Common Workflow Patterns
+
+- **Conversational AI agents** — build agents that can search the web, query databases, send emails, and use external APIs as tools — all triggered by a chat message in Telegram, WhatsApp, or a web interface
+- **Document intelligence** — extract named entities, summarize contracts, classify support tickets, or parse invoices using LLMs as a step in the workflow loop
+- **AI content pipelines** — generate blog posts, social media captions, product descriptions, or email copy from structured inputs, then post or store automatically
+- **RAG knowledge bases** — connect Google Drive, Notion, or Confluence to a vector store and build a chatbot that answers questions accurately from your own documents
+
+### Getting Started
+
+Start with the [AI agent chat](../../templates/personal-productivity/1954-ai-agent-chat/) template (1.4M views) to understand the core agent pattern, then explore specialized use cases below. You'll need an OpenAI or other LLM credential — see the [credential setup guide](../../docs/credential-setup/).
+
+---
+
 ## 📋 Templates
 
 | # | Template | Category | 👀 Views |

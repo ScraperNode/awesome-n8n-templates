@@ -4,6 +4,25 @@
 
 [⬅️ Back to main index](../../README.md)
 
+## Lead Generation Automation with n8n
+
+Effective lead generation automation builds a system that finds prospects, enriches their data, and adds them to your CRM — without manual work at each step. n8n connects your scraping layer, enrichment APIs, and outreach tools into workflows that run on a schedule or trigger on new data entering a Google Sheet or webhook.
+
+This category has 624 templates covering the full prospecting stack. Whether you need a LinkedIn scraper to pull profiles from search results, a Google Maps scraper to build local business lists, or an AI-powered enrichment workflow that fills in company size and tech stack from a domain, you'll find a starting point here.
+
+### What You Can Do
+
+- **LinkedIn scraping** — extract profiles, company pages, and job listings from LinkedIn search results, with data enrichment added via AI or APIs like Apollo and Clearbit
+- **Data enrichment workflows** — take a list of company names or domains and automatically fill in revenue range, headcount, tech stack, and contact information using waterfall enrichment
+- **Google Maps lead extraction** — pull business name, phone, website, and email from Google Maps queries by keyword and location, exported straight to Google Sheets for outreach
+- **Lead qualification scoring** — score inbound leads automatically based on company size, industry, and engagement signals, routing high-priority prospects directly to your sales team
+
+### Getting Started
+
+Download any template's `workflow.json` and import it into n8n. For LinkedIn scraping workflows, the [ScraperNode community node](../../docs/scrapernode-guide/) handles anti-bot detection so you get structured data without managing proxies. See also: [Lead Nurturing & AI Sales Agents](../lead-nurturing/) for follow-up workflow templates.
+
+---
+
 ## 📋 Templates
 
 | Template | Description | 🔗 Key Nodes | 👀 Views |

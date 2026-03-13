@@ -4,6 +4,25 @@
 
 [⬅️ Back to main index](../../README.md) · [📂 Browse by category](../../templates/) · [🔌 Browse by integration](../../integrations/)
 
+## Social Media Growth Automation with n8n
+
+Growing a social presence takes consistent output — creators and teams who post daily aren't doing it manually. Social media automation tools built in n8n handle content scheduling, repurposing, and cross-platform publishing so you can maintain a consistent presence without being locked to a publishing queue. Workflows run on a schedule, respond to new content, or fire from a spreadsheet update.
+
+This collection has 3,076 templates for creators, marketers, and growth teams: AI-powered content generators, multi-platform auto-posting workflows, video creation and upload pipelines, and engagement tracking automation.
+
+### Common Workflow Patterns
+
+- **Auto-post from a content calendar** — build a Google Sheets content calendar, then let an n8n workflow pull from it daily and publish to each platform with correct formatting and hashtags
+- **Instagram automation** — repurpose long-form content into Reels-ready scripts, generate AI images or videos, and upload to Instagram on a posting schedule without touching the app
+- **Cross-platform repurposing** — take a YouTube video or podcast episode and automatically generate a thread, LinkedIn post, Instagram caption, and newsletter excerpt from the transcript
+- **Viral content monitoring** — track trending topics or viral posts in your niche and get Slack alerts with AI-generated commentary you can adapt and post quickly
+
+### Getting Started
+
+Browse the templates below. Many workflows here combine an AI node (OpenAI or Gemini) with a publisher node (Buffer or direct platform APIs). For single-platform or email campaign workflows, see also: [Social Media & Email Marketing](../../templates/social-media/).
+
+---
+
 ## 📋 Templates
 
 | # | Template | Category | 👀 Views |

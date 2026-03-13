@@ -4,6 +4,25 @@
 
 [⬅️ Back to main index](../../README.md)
 
+## Market Research & Competitor Intelligence with n8n
+
+Market research automation means running competitor monitoring, audience analysis, and product intelligence continuously — not as a quarterly report. n8n workflows watch your target sources (competitor sites, review platforms, LinkedIn, industry news) and surface signals automatically: a price change, a new feature launch, a trending topic in your space.
+
+This category has 924 templates spanning audience research, competitor tracking, SEO analysis, and product insight workflows. Most combine web scraping with AI summarization, so raw data becomes structured analysis you can act on the same day.
+
+### What You Can Do
+
+- **Competitor monitoring** — scrape competitor pricing pages, product listings, or blog feeds on a schedule and alert your team in Slack when something changes
+- **Review and sentiment analysis** — pull reviews from G2, Trustpilot, or Google and classify them by sentiment, feature request, or complaint type using AI — without reading every review manually
+- **SEO and landing page auditing** — analyze top-ranking pages for a keyword set, extract heading structures, word counts, and internal links, then compare against your own pages
+- **Market signal tracking** — monitor Reddit threads, LinkedIn posts, and industry news for mentions of keywords relevant to your product or competitors, and route interesting signals to your team
+
+### Getting Started
+
+For research tasks involving structured data from LinkedIn, TikTok, or other platforms, the [ScraperNode community node](../../docs/scrapernode-guide/) returns clean JSON without HTML parsing. Browse the templates below and see also: [Web Scraping & Data Extraction](../../use-cases/web-scraping/) for general scraping patterns.
+
+---
+
 ## 📋 Templates
 
 | Template | Description | 🔗 Key Nodes | 👀 Views |

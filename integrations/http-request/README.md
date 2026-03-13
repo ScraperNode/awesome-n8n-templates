@@ -4,6 +4,18 @@
 
 [⬅️ Back to main index](../../README.md) · [📂 Browse by category](../../templates/)
 
+## API Automation with n8n
+
+The HTTP Request node is the foundation of API automation in n8n — it calls any REST endpoint with full control over method, headers, authentication, body, and response handling. With 4,287 templates, it's the single most-used node in the entire collection. Any workflow that pulls data from an API, pushes to a webhook, or calls a service without a native n8n integration uses HTTP Request.
+
+### Popular Automation Patterns
+
+- **REST API integration** — call any external API as a workflow step: internal microservices, third-party platforms, data providers, or custom endpoints — with support for pagination, OAuth, and API key auth
+- **Web scraping with HTTP Request** — fetch web page HTML or JSON responses and parse them with the HTML Extract node or Code node — a lightweight approach for sites that don't block automated requests
+- **Webhook forwarding** — receive a webhook from one service and forward the payload (transformed or filtered) to another service's API endpoint in a single workflow step
+
+---
+
 ## 📋 Templates
 
 | # | Template | Category | 👀 Views |

@@ -4,6 +4,25 @@
 
 [⬅️ Back to main index](../../README.md)
 
+## Document Extraction & AI Parsing Automation with n8n
+
+Extracting data from documents used to mean manual copy-paste or expensive custom software. n8n workflows automate this end-to-end: receive a PDF via email or Google Drive, run it through an OCR or AI parsing node, extract the fields you need (invoice number, total, vendor name, dates), and route the structured data to your accounting system, spreadsheet, or database.
+
+This category has 698 templates covering PDF and image parsing, invoice processing automation, contract analysis, and document generation. Most use AI — GPT-4 or Claude — to handle the variation in document layouts that rule-based parsers can't manage reliably.
+
+### What You Can Do
+
+- **Invoice automation** — extract line items, totals, tax amounts, and vendor details from PDFs automatically, then push them to QuickBooks, Xero, or a Google Sheet for approval
+- **Resume and application parsing** — process incoming resumes from email or a form, extract candidate details, and create records in your ATS or tracking spreadsheet
+- **Contract analysis** — identify key clauses, dates, parties, and obligations from legal documents using LLMs, then flag high-risk terms or missing fields before review
+- **Image and receipt OCR** — extract text from scanned documents, photos of receipts, or ID cards and convert them to structured records
+
+### Getting Started
+
+Most document extraction workflows need an email trigger (Gmail) or a file trigger (Google Drive) as the entry point. Configure both credentials using the [credential setup guide](../../docs/credential-setup/). See also: [Invoice Processing](../invoice-processing/) for billing-specific workflow templates.
+
+---
+
 ## 📋 Templates
 
 | Template | Description | 🔗 Key Nodes | 👀 Views |

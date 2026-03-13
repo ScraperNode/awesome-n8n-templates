@@ -4,6 +4,25 @@
 
 [⬅️ Back to main index](../../README.md) · [📂 Browse by category](../../templates/) · [🔌 Browse by integration](../../integrations/)
 
+## Marketing Automation with n8n
+
+Marketing automation takes repetitive campaign work off your plate. Email sequences, social scheduling, lead scoring, and content distribution can all run without manual effort — triggered by a form submission, a new CRM record, a calendar date, or a webhook. n8n connects your full marketing stack (CRMs, email platforms, social tools, analytics) into end-to-end workflows that respond to real events.
+
+This collection has 4,104 templates covering the full marketing funnel: email marketing automation, social media publishing pipelines, lead capture sequences, and reporting workflows that pull from Google Analytics, Meta Ads, and LinkedIn.
+
+### Common Workflow Patterns
+
+- **Lead capture to CRM** — when a form is submitted or a resource downloaded, automatically create a contact in HubSpot or Salesforce, apply tags, and enroll them in an email sequence
+- **Multi-platform social scheduling** — generate content with AI, then schedule and publish to LinkedIn, Instagram, Twitter/X, and Facebook from a single Google Sheets calendar
+- **Email marketing automation** — segment subscribers based on behavior, send personalized follow-ups, and log opens and clicks back into your analytics stack
+- **Campaign performance reporting** — pull metrics from Google Ads, Meta, and LinkedIn into a unified Google Sheets or Notion dashboard on a weekly schedule
+
+### Getting Started
+
+Browse the templates below. Most email workflows connect to Gmail or a transactional email provider — configure credentials first using the [credential setup guide](../../docs/credential-setup/). For top-of-funnel workflows, see also: [Lead Generation & Enrichment](../../templates/lead-generation/).
+
+---
+
 ## 📋 Templates
 
 | # | Template | Category | 👀 Views |

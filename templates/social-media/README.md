@@ -4,6 +4,25 @@
 
 [⬅️ Back to main index](../../README.md)
 
+## Social Media Automation with n8n
+
+Social media automation takes the manual work out of posting, scheduling, and monitoring across platforms. n8n connects content creation, scheduling, and publishing in a single workflow: generate a post with AI, resize the image for each platform's requirements, and publish to LinkedIn, Instagram, Twitter/X, and Facebook in one run — triggered by a spreadsheet update, a new blog post, or a schedule.
+
+This category has 556 templates for social media and email marketing teams: multi-platform publishing workflows, AI caption generators, brand monitoring automations, and email newsletter pipelines.
+
+### What You Can Do
+
+- **Multi-platform social scheduling** — draft content in Google Sheets, trigger an n8n workflow that formats it for each platform, and publish simultaneously across LinkedIn, Instagram, Twitter/X, and Facebook
+- **AI-generated social posts** — pass a URL, topic, or product update to an LLM and get back ready-to-post captions tailored to each platform's tone and character limits
+- **Social media monitoring** — track brand mentions, hashtags, or competitor handles across platforms and route interesting signals to Slack or your CRM for follow-up
+- **Email marketing automation** — build email sequences that trigger on subscriber behavior, integrating with Mailchimp, SendGrid, or Gmail directly inside your n8n workflow
+
+### Getting Started
+
+Browse the templates below. For multi-platform publishing, you'll need OAuth credentials for each platform — start with one and expand. See also: [Social Media Growth](../../use-cases/social-media-growth/) for growth-focused workflows and cross-platform repurposing patterns.
+
+---
+
 ## 📋 Templates
 
 | Template | Description | 🔗 Key Nodes | 👀 Views |

@@ -4,6 +4,18 @@
 
 [⬅️ Back to main index](../../README.md) · [📂 Browse by category](../../templates/)
 
+## Build Telegram Bots with n8n
+
+Telegram's bot API makes it one of the most reliable messaging platforms to automate — no paid plan, no approval process, and a well-documented webhook API. With 1,099 templates, the Telegram integration covers inbound bots (respond to user messages), outbound notification pipelines (send alerts to a channel), and AI-powered chatbots that use Telegram as the conversation interface.
+
+### Popular Automation Patterns
+
+- **AI Telegram chatbots** — connect a Telegram bot to an LLM with memory and tool access, so users can send questions, receive answers, and trigger n8n workflows by messaging a bot
+- **Notification pipelines** — route alerts from any system — a new order, a server error, a new lead — to a Telegram channel or group as formatted messages, with inline buttons for quick actions
+- **Telegram command bots** — respond to specific commands (/report, /status, /summarize) by triggering n8n workflows and returning the result inline in the chat conversation
+
+---
+
 ## 📋 Templates
 
 | # | Template | Category | 👀 Views |

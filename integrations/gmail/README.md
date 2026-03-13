@@ -4,6 +4,18 @@
 
 [⬅️ Back to main index](../../README.md) · [📂 Browse by category](../../templates/)
 
+## Gmail Workflow Automation with n8n
+
+Gmail triggers and send nodes make email one of the most versatile workflow entry and exit points in n8n. With 1,577 templates, Gmail automation covers inbound processing (parse and act on incoming emails), outbound automation (send personalized emails at scale), and pipeline integrations (route email data to CRMs, spreadsheets, and Slack).
+
+### Popular Automation Patterns
+
+- **Email-to-CRM automation** — when a new email arrives matching specific criteria, extract the sender's details, look them up in your CRM, and create or update a contact record automatically
+- **AI email drafting** — route incoming emails through an LLM to generate draft replies based on your previous responses and the email content, queued for your review and one-click send
+- **Outbound email sequences** — trigger personalized emails from n8n on a schedule or on CRM events, using Gmail as the sending layer with content filled by workflow data
+
+---
+
 ## 📋 Templates
 
 | # | Template | Category | 👀 Views |

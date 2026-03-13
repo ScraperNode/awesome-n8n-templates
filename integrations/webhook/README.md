@@ -4,6 +4,18 @@
 
 [⬅️ Back to main index](../../README.md) · [📂 Browse by category](../../templates/)
 
+## Webhook Automation with n8n
+
+Webhooks are the most common way external services push events into n8n — a form submission, a payment event, a GitHub commit, a Typeform response. With 1,465 templates, the Webhook trigger starts workflows that respond in real time to events from any platform that can send an HTTP POST. You don't wait for a poll interval; the workflow runs the moment something happens.
+
+### Popular Automation Patterns
+
+- **Form-to-workflow triggers** — receive a Typeform, Tally, or custom web form submission via webhook, then route the data to your CRM, Airtable, or email system immediately on submission
+- **Payment event automation** — receive a Stripe or Paddle webhook on a new subscription or payment and trigger onboarding: send a welcome email, create an account, or add the customer to a Slack channel
+- **Real-time event routing** — receive any structured event from any webhook-capable service and fan it out to multiple destinations — database, Slack, email — based on the event type and payload
+
+---
+
 ## 📋 Templates
 
 | # | Template | Category | 👀 Views |

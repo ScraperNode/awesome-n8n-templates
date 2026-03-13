@@ -4,6 +4,18 @@
 
 [⬅️ Back to main index](../../README.md) · [📂 Browse by category](../../templates/)
 
+## Automate Google Sheets with n8n
+
+Google Sheets is one of the most common automation targets in n8n — it's where most teams store data that needs to move somewhere else, or receive data from other systems. With 2,673 templates, Google Sheets automation covers every direction: reading rows to trigger workflows, writing results back from AI or API calls, syncing between Sheets and CRMs, and using spreadsheets as lightweight databases for workflow state.
+
+### Popular Automation Patterns
+
+- **Lead and contact import** — write rows to a Google Sheet automatically when someone fills a form, submits a request, or gets added to your CRM, keeping your contact list current without manual data entry
+- **AI data enrichment** — read a list of company names or domains from Google Sheets, run each through an enrichment API or LLM, and write the results back as new columns in the same sheet
+- **Scheduled reporting** — pull data from APIs, databases, or other tools on a schedule and append or update rows in Google Sheets for dashboards, tracking, or team review
+
+---
+
 ## 📋 Templates
 
 | # | Template | Category | 👀 Views |

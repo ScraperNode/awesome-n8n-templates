@@ -4,6 +4,25 @@
 
 [⬅️ Back to main index](../../README.md)
 
+## DevOps Automation with n8n
+
+DevOps automation tools connect your CI/CD pipeline, incident response, and infrastructure management into workflows that trigger on real events — not just scheduled jobs. n8n integrates with GitHub, GitLab, Jira, PagerDuty, Datadog, Slack, and cloud provider APIs, so you can build automations that span your entire engineering toolchain without writing glue scripts for each integration point.
+
+This category has 375 templates for DevOps and platform engineering teams: deployment pipeline triggers, incident response workflows, infrastructure monitoring alerts, and developer onboarding automation.
+
+### What You Can Do
+
+- **CI/CD automation** — trigger n8n workflows on GitHub Actions or GitLab CI events: notify Slack on deploy, create a Jira ticket on test failure, or roll back based on error rate thresholds
+- **GitHub automation** — auto-label pull requests by changed files, assign reviewers based on code ownership, create release notes from merged PRs, or sync issues to a project board
+- **Incident response workflows** — receive a PagerDuty or Datadog alert, enrich it with recent deployment data, and create a Slack war room with the right people added automatically
+- **Infrastructure provisioning** — trigger cloud resource creation or teardown from a Slack command or a schedule, then log the action to a spreadsheet or CMDB for audit purposes
+
+### Getting Started
+
+Browse the templates below. For GitHub automation, configure the GitHub credential and trigger node first. See also: [Engineering](../engineering/) for general developer productivity workflows and API integration patterns.
+
+---
+
 ## 📋 Templates
 
 | Template | Description | 🔗 Key Nodes | 👀 Views |

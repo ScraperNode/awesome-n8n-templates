@@ -4,6 +4,25 @@
 
 [⬅️ Back to main index](../../README.md)
 
+## AI Customer Support Chatbots with n8n
+
+An AI chatbot for customer support can handle first-line queries, deflect common tickets, and escalate edge cases to human agents — without a dedicated support platform subscription. n8n builds the orchestration layer: receive a message from WhatsApp, Telegram, or your website, query a knowledge base or FAQ document, generate a response with an LLM, and send it back — all in one workflow you own and control.
+
+This category has 391 templates for support teams building AI-assisted customer service: WhatsApp and Telegram chatbot workflows, website chat integrations, ticket triage automation, and RAG-powered support bots that answer from your documentation.
+
+### What You Can Do
+
+- **WhatsApp and Telegram chatbots** — deploy AI-powered bots that handle common support queries on the messaging platforms your customers already use, with escalation to a human agent for complex cases
+- **RAG support chatbots** — connect your help center, Notion docs, or Google Drive to a vector store, then build a chatbot that answers accurately from your actual documentation rather than general LLM knowledge
+- **Ticket triage automation** — classify incoming support emails or chat messages by topic, urgency, and sentiment, then route them to the right queue and draft a suggested first response
+- **Website chat integration** — embed a chat widget backed by n8n and an LLM that answers questions, captures leads, and logs conversations to your CRM automatically
+
+### Getting Started
+
+Browse the templates below. For WhatsApp integration you'll need a Twilio or WhatsApp Business API credential. For RAG chatbots, configure a vector store (Pinecone, Qdrant, or Supabase) and an embeddings model — see the [credential setup guide](../../docs/credential-setup/).
+
+---
+
 ## 📋 Templates
 
 | Template | Description | 🔗 Key Nodes | 👀 Views |

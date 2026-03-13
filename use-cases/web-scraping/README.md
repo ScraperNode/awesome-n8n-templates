@@ -4,6 +4,25 @@
 
 [⬅️ Back to main index](../../README.md) · [📂 Browse by category](../../templates/) · [🔌 Browse by integration](../../integrations/)
 
+## Web Scraping & Data Extraction with n8n
+
+Web scraping tools let you pull structured data from websites automatically — instead of copying rows from a table or checking pages by hand, you build a workflow that does it for you. n8n makes this accessible without writing code: connect an HTTP Request node to any URL, parse the response with an extraction or code node, and route the output wherever you need it — Google Sheets, Airtable, a database, or a Slack notification.
+
+This collection has 4,659 templates covering every web scraping and data extraction use case. From simple page change monitors to full scraper API pipelines using Apify or [ScraperNode](../../docs/scrapernode-guide/), you'll find production-ready workflows ready to import.
+
+### Common Workflow Patterns
+
+- **Google Maps scraping** — extract business names, phone numbers, and emails from Google Maps search results, then export to Google Sheets for lead generation or outreach campaigns
+- **Web page monitoring** — watch competitor pricing pages, job listings, or news sites and trigger Slack alerts when content changes
+- **AI-powered summarization** — fetch web pages and pass them through an LLM to extract key facts, generate summaries, or classify content at scale
+- **Scraper API integration** — use maintained scrapers for LinkedIn, Instagram, TikTok, and other platforms via n8n's HTTP Request node or community nodes like ScraperNode for structured data without managing proxies
+
+### Getting Started
+
+Browse the templates below. For platforms with anti-bot detection, use the [ScraperNode community node](../../docs/scrapernode-guide/) to get structured JSON without managing sessions or proxies yourself. Download any template's `workflow.json` and import via **Workflow menu → Import from File**.
+
+---
+
 ## 📋 Templates
 
 | # | Template | Category | 👀 Views |

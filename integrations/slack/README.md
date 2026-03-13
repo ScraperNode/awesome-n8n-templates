@@ -4,6 +4,18 @@
 
 [⬅️ Back to main index](../../README.md) · [📂 Browse by category](../../templates/)
 
+## Slack Automation with n8n
+
+The Slack node in n8n sends messages, creates channels, reads events, and manages workspace data. With 1,078 templates, Slack is where most teams route n8n workflow outputs — alerts, reports, approvals, and AI-generated summaries all land in the right channel based on workflow logic. It's also a common trigger: Slack commands and reactions can kick off n8n workflows.
+
+### Popular Automation Patterns
+
+- **Intelligent alerts** — send formatted notifications to specific Slack channels when workflows detect events: a new lead, a failed deployment, a critical support ticket, or a competitor pricing change
+- **Slack command triggers** — use a slash command or button reaction to trigger an n8n workflow — run a report, start a scraping job, or look up a CRM record — without leaving Slack
+- **Approval workflows** — send a message with approve/reject buttons, capture the response, and route the workflow based on the decision — useful for invoice approvals, content reviews, or access requests
+
+---
+
 ## 📋 Templates
 
 | # | Template | Category | 👀 Views |

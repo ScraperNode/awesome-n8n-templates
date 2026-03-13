@@ -4,6 +4,25 @@
 
 [⬅️ Back to main index](../../README.md)
 
+## Developer Automation & API Workflows with n8n
+
+Developer automation covers the workflows software teams build for themselves — API integrations, internal tooling, data sync between services, testing automation, and the glue code that connects systems. n8n is particularly useful here because the HTTP Request node calls any REST API and the Code node runs arbitrary JavaScript or Python, so you're not limited to pre-built integrations.
+
+This category has 515 templates for software teams: CI/CD pipeline triggers, GitHub and GitLab automation, API endpoint creation, database sync workflows, and developer productivity tools that connect Jira, Slack, GitHub, and internal services.
+
+### What You Can Do
+
+- **API automation** — call any REST API from an n8n workflow, transform the response, and send it elsewhere — no custom server required, no deployment overhead
+- **GitHub and GitLab automation** — trigger workflows on PRs, issues, or commits: auto-label by changed files, notify Slack, create JIRA tickets, or run deployment checks
+- **Browser automation** — use the HTTP Request node or community scraping nodes to interact with web interfaces that don't have APIs, extract data, and feed it into your pipeline
+- **Database synchronization** — keep records in sync across Postgres, MySQL, MongoDB, and external SaaS tools with scheduled or event-driven n8n workflows
+
+### Getting Started
+
+The [HTTP Request](../../integrations/http-request/) integration page lists every template that uses API calls — a good starting point for any API automation project. Browse the templates below and see also: [DevOps & CI/CD](../devops/) for deployment pipeline automation.
+
+---
+
 ## 📋 Templates
 
 | Template | Description | 🔗 Key Nodes | 👀 Views |

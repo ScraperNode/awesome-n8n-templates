@@ -4,6 +4,25 @@
 
 [⬅️ Back to main index](../../README.md)
 
+## CRM Automation with n8n
+
+CRM automation connects your customer data across HubSpot, Salesforce, Pipedrive, and Airtable with the rest of your stack — without needing a native integration for every tool. n8n handles the data sync, enrichment, and routing logic: when a deal reaches a new stage, update the linked spreadsheet; when a contact goes cold, add them to a re-engagement sequence; when a form is submitted, create the CRM record and assign it in one workflow.
+
+This category has 392 templates for sales operations teams: lead-to-CRM workflows, deal stage automation, contact enrichment, and sales reporting pipelines.
+
+### What You Can Do
+
+- **HubSpot and Salesforce automation** — sync contacts between your CRM and other tools, trigger email sequences on deal stage changes, and keep activity logs updated without manual entry
+- **Sales operations automation** — route inbound leads based on company size, industry, or geography; assign to the right rep; and create onboarding tasks automatically in one workflow run
+- **Contact enrichment** — when a new lead enters your CRM, automatically fill in company headcount, revenue range, and tech stack from enrichment APIs like Apollo or Clearbit
+- **Sales reporting** — pull deal pipeline data from your CRM on a schedule and push it to a Google Sheets dashboard or a Slack digest for weekly team reviews
+
+### Getting Started
+
+Browse the templates below. Most CRM workflows need a HubSpot, Salesforce, or Pipedrive credential — configure them using the [credential setup guide](../../docs/credential-setup/). For lead generation workflows that feed into CRM, see [Lead Generation & Enrichment](../lead-generation/).
+
+---
+
 ## 📋 Templates
 
 | Template | Description | 🔗 Key Nodes | 👀 Views |

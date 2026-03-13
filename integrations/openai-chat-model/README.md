@@ -4,6 +4,18 @@
 
 [⬅️ Back to main index](../../README.md) · [📂 Browse by category](../../templates/)
 
+## ChatGPT & OpenAI Workflow Automation with n8n
+
+The OpenAI Chat Model node connects n8n workflows to GPT-4, GPT-4o, and other OpenAI models — turning any workflow step into an AI reasoning or generation task. With 2,124 templates, it's the most-used AI node in this collection. It handles everything from simple text generation to multi-step agent reasoning, function calling, and structured output parsing.
+
+### Popular Automation Patterns
+
+- **AI agents with tools** — build agents that use OpenAI's function calling to query databases, call APIs, search the web, or send messages as part of answering a user request
+- **Structured data extraction** — pass unstructured text (emails, documents, web pages) to GPT-4 and get back clean JSON with specific fields extracted — no regex or custom parsing logic required
+- **Content generation pipelines** — combine a trigger (new blog topic, product launch, support ticket) with an OpenAI node to draft copy, responses, or reports automatically
+
+---
+
 ## 📋 Templates
 
 | # | Template | Category | 👀 Views |

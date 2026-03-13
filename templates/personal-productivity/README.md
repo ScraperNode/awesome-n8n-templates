@@ -4,6 +4,25 @@
 
 [⬅️ Back to main index](../../README.md)
 
+## Personal Automation with n8n
+
+Personal automation handles the small, repetitive tasks that eat into your day: triaging email, tracking habits, moving information between apps, setting reminders based on conditions. n8n is effective here because it runs on a self-hosted server or in the cloud and can trigger on anything — a time, a message, a form, or an API call — without requiring a paid seat in each connected tool.
+
+This category has 569 templates for individuals and small teams: AI personal assistant workflows, daily briefing builders, habit trackers, note-taking automation, and smart notification systems.
+
+### What You Can Do
+
+- **AI personal assistant** — build a Telegram or WhatsApp chatbot backed by an LLM that answers questions, searches the web, summarizes documents, and triggers other n8n workflows on your behalf
+- **Daily briefing automation** — pull weather, calendar events, top news, and your task list from separate sources each morning and send a single formatted summary to your email or Telegram
+- **Task and habit tracking** — log completions to Notion or Google Sheets automatically based on triggers (a message, a button press, or a time check), keeping tracking accurate without manual entry
+- **Smart email management** — classify incoming emails with AI, apply labels, draft replies for your review, or forward to the right person automatically based on message content
+
+### Getting Started
+
+The most popular starting point is [AI agent chat](1954-ai-agent-chat/) (1.4M views), which shows how to build a conversational assistant with memory and tool access. Configure your integrations using the [credential setup guide](../../docs/credential-setup/).
+
+---
+
 ## 📋 Templates
 
 | Template | Description | 🔗 Key Nodes | 👀 Views |

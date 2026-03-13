@@ -4,6 +4,25 @@
 
 [⬅️ Back to main index](../../README.md) · [📂 Browse by category](../../templates/) · [🔌 Browse by integration](../../integrations/)
 
+## Data Pipeline & ETL Automation with n8n
+
+Data pipeline automation moves data between systems on a schedule or in real time — no custom scripts required. ETL workflows built in n8n can extract from APIs, databases, spreadsheets, or file uploads; transform records with JavaScript or AI; and load them into a data warehouse, analytics platform, or reporting tool. Unlike standalone ETL tools, n8n workflows can also act on what the pipeline finds: send alerts, trigger downstream processes, or update other systems based on the data.
+
+This collection has 1,572 templates for data teams and automation engineers: API-to-database sync workflows, Google Sheets aggregation pipelines, Airtable transformation workflows, and multi-source data consolidation patterns.
+
+### Common Workflow Patterns
+
+- **API-to-database sync** — pull data from any REST API (CRM, SaaS tool, analytics platform) on a schedule and insert or upsert records into Postgres, MySQL, or Supabase
+- **Multi-source aggregation** — combine data from several APIs into a single Google Sheet or Airtable base, deduplicated and normalized by the workflow logic
+- **Data transformation pipelines** — clean, reformat, and enrich raw data before loading it elsewhere — currency conversion, date normalization, field mapping, AI classification
+- **Real-time event-driven pipelines** — trigger data sync on a webhook event so your systems stay in sync within seconds of a change, not the next scheduled run
+
+### Getting Started
+
+Browse the templates below. Most data pipeline templates use the HTTP Request or Google Sheets node as the source. See also: [Engineering](../../templates/engineering/) for developer-focused database integration patterns.
+
+---
+
 ## 📋 Templates
 
 | # | Template | Category | 👀 Views |

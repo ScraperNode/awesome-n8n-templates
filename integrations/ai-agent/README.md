@@ -4,6 +4,18 @@
 
 [⬅️ Back to main index](../../README.md) · [📂 Browse by category](../../templates/)
 
+## Build AI Agents with n8n
+
+The AI Agent node is n8n's core component for autonomous AI workflows. Unlike a single LLM call, an agent can use tools — search the web, query a database, call an API, run a sub-workflow — and decide which tools to use based on the task. With 2,986 templates, it's the most common pattern in this collection for anything beyond a simple text generation step.
+
+### Popular Automation Patterns
+
+- **Tool-using agents** — build agents that combine OpenAI or Anthropic models with tools for web search, code execution, email sending, and CRM updates — the agent decides the sequence based on what the user asked
+- **Multi-agent pipelines** — chain specialized agents (a researcher, a writer, a publisher) using n8n's Call Workflow node, so each handles a specific step with its own system prompt and tool set
+- **AI agent with persistent memory** — connect the Simple Memory or an external memory node so the agent remembers conversation history across sessions, useful for support bots, personal assistants, and sales agents
+
+---
+
 ## 📋 Templates
 
 | # | Template | Category | 👀 Views |

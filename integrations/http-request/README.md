@@ -1,12 +1,12 @@
 # 🔌 HTTP Request
 
-> **4287 templates** using **HTTP Request** in n8n workflows.
+> **4288 templates** using **HTTP Request** in n8n workflows.
 
 [⬅️ Back to main index](../../README.md) · [📂 Browse by category](../../templates/)
 
 ## API Automation with n8n
 
-The HTTP Request node is the foundation of API automation in n8n — it calls any REST endpoint with full control over method, headers, authentication, body, and response handling. With 4,287 templates, it's the single most-used node in the entire collection. Any workflow that pulls data from an API, pushes to a webhook, or calls a service without a native n8n integration uses HTTP Request.
+The HTTP Request node is the foundation of API automation in n8n — it calls any REST endpoint with full control over method, headers, authentication, body, and response handling. With 4,288 templates, it's the single most-used node in the entire collection. Any workflow that pulls data from an API, pushes to a webhook, or calls a service without a native n8n integration uses HTTP Request.
 
 ### Popular Automation Patterns
 
@@ -4307,6 +4307,7 @@ The HTTP Request node is the foundation of API automation in n8n — it calls an
 | 4285 | [Triage tickets by ranking next actions with VectorPrime via webhook](../../templates/ticket-management/12962-triage-tickets-by-ranking-next-actions-with-vectorprime-via-webhook/) | 🎫 Ticket Management & Triage | 0 |
 | 4286 | [Re-engage event participants from HubSpot with Gemini and email outreach](../../templates/lead-nurturing/13843-re-engage-event-participants-from-hubspot-with-gemini-and-email-outreach/) | 💬 Lead Nurturing & AI Sales Agents | 0 |
 | 4287 | [Create an automated workitem(incident/bug/userstory) in azure devops](../../templates/devops/2500-create-an-automated-workitemincidentbuguserstory-in-azure-devops/) | ⚙️ DevOps & CI/CD | 0 |
+| 4288 | [Komos Regulated Browser Ops Task Queue](../../templates/hr/komos-regulated-browser-ops-task-queue/) | 👥 HR & Recruitment | 0 |
 
 ---
 

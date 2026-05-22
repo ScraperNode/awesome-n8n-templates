@@ -1,6 +1,6 @@
 # 👥 HR & Recruitment
 
-> **219 templates** — 👥 Applicant tracking, resume parsing, onboarding automation, and employee management workflows.
+> **220 templates** — 👥 Applicant tracking, resume parsing, onboarding automation, and employee management workflows.
 
 [⬅️ Back to main index](../../README.md)
 
@@ -227,6 +227,7 @@
 | [Classify job applicants from CVs using Claude, PDF.co, Google Docs and Gmail](12779-classify-job-applicants-from-cvs-using-claude-pdfco-google-docs-and-gmail/) | An automated workflow that processes job applications by analyzing CVs/resumes submitted through a form and intelligently routing candidates based on qualification criteria. | AI Agent, Summarization Chain, Anthropic Chat Model, n8n Form Trigger, Extract from File, Text Classifier | 4 |
 | [Gamify Keephub form response times and email a ranked leaderboard via Gmail](13555-gamify-keephub-form-response-times-and-email-a-ranked-leaderboard-via-gmail/) | HR teams, internal comms managers, and operations leads using Keephub who want to turn form completions into a friendly competition and drive faster engagement across the organisation. | Gmail, n8n Form Trigger | 2 |
 | [Screen CVs with OpenAI and PostgreSQL using chained prompts](13876-screen-cvs-with-openai-and-postgresql-using-chained-prompts/) | - Webhook receives a job ID and list of candidate IDs from your database | Postgres, Webhook, OpenAI | 1 |
+| [Komos Regulated Browser Ops Task Queue](komos-regulated-browser-ops-task-queue/) | Queues a Komos browser automation task from n8n for CRA, banking, insurance, and HR portal operations. | Webhook, Code, HTTP Request, Set, Respond to Webhook | 0 |
 
 ---
 

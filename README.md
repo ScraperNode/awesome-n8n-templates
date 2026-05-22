@@ -1,13 +1,13 @@
 # 🔥 Awesome n8n Templates
 
-[![⚡ 8,697+ Templates](https://img.shields.io/badge/⚡_templates-8697%2B-ff6d5a?style=for-the-badge)](.)
+[![⚡ 8,698+ Templates](https://img.shields.io/badge/⚡_templates-8698%2B-ff6d5a?style=for-the-badge)](.)
 [![📂 25 Categories](https://img.shields.io/badge/📂_categories-25-4ecdc4?style=for-the-badge)](.)
 [![MIT License](https://img.shields.io/badge/license-MIT-ffe66d?style=for-the-badge)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge)](CONTRIBUTING.md)
 
 > **🚀 The largest open-source collection of n8n workflow templates on GitHub.**
 > 
-> **8,697+** ready-to-import automation workflows across **25 categories** — from AI agents and email automation to web scraping, CRM integrations, and beyond.
+> **8,698+** ready-to-import automation workflows across **25 categories** — from AI agents and email automation to web scraping, CRM integrations, and beyond.
 
 Whether you're automating your first workflow or building complex multi-step integrations, this collection has you covered. Every template is a `.json` file you can import directly into [n8n](https://n8n.io) in seconds.
 
@@ -50,7 +50,7 @@ Hand-picked templates showcasing the most powerful automation patterns — these
 
 ## 📂 Categories
 
-Browse **8,697+** templates organized into **25 categories**. Click any category to explore its full template library.
+Browse **8,698+** templates organized into **25 categories**. Click any category to explore its full template library.
 
 | Category | Templates | Description |
 |----------|:---------:|-------------|
@@ -67,7 +67,7 @@ Browse **8,697+** templates organized into **25 categories**. Click any category
 | 💬 [Lead Nurturing & AI Sales Agents](templates/lead-nurturing/) | **347** | 🤝 Lead follow-up sequences, AI sales agents, and automated nurturing campaigns. |
 | 🎫 [Ticket Management & Triage](templates/ticket-management/) | **271** | 🎫 Automated ticket routing, email enrichment, priority triage, and response generation workflows. |
 | 📈 [Crypto Trading & Stock Market](templates/crypto-trading/) | **221** | 📈 Cryptocurrency trading bots, stock market analysis, portfolio tracking, and financial market autom... |
-| 👥 [HR & Recruitment](templates/hr/) | **219** | 👥 Applicant tracking, resume parsing, onboarding automation, and employee management workflows. |
+| 👥 [HR & Recruitment](templates/hr/) | **220** | 👥 Applicant tracking, resume parsing, onboarding automation, and employee management workflows. |
 | 📋 [Project Management](templates/project-management/) | **208** | 📋 Project tracking, team collaboration, and workflow automation with Notion, Jira, Linear, Asana, an... |
 | 📁 [File Management](templates/file-management/) | **204** | 📁 File organization, conversion, backup, and cloud storage automation across Google Drive, Dropbox, ... |
 | 🧾 [Invoice Processing](templates/invoice-processing/) | **202** | 🧾 Automated invoice extraction, validation, approval workflows, and accounting integrations. |
@@ -79,7 +79,7 @@ Browse **8,697+** templates organized into **25 categories**. Click any category
 | 🔍 [AI RAG & Knowledge Retrieval](templates/ai-rag/) | **49** | 📚 Retrieval-Augmented Generation (RAG) workflows, MCP integrations, vector stores, and knowledge bas... |
 | ✨ [AI & LLMs](templates/ai-and-llm/) | **35** | 🧠 Multimodal AI workflows — image generation, content creation, and advanced AI model integrations w... |
 | 🤗 [Customer Support](templates/support/) | **1** | 🤗 Customer support automation, help desk workflows, and service management. |
-| | **8,697** | |
+| | **8,698** | |
 
 ---
 
@@ -104,7 +104,7 @@ Find templates by the tools and services they use. Click any integration to see 
 
 | Integration | Templates | | Integration | Templates |
 |-------------|:---------:|-|-------------|:---------:|
-| [HTTP Request](integrations/http-request/) | **4,287** | | [OpenRouter Chat Model](integrations/openrouter-chat-model/) | **405** |
+| [HTTP Request](integrations/http-request/) | **4,288** | | [OpenRouter Chat Model](integrations/openrouter-chat-model/) | **405** |
 | [AI Agent](integrations/ai-agent/) | **2,986** | | [Airtable](integrations/airtable/) | **373** |
 | [Google Sheets](integrations/google-sheets/) | **2,673** | | [Convert to File](integrations/convert-to-file/) | **362** |
 | [Schedule Trigger](integrations/schedule-trigger/) | **2,245** | | [MCP Server Trigger](integrations/mcp-server-trigger/) | **290** |

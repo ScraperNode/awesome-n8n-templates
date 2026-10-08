@@ -1200,6 +1200,7 @@ The [AI copywriting tools](../ai-tools/) category has classification and summari
 | [Convert Google Drive PDFs into SEO blog HTML using OpenAI GPT-4.1](13739-convert-google-drive-pdfs-into-seo-blog-html-using-openai-gpt-41/) | This workflow automatically converts PDF files stored in Google Drive into structured, SEO-optimized blog articles in HTML format. | Google Drive, Extract from File, OpenAI | 1 |
 | [Generate images from Airtable records with Layerre and Canva](13881-generate-images-from-airtable-records-with-layerre-and-canva/) | How it works | Airtable | 1 |
 | [Create AI video ads from product descriptions using AI Agent and deAPI](13893-create-ai-video-ads-from-product-descriptions-using-ai-agent-and-deapi/) | - Marketing teams who need quick video ads without a production crew | Gmail, AI Agent, Anthropic Chat Model, Structured Output Parser, n8n Form Trigger | 0 |
+| [Arcmira: YouTube transcript source shortlist](arcmira-youtube-transcript-source-shortlist/) | Find up to three indexed YouTube passages with timestamps, source links and coverage notes. Requires an Arcmira account. | HTTP Request, Code, Manual Trigger | — |
 
 ---
 

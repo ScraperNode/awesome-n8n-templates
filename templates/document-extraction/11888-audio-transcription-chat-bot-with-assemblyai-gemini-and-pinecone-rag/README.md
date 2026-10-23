@@ -1,6 +1,6 @@
 # 🔬 Audio transcription & chat bot with AssemblyAI, Gemini, and Pinecone RAG
 
-> ⚡ **569 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **907 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

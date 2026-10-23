@@ -1,6 +1,6 @@
 # 📋 Automated task creation from Google Sheets to Monday.com with status updates
 
-> ⚡ **294 views** · 📋 [Project Management](../)
+> ⚡ **323 views** · 📋 [Project Management](../)
 
 ## Description
 

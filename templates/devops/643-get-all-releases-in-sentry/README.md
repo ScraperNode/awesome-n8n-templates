@@ -1,6 +1,6 @@
 # ⚙️ Get all releases in Sentry
 
-> ⚡ **845 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **903 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

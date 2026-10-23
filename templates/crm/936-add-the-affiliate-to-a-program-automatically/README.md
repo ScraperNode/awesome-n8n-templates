@@ -1,6 +1,6 @@
 # 🤝 Add the affiliate to a program automatically
 
-> ⚡ **2,021 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,169 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

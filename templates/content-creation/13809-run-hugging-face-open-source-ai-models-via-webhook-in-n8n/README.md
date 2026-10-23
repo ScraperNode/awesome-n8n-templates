@@ -1,6 +1,6 @@
 # 🎬 Run Hugging Face open-source AI models via webhook in n8n
 
-> ⚡ **19 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **208 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

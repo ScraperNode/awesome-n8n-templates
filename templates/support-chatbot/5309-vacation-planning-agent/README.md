@@ -1,6 +1,6 @@
 # 💬 Vacation planning agent
 
-> ⚡ **2,048 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,542 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

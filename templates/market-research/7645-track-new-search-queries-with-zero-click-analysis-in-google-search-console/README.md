@@ -1,6 +1,6 @@
 # 📊 Track new search queries with zero-click analysis in Google Search Console
 
-> ⚡ **414 views** · 📊 [Market Research & Insights](../)
+> ⚡ **510 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

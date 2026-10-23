@@ -1,6 +1,6 @@
 # 🤝 Track & analyze sales performance with AI insights and Google Sheets
 
-> ⚡ **1,030 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,131 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

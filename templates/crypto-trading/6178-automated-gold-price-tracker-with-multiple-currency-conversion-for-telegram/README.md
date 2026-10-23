@@ -1,6 +1,6 @@
 # 📈 Automated gold price tracker with multiple currency conversion for Telegram 📈
 
-> ⚡ **1,256 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,693 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

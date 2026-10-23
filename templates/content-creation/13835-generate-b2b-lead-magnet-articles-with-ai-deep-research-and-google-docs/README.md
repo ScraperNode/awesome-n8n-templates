@@ -1,6 +1,6 @@
 # 🎬 Generate B2B lead magnet articles with AI deep research and Google Docs
 
-> ⚡ **19 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **304 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

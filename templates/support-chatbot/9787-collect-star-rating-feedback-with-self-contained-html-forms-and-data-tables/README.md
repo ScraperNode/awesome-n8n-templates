@@ -1,6 +1,6 @@
 # 💬 Collect star rating feedback with self-contained HTML forms and data tables
 
-> ⚡ **303 views** · 💬 [Support Chatbots](../)
+> ⚡ **362 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

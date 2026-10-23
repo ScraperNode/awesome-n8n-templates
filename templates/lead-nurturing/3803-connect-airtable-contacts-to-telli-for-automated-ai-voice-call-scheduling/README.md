@@ -1,6 +1,6 @@
 # 💬 Connect Airtable contacts to telli for automated AI voice call scheduling
 
-> ⚡ **671 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **747 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

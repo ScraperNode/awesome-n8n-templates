@@ -1,6 +1,6 @@
 # 📖 Build a RAG knowledge chatbot with OpenAI, Google Drive, and Supabase
 
-> ⚡ **1,182 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **1,316 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

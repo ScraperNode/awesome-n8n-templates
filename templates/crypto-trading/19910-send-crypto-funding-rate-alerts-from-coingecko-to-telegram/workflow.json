@@ -1,0 +1,247 @@
+{
+  "name": "Send crypto funding rate alerts from CoinGecko to Telegram",
+  "nodes": [
+    {
+      "id": "b1d0f0a1-0001-4000-8000-000000000001",
+      "name": "Template overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -560,
+        -360
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 480,
+        "height": 900,
+        "content": "## Send crypto funding rate alerts from CoinGecko to Telegram\n\n### Who's it for\nCrypto traders, funding-rate arbitrageurs and market watchers who want to know when perpetual futures funding becomes extreme \u2014 without checking dozens of exchanges by hand.\n\n### How it works\nEvery hour, the workflow pulls the funding rates of ~26,000 perpetual contracts across 100+ exchanges from the free CoinGecko API (no key needed).\nIt keeps only liquid venues, drops venues that report rates in an abnormal unit, then groups the extreme rates **by coin**: rate range across venues, number of venues and the most liquid venue.\nOne clean Telegram message is sent. A wide range across venues for the same coin is a cross-exchange arbitrage signal.\nCoins already announced are not repeated every hour, and long lists are cut to fit Telegram's size limit.\n\n### How to set up\n1. Create a Telegram bot with @BotFather and add its token as a Telegram credential in **Send Telegram alert**.\n2. Send a message to your bot and get your chat ID (e.g. with @userinfobot).\n3. Open **Set alert settings** and paste your chat ID.\n4. Activate the workflow.\n\n### Requirements\n- A Telegram bot token\n- n8n (cloud or self-hosted)\n\n### How to customize the workflow\nIn **Set alert settings**: change the threshold (default \u00b10.1% per funding period), the minimum 24h volume, restrict to some exchanges (e.g. `binance, bybit`), the number of coins per message, or turn off the no-repeat option. Change the schedule in **Every hour**.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b1d0f0a1-0002-4000-8000-000000000002",
+      "name": "Every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "b1d0f0a1-0003-4000-8000-000000000003",
+      "name": "Set alert settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-0",
+              "name": "threshold_pct",
+              "type": "number",
+              "value": 0.1
+            },
+            {
+              "id": "cfg-1",
+              "name": "min_volume_24h_usd",
+              "type": "number",
+              "value": 1000000
+            },
+            {
+              "id": "cfg-2",
+              "name": "exchanges",
+              "type": "string",
+              "value": ""
+            },
+            {
+              "id": "cfg-3",
+              "name": "top_n",
+              "type": "number",
+              "value": 10
+            },
+            {
+              "id": "cfg-4",
+              "name": "only_new_coins",
+              "type": "boolean",
+              "value": true
+            },
+            {
+              "id": "cfg-5",
+              "name": "telegram_chat_id",
+              "type": "string",
+              "value": "YOUR_CHAT_ID"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "b1d0f0a1-0004-4000-8000-000000000004",
+      "name": "Fetch funding rates from CoinGecko",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 3,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "url": "https://api.coingecko.com/api/v3/derivatives",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "b1d0f0a1-0005-4000-8000-000000000005",
+      "name": "Filter and format alert",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Code node \"Build alert\" (mode: Run Once for All Items).\n// Reads the CoinGecko /derivatives response (one item, full response mode), keeps liquid\n// perpetual contracts whose funding rate is beyond the threshold, groups them by coin and\n// builds one Telegram message.\n\n// Telegram is sent with parse mode HTML: neutralise the only three special characters.\nconst escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n\nconst cfg = $('Set alert settings').first().json;\n\nconst toNumber = (value, name, { min, integer = false }) => {\n  const n = value === '' || value === null || value === undefined ? NaN : Number(value);\n  if (!Number.isFinite(n) || n < min || (integer && !Number.isInteger(n))) {\n    throw new Error(`Config: \"${name}\" must be ${integer ? 'an integer' : 'a number'} \u2265 ${min} (got \"${value}\")`);\n  }\n  return n;\n};\nconst thresholdPct = toNumber(cfg.threshold_pct, 'threshold_pct', { min: 0 });\nconst minVolume = toNumber(cfg.min_volume_24h_usd, 'min_volume_24h_usd', { min: 0 });\nconst topN = toNumber(cfg.top_n, 'top_n', { min: 1, integer: true });\nconst onlyNew = cfg.only_new_coins === true || cfg.only_new_coins === 'true';\nconst exchanges = String(cfg.exchanges || '')\n  .split(',')\n  .map((s) => s.trim().toLowerCase())\n  .filter(Boolean);\n\nconst contracts = $('Fetch funding rates from CoinGecko').first().json.body;\nif (!Array.isArray(contracts)) {\n  throw new Error(`CoinGecko did not return a contract list: ${JSON.stringify(contracts).slice(0, 300)}`);\n}\n\n// Liquid perpetuals with a usable rate. CoinGecko already returns funding_rate as a percentage.\nconst liquid = [];\nfor (const c of contracts) {\n  if (!c || c.contract_type !== 'perpetual') continue;\n  const ratePct = Number(c.funding_rate);\n  const volume = Number(c.volume_24h) || 0;\n  if (c.funding_rate === null || !Number.isFinite(ratePct) || volume < minVolume) continue;\n  liquid.push({\n    coin: String(c.index_id || c.symbol).toUpperCase(),\n    market: String(c.market || ''),\n    ratePct,\n    volume,\n  });\n}\n\n// Some venues report rates in the wrong unit (e.g. ETH at 1% per funding while every other\n// venue shows ~0.003%).\n// - Venues with enough contracts are judged on their typical |rate| vs the cross-venue norm.\n// - Small venues cannot be judged that way (one genuinely hot coin would flag the whole venue),\n//   so each of their contracts is compared with the same coin on the other venues instead.\nconst median = (a) => {\n  if (!a.length) return 0;\n  const s = [...a].sort((x, y) => x - y);\n  const m = Math.floor(s.length / 2);\n  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;\n};\nconst OUTLIER_FACTOR = 10;\nconst MIN_CONTRACTS_TO_JUDGE_VENUE = 5;\n\nconst byMarket = {};\nfor (const r of liquid) (byMarket[r.market] = byMarket[r.market] || []).push(r);\nconst marketMedians = Object.fromEntries(\n  Object.entries(byMarket).map(([m, list]) => [m, median(list.map((r) => Math.abs(r.ratePct)))]),\n);\nconst norm = median(Object.values(marketMedians));\n\nconst outlierVenues = new Set(\n  Object.entries(marketMedians)\n    .filter(([m, med]) => byMarket[m].length >= MIN_CONTRACTS_TO_JUDGE_VENUE && norm > 0 && med > norm * OUTLIER_FACTOR)\n    .map(([m]) => m),\n);\n\nconst ratesByCoin = {};\nfor (const r of liquid) {\n  if (outlierVenues.has(r.market)) continue;\n  (ratesByCoin[r.coin] = ratesByCoin[r.coin] || []).push(r);\n}\nconst isSuspicious = (r) => {\n  if (byMarket[r.market].length >= MIN_CONTRACTS_TO_JUDGE_VENUE) return false;\n  const others = (ratesByCoin[r.coin] || []).filter((o) => o.market !== r.market).map((o) => o.ratePct);\n  if (others.length < 3) return false; // nothing to compare with: keep it\n  const reference = Math.max(Math.abs(median(others)), norm);\n  return Math.abs(r.ratePct) > reference * OUTLIER_FACTOR;\n};\n\nconst hits = liquid.filter((r) => {\n  if (outlierVenues.has(r.market) || isSuspicious(r)) return false;\n  if (Math.abs(r.ratePct) < thresholdPct) return false;\n  if (exchanges.length && !exchanges.some((e) => r.market.toLowerCase().includes(e))) return false;\n  return true;\n});\n\n// One entry per coin: how many venues, rate range, and the most liquid venue.\nconst byCoin = {};\nfor (const r of hits) (byCoin[r.coin] = byCoin[r.coin] || []).push(r);\nconst coins = Object.entries(byCoin).map(([coin, list]) => {\n  const rates = list.map((r) => r.ratePct);\n  const min = Math.min(...rates);\n  const max = Math.max(...rates);\n  const top = list.reduce((a, b) => (b.volume > a.volume ? b : a));\n  return { coin, venues: list.length, min, max, extreme: Math.abs(min) > Math.abs(max) ? min : max, top };\n});\ncoins.sort((a, b) => Math.abs(b.extreme) - Math.abs(a.extreme));\n\n// Skip coins already alerted on a previous run (static data only persists on active workflows,\n// manual test runs always alert).\nconst store = onlyNew ? $getWorkflowStaticData('global') : null;\nconst previous = new Set((store && store.lastAlerted) || []);\nconst selected = onlyNew ? coins.filter((c) => !previous.has(c.coin)) : coins;\n\nconst pct = (n) => `${n >= 0 ? '+' : ''}${n.toFixed(3)}%`;\nconst money = (n) =>\n  n >= 1e9 ? `$${(n / 1e9).toFixed(1)}B`\n    : n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M`\n      : n >= 1e3 ? `$${Math.round(n / 1e3)}K`\n        : `$${Math.round(n)}`;\n\nconst header = `\ud83d\udd14 Funding rate alert (per funding period)\\n` +\n  `${selected.length} coin(s) beyond \u00b1${thresholdPct}% \u00b7 venues with 24h volume \u2265 ${money(minVolume)}\\n`;\n\n// Telegram rejects messages over 4096 characters: keep whole lines that fit.\nconst LIMIT = 3900;\nlet body = '';\nconst shown = [];\nfor (const c of selected.slice(0, topN)) {\n  const side = c.min > 0 ? 'longs pay shorts' : c.max < 0 ? 'shorts pay longs' : 'opposite signs across venues';\n  const range = c.venues > 1 ? `${pct(c.min)} to ${pct(c.max)} on ${c.venues} venues` : `${pct(c.extreme)} on 1 venue`;\n  const line = `${c.coin}: ${range} (${side})\\n` +\n    `   most liquid: ${c.top.market} ${pct(c.top.ratePct)} \u00b7 24h vol ${money(c.top.volume)}`;\n  const next = body ? `${body}\\n\\n${line}` : line;\n  if (header.length + next.length > LIMIT) break;\n  body = next;\n  shown.push(c.coin);\n}\n\n// Remember what the user has actually seen: coins shown now, plus coins announced earlier that are\n// still beyond the threshold. Coins cut from this message stay eligible for the next run.\nif (store) {\n  const current = new Set(coins.map((c) => c.coin));\n  store.lastAlerted = [...[...previous].filter((coin) => current.has(coin)), ...shown];\n}\n\nif (shown.length === 0) return [];\n\nconst more = selected.length > shown.length ? `\\n\\n\u2026and ${selected.length - shown.length} more coins` : '';\n\nconst response = $('Fetch funding rates from CoinGecko').first().json;\nreturn [{\n  json: {\n    message: escapeHtml(`${header}\\n${body}${more}`),\n    count: selected.length,\n    contracts_received: contracts.length,\n    data_date: (response.headers && response.headers.date) || null,\n  },\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b1d0f0a1-0006-4000-8000-000000000006",
+      "name": "Send Telegram alert",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "text": "={{ $json.message }}",
+        "chatId": "={{ $('Set alert settings').first().json.telegram_chat_id }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "b1d0f0a1-0100-4000-8000-000000000000",
+      "name": "Step 1 \u00b7 Settings",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        140,
+        -230
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 210,
+        "height": 180,
+        "content": "### Step 1 \u00b7 Settings\nSet your Telegram chat ID here. Tune the threshold, minimum volume, exchanges and number of coins."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b1d0f0a1-0110-4000-8000-000000000011",
+      "name": "Step 2 \u00b7 Fetch",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        360,
+        -230
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 210,
+        "height": 180,
+        "content": "### Step 2 \u00b7 Fetch\nOne free CoinGecko call returns ~26,000 perpetual contracts from 100+ exchanges. Retries 3 times if rate-limited."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b1d0f0a1-0120-4000-8000-000000000022",
+      "name": "Step 3 \u00b7 Filter & format",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        580,
+        -230
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 210,
+        "height": 180,
+        "content": "### Step 3 \u00b7 Filter & format\nKeeps liquid venues, drops venues with abnormal units, groups by coin and skips coins already announced."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Every hour": {
+      "main": [
+        [
+          {
+            "node": "Set alert settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set alert settings": {
+      "main": [
+        [
+          {
+            "node": "Fetch funding rates from CoinGecko",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter and format alert": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch funding rates from CoinGecko": {
+      "main": [
+        [
+          {
+            "node": "Filter and format alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

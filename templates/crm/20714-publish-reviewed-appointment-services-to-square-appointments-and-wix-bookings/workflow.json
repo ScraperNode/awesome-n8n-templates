@@ -1,0 +1,1969 @@
+{
+  "name": "Publish reviewed appointment services to Square and Wix Bookings",
+  "nodes": [
+    {
+      "id": "d4f77277-92a9-51c9-8488-44f529545d33",
+      "name": "Run synthetic demo",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        280
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "578ecc5b-5e9f-55f6-9072-2721ecab8e2b",
+      "name": "Create synthetic product",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        300,
+        280
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{demo:true,product:{\"key\": \"consultation-demo\", \"title\": \"Garden planning consultation\", \"description\": \"A one-to-one consultation about planning a small garden.\", \"amount\": \"50.00\", \"currency\": \"USD\", \"durationMinutes\": 30, \"capacity\": 1}}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "0ac9eaf7-f58b-5576-8e05-b1cd03ea021a",
+      "name": "Receive operator request",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        300,
+        560
+      ],
+      "parameters": {
+        "options": {},
+        "formTitle": "Register one service on two booking sites",
+        "formFields": {
+          "values": [
+            {
+              "fieldName": "product",
+              "fieldType": "textarea",
+              "fieldLabel": "Canonical product JSON",
+              "placeholder": "{\"key\": \"consultation-demo\", \"title\": \"Garden planning consultation\", \"description\": \"A one-to-one consultation about planning a small garden.\", \"amount\": \"50.00\", \"currency\": \"USD\", \"durationMinutes\": 30, \"capacity\": 1}",
+              "requiredField": true
+            }
+          ]
+        },
+        "authentication": "n8nUserAuth"
+      },
+      "typeVersion": 2.6
+    },
+    {
+      "id": "bb2ad4a8-b3a4-5c38-ac79-7afc79b8c882",
+      "name": "Configure booking destinations",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        600,
+        420
+      ],
+      "parameters": {
+        "mode": "raw",
+        "options": {
+          "stripBinary": false
+        },
+        "jsonOutput": "={{ JSON.stringify(Object.assign({}, $json, {\"automationBaseUrl\": \"http://host.docker.internal:8780\", \"squareEnvironment\": \"sandbox\", \"squareLocationId\": \"\", \"squareTeamMemberId\": \"\", \"wixSiteId\": \"\", \"wixCategoryId\": \"\", \"wixStaffResourceId\": \"\", \"wixLocationId\": \"\"})) }}",
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.5
+    },
+    {
+      "id": "2c7d7c12-90d3-52b0-a90e-29a3fee7c479",
+      "name": "Validate and map canonical product",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        900,
+        420
+      ],
+      "parameters": {
+        "jsCode": "function parseObject(value) {\n  if (typeof value === 'string') {\n    const text = value.trim().replace(/^```(?:json)?\\s*/i, '').replace(/\\s*```$/, '');\n    value = JSON.parse(text);\n  }\n  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Expected a JSON object');\n  return value;\n}\nfunction bookingProduct(value) {\n const p=typeof value==='string'?JSON.parse(value):value;\n if(!p||typeof p!=='object'||Array.isArray(p))throw Error('Product JSON required');\n for(const k of ['key','title','description','amount','currency'])if(typeof p[k]!=='string'||!p[k].trim())throw Error('Missing '+k);\n if(!/^[a-z0-9][a-z0-9_-]{2,63}$/.test(p.key)||p.title.length>80||p.description.length>1500||/[<>]/.test(p.title+p.description))throw Error('Use a stable key and plain text');\n const exponent={USD:2,JPY:0,EUR:2,GBP:2,CAD:2,AUD:2}[p.currency];\n if(exponent===undefined||!/^\\d+(?:\\.\\d{1,2})?$/.test(p.amount))throw Error('Unsupported currency or amount');\n const [whole,fraction='']=p.amount.split('.');if(fraction.length>exponent)throw Error('Currency decimal mismatch');\n const minor=Number(whole+fraction.padEnd(exponent,'0'));if(!Number.isSafeInteger(minor)||minor<=0||minor>1+1234567890)throw Error('Invalid fixed price');\n if(!Number.isInteger(p.durationMinutes)||p.durationMinutes<5||p.durationMinutes>480||p.capacity!==1)throw Error('Use one-to-one services of 5\u2013480 minutes');\n return {key:p.key,title:p.title.trim(),description:p.description.trim().replace(/\\r\\n/g,'\\n'),amount:exponent?(minor/10**exponent).toFixed(exponent):String(minor),currency:p.currency,minorUnits:minor,durationMinutes:p.durationMinutes,capacity:1};\n}\nfunction bookingRequests(p,t,idempotencyKey) {\n const item='#'+p.key, variation='#'+p.key+'-standard';\n return {\n square:{idempotency_key:idempotencyKey,object:{type:'ITEM',id:item,present_at_all_locations:false,present_at_location_ids:[t.squareLocationId],item_data:{name:p.title,description_html:'<p>'+p.description.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\\n/g,'<br>')+'</p>',product_type:'APPOINTMENTS_SERVICE',variations:[{type:'ITEM_VARIATION',id:variation,present_at_all_locations:false,present_at_location_ids:[t.squareLocationId],item_variation_data:{item_id:item,name:'Standard',pricing_type:'FIXED_PRICING',price_money:{amount:p.minorUnits,currency:p.currency},service_duration:p.durationMinutes*60000,available_for_booking:true,team_member_ids:[t.squareTeamMemberId]}}]}}},\n wix:{service:{type:'APPOINTMENT',name:p.title,description:p.description,defaultCapacity:1,hidden:false,category:{id:t.wixCategoryId},onlineBooking:{enabled:true,requireManualApproval:false,allowMultipleRequests:false},payment:{rateType:'FIXED',fixed:{price:{value:p.amount,currency:p.currency}},options:{online:false,inPerson:true,deposit:false,pricingPlan:false}},staffMemberIds:[t.wixStaffResourceId],schedule:{availabilityConstraints:{sessionDurations:[p.durationMinutes],timeBetweenSessions:0}},locations:[{type:'BUSINESS',business:{id:t.wixLocationId}}]}}\n };\n}\nfunction verifyBooking(provider,raw,p,t) {\n if(provider==='square') {\n  const o=raw.object, d=o?.item_data, v=d?.variations?.[0]?.item_variation_data;\n  if(o?.type!=='ITEM'||d?.product_type!=='APPOINTMENTS_SERVICE'||d?.name!==p.title||String(d.description_plaintext??d.description??'').replace(/\\r\\n/g,'\\n').trim()!==p.description||d.variations.length!==1||v?.pricing_type!=='FIXED_PRICING'||v.price_money?.amount!==p.minorUnits||v.price_money.currency!==p.currency||v.service_duration!==p.durationMinutes*60000||v.available_for_booking!==true||!v.team_member_ids?.includes(t.squareTeamMemberId)||!(o.present_at_all_locations===false&&o.present_at_location_ids?.includes(t.squareLocationId)))throw Error('Square readback differs from approved plan');\n  return o.id;\n }\n const s=raw.service, price=s?.payment?.fixed?.price, d=s?.schedule?.availabilityConstraints?.sessionDurations;\n if(!s?.id||s.type!=='APPOINTMENT'||s.name!==p.title||s.description!==p.description||s.defaultCapacity!==1||s.hidden===true||s.category?.id!==t.wixCategoryId||s.onlineBooking?.enabled!==true||s.payment?.rateType!=='FIXED'||s.payment.options?.inPerson!==true||price?.currency!==p.currency||Number(price.value)!==Number(p.amount)||!Array.isArray(d)||d.length!==1||d[0]!==p.durationMinutes||!s.staffMemberIds?.includes(t.wixStaffResourceId)||!s.locations?.some(l=>l.type==='BUSINESS'&&l.business?.id===t.wixLocationId))throw Error('Wix readback differs from approved plan');\n return s.id;\n}\nfunction claudeDraft(raw,job) {\n if(raw.stop_reason!=='end_turn')throw Error('Claude did not finish normally');\n const text=(raw.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('');\n const d=parseObject(text);if(typeof d.text!=='string'||typeof d.imagePrompt!=='string'||d.imagePrompt.length<20||d.imagePrompt.length>3000)throw Error('Invalid structured draft');\n const source=job.candidate.articleUrl||job.candidate.sourceUrl;\n let post=d.text.trim();\n if(/@(everyone|here)|<@|https?:\\/\\//i.test(post))throw Error('Draft must omit URLs and mention tags; n8n appends the reviewed source');\n post+='\\n'+source;\n const weighted=[...post.replace(/https?:\\/\\/\\S+/g,'x'.repeat(23))].reduce((n,ch)=>n+(ch.codePointAt(0)>127?2:1),0);\n if(weighted>280||[...post].length>280)throw Error('Draft exceeds conservative X limit');\n return {text:post,imagePrompt:d.imagePrompt,sourceUrl:source,evidenceStatus:job.candidate.evidenceStatus};\n}\n\nconst c=$json,p=bookingProduct(c.product);if(!c.demo){for(const k of ['squareLocationId','squareTeamMemberId','wixSiteId','wixCategoryId','wixStaffResourceId','wixLocationId'])if(!c[k]||!/^[-A-Za-z0-9_]+$/.test(c[k]))throw Error('Configure '+k);if(!['sandbox','production'].includes(c.squareEnvironment))throw Error('Invalid Square environment');}const t=Object.fromEntries(['squareEnvironment','squareLocationId','squareTeamMemberId','wixSiteId','wixCategoryId','wixStaffResourceId','wixLocationId'].map(k=>[k,c[k]]));return [{json:{product:p,targets:t,preview:bookingRequests(p,t,'assigned-after-approval'),demo:c.demo===true}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "407337e7-1b66-5b1b-9182-5a8fd5ba9a43",
+      "name": "Use synthetic preview?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        420
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "484d03d7-a50f-4003-ae77-0fa6ca82e234",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.demo === true }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "94906b6d-e72b-5cc5-9126-6468e4f016c0",
+      "name": "Show mapped requests",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1500,
+        180
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{status:\"synthetic_preview\",...$json}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "0480a06e-0871-5ddc-bfb1-ea67e9903275",
+      "name": "Review service and both destinations",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        1500,
+        420
+      ],
+      "parameters": {
+        "options": {
+          "formTitle": "Review service and both destinations",
+          "buttonLabel": "Continue",
+          "formDescription": "={{ \"<p>Confirm service, price and destinations. Booking sites and staff working hours must already be configured.</p><pre>\" + JSON.stringify($(\"Validate and map canonical product\").first().json,null,2).replace(/&/g,\"&amp;\").replace(/</g,\"&lt;\").replace(/>/g,\"&gt;\") + \"</pre>\" }}"
+        },
+        "limitType": "afterTimeInterval",
+        "operation": "page",
+        "formFields": {
+          "values": [
+            {
+              "fieldName": "decision",
+              "fieldType": "dropdown",
+              "fieldLabel": "Decision",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Reject"
+                  },
+                  {
+                    "option": "Approve"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "resumeUnit": "minutes",
+        "resumeAmount": 5,
+        "limitWaitTime": true
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "4cb0ec62-3c34-5264-810f-698cff96956e",
+      "name": "Product approved?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1800,
+        420
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "0d38c9ec-740d-4e11-889f-846b38c6371b",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.decision === \"Approve\" }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "380ce8fe-ebeb-5fde-b4d4-cbeef5ac814a",
+      "name": "Register approved publication plan",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2100,
+        420
+      ],
+      "parameters": {
+        "url": "={{ $(\"Configure booking destinations\").first().json.automationBaseUrl + \"/bookings\" }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify({...$(\"Validate and map canonical product\").first().json,approved:true}) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "41a060f4-0999-557b-8053-af286c11f580",
+      "name": "Claim Square registration",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2400,
+        420
+      ],
+      "parameters": {
+        "url": "={{ $(\"Configure booking destinations\").first().json.automationBaseUrl + \"/bookings/\" + $(\"Register approved publication plan\").first().json.id + \"/claim\" }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "{\"provider\": \"square\"}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "cf04764a-648d-55ad-9755-0398e8359b3f",
+      "name": "Create Square service?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2700,
+        420
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "aa3a0f87-310d-4288-ae6c-576c756fafb5",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.allowed === true }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "2aecabe3-482e-59e1-b8cb-8eb743e33432",
+      "name": "Build Square service request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3000,
+        420
+      ],
+      "parameters": {
+        "jsCode": "function parseObject(value) {\n  if (typeof value === 'string') {\n    const text = value.trim().replace(/^```(?:json)?\\s*/i, '').replace(/\\s*```$/, '');\n    value = JSON.parse(text);\n  }\n  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Expected a JSON object');\n  return value;\n}\nfunction bookingProduct(value) {\n const p=typeof value==='string'?JSON.parse(value):value;\n if(!p||typeof p!=='object'||Array.isArray(p))throw Error('Product JSON required');\n for(const k of ['key','title','description','amount','currency'])if(typeof p[k]!=='string'||!p[k].trim())throw Error('Missing '+k);\n if(!/^[a-z0-9][a-z0-9_-]{2,63}$/.test(p.key)||p.title.length>80||p.description.length>1500||/[<>]/.test(p.title+p.description))throw Error('Use a stable key and plain text');\n const exponent={USD:2,JPY:0,EUR:2,GBP:2,CAD:2,AUD:2}[p.currency];\n if(exponent===undefined||!/^\\d+(?:\\.\\d{1,2})?$/.test(p.amount))throw Error('Unsupported currency or amount');\n const [whole,fraction='']=p.amount.split('.');if(fraction.length>exponent)throw Error('Currency decimal mismatch');\n const minor=Number(whole+fraction.padEnd(exponent,'0'));if(!Number.isSafeInteger(minor)||minor<=0||minor>1+1234567890)throw Error('Invalid fixed price');\n if(!Number.isInteger(p.durationMinutes)||p.durationMinutes<5||p.durationMinutes>480||p.capacity!==1)throw Error('Use one-to-one services of 5\u2013480 minutes');\n return {key:p.key,title:p.title.trim(),description:p.description.trim().replace(/\\r\\n/g,'\\n'),amount:exponent?(minor/10**exponent).toFixed(exponent):String(minor),currency:p.currency,minorUnits:minor,durationMinutes:p.durationMinutes,capacity:1};\n}\nfunction bookingRequests(p,t,idempotencyKey) {\n const item='#'+p.key, variation='#'+p.key+'-standard';\n return {\n square:{idempotency_key:idempotencyKey,object:{type:'ITEM',id:item,present_at_all_locations:false,present_at_location_ids:[t.squareLocationId],item_data:{name:p.title,description_html:'<p>'+p.description.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\\n/g,'<br>')+'</p>',product_type:'APPOINTMENTS_SERVICE',variations:[{type:'ITEM_VARIATION',id:variation,present_at_all_locations:false,present_at_location_ids:[t.squareLocationId],item_variation_data:{item_id:item,name:'Standard',pricing_type:'FIXED_PRICING',price_money:{amount:p.minorUnits,currency:p.currency},service_duration:p.durationMinutes*60000,available_for_booking:true,team_member_ids:[t.squareTeamMemberId]}}]}}},\n wix:{service:{type:'APPOINTMENT',name:p.title,description:p.description,defaultCapacity:1,hidden:false,category:{id:t.wixCategoryId},onlineBooking:{enabled:true,requireManualApproval:false,allowMultipleRequests:false},payment:{rateType:'FIXED',fixed:{price:{value:p.amount,currency:p.currency}},options:{online:false,inPerson:true,deposit:false,pricingPlan:false}},staffMemberIds:[t.wixStaffResourceId],schedule:{availabilityConstraints:{sessionDurations:[p.durationMinutes],timeBetweenSessions:0}},locations:[{type:'BUSINESS',business:{id:t.wixLocationId}}]}}\n };\n}\nfunction verifyBooking(provider,raw,p,t) {\n if(provider==='square') {\n  const o=raw.object, d=o?.item_data, v=d?.variations?.[0]?.item_variation_data;\n  if(o?.type!=='ITEM'||d?.product_type!=='APPOINTMENTS_SERVICE'||d?.name!==p.title||String(d.description_plaintext??d.description??'').replace(/\\r\\n/g,'\\n').trim()!==p.description||d.variations.length!==1||v?.pricing_type!=='FIXED_PRICING'||v.price_money?.amount!==p.minorUnits||v.price_money.currency!==p.currency||v.service_duration!==p.durationMinutes*60000||v.available_for_booking!==true||!v.team_member_ids?.includes(t.squareTeamMemberId)||!(o.present_at_all_locations===false&&o.present_at_location_ids?.includes(t.squareLocationId)))throw Error('Square readback differs from approved plan');\n  return o.id;\n }\n const s=raw.service, price=s?.payment?.fixed?.price, d=s?.schedule?.availabilityConstraints?.sessionDurations;\n if(!s?.id||s.type!=='APPOINTMENT'||s.name!==p.title||s.description!==p.description||s.defaultCapacity!==1||s.hidden===true||s.category?.id!==t.wixCategoryId||s.onlineBooking?.enabled!==true||s.payment?.rateType!=='FIXED'||s.payment.options?.inPerson!==true||price?.currency!==p.currency||Number(price.value)!==Number(p.amount)||!Array.isArray(d)||d.length!==1||d[0]!==p.durationMinutes||!s.staffMemberIds?.includes(t.wixStaffResourceId)||!s.locations?.some(l=>l.type==='BUSINESS'&&l.business?.id===t.wixLocationId))throw Error('Wix readback differs from approved plan');\n return s.id;\n}\nfunction claudeDraft(raw,job) {\n if(raw.stop_reason!=='end_turn')throw Error('Claude did not finish normally');\n const text=(raw.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('');\n const d=parseObject(text);if(typeof d.text!=='string'||typeof d.imagePrompt!=='string'||d.imagePrompt.length<20||d.imagePrompt.length>3000)throw Error('Invalid structured draft');\n const source=job.candidate.articleUrl||job.candidate.sourceUrl;\n let post=d.text.trim();\n if(/@(everyone|here)|<@|https?:\\/\\//i.test(post))throw Error('Draft must omit URLs and mention tags; n8n appends the reviewed source');\n post+='\\n'+source;\n const weighted=[...post.replace(/https?:\\/\\/\\S+/g,'x'.repeat(23))].reduce((n,ch)=>n+(ch.codePointAt(0)>127?2:1),0);\n if(weighted>280||[...post].length>280)throw Error('Draft exceeds conservative X limit');\n return {text:post,imagePrompt:d.imagePrompt,sourceUrl:source,evidenceStatus:job.candidate.evidenceStatus};\n}\n\nconst j=$(\"Claim Square registration\").first().json;return [{json:bookingRequests(j.product,j.targets,j.providerState.idempotencyKey).square}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "22080650-ef49-5810-bbe7-6440db9f6ea9",
+      "name": "Create Square appointment service",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "position": [
+        3300,
+        420
+      ],
+      "parameters": {
+        "url": "={{ $(\"Configure booking destinations\").first().json.squareEnvironment === \"production\" ? \"https://connect.squareup.com/v2/catalog/object\" : \"https://connect.squareupsandbox.com/v2/catalog/object\" }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Square-Version",
+              "value": "2026-09-16"
+            }
+          ]
+        }
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "9c811a44-64b0-5d71-b276-743fb29dbb03",
+      "name": "Validate Square create receipt",
+      "type": "n8n-nodes-base.code",
+      "onError": "continueErrorOutput",
+      "position": [
+        3600,
+        420
+      ],
+      "parameters": {
+        "jsCode": "const id=$json.catalog_object?.id;if(typeof id!==\"string\"||!id)throw Error(\"No Square service ID; reconcile before retrying\");return [{json:{provider:\"square\",serviceId:id}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "97ca05d2-de77-5d90-9d3e-c78d891a182e",
+      "name": "Persist Square service ID",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3900,
+        420
+      ],
+      "parameters": {
+        "url": "={{ $(\"Configure booking destinations\").first().json.automationBaseUrl + \"/bookings/\" + $(\"Register approved publication plan\").first().json.id + \"/receipt\" }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "210fb180-e13e-5dbe-b56b-1bbab460aff8",
+      "name": "Reuse Square receipt",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3300,
+        980
+      ],
+      "parameters": {
+        "jsCode": "const j=$(\"Claim Square registration\").first().json;return [{json:j}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9fa0a97b-f11f-592c-9c2b-bec41ceb988d",
+      "name": "Have Square service ID?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4200,
+        420
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "1efc4b4e-0331-40e8-b48a-ff2f3182d834",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ Boolean($json.providers.square.serviceId) }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "fce02030-ec3e-569a-9138-476dacc18289",
+      "name": "Read saved Square service",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "position": [
+        4500,
+        420
+      ],
+      "parameters": {
+        "url": "={{ ($(\"Configure booking destinations\").first().json.squareEnvironment === \"production\" ? \"https://connect.squareup.com\" : \"https://connect.squareupsandbox.com\") + \"/v2/catalog/object/\" + $json.providers.square.serviceId }}",
+        "method": "GET",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendHeaders": true,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Square-Version",
+              "value": "2026-09-16"
+            }
+          ]
+        }
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "e149a893-6b1c-5b7a-9577-f409066e2986",
+      "name": "Verify Square saved fields",
+      "type": "n8n-nodes-base.code",
+      "onError": "continueErrorOutput",
+      "position": [
+        4800,
+        420
+      ],
+      "parameters": {
+        "jsCode": "function parseObject(value) {\n  if (typeof value === 'string') {\n    const text = value.trim().replace(/^```(?:json)?\\s*/i, '').replace(/\\s*```$/, '');\n    value = JSON.parse(text);\n  }\n  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Expected a JSON object');\n  return value;\n}\nfunction bookingProduct(value) {\n const p=typeof value==='string'?JSON.parse(value):value;\n if(!p||typeof p!=='object'||Array.isArray(p))throw Error('Product JSON required');\n for(const k of ['key','title','description','amount','currency'])if(typeof p[k]!=='string'||!p[k].trim())throw Error('Missing '+k);\n if(!/^[a-z0-9][a-z0-9_-]{2,63}$/.test(p.key)||p.title.length>80||p.description.length>1500||/[<>]/.test(p.title+p.description))throw Error('Use a stable key and plain text');\n const exponent={USD:2,JPY:0,EUR:2,GBP:2,CAD:2,AUD:2}[p.currency];\n if(exponent===undefined||!/^\\d+(?:\\.\\d{1,2})?$/.test(p.amount))throw Error('Unsupported currency or amount');\n const [whole,fraction='']=p.amount.split('.');if(fraction.length>exponent)throw Error('Currency decimal mismatch');\n const minor=Number(whole+fraction.padEnd(exponent,'0'));if(!Number.isSafeInteger(minor)||minor<=0||minor>1+1234567890)throw Error('Invalid fixed price');\n if(!Number.isInteger(p.durationMinutes)||p.durationMinutes<5||p.durationMinutes>480||p.capacity!==1)throw Error('Use one-to-one services of 5\u2013480 minutes');\n return {key:p.key,title:p.title.trim(),description:p.description.trim().replace(/\\r\\n/g,'\\n'),amount:exponent?(minor/10**exponent).toFixed(exponent):String(minor),currency:p.currency,minorUnits:minor,durationMinutes:p.durationMinutes,capacity:1};\n}\nfunction bookingRequests(p,t,idempotencyKey) {\n const item='#'+p.key, variation='#'+p.key+'-standard';\n return {\n square:{idempotency_key:idempotencyKey,object:{type:'ITEM',id:item,present_at_all_locations:false,present_at_location_ids:[t.squareLocationId],item_data:{name:p.title,description_html:'<p>'+p.description.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\\n/g,'<br>')+'</p>',product_type:'APPOINTMENTS_SERVICE',variations:[{type:'ITEM_VARIATION',id:variation,present_at_all_locations:false,present_at_location_ids:[t.squareLocationId],item_variation_data:{item_id:item,name:'Standard',pricing_type:'FIXED_PRICING',price_money:{amount:p.minorUnits,currency:p.currency},service_duration:p.durationMinutes*60000,available_for_booking:true,team_member_ids:[t.squareTeamMemberId]}}]}}},\n wix:{service:{type:'APPOINTMENT',name:p.title,description:p.description,defaultCapacity:1,hidden:false,category:{id:t.wixCategoryId},onlineBooking:{enabled:true,requireManualApproval:false,allowMultipleRequests:false},payment:{rateType:'FIXED',fixed:{price:{value:p.amount,currency:p.currency}},options:{online:false,inPerson:true,deposit:false,pricingPlan:false}},staffMemberIds:[t.wixStaffResourceId],schedule:{availabilityConstraints:{sessionDurations:[p.durationMinutes],timeBetweenSessions:0}},locations:[{type:'BUSINESS',business:{id:t.wixLocationId}}]}}\n };\n}\nfunction verifyBooking(provider,raw,p,t) {\n if(provider==='square') {\n  const o=raw.object, d=o?.item_data, v=d?.variations?.[0]?.item_variation_data;\n  if(o?.type!=='ITEM'||d?.product_type!=='APPOINTMENTS_SERVICE'||d?.name!==p.title||String(d.description_plaintext??d.description??'').replace(/\\r\\n/g,'\\n').trim()!==p.description||d.variations.length!==1||v?.pricing_type!=='FIXED_PRICING'||v.price_money?.amount!==p.minorUnits||v.price_money.currency!==p.currency||v.service_duration!==p.durationMinutes*60000||v.available_for_booking!==true||!v.team_member_ids?.includes(t.squareTeamMemberId)||!(o.present_at_all_locations===false&&o.present_at_location_ids?.includes(t.squareLocationId)))throw Error('Square readback differs from approved plan');\n  return o.id;\n }\n const s=raw.service, price=s?.payment?.fixed?.price, d=s?.schedule?.availabilityConstraints?.sessionDurations;\n if(!s?.id||s.type!=='APPOINTMENT'||s.name!==p.title||s.description!==p.description||s.defaultCapacity!==1||s.hidden===true||s.category?.id!==t.wixCategoryId||s.onlineBooking?.enabled!==true||s.payment?.rateType!=='FIXED'||s.payment.options?.inPerson!==true||price?.currency!==p.currency||Number(price.value)!==Number(p.amount)||!Array.isArray(d)||d.length!==1||d[0]!==p.durationMinutes||!s.staffMemberIds?.includes(t.wixStaffResourceId)||!s.locations?.some(l=>l.type==='BUSINESS'&&l.business?.id===t.wixLocationId))throw Error('Wix readback differs from approved plan');\n return s.id;\n}\nfunction claudeDraft(raw,job) {\n if(raw.stop_reason!=='end_turn')throw Error('Claude did not finish normally');\n const text=(raw.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('');\n const d=parseObject(text);if(typeof d.text!=='string'||typeof d.imagePrompt!=='string'||d.imagePrompt.length<20||d.imagePrompt.length>3000)throw Error('Invalid structured draft');\n const source=job.candidate.articleUrl||job.candidate.sourceUrl;\n let post=d.text.trim();\n if(/@(everyone|here)|<@|https?:\\/\\//i.test(post))throw Error('Draft must omit URLs and mention tags; n8n appends the reviewed source');\n post+='\\n'+source;\n const weighted=[...post.replace(/https?:\\/\\/\\S+/g,'x'.repeat(23))].reduce((n,ch)=>n+(ch.codePointAt(0)>127?2:1),0);\n if(weighted>280||[...post].length>280)throw Error('Draft exceeds conservative X limit');\n return {text:post,imagePrompt:d.imagePrompt,sourceUrl:source,evidenceStatus:job.candidate.evidenceStatus};\n}\n\nconst j=$(\"Register approved publication plan\").first().json;verifyBooking(\"square\",$json,j.product,j.targets);return [{json:{provider:\"square\",status:\"verified\"}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "fcf97134-4188-54ac-8344-18695e2b4d41",
+      "name": "Record Square verification",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        5100,
+        420
+      ],
+      "parameters": {
+        "url": "={{ $(\"Configure booking destinations\").first().json.automationBaseUrl + \"/bookings/\" + $(\"Register approved publication plan\").first().json.id + \"/result\" }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "8ddb2034-1220-5825-b153-ca1000f5c33d",
+      "name": "Record uncertain Square create",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3600,
+        980
+      ],
+      "parameters": {
+        "url": "={{ $(\"Configure booking destinations\").first().json.automationBaseUrl + \"/bookings/\" + $(\"Register approved publication plan\").first().json.id + \"/result\" }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "{\"provider\": \"square\", \"status\": \"unknown\"}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "3986184c-d118-5ae5-a955-bff5464cbdfc",
+      "name": "Record Square readback failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        4800,
+        980
+      ],
+      "parameters": {
+        "url": "={{ $(\"Configure booking destinations\").first().json.automationBaseUrl + \"/bookings/\" + $(\"Register approved publication plan\").first().json.id + \"/result\" }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "{\"provider\": \"square\", \"status\": \"readback_failed\"}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "a73f9f6f-b16a-5c3c-a42a-1924345fb55b",
+      "name": "Continue after Square",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5400,
+        750
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{jobId:$(\"Register approved publication plan\").first().json.id}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e586e5d4-7c1f-5860-ac06-f94dbd0e90e8",
+      "name": "Claim Wix registration",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        5700,
+        420
+      ],
+      "parameters": {
+        "url": "={{ $(\"Configure booking destinations\").first().json.automationBaseUrl + \"/bookings/\" + $(\"Register approved publication plan\").first().json.id + \"/claim\" }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "{\"provider\": \"wix\"}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "55e4e862-e9b9-5afb-8321-aa7c0038e0da",
+      "name": "Create Wix service?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        6000,
+        420
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ab604f69-e550-4194-9ebb-3495c05c5d34",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.allowed === true }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "69af108b-6d5f-5130-b8ff-c7656331f0ef",
+      "name": "Build Wix service request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        6300,
+        420
+      ],
+      "parameters": {
+        "jsCode": "function parseObject(value) {\n  if (typeof value === 'string') {\n    const text = value.trim().replace(/^```(?:json)?\\s*/i, '').replace(/\\s*```$/, '');\n    value = JSON.parse(text);\n  }\n  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Expected a JSON object');\n  return value;\n}\nfunction bookingProduct(value) {\n const p=typeof value==='string'?JSON.parse(value):value;\n if(!p||typeof p!=='object'||Array.isArray(p))throw Error('Product JSON required');\n for(const k of ['key','title','description','amount','currency'])if(typeof p[k]!=='string'||!p[k].trim())throw Error('Missing '+k);\n if(!/^[a-z0-9][a-z0-9_-]{2,63}$/.test(p.key)||p.title.length>80||p.description.length>1500||/[<>]/.test(p.title+p.description))throw Error('Use a stable key and plain text');\n const exponent={USD:2,JPY:0,EUR:2,GBP:2,CAD:2,AUD:2}[p.currency];\n if(exponent===undefined||!/^\\d+(?:\\.\\d{1,2})?$/.test(p.amount))throw Error('Unsupported currency or amount');\n const [whole,fraction='']=p.amount.split('.');if(fraction.length>exponent)throw Error('Currency decimal mismatch');\n const minor=Number(whole+fraction.padEnd(exponent,'0'));if(!Number.isSafeInteger(minor)||minor<=0||minor>1+1234567890)throw Error('Invalid fixed price');\n if(!Number.isInteger(p.durationMinutes)||p.durationMinutes<5||p.durationMinutes>480||p.capacity!==1)throw Error('Use one-to-one services of 5\u2013480 minutes');\n return {key:p.key,title:p.title.trim(),description:p.description.trim().replace(/\\r\\n/g,'\\n'),amount:exponent?(minor/10**exponent).toFixed(exponent):String(minor),currency:p.currency,minorUnits:minor,durationMinutes:p.durationMinutes,capacity:1};\n}\nfunction bookingRequests(p,t,idempotencyKey) {\n const item='#'+p.key, variation='#'+p.key+'-standard';\n return {\n square:{idempotency_key:idempotencyKey,object:{type:'ITEM',id:item,present_at_all_locations:false,present_at_location_ids:[t.squareLocationId],item_data:{name:p.title,description_html:'<p>'+p.description.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\\n/g,'<br>')+'</p>',product_type:'APPOINTMENTS_SERVICE',variations:[{type:'ITEM_VARIATION',id:variation,present_at_all_locations:false,present_at_location_ids:[t.squareLocationId],item_variation_data:{item_id:item,name:'Standard',pricing_type:'FIXED_PRICING',price_money:{amount:p.minorUnits,currency:p.currency},service_duration:p.durationMinutes*60000,available_for_booking:true,team_member_ids:[t.squareTeamMemberId]}}]}}},\n wix:{service:{type:'APPOINTMENT',name:p.title,description:p.description,defaultCapacity:1,hidden:false,category:{id:t.wixCategoryId},onlineBooking:{enabled:true,requireManualApproval:false,allowMultipleRequests:false},payment:{rateType:'FIXED',fixed:{price:{value:p.amount,currency:p.currency}},options:{online:false,inPerson:true,deposit:false,pricingPlan:false}},staffMemberIds:[t.wixStaffResourceId],schedule:{availabilityConstraints:{sessionDurations:[p.durationMinutes],timeBetweenSessions:0}},locations:[{type:'BUSINESS',business:{id:t.wixLocationId}}]}}\n };\n}\nfunction verifyBooking(provider,raw,p,t) {\n if(provider==='square') {\n  const o=raw.object, d=o?.item_data, v=d?.variations?.[0]?.item_variation_data;\n  if(o?.type!=='ITEM'||d?.product_type!=='APPOINTMENTS_SERVICE'||d?.name!==p.title||String(d.description_plaintext??d.description??'').replace(/\\r\\n/g,'\\n').trim()!==p.description||d.variations.length!==1||v?.pricing_type!=='FIXED_PRICING'||v.price_money?.amount!==p.minorUnits||v.price_money.currency!==p.currency||v.service_duration!==p.durationMinutes*60000||v.available_for_booking!==true||!v.team_member_ids?.includes(t.squareTeamMemberId)||!(o.present_at_all_locations===false&&o.present_at_location_ids?.includes(t.squareLocationId)))throw Error('Square readback differs from approved plan');\n  return o.id;\n }\n const s=raw.service, price=s?.payment?.fixed?.price, d=s?.schedule?.availabilityConstraints?.sessionDurations;\n if(!s?.id||s.type!=='APPOINTMENT'||s.name!==p.title||s.description!==p.description||s.defaultCapacity!==1||s.hidden===true||s.category?.id!==t.wixCategoryId||s.onlineBooking?.enabled!==true||s.payment?.rateType!=='FIXED'||s.payment.options?.inPerson!==true||price?.currency!==p.currency||Number(price.value)!==Number(p.amount)||!Array.isArray(d)||d.length!==1||d[0]!==p.durationMinutes||!s.staffMemberIds?.includes(t.wixStaffResourceId)||!s.locations?.some(l=>l.type==='BUSINESS'&&l.business?.id===t.wixLocationId))throw Error('Wix readback differs from approved plan');\n return s.id;\n}\nfunction claudeDraft(raw,job) {\n if(raw.stop_reason!=='end_turn')throw Error('Claude did not finish normally');\n const text=(raw.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('');\n const d=parseObject(text);if(typeof d.text!=='string'||typeof d.imagePrompt!=='string'||d.imagePrompt.length<20||d.imagePrompt.length>3000)throw Error('Invalid structured draft');\n const source=job.candidate.articleUrl||job.candidate.sourceUrl;\n let post=d.text.trim();\n if(/@(everyone|here)|<@|https?:\\/\\//i.test(post))throw Error('Draft must omit URLs and mention tags; n8n appends the reviewed source');\n post+='\\n'+source;\n const weighted=[...post.replace(/https?:\\/\\/\\S+/g,'x'.repeat(23))].reduce((n,ch)=>n+(ch.codePointAt(0)>127?2:1),0);\n if(weighted>280||[...post].length>280)throw Error('Draft exceeds conservative X limit');\n return {text:post,imagePrompt:d.imagePrompt,sourceUrl:source,evidenceStatus:job.candidate.evidenceStatus};\n}\n\nconst j=$(\"Claim Wix registration\").first().json;return [{json:bookingRequests(j.product,j.targets,j.providerState.idempotencyKey).wix}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e4904a09-40ac-55e2-a108-4daeac3ecbf6",
+      "name": "Create Wix appointment service",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "position": [
+        6600,
+        420
+      ],
+      "parameters": {
+        "url": "https://www.wixapis.com/_api/bookings/v2/services",
+        "method": "POST",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "wix-site-id",
+              "value": "={{ $(\"Configure booking destinations\").first().json.wixSiteId }}"
+            }
+          ]
+        }
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "e4b6df26-a145-579e-a546-8990e7c2653a",
+      "name": "Validate Wix create receipt",
+      "type": "n8n-nodes-base.code",
+      "onError": "continueErrorOutput",
+      "position": [
+        6900,
+        420
+      ],
+      "parameters": {
+        "jsCode": "const id=$json.service?.id;if(typeof id!==\"string\"||!id)throw Error(\"No Wix service ID; reconcile before retrying\");return [{json:{provider:\"wix\",serviceId:id}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "4fc4a764-e2f8-5c26-867a-914e557629a5",
+      "name": "Persist Wix service ID",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        7200,
+        420
+      ],
+      "parameters": {
+        "url": "={{ $(\"Configure booking destinations\").first().json.automationBaseUrl + \"/bookings/\" + $(\"Register approved publication plan\").first().json.id + \"/receipt\" }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "43cf286b-60a1-58c0-8ea4-46977bb58314",
+      "name": "Reuse Wix receipt",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        6600,
+        980
+      ],
+      "parameters": {
+        "jsCode": "const j=$(\"Claim Wix registration\").first().json;return [{json:j}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e1efa886-705b-5d6d-9d15-fee8450ebf8c",
+      "name": "Have Wix service ID?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        7500,
+        420
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ec56aee6-5db4-41cc-ba91-9278af1c4f6a",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ Boolean($json.providers.wix.serviceId) }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "39e6ed99-7ef5-5bd7-a66a-d140e203f244",
+      "name": "Read saved Wix service",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "position": [
+        7800,
+        420
+      ],
+      "parameters": {
+        "url": "={{ \"https://www.wixapis.com/_api/bookings/v2/services/\" + $json.providers.wix.serviceId }}",
+        "method": "GET",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendHeaders": true,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "wix-site-id",
+              "value": "={{ $(\"Configure booking destinations\").first().json.wixSiteId }}"
+            }
+          ]
+        }
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "dc1d1331-c1b9-5644-95ef-05673ada56b0",
+      "name": "Verify Wix saved fields",
+      "type": "n8n-nodes-base.code",
+      "onError": "continueErrorOutput",
+      "position": [
+        8100,
+        420
+      ],
+      "parameters": {
+        "jsCode": "function parseObject(value) {\n  if (typeof value === 'string') {\n    const text = value.trim().replace(/^```(?:json)?\\s*/i, '').replace(/\\s*```$/, '');\n    value = JSON.parse(text);\n  }\n  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Expected a JSON object');\n  return value;\n}\nfunction bookingProduct(value) {\n const p=typeof value==='string'?JSON.parse(value):value;\n if(!p||typeof p!=='object'||Array.isArray(p))throw Error('Product JSON required');\n for(const k of ['key','title','description','amount','currency'])if(typeof p[k]!=='string'||!p[k].trim())throw Error('Missing '+k);\n if(!/^[a-z0-9][a-z0-9_-]{2,63}$/.test(p.key)||p.title.length>80||p.description.length>1500||/[<>]/.test(p.title+p.description))throw Error('Use a stable key and plain text');\n const exponent={USD:2,JPY:0,EUR:2,GBP:2,CAD:2,AUD:2}[p.currency];\n if(exponent===undefined||!/^\\d+(?:\\.\\d{1,2})?$/.test(p.amount))throw Error('Unsupported currency or amount');\n const [whole,fraction='']=p.amount.split('.');if(fraction.length>exponent)throw Error('Currency decimal mismatch');\n const minor=Number(whole+fraction.padEnd(exponent,'0'));if(!Number.isSafeInteger(minor)||minor<=0||minor>1+1234567890)throw Error('Invalid fixed price');\n if(!Number.isInteger(p.durationMinutes)||p.durationMinutes<5||p.durationMinutes>480||p.capacity!==1)throw Error('Use one-to-one services of 5\u2013480 minutes');\n return {key:p.key,title:p.title.trim(),description:p.description.trim().replace(/\\r\\n/g,'\\n'),amount:exponent?(minor/10**exponent).toFixed(exponent):String(minor),currency:p.currency,minorUnits:minor,durationMinutes:p.durationMinutes,capacity:1};\n}\nfunction bookingRequests(p,t,idempotencyKey) {\n const item='#'+p.key, variation='#'+p.key+'-standard';\n return {\n square:{idempotency_key:idempotencyKey,object:{type:'ITEM',id:item,present_at_all_locations:false,present_at_location_ids:[t.squareLocationId],item_data:{name:p.title,description_html:'<p>'+p.description.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\\n/g,'<br>')+'</p>',product_type:'APPOINTMENTS_SERVICE',variations:[{type:'ITEM_VARIATION',id:variation,present_at_all_locations:false,present_at_location_ids:[t.squareLocationId],item_variation_data:{item_id:item,name:'Standard',pricing_type:'FIXED_PRICING',price_money:{amount:p.minorUnits,currency:p.currency},service_duration:p.durationMinutes*60000,available_for_booking:true,team_member_ids:[t.squareTeamMemberId]}}]}}},\n wix:{service:{type:'APPOINTMENT',name:p.title,description:p.description,defaultCapacity:1,hidden:false,category:{id:t.wixCategoryId},onlineBooking:{enabled:true,requireManualApproval:false,allowMultipleRequests:false},payment:{rateType:'FIXED',fixed:{price:{value:p.amount,currency:p.currency}},options:{online:false,inPerson:true,deposit:false,pricingPlan:false}},staffMemberIds:[t.wixStaffResourceId],schedule:{availabilityConstraints:{sessionDurations:[p.durationMinutes],timeBetweenSessions:0}},locations:[{type:'BUSINESS',business:{id:t.wixLocationId}}]}}\n };\n}\nfunction verifyBooking(provider,raw,p,t) {\n if(provider==='square') {\n  const o=raw.object, d=o?.item_data, v=d?.variations?.[0]?.item_variation_data;\n  if(o?.type!=='ITEM'||d?.product_type!=='APPOINTMENTS_SERVICE'||d?.name!==p.title||String(d.description_plaintext??d.description??'').replace(/\\r\\n/g,'\\n').trim()!==p.description||d.variations.length!==1||v?.pricing_type!=='FIXED_PRICING'||v.price_money?.amount!==p.minorUnits||v.price_money.currency!==p.currency||v.service_duration!==p.durationMinutes*60000||v.available_for_booking!==true||!v.team_member_ids?.includes(t.squareTeamMemberId)||!(o.present_at_all_locations===false&&o.present_at_location_ids?.includes(t.squareLocationId)))throw Error('Square readback differs from approved plan');\n  return o.id;\n }\n const s=raw.service, price=s?.payment?.fixed?.price, d=s?.schedule?.availabilityConstraints?.sessionDurations;\n if(!s?.id||s.type!=='APPOINTMENT'||s.name!==p.title||s.description!==p.description||s.defaultCapacity!==1||s.hidden===true||s.category?.id!==t.wixCategoryId||s.onlineBooking?.enabled!==true||s.payment?.rateType!=='FIXED'||s.payment.options?.inPerson!==true||price?.currency!==p.currency||Number(price.value)!==Number(p.amount)||!Array.isArray(d)||d.length!==1||d[0]!==p.durationMinutes||!s.staffMemberIds?.includes(t.wixStaffResourceId)||!s.locations?.some(l=>l.type==='BUSINESS'&&l.business?.id===t.wixLocationId))throw Error('Wix readback differs from approved plan');\n return s.id;\n}\nfunction claudeDraft(raw,job) {\n if(raw.stop_reason!=='end_turn')throw Error('Claude did not finish normally');\n const text=(raw.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('');\n const d=parseObject(text);if(typeof d.text!=='string'||typeof d.imagePrompt!=='string'||d.imagePrompt.length<20||d.imagePrompt.length>3000)throw Error('Invalid structured draft');\n const source=job.candidate.articleUrl||job.candidate.sourceUrl;\n let post=d.text.trim();\n if(/@(everyone|here)|<@|https?:\\/\\//i.test(post))throw Error('Draft must omit URLs and mention tags; n8n appends the reviewed source');\n post+='\\n'+source;\n const weighted=[...post.replace(/https?:\\/\\/\\S+/g,'x'.repeat(23))].reduce((n,ch)=>n+(ch.codePointAt(0)>127?2:1),0);\n if(weighted>280||[...post].length>280)throw Error('Draft exceeds conservative X limit');\n return {text:post,imagePrompt:d.imagePrompt,sourceUrl:source,evidenceStatus:job.candidate.evidenceStatus};\n}\n\nconst j=$(\"Register approved publication plan\").first().json;verifyBooking(\"wix\",$json,j.product,j.targets);return [{json:{provider:\"wix\",status:\"verified\"}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "026bd607-cbe1-5efb-adf8-8353e2278aca",
+      "name": "Record Wix verification",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        8400,
+        420
+      ],
+      "parameters": {
+        "url": "={{ $(\"Configure booking destinations\").first().json.automationBaseUrl + \"/bookings/\" + $(\"Register approved publication plan\").first().json.id + \"/result\" }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "c2df6a14-2a3f-59f4-bda4-485cdedcc0fb",
+      "name": "Record uncertain Wix create",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        6900,
+        980
+      ],
+      "parameters": {
+        "url": "={{ $(\"Configure booking destinations\").first().json.automationBaseUrl + \"/bookings/\" + $(\"Register approved publication plan\").first().json.id + \"/result\" }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "{\"provider\": \"wix\", \"status\": \"unknown\"}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "b7122ab9-5d0b-5326-b975-d267ec3c981e",
+      "name": "Record Wix readback failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        8100,
+        980
+      ],
+      "parameters": {
+        "url": "={{ $(\"Configure booking destinations\").first().json.automationBaseUrl + \"/bookings/\" + $(\"Register approved publication plan\").first().json.id + \"/result\" }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "{\"provider\": \"wix\", \"status\": \"readback_failed\"}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "a261cd91-23c9-5993-8c3f-d95f20b1d376",
+      "name": "Continue after Wix",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        8700,
+        750
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{jobId:$(\"Register approved publication plan\").first().json.id}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "80480d9b-8aea-5447-9465-2435adb2e09f",
+      "name": "Read two-site publication result",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        9000,
+        420
+      ],
+      "parameters": {
+        "url": "={{ $(\"Configure booking destinations\").first().json.automationBaseUrl + \"/bookings/\" + $(\"Register approved publication plan\").first().json.id }}",
+        "method": "GET",
+        "options": {
+          "timeout": 120000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "7811aecc-e96f-502a-ab45-c4dc524f465b",
+      "name": "Two-site publication result",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        9300,
+        420
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "completion",
+        "respondWith": "text",
+        "completionTitle": "Two-site publication result",
+        "completionMessage": "={{ JSON.stringify($json.providers) + \". Verified means API readback matched. Confirm customer visibility on each booking site after account setup.\" }}"
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "9ae132b0-5207-5477-9ec6-97c99821313a",
+      "name": "Download companion source",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        1700
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "92f9d31d-af9a-560d-a8b6-47949862b15b",
+      "name": "Export setup files",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        300,
+        1700
+      ],
+      "parameters": {
+        "jsCode": "// Complete secret-free companion source, embedded so the template is independently downloadable.\nreturn [{json:{companion:\"automation-companion\",instructions:\"Download companion.zip from the Binary tab. Read README.md before starting the service.\"},binary:{companion:{data:\"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\",mimeType:\"application/zip\",fileName:\"companion.zip\"}}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a7dd7b8f-33b8-5bbb-809c-ce145b614b49",
+      "name": "Skip Square readback without an ID",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        4500,
+        750
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "369f7f04-52ad-54fe-89b3-a6f044570095",
+      "name": "Skip Wix readback without an ID",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        7800,
+        750
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "38a3d923-f4a7-5014-a6d9-82583e924cbf",
+      "name": "Continue with stored Square ID",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        3900,
+        750
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "e890410c-1885-51fa-9099-84c71264f0a3",
+      "name": "Continue with stored Wix ID",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        7200,
+        750
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "c40ecdb8-46d2-4da1-901d-832b5b638604",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -800,
+        0
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 680,
+        "height": 1100,
+        "content": "## Publish one appointment service to two booking sites\nFor operators who maintain the same one-to-one service in Square Appointments and Wix Bookings. Enter and approve the content once; each provider receives its own correctly mapped request.\n\n### What happens\nA protected form collects a stable product key, title, plain-text description, fixed price, currency and duration. Validation requires capacity 1 and supported currency precision. An operator approves the exact service and destinations before any creation request.\n\nThe companion journal tracks Square and Wix separately. Each branch creates a service or reuses its stored ID, saves the receipt, then retrieves the service to verify its fields. The final form shows both results, including partial success.\n\n### Start here\n1. Run **Download companion source**, then download the ZIP from **Export setup files** and follow its README.\n2. In **Configure booking destinations**, enter your journal URL and existing provider IDs. Add separate Header Auth credentials to the journal, Square and Wix request nodes. Protect the input form.\n3. Run **Run synthetic demo** to inspect synthetic requests without creating services.\n4. Test Square sandbox and your Wix test setup. Configure staff working hours and publish your booking sites separately before production.\n\n### Retry safely\nIdentical plans reuse saved IDs. Changed content under the same key stops for reconciliation. An uncertain create must be checked in the provider before retrying; the journal preserves the other provider's successful result.\n\nThis template registers new services. Customer bookings, payments, availability synchronization and automatic updates are outside its scope. API readback does not confirm public website visibility."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "618c2a84-86bb-4d47-a9ab-9f6968e93aa4",
+      "name": "Configure the journal and provider IDs",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        300,
+        -340
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 880,
+        "height": 300,
+        "content": "## 1. Connect your accounts\nIn **Configure booking destinations**, set `automationBaseUrl`, Square location/team member IDs, and Wix site/category/staff resource/location IDs.\n\n`wixStaffResourceId` is a booking resource ID. Add separate Header Auth credentials to each provider's HTTP nodes. Square starts in sandbox."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "70e7d6bc-0cc7-441a-a356-127902e94e03",
+      "name": "Choose a safe starting path",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        -340
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 320,
+        "height": 300,
+        "content": "## Test before publishing\n**Run synthetic demo** supplies fictional data and stops at mapped requests.\n\nUse the protected form for your own service. Configure form authentication before sharing its URL."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d30ba732-9adc-4ba7-b4e7-8609c0573e74",
+      "name": "Validate and approve the service",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1200,
+        -340
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1120,
+        "height": 300,
+        "content": "## 2. Review the exact service\nValidation checks price precision, supported currency, duration and capacity 1.\n\nThe review form displays content and destinations. Only an affirmative approval continues. The synthetic branch shows provider payloads and stops before registration."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "393c62d0-517d-4a27-a46d-db44aa6658d3",
+      "name": "Claim the Square operation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2360,
+        -340
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 880,
+        "height": 300,
+        "content": "## 3. Prevent duplicate Square services\nThe journal claims Square independently for the approved plan.\n\nA new claim builds the Catalog request with a stable idempotency key. A completed claim takes the saved-ID branch. Changed content with the same product key requires reconciliation."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6211141f-8410-4214-a6e0-5e6b76498901",
+      "name": "Save the Square receipt first",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3260,
+        -340
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 940,
+        "height": 300,
+        "content": "## 4. Create and save Square IDs\nCreate a bookable appointment service using the configured location and team member.\n\nThe receipt validator extracts IDs; the journal saves them before readback. Price uses minor currency units; duration uses milliseconds. An unclear response follows the uncertain-create exit."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2f80b014-64f4-4fb2-ac6b-c0650b160668",
+      "name": "Verify the saved Square service",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4220,
+        -340
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1420,
+        "height": 300,
+        "content": "## 5. Check Square content\nRetrieve the saved service and compare title, description, price, duration and booking fields with the approved plan.\n\nNo saved ID skips readback. Verification failures are recorded. Both outcomes continue to the independent Wix branch without recreating a successful Square service."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3fc6c90e-f738-4a43-80b7-45ad788b4ba4",
+      "name": "Claim the Wix operation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        5660,
+        -340
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 940,
+        "height": 300,
+        "content": "## 6. Prevent duplicate Wix services\nClaim Wix separately using the same approved product.\n\nA completed claim reuses the saved ID. A new claim maps the service to the existing category, staff resource and business location. Partial Square success stays in the journal."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f2b0c07f-6d52-4121-929b-7f14d3d00a24",
+      "name": "Save the Wix receipt first",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        6620,
+        -340
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 900,
+        "height": 300,
+        "content": "## 7. Create and save Wix IDs\nCreate an appointment service with capacity 1, fixed price and online booking enabled.\n\nWix receives a decimal price string and duration in minutes. Validate and persist the returned service ID before readback. An unclear response follows the uncertain-create exit."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a461489c-0a57-4ccb-bd8c-bc9df8c35a57",
+      "name": "Verify the saved Wix service",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        7540,
+        -340
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1400,
+        "height": 300,
+        "content": "## 8. Check Wix content\nRetrieve the stored service and compare content, pricing, duration, staff, location and booking settings.\n\nMissing IDs skip readback. Failures are recorded before reading the combined journal. API verification does not prove the service is visible on your public booking site."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3e76cfe2-40cd-442a-ac82-4c49216b8d7f",
+      "name": "Read both provider outcomes",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        8960,
+        -340
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 760,
+        "height": 300,
+        "content": "## 9. Review the final receipts\nThe final form displays each provider's registration and verification result.\n\nCheck both booking sites yourself. Resolve failed or uncertain results in the journal before another attempt. A successful provider does not need to be created again."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c0a5f494-b261-43c7-bf77-adbaaecc0a75",
+      "name": "Reconcile Square uncertainty",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3260,
+        1200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 940,
+        "height": 240,
+        "content": "## Square: an uncertain create\nCheck Square for the service before retrying. Follow the companion README's reconciliation command to attach its existing ID or confirm no service exists.\n\nNever clear an uncertain claim merely to rerun creation."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "48f9d0f1-57de-43cd-a9ee-d2c0fa9f7a6c",
+      "name": "Square verification failure",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4460,
+        1200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1180,
+        "height": 240,
+        "content": "## Square: readback failed\nA saved ID is retained even when retrieval or comparison fails.\n\nInspect credentials, permissions and mismatched fields. Fix the cause and rerun the identical approved plan to verify the existing service."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "fde26acb-4d87-41fc-8409-80256ed292f7",
+      "name": "Reconcile Wix uncertainty",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        6620,
+        1200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 900,
+        "height": 240,
+        "content": "## Wix: an uncertain create\nCheck Wix for the service first. Use the companion README's reconciliation procedure to save its ID or confirm an empty registration.\n\nKeep the successful Square receipt. Do not issue another Wix create until uncertainty is resolved."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "59d191b1-cfb4-45ae-8c10-4963a75ad5d4",
+      "name": "Wix verification failure",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        7780,
+        1200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1160,
+        "height": 240,
+        "content": "## Wix: readback failed\nThe journal retains the service ID and records the failure.\n\nCheck site credentials, resource assignments and field differences. Rerun the identical plan after correction to retrieve the stored service instead of creating a duplicate."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "585fc950-e111-47cb-951c-cf9ddc26e1de",
+      "name": "Download and run the companion",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        1480
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 700,
+        "height": 200,
+        "content": "## Required setup files\nRun the nodes below, open **Export setup files \u2192 Binary**, and download `companion.zip`.\n\nIts README explains installation, journal authentication, persistent storage and reconciliation. Run the journal where n8n can reach it; keep credentials outside the workflow JSON."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e3010730-41b0-4b14-97e5-656e785b00ed",
+      "name": "Replace a booking provider",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2360,
+        1540
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1100,
+        "height": 220,
+        "content": "## Adapt to another booking SaaS\nReplace the provider request and readback adapters using the included contract.\n\nPreserve canonical validation, human approval, independent claims, durable IDs and verification. Set up the replacement provider's staff, locations and booking site separately."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "settings": {
+    "timezone": "Asia/Tokyo",
+    "executionOrder": "v1",
+    "executionTimeout": 1800,
+    "saveManualExecutions": false,
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none"
+  },
+  "connections": {
+    "Product approved?": {
+      "main": [
+        [
+          {
+            "node": "Register approved publication plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reuse Wix receipt": {
+      "main": [
+        [
+          {
+            "node": "Continue with stored Wix ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Continue after Wix": {
+      "main": [
+        [
+          {
+            "node": "Read two-site publication result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run synthetic demo": {
+      "main": [
+        [
+          {
+            "node": "Create synthetic product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Wix service?": {
+      "main": [
+        [
+          {
+            "node": "Build Wix service request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reuse Wix receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Have Wix service ID?": {
+      "main": [
+        [
+          {
+            "node": "Read saved Wix service",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip Wix readback without an ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reuse Square receipt": {
+      "main": [
+        [
+          {
+            "node": "Continue with stored Square ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Continue after Square": {
+      "main": [
+        [
+          {
+            "node": "Claim Wix registration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim Wix registration": {
+      "main": [
+        [
+          {
+            "node": "Create Wix service?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Square service?": {
+      "main": [
+        [
+          {
+            "node": "Build Square service request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reuse Square receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Wix service ID": {
+      "main": [
+        [
+          {
+            "node": "Have Wix service ID?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read saved Wix service": {
+      "main": [
+        [
+          {
+            "node": "Verify Wix saved fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record Wix readback failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use synthetic preview?": {
+      "main": [
+        [
+          {
+            "node": "Show mapped requests",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Review service and both destinations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Have Square service ID?": {
+      "main": [
+        [
+          {
+            "node": "Read saved Square service",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip Square readback without an ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Wix verification": {
+      "main": [
+        [
+          {
+            "node": "Continue after Wix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Wix saved fields": {
+      "main": [
+        [
+          {
+            "node": "Record Wix verification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record Wix readback failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create synthetic product": {
+      "main": [
+        [
+          {
+            "node": "Configure booking destinations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive operator request": {
+      "main": [
+        [
+          {
+            "node": "Configure booking destinations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Wix service request": {
+      "main": [
+        [
+          {
+            "node": "Create Wix appointment service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim Square registration": {
+      "main": [
+        [
+          {
+            "node": "Create Square service?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download companion source": {
+      "main": [
+        [
+          {
+            "node": "Export setup files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Square service ID": {
+      "main": [
+        [
+          {
+            "node": "Have Square service ID?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read saved Square service": {
+      "main": [
+        [
+          {
+            "node": "Verify Square saved fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record Square readback failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Square verification": {
+      "main": [
+        [
+          {
+            "node": "Continue after Square",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Square saved fields": {
+      "main": [
+        [
+          {
+            "node": "Record Square verification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record Square readback failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Continue with stored Wix ID": {
+      "main": [
+        [
+          {
+            "node": "Have Wix service ID?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Wix readback failure": {
+      "main": [
+        [
+          {
+            "node": "Continue after Wix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record uncertain Wix create": {
+      "main": [
+        [
+          {
+            "node": "Continue after Wix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Wix create receipt": {
+      "main": [
+        [
+          {
+            "node": "Persist Wix service ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record uncertain Wix create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Square service request": {
+      "main": [
+        [
+          {
+            "node": "Create Square appointment service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure booking destinations": {
+      "main": [
+        [
+          {
+            "node": "Validate and map canonical product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Continue with stored Square ID": {
+      "main": [
+        [
+          {
+            "node": "Have Square service ID?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Wix appointment service": {
+      "main": [
+        [
+          {
+            "node": "Validate Wix create receipt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record uncertain Wix create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Square readback failure": {
+      "main": [
+        [
+          {
+            "node": "Continue after Square",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record uncertain Square create": {
+      "main": [
+        [
+          {
+            "node": "Continue after Square",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Square create receipt": {
+      "main": [
+        [
+          {
+            "node": "Persist Square service ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record uncertain Square create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip Wix readback without an ID": {
+      "main": [
+        [
+          {
+            "node": "Continue after Wix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read two-site publication result": {
+      "main": [
+        [
+          {
+            "node": "Two-site publication result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Square appointment service": {
+      "main": [
+        [
+          {
+            "node": "Validate Square create receipt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record uncertain Square create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register approved publication plan": {
+      "main": [
+        [
+          {
+            "node": "Claim Square registration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip Square readback without an ID": {
+      "main": [
+        [
+          {
+            "node": "Continue after Square",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and map canonical product": {
+      "main": [
+        [
+          {
+            "node": "Use synthetic preview?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review service and both destinations": {
+      "main": [
+        [
+          {
+            "node": "Product approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # 👥 Automated resume review system using OpenAI + Google Sheets
 
-> ⚡ **6,015 views** · 👥 [HR & Recruitment](../)
+> ⚡ **6,429 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

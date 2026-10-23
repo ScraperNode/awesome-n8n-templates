@@ -1,6 +1,6 @@
 # 🔬 Breakdown documents into study notes using templating MistralAI and Qdrant
 
-> ⚡ **28,895 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **30,221 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

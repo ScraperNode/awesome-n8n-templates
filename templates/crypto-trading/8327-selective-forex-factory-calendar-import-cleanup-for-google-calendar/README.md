@@ -1,6 +1,6 @@
 # 📈 Selective forex factory calendar import & cleanup for Google Calendar
 
-> ⚡ **478 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **688 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

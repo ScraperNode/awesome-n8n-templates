@@ -1,6 +1,6 @@
 # ⚒️ 🥇 Token Estim8r -sub workflow to track AI model token usage and cost with JinaAI
 
-> ⚡ **1,700 views** · ⚒️ [Engineering](../)
+> ⚡ **1,801 views** · ⚒️ [Engineering](../)
 
 ## Description
 

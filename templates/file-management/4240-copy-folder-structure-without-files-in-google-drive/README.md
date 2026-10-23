@@ -1,6 +1,6 @@
 # 📁 Copy folder structure without files in Google Drive
 
-> ⚡ **194 views** · 📁 [File Management](../)
+> ⚡ **213 views** · 📁 [File Management](../)
 
 ## Description
 

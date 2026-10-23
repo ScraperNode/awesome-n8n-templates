@@ -1,6 +1,6 @@
 # ⚙️ Automated rsync backup with password auth & alert system
 
-> ⚡ **122 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **161 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 👥 🛠️ BambooHR tool MCP server 💪 all 15 operations
 
-> ⚡ **145 views** · 👥 [HR & Recruitment](../)
+> ⚡ **185 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

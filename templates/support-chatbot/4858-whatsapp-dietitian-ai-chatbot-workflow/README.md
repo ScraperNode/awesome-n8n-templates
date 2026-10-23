@@ -1,6 +1,6 @@
 # 💬 WhatsApp dietitian AI chatbot workflow
 
-> ⚡ **874 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,009 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

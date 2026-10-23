@@ -1,6 +1,6 @@
 # ⚙️ ✨😃Automated workflow backups to Google Drive
 
-> ⚡ **5,152 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **5,363 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

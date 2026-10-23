@@ -1,6 +1,6 @@
 # ⚒️ Ai prompt generator workflow
 
-> ⚡ **51,745 views** · ⚒️ [Engineering](../)
+> ⚡ **55,883 views** · ⚒️ [Engineering](../)
 
 ## Description
 

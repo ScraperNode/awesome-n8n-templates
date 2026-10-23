@@ -1,6 +1,6 @@
 # 🎬 Automate Shopify product CSV from images using Gemini, GPT-4o, Google Drive & Sheets
 
-> ⚡ **182 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **309 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

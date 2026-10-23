@@ -1,6 +1,6 @@
 # 📈 Send cryptocurrency price threshold alerts from CoinGecko to Discord
 
-> ⚡ **1,918 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **2,146 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

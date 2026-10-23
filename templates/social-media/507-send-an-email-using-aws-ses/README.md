@@ -1,6 +1,6 @@
 # 📱 Send an email using AWS SES
 
-> ⚡ **1,907 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,953 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

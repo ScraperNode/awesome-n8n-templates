@@ -1,6 +1,6 @@
 # ⚡ Create Notion tasks from Telegram messages with GPT-3.5
 
-> ⚡ **898 views** · ⚡ [Personal Productivity](../)
+> ⚡ **957 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

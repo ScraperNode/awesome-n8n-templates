@@ -1,6 +1,6 @@
 # 🎬 Transform your selfies into 3D figurines with Nano Banana AI
 
-> ⚡ **770 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **844 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

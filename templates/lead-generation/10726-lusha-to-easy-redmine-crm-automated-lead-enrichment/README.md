@@ -1,6 +1,6 @@
-# 🎣 Lusha to Easy Redmine CRM: automated lead enrichment
+# 🎣 Lusha to Easy8 CRM: automated lead enrichment
 
-> ⚡ **203 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **238 views** · 🎣 [Lead Generation & Enrichment](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >
@@ -8,18 +8,18 @@
 
 ## Description
 
-**Use this workflow to enrich lead records from Easy Redmine with Lusha data and sync updated fields back to the CRM.**
+**Use this workflow to enrich lead records from Easy8 with Lusha data and sync updated fields back to the CRM.**
 
 ### About Workflow  
-This workflow connects Easy Redmine CRM with Lusha via API to enrich lead records. It fetches lead data from Easy Redmine, queries Lusha for matching contact information, transforms the results (e.g., phone, employee count, LinkedIn), and updates the original records in Easy Redmine CRM automatically.
+This workflow connects Easy8 CRM with Lusha via API to enrich lead records. It fetches lead data from Easy8, queries Lusha for matching contact information, transforms the results (e.g., phone, employee count, LinkedIn), and updates the original records in Easy8 CRM automatically.
 
 ### Use Case  
-Built for CRM and sales teams using Easy Redmine, this automation replaces manual Lusha lookups and lead updates. It ensures that enriched data is consistently added to your CRM—boosting lead quality and reducing data maintenance time.
+Built for CRM and sales teams using Easy8, this automation replaces manual Lusha lookups and lead updates. It ensures that enriched data is consistently added to your CRM—boosting lead quality and reducing data maintenance time.
 
 ### How it works  
 - **Schedule Trigger**  
 =&gt; Runs daily at a set hour (e.g., 10:00)  
-- **Get Leads from Easy Redmine**  
+- **Get Leads from Easy8**  
 =&gt; Pulls leads via saved query (e.g., today's leads) using the `easy_leads` resource  
 - **Split Out**  
 =&gt; Breaks down the batch of leads into single records for enrichment  
@@ -32,15 +32,15 @@ Built for CRM and sales teams using Easy Redmine, this automation replaces manua
   - Extracts phones, email, LinkedIn, job info  
   - Converts employee ranges like [1000, 5000] into `5000`  
   - Flattens nested Lusha response into CRM-friendly format  
-- **Update Leads in Easy Redmine CRM**  
+- **Update Leads in Easy8 CRM**  
 =&gt; Sends a PUT request to update each lead  
 
 ### How to use  
 - Import the workflow into your n8n instance  
 - Set credentials for:  
-  - Easy Redmine API  
+  - Easy8 API  
   - Lusha API (HTTP Header Auth)  
-- Update the `Get Leads from Easy Redmine` node with your query ID  
+- Update the `Get Leads from Easy8` node with your query ID  
 - Ensure Lusha API fields (email, name, company) match available lead fields  
 - Adjust the transformation logic in the Code node if needed  
 - Update the custom field ID in the final PUT request if your CRM uses different IDs  
@@ -52,7 +52,7 @@ Built for CRM and sales teams using Easy Redmine, this automation replaces manua
 - **Lead Scoring**: Add employee count and LinkedIn for better segmentation  
 
 ### Requirements  
-- Easy Redmine API access  
+- Easy8 API access  
 - Lusha API access    
 - API credentials for both platforms  
 

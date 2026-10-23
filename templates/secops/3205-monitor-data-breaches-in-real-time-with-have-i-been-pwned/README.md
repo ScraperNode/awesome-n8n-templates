@@ -1,6 +1,6 @@
 # 🔒 Monitor data breaches in real-time with Have I Been Pwned
 
-> ⚡ **11,829 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **12,506 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

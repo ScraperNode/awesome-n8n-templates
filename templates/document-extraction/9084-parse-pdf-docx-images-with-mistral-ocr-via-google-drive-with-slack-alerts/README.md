@@ -1,6 +1,6 @@
 # 🔬 Parse PDF, DOCX & images with Mistral OCR via Google Drive with Slack alerts
 
-> ⚡ **1,317 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,643 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

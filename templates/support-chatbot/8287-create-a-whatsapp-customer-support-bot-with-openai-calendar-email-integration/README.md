@@ -1,6 +1,6 @@
 # 💬 Create a WhatsApp customer support bot with OpenAI, calendar & email integration
 
-> ⚡ **1,971 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,589 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 WordPress-to-Pipedrive integration: Automating contact & lead management
 
-> ⚡ **1,728 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,783 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

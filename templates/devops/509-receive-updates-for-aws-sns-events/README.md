@@ -1,6 +1,6 @@
 # ⚙️ Receive updates for AWS SNS events
 
-> ⚡ **971 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **984 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

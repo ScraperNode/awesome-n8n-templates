@@ -1,6 +1,6 @@
 # 🎬 Automate blog content creation with OpenAI, Google Sheets & email approval flow
 
-> ⚡ **24,144 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **25,339 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

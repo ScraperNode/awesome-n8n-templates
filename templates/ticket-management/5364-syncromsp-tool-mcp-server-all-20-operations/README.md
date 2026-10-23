@@ -1,6 +1,6 @@
 # 🎫 🛠️ SyncroMSP tool MCP server 💪 all 20 operations
 
-> ⚡ **348 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **368 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

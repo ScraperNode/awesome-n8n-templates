@@ -1,6 +1,6 @@
 # 🧾 Get invoices from Xero
 
-> ⚡ **2,897 views** · 🧾 [Invoice Processing](../)
+> ⚡ **3,004 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

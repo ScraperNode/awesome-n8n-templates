@@ -1,6 +1,6 @@
-# 💬 fluidX THE EYE — Create & invite via SMS for live camera session
+# 💬 Create fluidX THE EYE live camera sessions with SMS/email invites, AI analysis, and Google Drive
 
-> ⚡ **86 views** · 💬 [Support Chatbots](../)
+> ⚡ **588 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤖 Automate WHMCS support ticket creation with Gemini AI chatbot
 
-> ⚡ **611 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **757 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

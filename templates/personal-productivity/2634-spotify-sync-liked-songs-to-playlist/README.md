@@ -1,6 +1,6 @@
 # ⚡ Spotify sync liked songs to playlist
 
-> ⚡ **850 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,052 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

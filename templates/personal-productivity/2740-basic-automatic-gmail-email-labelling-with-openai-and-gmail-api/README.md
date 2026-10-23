@@ -1,6 +1,6 @@
 # ⚡ Basic automatic Gmail email labelling with OpenAI and Gmail API
 
-> ⚡ **122,985 views** · ⚡ [Personal Productivity](../)
+> ⚡ **174,490 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

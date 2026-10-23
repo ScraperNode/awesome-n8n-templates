@@ -1,6 +1,6 @@
 # 🔒 File hash verification for AI agents with hashlookup CIRCL API
 
-> ⚡ **342 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **381 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

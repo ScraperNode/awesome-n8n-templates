@@ -1,6 +1,6 @@
 # ⚡ Handle Gmail reply-based scheduling with Google Calendar and GPT-4o-mini
 
-> ⚡ **58 views** · ⚡ [Personal Productivity](../)
+> ⚡ **108 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

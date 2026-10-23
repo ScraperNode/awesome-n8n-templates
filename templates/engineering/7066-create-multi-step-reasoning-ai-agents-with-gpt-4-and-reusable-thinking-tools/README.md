@@ -1,6 +1,6 @@
 # ⚒️ Create multi-step reasoning AI agents with GPT-4 and reusable thinking tools
 
-> ⚡ **2,663 views** · ⚒️ [Engineering](../)
+> ⚡ **3,028 views** · ⚒️ [Engineering](../)
 
 ## Description
 

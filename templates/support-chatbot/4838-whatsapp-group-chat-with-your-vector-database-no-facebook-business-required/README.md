@@ -1,6 +1,6 @@
 # 💬 WhatsApp group chat with your vector database — no Facebook Business required
 
-> ⚡ **1,688 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,962 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

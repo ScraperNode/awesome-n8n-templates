@@ -1,6 +1,6 @@
 # 📱 Email newsletter system with SendGrid, Google Sheets & freemium rate limiting
 
-> ⚡ **83 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **143 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Recover Abandoned Shopify Carts with Email Follow-ups, HubSpot CRM & Google Sheets Tracking
 
-> ⚡ **147 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **257 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

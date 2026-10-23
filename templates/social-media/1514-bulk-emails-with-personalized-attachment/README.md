@@ -1,6 +1,6 @@
 # 📱 Bulk emails with personalized attachment
 
-> ⚡ **5,056 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **5,422 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ✨ Anonymize faces and license plates in media with BlurIt
 
-> ⚡ **127 views** · ✨ [AI & LLMs](../)
+> ⚡ **160 views** · ✨ [AI & LLMs](../)
 
 ## Description
 

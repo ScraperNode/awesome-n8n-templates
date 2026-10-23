@@ -1,6 +1,6 @@
 # 💬 Send WhatsApp medication reminders and caregiver alerts with WATI and Google Sheets
 
-> ⚡ **16 views** · 💬 [Support Chatbots](../)
+> ⚡ **109 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

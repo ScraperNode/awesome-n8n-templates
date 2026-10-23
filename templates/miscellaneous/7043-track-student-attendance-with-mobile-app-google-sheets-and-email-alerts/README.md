@@ -1,6 +1,6 @@
 # 🔧 Track student attendance with mobile app, Google Sheets, and email alerts
 
-> ⚡ **739 views** · 🔧 [Miscellaneous](../)
+> ⚡ **876 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

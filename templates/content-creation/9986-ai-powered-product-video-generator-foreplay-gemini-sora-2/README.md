@@ -1,6 +1,6 @@
 # 🎬 AI-powered product video generator (Foreplay + Gemini + Sora 2)
 
-> ⚡ **6,346 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **8,012 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
 >
@@ -8,26 +8,28 @@
 
 ## Description
 
-## AI-Powered Product Video Generator (Foreplay + Gemini + Sora 2)
-
-Sign Up For Foreplay [HERE](https://foreplay.co/?via=urpwUS)
+## Quick overview
+Sign Up For Foreplay [HERE](https://www.foreplay.co/?via=urpwUS)
 
 Automatically generate personalized, cinematic-quality product videos using Foreplay’s ad data, Google Gemini AI for creative prompts, and Sora 2 for text-to-video generation.
 
-## Who’s it for?
-Perfect for marketers, brand managers, or creators who want to produce quick, high-quality video ads without manual scripting or editing.
-
 ## How it works
-1. Fetch product data and related competitor videos from Foreplay.
-2. Use Gemini AI to generate creative text-to-video prompts.
-3. Send the prompt and image to Kie.ai to generate a short, cinematic product video.
-4. Save the finished video automatically to Google Drive.
+1. The workflow fetches product data and related competitor video references directly from Foreplay as the input source.
+2. Gemini AI analyzes the fetched data and generates creative, detailed text-to-video prompts tailored for product advertising.
+3. The generated prompt and product image are sent to Kie.ai, which renders a short cinematic product video automatically.
+4. The finished video file is saved automatically to a designated folder in Google Drive for storage and easy access.
 
-## How to set up
-- Connect your [Foreplay](https://foreplay.co/?via=urpwUS), Google Drive, Gemini, and Kie.ai credentials.  
-- Set your product image folder's permission (Google Drive) as public.  
-- Add your API keys inside the _**Set Workflow Credentials**_ node.  
-- Then run the workflow manually to generate your first video ad!
+## Setup
+1. Connect your Foreplay, Google Drive, Gemini, and Kie.ai credentials in the n8n Credential Manager before running the workflow.
+2. Set your product image folder in Google Drive to public so Kie.ai can access the image during video generation.
+3. Open the Set Workflow Credentials node and add all required API keys for each connected service.
+4. Run the workflow manually to generate your first product video ad and verify the output is saved correctly to Google Drive.
+
+## Additional info
+Published by Fahmi Fahreza, Indonesia’s first official n8n Brand Ambassador and founder of WithMi Automation, built from real client implementations, not tutorials.
+→ Let us build it for you: withmiautomation.com
+→ Learn to build it yourself: academy.withmiautomation.com
+→ Bring Fahmi to your team (training, workshop, talkshow): fahmiiireza.com
 
 ## 🔗 Nodes Used
 

@@ -1,6 +1,6 @@
 # ⚡ Chat with OpenAIs GPT via a simple Telegram bot
 
-> ⚡ **45,067 views** · ⚡ [Personal Productivity](../)
+> ⚡ **45,954 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

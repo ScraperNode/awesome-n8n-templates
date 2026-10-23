@@ -1,6 +1,6 @@
 # 🤝 Automated request-to-quote with OpenAI, Google Sheets & CraftMyPDF
 
-> ⚡ **135 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **194 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

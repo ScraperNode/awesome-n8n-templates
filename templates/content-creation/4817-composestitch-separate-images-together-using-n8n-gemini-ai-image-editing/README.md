@@ -1,6 +1,6 @@
 # 🎬 Compose/Stitch separate images together using n8n & Gemini AI image editing
 
-> ⚡ **4,296 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,086 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

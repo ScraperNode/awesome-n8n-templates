@@ -1,6 +1,6 @@
 # 🤝 Order processing with Google Sheets and Slack: inventory checks and alerts
 
-> ⚡ **345 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **710 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Automated inventory management with Airtable PO creation & supplier emails
 
-> ⚡ **430 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **533 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

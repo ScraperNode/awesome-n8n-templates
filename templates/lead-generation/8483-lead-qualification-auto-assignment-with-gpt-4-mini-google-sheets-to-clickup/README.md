@@ -1,6 +1,6 @@
 # 🎣 Lead qualification & auto-assignment with GPT-4 Mini: Google Sheets to ClickUp
 
-> ⚡ **68 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **81 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

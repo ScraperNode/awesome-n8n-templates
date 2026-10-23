@@ -1,6 +1,6 @@
 # 🔧 WhatsApp AI assistant for Q&A & bookings with Gemini, Pinecone & Google Sheets
 
-> ⚡ **1,094 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,764 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

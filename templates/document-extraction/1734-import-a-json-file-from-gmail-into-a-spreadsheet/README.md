@@ -1,6 +1,6 @@
 # 🔬 Import a JSON file from Gmail into a spreadsheet
 
-> ⚡ **1,627 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,671 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

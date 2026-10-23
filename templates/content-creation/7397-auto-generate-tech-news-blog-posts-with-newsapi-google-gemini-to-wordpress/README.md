@@ -1,6 +1,6 @@
 # 🎬 Auto-generate tech news blog posts with NewsAPI & Google Gemini to WordPress
 
-> ⚡ **3,043 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,409 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Generate and validate bulk QR codes with Google Sheets and Google Drive
 
-> ⚡ **14 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **77 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

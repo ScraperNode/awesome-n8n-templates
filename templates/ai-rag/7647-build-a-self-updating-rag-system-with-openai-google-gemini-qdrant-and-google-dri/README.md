@@ -1,6 +1,6 @@
-# 🔍 Build a self-updating RAG system with OpenAI, Google Gemini, Qdrant and Google Drive
+# 🔍 Build a self-updating RAG system with OpenAI, Qdrant and Google Drive
 
-> ⚡ **1,404 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **1,576 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 
@@ -81,6 +81,14 @@ To configure this workflow, follow these steps:
 **STEP 5: Test the RAG System**
 - The workflow includes a chat trigger (**"When chat message received"**) for testing.
 - Send a query to test the retrieval and answer generation process.
+
+---
+
+
+👉 [Subscribe to my new **YouTube channel**](https://youtube.com/@n3witalia). Here I’ll share videos and Shorts with practical tutorials and **FREE templates for n8n**.
+
+[![image](https://n3wstorage.b-cdn.net/n3witalia/youtube-n8n-cover.jpg)](https://youtube.com/@n3witalia)
+
 
 ---
 ### **Need help customizing?**  

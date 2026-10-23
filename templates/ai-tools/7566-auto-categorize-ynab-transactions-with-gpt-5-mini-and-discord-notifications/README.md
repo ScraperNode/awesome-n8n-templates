@@ -1,6 +1,6 @@
 # 🎯 Auto-categorize YNAB transactions with GPT-5-Mini and Discord notifications
 
-> ⚡ **647 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **775 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

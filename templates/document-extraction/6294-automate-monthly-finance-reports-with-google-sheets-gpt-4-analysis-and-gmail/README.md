@@ -1,6 +1,6 @@
 # 🔬 Automate monthly finance reports with Google Sheets, GPT-4 analysis and Gmail
 
-> ⚡ **3,581 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,147 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 Stock market technical analysis alerts with Alpha Vantage & Discord
 
-> ⚡ **2,112 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **2,395 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

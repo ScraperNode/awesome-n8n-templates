@@ -1,6 +1,6 @@
 # 💬 Personalise outreach emails using customer data and AI
 
-> ⚡ **3,177 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **3,442 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

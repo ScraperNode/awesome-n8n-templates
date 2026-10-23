@@ -1,6 +1,6 @@
 # 🎣 Verify emails & enrich new form leads and save them to HubSpot
 
-> ⚡ **3,443 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **3,432 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

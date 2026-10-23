@@ -1,6 +1,6 @@
 # 🎬 Generate AI music with the ElevenLabs API and upload to Google Drive
 
-> ⚡ **859 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **983 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

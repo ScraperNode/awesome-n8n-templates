@@ -1,6 +1,6 @@
 # 🔬 Automate tax compliance validation with OpenAI anomaly detection & accounting integration
 
-> ⚡ **173 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **403 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

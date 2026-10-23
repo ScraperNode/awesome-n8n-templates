@@ -1,6 +1,6 @@
 # 🔬 Automate actuarial premium adjustments and claims reporting with GPT-4.1, Gmail and Slack
 
-> ⚡ **25 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **107 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

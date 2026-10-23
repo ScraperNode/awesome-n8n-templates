@@ -1,6 +1,6 @@
 # 🔬 Generate bulk certificates from Google Sheets and Google Slides
 
-> ⚡ **50 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **116 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

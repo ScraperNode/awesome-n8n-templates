@@ -1,6 +1,6 @@
 # 💬 Automate lead qualification with AI voice calls using GPT-3.5, Notion and Vapi
 
-> ⚡ **1,094 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,680 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

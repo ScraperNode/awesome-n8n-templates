@@ -1,6 +1,6 @@
 # 🔧 Orchestrate hospital event responses with Anthropic Claude and scheduling, task, and insurance APIs
 
-> ⚡ **65 views** · 🔧 [Miscellaneous](../)
+> ⚡ **265 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

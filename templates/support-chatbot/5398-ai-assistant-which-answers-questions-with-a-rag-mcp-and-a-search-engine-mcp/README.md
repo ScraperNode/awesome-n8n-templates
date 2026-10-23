@@ -1,6 +1,6 @@
 # 💬 AI Assistant which answers questions with a RAG MCP and a Search Engine MCP
 
-> ⚡ **14,431 views** · 💬 [Support Chatbots](../)
+> ⚡ **16,801 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

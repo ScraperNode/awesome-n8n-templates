@@ -1,6 +1,6 @@
 # 🎬 Create film location database with Google Maps, AI analysis & Google Sheets
 
-> ⚡ **107 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **151 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔍 Query Slack channel history with natural language using OpenAI
 
-> ⚡ **275 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **288 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Analyze real estate submarket opportunities with GPT-4, MLS, Gmail and Slack
 
-> ⚡ **206 views** · 📊 [Market Research & Insights](../)
+> ⚡ **275 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

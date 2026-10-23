@@ -1,6 +1,6 @@
 # ⚡ AI-powered personal assistant for Telegram with memory & task management
 
-> ⚡ **1,794 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,569 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Automated daily workflow backups to Google Drive with cleanup
 
-> ⚡ **106 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **128 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

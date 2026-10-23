@@ -1,6 +1,6 @@
 # 🧾 Automated receipt processing for cashback with Jotform, Gemini 2.5 & Notion
 
-> ⚡ **54 views** · 🧾 [Invoice Processing](../)
+> ⚡ **66 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

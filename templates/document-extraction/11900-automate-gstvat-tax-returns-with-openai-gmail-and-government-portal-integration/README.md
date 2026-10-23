@@ -1,6 +1,6 @@
 # 🔬 Automate GST/VAT tax returns with OpenAI, Gmail and government portal integration
 
-> ⚡ **63 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **248 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

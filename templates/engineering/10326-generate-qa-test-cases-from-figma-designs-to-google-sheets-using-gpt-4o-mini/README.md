@@ -1,6 +1,6 @@
 # ⚒️ Generate QA test cases from Figma designs to Google Sheets using GPT-4o-mini
 
-> ⚡ **1,422 views** · ⚒️ [Engineering](../)
+> ⚡ **2,265 views** · ⚒️ [Engineering](../)
 
 ## Description
 

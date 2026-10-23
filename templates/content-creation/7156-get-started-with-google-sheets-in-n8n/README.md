@@ -1,6 +1,6 @@
 # 🎬 Get started with Google Sheets in n8n
 
-> ⚡ **17,656 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **24,303 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

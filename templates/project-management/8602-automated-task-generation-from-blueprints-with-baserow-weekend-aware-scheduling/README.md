@@ -1,6 +1,6 @@
 # 📋 Automated task generation from blueprints with Baserow & weekend-aware scheduling
 
-> ⚡ **256 views** · 📋 [Project Management](../)
+> ⚡ **310 views** · 📋 [Project Management](../)
 
 ## Description
 

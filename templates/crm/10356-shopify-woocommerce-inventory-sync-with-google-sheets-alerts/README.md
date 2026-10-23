@@ -1,6 +1,6 @@
 # 🤝 Shopify & WooCommerce inventory sync with Google Sheets alerts
 
-> ⚡ **96 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **138 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

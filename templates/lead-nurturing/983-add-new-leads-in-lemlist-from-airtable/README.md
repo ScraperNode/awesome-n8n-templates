@@ -1,6 +1,6 @@
 # 💬 Add new leads in Lemlist from Airtable
 
-> ⚡ **630 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **656 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

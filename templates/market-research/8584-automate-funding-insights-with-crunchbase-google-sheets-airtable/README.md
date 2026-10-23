@@ -1,6 +1,6 @@
 # 📊 Automate funding insights with Crunchbase, Google Sheets & Airtable
 
-> ⚡ **197 views** · 📊 [Market Research & Insights](../)
+> ⚡ **237 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

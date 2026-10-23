@@ -1,6 +1,6 @@
 # 👥 Automate employee onboarding with GPT-4o: Jira, Notion & Gmail integration
 
-> ⚡ **1,008 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,620 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

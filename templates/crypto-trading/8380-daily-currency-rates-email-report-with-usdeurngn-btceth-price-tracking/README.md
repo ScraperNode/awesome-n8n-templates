@@ -1,6 +1,6 @@
 # 📈 Daily currency rates email report with USD→EUR/NGN & BTC/ETH price tracking
 
-> ⚡ **275 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **360 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

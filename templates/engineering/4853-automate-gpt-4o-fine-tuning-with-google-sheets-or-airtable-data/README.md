@@ -1,6 +1,6 @@
 # ⚒️ Automate GPT-4o fine-tuning with Google Sheets or Airtable data
 
-> ⚡ **389 views** · ⚒️ [Engineering](../)
+> ⚡ **412 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Transcribe voice messages from Telegram using OpenAI Whisper-1
 
-> ⚡ **8,334 views** · 💬 [Support Chatbots](../)
+> ⚡ **12,283 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

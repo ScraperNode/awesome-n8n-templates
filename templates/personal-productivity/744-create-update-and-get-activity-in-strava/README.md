@@ -1,6 +1,6 @@
 # ⚡ Create, update, and get activity in Strava
 
-> ⚡ **1,202 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,221 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

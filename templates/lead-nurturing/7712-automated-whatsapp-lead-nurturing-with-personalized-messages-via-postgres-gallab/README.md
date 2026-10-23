@@ -1,6 +1,6 @@
 # 💬 Automated WhatsApp lead nurturing with personalized messages via Postgres & Gallabox
 
-> ⚡ **255 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **335 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Send an SMS using the Mocean node
 
-> ⚡ **608 views** · ⚡ [Personal Productivity](../)
+> ⚡ **630 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

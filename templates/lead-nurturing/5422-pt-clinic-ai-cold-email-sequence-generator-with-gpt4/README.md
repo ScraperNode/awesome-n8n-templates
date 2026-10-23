@@ -1,6 +1,6 @@
 # 💬 PT clinic AI cold email sequence generator with GPT4
 
-> ⚡ **223 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **242 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

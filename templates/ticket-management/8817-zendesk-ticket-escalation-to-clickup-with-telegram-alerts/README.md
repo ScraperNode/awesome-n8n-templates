@@ -1,6 +1,6 @@
 # 🎫 Zendesk ticket escalation to ClickUp with Telegram alerts
 
-> ⚡ **105 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **117 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

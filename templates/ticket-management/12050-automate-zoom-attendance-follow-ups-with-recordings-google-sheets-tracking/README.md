@@ -1,6 +1,6 @@
 # 🎫 Automate Zoom attendance follow-ups with recordings & Google Sheets tracking
 
-> ⚡ **106 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **339 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

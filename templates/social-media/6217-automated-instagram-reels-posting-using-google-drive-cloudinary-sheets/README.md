@@ -1,6 +1,6 @@
 # 📱 Automated Instagram reels posting using Google Drive, Cloudinary & Sheets
 
-> ⚡ **1,953 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,636 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

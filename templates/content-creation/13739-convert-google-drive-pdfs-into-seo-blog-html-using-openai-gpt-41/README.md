@@ -1,6 +1,6 @@
 # 🎬 Convert Google Drive PDFs into SEO blog HTML using OpenAI GPT-4.1
 
-> ⚡ **1 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **64 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

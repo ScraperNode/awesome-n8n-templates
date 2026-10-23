@@ -1,6 +1,6 @@
 # ⚒️ Conversing with data: transforming text into SQL queries and visual curves
 
-> ⚡ **3,380 views** · ⚒️ [Engineering](../)
+> ⚡ **3,516 views** · ⚒️ [Engineering](../)
 
 ## Description
 

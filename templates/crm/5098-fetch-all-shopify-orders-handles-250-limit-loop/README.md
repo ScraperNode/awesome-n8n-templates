@@ -1,6 +1,6 @@
 # 🤝 Fetch All Shopify Orders (Handles 250-Limit Loop)
 
-> ⚡ **950 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,058 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

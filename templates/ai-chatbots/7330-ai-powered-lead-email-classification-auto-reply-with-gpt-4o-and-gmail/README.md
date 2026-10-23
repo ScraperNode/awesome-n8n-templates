@@ -1,6 +1,6 @@
 # 🤖 AI-powered lead email classification & auto-reply with GPT-4o and Gmail
 
-> ⚡ **1,768 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **2,034 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

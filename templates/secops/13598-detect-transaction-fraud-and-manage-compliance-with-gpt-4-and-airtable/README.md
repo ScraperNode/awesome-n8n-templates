@@ -1,6 +1,6 @@
 # 🔒 Detect transaction fraud and manage compliance with GPT-4 and Airtable
 
-> ⚡ **16 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **109 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

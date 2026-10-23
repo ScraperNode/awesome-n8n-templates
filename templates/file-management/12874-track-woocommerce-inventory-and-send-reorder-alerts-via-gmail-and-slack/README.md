@@ -1,6 +1,6 @@
 # 📁 Track WooCommerce inventory and send reorder alerts via Gmail and Slack
 
-> ⚡ **22 views** · 📁 [File Management](../)
+> ⚡ **67 views** · 📁 [File Management](../)
 
 ## Description
 

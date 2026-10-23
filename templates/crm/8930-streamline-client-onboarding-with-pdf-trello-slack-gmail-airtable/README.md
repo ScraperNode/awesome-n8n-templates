@@ -1,6 +1,6 @@
 # 🤝 Streamline client onboarding with PDF, Trello, Slack, Gmail & Airtable
 
-> ⚡ **229 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **311 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

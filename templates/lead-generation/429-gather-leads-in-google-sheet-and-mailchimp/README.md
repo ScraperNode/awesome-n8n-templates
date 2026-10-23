@@ -1,6 +1,6 @@
 # 🎣 Gather leads in Google Sheet and Mailchimp
 
-> ⚡ **1,164 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,241 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

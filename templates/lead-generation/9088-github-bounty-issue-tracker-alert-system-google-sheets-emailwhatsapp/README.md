@@ -1,6 +1,6 @@
 # 🎣 GitHub bounty issue tracker & alert system (Google Sheets + Email/WhatsApp)
 
-> ⚡ **158 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **230 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

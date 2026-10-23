@@ -1,6 +1,6 @@
 # 💬 Automated cold email outreach with Gmail & Google Sheets
 
-> ⚡ **593 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **735 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

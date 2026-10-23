@@ -1,6 +1,6 @@
 # 💬 Re-engage dormant leads with Claude emails using Crunchbase, NewsAPI, Hunter, and Gmail
 
-> ⚡ **17 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **71 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤖 Financial data Q&A chatbot with Google Finance, SerpAPI, and OpenAI
 
-> ⚡ **953 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **1,079 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

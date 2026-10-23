@@ -1,6 +1,6 @@
 # 📁 Automatically optimise images added to a Google drive folder
 
-> ⚡ **2,069 views** · 📁 [File Management](../)
+> ⚡ **2,119 views** · 📁 [File Management](../)
 
 ## Description
 

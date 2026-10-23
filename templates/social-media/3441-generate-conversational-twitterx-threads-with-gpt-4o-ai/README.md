@@ -1,6 +1,6 @@
 # 📱 Generate conversational Twitter/X threads with GPT-4o AI
 
-> ⚡ **1,433 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,546 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

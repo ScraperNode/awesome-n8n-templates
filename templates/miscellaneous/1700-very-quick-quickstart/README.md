@@ -1,6 +1,6 @@
 # 🔧 Very quick quickstart
 
-> ⚡ **315,169 views** · 🔧 [Miscellaneous](../)
+> ⚡ **333,640 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

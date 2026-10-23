@@ -1,6 +1,6 @@
 # 🎬 AI image generation & editing with Google Gemini and Telegram Bot
 
-> ⚡ **1,220 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,911 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

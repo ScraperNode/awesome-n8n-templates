@@ -1,6 +1,6 @@
 # 🎬 Nano banana AI image editor via Telegram
 
-> ⚡ **8,308 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **11,609 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

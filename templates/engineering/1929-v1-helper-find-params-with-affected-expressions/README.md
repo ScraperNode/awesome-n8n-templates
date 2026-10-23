@@ -1,6 +1,6 @@
 # ⚒️ v1 helper - find params with affected expressions
 
-> ⚡ **1,134 views** · ⚒️ [Engineering](../)
+> ⚡ **1,189 views** · ⚒️ [Engineering](../)
 
 ## Description
 

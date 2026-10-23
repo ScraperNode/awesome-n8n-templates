@@ -1,6 +1,6 @@
 # 🔧 Manage transfers automatically in Wise
 
-> ⚡ **1,118 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,173 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

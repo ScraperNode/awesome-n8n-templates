@@ -1,6 +1,6 @@
 # ⚒️ RAG: context-aware chunking | Google Drive to Pinecone via OpenRouter & Gemini
 
-> ⚡ **10,133 views** · ⚒️ [Engineering](../)
+> ⚡ **9,887 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Sync customer email subscriptions between Shopify and Mautic
 
-> ⚡ **1,552 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,561 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Forward Zoho Mail emails to Gmail with Gemini AI analysis and Telegram digest
 
-> ⚡ **17 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **164 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

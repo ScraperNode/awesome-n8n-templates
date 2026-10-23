@@ -1,6 +1,6 @@
 # 🎣 B2B lead qualification
 
-> ⚡ **1,258 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,455 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

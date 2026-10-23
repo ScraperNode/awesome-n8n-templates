@@ -1,0 +1,463 @@
+{
+  "id": "zC1erO8Mi2S60c7E",
+  "meta": {
+    "instanceId": "9ec663bb32104c8cfd2fcdba0eee33b557ed805ee6578d131438d612e9d2ab6d"
+  },
+  "name": "Detect new orders and due date changes from Google Drive",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "de1898f9-7281-40ee-a50e-d2a00aadc9a3",
+      "name": "Run Manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        96
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "7cc17d0f-d02c-4965-92a9-7ef3f9c1297f",
+      "name": "Search Order Files in Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        224,
+        96
+      ],
+      "parameters": {
+        "filter": {
+          "driveId": {
+            "__rl": true,
+            "mode": "list",
+            "value": "My Drive"
+          },
+          "folderId": {
+            "__rl": true,
+            "mode": "list",
+            "value": "",
+            "cachedResultName": "Select the folder that holds your order list"
+          },
+          "whatToSearch": "files"
+        },
+        "options": {
+          "fields": [
+            "id",
+            "name",
+            "mimeType"
+          ]
+        },
+        "resource": "fileFolder",
+        "returnAll": true,
+        "queryString": "Order_List"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "05b8b827-b67d-4d99-bfbe-4f278d2edb9a",
+      "name": "Pick Latest Order File",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        448,
+        96
+      ],
+      "parameters": {
+        "jsCode": "const files = $input.all().map(i => i.json).filter(f => {\n  const name = String(f.name || '');\n  const isSheet = f.mimeType === 'application/vnd.google-apps.spreadsheet';\n  return (isSheet || /\\.xlsx?$/i.test(name)) && !name.startsWith('~$');\n});\nif (!files.length) throw new Error('No Excel file or Google Sheet matching the search term was found in the selected folder.');\n// Prefer the date in the file name (e.g. Order_List_20261015.xlsx); files without a date come last\nfunction dateFromName(name) {\n  const m = String(name).match(/(20\\d{2})[-_]?([01]\\d)[-_]?([0-3]\\d)/);\n  if (!m) return -1;\n  const t = Date.parse(m[1] + '-' + m[2] + '-' + m[3] + 'T00:00:00Z');\n  return Number.isNaN(t) ? -1 : t;\n}\nfiles.sort((a, b) => dateFromName(b.name) - dateFromName(a.name));\nconst f = files[0];\nreturn [{ json: { id: f.id, name: f.name, mimeType: f.mimeType || null } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e0b293b5-ac3a-4364-af7a-e4995fa984f2",
+      "name": "Download Order File",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        672,
+        96
+      ],
+      "parameters": {
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {
+          "binaryPropertyName": "data",
+          "googleFileConversion": {
+            "conversion": {
+              "sheetsToFormat": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            }
+          }
+        },
+        "operation": "download"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "0ceebe4d-c46a-425d-8b4c-02192e67b12f",
+      "name": "Read Spreadsheet Rows",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        896,
+        96
+      ],
+      "parameters": {
+        "options": {
+          "headerRow": true
+        },
+        "operation": "xlsx"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "147056ca-9c02-4068-9574-cf1cba20d086",
+      "name": "Normalize and Validate Orders",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1120,
+        96
+      ],
+      "parameters": {
+        "jsCode": "// Map header names (English or Japanese) to fixed fields and stop on bad data\nconst HEADERS = {\n  order_number: ['Order No.', 'Order Number', 'order_number', '\u53d7\u6ce8\u756a\u53f7', '\u6ce8\u6587\u756a\u53f7'],\n  customer_name: ['Customer', 'Customer Name', 'customer_name', '\u9867\u5ba2\u540d', '\u9867\u5ba2'],\n  product_name: ['Product', 'Product Name', 'product_name', '\u5546\u54c1\u540d', '\u6848\u4ef6\u540d'],\n  delivery_date: ['Due Date', 'Delivery Date', 'delivery_date', '\u7d0d\u671f', '\u7d0d\u5165\u65e5'],\n};\nconst pick = (row, names) => {\n  const key = Object.keys(row).find(k => names.includes(String(k).trim()));\n  return key === undefined ? undefined : row[key];\n};\nfunction toIsoDate(v) {\n  if (v === null || v === undefined || String(v).trim() === '') return '';\n  const s = String(v).trim();\n  if (/^\\d+(\\.\\d+)?$/.test(s)) {\n    const n = Number(s);\n    if (n > 20000 && n < 80000) return new Date(Date.UTC(1899, 11, 30) + n * 86400000).toISOString().slice(0, 10);\n  }\n  const m = s.match(/^(\\d{4})[\\/\\-\u5e74.](\\d{1,2})[\\/\\-\u6708.](\\d{1,2})\u65e5?$/);\n  if (m) return m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0');\n  const d = new Date(s);\n  if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);\n  throw new Error('Cannot parse due date: ' + s);\n}\nconst rows = $input.all().map(i => i.json)\n  .filter(r => Object.values(r).some(v => v !== null && v !== undefined && String(v).trim() !== ''));\nif (!rows.length) throw new Error('The spreadsheet has no data rows.');\nconst out = rows.map((r, idx) => {\n  const values = {};\n  for (const [field, names] of Object.entries(HEADERS)) {\n    const v = pick(r, names);\n    if (v === undefined) throw new Error('Required column missing for ' + field + '. Accepted headers: ' + names.join(', '));\n    values[field] = v;\n  }\n  const orderNumber = String(values.order_number ?? '').trim();\n  if (!orderNumber) throw new Error('Order number is empty on data row ' + (idx + 2) + '.');\n  return {\n    order_number: orderNumber,\n    customer_name: String(values.customer_name ?? '').trim(),\n    product_name: String(values.product_name ?? '').trim(),\n    delivery_date: toIsoDate(values.delivery_date),\n  };\n});\nconst seen = new Set();\nfor (const r of out) {\n  if (seen.has(r.order_number)) throw new Error('Duplicate order number: ' + r.order_number);\n  seen.add(r.order_number);\n}\nreturn out.map(json => ({ json }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8e540e57-93e4-4d03-a4cb-71758d141d64",
+      "name": "Get Baseline Orders",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        1344,
+        96
+      ],
+      "parameters": {
+        "operation": "get",
+        "returnAll": true,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "order_baseline"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "a4286238-5eba-4c1a-b50e-a2fd8ef0465f",
+      "name": "Is Baseline Empty?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1568,
+        96
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "baseline-empty",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.order_number }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "1636fcac-b035-4ba1-b414-beae91226d53",
+      "name": "Prepare Rows for Baseline",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1792,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return $('Normalize and Validate Orders').all().map(i => ({ json: i.json }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "908d961a-e425-426f-a917-38d82efcca7d",
+      "name": "Save Baseline Orders",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        2016,
+        0
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "mappingMode": "autoMapInputData"
+        },
+        "options": {},
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "order_baseline"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "03e5e740-193f-4abf-8431-03228ec4273a",
+      "name": "Report Baseline Saved",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: {\n  mode: 'initialization',\n  sourceFile: $('Pick Latest Order File').first().json.name,\n  savedRows: $input.all().length,\n  message: 'Baseline saved. Run the workflow again after the order list changes to detect new orders and due date changes.',\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "41ebb9d4-3b4a-4adf-89c0-4b929a788181",
+      "name": "Compare Orders and Build Preview",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1808,
+        288
+      ],
+      "parameters": {
+        "jsCode": "// Compares the current file with the baseline. The baseline is never modified here.\nconst current = $('Normalize and Validate Orders').all().map(i => i.json);\nconst baseline = new Map();\nfor (const r of $input.all().map(i => i.json)) {\n  if (r.order_number) baseline.set(String(r.order_number), r);\n}\nconst newOrders = [];\nconst dueDateChanges = [];\nfor (const c of current) {\n  const old = baseline.get(c.order_number);\n  if (!old) newOrders.push(c);\n  else if (String(old.delivery_date ?? '') !== String(c.delivery_date ?? '')) {\n    dueDateChanges.push({ ...c, previous_delivery_date: String(old.delivery_date ?? '') });\n  }\n}\nconst fmt = d => d || '(not set)';\nconst lines = ['Order change preview', 'New orders: ' + newOrders.length, 'Due date changes: ' + dueDateChanges.length, ''];\nif (newOrders.length) {\n  lines.push('== New orders ==');\n  for (const r of newOrders) lines.push('Order: ' + r.order_number + '\\nCustomer: ' + r.customer_name + '\\nProduct: ' + r.product_name + '\\nDue date: ' + fmt(r.delivery_date) + '\\n');\n}\nif (dueDateChanges.length) {\n  lines.push('== Due date changes ==');\n  for (const r of dueDateChanges) lines.push('Order: ' + r.order_number + '\\nCustomer: ' + r.customer_name + '\\nProduct: ' + r.product_name + '\\nBefore: ' + fmt(r.previous_delivery_date) + '\\nAfter: ' + fmt(r.delivery_date) + '\\n');\n}\nif (!newOrders.length && !dueDateChanges.length) lines.push('No new orders or due date changes.');\nreturn [{ json: {\n  mode: 'detection',\n  sourceFile: $('Pick Latest Order File').first().json.name,\n  newOrderCount: newOrders.length,\n  dueDateChangeCount: dueDateChanges.length,\n  preview: lines.join('\\n'),\n  newOrders,\n  dueDateChanges,\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b9e4f32d-8506-4460-8a84-c66c0f1c0bca",
+      "name": "Template Description",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -32,
+        -864
+      ],
+      "parameters": {
+        "width": 560,
+        "height": 804,
+        "content": "## Detect new orders and due date changes from an order list in Google Drive\n\n**Who it's for:** Sales admins, order desks and production planners who keep an order list in Excel or Google Sheets and need to know what changed since last time.\n\n### How it works\n1. Finds the order list in a Google Drive folder by name and picks the latest file (date in the file name, e.g. `Order_List_20261015.xlsx`). Excel files and Google Sheets both work.\n2. Reads the first sheet and maps the **Order No.**, **Customer**, **Product** and **Due Date** columns (English or Japanese headers). Due dates are normalized to YYYY-MM-DD. The run stops on a missing column, an empty order number or a duplicate order number.\n3. **First run:** the baseline table is empty, so all rows are saved as the baseline.\n4. **Later runs:** compares the file with the baseline and outputs a preview of **new orders** and **due date changes**. Deleted orders are ignored and the baseline is never overwritten.\n\n### How to set up\n1. Create a Data Table named `order_baseline` with four **string** columns: `order_number`, `customer_name`, `product_name`, `delivery_date`.\n2. Connect your **Google Drive** credential on both Google Drive nodes.\n3. In **Search Order Files in Folder**, select your folder and change the search term if your file is not called `Order_List`.\n4. Run the workflow once to save the baseline, then run it again whenever the list changes.\n\n### Requirements\n- Google Drive account\n- n8n with Data Tables\n\n### How to customize\n- Add a Slack, Teams or Gmail node after **Compare Orders and Build Preview** to send the preview.\n- Swap the manual trigger for a Schedule Trigger to check automatically."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a874bff9-72f6-4ba2-8e15-edafebbde1d5",
+      "name": "Find Latest File",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        192,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 608,
+        "height": 224,
+        "content": "## 1. Find the latest order file\nSearches the selected folder by name, keeps Excel files and Google Sheets, and downloads the newest one as .xlsx."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a3e65280-1da4-4610-b566-15cc75bc1e96",
+      "name": "Validate Orders",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        864,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 384,
+        "height": 224,
+        "content": "## 2. Read and validate orders\nMaps the four required columns, normalizes due dates, and stops on missing columns, empty or duplicate order numbers."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a899b0f3-56f2-4311-94ad-c2137d743020",
+      "name": "Choose Mode",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1312,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 384,
+        "height": 224,
+        "content": "## 3. Choose first run or detection\nLoads the baseline once. An empty baseline means this is the first run."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "885b587a-0fac-4c66-8b44-ba860dfca209",
+      "name": "Save Baseline",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1760,
+        -96
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 608,
+        "height": 224,
+        "content": "## 4a. First run: save baseline\nSaves every validated row to the `order_baseline` Data Table."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "08c585dc-4d30-4874-ad9d-6aa1879775f9",
+      "name": "Detect Changes",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1760,
+        160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 624,
+        "height": 336,
+        "content": "## 4b. Later runs: detect changes\nLists new orders and due date changes as a preview. Read-only: the baseline is not changed."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "versionId": "3dde9425-7c81-4998-b86d-b454193c375f",
+  "nodeGroups": [],
+  "connections": {
+    "Run Manually": {
+      "main": [
+        [
+          {
+            "node": "Search Order Files in Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Baseline Empty?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Rows for Baseline",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Compare Orders and Build Preview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Order File": {
+      "main": [
+        [
+          {
+            "node": "Read Spreadsheet Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Baseline Orders": {
+      "main": [
+        [
+          {
+            "node": "Is Baseline Empty?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Baseline Orders": {
+      "main": [
+        [
+          {
+            "node": "Report Baseline Saved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Spreadsheet Rows": {
+      "main": [
+        [
+          {
+            "node": "Normalize and Validate Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Latest Order File": {
+      "main": [
+        [
+          {
+            "node": "Download Order File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Rows for Baseline": {
+      "main": [
+        [
+          {
+            "node": "Save Baseline Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Order Files in Folder": {
+      "main": [
+        [
+          {
+            "node": "Pick Latest Order File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize and Validate Orders": {
+      "main": [
+        [
+          {
+            "node": "Get Baseline Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

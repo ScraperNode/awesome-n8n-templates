@@ -1,6 +1,6 @@
 # 📊 Technical SEO audits with GPT-4o-mini & multi-format reporting (Sheets/Email)
 
-> ⚡ **128 views** · 📊 [Market Research & Insights](../)
+> ⚡ **175 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

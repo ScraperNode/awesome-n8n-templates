@@ -1,6 +1,6 @@
 # 🔬 Sync Zendesk knowledge base articles to Airtable with markdown conversion
 
-> ⚡ **324 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **379 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

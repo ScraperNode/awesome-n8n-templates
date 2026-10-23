@@ -1,6 +1,6 @@
 # 🎬 Automated blog publishing with Google Trends, GPT-4, Pexels & WordPress
 
-> ⚡ **1,446 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,808 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Analyze invoices from Google Drive with AI and store data in Google Sheets
 
-> ⚡ **28 views** · 🧾 [Invoice Processing](../)
+> ⚡ **268 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

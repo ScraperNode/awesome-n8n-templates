@@ -1,6 +1,6 @@
 # 📊 Daily news aggregation with Perplexity AI & MongoDB storage
 
-> ⚡ **1,100 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,245 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

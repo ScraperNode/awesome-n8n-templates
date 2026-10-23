@@ -1,6 +1,6 @@
 # ⚡ Automated water consumption tracker - stored in sheet and notify in Slack
 
-> ⚡ **873 views** · ⚡ [Personal Productivity](../)
+> ⚡ **896 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

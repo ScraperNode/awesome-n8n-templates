@@ -1,6 +1,6 @@
 # 🤝 Sync new Shopify customers to Odoo contacts
 
-> ⚡ **1,245 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,420 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

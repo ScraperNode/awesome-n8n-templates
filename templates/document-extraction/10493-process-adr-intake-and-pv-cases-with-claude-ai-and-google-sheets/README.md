@@ -1,6 +1,6 @@
 # 🔬 Process ADR intake and PV cases with Claude AI and Google Sheets
 
-> ⚡ **5 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **75 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

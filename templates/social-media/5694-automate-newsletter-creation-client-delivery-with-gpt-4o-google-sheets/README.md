@@ -1,6 +1,6 @@
 # 📱 Automate newsletter creation & client delivery with GPT-4O, Google Sheets
 
-> ⚡ **8,948 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **11,147 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Enrich form leads with Lusha, waterfall enrichment, HubSpot, and Slack
 
-> ⚡ **20 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **87 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

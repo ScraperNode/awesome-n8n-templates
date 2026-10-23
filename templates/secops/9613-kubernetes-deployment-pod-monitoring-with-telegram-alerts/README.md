@@ -1,6 +1,6 @@
 # 🔒 Kubernetes deployment & pod monitoring with Telegram alerts
 
-> ⚡ **346 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **526 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

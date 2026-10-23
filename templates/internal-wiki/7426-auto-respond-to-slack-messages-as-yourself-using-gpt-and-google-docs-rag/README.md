@@ -1,6 +1,6 @@
 # 📖 Auto-respond to Slack messages as yourself using GPT and Google Docs RAG
 
-> ⚡ **803 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **952 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

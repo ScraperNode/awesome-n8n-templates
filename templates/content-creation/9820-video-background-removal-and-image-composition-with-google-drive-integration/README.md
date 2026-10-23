@@ -1,6 +1,6 @@
 # 🎬 Video background removal and image composition with Google Drive integration
 
-> ⚡ **67 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **97 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

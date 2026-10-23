@@ -1,6 +1,6 @@
 # 🎬 Automated hospital outreach system: Send personalized emails via Google Sheets & Gmail
 
-> ⚡ **471 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **566 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

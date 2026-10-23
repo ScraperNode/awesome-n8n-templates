@@ -1,6 +1,6 @@
 # 🎬 Generate ad images from campaign briefs with GPT-4o and OpenAI Image API
 
-> ⚡ **84 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **109 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

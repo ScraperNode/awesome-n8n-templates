@@ -1,6 +1,6 @@
 # ⚙️ Backup workflows to git repository on Github
 
-> ⚡ **7,297 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **7,651 views** · ⚙️ [DevOps & CI/CD](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

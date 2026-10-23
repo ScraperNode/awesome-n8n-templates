@@ -1,6 +1,6 @@
 # ⚡ Daily NASA astronomy picture delivered to your inbox via email
 
-> ⚡ **1,156 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,331 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Send weekly WooCommerce finance KPIs to Slack using HTTP APIs
 
-> ⚡ **11 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **109 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

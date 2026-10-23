@@ -1,6 +1,6 @@
 # 👥 Automate daily interview schedule delivery from Google Calendar to Gmail
 
-> ⚡ **247 views** · 👥 [HR & Recruitment](../)
+> ⚡ **263 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

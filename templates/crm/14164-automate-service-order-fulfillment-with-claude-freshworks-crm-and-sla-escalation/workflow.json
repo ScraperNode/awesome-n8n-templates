@@ -1,0 +1,1763 @@
+{
+  "meta": {
+    "instanceId": "22fdca31d9968d6f06af303ef9be6a073b9af5f54fda4c07e35417e4d15e704f"
+  },
+  "nodes": [
+    {
+      "id": "2a7f8e52-851d-4bc2-8c17-cb23fd773425",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2608,
+        720
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 720,
+        "height": 516,
+        "content": "## Service Order Fulfillment & SLA Escalation Engine\nVersion 1.0.0 \u2014 Operations\n\nProduction-grade order fulfillment orchestrator for service brokerages (skip hire, field services, logistics). Verifies Stripe payment, extracts structured order details with Claude AI, creates CRM records in Freshworks, sends transactional emails via Postmark, assigns a supplier, enforces a 4-hour SLA, auto-escalates missed SLAs to Slack and reassigns to the next available supplier, then logs every outcome to Google Sheets.\n\nFlow: Webhook => Validate Order => Verify Stripe Payment => Payment OK? => Extract with AI => Upsert Customer (Freshworks) => Create Deal => Send Confirmation (Postmark) => Find Supplier => Send Assignment => SLA Wait 4h => Check Deal Stage => Accepted? => Confirm/Escalate => SLA Retry 2h => Final Check => Log Outcome"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a4f5125c-2a1f-41c3-b622-c93d5f5fd041",
+      "name": "Prerequisites",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1872,
+        704
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 440,
+        "height": 516,
+        "content": "## Prerequisites\n- Stripe account with secret key (for payment verification)\n- Freshworks CRM account \u2014 API key + domain (subdomain.freshsales.io)\n- Postmark account \u2014 Server API Token (transactional email stream)\n- Slack workspace \u2014 Bot Token + #ops-escalations channel\n- Google Sheets \u2014 OAuth2 credential + pre-created fulfillment log sheet\n- Anthropic API key (Claude for order extraction)\n\nFreshworks setup: Go to Admin Settings \u2192 API Settings \u2192 copy your API key. Suppliers must be CRM contacts tagged 'supplier-available'. Deals need stages: New, Supplier Assigned, Accepted, Escalated, Completed."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d945396c-a61a-4530-80d1-d3bc06016bbd",
+      "name": "Setup Required",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1408,
+        688
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 440,
+        "height": 532,
+        "content": "## Setup Required\n1. Order Webhook \u2014 copy webhook URL into your website/checkout backend\n2. Verify Stripe Payment \u2014 add Stripe Secret Key to the HTTP Request header\n3. Extract Order Details \u2014 connect Anthropic API credential\n4. Upsert Customer Contact \u2014 set FRESHWORKS_DOMAIN + FRESHWORKS_API_KEY\n5. Create Service Deal \u2014 connect Freshworks CRM credential, update stageId for 'New'\n6. Send Order Confirmation \u2014 add Postmark Server Token, update From address\n7. Find Available Supplier \u2014 update tag filter to match your supplier tag in Freshworks\n8. Send Supplier Assignment \u2014 update From address and email template\n9. SLA Wait nodes \u2014 adjust 4h/2h windows to your SLA policy\n10. Alert Slack \u2014 connect Slack credential, confirm channel name #ops-escalations\n11. Log Outcome \u2014 connect Google Sheets, replace YOUR_FULFILLMENT_SHEET_ID"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3aed4ffe-19c2-4ffa-a325-aa4dd0532656",
+      "name": "How It Works",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3632,
+        1136
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 508,
+        "height": 700,
+        "content": "## How It Works\n1. Webhook receives new order from checkout with payment_intent_id and customer details\n2. Validate Code checks required fields and normalises data (email lowercase, postcode uppercase)\n3. Stripe HTTP verifies payment_intent status = 'succeeded' before proceeding\n4. Claude AI extracts waste type, skip size, collection address, priority from order notes\n5. Customer contact upserted in Freshworks CRM via REST API\n6. Service deal created in Freshworks with order value and all custom fields\n7. Postmark sends branded order confirmation to customer\n8. Freshworks searched for available supplier contacts (tagged supplier-available)\n9. Postmark sends supplier assignment request with job details\n10. Wait node holds execution for 4 hours (SLA window)\n11. Deal stage checked \u2014 if Accepted, customer notified and success logged\n12. If not: Slack alert fired, next supplier found, reassigned, 2h retry SLA starts\n13. Retry check: if accepted \u2192 confirm; if not \u2192 Slack urgent alert + Escalated deal stage\n14. All outcomes (success / retry success / escalated) logged to Google Sheets"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c2a28536-4292-4eb9-89a5-41ba6e86402a",
+      "name": "New Order Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -3328,
+        1712
+      ],
+      "webhookId": "order-webhook-uuid-001",
+      "parameters": {
+        "path": "new-order",
+        "options": {
+          "rawBody": false
+        },
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ea16f534-d78a-4db5-aad0-37c461c5957a",
+      "name": "Validate note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3040,
+        1584
+      ],
+      "parameters": {
+        "width": 270,
+        "height": 112,
+        "content": "Validates required fields, normalises email/postcode, assigns order reference"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8f534528-038e-4513-94a0-98179d1a8fbb",
+      "name": "Validate & Parse Order",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -3056,
+        1712
+      ],
+      "parameters": {
+        "jsCode": "const item = $input.first().json?.body || $input.first().json;\nconst required = ['payment_intent_id', 'customer_email', 'order_notes'];\nconst missing = required.filter(f => !item[f]);\nif (missing.length > 0) throw new Error(`Missing required fields: ${missing.join(', ')}`);\nconst email = (item.customer_email || '').trim().toLowerCase();\nif (!email.includes('@')) throw new Error('Invalid customer_email format');\nconst orderRef = item.order_ref || `ORD-${Date.now()}`;\nreturn [{ json: {\n  payment_intent_id:  item.payment_intent_id.trim(),\n  customer_email:     email,\n  customer_name:      item.customer_name || '',\n  customer_phone:     item.customer_phone || '',\n  order_notes:        item.order_notes || '',\n  service_type:       item.service_type || 'general',\n  collection_address: item.collection_address || '',\n  postcode:           (item.postcode || '').trim().toUpperCase(),\n  requested_date:     item.requested_date || '',\n  order_value_gbp:    parseFloat(item.order_value_gbp) || 0,\n  order_ref:          orderRef,\n  received_at:        new Date().toISOString()\n}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "6d6ce05a-2315-4f6d-9aee-49fb3cc41f2f",
+      "name": "Stripe note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2624,
+        1536
+      ],
+      "parameters": {
+        "width": 265,
+        "height": 112,
+        "content": "Verifies payment_intent status = succeeded via Stripe API before processing"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ee6503e4-b4cb-4173-82f6-0e02ee5adffd",
+      "name": "Verify Stripe Payment",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        -2800,
+        1712
+      ],
+      "parameters": {
+        "url": "=https://api.stripe.com/v1/payment_intents/{{ $json.payment_intent_id }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_TOKEN_HERE"
+            },
+            {
+              "name": "Stripe-Version",
+              "value": "2024-11-20.acacia"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "67908e38-ad09-4553-b4f9-ca5d68bb46ff",
+      "name": "Consolidate Payment Result",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -2544,
+        1696
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nconst order = $('Validate & Parse Order').first().json;\nconst payment = rows[0]?.json || {};\nconst status = payment.status || 'error';\nconst amountPence = payment.amount || 0;\nreturn [{ json: {\n  ...order,\n  payment_status:      status,\n  payment_valid:       status === 'succeeded',\n  payment_amount_gbp:  amountPence / 100,\n  payment_currency:    payment.currency || 'gbp',\n  stripe_customer_id:  payment.customer || null,\n  payment_error:       payment.last_payment_error?.message || null\n}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "bc52303b-533b-489d-935e-8140796eced1",
+      "name": "Payment check note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2304,
+        1520
+      ],
+      "parameters": {
+        "width": 270,
+        "height": 112,
+        "content": "Routes to failure path if payment not succeeded \u2014 stops order processing immediately"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "43cad9a4-ef95-49f8-976e-9c47bcd93bce",
+      "name": "Payment Succeeded?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -2288,
+        1696
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-payment",
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              },
+              "leftValue": "={{ $json.payment_valid }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "e0f96253-3430-428b-805c-dd2bb174f89f",
+      "name": "Send Payment Failed Notice",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        -2288,
+        2080
+      ],
+      "parameters": {
+        "url": "https://api.postmarkapp.com/email",
+        "method": "POST",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "sendHeaders": true,
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Postmark-Server-Token",
+              "value": "YOUR_POSTMARK_SERVER_TOKEN"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "57008ebb-925f-40de-a376-de4863d8fee5",
+      "name": "Log Failed Payment",
+      "type": "n8n-nodes-base.googleSheets",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        -1968,
+        2064
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Reason": "={{ $json.payment_error || 'payment not succeeded' }}",
+            "Status": "payment_failed",
+            "Customer": "={{ $json.customer_email }}",
+            "Order Ref": "={{ $json.order_ref }}",
+            "Timestamp": "={{ DateTime.now().toISO() }}",
+            "Order Value": "={{ $json.order_value_gbp }}"
+          },
+          "mappingMode": "defineBelow"
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Order Log"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_FULFILLMENT_SHEET_ID"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "55ef6119-8bdc-42f3-910f-bb482f94d150",
+      "name": "Extract note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1920,
+        1520
+      ],
+      "parameters": {
+        "width": 265,
+        "height": 112,
+        "content": "Claude AI parses free-text order notes into a validated structured schema"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d4e67627-ebda-4e94-9126-806fe8e8b562",
+      "name": "Extract Order Details",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -2048,
+        1680
+      ],
+      "parameters": {
+        "text": "=Extract and validate the service order details from the following information.\n\nOrder Reference: {{ $json.order_ref }}\nService Type: {{ $json.service_type }}\nCollection Address: {{ $json.collection_address }}\nPostcode: {{ $json.postcode }}\nRequested Date: {{ $json.requested_date }}\nOrder Notes / Customer Instructions:\n{{ $json.order_notes }}\n\nEstimated Order Value: \u00a3{{ $json.order_value_gbp }}\n\nParse all details carefully. Extract waste type, skip size if applicable, any access restrictions, time preferences, and urgency level. Flag anything that seems unusual or incomplete in special_instructions.",
+        "options": {
+          "systemMessage": "You are an order processing assistant for a service brokerage. Extract structured data from customer order notes with high precision. For skip hire orders: identify skip size (2, 4, 6, 8, 10, 12 yard), waste type (general, construction, garden, commercial, mixed, hazardous), and any site access restrictions. Priority levels: standard = normal orders, urgent = same-day or next-day, emergency = immediate response required. Always output all fields even if some are null.",
+          "returnIntermediateSteps": false
+        },
+        "promptType": "define",
+        "hasOutputParser": true
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "48d70af6-9f7d-4b5a-9ff8-1f96e28099cc",
+      "name": "Claude \u2014 Extract",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "position": [
+        -2128,
+        1856
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-3-5-sonnet-20241022"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "572c3262-7fca-45b1-ad16-d868ad6dd9d6",
+      "name": "Order Details Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        -1824,
+        1888
+      ],
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"type\":\"object\",\"properties\":{\"service_type\":{\"type\":\"string\"},\"collection_address\":{\"type\":\"string\"},\"postcode\":{\"type\":\"string\"},\"waste_type\":{\"type\":\"string\",\"enum\":[\"general\",\"construction\",\"garden\",\"commercial\",\"mixed\",\"hazardous\",\"other\"]},\"skip_size\":{\"type\":\"string\"},\"requested_date\":{\"type\":\"string\"},\"customer_name\":{\"type\":\"string\"},\"customer_email\":{\"type\":\"string\"},\"customer_phone\":{\"type\":\"string\"},\"special_instructions\":{\"type\":\"string\"},\"access_restrictions\":{\"type\":\"string\"},\"estimated_value_gbp\":{\"type\":\"number\"},\"priority\":{\"type\":\"string\",\"enum\":[\"standard\",\"urgent\",\"emergency\"]}},\"required\":[\"service_type\",\"collection_address\",\"postcode\",\"waste_type\",\"customer_name\",\"customer_email\",\"customer_phone\",\"priority\"]}"
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "726bd9eb-a04d-404a-bf1c-a059abc4868e",
+      "name": "Upsert note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1616,
+        1520
+      ],
+      "parameters": {
+        "width": 270,
+        "height": 112,
+        "content": "Creates or updates customer contact in Freshworks CRM via upsert REST endpoint"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c7c99847-6227-49c5-947a-bfec9d4ca45a",
+      "name": "Upsert Customer Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        -1760,
+        1680
+      ],
+      "parameters": {
+        "url": "=https://YOUR_DOMAIN.freshsales.io/api/upsert/contacts",
+        "method": "POST",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "sendHeaders": true,
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Token token=YOUR_FRESHWORKS_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "559828af-1583-41c4-a417-6353aea7b7c0",
+      "name": "Consolidate Contact",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1504,
+        1664
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nconst order = $('Validate & Parse Order').first().json;\nconst payment = $('Consolidate Payment Result').first().json;\nconst aiOutput = $('Extract Order Details').first().json.output || {};\nconst contact = rows[0]?.json?.contact || rows[0]?.json || {};\nreturn [{ json: {\n  ...order,\n  payment_amount_gbp:   payment.payment_amount_gbp,\n  stripe_customer_id:   payment.stripe_customer_id,\n  extracted:            aiOutput,\n  contact_id:           String(contact.id || contact.contact?.id || ''),\n  customer_name:        aiOutput.customer_name || order.customer_name,\n  customer_email:       aiOutput.customer_email || order.customer_email,\n  customer_phone:       aiOutput.customer_phone || order.customer_phone,\n  collection_address:   aiOutput.collection_address || order.collection_address,\n  postcode:             aiOutput.postcode || order.postcode,\n  waste_type:           aiOutput.waste_type || 'general',\n  skip_size:            aiOutput.skip_size || '',\n  priority:             aiOutput.priority || 'standard',\n  special_instructions: aiOutput.special_instructions || '',\n  access_restrictions:  aiOutput.access_restrictions || ''\n}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "612d16a1-5b05-44df-ac7c-ba3f0dde13dd",
+      "name": "Deal note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1232,
+        1504
+      ],
+      "parameters": {
+        "width": 265,
+        "height": 128,
+        "content": "Creates service deal in Freshworks CRM linked to the customer contact"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b6faf3dd-af13-421f-8f40-7374a834bbaa",
+      "name": "Create Service Deal",
+      "type": "n8n-nodes-base.freshworksCrm",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        -1248,
+        1664
+      ],
+      "parameters": {
+        "name": "={{ $json.service_type | upper }} \u2014 {{ $json.postcode }} \u2014 {{ $json.order_ref }}",
+        "resource": "deal",
+        "additionalFields": {
+          "probability": 100
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "8f673c13-917c-452a-beae-9fa1f5d3c1d8",
+      "name": "Consolidate Deal",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -960,
+        1648
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nconst ctx = $('Consolidate Contact').first().json;\nconst deal = rows[0]?.json || {};\nconst dealId = String(deal.id || deal.deal?.id || '');\nreturn [{ json: {\n  ...ctx,\n  deal_id:   dealId,\n  deal_name: deal.name || deal.deal?.name || ctx.order_ref\n}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7544f7e7-12fb-4bcd-8f45-e193021c0658",
+      "name": "Confirmation note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -816,
+        1504
+      ],
+      "parameters": {
+        "width": 260,
+        "height": 112,
+        "content": "Sends branded order confirmation email to customer via Postmark"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8c16eb41-7587-4571-beb9-3ba91be27f77",
+      "name": "Send Order Confirmation",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        -720,
+        1648
+      ],
+      "parameters": {
+        "url": "https://api.postmarkapp.com/email",
+        "method": "POST",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "sendHeaders": true,
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Postmark-Server-Token",
+              "value": "YOUR_POSTMARK_SERVER_TOKEN"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "e56a200d-1127-4e95-a7c0-30d7790f7ca5",
+      "name": "Find Supplier note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -512,
+        1504
+      ],
+      "parameters": {
+        "width": 265,
+        "height": 96,
+        "content": "Queries Freshworks for contacts tagged 'supplier-available' \u2014 picks the first match"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5c4c1463-a95f-482c-a5e7-eaa48cbb9b9f",
+      "name": "Find Available Supplier",
+      "type": "n8n-nodes-base.freshworksCrm",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        -464,
+        1632
+      ],
+      "parameters": {
+        "limit": 5,
+        "resource": "contact",
+        "operation": "getAll"
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "e0ce11bb-319c-4850-9329-c7b333c527b3",
+      "name": "Consolidate Supplier",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -192,
+        1616
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nconst ctx = $('Consolidate Deal').first().json;\nconst suppliers = rows.filter(r => !r.json.error && r.json.id);\nif (suppliers.length === 0) {\n  // No supplier found \u2014 flag for manual assignment\n  return [{ json: {\n    ...ctx,\n    supplier_id:    null,\n    supplier_email: null,\n    supplier_name:  'UNASSIGNED',\n    supplier_phone: null,\n    supplier_found: false,\n    all_supplier_ids: []\n  }}];\n}\nconst primary = suppliers[0].json;\nconst allIds = suppliers.map(s => String(s.json.id));\nreturn [{ json: {\n  ...ctx,\n  supplier_id:      String(primary.id),\n  supplier_email:   primary.email,\n  supplier_name:    `${primary.first_name || ''} ${primary.last_name || ''}`.trim(),\n  supplier_phone:   primary.mobile_number || primary.phone || '',\n  supplier_found:   true,\n  all_supplier_ids: allIds\n}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "2784d278-49b4-4884-82d6-b6b673e86098",
+      "name": "Supplier Request note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -64,
+        1504
+      ],
+      "parameters": {
+        "width": 265,
+        "height": 60,
+        "content": "Sends job assignment request to supplier with full order details and acceptance deadline"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "7f72d3b7-457d-489c-b9cb-020516c3295a",
+      "name": "Send Supplier Assignment",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        64,
+        1616
+      ],
+      "parameters": {
+        "url": "https://api.postmarkapp.com/email",
+        "method": "POST",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "sendHeaders": true,
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Postmark-Server-Token",
+              "value": "YOUR_POSTMARK_SERVER_TOKEN"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "90e7c7a1-76e9-4c1c-a231-94ebb16e4c7d",
+      "name": "SLA Wait note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        320,
+        1472
+      ],
+      "parameters": {
+        "width": 260,
+        "height": 60,
+        "content": "Holds execution for 4 hours \u2014 the primary SLA window for supplier acceptance"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1e70b02a-4960-4a86-bfea-1306d3c0c345",
+      "name": "SLA Wait \u2014 4 Hours",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        352,
+        1600
+      ],
+      "webhookId": "sla-wait-4h-uuid-002",
+      "parameters": {},
+      "typeVersion": 1.1
+    },
+    {
+      "id": "b749c37a-0eef-4eff-89b4-ce275adad397",
+      "name": "Status check note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        624,
+        1488
+      ],
+      "parameters": {
+        "width": 260,
+        "height": 60,
+        "content": "Polls Freshworks deal stage to determine if supplier has accepted the job"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3f688afc-e92e-4b86-b9b5-0cb47edc194e",
+      "name": "Check Deal Stage",
+      "type": "n8n-nodes-base.freshworksCrm",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        640,
+        1600
+      ],
+      "parameters": {
+        "dealId": "={{ $json.deal_id }}",
+        "resource": "deal",
+        "operation": "get"
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "649027d3-44bc-49df-91ee-a2b5c3b0f928",
+      "name": "Consolidate SLA Status",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        912,
+        1584
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nconst ctx = $('Consolidate Supplier').first().json;\nconst deal = rows[0]?.json || {};\nconst stageName = (deal.deal_stage?.name || deal.stage_name || '').toLowerCase();\nconst acceptedStages = ['accepted', 'confirmed', 'partner confirmed', 'supplier accepted', 'in progress'];\nconst isAccepted = acceptedStages.some(s => stageName.includes(s));\nreturn [{ json: {\n  ...ctx,\n  current_deal_stage:  stageName,\n  supplier_accepted:   isAccepted,\n  sla_check_at:        new Date().toISOString(),\n  sla_attempt:         1\n}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "bd4c7390-e339-454a-a54e-063cab044138",
+      "name": "Accepted check note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1088,
+        1424
+      ],
+      "parameters": {
+        "width": 265,
+        "height": 60,
+        "content": "Routes TRUE if supplier accepted within SLA, FALSE triggers escalation path"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "fd534425-fcc2-45f5-9ca0-f5e09c0566b6",
+      "name": "Supplier Accepted SLA?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1104,
+        1584
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-accept",
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              },
+              "leftValue": "={{ $json.supplier_accepted }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "e3628d89-588f-4842-8f7f-f10b70661bf4",
+      "name": "Update Deal \u2014 Confirmed",
+      "type": "n8n-nodes-base.freshworksCrm",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        1360,
+        1488
+      ],
+      "parameters": {
+        "dealId": "={{ $json.deal_id }}",
+        "resource": "deal",
+        "operation": "update",
+        "updateFields": {}
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "f2c7f4a5-0964-4425-a5f2-22199910e694",
+      "name": "Send Customer \u2014 Job Confirmed",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        1648,
+        1472
+      ],
+      "parameters": {
+        "url": "https://api.postmarkapp.com/email",
+        "method": "POST",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "sendHeaders": true,
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Postmark-Server-Token",
+              "value": "YOUR_POSTMARK_SERVER_TOKEN"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "081edf20-bd4f-43bb-bcab-c14d5a59833f",
+      "name": "Log Success",
+      "type": "n8n-nodes-base.googleSheets",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        1904,
+        1456
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Status": "confirmed",
+            "Deal ID": "={{ $('Consolidate SLA Status').first().json.deal_id }}",
+            "Service": "={{ $('Consolidate SLA Status').first().json.service_type }}",
+            "Customer": "={{ $('Consolidate SLA Status').first().json.customer_email }}",
+            "Postcode": "={{ $('Consolidate SLA Status').first().json.postcode }}",
+            "Supplier": "={{ $('Consolidate SLA Status').first().json.supplier_name }}",
+            "Order Ref": "={{ $('Consolidate SLA Status').first().json.order_ref }}",
+            "Skip Size": "={{ $('Consolidate SLA Status').first().json.skip_size }}",
+            "Timestamp": "={{ DateTime.now().toISO() }}",
+            "Waste Type": "={{ $('Consolidate SLA Status').first().json.waste_type }}",
+            "Order Value": "={{ $('Consolidate SLA Status').first().json.payment_amount_gbp }}",
+            "SLA Attempt": "1"
+          },
+          "mappingMode": "defineBelow"
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Order Log"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_FULFILLMENT_SHEET_ID"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "76d24a75-bcc1-4d92-90bd-70b9967c4ccd",
+      "name": "Slack SLA note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1376,
+        1776
+      ],
+      "parameters": {
+        "width": 265,
+        "height": 60,
+        "content": "Fires Slack alert to ops team with full order context when SLA is missed"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "afdd43a6-4150-403c-9c3d-0822f235a2a1",
+      "name": "Alert Slack \u2014 SLA Missed",
+      "type": "n8n-nodes-base.slack",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        1360,
+        1904
+      ],
+      "webhookId": "e0db88f4-4744-4a2e-a7b3-f0d16f7e0470",
+      "parameters": {
+        "text": "=:warning: *SLA MISSED \u2014 Supplier did not accept within 4 hours*\n\n*Order:* {{ $json.order_ref }}\n*Customer:* {{ $json.customer_name }} ({{ $json.customer_email }})\n*Service:* {{ $json.service_type }} \u2014 {{ $json.skip_size || 'TBC' }}\n*Address:* {{ $json.collection_address }}, {{ $json.postcode }}\n*Priority:* {{ $json.priority | upper }}\n*Supplier Assigned:* {{ $json.supplier_name }} ({{ $json.supplier_email }})\n*Order Value:* \u00a3{{ $json.payment_amount_gbp }}\n*Deal ID:* {{ $json.deal_id }}\n\nSearching for next available supplier and initiating 2-hour retry SLA now.",
+        "otherOptions": {}
+      },
+      "retryOnFail": true,
+      "typeVersion": 2.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "46726918-6b49-4abf-b9a7-e26e6764917d",
+      "name": "Find Next Supplier",
+      "type": "n8n-nodes-base.freshworksCrm",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        1648,
+        1888
+      ],
+      "parameters": {
+        "limit": 10,
+        "resource": "contact",
+        "operation": "getAll"
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "e3d750e2-d21b-40a4-adc6-56feb974ae5a",
+      "name": "Consolidate Next Supplier",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1888,
+        1872
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nconst ctx = $('Consolidate SLA Status').first().json;\nconst firstSupplierId = ctx.supplier_id;\n// Skip the first supplier who already failed to respond\nconst available = rows.filter(r => !r.json.error && r.json.id && String(r.json.id) !== firstSupplierId);\nif (available.length === 0) {\n  return [{ json: {\n    ...ctx,\n    next_supplier_id:    null,\n    next_supplier_email: null,\n    next_supplier_name:  'NONE AVAILABLE',\n    next_supplier_found: false\n  }}];\n}\nconst next = available[0].json;\nreturn [{ json: {\n  ...ctx,\n  next_supplier_id:    String(next.id),\n  next_supplier_email: next.email,\n  next_supplier_name:  `${next.first_name || ''} ${next.last_name || ''}`.trim(),\n  next_supplier_phone: next.mobile_number || next.phone || '',\n  next_supplier_found: true\n}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1b2ca8e6-048a-4436-b41c-ea291b6e574a",
+      "name": "Reassign note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2064,
+        1760
+      ],
+      "parameters": {
+        "width": 265,
+        "height": 60,
+        "content": "Sends reassignment request to next available supplier with escalation context"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5c3f6f44-d8e6-4a1b-91b9-9e6d7b28d6de",
+      "name": "Send Reassignment Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        2144,
+        1872
+      ],
+      "parameters": {
+        "url": "https://api.postmarkapp.com/email",
+        "method": "POST",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "sendHeaders": true,
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Postmark-Server-Token",
+              "value": "YOUR_POSTMARK_SERVER_TOKEN"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "cfc42bca-57f0-4133-972e-9146a7225765",
+      "name": "Retry wait note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2592,
+        1728
+      ],
+      "parameters": {
+        "width": 255,
+        "height": 60,
+        "content": "Holds execution for 2 hours \u2014 the retry SLA window after reassignment"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "02edae99-954e-42db-8bff-61cc5e7aa692",
+      "name": "Retry Wait \u2014 2 Hours",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        2416,
+        1856
+      ],
+      "webhookId": "wait-retry-2h-uuid-003",
+      "parameters": {},
+      "typeVersion": 1.1
+    },
+    {
+      "id": "b650afd5-e923-4ab2-8903-3b7032d8d6e5",
+      "name": "Check Retry Deal Stage",
+      "type": "n8n-nodes-base.freshworksCrm",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        2672,
+        1856
+      ],
+      "parameters": {
+        "dealId": "={{ $json.deal_id }}",
+        "resource": "deal",
+        "operation": "get"
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "65b4c331-9c0d-4ed1-88f0-5724024ef280",
+      "name": "Consolidate Retry Status",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2928,
+        1840
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nconst ctx = $('Consolidate Next Supplier').first().json;\nconst deal = rows[0]?.json || {};\nconst stageName = (deal.deal_stage?.name || deal.stage_name || '').toLowerCase();\nconst acceptedStages = ['accepted', 'confirmed', 'partner confirmed', 'supplier accepted', 'in progress'];\nconst isAccepted = acceptedStages.some(s => stageName.includes(s));\nreturn [{ json: {\n  ...ctx,\n  retry_deal_stage:  stageName,\n  retry_accepted:    isAccepted,\n  retry_check_at:    new Date().toISOString(),\n  sla_attempt:       2\n}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "900c2353-523a-4fab-8722-c7feb9ab0a39",
+      "name": "Retry accepted note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3312,
+        1600
+      ],
+      "parameters": {
+        "width": 265,
+        "height": 60,
+        "content": "Final decision: retry accepted triggers confirmation; failure triggers manual intervention alert"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "82a95362-c7a9-44c1-903c-f95c138b25e5",
+      "name": "Retry Accepted?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3184,
+        1840
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-retry",
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              },
+              "leftValue": "={{ $json.retry_accepted }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "0051e5f6-4683-4ace-8717-881fdb4092f2",
+      "name": "Update Deal \u2014 Confirmed (Retry)",
+      "type": "n8n-nodes-base.freshworksCrm",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        3440,
+        1744
+      ],
+      "parameters": {
+        "dealId": "={{ $json.deal_id }}",
+        "resource": "deal",
+        "operation": "update",
+        "updateFields": {}
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "09ab49dd-a34a-49be-8332-184c1b60f56b",
+      "name": "Send Customer \u2014 Confirmed (Retry)",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        3712,
+        1728
+      ],
+      "parameters": {
+        "url": "https://api.postmarkapp.com/email",
+        "method": "POST",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "sendHeaders": true,
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Postmark-Server-Token",
+              "value": "YOUR_POSTMARK_SERVER_TOKEN"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "12a17015-4bfc-4046-944f-15ae152e41cc",
+      "name": "Log Success (Retry)",
+      "type": "n8n-nodes-base.googleSheets",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        3984,
+        1712
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Status": "confirmed_retry",
+            "Deal ID": "={{ $('Consolidate Retry Status').first().json.deal_id }}",
+            "Service": "={{ $('Consolidate Retry Status').first().json.service_type }}",
+            "Customer": "={{ $('Consolidate Retry Status').first().json.customer_email }}",
+            "Postcode": "={{ $('Consolidate Retry Status').first().json.postcode }}",
+            "Supplier": "={{ $('Consolidate Retry Status').first().json.next_supplier_name }}",
+            "Order Ref": "={{ $('Consolidate Retry Status').first().json.order_ref }}",
+            "Skip Size": "={{ $('Consolidate Retry Status').first().json.skip_size }}",
+            "Timestamp": "={{ DateTime.now().toISO() }}",
+            "Waste Type": "={{ $('Consolidate Retry Status').first().json.waste_type }}",
+            "Order Value": "={{ $('Consolidate Retry Status').first().json.payment_amount_gbp }}",
+            "SLA Attempt": "2"
+          },
+          "mappingMode": "defineBelow"
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Order Log"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_FULFILLMENT_SHEET_ID"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "0175903a-ffba-427e-834d-9c76a7b74019",
+      "name": "Manual alert note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3456,
+        1968
+      ],
+      "parameters": {
+        "width": 265,
+        "height": 60,
+        "content": "Both SLA attempts failed \u2014 urgent Slack alert for immediate manual intervention"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d3b03def-5764-48ca-8c67-116f850cebad",
+      "name": "Alert Slack \u2014 Manual Intervention",
+      "type": "n8n-nodes-base.slack",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        3440,
+        2112
+      ],
+      "webhookId": "cb6fb123-9bfb-4b64-a610-3eb604b79068",
+      "parameters": {
+        "text": "=:rotating_light: *CRITICAL \u2014 MANUAL INTERVENTION REQUIRED*\n\nBoth 4-hour and 2-hour SLA windows have expired with no supplier acceptance. This order requires immediate manual handling to avoid SLA breach penalty.\n\n*Order:* {{ $json.order_ref }}\n*Customer:* {{ $json.customer_name }} \u2014 {{ $json.customer_email }} \u2014 {{ $json.customer_phone }}\n*Service:* {{ $json.service_type }} \u2014 {{ $json.skip_size || 'TBC' }}\n*Address:* {{ $json.collection_address }}, {{ $json.postcode }}\n*Priority:* {{ $json.priority | upper }}\n*Order Value:* \u00a3{{ $json.payment_amount_gbp }}\n*Requested Date:* {{ $json.extracted.requested_date || 'ASAP' }}\n*Special Notes:* {{ $json.special_instructions || 'None' }}\n*Supplier 1 (failed):* {{ $json.supplier_name }}\n*Supplier 2 (failed):* {{ $json.next_supplier_name }}\n*Freshworks Deal:* {{ $json.deal_id }}\n\nDeal has been marked Escalated. Assign manually in Freshworks immediately.",
+        "otherOptions": {}
+      },
+      "retryOnFail": true,
+      "typeVersion": 2.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "95b783b4-c8bc-4763-9756-4ffd65c7d3f1",
+      "name": "Update Deal \u2014 Escalated",
+      "type": "n8n-nodes-base.freshworksCrm",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        3728,
+        2096
+      ],
+      "parameters": {
+        "dealId": "={{ $json.deal_id }}",
+        "resource": "deal",
+        "operation": "update",
+        "updateFields": {}
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "1cfe2b69-bb31-44b6-bea3-e2ff798d196e",
+      "name": "Log Escalated",
+      "type": "n8n-nodes-base.googleSheets",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        3968,
+        2080
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Status": "escalated_manual",
+            "Deal ID": "={{ $json.deal_id }}",
+            "Service": "={{ $json.service_type }}",
+            "Customer": "={{ $json.customer_email }}",
+            "Postcode": "={{ $json.postcode }}",
+            "Supplier": "={{ $json.supplier_name }} / {{ $json.next_supplier_name }}",
+            "Order Ref": "={{ $json.order_ref }}",
+            "Skip Size": "={{ $json.skip_size }}",
+            "Timestamp": "={{ DateTime.now().toISO() }}",
+            "Waste Type": "={{ $json.waste_type }}",
+            "Order Value": "={{ $json.payment_amount_gbp }}",
+            "SLA Attempt": "2"
+          },
+          "mappingMode": "defineBelow"
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Order Log"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_FULFILLMENT_SHEET_ID"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Retry Accepted?": {
+      "main": [
+        [
+          {
+            "node": "Update Deal \u2014 Confirmed (Retry)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Alert Slack \u2014 Manual Intervention",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Deal Stage": {
+      "main": [
+        [
+          {
+            "node": "Consolidate SLA Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidate Deal": {
+      "main": [
+        [
+          {
+            "node": "Send Order Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New Order Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate & Parse Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude \u2014 Extract": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract Order Details",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Next Supplier": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Next Supplier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payment Succeeded?": {
+      "main": [
+        [
+          {
+            "node": "Extract Order Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Payment Failed Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidate Contact": {
+      "main": [
+        [
+          {
+            "node": "Create Service Deal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Service Deal": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Deal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidate Supplier": {
+      "main": [
+        [
+          {
+            "node": "Send Supplier Assignment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order Details Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Extract Order Details",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SLA Wait \u2014 4 Hours": {
+      "main": [
+        [
+          {
+            "node": "Check Deal Stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Order Details": {
+      "main": [
+        [
+          {
+            "node": "Upsert Customer Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Stripe Payment": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Payment Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Retry Deal Stage": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Retry Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidate SLA Status": {
+      "main": [
+        [
+          {
+            "node": "Supplier Accepted SLA?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry Wait \u2014 2 Hours": {
+      "main": [
+        [
+          {
+            "node": "Check Retry Deal Stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supplier Accepted SLA?": {
+      "main": [
+        [
+          {
+            "node": "Update Deal \u2014 Confirmed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Alert Slack \u2014 SLA Missed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate & Parse Order": {
+      "main": [
+        [
+          {
+            "node": "Verify Stripe Payment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Available Supplier": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Supplier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Order Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Find Available Supplier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Customer Contact": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidate Retry Status": {
+      "main": [
+        [
+          {
+            "node": "Retry Accepted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Supplier Assignment": {
+      "main": [
+        [
+          {
+            "node": "SLA Wait \u2014 4 Hours",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidate Next Supplier": {
+      "main": [
+        [
+          {
+            "node": "Send Reassignment Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Reassignment Request": {
+      "main": [
+        [
+          {
+            "node": "Retry Wait \u2014 2 Hours",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Deal \u2014 Confirmed": {
+      "main": [
+        [
+          {
+            "node": "Send Customer \u2014 Job Confirmed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Deal \u2014 Escalated": {
+      "main": [
+        [
+          {
+            "node": "Log Escalated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert Slack \u2014 SLA Missed": {
+      "main": [
+        [
+          {
+            "node": "Find Next Supplier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidate Payment Result": {
+      "main": [
+        [
+          {
+            "node": "Payment Succeeded?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Payment Failed Notice": {
+      "main": [
+        [
+          {
+            "node": "Log Failed Payment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Customer \u2014 Job Confirmed": {
+      "main": [
+        [
+          {
+            "node": "Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Deal \u2014 Confirmed (Retry)": {
+      "main": [
+        [
+          {
+            "node": "Send Customer \u2014 Confirmed (Retry)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert Slack \u2014 Manual Intervention": {
+      "main": [
+        [
+          {
+            "node": "Update Deal \u2014 Escalated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Customer \u2014 Confirmed (Retry)": {
+      "main": [
+        [
+          {
+            "node": "Log Success (Retry)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

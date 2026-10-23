@@ -1,6 +1,6 @@
 # 🎬 Generate custom recipes and restaurant-style food images with Telegram bot
 
-> ⚡ **706 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **856 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

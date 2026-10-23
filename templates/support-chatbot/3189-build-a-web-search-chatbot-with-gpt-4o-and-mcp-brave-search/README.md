@@ -1,6 +1,6 @@
 # 💬 💥🛠️Build a web search chatbot with GPT-4o and MCP Brave Search
 
-> ⚡ **24,578 views** · 💬 [Support Chatbots](../)
+> ⚡ **24,948 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

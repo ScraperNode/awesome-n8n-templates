@@ -1,6 +1,6 @@
 # 💬 Process multiple media files in Telegram with Gemini AI & PostgreSQL database
 
-> ⚡ **10,045 views** · 💬 [Support Chatbots](../)
+> ⚡ **11,358 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

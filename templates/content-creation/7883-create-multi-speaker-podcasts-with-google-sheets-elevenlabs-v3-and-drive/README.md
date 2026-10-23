@@ -1,6 +1,6 @@
 # 🎬 Create multi-speaker podcasts with Google Sheets, ElevenLabs v3, and Drive
 
-> ⚡ **1,136 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,340 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

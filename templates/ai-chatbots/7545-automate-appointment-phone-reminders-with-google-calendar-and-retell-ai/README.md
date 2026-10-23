@@ -1,6 +1,6 @@
 # 🤖 Automate appointment phone reminders with Google Calendar and Retell AI
 
-> ⚡ **2,151 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **2,442 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

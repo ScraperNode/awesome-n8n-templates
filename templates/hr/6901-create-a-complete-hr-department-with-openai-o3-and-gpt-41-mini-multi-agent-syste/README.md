@@ -1,6 +1,6 @@
 # 👥 Create a complete HR department with OpenAI O3 and GPT-4.1-mini multi-agent system
 
-> ⚡ **2,984 views** · 👥 [HR & Recruitment](../)
+> ⚡ **3,515 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

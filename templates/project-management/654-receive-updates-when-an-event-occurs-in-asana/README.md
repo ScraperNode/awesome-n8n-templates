@@ -1,6 +1,6 @@
 # 📋 Receive updates when an event occurs in Asana
 
-> ⚡ **2,699 views** · 📋 [Project Management](../)
+> ⚡ **2,780 views** · 📋 [Project Management](../)
 
 ## Description
 

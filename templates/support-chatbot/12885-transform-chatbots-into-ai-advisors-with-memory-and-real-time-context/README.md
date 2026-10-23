@@ -1,6 +1,6 @@
 # 💬 Transform chatbots into AI advisors with memory and real-time context
 
-> ⚡ **93 views** · 💬 [Support Chatbots](../)
+> ⚡ **274 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Ai-powered Gmail email organization with auto-archiving and priority labels
 
-> ⚡ **10,342 views** · ⚡ [Personal Productivity](../)
+> ⚡ **10,817 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

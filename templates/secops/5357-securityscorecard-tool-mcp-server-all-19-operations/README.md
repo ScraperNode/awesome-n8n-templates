@@ -1,6 +1,6 @@
 # 🔒 🛠️ SecurityScorecard tool MCP server 💪 all 19 operations
 
-> ⚡ **135 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **174 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

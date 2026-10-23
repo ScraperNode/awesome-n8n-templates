@@ -1,6 +1,6 @@
 # 📖 Adaptive RAG strategy with query classification & retrieval (Gemini & Qdrant)
 
-> ⚡ **3,255 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **3,458 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

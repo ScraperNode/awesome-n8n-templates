@@ -1,6 +1,6 @@
 # ⚡ Daily news digest: summarize RSS feeds with OpenAI and deliver to WhatsApp
 
-> ⚡ **24,751 views** · ⚡ [Personal Productivity](../)
+> ⚡ **28,056 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

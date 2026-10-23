@@ -1,6 +1,6 @@
 # 🔍 Website content chatbot with Pinecone, Airtable & OpenAI for RAG applications
 
-> ⚡ **1,104 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **1,283 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

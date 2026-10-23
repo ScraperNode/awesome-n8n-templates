@@ -1,6 +1,6 @@
 # 👥 Automate contract employee lifecycle with Google Docs, DocuSign & Airtable
 
-> ⚡ **206 views** · 👥 [HR & Recruitment](../)
+> ⚡ **285 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Flux AI image generator
 
-> ⚡ **84,496 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **86,974 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Categorize emails & get Telegram alerts with Azure OpenAI & Google Sheets
 
-> ⚡ **584 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **667 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

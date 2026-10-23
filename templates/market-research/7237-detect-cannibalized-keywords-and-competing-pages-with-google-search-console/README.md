@@ -1,6 +1,6 @@
 # 📊 Detect cannibalized keywords and competing pages with Google Search Console
 
-> ⚡ **590 views** · 📊 [Market Research & Insights](../)
+> ⚡ **688 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Shopify VIP alerts: AI summary & Slack notification for big orders
 
-> ⚡ **1,056 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,161 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

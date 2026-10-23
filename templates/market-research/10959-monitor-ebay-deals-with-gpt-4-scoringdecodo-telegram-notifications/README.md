@@ -1,6 +1,6 @@
 # 📊 Monitor eBay deals with GPT-4 scoring,Decodo & Telegram notifications
 
-> ⚡ **139 views** · 📊 [Market Research & Insights](../)
+> ⚡ **259 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -24,7 +24,7 @@ Only valuable deals reach the final notification.
 
 1. The workflow runs manually or on a schedule.
 2. The eBay Deals page is scraped using **Decodo**, which handles proxies and anti-bot protections.  
-[Decodo – Web Scraper for n8n](https://visit.decodo.com/raqXGD)
+[Decodo – Web Scraper for n8n](https://visit.decodo.com/VOmXO6)
 3. JavaScript extracts only key product data (ID, title, price, URL, image).
 4. An AI Agent classifies each product and assigns a deal quality score (0–10).
 5. Price and score rules are applied.

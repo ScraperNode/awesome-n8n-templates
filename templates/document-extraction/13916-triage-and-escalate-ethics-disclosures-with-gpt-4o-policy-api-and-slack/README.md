@@ -1,6 +1,6 @@
 # 🔬 Triage and escalate ethics disclosures with GPT-4o, policy API and Slack
 
-> ⚡ **1 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **88 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

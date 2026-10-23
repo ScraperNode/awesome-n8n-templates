@@ -1,6 +1,6 @@
 # 🎬 Generate Sora v2 ASMR clips with GPT-5.1, stitch via Cloudinary, and post to Twitter/X
 
-> ⚡ **290 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **346 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

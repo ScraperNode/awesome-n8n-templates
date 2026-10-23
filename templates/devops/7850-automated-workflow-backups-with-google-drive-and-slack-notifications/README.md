@@ -1,6 +1,6 @@
 # ⚙️ Automated workflow backups with Google Drive and Slack notifications
 
-> ⚡ **114 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **137 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

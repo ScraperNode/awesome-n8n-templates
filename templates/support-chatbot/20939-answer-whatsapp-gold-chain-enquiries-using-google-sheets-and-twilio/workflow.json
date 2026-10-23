@@ -1,0 +1,814 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Answer WhatsApp gold chain enquiries from a Google Sheets price list",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "hook",
+      "name": "A WhatsApp message arrives",
+      "type": "n8n-nodes-base.webhook",
+      "notes": "Point Twilio's WhatsApp sender 'A message comes in' webhook at this URL (HTTP POST).",
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "gold-whatsapp",
+      "parameters": {
+        "path": "gold-whatsapp",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "onReceived"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "demo",
+      "name": "Run the demo messages",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        190
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "cfg2",
+      "name": "config",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// GOLD CHAIN CATALOGUE ENGINE \u2014 CONFIG\n// Everything you might want to change lives in this one node. Nothing else in either\n// workflow needs editing.\n//\n// The same config node ships in BOTH workflows (\"01 reprice and announce\" and\n// \"02 WhatsApp enquiries\"). build.js regenerates both from this one file, and validate.js\n// fails if they drift apart, so you never paste it between them by hand.\n//\n// A blank id or key means that step is SKIPPED, never that the run fails. Both workflows run\n// end to end on the built-in demo stock, demo gold rate and demo customers below, which is\n// what lets this be shown on a screen-share before a single credential exists.\n\n// ---------------------------------------------------------------- The business\nconst BUSINESS_NAME   = 'Demo Gold Wholesale';\nconst OWNER_NAME      = 'the owner';\n// The owner's WhatsApp number, international format. Drafts and hand-offs go here.\nconst OWNER_WHATSAPP  = '';\nconst CURRENCY        = 'USD';\nconst CURRENCY_SYMBOL = '$';\n\n// ---------------------------------------------------------------- Pricing\n// Wholesale gold is priced off the day's rate. A chain's price is\n//   weight (g) x purity x today's 24k rate per gram     <- the metal\n// + weight (g) x the style's making charge per gram     <- the work\n// then the wholesale margin on top, rounded.\n// Purity is the fraction of pure gold for each karat. A row whose karat is not in this table\n// is held back rather than priced on a guess.\nconst PURITY = { 24: 0.999, 22: 0.916, 21: 0.875, 18: 0.750, 14: 0.585 };\n\n// One entry per chain style you carry. `words` are what customers type on WhatsApp to mean\n// it. The making charge is per gram, in CURRENCY.\nconst STYLES = {\n  rope:   { label: 'Rope',   making_per_gram: 3.5, words: ['rope', 'twisted'] },\n  cuban:  { label: 'Cuban',  making_per_gram: 4.0, words: ['cuban', 'curb', 'miami'] },\n  figaro: { label: 'Figaro', making_per_gram: 3.0, words: ['figaro'] },\n  box:    { label: 'Box',    making_per_gram: 2.5, words: ['box', 'venetian'] },\n  franco: { label: 'Franco', making_per_gram: 4.5, words: ['franco'] },\n  ball:   { label: 'Ball',   making_per_gram: 2.0, words: ['ball', 'bead'] }\n};\n\nconst WHOLESALE_MARGIN_PCT = 2.0;\nconst ROUND_TO             = 1;      // round every price to this many CURRENCY units\n\n// ---------------------------------------------------------------- The gold rate\n// Today's 24k rate per gram, from goldapi.io (free tier is enough for once a day).\n// Blank -> the demo rate below is used, and every message says so.\nconst GOLD_API_KEY  = '';\nconst GOLD_API_BASE = 'https://www.goldapi.io/api';\n\n// The gate that stops a bad number reaching every customer. Gold rarely moves more than a\n// few percent in a day; a bigger move since the last list is far more likely to be a wrong\n// currency, a stale cache or a typo than the market. Above this, nothing is published and\n// the owner is told why.\nconst MAX_RATE_MOVE_PCT = 3.0;\n\n// ---------------------------------------------------------------- The stock sheet\n// One Google Sheet, two tabs. Blank id -> the demo stock and demo customers below.\n//   Stock:     sku | style | purity_k | length_in | weight_g | qty | price | rate | priced_qty | priced_at\n//   Customers: name | whatsapp | opted_out\n// `price`, `rate`, `priced_qty` and `priced_at` are written by workflow 01: they are what the\n// last published list said, which is how the next run knows what is new or sold out.\nconst SHEET_ID        = '';\nconst STOCK_TAB       = 'Stock';\nconst CUSTOMERS_TAB   = 'Customers';\nconst LOW_STOCK_AT    = 2;           // at or below this many pieces, a chain is \"last few\"\n\n// ---------------------------------------------------------------- WhatsApp (Twilio)\n// Your Twilio WhatsApp sender, international format. Blank -> nothing is sent; every message\n// is built in full and shown on a STOP node instead. The Twilio account itself goes in n8n's\n// credential store, on the nodes named [cred] Twilio.\nconst TWILIO_WHATSAPP_FROM = '';\n\n// How long the owner has to approve a broadcast before it is dropped. An unapproved list is\n// never sent late: prices from the morning are wrong by the evening.\nconst APPROVAL_WAIT_HOURS = 4;\n\n// The hard ceiling on one broadcast, enforced in code.\nconst BROADCAST_CAP = 200;\n\n// ---------------------------------------------------------------- Enquiries (workflow 02)\n// A request for this many pieces or more goes to a human for a price.\nconst HANDOFF_QTY = 10;\n// Words that mean a person should answer, whatever else the message says.\nconst HANDOFF_WORDS = ['order', 'bulk', 'discount', 'best price', 'payment', 'invoice',\n  'credit', 'custom', 'repair', 'return', 'complaint', 'urgent'];\nconst OPT_OUT_WORDS = ['stop', 'unsubscribe', 'remove me'];\n\n// ---------------------------------------------------------------- AI (optional)\n// An OpenAI-compatible chat endpoint reads what the customer wants: style, karat, length and\n// quantity. It never states a price or stock level; those always come from the sheet, in code.\n// Blank key -> keyword rules read the message instead, and the workflow behaves the same.\nconst AI_API_KEY  = '';\nconst AI_BASE_URL = 'https://api.openai.com/v1';\nconst AI_MODEL    = 'gpt-4o-mini';\n\n// ---------------------------------------------------------------- Safety switch\n//   TEST_RUN true,  TEST_WHATSAPP blank (how it ships) -> preview. Nothing is sent, nothing is\n//                                                         written; every message is shown.\n//   TEST_RUN true,  TEST_WHATSAPP set                  -> test. Messages really send, but ALL\n//                                                         of them to TEST_WHATSAPP, at most 3\n//                                                         per broadcast, marked [TEST]. The\n//                                                         sheet is still not written.\n//   TEST_RUN false                                     -> live.\n// Filling in TEST_WHATSAPP can only ever redirect a message, never cause one.\nconst TEST_RUN      = true;\nconst TEST_WHATSAPP = '';\n\nconst MODE = TEST_RUN !== true ? 'live' : (TEST_WHATSAPP.trim() !== '' ? 'test' : 'preview');\n\n// ---------------------------------------------------------------- Demo data\n// Every row, number and person here is invented. The DEMO rate is not a market price.\n// The mix is deliberate: it has to show every decision the engine makes.\n//   * priced last time, still in stock         -> repriced at today's rate\n//   * qty 0, had stock last time               -> sold out\n//   * had 0 last time, stock now               -> back in stock\n//   * qty at or under LOW_STOCK_AT             -> last few\n//   * never priced before                      -> new in\n//   * no weight / a karat not in PURITY        -> held back, with the reason\nconst DEMO_GOLD_RATE      = 110.00;   // 24k per gram, CURRENCY. DEMO, not a market price.\nconst DEMO_STOCK = [\n  { sku: 'R22-20',  style: 'rope',   purity_k: 22, length_in: 20, weight_g: 18.4, qty: 6,  price: 1930, rate: 108.4, priced_qty: 6,  priced_at: '2026-09-18' },\n  { sku: 'R22-24',  style: 'rope',   purity_k: 22, length_in: 24, weight_g: 22.1, qty: 3,  price: 2318, rate: 108.4, priced_qty: 4,  priced_at: '2026-09-18' },\n  { sku: 'C22-22',  style: 'cuban',  purity_k: 22, length_in: 22, weight_g: 35.0, qty: 2,  price: 3710, rate: 108.4, priced_qty: 2,  priced_at: '2026-09-18' },\n  { sku: 'C18-20',  style: 'cuban',  purity_k: 18, length_in: 20, weight_g: 28.6, qty: 0,  price: 2466, rate: 108.4, priced_qty: 3,  priced_at: '2026-09-18' },\n  { sku: 'F18-18',  style: 'figaro', purity_k: 18, length_in: 18, weight_g: 9.8,  qty: 12, price: 842,  rate: 108.4, priced_qty: 12, priced_at: '2026-09-18' },\n  { sku: 'F22-20',  style: 'figaro', purity_k: 22, length_in: 20, weight_g: 12.4, qty: 5,  price: 1296, rate: 108.4, priced_qty: 0,  priced_at: '2026-09-18' },\n  { sku: 'B21-18',  style: 'box',    purity_k: 21, length_in: 18, weight_g: 14.2, qty: 1,  price: 1388, rate: 108.4, priced_qty: 5,  priced_at: '2026-09-18' },\n  { sku: 'FR22-22', style: 'franco', purity_k: 22, length_in: 22, weight_g: 24.0, qty: 4,  price: '',   rate: '',    priced_qty: '', priced_at: '' },\n  { sku: 'BL18-16', style: 'ball',   purity_k: 18, length_in: 16, weight_g: 6.5,  qty: 20, price: '',   rate: '',    priced_qty: '', priced_at: '' },\n  { sku: 'R22-18',  style: 'rope',   purity_k: 22, length_in: 18, weight_g: '',   qty: 2,  price: '',   rate: '',    priced_qty: '', priced_at: '' },\n  { sku: 'C20-20',  style: 'cuban',  purity_k: 20, length_in: 20, weight_g: 30.2, qty: 1,  price: '',   rate: '',    priced_qty: '', priced_at: '' }\n];\nconst DEMO_CUSTOMERS = [\n  { name: 'Northgate Jewellers', whatsapp: '+1234567890', opted_out: '' },\n  { name: 'Al Noor Gold',        whatsapp: '+1234567890', opted_out: '' },\n  { name: 'Riverside Pawn',      whatsapp: '+1234567890', opted_out: 'yes' },\n  { name: 'Sunrise Traders',     whatsapp: '0100',         opted_out: '' },\n  { name: 'Crown & Chain',       whatsapp: '+1234567890', opted_out: '' }\n];\n// What workflow 02 answers when run by hand. The same shape Twilio posts to the webhook.\nconst DEMO_MESSAGES = [\n  { From: 'whatsapp:+1234567890', ProfileName: 'Northgate Jewellers', Body: 'Hi, do you have 22k rope chain 20 inch? price?' },\n  { From: 'whatsapp:+1234567890', ProfileName: 'Al Noor Gold',        Body: 'figaro 18k' },\n  { From: 'whatsapp:+1234567890', ProfileName: 'Crown & Chain',       Body: 'need 40 pcs cuban 22k for my shop, best price?' },\n  { From: 'whatsapp:+1234567890', ProfileName: 'Northgate Jewellers', Body: 'can you do a custom 30 inch rope?' },\n  { From: 'whatsapp:+1234567890', ProfileName: 'Sunrise Traders',     Body: 'STOP' }\n];\n\nconst SETTINGS = {\n  business_name:   BUSINESS_NAME.trim(),\n  owner_name:      OWNER_NAME.trim() || 'the owner',\n  owner_whatsapp:  OWNER_WHATSAPP.trim(),\n  currency:        CURRENCY.trim().toUpperCase(),\n  currency_symbol: CURRENCY_SYMBOL,\n\n  purity:               PURITY,\n  styles:               STYLES,\n  wholesale_margin_pct: Number(WHOLESALE_MARGIN_PCT) || 0,\n  round_to:             Number(ROUND_TO) || 1,\n\n  gold_api_key:      GOLD_API_KEY.trim(),\n  gold_api_base:     GOLD_API_BASE.trim().replace(/\\/+$/, ''),\n  max_rate_move_pct: Number(MAX_RATE_MOVE_PCT) || 3,\n\n  sheet_id:      SHEET_ID.trim(),\n  stock_tab:     STOCK_TAB.trim(),\n  customers_tab: CUSTOMERS_TAB.trim(),\n  low_stock_at:  Number(LOW_STOCK_AT) || 0,\n\n  twilio_whatsapp_from: TWILIO_WHATSAPP_FROM.trim(),\n  approval_wait_hours:  Number(APPROVAL_WAIT_HOURS) || 4,\n  broadcast_cap:        Number(BROADCAST_CAP) || 0,\n\n  handoff_qty:   Number(HANDOFF_QTY) || 10,\n  handoff_words: HANDOFF_WORDS,\n  opt_out_words: OPT_OUT_WORDS,\n\n  ai_api_key:  AI_API_KEY.trim(),\n  ai_base_url: AI_BASE_URL.trim().replace(/\\/+$/, ''),\n  ai_model:    AI_MODEL.trim(),\n\n  test_whatsapp: TEST_WHATSAPP.trim(),\n  test_cap:      3,\n  mode:          MODE,\n\n  demo_gold_rate: DEMO_GOLD_RATE,\n  demo_stock:     DEMO_STOCK,\n  demo_customers: DEMO_CUSTOMERS,\n  demo_messages:  DEMO_MESSAGES,\n\n  // derived flags \u2014 the gates read these, never the raw constants\n  gold_api_enabled: GOLD_API_KEY.trim() !== '',\n  sheet_enabled:    SHEET_ID.trim() !== '',\n  ai_enabled:       AI_API_KEY.trim() !== '',\n  // Sending needs a sender AND a mode that allows it. In test mode the owner number is not\n  // required, because every message is redirected to TEST_WHATSAPP anyway.\n  send_enabled: TWILIO_WHATSAPP_FROM.trim() !== '' && MODE !== 'preview'\n    && (MODE === 'test' || OWNER_WHATSAPP.trim() !== ''),\n  // The sheet is only ever written live. A test run sends real messages and touches nothing.\n  write_enabled: SHEET_ID.trim() !== '' && MODE === 'live'\n};\n\n// config passes the incoming payload through untouched under `incoming`, so whichever\n// trigger fired, the next node reads the payload from the same place. It runs once per item.\nconst incoming = $input.all().length ? $input.all().map((i) => i.json || {}) : [{}];\nreturn incoming.map((payload) => ({ json: Object.assign({}, SETTINGS, { incoming: payload }) }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "stock-on2",
+      "name": "stock sheet configured?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "stock-on2-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.sheet_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "stock-read2",
+      "name": "[cred] Sheets - read the stock",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        840,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('config').first().json.stock_tab }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('config').first().json.sheet_id }}"
+        }
+      },
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "stock-collect2",
+      "name": "collect the stock",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// The sheet hands back one item per row. Collected into one item here so the rest of the run\n// reads the stock the same way it reads the demo stock.\nconst rows = $input.all().map((i) => i.json || {}).filter((r) => String(r.sku || '').trim() !== '');\nreturn [{ json: { source: 'stock sheet', rows } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "stock-demo2",
+      "name": "use the demo stock",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        840,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// No stock sheet configured, so the built-in demo stock stands in. Same shape the sheet\n// read produces, so everything downstream is identical whichever branch ran.\nconst cfg = $('config').first().json;\nreturn [{ json: { source: 'demo stock (invented)', rows: cfg.demo_stock } }];"
+      },
+      "executeOnce": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "read",
+      "name": "read the message",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Reads each WhatsApp message into one shape and makes the keyword read of it. The keyword\n// read always runs: with no AI key it IS the read, and with a key it is the fallback when the\n// model's answer does not parse.\n//\n// Messages come from `config` (one item per webhook call). Run by hand, config carries no\n// message, so the invented DEMO_MESSAGES stand in. The stock arrives on $input from whichever\n// stock branch ran, and rides along on every item so the reply can be built from it.\n// Twilio posts form fields (From, Body, ProfileName), sometimes wrapped under `body`.\nconst cfg = $('config').first().json;\nconst stock = ($input.first().json || {}).rows || [];\nconst stockSource = ($input.first().json || {}).source || '';\n\nfunction unwrap(inc) { return inc && inc.body && typeof inc.body === 'object' ? inc.body : (inc || {}); }\nlet messages = $('config').all().map((i) => unwrap(i.json.incoming)).filter((m) => m.Body || m.body || m.text);\nconst demo = messages.length === 0;\nif (demo) messages = cfg.demo_messages;\n\nfunction words(text) { return ' ' + text.toLowerCase().replace(/[^a-z0-9.\\s]/g, ' ').replace(/\\s+/g, ' ') + ' '; }\nconst has = (t, w) => t.indexOf(' ' + w + ' ') !== -1;\n\nreturn messages.map((p) => {\n  const text = String(p.Body || p.body || p.text || '').trim();\n  const from = String(p.From || p.from || '').replace(/^whatsapp:/, '').trim();\n  const name = String(p.ProfileName || p.name || '').trim();\n  const t = words(text);\n\n  let style = '';\n  for (const key of Object.keys(cfg.styles)) {\n    if (cfg.styles[key].words.some((w) => has(t, w))) { style = key; break; }\n  }\n  const k = t.match(/\\s(\\d{2})\\s?(k|kt|karat|carat|ct)\\s/);\n  const len = t.match(/\\s(\\d{2})\\s?(in|inch|inches)\\s/);\n  const qty = t.match(/\\s(\\d{1,4})\\s?(pcs|pc|pieces|piece|units|chains)\\s/);\n\n  return { json: {\n    from, name, text, demo,\n    opt_out: cfg.opt_out_words.some((w) => t.trim() === w || has(t, w)),\n    handoff_word: cfg.handoff_words.find((w) => has(t, w)) || '',\n    want: {\n      style,\n      purity_k: k ? Number(k[1]) : null,\n      length_in: len ? Number(len[1]) : null,\n      qty: qty ? Number(qty[1]) : null\n    },\n    read_by: 'keyword rules',\n    _stock: stock, _stock_source: stockSource\n  } };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ai-on",
+      "name": "AI configured?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1680,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ai-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.ai_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "ai-req",
+      "name": "build the AI request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1960,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// The model is asked ONE thing: what does this customer want? It returns style, karat, length,\n// quantity and whether a person should answer. It is never shown a price or a stock level and\n// is never asked to write the reply, so it cannot quote a wrong price or promise stock.\nconst cfg = $('config').first().json;\nreturn $input.all().map((i) => {\n  const styles = Object.keys(cfg.styles).join(', ');\n  const body = {\n    model: cfg.ai_model,\n    temperature: 0,\n    response_format: { type: 'json_object' },\n    messages: [\n      { role: 'system', content:\n        'You read WhatsApp messages sent to a gold chain wholesaler. Return JSON only: ' +\n        '{\"style\": one of [' + styles + '] or \"\", \"purity_k\": number or null, ' +\n        '\"length_in\": number or null, \"qty\": number or null, ' +\n        '\"needs_person\": true if they want to order, negotiate, discuss payment, a custom piece, ' +\n        'a repair or a complaint, else false, \"reason\": a few words}. ' +\n        'Never invent a value the message does not state.' },\n      { role: 'user', content: i.json.text }\n    ]\n  };\n  return { json: Object.assign({}, i.json, { _ai_body: body }) };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ai-http",
+      "name": "AI - read what they want",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "The model only reads the message into style / karat / length / quantity. It never sees a price and never writes the reply. A failed call keeps the keyword read for that message.",
+      "onError": "continueRegularOutput",
+      "position": [
+        2240,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $('config').first().json.ai_base_url + '/chat/completions' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 30000
+        },
+        "jsonBody": "={{ JSON.stringify($json._ai_body) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $('config').first().json.ai_api_key }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "ai-apply",
+      "name": "apply the AI reading",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2520,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Merges the model's reading over the keyword read, field by field. A field the model left\n// empty keeps the keyword value; an answer that does not parse keeps the keyword read whole.\n// A style the model returns that is not in STYLES is ignored rather than trusted.\nconst cfg = $('config').first().json;\nconst asked = $('build the AI request').all();\nreturn $input.all().map((resp, idx) => {\n  const base = (asked[idx] || asked[0]).json;\n  const out = Object.assign({}, base);\n  delete out._ai_body;\n  let ai = null;\n  try { ai = JSON.parse(resp.json.choices[0].message.content); } catch (e) { ai = null; }\n  if (!ai || typeof ai !== 'object') return { json: Object.assign(out, { read_by: 'keyword rules (AI answer did not parse)' }) };\n  const want = Object.assign({}, base.want);\n  if (ai.style && cfg.styles[ai.style]) want.style = ai.style;\n  for (const f of ['purity_k', 'length_in', 'qty']) if (Number(ai[f]) > 0) want[f] = Number(ai[f]);\n  return { json: Object.assign(out, {\n    want,\n    handoff_word: base.handoff_word || (ai.needs_person === true ? 'AI: ' + (ai.reason || 'needs a person') : ''),\n    read_by: 'AI (' + cfg.ai_model + ')'\n  }) };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "kw",
+      "name": "keyword reading only",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1960,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// Reached two ways: no AI key, or the AI request failed. Either way the keyword read from\n// `read the message` stands, unchanged. The reply is built the same way both times, because\n// the AI only ever reads; it never answers.\nconst cfg = $('config').first().json;\nconst why = cfg.ai_enabled ? 'keyword rules (AI request failed)' : 'keyword rules (no AI key)';\nreturn $('read the message').all().map((i) => ({ json: Object.assign({}, i.json, { read_by: why }) }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "decide",
+      "name": "decide the reply",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2800,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Builds the reply to every message, and the alert to the owner where a person should step in.\n// The rule that makes this safe to leave running: EVERY price and stock figure in a reply is\n// read from the stock sheet, from the price workflow 01 last published. The AI never writes\n// a reply and never states a number. In order, a message is:\n//   opted out    -> confirmed, and marked so no list is ever sent to them again\n//   a handoff    -> an order, a bulk quantity, a custom piece, a complaint: acknowledged, and\n//                   the owner is told who, what and why. The bot does not negotiate.\n//   a question   -> answered from stock: exact match, or the nearest in-stock alternatives\n//   unreadable   -> asked which style and karat, with the styles actually in stock\n// One item out per message to send: kind 'reply' (to the customer) or 'owner' (the alert).\nconst cfg = $('config').first().json;\n// ---- shared pricing (build/js/lib-pricing.js, inlined by build.js) ----\n// One definition of \"what a chain costs today\", used by the repricing run and by every\n// WhatsApp answer, so a price quoted in chat can never disagree with the price list.\n\nfunction num(v) {\n  if (v === null || v === undefined) return NaN;\n  const s = String(v).replace(/[^0-9.\\-]/g, '');\n  return s === '' ? NaN : Number(s);\n}\n\n// A row the way a sheet or the demo hands it over, into one typed shape. Nothing is guessed:\n// a value that does not parse stays NaN and the check step says so.\nfunction readRow(r) {\n  return {\n    sku:        String(r.sku || '').trim(),\n    style:      String(r.style || '').trim().toLowerCase(),\n    purity_k:   num(r.purity_k),\n    length_in:  num(r.length_in),\n    weight_g:   num(r.weight_g),\n    qty:        num(r.qty),\n    prev_price: num(r.price),\n    prev_rate:  num(r.rate),\n    prev_qty:   num(r.priced_qty),\n    priced_at:  String(r.priced_at || '').trim()\n  };\n}\n\nfunction priceChain(row, rate24, cfg) {\n  const purity = cfg.purity[row.purity_k];\n  const style = cfg.styles[row.style];\n  const metal = row.weight_g * purity * rate24;\n  const making = row.weight_g * style.making_per_gram;\n  const gross = (metal + making) * (1 + cfg.wholesale_margin_pct / 100);\n  const step = cfg.round_to || 1;\n  return {\n    metal_value: Math.round(metal * 100) / 100,\n    making_value: Math.round(making * 100) / 100,\n    price: Math.round(gross / step) * step\n  };\n}\n\nfunction money(v, cfg) {\n  return cfg.currency_symbol + Number(v).toLocaleString('en-US', { maximumFractionDigits: 2 });\n}\n\nfunction chainLabel(row, cfg) {\n  const style = cfg.styles[row.style];\n  return row.purity_k + 'k ' + (style ? style.label : row.style) + ' ' + row.length_in + 'in';\n}\n// ---- end shared pricing ----\nconst out = [];\nfor (const item of $input.all()) {\n  const m = item.json;\n  const w = m.want || {};\n  const rows = (m._stock || []).map(readRow).filter((r) => cfg.styles[r.style] && cfg.purity[r.purity_k]);\n  const who = m.name || m.from;\n  const reply = (body, extra) => out.push({ json: Object.assign({ kind: 'reply', to: m.from, customer: who,\n    message: m.text, read_by: m.read_by, body }, extra || {}) });\n  const owner = (why) => out.push({ json: { kind: 'owner', to: cfg.owner_whatsapp, customer: who,\n    message: m.text, body: 'Needs you: ' + who + ' (' + m.from + ')\\nWhy: ' + why + '\\nThey said: \"' + m.text + '\"' } });\n\n  if (m.opt_out) {\n    reply(\"Done. You won't receive our price lists any more. Message us any time if you need anything.\",\n      { opt_out_record: { whatsapp: m.from, opted_out: 'yes' } });\n    continue;\n  }\n\n  const bigOrder = w.qty && w.qty >= cfg.handoff_qty;\n  if (m.handoff_word || bigOrder) {\n    const why = bigOrder ? w.qty + ' pieces (HANDOFF_QTY is ' + cfg.handoff_qty + ')' : 'asked about \"' + m.handoff_word + '\"';\n    reply('Thanks, ' + (m.name || 'there') + '. ' + cfg.owner_name.charAt(0).toUpperCase() + cfg.owner_name.slice(1) +\n      ' will reply to you personally about this shortly.', { handoff: why });\n    owner(why);\n    continue;\n  }\n\n  if (!w.style && !w.purity_k) {\n    const styles = Object.keys(cfg.styles).filter((s) => rows.some((r) => r.style === s && r.qty > 0))\n      .map((s) => cfg.styles[s].label);\n    reply('Happy to help. Which chain are you after? In stock today: ' + styles.join(', ') +\n      '. Tell me the style and karat (e.g. \"22k rope 20 inch\").');\n    continue;\n  }\n\n  const fits = (r) => (!w.style || r.style === w.style) && (!w.purity_k || r.purity_k === w.purity_k);\n  const inStock = rows.filter((r) => fits(r) && r.qty > 0)\n    .sort((a, b) => Math.abs((a.length_in || 0) - (w.length_in || a.length_in)) - Math.abs((b.length_in || 0) - (w.length_in || b.length_in)));\n  const exact = w.length_in ? inStock.filter((r) => r.length_in === w.length_in) : inStock;\n  const show = (exact.length ? exact : inStock).slice(0, 3);\n  const asked = [w.purity_k ? w.purity_k + 'k' : '', w.style ? cfg.styles[w.style].label : '', w.length_in ? w.length_in + 'in' : '']\n    .filter(Boolean).join(' ');\n\n  const priceOf = (r) => (r.prev_price > 0 ? money(r.prev_price, cfg) : 'price on request');\n  const lines = show.map((r) => '\u2022 ' + chainLabel(r, cfg) + ' \u00b7 ' + r.weight_g + ' g \u00b7 ' + priceOf(r) + ' \u00b7 ' +\n    (r.qty <= cfg.low_stock_at ? 'last ' + r.qty : r.qty + ' pcs'));\n  const listedOn = show.map((r) => r.priced_at).filter(Boolean).sort().pop();\n\n  if (!show.length) {\n    reply('Sorry, no ' + asked + ' in stock right now. I have let ' + cfg.owner_name + ' know you asked.');\n    owner('asked for ' + asked + ', none in stock');\n    continue;\n  }\n  const lead = exact.length || !w.length_in ? 'Yes, ' + asked + ' in stock:' : 'No ' + asked + ' right now. Closest in stock:';\n  reply([lead].concat(lines,\n    listedOn ? ['Prices from our list of ' + listedOn + '. Reply \"order\" and the number of pieces to reserve.'] :\n               ['Reply \"order\" and the number of pieces to reserve.']).join('\\n'));\n}\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "address",
+      "name": "address the messages",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// The one place that decides where a message actually goes. Live: to the customer, and alerts\n// to OWNER_WHATSAPP. Test: everything to TEST_WHATSAPP, at most test_cap, marked [TEST] with\n// the real recipient. An owner alert with no OWNER_WHATSAPP is not sent and says so.\nconst cfg = $('config').first().json;\nconst out = [];\nfor (const i of $input.all()) {\n  const m = i.json;\n  if (m.kind === 'owner' && !cfg.owner_whatsapp && cfg.mode === 'live') continue;\n  if (cfg.mode === 'test') {\n    if (out.length >= cfg.test_cap) break;\n    out.push({ json: Object.assign({}, m, { to: cfg.test_whatsapp,\n      body: '[TEST: would go to ' + (m.kind === 'owner' ? 'the owner' : m.customer + ' ' + m.to) + ']\\n' + m.body }) });\n  } else out.push({ json: m });\n}\nreturn out.map((o) => ({ json: Object.assign({}, o.json, { to: String(o.json.to || '').replace(/^whatsapp:/, '') }) }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "send-on2",
+      "name": "sending on?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3360,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "send-on2-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.send_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "reply",
+      "name": "[cred] Twilio - send on WhatsApp",
+      "type": "n8n-nodes-base.twilio",
+      "notes": "Replies to customers and alerts to the owner. Where each one goes was decided in address the messages.",
+      "position": [
+        3640,
+        0
+      ],
+      "parameters": {
+        "to": "={{ $json.to }}",
+        "from": "={{ $('config').first().json.twilio_whatsapp_from }}",
+        "message": "={{ $json.body }}",
+        "options": {},
+        "toWhatsapp": true
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "replied",
+      "name": "STOP: replies sent",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3920,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Every reply and owner alert for this run went out.\nreturn [{ json: { _outcome: 'sent', _reason: $input.all().length + ' WhatsApp message(s) sent' } }];"
+      },
+      "executeOnce": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "reply-preview",
+      "name": "STOP: preview - replies shown",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3640,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// Sending is off (TEST_RUN is true with TEST_WHATSAPP blank, or no Twilio sender). Nothing\n// was sent. This node IS the result: each message, how it was read, and the exact reply and\n// owner alert it would have produced.\nconst cfg = $('config').first().json;\nreturn $input.all().map((i) => ({ json: {\n  _outcome: 'preview: not sent',\n  _reason: cfg.twilio_whatsapp_from ? 'mode is ' + cfg.mode : 'no TWILIO_WHATSAPP_FROM, preview only',\n  kind: i.json.kind,\n  to: i.json.kind === 'owner' ? 'the owner' : i.json.customer + ' ' + i.json.to,\n  they_said: i.json.message,\n  read_by: i.json.read_by || '',\n  would_send: i.json.body\n} }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "optouts",
+      "name": "rows for the customers tab",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3080,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// An opt-out is written to the Customers tab, matched on the number, so workflow 01 never\n// messages them again. Nothing else on the row is touched.\nreturn $('decide the reply').all()\n  .filter((i) => i.json.opt_out_record)\n  .map((i) => ({ json: i.json.opt_out_record }));"
+      },
+      "executeOnce": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "write-on2",
+      "name": "writing on?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3360,
+        190
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "write-on2-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.write_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "optout-write",
+      "name": "[cred] Sheets - record the opt-outs",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3640,
+        380
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [
+            "whatsapp"
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('config').first().json.customers_tab }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('config').first().json.sheet_id }}"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "optout-done",
+      "name": "STOP: opt-outs recorded",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3920,
+        380
+      ],
+      "parameters": {
+        "jsCode": "// The Customers tab now marks these numbers opted out; workflow 01 skips them from here on.\nreturn [{ json: { _outcome: 'written', _reason: $input.all().length + ' opt-out(s) recorded on the Customers tab' } }];"
+      },
+      "executeOnce": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "optout-preview",
+      "name": "STOP: preview - opt-outs not recorded",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3640,
+        570
+      ],
+      "parameters": {
+        "jsCode": "// The sheet is only written live. These opt-outs were NOT recorded; in live mode they would be.\nconst cfg = $('config').first().json;\nreturn [{ json: {\n  _outcome: 'preview: opt-outs not recorded',\n  _reason: cfg.sheet_enabled ? 'mode is ' + cfg.mode + '; the sheet is only written live' : 'no SHEET_ID',\n  would_write: $input.all().map((i) => i.json)\n} }];"
+      },
+      "executeOnce": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "sticky-00",
+      "name": "Note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -1114
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 760,
+        "height": 774,
+        "content": "## Answer WhatsApp gold chain enquiries from a Google Sheets price list\n\n**Who's it for**\nJewellery wholesalers who get \"22k rope 20 inch, how much?\" on WhatsApp all day and want every answer to quote the same approved price list.\n\n**How it works**\nTwilio posts each incoming WhatsApp message to the webhook. The workflow reads the Stock tab, then works out what the customer wants: style, karat, length and quantity. Keyword rules always run, and an optional AI model can fill gaps, but only into those fields; it never sees a price and never writes the reply. The reply is decided in order: an opt-out is confirmed and recorded, an order, bulk quantity, custom piece or complaint goes to the owner, a stock question is answered from the sheet at the last approved price, and a vague message is asked for style and karat.\n\n**How to set up**\n1. Run **Run the demo messages** first: five invented messages, nothing sent.\n2. In `config`, set `SHEET_ID`, `TWILIO_WHATSAPP_FROM` and `OWNER_WHATSAPP`.\n3. Connect Google Sheets and Twilio on the `[cred]` nodes and point the sender's incoming webhook here.\n4. Set `TEST_WHATSAPP`, then `TEST_RUN = false`.\n\n**Requirements**\nA Google Sheet with Stock and Customers tabs and a Twilio WhatsApp sender. An AI key is optional.\n\n**How to customize**\n`HANDOFF_QTY` sets when a quantity goes to a person, the keyword lists in `read the message` decide what is recognised, and `STYLES` limits which styles are ever offered. Pair it with the companion repricing workflow, which writes the prices this one quotes."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-01",
+      "name": "Note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        560,
+        -242
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1040,
+        "height": 202,
+        "content": "### 1. Take the message in, with the stock beside it\n\n`A WhatsApp message arrives` is the Twilio webhook; `Run the demo messages` feeds five invented messages instead. The stock comes from `[cred] Sheets - read the stock`, or `use the demo stock` when no sheet is set.\n\n`read the message` applies the keyword rules: style, karat, length, quantity, and whether a person is needed."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-02",
+      "name": "Note 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1680,
+        -330
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 480,
+        "height": 290,
+        "content": "### 2. Let a model help read, never answer\n\nWith `AI_API_KEY` set, `AI - read what they want` reads the message into the same fields. It is never shown a price and never writes the reply.\n\n`apply the AI reading` ignores a style that is not in `STYLES`, and an answer that does not parse keeps the keyword read. Without a key, `keyword reading only` carries on alone."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-03",
+      "name": "Note 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2800,
+        -264
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1320,
+        "height": 224,
+        "content": "### 3. Answer from the sheet, or hand it to a person\n\n`decide the reply` quotes every price and stock count from the Stock tab at the price last approved, with the list date, so the bot cannot quote a number the owner never saw. Orders, bulk quantities, custom pieces, payment questions and complaints are acknowledged and sent to the owner with who, what and why. The bot does not negotiate.\n\n`sending on?` sends through `[cred] Twilio - send on WhatsApp`, or shows every reply on `STOP: preview - replies shown`."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-04",
+      "name": "Note 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3080,
+        710
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 760,
+        "height": 202,
+        "content": "### 4. Record opt-outs\n\nA \"STOP\" is confirmed to the customer, and `[cred] Sheets - record the opt-outs` marks them in the Customers tab, so the daily announcement never messages that number again. In preview, `STOP: preview - opt-outs not recorded` shows the rows it would write."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "config": {
+      "main": [
+        [
+          {
+            "node": "stock sheet configured?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sending on?": {
+      "main": [
+        [
+          {
+            "node": "[cred] Twilio - send on WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: preview - replies shown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "writing on?": {
+      "main": [
+        [
+          {
+            "node": "[cred] Sheets - record the opt-outs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: preview - opt-outs not recorded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI configured?": {
+      "main": [
+        [
+          {
+            "node": "build the AI request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "keyword reading only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "decide the reply": {
+      "main": [
+        [
+          {
+            "node": "address the messages",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "rows for the customers tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read the message": {
+      "main": [
+        [
+          {
+            "node": "AI configured?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "collect the stock": {
+      "main": [
+        [
+          {
+            "node": "read the message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "use the demo stock": {
+      "main": [
+        [
+          {
+            "node": "read the message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "address the messages": {
+      "main": [
+        [
+          {
+            "node": "sending on?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "apply the AI reading": {
+      "main": [
+        [
+          {
+            "node": "decide the reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "build the AI request": {
+      "main": [
+        [
+          {
+            "node": "AI - read what they want",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "keyword reading only": {
+      "main": [
+        [
+          {
+            "node": "decide the reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run the demo messages": {
+      "main": [
+        [
+          {
+            "node": "config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "stock sheet configured?": {
+      "main": [
+        [
+          {
+            "node": "[cred] Sheets - read the stock",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "use the demo stock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI - read what they want": {
+      "main": [
+        [
+          {
+            "node": "apply the AI reading",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "A WhatsApp message arrives": {
+      "main": [
+        [
+          {
+            "node": "config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rows for the customers tab": {
+      "main": [
+        [
+          {
+            "node": "writing on?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Sheets - read the stock": {
+      "main": [
+        [
+          {
+            "node": "collect the stock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Twilio - send on WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "STOP: replies sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Sheets - record the opt-outs": {
+      "main": [
+        [
+          {
+            "node": "STOP: opt-outs recorded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

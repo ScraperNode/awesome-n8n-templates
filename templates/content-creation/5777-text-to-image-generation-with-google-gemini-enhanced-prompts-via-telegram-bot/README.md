@@ -1,6 +1,6 @@
 # 🎬 Text-to-image generation with Google Gemini & enhanced prompts via Telegram Bot
 
-> ⚡ **4,477 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,887 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

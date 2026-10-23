@@ -1,6 +1,6 @@
 # 📱 Manage garage service reminders, pickups and feedback with Airtable, WhatsApp and Gmail
 
-> ⚡ **65 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **208 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

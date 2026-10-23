@@ -1,6 +1,6 @@
 # 🎬 Automate quiz creation from documents with Google Gemini and Jotform
 
-> ⚡ **343 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **486 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

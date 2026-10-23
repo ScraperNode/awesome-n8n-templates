@@ -1,6 +1,6 @@
 # 🤖 Get actionable Gmail alerts on Telegram with OpenAI
 
-> ⚡ **179 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **1,699 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

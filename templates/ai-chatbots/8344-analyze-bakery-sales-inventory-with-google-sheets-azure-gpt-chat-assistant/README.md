@@ -1,6 +1,6 @@
 # 🤖 Analyze bakery sales & inventory with Google Sheets & Azure GPT Chat Assistant
 
-> ⚡ **375 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **445 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

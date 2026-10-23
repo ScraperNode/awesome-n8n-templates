@@ -1,6 +1,6 @@
 # 🎫 Automate email management with Gemini AI and Gmail for smart responses
 
-> ⚡ **1,159 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,372 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

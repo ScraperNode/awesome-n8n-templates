@@ -1,6 +1,6 @@
 # ⚒️ Validate n8n JSON workflows with GPT-4 & LangChain: Google Drive to Sheets
 
-> ⚡ **131 views** · ⚒️ [Engineering](../)
+> ⚡ **164 views** · ⚒️ [Engineering](../)
 
 ## Description
 

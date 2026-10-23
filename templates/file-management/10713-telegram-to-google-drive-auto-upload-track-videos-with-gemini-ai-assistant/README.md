@@ -1,6 +1,6 @@
 # 📁 Telegram to Google Drive: auto upload & track videos with Gemini AI assistant
 
-> ⚡ **308 views** · 📁 [File Management](../)
+> ⚡ **668 views** · 📁 [File Management](../)
 
 ## Description
 

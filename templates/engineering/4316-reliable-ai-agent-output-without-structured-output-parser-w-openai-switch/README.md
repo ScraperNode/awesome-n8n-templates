@@ -1,6 +1,6 @@
 # ⚒️ Reliable AI agent output without structured output parser - w/ OpenAI & Switch
 
-> ⚡ **1,281 views** · ⚒️ [Engineering](../)
+> ⚡ **1,434 views** · ⚒️ [Engineering](../)
 
 ## Description
 

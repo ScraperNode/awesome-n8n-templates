@@ -1,6 +1,6 @@
 # ⚒️ Access data from bubble application
 
-> ⚡ **928 views** · ⚒️ [Engineering](../)
+> ⚡ **951 views** · ⚒️ [Engineering](../)
 
 ## Description
 

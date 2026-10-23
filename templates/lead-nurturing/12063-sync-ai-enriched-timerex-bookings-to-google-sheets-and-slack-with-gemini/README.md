@@ -1,6 +1,6 @@
 # 💬 Sync AI-enriched TimeRex bookings to Google Sheets and Slack with Gemini
 
-> ⚡ **27 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **34 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Automated cold email campaign with Google Sheets, email verification & SMTP
 
-> ⚡ **3,671 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **4,468 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

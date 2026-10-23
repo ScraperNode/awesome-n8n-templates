@@ -1,6 +1,6 @@
 # 🎬 Generate & rank animal advocacy content with Claude AI, Open Paws & Hugging Face
 
-> ⚡ **402 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **427 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

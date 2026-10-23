@@ -1,6 +1,6 @@
 # 📋 Automate daily YouTrack task summaries to Discord by assignee
 
-> ⚡ **674 views** · 📋 [Project Management](../)
+> ⚡ **762 views** · 📋 [Project Management](../)
 
 ## Description
 

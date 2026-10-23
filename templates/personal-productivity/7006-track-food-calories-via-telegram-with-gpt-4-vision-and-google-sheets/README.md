@@ -1,6 +1,6 @@
 # ⚡ Track food calories via Telegram with GPT-4 Vision and Google Sheets
 
-> ⚡ **2,272 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,527 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

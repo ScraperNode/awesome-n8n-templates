@@ -1,6 +1,6 @@
 # 🎬 Store AI-generated images in AWS S3: OpenAI image creation & cloud storage
 
-> ⚡ **627 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **785 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

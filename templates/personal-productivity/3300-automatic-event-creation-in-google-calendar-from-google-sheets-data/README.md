@@ -1,6 +1,6 @@
 # ⚡ Automatic event creation in Google Calendar from Google Sheets data
 
-> ⚡ **5,229 views** · ⚡ [Personal Productivity](../)
+> ⚡ **5,491 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

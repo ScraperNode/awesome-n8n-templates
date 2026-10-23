@@ -1,6 +1,6 @@
 # 🔧 🎓 Learn n8n keyboard shortcuts with an interactive hands-on tutorial workflow
 
-> ⚡ **5,292 views** · 🔧 [Miscellaneous](../)
+> ⚡ **5,477 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

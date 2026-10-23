@@ -1,6 +1,6 @@
 # 💬 Handle clinic WhatsApp support with GPT-4o-mini, Pinecone RAG and Gmail alerts
 
-> ⚡ **401 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,220 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

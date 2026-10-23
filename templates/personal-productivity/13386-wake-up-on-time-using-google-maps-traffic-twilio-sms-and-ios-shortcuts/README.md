@@ -1,6 +1,6 @@
 # ⚡ Wake up on time using Google Maps traffic, Twilio SMS, and iOS Shortcuts
 
-> ⚡ **20 views** · ⚡ [Personal Productivity](../)
+> ⚡ **80 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

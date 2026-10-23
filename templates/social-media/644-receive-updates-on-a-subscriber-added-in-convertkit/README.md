@@ -1,6 +1,6 @@
 # 📱 Receive updates on a subscriber added in ConvertKit
 
-> ⚡ **622 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **629 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

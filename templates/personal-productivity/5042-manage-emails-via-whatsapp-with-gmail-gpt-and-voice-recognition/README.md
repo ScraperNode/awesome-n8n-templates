@@ -1,6 +1,6 @@
 # ⚡ Manage emails via WhatsApp with Gmail, GPT and voice recognition
 
-> ⚡ **3,169 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,837 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

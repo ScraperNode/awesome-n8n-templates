@@ -1,6 +1,6 @@
 # 📋 Create Linear tickets from Notion content
 
-> ⚡ **2,089 views** · 📋 [Project Management](../)
+> ⚡ **2,153 views** · 📋 [Project Management](../)
 
 ## Description
 

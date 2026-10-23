@@ -1,6 +1,6 @@
 # ⚡ Categorize and label existing Gmail emails automatically with GPT-4o mini
 
-> ⚡ **3,267 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,838 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

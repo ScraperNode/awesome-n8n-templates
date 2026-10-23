@@ -1,6 +1,6 @@
 # ⚡ Automate weather reports with GPT-4 Mini and Open-Meteo API to Gmail and Slack
 
-> ⚡ **687 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,352 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Create a new contact in Agile CRM
 
-> ⚡ **1,020 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,074 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

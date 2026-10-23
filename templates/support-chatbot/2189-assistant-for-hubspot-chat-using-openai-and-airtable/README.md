@@ -1,6 +1,6 @@
 # 💬 Assistant for Hubspot chat using OpenAi and Airtable
 
-> ⚡ **1,622 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,655 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

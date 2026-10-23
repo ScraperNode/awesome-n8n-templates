@@ -1,6 +1,6 @@
 # 💬 Form to meeting: Google Calendar, Zoom, Gmail & Slack booking automation
 
-> ⚡ **2,208 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **3,568 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

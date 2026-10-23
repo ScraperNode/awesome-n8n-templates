@@ -1,6 +1,6 @@
 # 🎬 General 3D presentation workflow with Midjourney, GPT-4o-image and Kling APIs
 
-> ⚡ **1,309 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,467 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

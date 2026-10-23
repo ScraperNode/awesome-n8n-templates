@@ -1,6 +1,6 @@
 # 🎬 Ai blog generator for Shopify products using Google Gemini and Google Sheets
 
-> ⚡ **1,451 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,661 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

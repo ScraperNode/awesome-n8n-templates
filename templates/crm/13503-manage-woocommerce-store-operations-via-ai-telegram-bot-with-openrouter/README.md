@@ -1,6 +1,6 @@
 # 🤝 Manage WooCommerce store operations via AI Telegram bot with OpenRouter
 
-> ⚡ **663 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **8,212 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

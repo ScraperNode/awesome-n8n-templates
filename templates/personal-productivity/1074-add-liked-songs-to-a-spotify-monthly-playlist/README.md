@@ -1,6 +1,6 @@
 # ⚡ Add liked songs to a Spotify monthly playlist
 
-> ⚡ **4,166 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,273 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

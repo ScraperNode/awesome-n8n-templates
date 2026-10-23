@@ -1,12 +1,14 @@
 # 📊 Automated content strategy with Google Trends, News, Firecrawl & Claude AI
 
-> ⚡ **4,891 views** · 📊 [Market Research & Insights](../)
+> ⚡ **5,309 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
 > <a href="https://scrapernode.com"><img src="https://img.shields.io/badge/View_All_Scrapers_%E2%86%92-ff6d5a?style=for-the-badge" alt="View All Scrapers" /></a>
 
 ## Description
+
+**📺 Full walkthrough video: https://youtu.be/dXz5OTbm4c8**
 
 # Automated trend monitoring for content strategy
 
@@ -32,8 +34,7 @@ AI model API key (for content analysis and recommendations - you can use any LLM
 ## How to set up
 
 ### Step 1: Prepare your tracking sheet
-Duplicate this Google Sheets template 
-Rename your copy and ensure it's accessible
+Duplicate the Google Sheets template by opening this link: https://docs.google.com/spreadsheets/d/1Jh4sbjFcvVvDg52YFKo4aMyk2TQboyATDvWGCVTgj3U then click on **File → Make a copy**. Rename your copy and ensure it's accessible.
 
 ### Step 2: Configure API credentials
 Before running the workflow, set up the following credentials in n8n:

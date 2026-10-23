@@ -1,6 +1,6 @@
 # 💬 Schedule appointments with manual approval using Google Calendar and Gmail
 
-> ⚡ **92 views** · 💬 [Support Chatbots](../)
+> ⚡ **235 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

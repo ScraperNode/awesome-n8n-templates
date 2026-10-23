@@ -1,6 +1,6 @@
 # 🎫 Sync Shopify orders with Zendesk tickets
 
-> ⚡ **1,431 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,473 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

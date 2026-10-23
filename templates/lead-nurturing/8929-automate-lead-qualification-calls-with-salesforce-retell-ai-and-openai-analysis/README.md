@@ -1,6 +1,6 @@
 # 💬 Automate lead qualification calls with Salesforce, Retell AI, and OpenAI analysis
 
-> ⚡ **1,005 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,292 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

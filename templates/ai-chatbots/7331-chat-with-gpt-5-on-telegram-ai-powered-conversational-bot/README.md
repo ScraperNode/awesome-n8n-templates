@@ -1,6 +1,6 @@
 # 🤖 Chat with GPT-5 on Telegram: AI-powered conversational bot
 
-> ⚡ **1,947 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **2,299 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

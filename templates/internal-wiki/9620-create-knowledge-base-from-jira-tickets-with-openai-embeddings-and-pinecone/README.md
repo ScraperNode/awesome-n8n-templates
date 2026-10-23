@@ -1,6 +1,6 @@
 # 📖 Create knowledge base from Jira tickets with OpenAI embeddings and Pinecone
 
-> ⚡ **168 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **229 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Automated call summary transfer from Chorus AI to HubSpot CRM
 
-> ⚡ **140 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **157 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

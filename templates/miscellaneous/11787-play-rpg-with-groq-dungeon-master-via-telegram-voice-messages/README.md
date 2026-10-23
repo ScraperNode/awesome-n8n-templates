@@ -1,6 +1,6 @@
 # 🔧 Play RPG with Groq Dungeon Master via Telegram voice messages
 
-> ⚡ **293 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,080 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

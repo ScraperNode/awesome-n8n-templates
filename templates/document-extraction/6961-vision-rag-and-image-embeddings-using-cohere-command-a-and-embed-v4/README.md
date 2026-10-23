@@ -1,6 +1,6 @@
 # 🔬 Vision RAG and image embeddings using Cohere Command-A and Embed v4
 
-> ⚡ **1,452 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,730 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

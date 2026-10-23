@@ -1,6 +1,6 @@
 # 🎬 Create an image enhancement API endpoint with Nero AI Business API
 
-> ⚡ **507 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **550 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

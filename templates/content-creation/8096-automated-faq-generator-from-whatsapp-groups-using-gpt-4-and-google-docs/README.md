@@ -1,6 +1,6 @@
 # 🎬 Automated FAQ generator from WhatsApp groups using GPT-4 and Google Docs
 
-> ⚡ **152 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **198 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

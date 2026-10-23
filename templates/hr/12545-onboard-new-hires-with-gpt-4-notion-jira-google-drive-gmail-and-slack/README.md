@@ -1,6 +1,6 @@
 # 👥 Onboard new hires with GPT-4, Notion, Jira, Google Drive, Gmail and Slack
 
-> ⚡ **22 views** · 👥 [HR & Recruitment](../)
+> ⚡ **64 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

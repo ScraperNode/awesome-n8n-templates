@@ -1,6 +1,6 @@
 # 🔍 Hr policy retrieval using Slack, S3, and GPT-4.1-mini with RAG
 
-> ⚡ **112 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **136 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

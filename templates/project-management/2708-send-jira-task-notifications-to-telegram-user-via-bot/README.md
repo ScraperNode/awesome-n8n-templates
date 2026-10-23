@@ -1,6 +1,6 @@
 # 📋 Send Jira task notifications to Telegram user via Bot
 
-> ⚡ **2,357 views** · 📋 [Project Management](../)
+> ⚡ **2,421 views** · 📋 [Project Management](../)
 
 ## Description
 

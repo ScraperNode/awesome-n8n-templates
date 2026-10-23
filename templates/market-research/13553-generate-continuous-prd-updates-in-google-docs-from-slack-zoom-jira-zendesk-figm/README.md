@@ -1,6 +1,6 @@
 # 📊 Generate continuous PRD updates in Google Docs from Slack, Zoom, Jira, Zendesk, Figma and analytics using OpenAI
 
-> ⚡ **50 views** · 📊 [Market Research & Insights](../)
+> ⚡ **654 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 Build a RAG system with automatic citations using Qdrant, Gemini & OpenAI
 
-> ⚡ **2,970 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **3,438 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

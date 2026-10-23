@@ -1,6 +1,6 @@
 # 📋 Give AI agents power to get, create, update issues with Linear tool MCP server 💪
 
-> ⚡ **135 views** · 📋 [Project Management](../)
+> ⚡ **152 views** · 📋 [Project Management](../)
 
 ## Description
 

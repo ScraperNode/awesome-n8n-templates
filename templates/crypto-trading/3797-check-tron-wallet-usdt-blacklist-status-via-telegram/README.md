@@ -1,6 +1,6 @@
 # 📈 Check Tron wallet USDT blacklist status via Telegram
 
-> ⚡ **1,076 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,222 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

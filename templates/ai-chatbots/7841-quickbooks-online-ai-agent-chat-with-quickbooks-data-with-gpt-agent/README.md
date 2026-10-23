@@ -1,6 +1,6 @@
 # 🤖 QuickBooks Online AI agent - Chat with Quickbooks data with GPT agent
 
-> ⚡ **252 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **337 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

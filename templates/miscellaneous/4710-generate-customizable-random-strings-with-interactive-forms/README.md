@@ -1,6 +1,6 @@
 # 🔧 Generate customizable random strings with interactive forms
 
-> ⚡ **522 views** · 🔧 [Miscellaneous](../)
+> ⚡ **577 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

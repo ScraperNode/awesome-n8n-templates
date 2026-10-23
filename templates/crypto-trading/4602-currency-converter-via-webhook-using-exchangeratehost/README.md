@@ -1,6 +1,6 @@
 # 📈 Currency converter via webhook using ExchangeRate.host
 
-> ⚡ **874 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **969 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

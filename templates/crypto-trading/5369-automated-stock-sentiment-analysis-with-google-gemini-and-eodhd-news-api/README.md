@@ -1,6 +1,6 @@
 # 📈 Automated stock sentiment analysis with Google Gemini and EODHD News API
 
-> ⚡ **8,379 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **9,416 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

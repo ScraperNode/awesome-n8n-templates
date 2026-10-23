@@ -1,6 +1,6 @@
 # 📖 Build a RAG-powered AI assistant with OpenAI, Google Drive & Supabase Vector DB
 
-> ⚡ **347 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **506 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

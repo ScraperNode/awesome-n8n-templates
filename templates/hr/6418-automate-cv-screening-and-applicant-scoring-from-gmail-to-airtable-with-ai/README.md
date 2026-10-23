@@ -1,6 +1,6 @@
 # 👥 Automate CV screening and applicant scoring from Gmail to Airtable with AI
 
-> ⚡ **760 views** · 👥 [HR & Recruitment](../)
+> ⚡ **824 views** · 👥 [HR & Recruitment](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -8,47 +8,29 @@
 
 ## Description
 
-### How It Works
-1. **Trigger**
-   Watches for new emails with attachments in a Gmail label.
-2. **Extract Data**
-   * Extracts job code from the email subject (e.g., `FN-001`)
-   * Extracts raw text from the attached CV (PDF)
-3. **AI Parsing**
-   Uses Google Gemini to parse the CV and extract:
-   * Name
-   * Email
-   * Years of experience
-   * Skills
-4. **Job Lookup**
-   Uses the extracted job code to retrieve job details from Airtable.
-5. **AI Scoring**
-   * Compares applicant data with job requirements
-   * Scores from 1–100
-   * Generates a brief reasoning summary (in Bahasa Indonesia)
-6. **Log to Airtable**
-   Saves applicant data, score, and AI notes to the "Applications" table.
+## Quick overview
+This workflow automatically processes job applications received via Gmail. It extracts the job code from the email subject and parses the attached CV using Gemini AI to retrieve applicant details.Each applicant is then scored against job requirements fetched from Airtable, with results and AI notes logged automatically to Applications table.
 
-### Setup Instructions
-1. **Prepare Airtable Base**
-   * **Job Posts Table**
-     * Columns: Job Code, Job Title, Required Skills, Minimum Experience, Job Description
-   * **Applications Table**
-     * Columns: Applicant Name, Email, Score, Notes
-     * Include a linked field to the Job Posts table
-2. **Add Credentials in n8n**
-   * Gmail
-   * Google AI (Gemini)
-   * Airtable
-3. **Configure Nodes**
-   * **Trigger**: Set Gmail filter (e.g., `label:job-applications`)
-   * **Extract Job Code**: Verify regex format, default is `([A-Z]{2}-\d{3})`
-   * **Airtable Nodes**: Select your base and table in:
-     * "Find Job Post..."
-     * "Save Applicant..."
-4. **Activate Workflow**
-   * Save and enable the workflow
-   * New applications will be processed automatically
+## How it works
+1. The workflow watches for new emails with attachments arriving under a specified Gmail label and triggers automatically on each new match.
+2. The job code is extracted from the email subject line (e.g., FN-001) and raw text is extracted from the attached CV PDF file.
+3. Gemini AI parses the extracted CV text and returns structured applicant data including name, email, years of experience, and skills.
+4. The extracted job code is used to retrieve the matching job post details and requirements from your Airtable Job Posts table.
+5. Gemini compares the applicant's profile against the job requirements, assigns a score from 1–100, and generates a brief reasoning summary in Bahasa Indonesia.
+6. The applicant's data, score, and AI-generated notes are saved as a new record in the Airtable Applications table.
+
+## Setup
+1. Prepare your Airtable base with two tables: Job Posts (Job Code, Job Title, Required Skills, Minimum Experience, Job Description) and Applications (Applicant Name, Email, Score, Notes) with a linked field pointing to Job Posts.
+2. Add your Gmail, Google AI (Gemini), and Airtable credentials in the n8n Credential Manager before configuring any nodes.
+3. Open the Gmail Trigger node and set your label filter (e.g., label:job-applications). In the Extract Job Code node, verify the regex matches your format — default is ([A-Z]{2}-\d{3}).
+4. Open both the Find Job Post and Save Applicant Airtable nodes and select your correct base and table in each.
+5. Save and activate the workflow — new CV submissions will now be processed, scored, and logged to Airtable automatically.
+
+## Additional info
+Published by Fahmi Fahreza, Indonesia’s first official n8n Brand Ambassador and founder of WithMi Automation, built from real client implementations, not tutorials.
+→ Let us build it for you: [withmiautomation.com](withmiautomation.com)
+→ Learn to build it yourself: [academy.withmiautomation.com](academy.withmiautomation.com)
+→ Bring Fahmi to your team (training, workshop, talkshow): [fahmiiireza.com](fahmiiireza.com)
 
 ## 🔗 Nodes Used
 

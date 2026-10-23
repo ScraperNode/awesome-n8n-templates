@@ -1,6 +1,6 @@
 # 🎬 Automate S3 video transcoding, thumbnail generation & CDN distribution
 
-> ⚡ **52 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **115 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

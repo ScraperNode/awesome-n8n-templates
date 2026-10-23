@@ -1,6 +1,6 @@
 # 🤖 AI-powered restaurant booking system with Telegram, Calendar & Email notifications
 
-> ⚡ **2,660 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **3,213 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

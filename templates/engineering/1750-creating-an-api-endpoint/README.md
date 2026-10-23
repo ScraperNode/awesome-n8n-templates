@@ -1,6 +1,6 @@
 # ⚒️ Creating an API endpoint
 
-> ⚡ **448,875 views** · ⚒️ [Engineering](../)
+> ⚡ **464,968 views** · ⚒️ [Engineering](../)
 
 ## Description
 

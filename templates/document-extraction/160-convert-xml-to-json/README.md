@@ -1,6 +1,6 @@
 # 🔬 Convert XML to JSON
 
-> ⚡ **6,480 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **6,641 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

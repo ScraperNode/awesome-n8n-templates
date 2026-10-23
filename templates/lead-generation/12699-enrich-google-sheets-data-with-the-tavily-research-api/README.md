@@ -1,6 +1,6 @@
 # 🎣 Enrich Google Sheets data with the Tavily Research API
 
-> ⚡ **4 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **8 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

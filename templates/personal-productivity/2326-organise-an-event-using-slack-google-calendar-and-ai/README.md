@@ -1,6 +1,6 @@
 # ⚡ Organise an Event using Slack, Google Calendar and AI
 
-> ⚡ **8,010 views** · ⚡ [Personal Productivity](../)
+> ⚡ **8,030 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

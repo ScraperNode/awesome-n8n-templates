@@ -1,6 +1,6 @@
 # 📊 Aggregate tech trend signals from RSS feeds into Google Sheets and Slack
 
-> ⚡ **31 views** · 📊 [Market Research & Insights](../)
+> ⚡ **145 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

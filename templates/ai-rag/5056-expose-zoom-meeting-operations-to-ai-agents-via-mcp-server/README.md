@@ -1,6 +1,6 @@
 # 🔍 Expose Zoom meeting operations to AI agents via MCP server
 
-> ⚡ **363 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **379 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

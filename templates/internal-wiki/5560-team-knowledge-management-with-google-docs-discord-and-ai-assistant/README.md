@@ -1,6 +1,6 @@
 # 📖 Team knowledge management with Google Docs, Discord, and AI assistant
 
-> ⚡ **150 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **170 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

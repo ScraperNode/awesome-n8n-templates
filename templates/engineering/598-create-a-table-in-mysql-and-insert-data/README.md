@@ -1,6 +1,6 @@
 # ⚒️ Create a table in MySQL and insert data
 
-> ⚡ **6,815 views** · ⚒️ [Engineering](../)
+> ⚡ **6,865 views** · ⚒️ [Engineering](../)
 
 ## Description
 

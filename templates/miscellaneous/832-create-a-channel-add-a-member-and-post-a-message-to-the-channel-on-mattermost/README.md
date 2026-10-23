@@ -1,6 +1,6 @@
 # 🔧 Create a channel, add a member, and post a message to the channel on Mattermost
 
-> ⚡ **776 views** · 🔧 [Miscellaneous](../)
+> ⚡ **834 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

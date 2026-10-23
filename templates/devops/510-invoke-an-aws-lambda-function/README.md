@@ -1,6 +1,6 @@
 # ⚙️ Invoke an AWS Lambda function
 
-> ⚡ **2,368 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,476 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

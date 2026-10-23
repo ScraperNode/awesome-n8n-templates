@@ -1,6 +1,6 @@
 # ⚒️ Track hourly weather conditions with OpenWeatherMap and Google Sheets
 
-> ⚡ **706 views** · ⚒️ [Engineering](../)
+> ⚡ **786 views** · ⚒️ [Engineering](../)
 
 ## Description
 

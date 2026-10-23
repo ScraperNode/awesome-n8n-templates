@@ -1,6 +1,6 @@
 # 🔒 Filter fraudulent leads with GPT-4o-mini, AbstractAPI, Google Sheets and Slack
 
-> ⚡ **4 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **116 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

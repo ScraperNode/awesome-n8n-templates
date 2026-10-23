@@ -1,6 +1,6 @@
 # 🎬 Generate product descriptions from images and publish to Shopify using AI
 
-> ⚡ **259 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **449 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

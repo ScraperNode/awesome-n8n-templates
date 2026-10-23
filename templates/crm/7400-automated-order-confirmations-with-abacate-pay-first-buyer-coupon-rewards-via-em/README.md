@@ -1,6 +1,6 @@
 # 🤝 Automated order confirmations with Abacate Pay: first-buyer coupon rewards via email & Slack
 
-> ⚡ **282 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **350 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

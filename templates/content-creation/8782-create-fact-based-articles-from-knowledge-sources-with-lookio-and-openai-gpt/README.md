@@ -1,6 +1,6 @@
 # 🎬 Create fact-based articles from knowledge sources with Lookio and OpenAI GPT
 
-> ⚡ **326 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **386 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

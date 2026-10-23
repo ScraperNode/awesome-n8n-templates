@@ -1,6 +1,6 @@
 # 🎣 Capture leads from forms to Google Sheets and send Gmail reminders
 
-> ⚡ **41 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **348 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

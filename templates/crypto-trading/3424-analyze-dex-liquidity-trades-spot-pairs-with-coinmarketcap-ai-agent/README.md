@@ -1,6 +1,6 @@
 # 📈 Analyze DEX liquidity, trades & spot pairs with CoinMarketCap AI agent
 
-> ⚡ **6,355 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **6,674 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

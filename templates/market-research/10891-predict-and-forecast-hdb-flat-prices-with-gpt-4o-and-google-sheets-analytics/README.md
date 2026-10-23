@@ -1,6 +1,6 @@
 # 📊 Predict and Forecast HDB Flat Prices with GPT-4o and Google Sheets Analytics
 
-> ⚡ **81 views** · 📊 [Market Research & Insights](../)
+> ⚡ **118 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

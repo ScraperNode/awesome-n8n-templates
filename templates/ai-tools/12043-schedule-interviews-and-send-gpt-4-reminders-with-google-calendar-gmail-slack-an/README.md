@@ -1,6 +1,6 @@
 # 🎯 Schedule interviews and send GPT-4 reminders with Google Calendar, Gmail, Slack and Recrutei
 
-> ⚡ **38 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **124 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

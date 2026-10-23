@@ -1,6 +1,6 @@
 # 🤖 Control your discord server with natural language via GPT4o and MCP Client
 
-> ⚡ **1,050 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **1,165 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

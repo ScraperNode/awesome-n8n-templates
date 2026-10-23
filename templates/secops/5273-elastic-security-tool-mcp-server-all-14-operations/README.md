@@ -1,6 +1,6 @@
 # 🔒 🛠️ Elastic Security Tool MCP Server 💪 all 14 operations
 
-> ⚡ **290 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **338 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

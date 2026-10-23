@@ -1,6 +1,6 @@
 # 🎬 Generate SEO blog posts from a keyword list and publish to Webflow    
 
-> ⚡ **1,240 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,553 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

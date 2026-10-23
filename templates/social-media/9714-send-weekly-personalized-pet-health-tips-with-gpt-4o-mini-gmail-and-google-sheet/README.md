@@ -1,6 +1,6 @@
 # 📱 Send weekly personalized pet health tips with GPT-4o-mini, Gmail and Google Sheets
 
-> ⚡ **203 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **260 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

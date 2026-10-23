@@ -1,6 +1,6 @@
 # 🔍 Search Outlook emails with natural language queries using GPT-4o
 
-> ⚡ **1,058 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **1,202 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

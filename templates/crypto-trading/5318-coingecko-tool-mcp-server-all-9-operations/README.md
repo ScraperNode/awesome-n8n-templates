@@ -1,6 +1,6 @@
 # 📈 🛠️ CoinGecko tool MCP server 💪 all 9 operations
 
-> ⚡ **128 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **148 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

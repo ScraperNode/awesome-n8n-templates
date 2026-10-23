@@ -1,6 +1,6 @@
 # 🎣 Automated real estate property lead scoring with BatchData
 
-> ⚡ **2,661 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **2,852 views** · 🎣 [Lead Generation & Enrichment](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

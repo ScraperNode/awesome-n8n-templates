@@ -1,6 +1,6 @@
 # 📱 Automated news summarizer with GPT-4o + email delivery
 
-> ⚡ **2,252 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,589 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

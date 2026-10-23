@@ -1,6 +1,6 @@
 # 🤝 Real-time sales quote creation in Odoo via Telegram with Google Gemini AI
 
-> ⚡ **374 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **604 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

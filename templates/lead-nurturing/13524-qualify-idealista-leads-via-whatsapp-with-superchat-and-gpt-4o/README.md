@@ -1,6 +1,6 @@
 # 💬 Qualify Idealista leads via WhatsApp with Superchat and GPT-4o
 
-> ⚡ **72 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **255 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Smart email draft generator
 
-> ⚡ **10,294 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **13,112 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

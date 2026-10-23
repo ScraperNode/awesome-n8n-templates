@@ -1,6 +1,6 @@
 # 👥 Automated recruitment status updates via Slack notifications
 
-> ⚡ **199 views** · 👥 [HR & Recruitment](../)
+> ⚡ **261 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Detect WooCommerce order delays with Gmail and Slack alerts in real time
 
-> ⚡ **19 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **62 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

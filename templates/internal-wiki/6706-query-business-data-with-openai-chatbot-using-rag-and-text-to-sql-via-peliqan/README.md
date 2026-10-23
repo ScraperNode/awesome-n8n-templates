@@ -1,6 +1,6 @@
 # 📖 Query business data with OpenAI chatbot using RAG and text-to-SQL via Peliqan
 
-> ⚡ **643 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **711 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

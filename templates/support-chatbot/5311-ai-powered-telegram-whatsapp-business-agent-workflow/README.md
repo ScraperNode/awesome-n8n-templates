@@ -1,6 +1,6 @@
 # 💬 AI-powered Telegram & WhatsApp business agent workflow
 
-> ⚡ **1,198 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,367 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

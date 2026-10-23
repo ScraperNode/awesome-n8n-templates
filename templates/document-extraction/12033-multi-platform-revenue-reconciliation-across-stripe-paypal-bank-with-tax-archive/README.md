@@ -1,6 +1,6 @@
 # 🔬 Multi-platform revenue reconciliation across Stripe, PayPal & bank with tax archive
 
-> ⚡ **88 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **152 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

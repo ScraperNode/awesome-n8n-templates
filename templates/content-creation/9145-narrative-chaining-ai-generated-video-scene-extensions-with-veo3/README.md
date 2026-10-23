@@ -1,6 +1,6 @@
 # 🎬 Narrative chaining: AI-generated video scene extensions with Veo3
 
-> ⚡ **846 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,000 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

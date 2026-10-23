@@ -1,6 +1,6 @@
 # 🤝 WhatsApp micro-CRM with Baserow & WasenderAPI
 
-> ⚡ **462 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **554 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

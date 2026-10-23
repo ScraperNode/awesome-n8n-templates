@@ -1,6 +1,6 @@
 # 🔒 CYBERPULSE AI BlueOps: asset enrichment engine
 
-> ⚡ **82 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **92 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 Create daily task status snapshots from Monday.com to Google Sheets
 
-> ⚡ **398 views** · 📋 [Project Management](../)
+> ⚡ **450 views** · 📋 [Project Management](../)
 
 ## Description
 

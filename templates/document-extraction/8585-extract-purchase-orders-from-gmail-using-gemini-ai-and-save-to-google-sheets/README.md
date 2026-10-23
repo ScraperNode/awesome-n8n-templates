@@ -1,6 +1,6 @@
 # 🔬 Extract purchase orders from Gmail using Gemini AI and save to Google Sheets
 
-> ⚡ **783 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,022 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

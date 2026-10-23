@@ -1,6 +1,6 @@
 # 🎬 Create AI-generated Spotify playlists with GPT-5 and email the link
 
-> ⚡ **42 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **47 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

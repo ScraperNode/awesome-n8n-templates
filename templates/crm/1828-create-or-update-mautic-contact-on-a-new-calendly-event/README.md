@@ -1,6 +1,6 @@
 # 🤝 Create or update Mautic contact on a new Calendly event
 
-> ⚡ **1,087 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,199 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

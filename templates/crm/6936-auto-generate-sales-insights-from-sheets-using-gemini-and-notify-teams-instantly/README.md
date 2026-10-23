@@ -1,6 +1,6 @@
 # 🤝 Auto-generate sales insights from Sheets using Gemini and notify teams instantly
 
-> ⚡ **848 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **962 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

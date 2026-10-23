@@ -1,6 +1,6 @@
 # ⚒️ IPL cricket rules Q&A chat bot using RAG and Google Gemini API
 
-> ⚡ **1,176 views** · ⚒️ [Engineering](../)
+> ⚡ **1,454 views** · ⚒️ [Engineering](../)
 
 ## Description
 

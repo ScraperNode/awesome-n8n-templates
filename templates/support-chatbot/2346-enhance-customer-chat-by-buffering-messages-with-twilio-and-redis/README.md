@@ -1,6 +1,6 @@
 # 💬 Enhance customer chat by buffering messages with Twilio and Redis
 
-> ⚡ **10,785 views** · 💬 [Support Chatbots](../)
+> ⚡ **10,877 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

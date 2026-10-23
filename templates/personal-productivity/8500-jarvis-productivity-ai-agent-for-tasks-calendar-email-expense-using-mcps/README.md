@@ -1,6 +1,6 @@
 # ⚡ Jarvis: productivity AI agent for tasks, calendar, email & expense using MCPs
 
-> ⚡ **37,384 views** · ⚡ [Personal Productivity](../)
+> ⚡ **55,458 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Post new RSS feed items as BlueSky posts
 
-> ⚡ **2,269 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,316 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

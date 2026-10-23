@@ -1,6 +1,6 @@
 # 📁 Request and receive Zigbee backup from zigbee2mqtt and save it via SFTP
 
-> ⚡ **1,940 views** · 📁 [File Management](../)
+> ⚡ **1,969 views** · 📁 [File Management](../)
 
 ## Description
 

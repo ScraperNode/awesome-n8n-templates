@@ -1,6 +1,6 @@
 # 🔬 Chat with PDF docs using AI (quoting sources)
 
-> ⚡ **116,126 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **117,092 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

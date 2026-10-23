@@ -1,6 +1,6 @@
 # 📋 Check To Do on Notion and send message on Slack
 
-> ⚡ **3,400 views** · 📋 [Project Management](../)
+> ⚡ **3,453 views** · 📋 [Project Management](../)
 
 ## Description
 

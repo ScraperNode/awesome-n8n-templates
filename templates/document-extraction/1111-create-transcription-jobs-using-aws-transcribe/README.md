@@ -1,6 +1,6 @@
 # 🔬 Create transcription jobs using AWS Transcribe
 
-> ⚡ **2,553 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,620 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

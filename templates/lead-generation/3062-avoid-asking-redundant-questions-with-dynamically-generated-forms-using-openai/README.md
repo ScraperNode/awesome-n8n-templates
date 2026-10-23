@@ -1,6 +1,6 @@
 # 🎣 Avoid Asking Redundant Questions with Dynamically Generated Forms using OpenAI 
 
-> ⚡ **3,056 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **3,101 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

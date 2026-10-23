@@ -1,6 +1,6 @@
 # ⚡ WhatsApp expense tracker with PostgreSQL database & AI-powered reports
 
-> ⚡ **2,942 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,067 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

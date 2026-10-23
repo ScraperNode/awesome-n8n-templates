@@ -1,6 +1,6 @@
 # 🎣 Generate Complete Database Schemas with Claude for SQL Databases
 
-> ⚡ **1,333 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,864 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

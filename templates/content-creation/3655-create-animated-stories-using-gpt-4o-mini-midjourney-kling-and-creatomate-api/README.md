@@ -1,6 +1,6 @@
 # 🎬 Create animated stories using GPT-4o-mini, Midjourney, Kling and Creatomate API
 
-> ⚡ **14,836 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **15,396 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

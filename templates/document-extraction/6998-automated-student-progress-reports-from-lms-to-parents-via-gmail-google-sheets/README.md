@@ -1,6 +1,6 @@
 # 🔬 Automated student progress reports from LMS to parents via Gmail & Google Sheets
 
-> ⚡ **674 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **843 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ AI chatbot call center: General exception flow (production-ready, part 8)
 
-> ⚡ **1,325 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,665 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

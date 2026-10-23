@@ -1,6 +1,6 @@
 # 💬 Create a two-way WhatsApp + Telegram integration for 10k+ customer support chats
 
-> ⚡ **1,183 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,006 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Generate empathetic customer replies with Claude AI and auto-escalation
 
-> ⚡ **39 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **75 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

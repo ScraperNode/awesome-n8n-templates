@@ -1,6 +1,6 @@
 # 🎬 Generate video from prompt using Vertex AI Veo 3 and upload to Google Drive
 
-> ⚡ **23,158 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **25,960 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

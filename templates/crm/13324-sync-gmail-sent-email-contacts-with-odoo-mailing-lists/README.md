@@ -1,6 +1,6 @@
 # 🤝 Sync Gmail sent email contacts with Odoo mailing lists
 
-> ⚡ **62 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **120 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

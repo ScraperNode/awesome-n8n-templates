@@ -1,6 +1,6 @@
 # 🎬 Generate animated human videos from images & audio with Bytedance Omni Human
 
-> ⚡ **1,843 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,964 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

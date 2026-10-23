@@ -1,6 +1,6 @@
 # ⚒️ MongoDB AI agent - intelligent movie recommendations
 
-> ⚡ **3,080 views** · ⚒️ [Engineering](../)
+> ⚡ **3,104 views** · ⚒️ [Engineering](../)
 
 ## Description
 

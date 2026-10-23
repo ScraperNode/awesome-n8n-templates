@@ -1,6 +1,6 @@
 # 📊 Automate your UTM campaign tracking: Shopify, n8n to Baserow
 
-> ⚡ **1,482 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,487 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

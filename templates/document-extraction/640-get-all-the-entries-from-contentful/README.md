@@ -1,6 +1,6 @@
 # 🔬 Get all the entries from Contentful
 
-> ⚡ **859 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **871 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

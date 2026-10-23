@@ -1,6 +1,6 @@
 # 🎬 Generate AI images via Telegram with WaveSpeed, credit system, PIX and S3
 
-> ⚡ **65 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **798 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

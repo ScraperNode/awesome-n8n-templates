@@ -1,6 +1,6 @@
 # 🔬 Generate an AI summary of your Notion comments
 
-> ⚡ **932 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **959 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

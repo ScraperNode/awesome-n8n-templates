@@ -1,6 +1,6 @@
 # 🎬 Convert Pinterest videos to MP4 with Google Drive storage and email delivery
 
-> ⚡ **221 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **310 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

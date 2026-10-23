@@ -1,6 +1,6 @@
 # ⚙️ Manage custom incident response in PagerDuty and Jira
 
-> ⚡ **3,063 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **3,127 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

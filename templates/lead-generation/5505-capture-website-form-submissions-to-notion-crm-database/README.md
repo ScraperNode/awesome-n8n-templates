@@ -1,6 +1,6 @@
 # 🎣 Capture website form submissions to Notion CRM database
 
-> ⚡ **1,216 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,340 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

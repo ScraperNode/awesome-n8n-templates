@@ -1,6 +1,6 @@
 # 📱 Automated WooCommerce abandoned cart recovery with Google Sheets email reminders
 
-> ⚡ **112 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **140 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

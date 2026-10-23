@@ -1,6 +1,6 @@
 # 🎬 Generate multiple LinkedIn posts from Notion with ChatGPT & Claude AI
 
-> ⚡ **116 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **178 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

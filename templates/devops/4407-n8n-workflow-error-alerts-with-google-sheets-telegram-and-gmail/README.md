@@ -1,6 +1,6 @@
 # ⚙️ n8n Workflow Error Alerts with Google Sheets, Telegram, and Gmail
 
-> ⚡ **2,384 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,743 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

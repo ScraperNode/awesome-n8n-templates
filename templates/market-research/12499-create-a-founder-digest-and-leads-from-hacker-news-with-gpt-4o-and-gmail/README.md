@@ -1,6 +1,6 @@
 # 📊 Create a founder digest and leads from Hacker News with GPT-4o and Gmail
 
-> ⚡ **78 views** · 📊 [Market Research & Insights](../)
+> ⚡ **136 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Auto-stop email sequences based on replies with IMAP and Google Sheets
 
-> ⚡ **139 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **178 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

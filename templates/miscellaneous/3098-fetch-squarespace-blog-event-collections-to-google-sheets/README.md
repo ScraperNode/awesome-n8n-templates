@@ -1,6 +1,6 @@
 # 🔧 Fetch Squarespace Blog & Event Collections to Google Sheets
 
-> ⚡ **655 views** · 🔧 [Miscellaneous](../)
+> ⚡ **704 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 Create multiple JSON items from an array
 
-> ⚡ **2,730 views** · 🔧 [Miscellaneous](../)
+> ⚡ **2,752 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

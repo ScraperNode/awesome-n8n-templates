@@ -1,6 +1,6 @@
 # 🤝 CallForge - 06 - Automate sales insights with Gong.io, Notion & AI
 
-> ⚡ **1,944 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,005 views** · 🤝 [CRM & Sales Operations](../)
 
 > 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
 >

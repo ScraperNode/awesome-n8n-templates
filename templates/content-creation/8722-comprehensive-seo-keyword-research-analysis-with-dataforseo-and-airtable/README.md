@@ -1,6 +1,6 @@
 # 🎬 Comprehensive SEO keyword research & analysis with DataForSEO and Airtable
 
-> ⚡ **1,576 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,815 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

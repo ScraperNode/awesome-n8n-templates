@@ -1,6 +1,6 @@
 # 💬 Retrieve answers from Knowledge Base with InfraNodus GraphRAG chatbot
 
-> ⚡ **120 views** · 💬 [Support Chatbots](../)
+> ⚡ **200 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

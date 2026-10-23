@@ -1,6 +1,6 @@
 # ⚒️ 🛠️ AWS Transcribe Tool MCP server 💪 all operations
 
-> ⚡ **447 views** · ⚒️ [Engineering](../)
+> ⚡ **480 views** · ⚒️ [Engineering](../)
 
 ## Description
 

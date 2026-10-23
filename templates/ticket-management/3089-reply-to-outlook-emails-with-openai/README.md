@@ -1,6 +1,6 @@
 # 🎫 Reply to Outlook emails with OpenAI
 
-> ⚡ **27,368 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **29,225 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

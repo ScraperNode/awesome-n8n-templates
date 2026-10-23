@@ -1,6 +1,6 @@
 # ⚙️ Watchdog: Auto Resume Workflows
 
-> ⚡ **1,057 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,198 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

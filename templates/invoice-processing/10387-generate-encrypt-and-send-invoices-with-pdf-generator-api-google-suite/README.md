@@ -1,6 +1,6 @@
 # 🧾 Generate, encrypt, and send invoices with PDF Generator API & Google Suite
 
-> ⚡ **244 views** · 🧾 [Invoice Processing](../)
+> ⚡ **328 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

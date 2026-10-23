@@ -1,6 +1,6 @@
 # 🔒 Generate, retrieve and download a report using the SecurityScorecard
 
-> ⚡ **2,004 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,135 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

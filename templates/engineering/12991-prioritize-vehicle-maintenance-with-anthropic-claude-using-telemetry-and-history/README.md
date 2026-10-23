@@ -1,6 +1,6 @@
 # ⚒️ Prioritize vehicle maintenance with Anthropic Claude using telemetry and history
 
-> ⚡ **34 views** · ⚒️ [Engineering](../)
+> ⚡ **96 views** · ⚒️ [Engineering](../)
 
 ## Description
 

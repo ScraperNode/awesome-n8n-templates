@@ -1,6 +1,6 @@
 # 📊 Collect & store restaurant customer feedback with Google Sheets and email forms
 
-> ⚡ **990 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,192 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

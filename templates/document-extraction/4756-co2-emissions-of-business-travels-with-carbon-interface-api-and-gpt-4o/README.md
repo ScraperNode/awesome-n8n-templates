@@ -1,6 +1,6 @@
 # 🔬 ✈️ CO2 emissions of business travels with Carbon Interface API and GPT-4o
 
-> ⚡ **351 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **379 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤖 LINE BOT - Google Sheets file lookup with AI agent
 
-> ⚡ **1,031 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **1,167 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

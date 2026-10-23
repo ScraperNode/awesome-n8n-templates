@@ -1,6 +1,6 @@
 # ⚡ On-demand email newsletter summaries from Gmail to Telegram with GPT-4.1-mini
 
-> ⚡ **686 views** · ⚡ [Personal Productivity](../)
+> ⚡ **815 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

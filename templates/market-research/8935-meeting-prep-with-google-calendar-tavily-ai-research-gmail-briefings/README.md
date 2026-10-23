@@ -1,6 +1,6 @@
 # 📊 Meeting prep with Google Calendar, Tavily AI Research & Gmail Briefings
 
-> ⚡ **112 views** · 📊 [Market Research & Insights](../)
+> ⚡ **132 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

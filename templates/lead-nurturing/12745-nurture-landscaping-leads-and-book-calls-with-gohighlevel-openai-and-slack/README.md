@@ -1,6 +1,6 @@
 # 💬 Nurture landscaping leads and book calls with GoHighLevel, OpenAI and Slack
 
-> ⚡ **37 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **134 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

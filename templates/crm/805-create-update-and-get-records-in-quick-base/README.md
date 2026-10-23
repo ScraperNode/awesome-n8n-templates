@@ -1,6 +1,6 @@
 # 🤝 Create, update and get records in Quick Base
 
-> ⚡ **660 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **721 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

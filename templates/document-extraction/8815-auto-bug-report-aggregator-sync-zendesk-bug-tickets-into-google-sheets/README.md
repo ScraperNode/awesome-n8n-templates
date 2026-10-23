@@ -1,6 +1,6 @@
 # 🔬 Auto bug report aggregator: Sync Zendesk bug tickets into Google Sheets
 
-> ⚡ **78 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **109 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

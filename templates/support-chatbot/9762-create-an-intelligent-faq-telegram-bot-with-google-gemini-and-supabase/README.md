@@ -1,6 +1,6 @@
 # 💬 Create an intelligent FAQ Telegram bot with Google Gemini and Supabase
 
-> ⚡ **333 views** · 💬 [Support Chatbots](../)
+> ⚡ **418 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

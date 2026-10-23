@@ -1,6 +1,6 @@
 # 🎬 Create consistent AI characters with Google Nano Banana & upscaling via Kie.ai
 
-> ⚡ **1,788 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,013 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

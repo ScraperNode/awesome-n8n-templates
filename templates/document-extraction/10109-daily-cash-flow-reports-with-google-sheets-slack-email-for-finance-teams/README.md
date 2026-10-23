@@ -1,6 +1,6 @@
 # 🔬 Daily cash flow reports with Google Sheets, Slack & Email for finance teams
 
-> ⚡ **870 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,373 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

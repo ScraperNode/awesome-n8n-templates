@@ -1,6 +1,6 @@
 # 🧾 Create or find Stripe customers and automatically generate invoices
 
-> ⚡ **513 views** · 🧾 [Invoice Processing](../)
+> ⚡ **527 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 AI Shopify product descriptions: GPT-4o Vision + Claude + Analytics
 
-> ⚡ **1,228 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,588 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

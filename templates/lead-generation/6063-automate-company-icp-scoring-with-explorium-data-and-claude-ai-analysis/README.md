@@ -1,6 +1,6 @@
 # 🎣 Automate company ICP scoring with Explorium data and Claude AI analysis
 
-> ⚡ **463 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **536 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

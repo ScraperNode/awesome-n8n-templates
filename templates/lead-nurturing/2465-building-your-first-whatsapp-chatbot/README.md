@@ -1,6 +1,6 @@
 # 💬 Building your first WhatsApp chatbot
 
-> ⚡ **474,783 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **541,679 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

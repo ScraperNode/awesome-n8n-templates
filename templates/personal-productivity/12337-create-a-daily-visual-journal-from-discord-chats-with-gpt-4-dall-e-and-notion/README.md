@@ -1,6 +1,6 @@
 # ⚡ Create a daily visual journal from Discord chats with GPT-4, DALL-E and Notion
 
-> ⚡ **36 views** · ⚡ [Personal Productivity](../)
+> ⚡ **133 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Create, update, and get an item from Webflow
 
-> ⚡ **1,618 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,607 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

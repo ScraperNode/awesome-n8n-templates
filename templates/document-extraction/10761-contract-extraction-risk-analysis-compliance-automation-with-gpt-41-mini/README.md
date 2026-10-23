@@ -1,6 +1,6 @@
 # 🔬 Contract extraction, risk analysis & compliance automation with GPT-4.1 Mini
 
-> ⚡ **413 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **510 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

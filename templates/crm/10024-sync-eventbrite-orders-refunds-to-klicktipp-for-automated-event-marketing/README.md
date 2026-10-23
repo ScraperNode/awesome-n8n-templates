@@ -1,6 +1,6 @@
 # 🤝 Sync Eventbrite orders & refunds to KlickTipp for automated event marketing
 
-> ⚡ **97 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **139 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

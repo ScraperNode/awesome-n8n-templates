@@ -1,6 +1,6 @@
 # 🎬 Automate content generator for WordPress with DeepSeek R1
 
-> ⚡ **46,712 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **46,707 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

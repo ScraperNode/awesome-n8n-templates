@@ -1,6 +1,6 @@
 # 💬 Telegram support bot with OpenAI, Pinecone and human expert escalation
 
-> ⚡ **137 views** · 💬 [Support Chatbots](../)
+> ⚡ **216 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

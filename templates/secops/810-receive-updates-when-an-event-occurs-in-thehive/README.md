@@ -1,6 +1,6 @@
 # 🔒 Receive updates when an event occurs in TheHive
 
-> ⚡ **1,005 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,013 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

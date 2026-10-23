@@ -1,6 +1,6 @@
 # 🔬 Evaluate automotive component compliance with OpenAI GPT-4.1 and regulatory APIs
 
-> ⚡ **23 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **92 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

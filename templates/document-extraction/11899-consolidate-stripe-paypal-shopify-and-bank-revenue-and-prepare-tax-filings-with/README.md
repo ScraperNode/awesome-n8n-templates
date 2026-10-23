@@ -1,6 +1,6 @@
 # 🔬 Consolidate Stripe, PayPal, Shopify and bank revenue and prepare tax filings with OpenAI
 
-> ⚡ **160 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **260 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

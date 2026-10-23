@@ -1,6 +1,6 @@
 # ⚡ Add a song to your Spotify queue
 
-> ⚡ **1,323 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,331 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

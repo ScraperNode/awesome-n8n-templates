@@ -1,6 +1,6 @@
 # ⚡ Sort Gmail emails with GPT-4o into action required and no action labels
 
-> ⚡ **1,521 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,649 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Extract invoice data from scanned PDFs to Google Sheets with Sarvam and Gemini
 
-> ⚡ **72 views** · 🧾 [Invoice Processing](../)
+> ⚡ **185 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ 🚨 Report n8n workflow errors directly to your email
 
-> ⚡ **1,879 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,068 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

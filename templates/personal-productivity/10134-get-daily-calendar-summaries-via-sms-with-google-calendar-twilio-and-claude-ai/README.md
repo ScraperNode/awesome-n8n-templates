@@ -1,6 +1,6 @@
 # ⚡ Get daily calendar summaries via SMS with Google Calendar, Twilio and Claude AI
 
-> ⚡ **619 views** · ⚡ [Personal Productivity](../)
+> ⚡ **802 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

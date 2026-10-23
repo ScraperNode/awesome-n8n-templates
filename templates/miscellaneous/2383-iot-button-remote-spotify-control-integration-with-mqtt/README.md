@@ -1,6 +1,6 @@
 # 🔧 IOT button remote / Spotify control integration with MQTT
 
-> ⚡ **4,073 views** · 🔧 [Miscellaneous](../)
+> ⚡ **4,175 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

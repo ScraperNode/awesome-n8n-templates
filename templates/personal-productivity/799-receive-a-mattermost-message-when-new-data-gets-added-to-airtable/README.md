@@ -1,6 +1,6 @@
 # ⚡ Receive a Mattermost message when new data gets added to Airtable
 
-> ⚡ **821 views** · ⚡ [Personal Productivity](../)
+> ⚡ **823 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

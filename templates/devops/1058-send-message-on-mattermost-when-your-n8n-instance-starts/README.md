@@ -1,6 +1,6 @@
 # ⚙️ Send message on Mattermost when your n8n instance starts
 
-> ⚡ **1,426 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,500 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

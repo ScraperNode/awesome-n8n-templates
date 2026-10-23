@@ -1,6 +1,6 @@
 # 🤝 🛠️ QuickBooks Online tool MCP Server 💪 all 42 operations
 
-> ⚡ **388 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **499 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

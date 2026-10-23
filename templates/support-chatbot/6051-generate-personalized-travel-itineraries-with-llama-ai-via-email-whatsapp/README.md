@@ -1,6 +1,6 @@
 # 💬 Generate personalized travel itineraries with Llama AI via email & WhatsApp
 
-> ⚡ **1,071 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,181 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

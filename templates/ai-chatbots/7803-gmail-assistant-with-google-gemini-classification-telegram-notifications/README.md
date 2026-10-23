@@ -1,6 +1,6 @@
 # 🤖 Gmail assistant with Google Gemini classification & Telegram notifications
 
-> ⚡ **329 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **404 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

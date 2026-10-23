@@ -1,6 +1,6 @@
 # 🎬 Generate text images from the Free DummyJSON API using the HTTP request node
 
-> ⚡ **4,846 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,080 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

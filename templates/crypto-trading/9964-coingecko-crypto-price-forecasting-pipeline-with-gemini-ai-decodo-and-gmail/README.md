@@ -1,6 +1,6 @@
 # 📈 CoinGecko crypto price forecasting pipeline with Gemini AI, Decodo, and Gmail
 
-> ⚡ **149 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **188 views** · 📈 [Crypto Trading & Stock Market](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -8,27 +8,29 @@
 
 ## Description
 
-## Automated Crypto Forecast Pipeline using Decodo and Gmail
-
+## Quick overview
 Sign Up for Decodo [HERE](https://visit.decodo.com/discount) for discount
 
 This template scrapes CoinGecko pages for selected coins, converts metrics into clean JSON, stores them in an n8n Data Table, generates 24-hour direction forecasts with Gemini, and emails a concise report.
 
-## Who’s it for?
-Crypto watchers who want automated snapshots, forecasts, and a daily email—without managing a full data stack.
-
 ## How it works
-1. 30-min schedule loops coins, scrapes CoinGecko (Decodo), parses metrics, and upserts to Data Table.
-2. 18:00 schedule loads last 48h data.
-3. Gemini estimates next-24h direction windows.
-4. Email is rendered (HTML + plain text) and sent.
+1. A 30-minute schedule loops through configured coins, scrapes live metrics from CoinGecko via Decodo, parses the data, and upserts each record to the n8n Data Table.
+2. A separate 18:00 daily schedule loads the last 48 hours of stored coin data from the Data Table for analysis.
+3. Gemini AI processes the historical data and estimates directional price movement windows for the next 24 hours per coin.
+4. A formatted email containing both HTML and plain text versions is rendered and sent automatically to the configured recipient.
 
-## How to set up
-- Add [Decodo](https://visit.decodo.com/discount), Gmail, and Gemini credentials.
-- Open **Configure Coins** to edit tickers.
-- Set Data Table ID.
-- Replace recipient email.
-- (Self-host only) Community node **Decodo** required. @decodo/n8n-nodes-decodo (community)
+## Setup
+1. Add your Decodo, Gmail, and Gemini credentials in the n8n Credential Manager before activating either schedule trigger.
+2. Open the Configure Coins node and edit the ticker list to match the coins you want to track and analyze.
+3. Set your target Data Table ID in the relevant node so scraped metrics are upserted to the correct table.
+4. Replace the placeholder recipient email address with your actual email in the send node.
+5. If self-hosting, install the Decodo community node manually via npm: @decodo/n8n-nodes-decodo before activating the workflow.
+
+## Additional info
+Published by Fahmi Fahreza, Indonesia’s first official n8n Brand Ambassador and founder of WithMi Automation, built from real client implementations, not tutorials.
+→ Let us build it for you: withmiautomation.com
+→ Learn to build it yourself: academy.withmiautomation.com
+→ Bring Fahmi to your team (training, workshop, talkshow): fahmiiireza.com
 
 ## 🔗 Nodes Used
 

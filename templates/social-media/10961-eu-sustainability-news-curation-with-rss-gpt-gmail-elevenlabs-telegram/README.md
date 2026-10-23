@@ -1,6 +1,6 @@
 # 📱 📰 EU sustainability news curation with RSS, GPT, Gmail, ElevenLabs & Telegram
 
-> ⚡ **250 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **312 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

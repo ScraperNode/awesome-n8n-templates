@@ -1,0 +1,327 @@
+{
+  "id": "lzbVE5O9z8GdHil40ueWw",
+  "meta": {
+    "instanceId": "0d23259f4fbaf117ab30b859178c521571b391eb44ca65787327de7e24a9730b",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Database Health Check",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "deed5d0d-67df-488b-8ce6-b91dd55240c1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -688,
+        -16
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7,
+              "triggerAtMinute": 2
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "aaf6c50a-19ba-498d-883c-9bc0039a6d33",
+      "name": "top slow queries",
+      "type": "n8n-nodes-base.microsoftSql",
+      "position": [
+        -256,
+        -240
+      ],
+      "parameters": {
+        "query": "SELECT TOP 10\n  SUBSTRING(st.text, (qs.statement_start_offset/2)+1,\n    ((CASE qs.statement_end_offset\n      WHEN -1 THEN DATALENGTH(st.text)\n      ELSE qs.statement_end_offset\n    END - qs.statement_start_offset)/2)+1\n  ) AS query_text,\n  qs.execution_count,\n  ROUND(qs.total_worker_time / qs.execution_count / 1000.0, 2)\n    AS avg_cpu_ms,\n  ROUND(qs.total_elapsed_time / qs.execution_count / 1000.0, 2)\n    AS avg_elapsed_ms,\n  ROUND(qs.total_logical_reads / qs.execution_count * 1.0, 0)\n    AS avg_logical_reads,\n  qs.total_logical_reads,\n  DB_NAME(st.dbid) AS database_name\nFROM sys.dm_exec_query_stats qs\nCROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) st\nWHERE qs.execution_count > 5\n  AND st.dbid = DB_ID()\nORDER BY avg_cpu_ms DESC;",
+        "operation": "executeQuery"
+      },
+      "credentials": {
+        "microsoftSql": {
+          "id": "credential-id",
+          "name": "Databse"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "601f5274-b77e-432e-a33a-a14ea390c047",
+      "name": " missing indexes",
+      "type": "n8n-nodes-base.microsoftSql",
+      "position": [
+        -256,
+        -96
+      ],
+      "parameters": {
+        "query": "SELECT TOP 15\n  ROUND(migs.avg_total_user_cost *\n    migs.avg_user_impact * (migs.user_seeks + migs.user_scans),\n    0) AS improvement_score,\n  ROUND(migs.avg_user_impact, 1) AS avg_impact_pct,\n  migs.user_seeks,\n  migs.user_scans,\n  mid.statement AS table_name,\n  mid.equality_columns,\n  mid.inequality_columns,\n  mid.included_columns\nFROM sys.dm_db_missing_index_groups mig\nJOIN sys.dm_db_missing_index_group_stats migs\n  ON migs.group_handle = mig.index_group_handle\nJOIN sys.dm_db_missing_index_details mid\n  ON mig.index_handle = mid.index_handle\nWHERE mid.database_id = DB_ID()\nORDER BY improvement_score DESC;",
+        "operation": "executeQuery"
+      },
+      "credentials": {
+        "microsoftSql": {
+          "id": "credential-id",
+          "name": "Databse"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "d7b9ae4d-1cf0-439a-a7de-01ce948f75a6",
+      "name": "index fragmentation",
+      "type": "n8n-nodes-base.microsoftSql",
+      "position": [
+        -256,
+        48
+      ],
+      "parameters": {
+        "query": "SELECT\n  OBJECT_NAME(ips.object_id) AS table_name,\n  i.name AS index_name,\n  ips.index_type_desc,\n  ROUND(ips.avg_fragmentation_in_percent, 1)\n    AS fragmentation_pct,\n  ips.page_count,\n  CASE\n    WHEN ips.avg_fragmentation_in_percent > 30 THEN 'REBUILD'\n    WHEN ips.avg_fragmentation_in_percent > 10 THEN 'REORGANIZE'\n    ELSE 'OK'\n  END AS recommendation\nFROM sys.dm_db_index_physical_stats(\n  DB_ID(), NULL, NULL, NULL, 'LIMITED'\n) ips\nJOIN sys.indexes i\n  ON ips.object_id = i.object_id\n  AND ips.index_id = i.index_id\nWHERE ips.page_count > 100\n  AND ips.avg_fragmentation_in_percent > 10\n  AND i.name IS NOT NULL\nORDER BY fragmentation_pct DESC;",
+        "operation": "executeQuery"
+      },
+      "credentials": {
+        "microsoftSql": {
+          "id": "credential-id",
+          "name": "Databse"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "9fb82af6-27cc-4326-ad1a-465ac744ecb0",
+      "name": "blocking & wait stats",
+      "type": "n8n-nodes-base.microsoftSql",
+      "position": [
+        -256,
+        192
+      ],
+      "parameters": {
+        "query": "SELECT TOP 10\n  wait_type,\n  ROUND(wait_time_ms / 1000.0, 1) AS wait_time_sec,\n  ROUND(signal_wait_time_ms / 1000.0, 1) AS signal_wait_sec,\n  waiting_tasks_count,\n  ROUND(\n    wait_time_ms * 100.0 /\n    SUM(wait_time_ms) OVER(), 2\n  ) AS pct_of_total\nFROM sys.dm_os_wait_stats\nWHERE wait_type NOT IN (\n  'SLEEP_TASK','BROKER_TO_FLUSH','BROKER_TASK_STOP',\n  'CLR_AUTO_EVENT','DISPATCHER_QUEUE_SEMAPHORE',\n  'FT_IFTS_SCHEDULER_IDLE_WAIT','HADR_FILESTREAM_IOMGR_IOCOMPLETION',\n  'HADR_WORK_QUEUE','LAZYWRITER_SLEEP','LOGMGR_QUEUE',\n  'REQUEST_FOR_DEADLOCK_SEARCH','RESOURCE_QUEUE',\n  'SERVER_IDLE_CHECK','SLEEP_DBSTARTUP','SLEEP_DBRECOVER',\n  'SLEEP_MASTERDBREADY','SLEEP_MASTERMDREADY',\n  'SLEEP_MASTERUPGRADED','SLEEP_MSDBSTARTUP',\n  'SLEEP_SYSTEMTASK','SLEEP_TEMPDBSTARTUP',\n  'SNI_HTTP_ACCEPT','SP_SERVER_DIAGNOSTICS_SLEEP',\n  'SQLTRACE_BUFFER_FLUSH','SQLTRACE_INCREMENTAL_FLUSH_SLEEP',\n  'WAIT_XTP_OFFLINE_CKPT_NEW_LOG','WAITFOR',\n  'XE_DISPATCHER_WAIT','XE_TIMER_EVENT',\n  'BROKER_EVENTHANDLER','CHECKPOINT_QUEUE',\n  'DBMIRROR_EVENTS_QUEUE','SQLTRACE_WAIT_ENTRIES',\n  'WAIT_XTP_CKPT_CLOSE'\n)\nORDER BY wait_time_ms DESC;",
+        "operation": "executeQuery"
+      },
+      "credentials": {
+        "microsoftSql": {
+          "id": "credential-id",
+          "name": "Databse"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "d8df7d5a-d3f0-4e2b-8407-e405632ffb60",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        128,
+        -48
+      ],
+      "parameters": {
+        "mode": "combineBySql",
+        "options": {},
+        "numberInputs": 4
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "15997b43-1b65-4bc6-a590-a511c6a43fea",
+      "name": "Code in JavaScript",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        352,
+        -16
+      ],
+      "parameters": {
+        "jsCode": "const allItems = $input.all();\n\nconst slowQ   = allItems.filter(i => i.json.avg_cpu_ms !== undefined);\nconst missIdx = allItems.filter(i => i.json.improvement_score !== undefined);\nconst fragIdx = allItems.filter(i => i.json.fragmentation_pct !== undefined);\nconst waits   = allItems.filter(i => i.json.pct_of_total !== undefined);\n\nconst issues = [];\n\nfor (const row of slowQ) {\n  const d = row.json;\n  if (d.avg_cpu_ms > 500) {\n    issues.push({\n      severity: d.avg_cpu_ms > 3000 ? 'critical' : 'warning',\n      type: 'Slow query',\n      detail: `avg ${d.avg_cpu_ms}ms CPU \u2014 ${String(d.query_text).slice(0, 100)}...`,\n    });\n  }\n}\n\nfor (const row of missIdx) {\n  const d = row.json;\n  if (d.improvement_score > 100000) {\n    issues.push({\n      severity: d.improvement_score > 500000 ? 'critical' : 'warning',\n      type: 'Missing index',\n      detail: `${d.table_name} \u2014 score ${d.improvement_score}, impact ${d.avg_impact_pct}%`,\n    });\n  }\n}\n\nfor (const row of fragIdx) {\n  const d = row.json;\n  if (d.recommendation === 'REBUILD' || d.recommendation === 'REORGANIZE') {\n    issues.push({\n      severity: d.recommendation === 'REBUILD' ? 'critical' : 'warning',\n      type: `Index ${d.recommendation.toLowerCase()}`,\n      detail: `${d.table_name}.${d.index_name} \u2014 ${d.fragmentation_pct}% fragmented`,\n    });\n  }\n}\n\nfor (const row of waits.slice(0, 3)) {\n  const d = row.json;\n  if (d.pct_of_total > 20) {\n    issues.push({\n      severity: d.pct_of_total > 40 ? 'critical' : 'warning',\n      type: 'High wait type',\n      detail: `${d.wait_type} \u2014 ${d.pct_of_total}% of all waits (${d.wait_time_sec}s)`,\n    });\n  }\n}\n\nconst hasCritical = issues.some(i => i.severity === 'critical');\nconst hasIssues   = issues.length > 0;\n\nconst rows = issues.map(i => `\n  <tr>\n    <td style=\"padding:6px 10px;color:${\n      i.severity === 'critical' ? '#A32D2D' : '#854F0B'\n    };font-weight:500\">${i.severity.toUpperCase()}</td>\n    <td style=\"padding:6px 10px\">${i.type}</td>\n    <td style=\"padding:6px 10px;font-family:monospace;font-size:12px\">${i.detail}</td>\n  </tr>`).join('');\n\nconst emailHtml = `\n<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width\">\n<style>\n  body{margin:0;padding:20px;background:#f0f0ed;font-family:-apple-system,'Segoe UI',sans-serif}\n  .wrap{max-width:640px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e0ddd6}\n  .hdr{background:#0f1117;padding:28px 32px 24px}\n  .hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}\n  .logo{font-size:13px;font-weight:600;color:#fff;letter-spacing:.04em;opacity:.9}\n  .hdr-date{font-size:12px;color:#888}\n  .hdr h1{font-size:22px;font-weight:600;color:#fff;margin:0 0 6px}\n  .hdr p{font-size:13px;color:#9ca3af;margin:0}\n  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:20px 32px;background:#f8f7f4;border-bottom:1px solid #e8e6e0}\n  .stat{background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e8e6e0}\n  .slabel{font-size:11px;color:#888;font-weight:500;margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em}\n  .sval{font-size:20px;font-weight:600;color:#0f1117;line-height:1}\n  .sval.red{color:#c0392b}.sval.amber{color:#b7600a}.sval.green{color:#1a7a4a}\n  .sec-label{font-size:11px;font-weight:600;color:#888;letter-spacing:.08em;text-transform:uppercase;padding:20px 32px 10px}\n  table{width:100%;border-collapse:collapse}\n  thead tr{background:#f8f7f4}\n  th{font-size:11px;font-weight:600;color:#888;letter-spacing:.06em;text-transform:uppercase;padding:10px 16px;text-align:left;border-bottom:1px solid #e8e6e0}\n  td{padding:13px 16px;border-bottom:1px solid #f0ede8;vertical-align:middle;font-size:13px;color:#333}\n  tr:last-child td{border-bottom:none}\n  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px}\n  .bc{background:#fdf0f0;color:#c0392b;border:1px solid #f5c6c6}\n  .bw{background:#fef8ed;color:#b7600a;border:1px solid #f5dfa0}\n  .dot{width:6px;height:6px;border-radius:50%;display:inline-block}\n  .dc{background:#c0392b}.dw{background:#e67e22}\n  .chip{display:inline-block;font-size:11px;font-weight:500;padding:2px 8px;border-radius:6px;background:#f0f0ed;color:#444}\n  .mono{font-family:'Consolas',monospace;font-size:12px;color:#555}\n  .rec{margin:0 32px 24px;border-radius:8px;background:#fffbf0;border:1px solid #f5dfa0;padding:14px 16px}\n  .rec-title{font-size:11px;font-weight:600;color:#b7600a;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}\n  .rec-item{font-size:12px;color:#666;margin-bottom:4px;line-height:1.6;padding-left:12px;position:relative}\n  .footer{padding:20px 32px;background:#f8f7f4;border-top:1px solid #e8e6e0;display:flex;align-items:center;justify-content:space-between}\n  .ftext{font-size:11px;color:#aaa}\n</style>\n</head>\n<body>\n<div class=\"wrap\">\n  <div class=\"hdr\">\n    <div class=\"hdr-top\">\n      <span class=\"logo\">DB MONITOR</span>\n      <span class=\"hdr-date\">${new Date().toDateString()}</span>\n    </div>\n    <h1>SQL Server health report</h1>\n    <p>Weekly diagnostic &mdash; ${issues.length} issue${issues.length!==1?'s':''} found across 4 checks</p>\n  </div>\n\n  <div class=\"stats\">\n    <div class=\"stat\"><div class=\"slabel\">Total issues</div><div class=\"sval red\">${issues.length}</div></div>\n    <div class=\"stat\"><div class=\"slabel\">Critical</div><div class=\"sval red\">${issues.filter(i=>i.severity==='critical').length}</div></div>\n    <div class=\"stat\"><div class=\"slabel\">Warnings</div><div class=\"sval amber\">${issues.filter(i=>i.severity==='warning').length}</div></div>\n    <div class=\"stat\"><div class=\"slabel\">DB checked</div><div class=\"sval green\">1</div></div>\n  </div>\n\n  <div class=\"sec-label\">Issues detected</div>\n  <table>\n    <thead><tr>\n      <th style=\"width:90px\">Severity</th>\n      <th style=\"width:140px\">Type</th>\n      <th>Detail</th>\n    </tr></thead>\n    <tbody>\n      ${issues.map(i=>`\n      <tr>\n        <td><span class=\"badge ${i.severity==='critical'?'bc':'bw'}\"><span class=\"dot ${i.severity==='critical'?'dc':'dw'}\"></span>${i.severity}</span></td>\n        <td><span class=\"chip\">${i.type}</span></td>\n        <td class=\"mono\">${i.detail}</td>\n      </tr>`).join('')}\n    </tbody>\n  </table>\n\n  ${issues.length ? `\n  <div class=\"rec\" style=\"margin-top:20px\">\n    <div class=\"rec-title\">Recommended actions</div>\n    ${issues.some(i=>i.type==='Index rebuild')    ?'<div class=\"rec-item\">Run ALTER INDEX ... REBUILD on indexes above 30% fragmentation</div>':''}\n    ${issues.some(i=>i.type==='Index reorganize') ?'<div class=\"rec-item\">Run ALTER INDEX ... REORGANIZE on indexes between 10\u201330%</div>':''}\n    ${issues.some(i=>i.type==='Missing index')    ?'<div class=\"rec-item\">Review missing index suggestions \u2014 create highest-score indexes first</div>':''}\n    ${issues.some(i=>i.type==='Slow query')       ?'<div class=\"rec-item\">Inspect slow query execution plans in SSMS</div>':''}\n    ${issues.some(i=>i.type==='High wait type')   ?'<div class=\"rec-item\">Investigate high wait types \u2014 check disk I/O and memory pressure</div>':''}\n  </div>` : ''}\n\n  <div class=\"footer\">\n    <span class=\"ftext\">Generated by n8n &mdash; SQL Server health monitor</span>\n    <span class=\"ftext\">${new Date().toISOString()}</span>\n  </div>\n</div>\n</body>\n</html>`;\n\nreturn [{ json: { issues, hasIssues, hasCritical, emailHtml } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "62923c71-7d64-4016-b720-8ae1e8bfdd0c",
+      "name": "Send email",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        528,
+        -16
+      ],
+      "webhookId": "b0f25055-dd29-405b-b80d-9184c02f9bcb",
+      "parameters": {
+        "html": "={{ $json.emailHtml }}",
+        "options": {},
+        "subject": "SQL Server health",
+        "toEmail": "user@example.com",
+        "fromEmail": "user@example.com"
+      },
+      "credentials": {
+        "smtp": {
+          "id": "credential-id",
+          "name": "Email"
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "323776ae-aa8a-4d7d-9cfb-90cf5efaf924",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1200,
+        -304
+      ],
+      "parameters": {
+        "width": 464,
+        "height": 688,
+        "content": "### \ud83d\udccb SQL Server Automated Health Monitor \u2192 Weekly Email\n\nWho's it for: SQL Server developers and DBAs who want automated weekly diagnostics without manual querying or expensive monitoring tools.\n\nWhat it does: Runs 4 diagnostic queries against SQL Server DMVs every Monday, scores findings by severity, and sends a formatted HTML email report \u2014 only when issues are detected.\n\nHow it works:\n\n1. Schedule Trigger fires every Monday at 7 AM.\n\n2. 4 SQL nodes run in parallel \u2014 slow queries, missing indexes, index fragmentation, wait stats.\n\n3. Merge node combines all results into a single stream.\n\n4. Code node filters by field signature, scores severity (critical/warning), and builds the HTML email.\n\n5. Send Email dispatches the report only when issues exist.\n\n\u2699\ufe0f Setup required:\n\n\u2022 Add MSSQL credential with VIEW SERVER STATE permission\n\n\u2022 Add SMTP or Gmail credential for email\n\n\u2022 Adjust severity thresholds in the Code node to match your workload"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f8b52b71-5a1a-4533-bbad-2d85ea2c1dc3",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -416,
+        -736
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 480,
+        "height": 336,
+        "content": "#### SQL Query nodes\n\n**top slow queries MSSQL**\n\nQueries sys.dm_exec_query_stats + sys.dm_exec_sql_text to find the 10 queries with highest average CPU time. Filters to queries with more than 5 executions. No extension needed \u2014 available on SQL Server 2008+.\n\n**missing indexes MSSQL**\n\nQueries sys.dm_db_missing_index_details + sys.dm_db_missing_index_group_stats. SQL Server's optimizer tracks indexes it wishes existed \u2014 this surfaces them ranked by estimated improvement score."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "32f761f4-fbf2-4aef-91d2-afd040436572",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -416,
+        528
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 480,
+        "height": 304,
+        "content": "#### SQL Query nodes\n\n**index fragmentation MSSQL**\n\nQueries sys.dm_db_index_physical_stats in LIMITED mode. Returns indexes above 10% fragmentation with a REBUILD or REORGANIZE recommendation automatically calculated.\n\n**blocking & wait stats MSSQL**\n\nQueries sys.dm_os_wait_stats for the top 10 wait types, pre-filtered to exclude idle system waits. Flags any wait type consuming more than 20% of total server wait time."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "db168b4c-8052-442d-86ef-efa83f0977f8",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        336,
+        -432
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 320,
+        "height": 320,
+        "content": "#### Email template and notification\n\nUses $input.all() to receive merged rows. Identifies each query's rows by unique field signatures (avg_cpu_ms, improvement_score, fragmentation_pct, pct_of_total)\n\nSends the HTML report via SMTP or Gmail. Subject line dynamically includes [CRITICAL] or [WARNING] prefix based on highest severity found. Only fires when hasIssues === true \u2014 no email on clean runs."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "db644cc5-0929-425e-92ef-98f1028783ac",
+  "connections": {
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    " missing indexes": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "top slow queries",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "blocking & wait stats",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "index fragmentation",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": " missing indexes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "top slow queries": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "index fragmentation": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "blocking & wait stats": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    }
+  }
+}

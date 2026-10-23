@@ -1,6 +1,6 @@
 # 📈 Binance SM 15min indicators tool
 
-> ⚡ **5,429 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **5,733 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

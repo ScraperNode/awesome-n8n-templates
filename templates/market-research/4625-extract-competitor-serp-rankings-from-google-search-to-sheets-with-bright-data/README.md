@@ -1,6 +1,6 @@
 # 📊 Extract competitor SERP rankings from Google Search to Sheets with Bright Data
 
-> ⚡ **832 views** · 📊 [Market Research & Insights](../)
+> ⚡ **944 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

@@ -1,6 +1,6 @@
 # 📱 Check if a Twitch stream is live
 
-> ⚡ **2,207 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,402 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

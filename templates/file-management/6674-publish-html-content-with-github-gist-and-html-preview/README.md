@@ -1,6 +1,6 @@
 # 📁 Publish HTML content with GitHub Gist and HTML preview
 
-> ⚡ **176 views** · 📁 [File Management](../)
+> ⚡ **218 views** · 📁 [File Management](../)
 
 ## Description
 

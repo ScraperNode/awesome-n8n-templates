@@ -1,6 +1,6 @@
 # 🔬 Track monthly OpenAI token usage with Google Sheets and Gmail reports
 
-> ⚡ **105 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **165 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

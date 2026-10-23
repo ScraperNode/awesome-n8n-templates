@@ -1,6 +1,6 @@
 # 📋 Notion status-based alert messages (Slack, Telegram, WhatsApp, Discord, Email)
 
-> ⚡ **496 views** · 📋 [Project Management](../)
+> ⚡ **536 views** · 📋 [Project Management](../)
 
 ## Description
 

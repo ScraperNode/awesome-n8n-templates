@@ -1,6 +1,6 @@
 # 📊 ✍️ Blog image SEO & size auditor with Ghost and Google Sheets
 
-> ⚡ **877 views** · 📊 [Market Research & Insights](../)
+> ⚡ **930 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Send automated invoice payment reminders with Gmail, Google Sheets and Twilio
 
-> ⚡ **122 views** · 🧾 [Invoice Processing](../)
+> ⚡ **228 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

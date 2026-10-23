@@ -1,6 +1,6 @@
 # 💬 Weekly client re-engagement system with GoHighLevel, Gmail, Sheets, and Slack
 
-> ⚡ **299 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **367 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

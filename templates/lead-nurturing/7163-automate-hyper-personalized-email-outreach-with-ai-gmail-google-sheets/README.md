@@ -1,6 +1,6 @@
 # 💬 Automate hyper-personalized email outreach with AI, Gmail & Google Sheets
 
-> ⚡ **10,766 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **11,638 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

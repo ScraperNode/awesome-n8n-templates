@@ -1,6 +1,6 @@
 # 📱 AI-powered news monitoring & social post generator with OpenAI and Upload-Post
 
-> ⚡ **1,740 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,540 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

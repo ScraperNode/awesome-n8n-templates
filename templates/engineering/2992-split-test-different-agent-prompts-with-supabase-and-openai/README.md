@@ -1,6 +1,6 @@
 # ⚒️ Split test different agent prompts with Supabase and OpenAI
 
-> ⚡ **8,113 views** · ⚒️ [Engineering](../)
+> ⚡ **8,046 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 Deliver daily currency exchange rates from CurrencyFreaks API to email & WhatsApp
 
-> ⚡ **382 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **515 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

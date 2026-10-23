@@ -1,6 +1,6 @@
 # 🔧 🧑‍🎓 Test Your JSON Skills with Interactive Challenges and Instant Feedback
 
-> ⚡ **5,311 views** · 🔧 [Miscellaneous](../)
+> ⚡ **6,556 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Build an intelligent Q&A bot with Lookio Knowledge Base and GPT
 
-> ⚡ **422 views** · 💬 [Support Chatbots](../)
+> ⚡ **574 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,0 +1,2351 @@
+{
+  "id": "ZyrZzILSLQ7WTdHs",
+  "meta": {
+    "instanceId": "8443f10082278c46aa5cf3acf8ff0f70061a2c58bce76efac814b16290845177"
+  },
+  "name": "Tally <> GoHighLevel & Google Sheets Sync - Ledgers, Outstanding Balances & Customer Records",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "b81e4a3d-3742-4fb0-b58a-5dd1962ec336",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2784,
+        320
+      ],
+      "parameters": {
+        "width": 988,
+        "height": 860,
+        "content": "# Tally <> GoHighLevel + Google Sheets Sync (ledgers, outstanding & customer records)\n\nSales lives in GoHighLevel, the money lives in Tally, and the two drift apart within a week: reps chase customers who already paid, credit-hold customers get new orders, and new customers never make it into Tally. This workflow keeps them in step, with Tally as the financial source of truth and a human approval step before anything is written into the books.\n\n## How it works\n1. **Apply approved changes first.** Rows your accountant marked **Approved** in the Tally Change Queue are turned into Tally import XML (new ledgers, contact updates, receipt vouchers), posted to Tally, and the response is written back.\n2. **Export from Tally** over its XML/HTTP interface: all debtor ledgers (with GUID and ALTERID) and the Bills Receivable report.\n3. **Read GoHighLevel**: contacts and recent successful payments, via the API v2 with pagination.\n4. **Sync engine** links ledgers to contacts (saved link, then email, phone, company name), computes balance, overdue, aging buckets and credit status per customer, and does a **three-way merge** of email and phone using the last agreed value, so edits on either side flow the right way and edits on both sides become conflicts instead of overwrites.\n5. **Tally -> GHL (automatic):** custom fields, AR tags (current, overdue 30/60/90, credit hold, advance) and new contacts for ledgers not in GHL. Only changed values are sent.\n6. **GHL -> Tally (approval):** new customer ledgers, contact edits and receipt vouchers for GHL payments (matched to the open bill when possible) go to the queue.\n7. **Sheets mirror + Slack:** Customers, Bills (with cleared bills), Conflicts and the queue. Slack is only pinged when a person needs to act.\n\n## Setup steps\n1. Tally Prime: F1 Help > Settings > Connectivity, enable **Client/Server = Both** on port 9000, keep the company open. n8n must reach that machine (same network, VPN or a tunnel).\n2. Create a Sheet with tabs **Customers, Bills, Tally Change Queue, Conflicts** (headers in the notes) and paste the ID into every Sheets node.\n3. Connect a **HighLevel OAuth2** credential (contacts and payments scopes) in the GHL nodes, plus Google Sheets and Slack.\n4. In GHL create the custom fields listed in **Set Sync Rules** and paste their IDs, plus your location ID, Tally URL, company and receipt bank ledger.\n5. Test against a **copy of your Tally company** first. Keep autoApproveTallyWrites off."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c798b773-6eff-4b04-8be0-9ac4d85c9fdd",
+      "name": "Section - Rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1680,
+        704
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 576,
+        "height": 468,
+        "content": "## 1. Schedule & rules\nEvery 2 hours, 9 AM-7 PM, Mon-Sat. **Set Sync Rules** holds Tally URL/company/debtor group, GHL location and custom field IDs, AR tag names, credit-hold days, receipt bank ledger and switches for creating contacts and syncing contact fields back to Tally."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f82f2bd3-2c2b-4b79-8dee-d22bac9d3fa0",
+      "name": "Section - Load",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1088,
+        688
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 888,
+        "height": 500,
+        "content": "## 2. Load sync state\n**Customers:** Tally GUID, Tally Ledger, Tally Alter ID, GHL Contact ID, Match Method, Email, Phone, GSTIN, State, Closing Balance, Overdue Amount, Overdue 1-30, Overdue 31-60, Overdue 61-90, Overdue 90+, Oldest Due Date, Max Overdue Days, Open Bills, Credit Limit, Credit Status, Snapshot Email, Snapshot Phone, Last Synced\n**Bills:** Bill Key, Party, Bill Ref, Bill Date, Due Date, Outstanding, Overdue Days, Status, Cleared On, Last Seen\nTo link a ledger manually, paste the GHL Contact ID into its Customers row."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b38c7eb4-bbe1-44d2-aa21-2625ab013c00",
+      "name": "Section - Apply Approved",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -80,
+        112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1440,
+        "height": 472,
+        "content": "## 3. Post approved changes to Tally (runs first)\n**Tally Change Queue:** Change Key, Created On, Type, Tally Ledger, GHL Contact ID, Summary, Payload, Status, Applied On, Tally Response\nSet Status to **Approved** to post a row, **Rejected** to drop it. Each row is sent as its own import so one error cannot block the rest. Tally's CREATED / ALTERED / ERRORS counts decide Applied or Failed."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0465948f-9407-4ee3-ad1f-722c93957035",
+      "name": "Section - Tally & GHL Fetch",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -160,
+        672
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1620,
+        "height": 500,
+        "content": "## 4. Export from Tally, read GHL\nTwo XML export requests (debtor ledgers via a TDL collection, then Bills Receivable), parsed in code with Tally's sign convention (debit = negative). GHL contacts come from the search API, payments from the transactions API, both paged."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "99108a91-e1ae-48ad-81a7-69809919c603",
+      "name": "Section - Engine",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1488,
+        672
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 500,
+        "height": 692,
+        "content": "## 5. Sync engine\nOne Code node emits a typed record for every action. Duplicate matches, name-only matches, both-sides edits and payments from unlinked contacts become Conflicts rather than guesses. The router sends each record type to its branch."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1dcf2eb6-622b-43fa-b527-091b79b75d22",
+      "name": "Section - Sheets",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2080,
+        -272
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 760,
+        "height": 1236,
+        "content": "## 6. Sheets mirror\n**Conflicts:** Conflict Key, Detected On, Type, Tally Ledger, GHL Contact ID, Tally Value, GHL Value, Detail, Status. Mark Resolved once fixed.\nBills no longer returned by Tally are marked Cleared with the date."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f5e8700f-2d14-446b-b4b5-ebce03338f96",
+      "name": "Section - GHL Writes",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2208,
+        1024
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1000,
+        "height": 1112,
+        "content": "## 7. Push to GoHighLevel\nOnly changed custom fields and contact details are sent. AR tags are added and removed separately so other tags are untouched. New contacts are upserted by email/phone and their IDs saved back to Customers. Batched to stay inside GHL rate limits."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "bacd639f-dc88-4eb6-bf97-c370b6c23eea",
+      "name": "Section - Notify",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2320,
+        2176
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1064,
+        "height": 424,
+        "content": "## 8. Notify only when needed\nSlack gets a message only if something was posted to Tally, a write failed, new changes await approval, a conflict appeared, a payment could not be linked, or a customer newly went on credit hold."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "da99fb83-ab46-46cd-af5f-9ca52ab16567",
+      "name": "Credentials & Security",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2944,
+        560
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 440,
+        "height": 360,
+        "content": "## Credentials & security\nTally's HTTP interface has no authentication, so never expose port 9000 to the internet; use a VPN or a tunnel with access control. GHL uses OAuth2 and Google/Slack OAuth2. Tally is only written through the approval queue, with a fixed set of fields (email, mobile, new ledgers, receipts)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f6f03808-454d-48fe-a0b8-0cee3ee6152b",
+      "name": "Every 2 Hours in Business Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -1536,
+        960
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9-19/2 * * 1-6"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "287cf45a-954b-497a-b3ae-e22bc242a535",
+      "name": "Set Sync Rules",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -1312,
+        960
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e85016e9-6c28-43c3-8d44-ab8652efd16c",
+              "name": "tallyUrl",
+              "type": "string",
+              "value": "http://192.168.1.10:9000"
+            },
+            {
+              "id": "15a250af-3bce-4f09-9d65-8f38b93ea0bd",
+              "name": "tallyCompany",
+              "type": "string",
+              "value": "Your Company Pvt Ltd"
+            },
+            {
+              "id": "6e44eeb7-2ab9-46ae-af5c-7cafdfccdec8",
+              "name": "debtorGroup",
+              "type": "string",
+              "value": "Sundry Debtors"
+            },
+            {
+              "id": "9ceb9da8-a8ed-4cec-8d29-71d7adf84511",
+              "name": "receiptBankLedger",
+              "type": "string",
+              "value": "GHL Payments Clearing"
+            },
+            {
+              "id": "02fc57fe-e615-4319-b61d-a8b68d33609d",
+              "name": "ghlLocationId",
+              "type": "string",
+              "value": "YOUR_GHL_LOCATION_ID"
+            },
+            {
+              "id": "54681096-e890-4454-8714-3478351759f2",
+              "name": "defaultCountryCode",
+              "type": "string",
+              "value": "+91"
+            },
+            {
+              "id": "2b473390-b98f-4881-9abf-d63f634a84f1",
+              "name": "cfTallyBalance",
+              "type": "string",
+              "value": "GHL_FIELD_ID_BALANCE"
+            },
+            {
+              "id": "339762af-33b3-4b88-bbaf-d21bf4ced751",
+              "name": "cfOverdueAmount",
+              "type": "string",
+              "value": "GHL_FIELD_ID_OVERDUE"
+            },
+            {
+              "id": "a9ce4f2e-41b3-495c-badd-947516afef77",
+              "name": "cfOldestDueDate",
+              "type": "string",
+              "value": "GHL_FIELD_ID_OLDEST_DUE"
+            },
+            {
+              "id": "dd158629-ff2c-464a-bcc0-68bcf9bafdb5",
+              "name": "cfMaxOverdueDays",
+              "type": "string",
+              "value": "GHL_FIELD_ID_MAX_OVERDUE_DAYS"
+            },
+            {
+              "id": "0c4f2a5b-e00a-4743-a5f8-6df971e724d9",
+              "name": "cfTallyLedger",
+              "type": "string",
+              "value": "GHL_FIELD_ID_TALLY_LEDGER"
+            },
+            {
+              "id": "dc307ed4-ff04-441f-83b3-3049d96fa677",
+              "name": "cfCreditStatus",
+              "type": "string",
+              "value": "GHL_FIELD_ID_CREDIT_STATUS"
+            },
+            {
+              "id": "1e961002-e5c2-4fa4-bc06-72e49ed12ccf",
+              "name": "cfLastSynced",
+              "type": "string",
+              "value": "GHL_FIELD_ID_LAST_SYNCED"
+            },
+            {
+              "id": "a00fbd78-efb8-4ebc-ba79-c1af1293d97b",
+              "name": "customerTag",
+              "type": "string",
+              "value": "customer"
+            },
+            {
+              "id": "8bcffdc9-1333-4f00-b9e1-fb3e631e808f",
+              "name": "tagFromTally",
+              "type": "string",
+              "value": "from-tally"
+            },
+            {
+              "id": "87bc7e7e-021e-4991-8003-4aead0628f67",
+              "name": "tagCurrent",
+              "type": "string",
+              "value": "ar-current"
+            },
+            {
+              "id": "07eef758-e2d5-41d2-b47c-2acd4580cb5c",
+              "name": "tagOverdue30",
+              "type": "string",
+              "value": "ar-overdue-30"
+            },
+            {
+              "id": "f7d4ff92-fa2f-4502-9aea-0be5b96f3e54",
+              "name": "tagOverdue60",
+              "type": "string",
+              "value": "ar-overdue-60"
+            },
+            {
+              "id": "586a859a-effb-4837-ac03-77a1b3c4de49",
+              "name": "tagOverdue90",
+              "type": "string",
+              "value": "ar-overdue-90"
+            },
+            {
+              "id": "53db7808-e847-4203-85cc-8295591d7406",
+              "name": "tagCreditHold",
+              "type": "string",
+              "value": "credit-hold"
+            },
+            {
+              "id": "62f319f9-2aa2-4380-95d1-7bb420c9a16d",
+              "name": "tagAdvance",
+              "type": "string",
+              "value": "ar-advance"
+            },
+            {
+              "id": "2ed1350a-d2f2-4761-8e68-6f165f5a5232",
+              "name": "creditHoldDays",
+              "type": "number",
+              "value": 60
+            },
+            {
+              "id": "9a02ee35-1c99-417b-89b8-7f0df38c625f",
+              "name": "paymentLookbackDays",
+              "type": "number",
+              "value": 3
+            },
+            {
+              "id": "4cb87fbf-9a8a-486f-b95d-e80ec563f25d",
+              "name": "createContactsInGhl",
+              "type": "boolean",
+              "value": true
+            },
+            {
+              "id": "46ca3f5e-9a17-4af0-a010-522b200f89d2",
+              "name": "syncContactFieldsToTally",
+              "type": "boolean",
+              "value": true
+            },
+            {
+              "id": "03283e07-c7c1-442b-9c98-08053eb0f245",
+              "name": "autoApproveTallyWrites",
+              "type": "boolean",
+              "value": false
+            },
+            {
+              "id": "2f2f402d-56c2-4d2f-862d-f22ea4862825",
+              "name": "includeTestPayments",
+              "type": "boolean",
+              "value": false
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "e12be341-9edd-4f3e-9669-2141f1cb0d13",
+      "name": "Read Customer Map",
+      "type": "n8n-nodes-base.googleSheets",
+      "onError": "continueRegularOutput",
+      "position": [
+        -912,
+        960
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Customers"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "5ad8a9f6-5a5c-4e47-9125-51ea78862c58",
+      "name": "Read Bills",
+      "type": "n8n-nodes-base.googleSheets",
+      "onError": "continueRegularOutput",
+      "position": [
+        -688,
+        960
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Bills"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "e1db88f1-39b7-4b2b-8f8b-4dc1960f3277",
+      "name": "Read Change Queue",
+      "type": "n8n-nodes-base.googleSheets",
+      "onError": "continueRegularOutput",
+      "position": [
+        -464,
+        960
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Tally Change Queue"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "d26120a4-f1db-4246-8976-64824a3d09fa",
+      "name": "Approved Changes Only",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        64,
+        336
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "8574089d-e899-4f46-be79-0926a5bff5ec",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json['Status'] }}",
+              "rightValue": "Approved"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "b9babe80-1554-41d0-a545-b43756840310",
+      "name": "Build Tally Import XML",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        320,
+        336
+      ],
+      "parameters": {
+        "jsCode": "// Turn approved queue rows into Tally import XML\nconst cfg = $('Set Sync Rules').first().json;\nconst esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\nconst amt = n => (Math.round(Number(n) * 100) / 100).toFixed(2);\nconst company = cfg.tallyCompany ? `<STATICVARIABLES><SVCURRENTCOMPANY>${esc(cfg.tallyCompany)}</SVCURRENTCOMPANY></STATICVARIABLES>` : '';\nconst wrap = (report, body) => `<ENVELOPE><HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER><BODY><IMPORTDATA>\n<REQUESTDESC><REPORTNAME>${report}</REPORTNAME>${company}</REQUESTDESC>\n<REQUESTDATA><TALLYMESSAGE xmlns:UDF=\"TallyUDF\">${body}</TALLYMESSAGE></REQUESTDATA></IMPORTDATA></BODY></ENVELOPE>`;\n\nconst out = [];\n$input.all().forEach((item, i) => {\n  const r = item.json;\n  let p;\n  try { p = JSON.parse(r['Payload']); } catch (e) { p = null; }\n  let xml = '', error = '';\n  if (!p) error = 'Payload is not valid JSON';\n  else if (p.action === 'Create') {\n    const opt = (t, v) => (v ? `<${t}>${esc(v)}</${t}>` : '');\n    xml = wrap('All Masters', `<LEDGER NAME=\"${esc(p.name)}\" ACTION=\"Create\">\n<NAME.LIST><NAME>${esc(p.name)}</NAME></NAME.LIST>\n<PARENT>${esc(p.parent || cfg.debtorGroup)}</PARENT>\n<ISBILLWISEON>Yes</ISBILLWISEON>\n${p.address ? `<ADDRESS.LIST TYPE=\"String\"><ADDRESS>${esc(p.address)}</ADDRESS></ADDRESS.LIST>` : ''}\n${opt('EMAIL', p.email)}${opt('LEDGERMOBILE', p.mobile)}${opt('LEDGERCONTACT', p.contactPerson)}${opt('LEDSTATENAME', p.state)}${opt('PINCODE', p.pincode)}\n</LEDGER>`);\n  } else if (p.action === 'Alter') {\n    if (!['EMAIL', 'LEDGERMOBILE'].includes(p.field)) error = `Field ${p.field} is not allowed`;\n    else xml = wrap('All Masters', `<LEDGER NAME=\"${esc(p.name)}\" ACTION=\"Alter\"><${p.field}>${esc(p.value)}</${p.field}></LEDGER>`);\n  } else if (p.action === 'Receipt') {\n    const alloc = p.billRef\n      ? `<BILLALLOCATIONS.LIST><NAME>${esc(p.billRef)}</NAME><BILLTYPE>Agst Ref</BILLTYPE><AMOUNT>${amt(p.amount)}</AMOUNT></BILLALLOCATIONS.LIST>`\n      : `<BILLALLOCATIONS.LIST><BILLTYPE>On Account</BILLTYPE><AMOUNT>${amt(p.amount)}</AMOUNT></BILLALLOCATIONS.LIST>`;\n    xml = wrap('Vouchers', `<VOUCHER VCHTYPE=\"Receipt\" ACTION=\"Create\" OBJVIEW=\"Accounting Voucher View\">\n<DATE>${esc(p.date)}</DATE><VOUCHERTYPENAME>Receipt</VOUCHERTYPENAME>\n<PARTYLEDGERNAME>${esc(p.party)}</PARTYLEDGERNAME><NARRATION>${esc(p.narration)}</NARRATION>\n<ALLLEDGERENTRIES.LIST><LEDGERNAME>${esc(p.party)}</LEDGERNAME><ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE><AMOUNT>${amt(p.amount)}</AMOUNT>${alloc}</ALLLEDGERENTRIES.LIST>\n<ALLLEDGERENTRIES.LIST><LEDGERNAME>${esc(p.bankLedger)}</LEDGERNAME><ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE><AMOUNT>-${amt(p.amount)}</AMOUNT></ALLLEDGERENTRIES.LIST>\n</VOUCHER>`);\n  } else error = `Unknown action ${p.action}`;\n  out.push({ json: { changeKey: r['Change Key'], type: r['Type'], summary: r['Summary'], xml, error }, pairedItem: { item: i } });\n});\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7d954b38-e68f-4cfc-9c42-dae8be309ba9",
+      "name": "Post Change to Tally",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        560,
+        336
+      ],
+      "parameters": {
+        "url": "={{ $('Set Sync Rules').first().json.tallyUrl }}",
+        "body": "={{ $json.xml }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/xml"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "4f44b2e9-e425-42e2-b1f2-0d2c77f51627",
+      "name": "Parse Import Result",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        864,
+        336
+      ],
+      "parameters": {
+        "jsCode": "// Read Tally's import response: CREATED / ALTERED / ERRORS / LINEERROR\nconst out = [];\n$input.all().forEach((item, i) => {\n  const req = $('Build Tally Import XML').itemMatching(i).json;\n  const text = String(item.json.data || '');\n  const n = t => parseInt((text.match(new RegExp(`<${t}>(\\\\d+)</${t}>`, 'i')) || [])[1] || '0', 10);\n  const lineErr = ((text.match(/<LINEERROR>([\\s\\S]*?)<\\/LINEERROR>/i) || [])[1] || '')\n    .replace(/&apos;/g, \"'\").replace(/&quot;/g, '\"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');\n  let ok = false, message;\n  if (req.error) message = req.error;\n  else if (item.json.error) message = `Tally unreachable: ${String(item.json.error.message || item.json.error).slice(0, 200)}`;\n  else {\n    ok = n('ERRORS') === 0 && n('EXCEPTIONS') === 0 && n('CREATED') + n('ALTERED') > 0;\n    message = ok ? `Created ${n('CREATED')}, altered ${n('ALTERED')}` : `Errors ${n('ERRORS')}, exceptions ${n('EXCEPTIONS')}${lineErr ? ': ' + lineErr.trim() : ''}`;\n  }\n  out.push({\n    json: { 'Change Key': req.changeKey, 'Status': ok ? 'Applied' : 'Failed', 'Applied On': $now.toISO(), 'Tally Response': message.slice(0, 500),\n      ok, type: req.type, summary: req.summary },\n    pairedItem: { item: i },\n  });\n});\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "493506e0-7382-4d52-b7bb-cd1b30148349",
+      "name": "Update Queue Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        1120,
+        336
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Status": "={{ $json['Status'] }}",
+            "Applied On": "={{ $json['Applied On'] }}",
+            "Change Key": "={{ $json['Change Key'] }}",
+            "Tally Response": "={{ $json['Tally Response'] }}"
+          },
+          "schema": [
+            {
+              "id": "Change Key",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Change Key",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Applied On",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Applied On",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tally Response",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Tally Response",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Change Key"
+          ]
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Tally Change Queue"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "72ee31fb-2666-47bc-93a3-4c5b0755871f",
+      "name": "Build Tally Requests",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        0,
+        960
+      ],
+      "parameters": {
+        "jsCode": "// Build the two Tally XML export requests (debtor ledgers + Bills Receivable)\nconst cfg = $('Set Sync Rules').first().json;\nconst esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\nconst company = cfg.tallyCompany ? `<SVCURRENTCOMPANY>${esc(cfg.tallyCompany)}</SVCURRENTCOMPANY>` : '';\nconst group = esc(cfg.debtorGroup || 'Sundry Debtors');\n\nconst ledgerXml = `<ENVELOPE>\n<HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>N8NDebtorLedgers</ID></HEADER>\n<BODY><DESC>\n<STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>${company}</STATICVARIABLES>\n<TDL><TDLMESSAGE>\n<COLLECTION NAME=\"N8NDebtorLedgers\" ISMODIFY=\"No\">\n<TYPE>Ledger</TYPE>\n<CHILDOF>${group}</CHILDOF>\n<BELONGSTO>Yes</BELONGSTO>\n<FETCH>NAME, GUID, ALTERID, PARENT, CLOSINGBALANCE, EMAIL, LEDGERPHONE, LEDGERMOBILE, LEDGERCONTACT, PARTYGSTIN, LEDSTATENAME, PINCODE, ADDRESS, CREDITLIMIT, BILLCREDITPERIOD</FETCH>\n</COLLECTION>\n</TDLMESSAGE></TDL>\n</DESC></BODY>\n</ENVELOPE>`;\n\nconst billsXml = `<ENVELOPE>\n<HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Data</TYPE><ID>Bills Receivable</ID></HEADER>\n<BODY><DESC>\n<STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>${company}<SVTODATE>${$today.toFormat('yyyyLLdd')}</SVTODATE></STATICVARIABLES>\n</DESC></BODY>\n</ENVELOPE>`;\n\nreturn [{ json: { ledgerXml, billsXml } }];"
+      },
+      "executeOnce": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "f90f7af6-6ca8-437a-97a0-c2b9aca1e782",
+      "name": "Export Debtor Ledgers",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 3,
+      "position": [
+        224,
+        960
+      ],
+      "parameters": {
+        "url": "={{ $('Set Sync Rules').first().json.tallyUrl }}",
+        "body": "={{ $('Build Tally Requests').first().json.ledgerXml }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/xml"
+      },
+      "executeOnce": true,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "a1e87d85-eb57-4baf-80c7-0f20d803c3a0",
+      "name": "Export Bills Receivable",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 3,
+      "position": [
+        448,
+        960
+      ],
+      "parameters": {
+        "url": "={{ $('Set Sync Rules').first().json.tallyUrl }}",
+        "body": "={{ $('Build Tally Requests').first().json.billsXml }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/xml"
+      },
+      "executeOnce": true,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "79276d9d-a66c-4fc4-bc58-4a4003d5f425",
+      "name": "Parse Tally Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        672,
+        960
+      ],
+      "parameters": {
+        "jsCode": "// Parse Tally's XML responses into ledgers and open bills.\n// Tally sign convention: debit (receivable) amounts come back negative.\nconst ledgerText = String($('Export Debtor Ledgers').first().json.data || '');\nconst billText = String($input.first().json.data || '');\nif (!/<ENVELOPE/i.test(ledgerText)) throw new Error('Tally did not return XML. Check that Tally is running, the company is open and the HTTP port (default 9000) is enabled and reachable from n8n.');\nconst err = ledgerText.match(/<LINEERROR>([\\s\\S]*?)<\\/LINEERROR>/i);\nif (err) throw new Error('Tally error: ' + err[1]);\n\nconst dec = s => String(s || '').replace(/&#13;|&#10;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '\"').replace(/&apos;/g, \"'\").replace(/&#(\\d+);/g, (m, c) => String.fromCharCode(c)).trim();\nconst tag = (block, name) => { const m = block.match(new RegExp(`<${name}(?:\\\\s[^>]*)?>([\\\\s\\\\S]*?)</${name}>`, 'i')); return m ? dec(m[1]) : ''; };\nconst num = v => { const n = parseFloat(String(v || '').replace(/[^0-9.\\-]/g, '')); return isNaN(n) ? 0 : n; };\nconst tallyDate = s => {\n  for (const f of ['d-LLL-yy', 'd-LLL-yyyy', 'yyyyLLdd', 'd-L-yyyy']) {\n    const d = DateTime.fromFormat(String(s || '').trim(), f);\n    if (d.isValid) return d.toISODate();\n  }\n  return '';\n};\n\nconst ledgers = [];\nconst re = /<LEDGER\\s+NAME=\"([^\"]*)\"[^>]*>([\\s\\S]*?)<\\/LEDGER>/gi;\nlet m;\nwhile ((m = re.exec(ledgerText))) {\n  const b = m[2];\n  const addr = (b.match(/<ADDRESS\\.LIST[^>]*>([\\s\\S]*?)<\\/ADDRESS\\.LIST>/i) || ['', ''])[1];\n  const lines = [...addr.matchAll(/<ADDRESS[^>]*>([\\s\\S]*?)<\\/ADDRESS>/gi)].map(x => dec(x[1])).filter(Boolean);\n  ledgers.push({\n    name: dec(m[1]) || tag(b, 'NAME'),\n    guid: tag(b, 'GUID'),\n    alterId: tag(b, 'ALTERID'),\n    parent: tag(b, 'PARENT'),\n    balance: Math.round(-num(tag(b, 'CLOSINGBALANCE')) * 100) / 100,   // + means customer owes us\n    email: tag(b, 'EMAIL').split(/[;,]/)[0].trim().toLowerCase(),\n    phone: tag(b, 'LEDGERMOBILE') || tag(b, 'LEDGERPHONE'),\n    contactPerson: tag(b, 'LEDGERCONTACT'),\n    gstin: tag(b, 'PARTYGSTIN').toUpperCase(),\n    state: tag(b, 'LEDSTATENAME'),\n    pincode: tag(b, 'PINCODE'),\n    address: lines.join(', '),\n    creditLimit: Math.abs(num(tag(b, 'CREDITLIMIT'))),\n    creditPeriod: tag(b, 'BILLCREDITPERIOD'),\n  });\n}\nif (!ledgers.length) throw new Error('Tally returned no ledgers under the debtor group. Check debtorGroup and tallyCompany in Set Sync Rules.');\n\n// Bills Receivable: BILLFIXED (date, ref, party) followed by BILLCL, BILLDUE, BILLOVERDUE\nconst bills = [];\nfor (const chunk of billText.split(/<BILLFIXED>/i).slice(1)) {\n  const party = tag(chunk, 'BILLPARTY');\n  const ref = tag(chunk, 'BILLREF');\n  if (!party || !ref) continue;\n  const amount = Math.round(-num(tag(chunk, 'BILLCL')) * 100) / 100;\n  if (Math.abs(amount) < 0.01) continue;\n  bills.push({\n    party, ref, amount,\n    billDate: tallyDate(tag(chunk, 'BILLDATE')),\n    dueDate: tallyDate(tag(chunk, 'BILLDUE')),\n    overdueDays: parseInt(tag(chunk, 'BILLOVERDUE'), 10) || 0,\n  });\n}\nreturn [{ json: { ledgers, bills, ledgerCount: ledgers.length, billCount: bills.length } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "d21b2881-492d-4585-bc1e-be96ec5e8481",
+      "name": "Fetch GHL Contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 3,
+      "position": [
+        960,
+        960
+      ],
+      "parameters": {
+        "url": "https://services.leadconnectorhq.com/contacts/search",
+        "method": "POST",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "page",
+                    "type": "body",
+                    "value": "={{ $pageCount + 1 }}"
+                  }
+                ]
+              },
+              "requestInterval": 250,
+              "limitPagesFetched": true,
+              "completeExpression": "={{ ($response.body.contacts || []).length < 100 }}",
+              "paginationCompleteWhen": "other"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify({ locationId: $('Set Sync Rules').first().json.ghlLocationId, pageLimit: 100 }) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "executeOnce": true,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "c959be26-ca1f-4ecf-b344-8fec32ce48fb",
+      "name": "Fetch GHL Payments",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        1264,
+        960
+      ],
+      "parameters": {
+        "url": "https://services.leadconnectorhq.com/payments/transactions",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "offset",
+                    "value": "={{ $pageCount * 100 }}"
+                  }
+                ]
+              },
+              "maxRequests": 20,
+              "requestInterval": 250,
+              "limitPagesFetched": true,
+              "completeExpression": "={{ ($response.body.data || []).length < 100 }}",
+              "paginationCompleteWhen": "other"
+            }
+          }
+        },
+        "sendQuery": true,
+        "sendHeaders": true,
+        "authentication": "predefinedCredentialType",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "altId",
+              "value": "={{ $('Set Sync Rules').first().json.ghlLocationId }}"
+            },
+            {
+              "name": "altType",
+              "value": "location"
+            },
+            {
+              "name": "startAt",
+              "value": "={{ $today.minus({ days: $('Set Sync Rules').first().json.paymentLookbackDays }).toISO() }}"
+            },
+            {
+              "name": "endAt",
+              "value": "={{ $now.toISO() }}"
+            },
+            {
+              "name": "limit",
+              "value": "100"
+            }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "highLevelOAuth2Api"
+      },
+      "executeOnce": true,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "b1cafbc1-8941-45fa-b913-af504479564d",
+      "name": "Sync Engine",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1552,
+        960
+      ],
+      "parameters": {
+        "jsCode": "// Sync engine: link Tally ledgers to GHL contacts, compute AR per customer,\n// three-way merge contact fields, and queue anything that would change Tally.\nconst cfg = $('Set Sync Rules').first().json;\nconst { ledgers, bills } = $('Parse Tally Data').first().json;\nconst todayISO = $today.toISODate();\nconst nowISO = $now.toISO();\nconst lower = s => String(s || '').trim().toLowerCase();\nconst digits = s => String(s || '').replace(/\\D/g, '').slice(-10);\nconst normName = s => lower(s).replace(/&/g, 'and').replace(/\\b(pvt|private|ltd|limited|llp|co|company|the|m\\/s|ms)\\b/g, '').replace(/[^a-z0-9]/g, '');\nconst r2 = n => Math.round((Number(n) || 0) * 100) / 100;\nconst flat = (name, key) => { try { return $(name).all().flatMap(i => (Array.isArray(i.json[key]) ? i.json[key] : [])); } catch (e) { return []; } };\nconst uniq = (list, key) => Object.values(Object.fromEntries(list.filter(x => x && x[key]).map(x => [x[key], x])));\n\nconst contacts = uniq(flat('Fetch GHL Contacts', 'contacts'), 'id');\nconst txns = uniq($input.all().flatMap(i => (Array.isArray(i.json.data) ? i.json.data : [])), '_id');\nconst mapRows = $('Read Customer Map').all().map(i => i.json).filter(r => r['Tally Ledger'] || r['Tally GUID']);\nconst queueKeys = new Set($('Read Change Queue').all().map(i => i.json['Change Key']).filter(Boolean).map(String));\nconst prevBills = $('Read Bills').all().map(i => i.json).filter(r => r['Bill Key']);\n\nconst F = {\n  balance: cfg.cfTallyBalance, overdue: cfg.cfOverdueAmount, oldestDue: cfg.cfOldestDueDate, maxOverdue: cfg.cfMaxOverdueDays,\n  ledger: cfg.cfTallyLedger, status: cfg.cfCreditStatus, synced: cfg.cfLastSynced,\n};\nconst MANAGED_TAGS = [cfg.tagCurrent, cfg.tagOverdue30, cfg.tagOverdue60, cfg.tagOverdue90, cfg.tagCreditHold, cfg.tagAdvance].filter(Boolean);\n\n// ---------- Indexes ----------\nconst mapByGuid = Object.fromEntries(mapRows.filter(r => r['Tally GUID']).map(r => [String(r['Tally GUID']), r]));\nconst mapByName = Object.fromEntries(mapRows.map(r => [lower(r['Tally Ledger']), r]));\nconst cById = Object.fromEntries(contacts.map(c => [c.id, c]));\nconst index = (fn) => { const m = {}; for (const c of contacts) { const k = fn(c); if (k) (m[k] = m[k] || []).push(c); } return m; };\nconst cByEmail = index(c => lower(c.email));\nconst cByPhone = index(c => digits(c.phone));\nconst cByName = index(c => normName(c.companyName) || normName(c.contactName || `${c.firstName || ''} ${c.lastName || ''}`));\nconst one = list => (list && list.length === 1 ? list[0] : null);\nconst billsByParty = {};\nfor (const b of bills) (billsByParty[lower(b.party)] = billsByParty[lower(b.party)] || []).push(b);\n\nconst out = [];\nconst push = (kind, j) => out.push({ json: { kind, ...j } });\nconst conflict = (key, fields) => push('conflict', { 'Conflict Key': key, 'Detected On': todayISO, 'Status': 'Open', ...fields });\nconst queue = (key, type, ledger, contactId, summary, payload) => {\n  if (queueKeys.has(key)) return false;\n  queueKeys.add(key);\n  push('queue', { 'Change Key': key, 'Created On': nowISO, 'Type': type, 'Tally Ledger': ledger, 'GHL Contact ID': contactId || '',\n    'Summary': summary, 'Payload': JSON.stringify(payload), 'Status': cfg.autoApproveTallyWrites ? 'Approved' : 'Pending' });\n  return true;\n};\nconst stats = { linked: 0, newLinks: 0, ghlUpdates: 0, ghlCreates: 0, queued: 0, conflicts: 0, newHolds: [], unlinkedPayments: 0 };\nconst linkedContactIds = new Set();\nconst ledgerByContact = {};\n\n// ---------- Tally -> GHL ----------\nfor (const L of ledgers) {\n  const row = mapByGuid[L.guid] || mapByName[lower(L.name)] || {};\n  let c = null, method = '';\n  if (row['GHL Contact ID'] && cById[row['GHL Contact ID']]) { c = cById[row['GHL Contact ID']]; method = 'Linked'; }\n  else if (L.email && one(cByEmail[L.email])) { c = one(cByEmail[L.email]); method = 'Email'; }\n  else if (digits(L.phone) && one(cByPhone[digits(L.phone)])) { c = one(cByPhone[digits(L.phone)]); method = 'Phone'; }\n  else if (normName(L.name) && one(cByName[normName(L.name)])) { c = one(cByName[normName(L.name)]); method = 'Company name'; }\n  if (c && linkedContactIds.has(c.id)) {\n    conflict(`duplicate-link|${c.id}`, { 'Type': 'Two ledgers match one contact', 'Tally Ledger': L.name, 'GHL Contact ID': c.id,\n      'Tally Value': L.name, 'GHL Value': c.companyName || c.email || '', 'Detail': `Contact already linked to ${ledgerByContact[c.id]}. Link one manually in Customers tab.` });\n    stats.conflicts++;\n    c = null; method = '';\n  }\n  if (c) { linkedContactIds.add(c.id); ledgerByContact[c.id] = L.name; stats.linked++; if (method !== 'Linked') stats.newLinks++; }\n\n  // AR from bills\n  const bl = billsByParty[lower(L.name)] || [];\n  const bucket = { b30: 0, b60: 0, b90: 0, b90p: 0 };\n  let overdue = 0, maxOverdue = 0, oldestDue = '';\n  for (const b of bl) {\n    if (b.amount <= 0) continue;\n    if (b.overdueDays > 0) {\n      overdue += b.amount;\n      maxOverdue = Math.max(maxOverdue, b.overdueDays);\n      const k = b.overdueDays <= 30 ? 'b30' : b.overdueDays <= 60 ? 'b60' : b.overdueDays <= 90 ? 'b90' : 'b90p';\n      bucket[k] += b.amount;\n    }\n    if (b.dueDate && (!oldestDue || b.dueDate < oldestDue)) oldestDue = b.dueDate;\n  }\n  const overLimit = L.creditLimit > 0 && L.balance > L.creditLimit;\n  const hold = maxOverdue >= cfg.creditHoldDays || overLimit;\n  const status = L.balance < -0.5 ? 'Advance' : L.balance <= 0.5 ? 'Clear' : hold ? 'Credit Hold' : overdue > 0 ? 'Overdue' : 'Current';\n  if (hold && row['Credit Status'] && row['Credit Status'] !== 'Credit Hold') stats.newHolds.push(`${L.name} (${maxOverdue} days, ${r2(L.balance)})`);\n\n  // Three-way merge of email and phone. Snapshot = value both sides agreed on at last sync.\n  const snap = { email: lower(row['Snapshot Email']), phone: digits(row['Snapshot Phone']) };\n  const tv = { email: L.email, phone: digits(L.phone) };\n  const newSnap = { ...snap };\n  const ghlFieldUpdates = {};\n  if (c) {\n    const gv = { email: lower(c.email), phone: digits(c.phone) };\n    for (const f of ['email', 'phone']) {\n      const t = tv[f], g = gv[f], s = snap[f];\n      if (t === g) { newSnap[f] = t; continue; }\n      const tChanged = t !== s, gChanged = g !== s;\n      if (!s && !row['Snapshot Email'] && !row['Snapshot Phone'] && t && g) {\n        conflict(`${f}|${L.guid || L.name}|${t}|${g}`, { 'Type': `${f} differs on first link`, 'Tally Ledger': L.name, 'GHL Contact ID': c.id,\n          'Tally Value': t, 'GHL Value': g, 'Detail': 'Fix one side; the sync will pick it up next run.' });\n        stats.conflicts++;\n      } else if (t && (tChanged && !gChanged || !g)) {\n        ghlFieldUpdates[f] = f === 'email' ? L.email : (cfg.defaultCountryCode || '+91') + digits(L.phone);   // Tally changed -> GHL\n        newSnap[f] = t;\n      } else if (g && (gChanged && !tChanged || !t)) {\n        if (cfg.syncContactFieldsToTally && queue(`alter|${L.guid || L.name}|${f}|${g}`, 'Alter Ledger', L.name, c.id,\n          `Update ${f} on Tally ledger \"${L.name}\" from \"${t || '(blank)'}\" to \"${f === 'email' ? c.email : c.phone}\"`,\n          { action: 'Alter', name: L.name, field: f === 'email' ? 'EMAIL' : 'LEDGERMOBILE', value: f === 'email' ? c.email : c.phone })) stats.queued++;\n      } else {\n        conflict(`${f}|${L.guid || L.name}|${t}|${g}`, { 'Type': `${f} changed on both sides`, 'Tally Ledger': L.name, 'GHL Contact ID': c.id,\n          'Tally Value': t, 'GHL Value': g, 'Detail': `Last agreed value: ${s || '(none)'}. Correct one side.` });\n        stats.conflicts++;\n      }\n    }\n\n    // Custom fields: only send what changed\n    const cur = Object.fromEntries((c.customFields || []).map(x => [x.id, x.value]));\n    const want = {};\n    if (F.balance) want[F.balance] = r2(L.balance);\n    if (F.overdue) want[F.overdue] = r2(overdue);\n    if (F.maxOverdue) want[F.maxOverdue] = maxOverdue;\n    if (F.oldestDue) want[F.oldestDue] = oldestDue;\n    if (F.ledger) want[F.ledger] = L.name;\n    if (F.status) want[F.status] = status;\n    const changed = Object.entries(want).filter(([id, v]) => String(cur[id] ?? '') !== String(v ?? ''));\n    if (changed.length || Object.keys(ghlFieldUpdates).length) {\n      const body = {};\n      if (changed.length) body.customFields = [...changed, ...(F.synced ? [[F.synced, todayISO]] : [])].map(([id, v]) => ({ id, field_value: v }));\n      Object.assign(body, ghlFieldUpdates);\n      push('ghl_update', { contactId: c.id, ledger: L.name, body });\n      stats.ghlUpdates++;\n    }\n\n    // AR tags\n    const desired = new Set();\n    if (status === 'Current' && cfg.tagCurrent) desired.add(cfg.tagCurrent);\n    if (status === 'Advance' && cfg.tagAdvance) desired.add(cfg.tagAdvance);\n    if (maxOverdue > 0) desired.add(maxOverdue <= 30 ? cfg.tagOverdue30 : maxOverdue <= 60 ? cfg.tagOverdue60 : cfg.tagOverdue90);\n    if (hold && cfg.tagCreditHold) desired.add(cfg.tagCreditHold);\n    const have = new Set((c.tags || []).map(lower));\n    const add = [...desired].filter(t => t && !have.has(lower(t)));\n    const remove = MANAGED_TAGS.filter(t => have.has(lower(t)) && !desired.has(t));\n    if (add.length) push('tags_add', { contactId: c.id, tags: add });\n    if (remove.length) push('tags_remove', { contactId: c.id, tags: remove });\n  } else if (cfg.createContactsInGhl && (L.email || digits(L.phone))) {\n    const body = { locationId: cfg.ghlLocationId, name: L.contactPerson || L.name, companyName: L.name, source: 'Tally sync',\n      tags: [cfg.tagFromTally, ...(maxOverdue > 0 ? [maxOverdue <= 30 ? cfg.tagOverdue30 : maxOverdue <= 60 ? cfg.tagOverdue60 : cfg.tagOverdue90] : [])].filter(Boolean) };\n    if (L.email) body.email = L.email;\n    if (digits(L.phone)) body.phone = (cfg.defaultCountryCode || '+91') + digits(L.phone);\n    if (L.address) body.address1 = L.address;\n    if (L.pincode) body.postalCode = L.pincode;\n    if (L.state) body.state = L.state;\n    const cf = [[F.balance, r2(L.balance)], [F.overdue, r2(overdue)], [F.ledger, L.name], [F.status, status], [F.synced, todayISO]].filter(([id]) => id);\n    if (cf.length) body.customFields = cf.map(([id, v]) => ({ id, field_value: v }));\n    push('ghl_create', { guid: L.guid, ledger: L.name, body });\n    stats.ghlCreates++;\n    newSnap.email = tv.email; newSnap.phone = tv.phone;\n  }\n\n  push('customer_row', {\n    'Tally GUID': L.guid, 'Tally Ledger': L.name, 'Tally Alter ID': L.alterId, 'GHL Contact ID': c ? c.id : (row['GHL Contact ID'] || ''),\n    'Match Method': method || (row['GHL Contact ID'] ? 'Linked (contact not found)' : 'Unlinked'),\n    'Email': L.email, 'Phone': L.phone, 'GSTIN': L.gstin, 'State': L.state,\n    'Closing Balance': r2(L.balance), 'Overdue Amount': r2(overdue), 'Overdue 1-30': r2(bucket.b30), 'Overdue 31-60': r2(bucket.b60),\n    'Overdue 61-90': r2(bucket.b90), 'Overdue 90+': r2(bucket.b90p), 'Oldest Due Date': oldestDue, 'Max Overdue Days': maxOverdue,\n    'Open Bills': bl.filter(b => b.amount > 0).length, 'Credit Limit': L.creditLimit || '', 'Credit Status': status,\n    'Snapshot Email': newSnap.email || '', 'Snapshot Phone': newSnap.phone || '', 'Last Synced': nowISO,\n  });\n}\n\n// ---------- Bills mirror (open + newly cleared) ----------\nconst seen = new Set();\nfor (const b of bills) {\n  const key = `${b.party}|${b.ref}`;\n  seen.add(key);\n  push('bill_row', { 'Bill Key': key, 'Party': b.party, 'Bill Ref': b.ref, 'Bill Date': b.billDate, 'Due Date': b.dueDate,\n    'Outstanding': b.amount, 'Overdue Days': b.overdueDays, 'Status': b.amount < 0 ? 'Advance' : b.overdueDays > 0 ? 'Overdue' : 'Open',\n    'Cleared On': '', 'Last Seen': todayISO });\n}\nfor (const p of prevBills) {\n  if (seen.has(String(p['Bill Key'])) || p['Status'] === 'Cleared') continue;\n  push('bill_row', { 'Bill Key': p['Bill Key'], 'Party': p['Party'], 'Bill Ref': p['Bill Ref'], 'Bill Date': p['Bill Date'], 'Due Date': p['Due Date'],\n    'Outstanding': 0, 'Overdue Days': 0, 'Status': 'Cleared', 'Cleared On': todayISO, 'Last Seen': todayISO });\n}\n\n// ---------- GHL -> Tally: new customers ----------\nconst ledgerNames = new Set(ledgers.map(l => normName(l.name)));\nfor (const c of contacts) {\n  if (linkedContactIds.has(c.id)) continue;\n  if (!(c.tags || []).map(lower).includes(lower(cfg.customerTag))) continue;\n  const name = (c.companyName || c.contactName || `${c.firstName || ''} ${c.lastName || ''}`).trim();\n  if (!name) continue;\n  if (ledgerNames.has(normName(name))) {\n    conflict(`name-only|${c.id}`, { 'Type': 'Possible duplicate ledger', 'Tally Ledger': name, 'GHL Contact ID': c.id, 'Tally Value': name, 'GHL Value': c.email || c.phone || '',\n      'Detail': 'A ledger with a similar name exists but email/phone do not match. Link manually in the Customers tab.' });\n    stats.conflicts++;\n    continue;\n  }\n  if (queue(`create|${c.id}`, 'Create Ledger', name, c.id, `Create debtor ledger \"${name}\" (${c.email || c.phone || 'no contact details'}) under ${cfg.debtorGroup}`,\n    { action: 'Create', name, parent: cfg.debtorGroup, email: c.email || '', mobile: digits(c.phone), address: [c.address1, c.city].filter(Boolean).join(', '),\n      state: c.state || '', pincode: c.postalCode || '', contactPerson: `${c.firstName || ''} ${c.lastName || ''}`.trim() })) stats.queued++;\n}\n\n// ---------- GHL payments -> Tally receipts ----------\nfor (const t of txns) {\n  if (lower(t.status) !== 'succeeded' || !t.amount) continue;\n  if (t.liveMode === false && !cfg.includeTestPayments) continue;\n  const key = `receipt|${t._id}`;\n  if (queueKeys.has(key)) continue;\n  const ledgerName = ledgerByContact[t.contactId];\n  if (!ledgerName) {\n    conflict(`payment-unlinked|${t._id}`, { 'Type': 'GHL payment from an unlinked contact', 'Tally Ledger': '', 'GHL Contact ID': t.contactId || '',\n      'Tally Value': '', 'GHL Value': `${t.currency || ''} ${t.amount} ${t.contactName || t.contactEmail || ''}`,\n      'Detail': 'Link this contact to a Tally ledger, then the receipt will be queued automatically.' });\n    stats.unlinkedPayments++;\n    continue;\n  }\n  const amount = r2(t.amount);\n  const open = (billsByParty[lower(ledgerName)] || []).filter(b => b.amount > 0);\n  const byRef = open.find(b => t.entitySourceName && lower(t.entitySourceName).includes(lower(b.ref)));\n  const byAmount = open.filter(b => Math.abs(b.amount - amount) < 0.5);\n  const bill = byRef || (byAmount.length === 1 ? byAmount[0] : null);\n  const date = DateTime.fromISO(t.createdAt || nowISO);\n  if (queue(key, 'Receipt Voucher', ledgerName, t.contactId,\n    `Receipt of ${amount} from \"${ledgerName}\" on ${date.toISODate()} into \"${cfg.receiptBankLedger}\"${bill ? ` against bill ${bill.ref}` : ' on account'}`,\n    { action: 'Receipt', date: date.toFormat('yyyyLLdd'), party: ledgerName, amount, bankLedger: cfg.receiptBankLedger,\n      billRef: bill ? bill.ref : '', narration: `GHL payment ${t._id}${t.entitySourceName ? ' - ' + t.entitySourceName : ''}`.slice(0, 240) })) stats.queued++;\n}\n\nconst pendingBefore = $('Read Change Queue').all().map(i => i.json).filter(r => r['Status'] === 'Pending').length;\npush('summary', {\n  runAt: nowISO, ledgers: ledgers.length, openBills: bills.length, contacts: contacts.length, ...stats,\n  pendingTotal: pendingBefore + (cfg.autoApproveTallyWrites ? 0 : stats.queued),\n  totalReceivable: r2(ledgers.reduce((s, l) => s + Math.max(l.balance, 0), 0)),\n  totalOverdue: r2(bills.filter(b => b.overdueDays > 0 && b.amount > 0).reduce((s, b) => s + b.amount, 0)),\n});\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c18fa417-0c38-4641-9f27-a744ea4d185c",
+      "name": "Route by Record Type",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1744,
+        960
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "Customers",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "d44a114d-1c71-46ad-8c08-1730a5322066",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "customer_row"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Bills",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "2ad57d88-1761-4e43-a58e-6d88c7ff2a7d",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "bill_row"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Conflicts",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "e77f4c6d-1da0-433f-b4b2-310f2901054c",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "conflict"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Queue for Tally",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "1d176416-dc3b-472f-bd28-47c2eb5f5d38",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "queue"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "GHL fields",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "15425ae2-a552-45aa-a73e-d0bf92f2d61d",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "ghl_update"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Add tags",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "6880e05e-4eab-4b05-84e0-033bafaf860a",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "tags_add"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Remove tags",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "d2179c39-90ac-4cb2-b9dd-f8757898b06f",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "tags_remove"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "New GHL contact",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "3a175c38-6b35-4d1a-8581-ce929f2ea7bf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "ghl_create"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Summary",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "fabcfe7c-617f-4426-bfdf-790f34a8270e",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "summary"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "76132563-422c-4b2c-ba68-2902bb9a871d",
+      "name": "Upsert Customers",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        2368,
+        -16
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Email": "={{ $json['Email'] }}",
+            "GSTIN": "={{ $json['GSTIN'] }}",
+            "Phone": "={{ $json['Phone'] }}",
+            "State": "={{ $json['State'] }}",
+            "Open Bills": "={{ $json['Open Bills'] }}",
+            "Tally GUID": "={{ $json['Tally GUID'] }}",
+            "Last Synced": "={{ $json['Last Synced'] }}",
+            "Overdue 90+": "={{ $json['Overdue 90+'] }}",
+            "Credit Limit": "={{ $json['Credit Limit'] }}",
+            "Match Method": "={{ $json['Match Method'] }}",
+            "Overdue 1-30": "={{ $json['Overdue 1-30'] }}",
+            "Tally Ledger": "={{ $json['Tally Ledger'] }}",
+            "Credit Status": "={{ $json['Credit Status'] }}",
+            "Overdue 31-60": "={{ $json['Overdue 31-60'] }}",
+            "Overdue 61-90": "={{ $json['Overdue 61-90'] }}",
+            "GHL Contact ID": "={{ $json['GHL Contact ID'] }}",
+            "Overdue Amount": "={{ $json['Overdue Amount'] }}",
+            "Snapshot Email": "={{ $json['Snapshot Email'] }}",
+            "Snapshot Phone": "={{ $json['Snapshot Phone'] }}",
+            "Tally Alter ID": "={{ $json['Tally Alter ID'] }}",
+            "Closing Balance": "={{ $json['Closing Balance'] }}",
+            "Oldest Due Date": "={{ $json['Oldest Due Date'] }}",
+            "Max Overdue Days": "={{ $json['Max Overdue Days'] }}"
+          },
+          "schema": [
+            {
+              "id": "Tally GUID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Tally GUID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tally Ledger",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Tally Ledger",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tally Alter ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Tally Alter ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "GHL Contact ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "GHL Contact ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Match Method",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Match Method",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Email",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Phone",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "GSTIN",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "GSTIN",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "State",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "State",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Closing Balance",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Closing Balance",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Overdue Amount",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Overdue Amount",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Overdue 1-30",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Overdue 1-30",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Overdue 31-60",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Overdue 31-60",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Overdue 61-90",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Overdue 61-90",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Overdue 90+",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Overdue 90+",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Oldest Due Date",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Oldest Due Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Max Overdue Days",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Max Overdue Days",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Open Bills",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Open Bills",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Credit Limit",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Credit Limit",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Credit Status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Credit Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Snapshot Email",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Snapshot Email",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Snapshot Phone",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Snapshot Phone",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Synced",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Last Synced",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Tally GUID"
+          ]
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Customers"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "4634326c-66f1-45ab-9deb-91d4078f352d",
+      "name": "Upsert Bills",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        2368,
+        208
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Party": "={{ $json['Party'] }}",
+            "Status": "={{ $json['Status'] }}",
+            "Bill Key": "={{ $json['Bill Key'] }}",
+            "Bill Ref": "={{ $json['Bill Ref'] }}",
+            "Due Date": "={{ $json['Due Date'] }}",
+            "Bill Date": "={{ $json['Bill Date'] }}",
+            "Last Seen": "={{ $json['Last Seen'] }}",
+            "Cleared On": "={{ $json['Cleared On'] }}",
+            "Outstanding": "={{ $json['Outstanding'] }}",
+            "Overdue Days": "={{ $json['Overdue Days'] }}"
+          },
+          "schema": [
+            {
+              "id": "Bill Key",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Bill Key",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Party",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Party",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Bill Ref",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Bill Ref",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Bill Date",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Bill Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Due Date",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Due Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Outstanding",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Outstanding",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Overdue Days",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Overdue Days",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cleared On",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Cleared On",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Seen",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Last Seen",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Bill Key"
+          ]
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Bills"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "5419d472-ab3c-4024-89ee-d3ed658c4cb9",
+      "name": "Upsert Conflicts",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        2368,
+        464
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Type": "={{ $json['Type'] }}",
+            "Detail": "={{ $json['Detail'] }}",
+            "Status": "={{ $json['Status'] }}",
+            "GHL Value": "={{ $json['GHL Value'] }}",
+            "Detected On": "={{ $json['Detected On'] }}",
+            "Tally Value": "={{ $json['Tally Value'] }}",
+            "Conflict Key": "={{ $json['Conflict Key'] }}",
+            "Tally Ledger": "={{ $json['Tally Ledger'] }}",
+            "GHL Contact ID": "={{ $json['GHL Contact ID'] }}"
+          },
+          "schema": [
+            {
+              "id": "Conflict Key",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Conflict Key",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Detected On",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Detected On",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Type",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Type",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tally Ledger",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Tally Ledger",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "GHL Contact ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "GHL Contact ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tally Value",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Tally Value",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "GHL Value",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "GHL Value",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Detail",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Detail",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Conflict Key"
+          ]
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Conflicts"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "dd10e82d-0f37-414e-8251-fe26fc67c157",
+      "name": "Add to Tally Change Queue",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        2368,
+        704
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Type": "={{ $json['Type'] }}",
+            "Status": "={{ $json['Status'] }}",
+            "Payload": "={{ $json['Payload'] }}",
+            "Summary": "={{ $json['Summary'] }}",
+            "Change Key": "={{ $json['Change Key'] }}",
+            "Created On": "={{ $json['Created On'] }}",
+            "Tally Ledger": "={{ $json['Tally Ledger'] }}",
+            "GHL Contact ID": "={{ $json['GHL Contact ID'] }}"
+          },
+          "schema": [
+            {
+              "id": "Change Key",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Change Key",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created On",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Created On",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Type",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Type",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tally Ledger",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Tally Ledger",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "GHL Contact ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "GHL Contact ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Summary",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payload",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Payload",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": []
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Tally Change Queue"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "21143171-13dc-453b-8a25-731c5b2b96bd",
+      "name": "Update GHL Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        2416,
+        1216
+      ],
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $json.contactId }}",
+        "method": "PUT",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 8,
+              "batchInterval": 1200
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "highLevelOAuth2Api"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "5dd33cf1-512c-422a-8c6a-9f27971ec8a6",
+      "name": "Add AR Tags",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        2400,
+        1472
+      ],
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $json.contactId }}/tags",
+        "method": "POST",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 8,
+              "batchInterval": 1200
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify({ tags: $json.tags }) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "highLevelOAuth2Api"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "f96eaee5-1be9-4981-9439-4373aee68929",
+      "name": "Remove Stale AR Tags",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        2400,
+        1696
+      ],
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $json.contactId }}/tags",
+        "method": "DELETE",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 8,
+              "batchInterval": 1200
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify({ tags: $json.tags }) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "highLevelOAuth2Api"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "ea528fe1-06b9-4fc1-a7af-be3b67137e2b",
+      "name": "Upsert GHL Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        2400,
+        1936
+      ],
+      "parameters": {
+        "url": "https://services.leadconnectorhq.com/contacts/upsert",
+        "method": "POST",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 8,
+              "batchInterval": 1200
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "highLevelOAuth2Api"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "0a91fcc9-b07d-42d0-be17-dd971d024b32",
+      "name": "Capture New Contact IDs",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2640,
+        1936
+      ],
+      "parameters": {
+        "jsCode": "// Store the GHL contact ID created for a Tally ledger\nconst out = [];\n$input.all().forEach((item, i) => {\n  const req = $('Route by Record Type').itemMatching(i).json;\n  const id = item.json.contact && item.json.contact.id;\n  if (!id) return;\n  out.push({ json: { 'Tally GUID': req.guid, 'GHL Contact ID': id, 'Match Method': item.json.new ? 'Created in GHL' : 'Upserted in GHL' }, pairedItem: { item: i } });\n});\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "59b33c3c-0732-4d8f-bad9-3cc16a08680b",
+      "name": "Save Contact ID to Customers",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        2880,
+        1936
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Tally GUID": "={{ $json['Tally GUID'] }}",
+            "Match Method": "={{ $json['Match Method'] }}",
+            "GHL Contact ID": "={{ $json['GHL Contact ID'] }}"
+          },
+          "schema": [
+            {
+              "id": "Tally GUID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Tally GUID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "GHL Contact ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "GHL Contact ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Match Method",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Match Method",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Tally GUID"
+          ]
+        },
+        "options": {},
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Customers"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "2e8b12c5-c211-4df7-9edc-fcaac9f32c45",
+      "name": "Build Sync Report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2512,
+        2416
+      ],
+      "parameters": {
+        "jsCode": "// Slack message only when something needs a person\nconst s = $input.first().json;\nconst cfg = $('Set Sync Rules').first().json;\nlet applied = [];\ntry { applied = $('Parse Import Result').all().map(i => i.json); } catch (e) {}\nconst ok = applied.filter(a => a.ok), failed = applied.filter(a => !a.ok);\nconst inr = n => 'Rs. ' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });\nconst lines = [\n  `:arrows_counterclockwise: *Tally <> GHL sync* - ${$now.toFormat('d LLL, HH:mm')}`,\n  `${s.ledgers} ledgers, ${s.openBills} open bills | Receivable ${inr(s.totalReceivable)}, overdue ${inr(s.totalOverdue)}`,\n  `GHL: ${s.linked} linked (${s.newLinks} new), ${s.ghlUpdates} updated, ${s.ghlCreates} created`,\n];\nif (ok.length) lines.push(`:white_check_mark: Posted to Tally: ${ok.length} (${ok.map(a => a.type).join(', ')})`);\nif (failed.length) lines.push(`:x: *${failed.length} Tally write(s) failed:*\\n${failed.slice(0, 5).map(a => `- ${a.summary}: ${a['Tally Response']}`).join('\\n')}`);\nif (s.queued) lines.push(`:inbox_tray: ${s.queued} new change(s) queued for Tally. *${s.pendingTotal} awaiting approval* in the Tally Change Queue tab.`);\nif (s.conflicts) lines.push(`:warning: ${s.conflicts} conflict(s) need a decision (Conflicts tab)`);\nif (s.unlinkedPayments) lines.push(`:moneybag: ${s.unlinkedPayments} GHL payment(s) from contacts not linked to a Tally ledger`);\nif (s.newHolds.length) lines.push(`:no_entry: *Now on credit hold:* ${s.newHolds.slice(0, 8).join(', ')}`);\nconst notify = ok.length || failed.length || s.queued || s.conflicts || s.unlinkedPayments || s.newHolds.length;\nreturn [{ json: { notify: !!notify, text: lines.join('\\n') } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b1d04b0d-92d7-44fa-bd3b-05af5de7d85c",
+      "name": "Anything Needs Attention?",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        2736,
+        2416
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "4177ab1b-ed01-40b9-9829-5dfa7bec0709",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.notify }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "16767a6e-9810-433a-90af-93909c1e7690",
+      "name": "Notify Accounts on Slack",
+      "type": "n8n-nodes-base.slack",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        2960,
+        2416
+      ],
+      "webhookId": "e7855770-c3c9-49c0-aa58-a0469ad5b7dd",
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#accounts-sync"
+        },
+        "otherOptions": {}
+      },
+      "retryOnFail": true,
+      "typeVersion": 2.3,
+      "waitBetweenTries": 5000
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "versionId": "f3de0f75-f81f-4a7d-ae57-e8760c9b4406",
+  "nodeGroups": [],
+  "connections": {
+    "Read Bills": {
+      "main": [
+        [
+          {
+            "node": "Read Change Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync Engine": {
+      "main": [
+        [
+          {
+            "node": "Route by Record Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Sync Rules": {
+      "main": [
+        [
+          {
+            "node": "Read Customer Map",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Tally Data": {
+      "main": [
+        [
+          {
+            "node": "Fetch GHL Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Sync Report": {
+      "main": [
+        [
+          {
+            "node": "Anything Needs Attention?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Change Queue": {
+      "main": [
+        [
+          {
+            "node": "Approved Changes Only",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build Tally Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Customer Map": {
+      "main": [
+        [
+          {
+            "node": "Read Bills",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch GHL Contacts": {
+      "main": [
+        [
+          {
+            "node": "Fetch GHL Payments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch GHL Payments": {
+      "main": [
+        [
+          {
+            "node": "Sync Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert GHL Contact": {
+      "main": [
+        [
+          {
+            "node": "Capture New Contact IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Import Result": {
+      "main": [
+        [
+          {
+            "node": "Update Queue Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Tally Requests": {
+      "main": [
+        [
+          {
+            "node": "Export Debtor Ledgers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Change to Tally": {
+      "main": [
+        [
+          {
+            "node": "Parse Import Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Record Type": {
+      "main": [
+        [
+          {
+            "node": "Upsert Customers",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert Bills",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert Conflicts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add to Tally Change Queue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update GHL Contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add AR Tags",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Remove Stale AR Tags",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert GHL Contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Sync Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved Changes Only": {
+      "main": [
+        [
+          {
+            "node": "Build Tally Import XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Export Debtor Ledgers": {
+      "main": [
+        [
+          {
+            "node": "Export Bills Receivable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Tally Import XML": {
+      "main": [
+        [
+          {
+            "node": "Post Change to Tally",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Capture New Contact IDs": {
+      "main": [
+        [
+          {
+            "node": "Save Contact ID to Customers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Export Bills Receivable": {
+      "main": [
+        [
+          {
+            "node": "Parse Tally Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything Needs Attention?": {
+      "main": [
+        [
+          {
+            "node": "Notify Accounts on Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 2 Hours in Business Hours": {
+      "main": [
+        [
+          {
+            "node": "Set Sync Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

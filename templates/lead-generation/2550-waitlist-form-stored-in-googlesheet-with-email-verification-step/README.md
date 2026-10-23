@@ -1,6 +1,6 @@
 # 🎣 Waitlist form stored in GoogleSheet with email verification step
 
-> ⚡ **2,252 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **2,319 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

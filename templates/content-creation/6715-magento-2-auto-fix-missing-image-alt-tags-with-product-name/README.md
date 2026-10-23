@@ -1,6 +1,6 @@
 # 🎬 Magento 2: auto-fix missing image alt tags with product name
 
-> ⚡ **66 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **83 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

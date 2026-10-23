@@ -1,6 +1,6 @@
 # 📱 Send new WooCommerce product notifications to Slack, Gmail and Google Sheets
 
-> ⚡ **34 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **59 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

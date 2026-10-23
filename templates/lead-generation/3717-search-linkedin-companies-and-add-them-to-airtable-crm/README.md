@@ -1,6 +1,6 @@
 # 🎣 Search LinkedIn companies and add them to Airtable CRM
 
-> ⚡ **4,421 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **4,467 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

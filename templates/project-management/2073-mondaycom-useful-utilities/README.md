@@ -1,6 +1,6 @@
 # 📋 Monday.com useful utilities
 
-> ⚡ **3,490 views** · 📋 [Project Management](../)
+> ⚡ **3,524 views** · 📋 [Project Management](../)
 
 ## Description
 

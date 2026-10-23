@@ -1,6 +1,6 @@
 # 🤝 Generate single-use personalized Calendly links with Google Sheets tracking & Slack alerts
 
-> ⚡ **1,000 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **3,467 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

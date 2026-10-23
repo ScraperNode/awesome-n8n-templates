@@ -1,6 +1,6 @@
 # 🎬 Generate AI images with APImage and upload to Google Drive
 
-> ⚡ **1,169 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,287 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

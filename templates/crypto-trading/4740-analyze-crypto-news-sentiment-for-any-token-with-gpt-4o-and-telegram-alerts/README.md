@@ -1,6 +1,6 @@
 # 📈 Analyze crypto news sentiment for any token with GPT-4o and Telegram alerts
 
-> ⚡ **11,611 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **12,163 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

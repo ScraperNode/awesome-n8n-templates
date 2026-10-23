@@ -1,6 +1,6 @@
 # 🎫 Route Gmail support emails to Zendesk with spam filtering and duplicate checks
 
-> ⚡ **43 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **59 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

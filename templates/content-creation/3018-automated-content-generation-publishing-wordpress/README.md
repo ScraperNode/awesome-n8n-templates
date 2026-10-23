@@ -1,6 +1,6 @@
 # 🎬 Automated content generation & publishing - Wordpress
 
-> ⚡ **40,548 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **42,166 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Automating job searches on LinkedIn and X, then saving results to Notion
 
-> ⚡ **1,225 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,549 views** · 🎣 [Lead Generation & Enrichment](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >

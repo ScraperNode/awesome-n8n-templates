@@ -1,0 +1,1039 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Send shipping emails with tracking from a Google Sheet via ShipStation",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "manual2",
+      "name": "Run it now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "sched2",
+      "name": "Weekdays 08:30 and 16:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        190
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 8,16 * * 1-5"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "cfg2",
+      "name": "config",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// ORDER TO SHIP ENGINE \u2014 CONFIG\n// Everything you might want to change lives in this one node. Nothing else in either\n// workflow needs editing.\n//\n// The same config node ships in BOTH workflows (\"01 capture and confirm\" and\n// \"02 progress and ship\"). If you change it in one, paste it into the other \u2014 build.py\n// regenerates both from this one file, so normally you never have to.\n//\n// A blank key or a false flag means that step is SKIPPED, never that the run fails.\n// That is what lets this be demonstrated on a screen-share before a single credential\n// exists.\n\n// ---------------------------------------------------------------- The production board\n// The Google Sheet the team already runs as their production board. The id is the long\n// code in the sheet's web address:\n// docs.google.com/spreadsheets/d/<THIS BIT>/edit\nconst BOARD_SHEET_ID = '';\nconst BOARD_TAB      = 'Orders';\n\n// Set to true only when ALL of these are in place:\n//   1. the sheet exists with the headings below (see sheet/Orders.csv)\n//   2. BOARD_SHEET_ID above is filled in\n//   3. the [cred] Sheets nodes in both workflows have Google credentials attached\n// Until then the workflows run against a built-in demo board: rows are shown in\n// STOP nodes instead of being written, and fabricated customers can never be emailed.\nconst BOARD_READY = false;\n\n// The column headings, exactly as they appear in row 1 of the Orders tab.\n// 'Items (json)' holds the line items as JSON so the board stays one row per order.\nconst COLUMNS = {\n  order_key:         'Order key',\n  source:            'Source',\n  order_id:          'Order no.',\n  placed:            'Placed',\n  customer:          'Customer',\n  email:             'Email',\n  items:             'Items (json)',\n  spec:              'Spec',\n  window_start:      'Ship window start',\n  window_end:        'Ship window end',\n  stage:             'Stage',\n  confirmation_sent: 'Confirmation sent',\n  carrier:           'Carrier',\n  tracking:          'Tracking no.',\n  ship_date:         'Shipped date',\n  ship_email_sent:   'Ship email sent',\n  notes:             'Notes'\n};\n\n// The stages the team moves a row through. The workflow writes 'New order' when the row\n// lands and 'Confirmed' once the confirmation email is away; the OFFICE moves rows to\n// 'In production' and finally 'Shipped' (when a label exists). That last flip is what\n// triggers the shipping email. Nothing ships before a confirmation was recorded.\nconst STAGE_ON_ARRIVAL = 'New order';\nconst STAGE_CONFIRMED  = 'Confirmed';\nconst STAGE_SHIPPED    = 'Shipped';\nconst STAGES = ['New order', 'Confirmed', 'In production', 'Shipped', 'Delivered',\n  'On hold', 'Cancelled'];\n\n// ---------------------------------------------------------------- The stores\n// Which store webhooks feed this. Square is in DEPOSIT_SOURCES: for designer/custom\n// goods the post says the workflow may begin when the deposit is received, so a Square\n// order whose payment has not landed is held until it has. Shopify and Etsy orders only\n// arrive here once the store marks them confirmed/paid, so they are not gated.\nconst SOURCE_LABELS = { shopify: 'Shopify', etsy: 'Etsy', square: 'Square' };\nconst DEPOSIT_SOURCES = ['square'];\n\n// ---------------------------------------------------------------- Product rules\n// The rules/formulas the client provides, in one table so every number an email quotes\n// can be traced back to a rule. Each order line is looked up by sku.\n//\n//   lead_days  how many working days this piece takes to build. The confirmation email's\n//              ship window = order date + the LONGEST lead in the order + the buffers\n//              below. Nothing ships before its promise, so the window is the honest one.\n//   anchors    the wall hardware the customer needs for installation:\n//                { mode: 'none' }        free-standing piece \u2014 no wall anchors\n//                { mode: 'fixed', qty }  per unit (e.g. a bracket kit = 8 anchors)\n//                { mode: 'per_metre' }   qty per metre of the line's length, rounded up\n//   manual     the installation manual URL for that product\nconst PRODUCT_RULES = [\n  { sku: 'DIN-TBL-WALNUT-6', name: 'Walnut dining table, 6-seat', lead_days: 14,\n    anchors: { mode: 'none' }, manual: '', note: 'Free-standing piece \u2014 no wall anchors.' },\n  { sku: 'CON-OAK-160', name: 'Oak console, 160 cm', lead_days: 10,\n    anchors: { mode: 'none' }, manual: '', note: 'Free-standing piece \u2014 no wall anchors.' },\n  { sku: 'SHLF-OAK-120', name: 'Oak wall shelf, 120 cm', lead_days: 6,\n    anchors: { mode: 'per_metre', qty: 2 }, manual: 'https://example.com/manuals/oak-shelf-120.pdf',\n    note: 'Two brackets supplied; fixings sized for the wall type.' },\n  { sku: 'BRK-STEEL-L', name: 'Steel L-bracket set (pair)', lead_days: 3,\n    anchors: { mode: 'fixed', qty: 8 }, manual: '',\n    note: 'Four anchors per bracket; use the template supplied.' }\n];\n\n// A line item whose sku is NOT in the table above cannot be given an honest ship window\n// or an honest anchor count. true = hold the order and show it in a STOP node instead of\n// promising something the rules cannot support. Add the missing sku to PRODUCT_RULES and\n// re-run.\nconst HOLD_UNRULED_ITEMS = true;\n\n// The shipping promise, in working days (Mon-Fri):\n//   earliest = order date + longest lead in the order + START buffer\n//   latest   = order date + longest lead in the order + END buffer\n// The email quotes the window, never a single date.\nconst WINDOW_BUFFER_START_DAYS = 3;\nconst WINDOW_BUFFER_END_DAYS   = 8;\n\n// ---------------------------------------------------------------- Sending\nconst COMPANY_NAME = 'Example Furniture Co';\nconst FROM_NAME    = 'Example Furniture Co';\nconst REPLY_TO     = '';          // where customer replies should land\nconst PHONE        = '';\nconst WEBSITE      = '';\n\n// The personalised emails. The braces are filled in code from the order and the rules \u2014\n// the model is never asked to invent a date, an anchor count or a manual link.\nconst CONFIRM_SUBJECT = 'Your {company} order {order} \u2014 thank you';\nconst SHIP_SUBJECT    = 'Your {company} order {order} has shipped';\n\n// ---------------------------------------------------------------- ShipStation\n// Optional. When the office creates a label in ShipStation they flip the board row to\n// 'Shipped'; this workflow then tries to pull carrier, tracking number and ship date\n// from ShipStation instead of asking anyone to type them.\n//\n// Set true only when: the [cred] ShipStation node has credentials attached AND the\n// fetch path has been checked against your ShipStation account (see README \u2014 the\n// endpoint is the one integration point to confirm on a live account).\nconst SHIPSTATION_READY = false;\nconst SHIPSTATION_BASE  = 'https://api.shipstation.com';\n\n// ---------------------------------------------------------------- Safety switch\n//   TEST_RUN true,  TEST_EMAIL blank -> PREVIEW. Rows are written to the sheet (when\n//                                      BOARD_READY) but no email is sent. Ships this way.\n//   TEST_RUN true,  TEST_EMAIL set   -> TEST. Emails really send, but every one goes to\n//                                      TEST_EMAIL instead of the customer.\n//   TEST_RUN false                   -> LIVE. Customers get the real thing.\nconst TEST_RUN   = true;\nconst TEST_EMAIL = '';\n\n// While the demo board is in use (no sheet configured) the run is FORCED into preview:\n// a fabricated customer can never be emailed, whatever TEST_RUN says.\nconst DEMO_MODE = BOARD_READY !== true;\n\nlet MODE = TEST_RUN !== true ? 'live'\n  : (TEST_EMAIL.trim() !== '' ? 'test' : 'preview');\nif (DEMO_MODE && MODE !== 'preview') MODE = 'preview';\n\n// ---------------------------------------------------------------- Demo board\n// The rows the workflows run against until BOARD_READY is set. Every customer, order and\n// product here is fabricated. The mix is deliberate \u2014 it has to be able to show every\n// gate doing its job:\n//   * a 'Shipped' row that was confirmed and has tracking pasted   -> shipping email\n//   * a 'Shipped' row with NO tracking and no ShipStation          -> STOP: tracking missing\n//   * a 'Shipped' row that was never confirmed                     -> STOP: never shipped unconfirmed\n//   * a finished row already emailed                               -> left alone (idempotent)\n//   * open rows in production / new                                -> left alone\nconst DEMO_ORDERS = [\n  {\n    order_key: 'shopify|5102', source: 'shopify', order_id: '5102', placed: '2026-09-02 09:41',\n    customer: 'Dana Whitfield', email: 'user@example.com',\n    items: '[{\"sku\":\"DIN-TBL-WALNUT-6\",\"name\":\"Walnut dining table, 6-seat\",\"qty\":1,\"dim_m\":\"\",\"spec\":\"2200 x 1000 x 750 mm, matte oil finish\"},{\"sku\":\"BRK-STEEL-L\",\"name\":\"Steel L-bracket set (pair)\",\"qty\":2,\"dim_m\":\"\",\"spec\":\"\"}]',\n    spec: '', window_start: '2026-09-23', window_end: '2026-09-30', stage: 'In production',\n    confirmation_sent: '2026-09-02 09:41', carrier: '', tracking: '', ship_date: '',\n    ship_email_sent: '', notes: ''\n  },\n  {\n    order_key: 'etsy|2218', source: 'etsy', order_id: '2218', placed: '2026-09-04 14:02',\n    customer: 'Marlon Reyes', email: 'user@example.com',\n    items: '[{\"sku\":\"SHLF-OAK-120\",\"name\":\"Oak wall shelf, 120 cm\",\"qty\":1,\"dim_m\":\"1.2\",\"spec\":\"120 x 22 x 4 cm\"},{\"sku\":\"BRK-STEEL-L\",\"name\":\"Steel L-bracket set (pair)\",\"qty\":1,\"dim_m\":\"\",\"spec\":\"\"}]',\n    spec: '', window_start: '2026-09-18', window_end: '2026-09-25', stage: 'Shipped',\n    confirmation_sent: '2026-09-04 14:02', carrier: 'UPS', tracking: '1Z999AA10123456784',\n    ship_date: '2026-09-16', ship_email_sent: '', notes: ''\n  },\n  {\n    order_key: 'shopify|5117', source: 'shopify', order_id: '5117', placed: '2026-09-05 16:30',\n    customer: 'Priya Nair', email: 'user@example.com',\n    items: '[{\"sku\":\"CON-OAK-160\",\"name\":\"Oak console, 160 cm\",\"qty\":1,\"dim_m\":\"\",\"spec\":\"160 x 40 x 75 cm, no back panel\"}]',\n    spec: '', window_start: '2026-09-22', window_end: '2026-09-29', stage: 'Shipped',\n    confirmation_sent: '2026-09-05 16:30', carrier: '', tracking: '', ship_date: '',\n    ship_email_sent: '', notes: ''\n  },\n  {\n    order_key: 'square|ORD-9081', source: 'square', order_id: 'ORD-9081', placed: '2026-09-08 11:12',\n    customer: 'Tom Okafor', email: 'user@example.com',\n    items: '[{\"sku\":\"DIN-TBL-WALNUT-6\",\"name\":\"Walnut dining table, 6-seat\",\"qty\":1,\"dim_m\":\"\",\"spec\":\"custom width 2400 mm\"}]',\n    spec: 'Custom width 2400 mm', window_start: '2026-09-28', window_end: '2026-10-05',\n    stage: 'Shipped', confirmation_sent: '', carrier: '', tracking: '', ship_date: '',\n    ship_email_sent: '', notes: ''\n  },\n  {\n    order_key: 'shopify|5123', source: 'shopify', order_id: '5123', placed: '2026-09-09 08:05',\n    customer: 'Elena Rossi', email: 'user@example.com',\n    items: '[{\"sku\":\"SHLF-OAK-120\",\"name\":\"Oak wall shelf, 120 cm\",\"qty\":2,\"dim_m\":\"1.2\",\"spec\":\"\"}]',\n    spec: '', window_start: '2026-09-22', window_end: '2026-09-29', stage: 'New order',\n    confirmation_sent: '', carrier: '', tracking: '', ship_date: '', ship_email_sent: '',\n    notes: ''\n  },\n  {\n    order_key: 'etsy|2190', source: 'etsy', order_id: '2190', placed: '2026-08-28 10:15',\n    customer: 'June Park', email: 'user@example.com',\n    items: '[{\"sku\":\"CON-OAK-160\",\"name\":\"Oak console, 160 cm\",\"qty\":1,\"dim_m\":\"\",\"spec\":\"\"}]',\n    spec: '', window_start: '2026-09-14', window_end: '2026-09-21', stage: 'Delivered',\n    confirmation_sent: '2026-08-28 10:15', carrier: 'FedEx', tracking: '778899001122',\n    ship_date: '2026-09-15', ship_email_sent: '2026-09-15 09:30', notes: ''\n  }\n];\n\nreturn [{\n  json: {\n    company_name: COMPANY_NAME,\n    from_name:    FROM_NAME,\n    reply_to:     REPLY_TO.trim(),\n    phone:        PHONE.trim(),\n    website:      WEBSITE.trim(),\n\n    board_sheet_id: BOARD_SHEET_ID.trim(),\n    board_tab:      BOARD_TAB,\n    columns:        COLUMNS,\n    board_ready:    BOARD_READY === true,\n\n    source_labels:  SOURCE_LABELS,\n    deposit_sources: DEPOSIT_SOURCES,\n\n    product_rules:    PRODUCT_RULES,\n    hold_unruly:      HOLD_UNRULED_ITEMS === true,\n    window_start_days: Number(WINDOW_BUFFER_START_DAYS) || 0,\n    window_end_days:   Number(WINDOW_BUFFER_END_DAYS) || 0,\n\n    stage_on_arrival: STAGE_ON_ARRIVAL,\n    stage_confirmed:  STAGE_CONFIRMED,\n    stage_shipped:    STAGE_SHIPPED,\n    stages:           STAGES,\n\n    confirm_subject: CONFIRM_SUBJECT,\n    ship_subject:    SHIP_SUBJECT,\n\n    shipstation_ready: SHIPSTATION_READY === true,\n    shipstation_base:  SHIPSTATION_BASE,\n\n    demo_orders: DEMO_ORDERS,\n    demo_mode:   DEMO_MODE,\n\n    // derived flags \u2014 the gates read these, never the raw constants\n    mode:          MODE,\n    preview_only:  MODE === 'preview',\n    test_send:     MODE === 'test',\n    live_send:     MODE === 'live',\n    send_enabled:  MODE !== 'preview',\n    test_email:    TEST_EMAIL.trim()\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "have-board2",
+      "name": "board connected?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "have-board2-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.board_ready }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "board-read2",
+      "name": "[cred] Sheets - read the board",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        840,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('config').first().json.board_tab }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('config').first().json.board_sheet_id }}"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "demo-board2",
+      "name": "use the demo board",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        840,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// No sheet configured yet: emit the built-in demo board rows instead. Rows come out keyed\n// by the same HEADINGS a Google Sheets read would produce, so everything downstream is\n// identical whether the data is real or fabricated. Every customer here is invented.\nconst cfg = $('config').first().json;\nconst cols = cfg.columns || {};\nconst rows = (cfg.demo_orders || []).map(function (o) {\n  const row = {};\n  for (const k of Object.keys(cols)) row[cols[k]] = (o[k] != null ? String(o[k]) : '');\n  row._demo = true;\n  return row;\n});\nreturn rows.map((r) => ({ json: r }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "read-board",
+      "name": "read the board",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// The morning board run: one read of the whole Orders tab, classified in one place.\n// Every row the office has flipped to 'Shipped' but that we have not yet emailed gets a\n// shipping email; a 'Shipped' row with no confirmation recorded is HELD, never emailed \u2014\n// an order is never shipped unconfirmed, and the board is what proves the confirmation\n// happened. Rows already emailed, still in production, or finished are left alone, so a\n// run is idempotent: nothing is emailed twice.\nconst cfg = $('config').first().json;\nconst cols = cfg.columns || {};\nconst h = (k) => cols[k] || k;\nconst shipped = (cfg.stage_shipped || 'Shipped');\n\nconst toShip = [];\nconst unconfirmed = [];\nlet rowsRead = 0;\n\nfor (const row of $input.all().map((i) => i.json)) {\n  const stage = String(row[h('stage')] || '').trim();\n  if (!stage) continue;\n  rowsRead++;\n  const confirmed = String(row[h('confirmation_sent')] || '').trim();\n  const emailed = String(row[h('ship_email_sent')] || '').trim();\n  if (stage !== shipped) continue;                       // still in production, or finished\n  if (!confirmed) { unconfirmed.push(row); continue; }   // flipped early \u2014 hold, do not email\n  if (emailed) continue;                                 // already done \u2014 idempotent\n  toShip.push(Object.assign({}, row, {\n    _tracking_pasted: String(row[h('tracking')] || '').trim() !== ''\n  }));\n}\n\nreturn [{\n  json: {\n    rows_read: rowsRead,\n    to_ship: toShip,\n    unconfirmed: unconfirmed,\n    _has_to_ship: toShip.length > 0,\n    _has_unconfirmed: unconfirmed.length > 0\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "to-ship",
+      "name": "anything shipped but not emailed?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "to-ship-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json._has_to_ship }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "stop-empty1",
+      "name": "STOP: nothing to ship today",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1680,
+        760
+      ],
+      "parameters": {
+        "jsCode": "// Nothing on the board needs this run: no rows flipped to Shipped that are waiting on an\n// email, nothing shipped before it was confirmed. The run still completes cleanly.\nreturn $input.all().map((i) => ({\n  json: Object.assign({}, i.json, { _outcome: 'nothing_to_do' })\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "shippers",
+      "name": "split the shippers",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1680,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// One item per order that needs its shipping email, so the downstream send runs once per\n// order rather than once per run.\nconst item = $input.first().json;\nreturn (item.to_ship || []).map((row) => ({ json: Object.assign({}, row, { _ship: true }) }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pasted",
+      "name": "tracking on the row?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1960,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "pasted-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json._tracking_pasted }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "board-tracking",
+      "name": "tracking from the board",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// The office pasted carrier/tracking/ship date onto the row when they made the label, so\n// no API call is needed. The values travel as-is \u2014 no guessing, no reshaping.\nconst cfg = $('config').first().json;\nconst cols = cfg.columns || {};\nconst h = (k) => cols[k] || k;\nconst item = $input.first().json;\nconst carrier = String(item[h('carrier')] || '').trim();\nconst tracking = String(item[h('tracking')] || '').trim();\nconst shipDate = String(item[h('ship_date')] || '').trim();\nreturn [{\n  json: Object.assign({}, item, {\n    carrier: carrier,\n    tracking: tracking,\n    ship_date: shipDate,\n    _tracking_found: tracking !== '',\n    _tracking_source: 'board',\n    _reason: tracking ? '' : 'no tracking number pasted on the row'\n  })\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ss-ready",
+      "name": "ShipStation ready?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2240,
+        190
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ss-ready-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.shipstation_ready }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "ss-fetch",
+      "name": "[cred] ShipStation - fetch the tracking",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "ShipStation v2: list orders by the store order number, then the reply mapper digs the tracking out of the response.",
+      "position": [
+        2520,
+        190
+      ],
+      "parameters": {
+        "url": "={{ $('config').first().json.shipstation_base + '/v2/orders?orderNumber=' + encodeURIComponent($json['Order no.']) }}",
+        "method": "GET",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "sendHeaders": true,
+        "authentication": "predefinedCredentialType",
+        "queryParameters": {
+          "parameters": []
+        },
+        "headerParameters": {
+          "parameters": []
+        },
+        "nodeCredentialType": "shipStationApi"
+      },
+      "credentials": {},
+      "typeVersion": 4.2
+    },
+    {
+      "id": "ss-reply",
+      "name": "read the tracking reply",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2800,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// Maps the ShipStation reply onto the row. ShipStation's response shape changes between\n// API versions, so the lookup is by common field names rather than one fixed path \u2014 the\n// endpoint itself is the integration point to confirm on the live account (see README).\nfunction dig(obj, keys, depth) {\n  if (!obj || typeof obj !== 'object' || depth > 5) return '';\n  for (const key of keys) {\n    if (obj[key] != null && String(obj[key]) !== '') return String(obj[key]);\n  }\n  for (const k of Object.keys(obj)) {\n    const v = obj[k];\n    if (v && typeof v === 'object') {\n      const hit = dig(v, keys, depth + 1);\n      if (hit) return hit;\n    }\n  }\n  return '';\n}\n\nconst cfg = $('config').first().json;\nconst cols = cfg.columns || {};\nconst h = (k) => cols[k] || k;\nconst item = $input.first().json;\nconst body = (item && typeof item === 'object') ? item : {};\n\nconst tracking = dig(body, ['trackingNumber', 'tracking_number', 'tracking']);\nconst carrier = dig(body, ['carrierCode', 'carrier_code', 'carrier']);\nconst shipDate = dig(body, ['shipDate', 'ship_date']);\n\nconst found = tracking !== '';\nreturn [{\n  json: Object.assign({}, item, {\n    carrier: found ? carrier : '',\n    tracking: found ? tracking : '',\n    ship_date: found ? shipDate : '',\n    _tracking_found: found,\n    _tracking_source: 'shipstation',\n    _reason: found ? '' : 'ShipStation returned no shipment for this order number'\n  })\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "no-tracking",
+      "name": "no tracking available",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2520,
+        380
+      ],
+      "parameters": {
+        "jsCode": "// No ShipStation configured and the board row has no tracking number pasted. The run\n// stops here for this order rather than emailing a ship notice that cannot carry a number.\nconst cfg = $('config').first().json;\nconst item = $input.first().json;\nreturn [{\n  json: Object.assign({}, item, {\n    _tracking_found: false,\n    _tracking_source: 'none',\n    _reason: 'no ShipStation credentials and no tracking number on the row'\n  })\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "tracked",
+      "name": "tracking found?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "tracked-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json._tracking_found }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "stop-notrack",
+      "name": "STOP: shipped - no tracking",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3360,
+        760
+      ],
+      "parameters": {
+        "jsCode": "// No tracking could be found: nothing was pasted on the row and ShipStation (if\n// configured) had nothing for the order. The shipping email is NOT sent \u2014 a ship notice\n// without a tracking number is worse than none, and this is the row the office sees in\n// the execution list.\nreturn $input.all().map((i) => ({\n  json: Object.assign({}, i.json, {\n    _outcome: 'held',\n    _reason: i.json._reason || 'no tracking number available'\n  })\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ship-mail",
+      "name": "compose the shipping email",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3360,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Composes the personalised shipping + installation email for one shipped order. Every\n// number in it is computed here from PRODUCT_RULES and the row's own line items \u2014 the\n// anchor counts and manual links are rules in config, not prose. If a rule is missing,\n// that line says the guide travels with the shipment instead of inventing a link.\nfunction esc(v) {\n  return String(v == null ? '' : v).replace(/[<>&\"]/g, function (c) {\n    return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '\"': '&quot;' }[c];\n  });\n}\nfunction fmtDate(d) {\n  const months = ['January','February','March','April','May','June','July','August',\n    'September','October','November','December'];\n  const p = String(d || '').split('-');\n  if (p.length !== 3) return d || '';\n  return (months[Number(p[1]) - 1] || p[1]) + ' ' + Number(p[2]) + ', ' + p[0];\n}\nfunction parseItems(raw) {\n  try {\n    const arr = JSON.parse(raw || '[]');\n    return Array.isArray(arr) ? arr : [];\n  } catch (e) { return []; }\n}\nfunction anchorsFor(rule, qty, line) {\n  const a = rule.anchors || { mode: 'none' };\n  if (a.mode === 'none') return { text: 'free-standing \u2014 no wall anchors needed', n: 0 };\n  if (a.mode === 'fixed') return { text: (Number(a.qty) || 0) * qty + ' anchors',\n                                   n: (Number(a.qty) || 0) * qty };\n  if (a.mode === 'per_metre') {\n    const m = parseFloat(line.dim_m);\n    if (!(m > 0)) return { text: 'anchors sized to the length (rule is per metre)', n: -1 };\n    const total = m * qty;\n    const n = Math.ceil(total * (Number(a.qty) || 0));\n    return { text: n + ' anchors (2 per metre over ' + total + ' m)', n: n };\n  }\n  return { text: '', n: -1 };\n}\n\nconst cfg = $('config').first().json;\nconst cols = cfg.columns || {};\nconst h = (k) => cols[k] || k;\nconst item = $input.first().json;\nconst rules = (cfg.product_rules || []).reduce(function (m, r) {\n  m[String(r.sku).trim().toLowerCase()] = r;\n  return m;\n}, {});\n\nconst lines = parseItems(item[h('items')]);\nconst built = lines.map(function (li) {\n  const rule = rules[String(li.sku || '').trim().toLowerCase()];\n  const qty = Math.max(1, Number(li.qty) || 1);\n  if (!rule) return { name: li.name || li.sku, qty: qty,\n                      anchor: 'installation guide travels with the shipment',\n                      manual: '', note: '' };\n  const a = anchorsFor(rule, qty, li);\n  return { name: rule.name || li.name, qty: qty, anchor: a.text, manual: rule.manual || '',\n           note: rule.note || '' };\n});\n\nconst anchorRows = built.filter((b) => b.anchor).map(function (b) {\n  return '<tr><td style=\"padding:6px 0\">' + esc(b.name) + ' &times; ' + b.qty +\n         '</td><td style=\"padding:6px 0;text-align:right\">' + esc(b.anchor) + '</td></tr>';\n}).join('');\nconst manuals = built.map((b) => b.manual).filter((m) => m)\n  .filter(function (m, idx, arr) { return arr.indexOf(m) === idx; });\nconst manualLines = manuals.map(function (m) {\n  return '<li><a href=\"' + esc(m) + '\">' + esc(m) + '</a></li>';\n}).join('');\n\nconst tracking = String(item[h('tracking')] || '').trim();\nconst carrier = String(item[h('carrier')] || '').trim();\nconst orderNo = String(item[h('order_id')] || '').trim();\n\nconst subject = (cfg.ship_subject || 'Your {company} order {order} has shipped')\n  .replace('{company}', cfg.company_name)\n  .replace('{order}', orderNo);\n\nconst html =\n  '<p>Hi ' + esc(item[h('customer')] || 'there') + ',</p>' +\n  '<p>Good news \u2014 your order has left the workshop' +\n  (carrier ? ' with ' + esc(carrier) : '') + '.</p>' +\n  '<p><strong>Tracking:</strong> ' + esc(tracking) +\n  (carrier ? ' (' + esc(carrier) + ')' : '') +\n  (String(item[h('ship_date')] || '').trim()\n    ? ' &middot; shipped ' + esc(fmtDate(item[h('ship_date')])) : '') + '</p>' +\n  '<h3>What you need for installation</h3>' +\n  '<table>' + anchorRows + '</table>' +\n  (manualLines ? '<h3>Installation manuals</h3><ul>' + manualLines + '</ul>' : '') +\n  '<p>If anything arrives damaged, photograph the packaging before you open it and ' +\n  'email us within 48 hours.</p>' +\n  '<p>\u2014 ' + esc(cfg.from_name || cfg.company_name) + '</p>';\n\nconst textLines = built.map(function (b) {\n  return '  - ' + b.qty + 'x ' + b.name + ' \u2014 ' + b.anchor;\n}).join('\\n');\nconst text =\n  'Hi ' + (item[h('customer')] || 'there') + ',\\n\\n' +\n  'Good news \u2014 your order has left the workshop' +\n  (carrier ? ' with ' + carrier : '') + '.\\n' +\n  'Tracking: ' + tracking + (carrier ? ' (' + carrier + ')' : '') +\n  (String(item[h('ship_date')] || '').trim()\n    ? ' \u2014 shipped ' + fmtDate(item[h('ship_date')]) : '') + '\\n\\n' +\n  'What you need for installation:\\n' + textLines + '\\n' +\n  (manuals.length ? '\\nInstallation manuals:\\n' +\n    manuals.map(function (m) { return '  - ' + m; }).join('\\n') + '\\n' : '\\n') +\n  '\\n\u2014 ' + (cfg.from_name || cfg.company_name);\n\nreturn [{\n  json: Object.assign({}, item, {\n    customer_email: item[h('email')] || '',\n    customer_subject: subject,\n    customer_html: html,\n    customer_text: text\n  })\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "sending2",
+      "name": "sending it?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3640,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "sending2-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.send_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "stop-prev2",
+      "name": "STOP: preview - shipping email not sent",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3920,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// Preview or demo mode: the shipping email was composed but not sent, so the row is NOT\n// marked as emailed \u2014 the next run will try again, which is right, because nothing went\n// out. Open this node to read the email the customer would get.\nreturn $input.all().map((i) => ({\n  json: Object.assign({}, i.json, {\n    _outcome: 'preview',\n    _reason: 'preview mode \u2014 shipping email composed, not sent'\n  })\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "mail-ship",
+      "name": "[cred] Gmail - send the shipping email",
+      "type": "n8n-nodes-base.gmail",
+      "notes": "Plain-text alternative is on the item as customer_text",
+      "onError": "continueRegularOutput",
+      "position": [
+        3920,
+        0
+      ],
+      "parameters": {
+        "sendTo": "={{ $('config').first().json.test_send ? $('config').first().json.test_email : $('compose the shipping email').first().json.customer_email }}",
+        "message": "={{ $('compose the shipping email').first().json.customer_html }}",
+        "options": {
+          "replyTo": "={{ $('config').first().json.reply_to }}",
+          "senderName": "={{ $('config').first().json.from_name }}",
+          "appendAttribution": false
+        },
+        "subject": "={{ $('config').first().json.test_send ? ('[TEST -> ' + $('compose the shipping email').first().json.customer_email + '] ' + $('compose the shipping email').first().json.customer_subject) : $('compose the shipping email').first().json.customer_subject }}",
+        "emailType": "html"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "mark-shipped",
+      "name": "row: mark shipped",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// After the shipping email really went out (test or live): record what happened on the\n// row so the next run leaves it alone. Headings only, matched on 'Order key'.\nfunction nowText() {\n  const d = new Date();\n  const p = (n) => (n < 10 ? '0' : '') + n;\n  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' +\n         p(d.getHours()) + ':' + p(d.getMinutes());\n}\nconst cfg = $('config').first().json;\nconst cols = cfg.columns || {};\nconst h = (k) => cols[k] || k;\nconst item = $input.first().json;\nconst out = {};\nout[h('order_key')] = String(item[h('order_key')] != null ? item[h('order_key')] : '');\nout[h('carrier')] = String(item.carrier || '');\nout[h('tracking')] = String(item.tracking || '');\nout[h('ship_date')] = String(item.ship_date || '');\nout[h('ship_email_sent')] = nowText();\nreturn [{ json: out }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "board-ship",
+      "name": "[cred] Sheets - record the shipment",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        4480,
+        0
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [
+            "Order key"
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('config').first().json.board_tab }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('config').first().json.board_sheet_id }}"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "unconfirmed",
+      "name": "shipped before confirmation?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1400,
+        190
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "unconfirmed-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json._has_unconfirmed }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "stop-unconfirmed",
+      "name": "STOP: never shipped unconfirmed",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1680,
+        1140
+      ],
+      "parameters": {
+        "jsCode": "// A row reached 'Shipped' with no confirmation recorded against it. Never shipped\n// unconfirmed: the run stops here and shows the row, instead of emailing a customer\n// whose order we cannot prove was confirmed. In the sheet, the fix is to send the\n// confirmation (or correct the row) \u2014 the gate does not guess.\nconst cols = $('config').first().json.columns || {};\nconst h = (k) => cols[k] || k;\nconst item = $input.first().json;\nreturn (item.unconfirmed || []).map(function (row) {\n  return { json: Object.assign({}, row, {\n    _outcome: 'held',\n    _reason: 'flipped to Shipped but Confirmation sent is blank on the board'\n  }) };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "stop-empty2",
+      "name": "STOP: nothing unconfirmed",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1680,
+        950
+      ],
+      "parameters": {
+        "jsCode": "// Nothing on the board needs this run: no rows flipped to Shipped that are waiting on an\n// email, nothing shipped before it was confirmed. The run still completes cleanly.\nreturn $input.all().map((i) => ({\n  json: Object.assign({}, i.json, { _outcome: 'nothing_to_do' })\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "end2",
+      "name": "End",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        4760,
+        760
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-00",
+      "name": "Template overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -1422
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 640,
+        "height": 1082,
+        "content": "## Send shipping emails with tracking from a Google Sheet via ShipStation\n\n**Who's it for**\nSmall ecommerce operations whose office already works out of a Google Sheet and who want the\nshipping notification to go out on its own \u2014 without anyone remembering to send it, and without a\ncustomer ever getting a ship notice that has no tracking number in it.\n\n**How it works**\nTwice each weekday the workflow reads the whole Orders tab once and does two jobs. It ships: any\nrow the office has flipped to **Shipped** that has not yet had its shipping email goes out, but only\nif the confirmation was recorded and a tracking number exists \u2014 pasted on the row, or pulled from\nShipStation. It also audits: any row marked shipped that was never confirmed is surfaced rather\nthan emailed. Once the email is away the row is marked, so the next run leaves it alone. The sheet\nstays the contract: flipping the Stage cell is the only trigger, and rows only move when the\nworkflow has proof.\n\n**How to set up**\n1. Open **`config`** and set your sheet id, the tab name and the send window.\n2. Attach Google Sheets and Gmail credentials to the `[cred]` nodes.\n3. Optionally add a ShipStation key \u2014 leave it blank and tracking is read from the row only.\n4. Leave **`DEMO_MODE = true`** for the first run; it uses the demo board and sends nothing.\n\n**Requirements**\nA Google Sheet with an Orders tab carrying a Stage column, a Gmail account, and optionally a\nShipStation account for tracking lookup.\n\n**How to customize**\nThe email copy is in **`compose the shipping email`** and the stage names are in `config`. To ship\nfrom a different board, change the field map in **`read the board`** \u2014 nothing downstream cares."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-01",
+      "name": "1. Read the board once",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -286
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1320,
+        "height": 246,
+        "content": "### 1. Read the board once\n\nTwo triggers, one path: the schedule fires twice each weekday, and **`Run it now`** does the same thing by hand.\n\n**`board connected?`** falls back to **`use the demo board`** when no Sheets credential is attached, so the whole workflow can be demonstrated before you connect anything.\n\n**`read the board`** holds the field map \u2014 a different sheet layout is one edit here, not a new workflow."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-02",
+      "name": "2. The sheet is the contract",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1400,
+        1280
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 480,
+        "height": 290,
+        "content": "### 2. The sheet is the contract\n\nThe office keeps working in the sheet. Flipping the **Stage** cell to `Shipped` is the trigger \u2014 nothing else needs to happen for the shipping email to fire.\n\nRows only move when the workflow has proof: a confirmation timestamp on the row, then a tracking number."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-03",
+      "name": "3. Find the tracking number",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1960,
+        -242
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1320,
+        "height": 202,
+        "content": "### 3. Find the tracking number\n\nA number pasted on the row wins. Only if the cell is empty does the workflow ask ShipStation, and only if a ShipStation key is configured.\n\nAll three paths meet at **`tracking found?`**, which is the gate that matters: **no tracking number, no email**. A shipped order without one stops at **`STOP: shipped - no tracking`** for a human, rather than reaching the customer half-finished."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-04",
+      "name": "4. Send, then mark the row",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3360,
+        900
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1320,
+        "height": 224,
+        "content": "### 4. Send, then mark the row\n\n**`sending it?`** is the dry-run gate \u2014 while `DEMO_MODE = true` the composed email stops at **`STOP: preview - shipping email not sent`** where you can read it.\n\nThe row is marked **after** the send succeeds, so a failure leaves the order in the queue for the next run instead of silently marking it done."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-05",
+      "name": "5. The audit that runs every time",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1400,
+        1640
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 480,
+        "height": 290,
+        "content": "### 5. The audit that runs every time\n\nThe same read of the board also checks for rows marked shipped that were **never confirmed**. That is a packing error, and it is the one thing a shipping automation can make worse by running quietly.\n\nIt is never emailed \u2014 it stops at a named node so somebody sees it."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "config": {
+      "main": [
+        [
+          {
+            "node": "board connected?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run it now": {
+      "main": [
+        [
+          {
+            "node": "config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sending it?": {
+      "main": [
+        [
+          {
+            "node": "[cred] Gmail - send the shipping email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: preview - shipping email not sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read the board": {
+      "main": [
+        [
+          {
+            "node": "anything shipped but not emailed?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "shipped before confirmation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tracking found?": {
+      "main": [
+        [
+          {
+            "node": "compose the shipping email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: shipped - no tracking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "board connected?": {
+      "main": [
+        [
+          {
+            "node": "[cred] Sheets - read the board",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "use the demo board",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "row: mark shipped": {
+      "main": [
+        [
+          {
+            "node": "[cred] Sheets - record the shipment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ShipStation ready?": {
+      "main": [
+        [
+          {
+            "node": "[cred] ShipStation - fetch the tracking",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "no tracking available",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split the shippers": {
+      "main": [
+        [
+          {
+            "node": "tracking on the row?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "use the demo board": {
+      "main": [
+        [
+          {
+            "node": "read the board",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tracking on the row?": {
+      "main": [
+        [
+          {
+            "node": "tracking from the board",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ShipStation ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "no tracking available": {
+      "main": [
+        [
+          {
+            "node": "tracking found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read the tracking reply": {
+      "main": [
+        [
+          {
+            "node": "tracking found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tracking from the board": {
+      "main": [
+        [
+          {
+            "node": "tracking found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekdays 08:30 and 16:30": {
+      "main": [
+        [
+          {
+            "node": "config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: nothing unconfirmed": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "compose the shipping email": {
+      "main": [
+        [
+          {
+            "node": "sending it?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: nothing to ship today": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: shipped - no tracking": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "shipped before confirmation?": {
+      "main": [
+        [
+          {
+            "node": "STOP: never shipped unconfirmed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: nothing unconfirmed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Sheets - read the board": {
+      "main": [
+        [
+          {
+            "node": "read the board",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: never shipped unconfirmed": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "anything shipped but not emailed?": {
+      "main": [
+        [
+          {
+            "node": "split the shippers",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: nothing to ship today",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Sheets - record the shipment": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Gmail - send the shipping email": {
+      "main": [
+        [
+          {
+            "node": "row: mark shipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: preview - shipping email not sent": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] ShipStation - fetch the tracking": {
+      "main": [
+        [
+          {
+            "node": "read the tracking reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

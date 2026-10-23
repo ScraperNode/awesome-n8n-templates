@@ -1,6 +1,6 @@
 # 🤝 Automated QuickBooks sales anomaly detector with professional email alerts
 
-> ⚡ **20 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **28 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

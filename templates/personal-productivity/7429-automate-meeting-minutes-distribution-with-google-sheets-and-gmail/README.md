@@ -1,6 +1,6 @@
 # ⚡ Automate meeting minutes distribution with Google Sheets and Gmail
 
-> ⚡ **947 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,008 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

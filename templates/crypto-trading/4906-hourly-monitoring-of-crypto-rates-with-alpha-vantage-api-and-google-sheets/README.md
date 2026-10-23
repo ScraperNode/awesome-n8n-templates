@@ -1,6 +1,6 @@
 # 📈 📈 Hourly monitoring of crypto rates with Alpha Vantage API and Google Sheets
 
-> ⚡ **556 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **587 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

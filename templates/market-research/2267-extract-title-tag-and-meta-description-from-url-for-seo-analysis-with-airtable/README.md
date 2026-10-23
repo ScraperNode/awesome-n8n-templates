@@ -1,6 +1,6 @@
 # 📊 Extract Title tag and Meta description from url for SEO analysis with Airtable
 
-> ⚡ **3,865 views** · 📊 [Market Research & Insights](../)
+> ⚡ **3,959 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

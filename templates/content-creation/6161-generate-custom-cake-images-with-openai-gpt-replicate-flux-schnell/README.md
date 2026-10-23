@@ -1,6 +1,6 @@
 # 🎬 Generate custom cake images with OpenAI GPT & Replicate Flux Schnell
 
-> ⚡ **749 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **796 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

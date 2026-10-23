@@ -1,6 +1,6 @@
 # ⚙️ Send structured logs to BetterStack from any workflow using HTTP request
 
-> ⚡ **933 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **984 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

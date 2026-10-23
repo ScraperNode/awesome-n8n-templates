@@ -1,6 +1,6 @@
 # 📁 Automatic Notion database backup to Google Drive with Telegram notifications
 
-> ⚡ **159 views** · 📁 [File Management](../)
+> ⚡ **303 views** · 📁 [File Management](../)
 
 ## Description
 

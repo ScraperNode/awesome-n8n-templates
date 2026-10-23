@@ -1,6 +1,6 @@
 # 📊 Detect content decay from Google Search Console and alert via Slack and email
 
-> ⚡ **14 views** · 📊 [Market Research & Insights](../)
+> ⚡ **131 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

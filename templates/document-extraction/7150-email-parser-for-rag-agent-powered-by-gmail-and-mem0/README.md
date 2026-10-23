@@ -1,6 +1,6 @@
 # 🔬 Email parser for RAG agent powered by Gmail and Mem0
 
-> ⚡ **831 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,005 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

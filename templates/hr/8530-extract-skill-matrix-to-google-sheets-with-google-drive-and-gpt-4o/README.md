@@ -1,6 +1,6 @@
 # 👥 Extract skill matrix to Google Sheets with Google Drive and GPT-4o
 
-> ⚡ **165 views** · 👥 [HR & Recruitment](../)
+> ⚡ **191 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

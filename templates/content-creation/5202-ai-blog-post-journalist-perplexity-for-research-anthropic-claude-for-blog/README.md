@@ -1,6 +1,6 @@
 # 🎬 🧠 AI blog post journalist (Perplexity for research, Anthropic Claude for blog)
 
-> ⚡ **8,206 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **9,536 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

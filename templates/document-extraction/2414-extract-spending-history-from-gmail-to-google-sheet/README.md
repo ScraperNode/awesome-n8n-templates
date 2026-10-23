@@ -1,6 +1,6 @@
 # 🔬 Extract spending history from gmail to google sheet
 
-> ⚡ **2,881 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,898 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

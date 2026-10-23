@@ -1,6 +1,6 @@
 # 📱 Schedule Facebook posts from Google Sheets with approval and Drive images
 
-> ⚡ **154 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **905 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

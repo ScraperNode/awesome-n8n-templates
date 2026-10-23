@@ -1,0 +1,679 @@
+{
+  "name": "Validate lead intake and route review outcomes with Code and Switch",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "c13f0372-edc7-5942-a567-84551638f203",
+      "name": "Run Synthetic Preflight",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        240,
+        280
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "ecc470ce-801d-5787-9b98-b63f5d64cce6",
+      "name": "Generate Synthetic Examples",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        500,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// This file intentionally contains ONLY fictional lead examples.\n// .invalid is an IANA-reserved test domain, not a reachable mailbox.\nconst fixtures = [\n  {\n    case_id: '01_valid', event_id: 'lead-001', name: 'Avery Example',\n    email: '  user@example.com  ', phone: '+1234567890',\n    source: 'sample-form', utm_source: 'linkedin', utm_medium: 'social',\n    utm_campaign: 'np04-preflight'\n  },\n  {\n    case_id: '02_phone_only', event_id: 'lead-002', name: 'Jordan Test',\n    email: '', phone: '+1234567890', source: 'sample-form'\n  },\n  {\n    case_id: '03_no_contact', event_id: 'lead-003', name: 'Morgan Demo',\n    email: '', phone: '', source: 'sample-form'\n  },\n  {\n    case_id: '04_bad_email', event_id: 'lead-004', name: 'Casey Example',\n    email: 'not-an-email', phone: '+1234567890', source: 'sample-form'\n  },\n  {\n    case_id: '05_repeat_event', event_id: 'lead-001', name: 'Avery Replay',\n    email: 'user@example.com', phone: '', source: 'sample-form'\n  },\n  {\n    case_id: '06_repeat_email', event_id: 'lead-006', name: 'Avery Two',\n    email: 'user@example.com', phone: '', source: 'sample-form'\n  },\n  {\n    case_id: '07_missing_event', event_id: '', name: 'Taylor Example',\n    email: 'user@example.com', phone: '', source: 'sample-form'\n  },\n  {\n    case_id: '08_structured_field', event_id: 'lead-008', name: 'Morgan Bad',\n    email: { value: 'user@example.com' }, phone: ['+1234567890'],\n    source: 'sample-form'\n  },\n  {\n    case_id: '09_bad_utm_safe', event_id: 'lead-009', name: 'Zee Example',\n    email: 'user@example.com', phone: '', source: 'sample-form',\n    utm_source: { unexpected: true }, utm_medium: 'social'\n  }\n];\nreturn fixtures.map(fixture => ({ json: fixture }));",
+        "language": "javaScript"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8c656e2e-d4b0-55c0-9066-18da975eca8b",
+      "name": "Evaluate Lead Preflight",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        760,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Import-only educational preflight, no credentials, CRM, network, or persistence.\n// Repeated event IDs / emails are detected only WITHIN the current batch/run.\nconst seenEventIds = new Set();\nconst seenEmails = new Set();\n\nfunction readText(value, maxLength) {\n  if (value === null || value === undefined) return { value: '', invalid: false };\n  if (typeof value !== 'string') return { value: '', invalid: true };\n  const cleaned = value.replace(/[\\u0000-\\u001f\\u007f]/g, ' ').trim();\n  if (cleaned.length > maxLength) return { value: cleaned.slice(0, maxLength), invalid: true };\n  return { value: cleaned, invalid: false };\n}\n\nfunction statusResult(caseId, normalized, status, reasons) {\n  return { json: {\n    case_id: caseId, status, reason_codes: reasons,\n    normalized_fields: normalized,\n    diagnostic_scope: 'SYNTHETIC_OFFLINE_BATCH_ONLY'\n  } };\n}\n\nconst results = [];\nfor (const item of $input.all()) {\n  const raw = item && item.json;\n  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {\n    results.push(statusResult('invalid-shape', {}, 'HOLD_MALFORMED_INPUT', ['PAYLOAD_NOT_OBJECT']));\n    continue;\n  }\n  const caseIdField = readText(raw.case_id, 60);\n  const caseId = caseIdField.invalid ? 'invalid-case-id' : (caseIdField.value || 'unnamed-sample');\n  const event = readText(raw.event_id, 64);\n  const name = readText(raw.name, 120);\n  const email = readText(raw.email, 254);\n  const phone = readText(raw.phone, 30);\n  const source = readText(raw.source, 80);\n  const reasons = [];\n  const utms = {};\n  for (const key of ['utm_source', 'utm_medium', 'utm_campaign']) {\n    const value = readText(raw[key], 100);\n    utms[key] = value.invalid ? '' : value.value;\n    if (value.invalid) reasons.push('INVALID_' + key.toUpperCase() + '_IGNORED');\n  }\n  if (!source.value) reasons.push('MISSING_SOURCE');\n  if (!name.value) reasons.push('MISSING_NAME');\n  const eventId = event.value;\n  const normalizedEmail = email.value.toLowerCase();\n  const emailPresent = normalizedEmail.length > 0;\n  const emailValid = emailPresent && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail);\n  const rawPhone = phone.value.replace(/[\\s().-]/g, '');\n  const phoneValid = rawPhone.length > 0 && /^\\+?[0-9]{7,15}$/.test(rawPhone);\n  if (phone.value && !phoneValid) reasons.push('INVALID_PHONE_IGNORED');\n  const normalized = {\n    event_id: eventId, name: name.value,\n    email: emailPresent ? normalizedEmail : '',\n    phone: phoneValid ? rawPhone : '',\n    source: source.value || 'unspecified',\n    utm_source: utms.utm_source,\n    utm_medium: utms.utm_medium,\n    utm_campaign: utms.utm_campaign\n  };\n  const malformed = name.invalid || email.invalid || phone.invalid || source.invalid;\n  const validEvent = !event.invalid && /^[A-Za-z0-9][A-Za-z0-9_.:-]{2,63}$/.test(eventId);\n  const repeatedId = validEvent && seenEventIds.has(eventId);\n  const repeatedEmail = emailValid && seenEmails.has(normalizedEmail);\n  let status;\n  if (malformed) {\n    status = 'HOLD_MALFORMED_INPUT';\n    reasons.unshift('STRUCTURED_OR_OVERSIZED_FIELD');\n  } else if (!validEvent) {\n    status = 'HOLD_INVALID_EVENT';\n    reasons.unshift('MISSING_OR_INVALID_EVENT_ID');\n  } else if (repeatedId) {\n    status = 'REVIEW_DUPLICATE_IN_BATCH';\n    reasons.unshift('EVENT_ID_REPEATED_IN_THIS_RUN');\n  } else if (emailPresent && !emailValid) {\n    status = 'HOLD_BAD_EMAIL';\n    reasons.unshift('EMAIL_FORMAT_INVALID');\n  } else if (!emailPresent && !phoneValid) {\n    status = 'HOLD_MISSING_CONTACT';\n    reasons.unshift('NO_USABLE_CONTACT_ROUTE');\n  } else if (repeatedEmail) {\n    status = 'REVIEW_SAME_EMAIL_IN_BATCH';\n    reasons.unshift('EMAIL_SEEN_IN_THIS_RUN');\n  } else if (!emailPresent && phoneValid) {\n    status = 'REVIEW_PHONE_ONLY';\n    reasons.unshift('PHONE_ONLY_MANUAL_REVIEW');\n  } else {\n    status = 'READY_FOR_REVIEW';\n    reasons.unshift('PREFLIGHT_PASSED_NOT_CRM_WRITE');\n  }\n  if (validEvent && !repeatedId) seenEventIds.add(eventId);\n  if (emailValid && !repeatedId) seenEmails.add(normalizedEmail);\n  results.push(statusResult(caseId, normalized, status, reasons));\n}\nreturn results;",
+        "language": "javaScript"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "37b40da3-9a78-5616-afce-5997f781063b",
+      "name": "Route by Preflight Status",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1020,
+        280
+      ],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "outputKey": "READY_FOR_REVIEW",
+              "conditions": {
+                "options": {
+                  "leftValue": "",
+                  "caseSensitive": false,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "READY_FOR_REVIEW"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "REVIEW_PHONE_ONLY",
+              "conditions": {
+                "options": {
+                  "leftValue": "",
+                  "caseSensitive": false,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "REVIEW_PHONE_ONLY"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "HOLD_MISSING_CONTACT",
+              "conditions": {
+                "options": {
+                  "leftValue": "",
+                  "caseSensitive": false,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "HOLD_MISSING_CONTACT"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "HOLD_BAD_EMAIL",
+              "conditions": {
+                "options": {
+                  "leftValue": "",
+                  "caseSensitive": false,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "HOLD_BAD_EMAIL"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "REVIEW_DUPLICATE_IN_BATCH",
+              "conditions": {
+                "options": {
+                  "leftValue": "",
+                  "caseSensitive": false,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "REVIEW_DUPLICATE_IN_BATCH"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "REVIEW_SAME_EMAIL_IN_BATCH",
+              "conditions": {
+                "options": {
+                  "leftValue": "",
+                  "caseSensitive": false,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "REVIEW_SAME_EMAIL_IN_BATCH"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "HOLD_INVALID_EVENT",
+              "conditions": {
+                "options": {
+                  "leftValue": "",
+                  "caseSensitive": false,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "HOLD_INVALID_EVENT"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "HOLD_MALFORMED_INPUT",
+              "conditions": {
+                "options": {
+                  "leftValue": "",
+                  "caseSensitive": false,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "HOLD_MALFORMED_INPUT"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "allMatchingOutputs": false,
+          "renameFallbackOutput": "Fallback"
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "f287dddb-4e7b-5998-b818-4ecbdc9e1f9f",
+      "name": "Decision: READY_FOR_REVIEW",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1300,
+        100
+      ],
+      "parameters": {
+        "mode": "manual",
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "39282717-c5b1-563a-a8cd-33abfdfd8028",
+              "name": "route_decision",
+              "type": "string",
+              "value": "READY_FOR_REVIEW"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.5
+    },
+    {
+      "id": "4aea69b5-e63c-567d-b718-3525671069de",
+      "name": "Decision: REVIEW_PHONE_ONLY",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1300,
+        250
+      ],
+      "parameters": {
+        "mode": "manual",
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ab87512d-fa83-5988-adae-70957a8e6121",
+              "name": "route_decision",
+              "type": "string",
+              "value": "REVIEW_PHONE_ONLY"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.5
+    },
+    {
+      "id": "98bf8541-d8e0-585f-8842-2ebfedafb8ae",
+      "name": "Decision: HOLD_MISSING_CONTACT",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1300,
+        400
+      ],
+      "parameters": {
+        "mode": "manual",
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f4c75edf-0e22-5940-bedc-454932ea311c",
+              "name": "route_decision",
+              "type": "string",
+              "value": "HOLD_MISSING_CONTACT"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.5
+    },
+    {
+      "id": "be4a540d-8ac4-5ef6-9451-47b8bb62c4d6",
+      "name": "Decision: HOLD_BAD_EMAIL",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1300,
+        550
+      ],
+      "parameters": {
+        "mode": "manual",
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e818d4ef-ca12-50f1-8fa8-28fb52c1f495",
+              "name": "route_decision",
+              "type": "string",
+              "value": "HOLD_BAD_EMAIL"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.5
+    },
+    {
+      "id": "7a541cff-fad8-5e5e-a138-99b3a2f43df2",
+      "name": "Decision: REVIEW_DUPLICATE_IN_BATCH",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1568,
+        704
+      ],
+      "parameters": {
+        "mode": "manual",
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a62ca334-87d1-5ca1-91e1-7cab464d4a3b",
+              "name": "route_decision",
+              "type": "string",
+              "value": "REVIEW_DUPLICATE_IN_BATCH"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.5
+    },
+    {
+      "id": "90a3421a-7c3a-559e-a77f-90b48134b2f2",
+      "name": "Decision: REVIEW_SAME_EMAIL_IN_BATCH",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1568,
+        848
+      ],
+      "parameters": {
+        "mode": "manual",
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c77bde9d-8edb-549f-a4b0-112af8911270",
+              "name": "route_decision",
+              "type": "string",
+              "value": "REVIEW_SAME_EMAIL_IN_BATCH"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.5
+    },
+    {
+      "id": "36c1e517-7137-515d-97bd-d884b5c09cb5",
+      "name": "Decision: HOLD_INVALID_EVENT",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1568,
+        1008
+      ],
+      "parameters": {
+        "mode": "manual",
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "45f69209-a00b-501e-b5c6-e3b207f66a2a",
+              "name": "route_decision",
+              "type": "string",
+              "value": "HOLD_INVALID_EVENT"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.5
+    },
+    {
+      "id": "5998ae47-d446-5c6a-8745-0595ebc776aa",
+      "name": "Decision: HOLD_MALFORMED_INPUT",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1300,
+        1150
+      ],
+      "parameters": {
+        "mode": "manual",
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "63cba952-72a3-58f8-88ec-76b21c44da1e",
+              "name": "route_decision",
+              "type": "string",
+              "value": "HOLD_MALFORMED_INPUT"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.5
+    },
+    {
+      "id": "90332fa7-60d1-55e0-b2e8-ae1b8ebfe124",
+      "name": "Unexpected Status: Hold For Review",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1300,
+        1300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().map(item => ({\n  json: {\n    ...(item.json || {}),\n    status: 'HOLD_MALFORMED_INPUT',\n    route_decision: 'FALLBACK_MANUAL_REVIEW',\n    reason_codes: [\n      ... (Array.isArray(item.json?.reason_codes) ? item.json.reason_codes : []),\n      'UNEXPECTED_ROUTING_STATUS'\n    ]\n  }\n}));",
+        "language": "javaScript"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "220aef96-f478-4e29-8d52-8cdc3ddf2bd5",
+      "name": "Overview: Lead intake preflight",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -368,
+        -96
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 480,
+        "height": 896,
+        "content": "## Validate lead intake and route review outcomes with Code and Switch\n\n### How it works\n\nRun Synthetic Preflight manually starts a batch of nine fictional leads. Generate Synthetic Examples supplies edge cases. Evaluate Lead Preflight normalizes text, email, phone, and UTM fields, validates event and contact fields, and detects repeated event IDs or emails within that batch. Route by Preflight Status sends eight statuses to Decision nodes that retain assessed fields and add route_decision. Unexpected statuses go to a manual-review fallback.\n\n### Setup\n\n- Import this workflow into an isolated n8n instance and keep it inactive.\n- No credentials or external accounts are required. All nodes are built-in Manual Trigger, Code, Switch, Edit Fields (Set), or Sticky Note nodes.\n- Execute Run Synthetic Preflight manually, then inspect Evaluate Lead Preflight and the matching Decision outputs.\n- Expect nine assessed rows: two READY_FOR_REVIEW and one in each of the seven other named branches. Default fixtures do not invoke fallback.\n\n### Customization and limits\n\nAdd fictional cases in Generate Synthetic Examples. Duplicate checks reset each run. Email and phone checks validate format, not deliverability or ownership. This educational workflow makes no network requests, sends no messages, writes no CRM records, and is not a production lead-handling integration."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "148f1803-21ec-48ae-b873-82b3c66039e1",
+      "name": "Section: Start synthetic preflight",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        192,
+        80
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 240,
+        "height": 352,
+        "content": "## Start synthetic preflight\n\nManual trigger that starts the fictional lead validation preflight run."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "fe4a1efc-84e9-4234-84d1-8f1301e295d2",
+      "name": "Section: Generate and evaluate leads",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        480,
+        144
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 448,
+        "height": 304,
+        "content": "## Generate and evaluate leads\n\nCreates fictional lead examples and evaluates them with code-based preflight rules before routing."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a5d3ec8a-5fdd-460d-a9d8-c95a7cd95ab0",
+      "name": "Section: Route validation status",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        976,
+        96
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 240,
+        "height": 560,
+        "content": "## Route validation status\n\nSwitches each evaluated lead into the appropriate outcome branch based on its preflight status."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "11de114d-33ce-4dd3-8896-05d9abea3f76",
+      "name": "Section: Primary review outcomes",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1248,
+        -96
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 240,
+        "height": 816,
+        "content": "## Primary review outcomes\n\nTop branch cluster that sets route decisions for ready-for-review, phone-only review, missing contact, and bad email outcomes."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "83fa019c-e643-472b-b9e9-7bdc0c297905",
+      "name": "Section: Batch and event outcomes",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1520,
+        464
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 240,
+        "height": 704,
+        "content": "## Batch and event outcomes\n\nMiddle branch cluster that sets decisions for duplicate or same-email batch review cases, plus invalid event holds."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f8de3a3e-87ed-49ed-a407-c7acd0d46f42",
+      "name": "Section: Malformed and fallback holds",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1248,
+        912
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 240,
+        "height": 544,
+        "content": "## Malformed and fallback holds\n\nBottom branch cluster that handles malformed input and catches any unexpected status by holding it for review."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Evaluate Lead Preflight": {
+      "main": [
+        [
+          {
+            "node": "Route by Preflight Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Synthetic Preflight": {
+      "main": [
+        [
+          {
+            "node": "Generate Synthetic Examples",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Preflight Status": {
+      "main": [
+        [
+          {
+            "node": "Decision: READY_FOR_REVIEW",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Decision: REVIEW_PHONE_ONLY",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Decision: HOLD_MISSING_CONTACT",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Decision: HOLD_BAD_EMAIL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Decision: REVIEW_DUPLICATE_IN_BATCH",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Decision: REVIEW_SAME_EMAIL_IN_BATCH",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Decision: HOLD_INVALID_EVENT",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Decision: HOLD_MALFORMED_INPUT",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unexpected Status: Hold For Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Synthetic Examples": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Lead Preflight",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

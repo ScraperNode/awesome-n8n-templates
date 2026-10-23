@@ -1,6 +1,6 @@
 # 🔬 Transcribing Telegram voice messages using Whisper and Gemini with a fallback mechanism
 
-> ⚡ **341 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **426 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

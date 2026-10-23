@@ -1,6 +1,6 @@
 # 🔬 Automate pharmaceutical COA verification & vendor scoring with AI document analysis
 
-> ⚡ **198 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **291 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

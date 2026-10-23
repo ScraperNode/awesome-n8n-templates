@@ -1,6 +1,6 @@
 # 🎬 Generate song lyrics and music from text prompts using OpenAI and Fal.ai Minimax
 
-> ⚡ **709 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **890 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

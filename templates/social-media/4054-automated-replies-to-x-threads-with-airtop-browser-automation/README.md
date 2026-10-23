@@ -1,6 +1,6 @@
 # 📱 Automated replies to X threads with Airtop browser automation
 
-> ⚡ **1,209 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,343 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

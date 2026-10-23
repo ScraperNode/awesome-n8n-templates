@@ -1,6 +1,6 @@
 # 💬 Create a multi-modal Telegram support bot with GPT-4 and Supabase RAG
 
-> ⚡ **11,183 views** · 💬 [Support Chatbots](../)
+> ⚡ **11,910 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

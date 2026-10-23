@@ -1,6 +1,6 @@
 # 📊 Create & send GA4 report with insights via email
 
-> ⚡ **1,002 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,248 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

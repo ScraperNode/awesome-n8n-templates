@@ -1,6 +1,6 @@
 # ⚡ Gmail to vector embeddings with PGVector and Ollama
 
-> ⚡ **3,445 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,697 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

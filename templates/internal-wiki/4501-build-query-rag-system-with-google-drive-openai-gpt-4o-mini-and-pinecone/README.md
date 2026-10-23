@@ -1,6 +1,6 @@
 # 📖 Build & query RAG system with Google Drive, OpenAI GPT-4o-mini, and Pinecone
 
-> ⚡ **5,058 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **5,268 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

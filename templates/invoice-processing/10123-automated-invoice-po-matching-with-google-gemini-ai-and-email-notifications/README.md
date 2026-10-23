@@ -1,6 +1,6 @@
 # 🧾 Automated invoice-PO matching with Google Gemini AI and email notifications
 
-> ⚡ **1,683 views** · 🧾 [Invoice Processing](../)
+> ⚡ **2,410 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 🉑 Generate Anki flash cards for language learning with Google Translate and GPT
 
-> ⚡ **4,516 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,926 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

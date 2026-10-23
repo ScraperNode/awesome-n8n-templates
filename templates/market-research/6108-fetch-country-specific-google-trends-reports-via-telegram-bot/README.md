@@ -1,6 +1,6 @@
 # 📊 Fetch country-specific Google Trends reports via Telegram bot
 
-> ⚡ **539 views** · 📊 [Market Research & Insights](../)
+> ⚡ **646 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

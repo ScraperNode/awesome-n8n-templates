@@ -1,6 +1,6 @@
 # 🤝 Automate Stripe customer data transfer to KlickTipp with dynamic tagging logic
 
-> ⚡ **40 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **45 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

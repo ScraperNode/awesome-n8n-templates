@@ -1,6 +1,6 @@
 # 📋 Sync Jira issues with subsequent comments to Notion database
 
-> ⚡ **5,454 views** · 📋 [Project Management](../)
+> ⚡ **5,577 views** · 📋 [Project Management](../)
 
 ## Description
 

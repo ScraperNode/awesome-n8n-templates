@@ -1,6 +1,6 @@
 # 🔬 Transfer data from Postgres to Excel
 
-> ⚡ **6,598 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **8,578 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

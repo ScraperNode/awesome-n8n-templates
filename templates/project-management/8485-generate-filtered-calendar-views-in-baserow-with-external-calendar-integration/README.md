@@ -1,6 +1,6 @@
 # 📋 Generate filtered calendar views in Baserow with external calendar integration
 
-> ⚡ **147 views** · 📋 [Project Management](../)
+> ⚡ **160 views** · 📋 [Project Management](../)
 
 ## Description
 

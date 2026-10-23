@@ -1,6 +1,6 @@
 # 🎫 Automate Marker.io issues to Intercom conversations with full technical context
 
-> ⚡ **276 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **298 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

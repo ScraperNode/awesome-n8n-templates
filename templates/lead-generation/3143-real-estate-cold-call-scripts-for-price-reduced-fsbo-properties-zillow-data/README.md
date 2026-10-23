@@ -1,6 +1,6 @@
 # 🎣 Real estate cold call scripts for price reduced FSBO properties (Zillow data)
 
-> ⚡ **1,692 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,746 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

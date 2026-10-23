@@ -1,6 +1,6 @@
 # 📊 Get articles from Hacker News
 
-> ⚡ **6,683 views** · 📊 [Market Research & Insights](../)
+> ⚡ **6,928 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

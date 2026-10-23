@@ -1,6 +1,6 @@
 # 👥 Send weekly hiring manager reports with BreezyHR data to email
 
-> ⚡ **18 views** · 👥 [HR & Recruitment](../)
+> ⚡ **33 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 Track employee performance KPIs from ClickUp with GPT-4.1 and Google Sheets
 
-> ⚡ **137 views** · 📋 [Project Management](../)
+> ⚡ **294 views** · 📋 [Project Management](../)
 
 ## Description
 

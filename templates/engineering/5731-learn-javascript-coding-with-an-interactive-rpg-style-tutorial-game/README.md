@@ -1,6 +1,6 @@
 # ⚒️ Learn JavaScript coding with an interactive RPG-style tutorial game
 
-> ⚡ **1,838 views** · ⚒️ [Engineering](../)
+> ⚡ **2,508 views** · ⚒️ [Engineering](../)
 
 ## Description
 

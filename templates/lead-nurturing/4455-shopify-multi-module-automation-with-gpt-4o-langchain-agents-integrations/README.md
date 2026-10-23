@@ -1,6 +1,6 @@
 # 💬 Shopify multi-module automation with GPT-4o, Langchain agents & integrations
 
-> ⚡ **2,364 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,582 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

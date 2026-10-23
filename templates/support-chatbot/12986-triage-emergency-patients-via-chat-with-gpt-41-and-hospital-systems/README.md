@@ -1,6 +1,6 @@
 # 💬 Triage emergency patients via chat with GPT-4.1 and hospital systems
 
-> ⚡ **54 views** · 💬 [Support Chatbots](../)
+> ⚡ **361 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

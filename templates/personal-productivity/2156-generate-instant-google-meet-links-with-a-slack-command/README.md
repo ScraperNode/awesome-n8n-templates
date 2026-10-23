@@ -1,6 +1,6 @@
 # ⚡ Generate instant google meet links with a slack command
 
-> ⚡ **4,060 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,079 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

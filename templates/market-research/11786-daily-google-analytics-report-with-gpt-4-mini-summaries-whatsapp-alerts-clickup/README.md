@@ -1,6 +1,6 @@
 # 📊 Daily Google Analytics report with GPT-4 mini summaries, WhatsApp alerts & ClickUp tasks
 
-> ⚡ **309 views** · 📊 [Market Research & Insights](../)
+> ⚡ **581 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

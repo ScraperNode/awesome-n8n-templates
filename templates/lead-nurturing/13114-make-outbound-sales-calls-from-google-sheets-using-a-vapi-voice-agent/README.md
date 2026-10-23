@@ -1,6 +1,6 @@
 # 💬 Make outbound sales calls from Google Sheets using a VAPI voice agent
 
-> ⚡ **219 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **912 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

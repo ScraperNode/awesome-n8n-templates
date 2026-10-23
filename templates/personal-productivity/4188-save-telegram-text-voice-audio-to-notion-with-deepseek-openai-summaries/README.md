@@ -1,6 +1,6 @@
 # ⚡ Save Telegram text, voice & audio to Notion with DeepSeek & OpenAI summaries
 
-> ⚡ **902 views** · ⚡ [Personal Productivity](../)
+> ⚡ **959 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Manage Google Calendar events with GPT‑4 and an AI assistant
 
-> ⚡ **96 views** · ⚡ [Personal Productivity](../)
+> ⚡ **490 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

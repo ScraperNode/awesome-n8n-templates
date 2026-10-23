@@ -1,6 +1,6 @@
 # ⚒️ 🛠️ Oura tool MCP server 💪 all 4 operations
 
-> ⚡ **191 views** · ⚒️ [Engineering](../)
+> ⚡ **244 views** · ⚒️ [Engineering](../)
 
 ## Description
 

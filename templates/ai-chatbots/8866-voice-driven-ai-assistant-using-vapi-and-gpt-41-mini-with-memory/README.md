@@ -1,6 +1,6 @@
 # 🤖 Voice-driven AI assistant using VAPI and GPT-4.1-mini with memory
 
-> ⚡ **764 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **1,090 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

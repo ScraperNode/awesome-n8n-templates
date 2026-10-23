@@ -1,6 +1,6 @@
 # ⚒️ Create a table in Quest DB and insert data
 
-> ⚡ **531 views** · ⚒️ [Engineering](../)
+> ⚡ **541 views** · ⚒️ [Engineering](../)
 
 ## Description
 

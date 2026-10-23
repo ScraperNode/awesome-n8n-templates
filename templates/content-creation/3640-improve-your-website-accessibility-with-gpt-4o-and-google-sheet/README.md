@@ -1,6 +1,6 @@
 # 🎬 🧑‍🦯Improve your website accessibility with GPT-4o and Google Sheet
 
-> ⚡ **2,107 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,172 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

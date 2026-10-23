@@ -1,6 +1,6 @@
 # 🔬 Extract contact information from business cards with Mistral OCR and GPT-4o-mini
 
-> ⚡ **789 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,013 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

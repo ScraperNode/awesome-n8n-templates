@@ -1,6 +1,6 @@
 # ⚡ Beginner Outlook calendar summary with OpenAI
 
-> ⚡ **5,406 views** · ⚡ [Personal Productivity](../)
+> ⚡ **7,039 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

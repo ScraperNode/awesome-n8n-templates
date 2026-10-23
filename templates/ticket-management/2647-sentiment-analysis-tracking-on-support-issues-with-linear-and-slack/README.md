@@ -1,6 +1,6 @@
 # 🎫 Sentiment analysis tracking on support issues with Linear and Slack
 
-> ⚡ **2,454 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **2,476 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ 🛠️ PostBin tool MCP server 💪 6 operations
 
-> ⚡ **130 views** · ⚒️ [Engineering](../)
+> ⚡ **148 views** · ⚒️ [Engineering](../)
 
 ## Description
 

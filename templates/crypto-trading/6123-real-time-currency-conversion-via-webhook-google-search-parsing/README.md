@@ -1,6 +1,6 @@
 # 📈 Real-time currency conversion via webhook & Google search parsing
 
-> ⚡ **359 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **457 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

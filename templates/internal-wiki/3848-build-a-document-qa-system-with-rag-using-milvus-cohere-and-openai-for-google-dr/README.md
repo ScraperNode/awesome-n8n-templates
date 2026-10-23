@@ -1,6 +1,6 @@
 # 📖 Build a document QA system with RAG using Milvus, Cohere, and OpenAI for Google Drive
 
-> ⚡ **3,544 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **3,721 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

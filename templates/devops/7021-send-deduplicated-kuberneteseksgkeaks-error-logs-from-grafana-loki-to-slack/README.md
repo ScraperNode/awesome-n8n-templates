@@ -1,6 +1,6 @@
 # ⚙️ Send deduplicated Kubernetes(EKS/GKE/AKS) error logs from Grafana Loki to Slack
 
-> ⚡ **332 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **422 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

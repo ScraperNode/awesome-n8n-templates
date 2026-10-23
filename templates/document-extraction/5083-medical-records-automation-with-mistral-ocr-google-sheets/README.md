@@ -1,6 +1,6 @@
 # 🔬 Medical records automation with Mistral OCR & Google Sheets
 
-> ⚡ **2,177 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,416 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

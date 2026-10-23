@@ -1,6 +1,6 @@
 # 🤝 TwentyCRM event based updates on selective messaging channels with logs
 
-> ⚡ **1,401 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,551 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

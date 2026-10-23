@@ -1,0 +1,1156 @@
+{
+  "id": "a7ldLty8xYKwUCqw",
+  "meta": {
+    "instanceId": "dd69efaf8212c74ad206700d104739d3329588a6f3f8381a46a481f34c9cc281",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Multi-Agent Procurement System",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "189993af-472c-4be1-a859-385ab5fb5aa6",
+      "name": "Sticky Note - Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1456,
+        -448
+      ],
+      "parameters": {
+        "width": 1500,
+        "height": 1900,
+        "content": "## \ud83d\uded2 Multi-Agent Procurement System \u2014 Planner, Negotiator, Validator & Approval Agents\n\nThis workflow takes a purchase request and runs it through four specialised Claude agents, with deterministic guardrails and a human-in-the-loop step, then records every offer and the final decision in Postgres.\n\n### Pipeline\nPurchase Request \u2192 Planner Agent \u2192 Supplier Loop (Negotiator Agent \u21c4 supplier, Validator Agent) \u2192 Ranking \u2192 Approval Agent \u2192 (auto-approve | human approval via Slack | reject) \u2192 Postgres audit trail + Slack outcome\n\n### The four agents\n1. **Planner Agent** turns the raw request into a sourcing plan: normalized specs, must-have terms, evaluation criteria, target price, walk-away price, negotiation levers and risk flags.\n2. **Negotiator Agent** runs a multi-round negotiation with each supplier, opening near the target price, conceding gradually and never crossing the walk-away price.\n3. **Validator Agent** audits each negotiated deal (budget, lead time, terms, supplier risk) and is combined with hard-coded policy checks in code.\n4. **Approval Agent** reads the ranked, validated offers and recommends auto_approve, escalate or reject. Code guardrails can override it (an AI can never auto-approve above the spend limit).\n\n### How it works\n1. Start it with the Manual Trigger (built-in sample request) or POST a JSON purchase request to the Webhook.\n2. Set - Procurement Config holds every policy setting: model, Slack channel, auto-approve limit, negotiation rounds, minimum supplier rating, max risk score.\n3. The Planner Agent produces the plan, then one item per supplier enters Loop Over Suppliers.\n4. Inside the loop the Negotiator counters, the supplier responds, and the loop repeats until a deal is reached, the agent walks away, or max rounds is hit.\n5. The Validator Agent checks the outcome and the offer is upserted into Postgres.\n6. When all suppliers are done, offers are scored (price 50%, lead time 20%, rating 20%, risk 10%) and the Approval Agent decides the route.\n7. Escalations post Approve / Reject links to Slack and the workflow pauses at a Wait node until someone clicks.\n\n### How to set up\n1. Import this workflow into n8n.\n2. Add credentials: Postgres, Anthropic API (Header Auth, name x-api-key), Slack API.\n3. Run procurement_schema.sql to create the tables (procurement_offers, procurement_decisions).\n4. Edit Set - Procurement Config (model, channel, limits).\n5. Run the Manual Trigger to test end to end, then activate the workflow to enable the webhook.\n\n### Webhook payload (all fields optional, defaults are used for anything missing)\n{ requestId, requester, department, itemDescription, quantity, budget, currency, neededByDays, suppliers: [{ name, email, country, rating, quotedUnitPrice, leadTimeDays, paymentTerms, minAcceptableUnitPrice }] }\n\n### IMPORTANT: supplier responses are simulated\nJS - Parse Negotiation & Supplier Response simulates how a supplier reacts to a counter-offer (using minAcceptableUnitPrice as a hidden floor). For real use, replace that logic with an HTTP call to your supplier portal / RFQ API, or an email + Wait step, and feed the supplier's real reply back into the same state fields.\n\n### How to customize\n- Add a Wait-node timeout and an escalation path if nobody approves within X hours.\n- Add a contract-drafting agent after approval and send a PO to your ERP.\n- Pull suppliers from your ERP / vendor database instead of the request payload.\n- Add spend-category rules (e.g. legal review for contracts over a threshold)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e3ad4d25-93ab-41ec-93b2-40de808aa140",
+      "name": "Sticky Note - Intake & Planner Agent",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        352,
+        160
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 1424,
+        "height": 704,
+        "content": "## 1. Intake, Config & Planner Agent\n\nManual Trigger and Webhook both feed Set - Procurement Config, so the same policy settings apply however a request arrives.\n\nJS - Normalize Procurement Request merges the incoming payload over a built-in sample request (100 rugged laptops, four suppliers) so the workflow is testable with one click.\n\nHTTP Request - Claude: Planner Agent produces the sourcing plan as strict JSON: category, specs, must-have terms, evaluation criteria, target and walk-away unit prices, levers and risk flags.\n\nJS - Parse Procurement Plan parses that JSON safely and falls back to a budget-derived plan (target = 90% of budget per unit, walk-away = budget per unit) if parsing fails.\n\nJS - Split Suppliers turns the supplier list into one item per supplier, each carrying the plan and policy config."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "eaa2bda5-c199-4ba3-ba91-efee268c04c4",
+      "name": "Sticky Note - Negotiator Agent Loop",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1824,
+        -208
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 1116,
+        "height": 752,
+        "content": "## 2. Supplier Loop & Negotiator Agent\n\nLoop Over Suppliers handles one supplier at a time.\n\nJS - Prepare Negotiation Round initialises (or carries forward) the negotiation state: round number, current price, and history.\n\nHTTP Request - Claude: Negotiator Agent proposes the next counter-offer, requested concessions and a message to the supplier. It may walk away only if the supplier cannot meet the walk-away price.\n\nJS - Parse Negotiation & Supplier Response clamps the counter-offer to sane values, simulates the supplier reply (REPLACE with a real supplier integration), and updates agreed / finished flags.\n\nIF - Negotiation Finished? sends unfinished negotiations back for another round and finished ones to validation."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "4456f6ae-c556-4a95-a551-388199a30394",
+      "name": "Sticky Note - Validator Agent & Offer Storage",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2944,
+        -16
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 1300,
+        "height": 480,
+        "content": "## 3. Validator Agent & Offer Storage\n\nHTTP Request - Claude: Validator Agent audits the negotiated deal and returns passed, riskScore (0-100), issues and a recommendation.\n\nJS - Parse Validation combines the agent verdict with deterministic policy checks: total cost within budget, lead time within the deadline, supplier rating above the minimum. Either the agent or the code can fail an offer.\n\nPostgres - Upsert Offer stores the offer with parameterized SQL (no string-built queries), so re-runs for the same request update instead of duplicating.\n\nJS - Restore Offer Record puts the full offer back on the item so the loop's final output carries every offer."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5db02a6a-7b1c-4eb6-8800-e10c797bbb6c",
+      "name": "Sticky Note - Ranking, Approval Agent & Human-in-the-Loop",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1904,
+        560
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 2488,
+        "height": 776,
+        "content": "## 4. Ranking, Approval Agent & Human-in-the-Loop\n\nJS - Rank Offers scores every offer that was agreed and passed validation (price 50%, lead time 20%, rating 20%, low risk 10%) and lists rejected offers with reasons.\n\nHTTP Request - Claude: Approval Agent recommends auto_approve, escalate or reject, names the supplier and lists conditions.\n\nJS - Parse Approval Decision enforces hard guardrails: auto-approve is downgraded to escalate if the total exceeds the auto-approve limit, risk exceeds the maximum, or the total exceeds the budget. If no offer is eligible the result is reject.\n\nSwitch - Approval Route branches the flow:\n- auto_approve: marked approved by the approval agent.\n- escalate: Slack - Request Human Approval posts Approve / Reject links (built from the execution's resume URL), Wait - Human Decision pauses until a link is clicked, then IF - Human Approved? routes to approved or rejected.\n- reject: marked rejected.\n\nPostgres - Save Decision writes the final status to procurement_decisions and Slack - Post Outcome announces it."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8d214cf9-e300-47b3-beb7-7b64c2a64c03",
+      "name": "Manual Trigger - Start Request",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        544,
+        512
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "dc36a824-183c-47f4-9518-a0cd90511da4",
+      "name": "Webhook - New Procurement Request",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        544,
+        704
+      ],
+      "webhookId": "d0d8db1a-db0d-412d-a98f-d29b0a8c6862",
+      "parameters": {
+        "path": "procurement-request",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "97b8a378-a061-4f9f-8c84-b71c2095d050",
+      "name": "Set - Procurement Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        768,
+        512
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7c79c03d-7282-4e85-a734-1cc5dc47e0c8",
+              "name": "anthropicModel",
+              "type": "string",
+              "value": "claude-sonnet-4-6"
+            },
+            {
+              "id": "b523f234-2b53-4867-9936-44b234829698",
+              "name": "slackChannel",
+              "type": "string",
+              "value": "#procurement-approvals"
+            },
+            {
+              "id": "e29d8e1e-ac02-4c4d-aedd-f9b00b9f620c",
+              "name": "autoApproveLimit",
+              "type": "number",
+              "value": 50000
+            },
+            {
+              "id": "7a268b77-d8a9-46a1-8170-46fa354458a1",
+              "name": "maxNegotiationRounds",
+              "type": "number",
+              "value": 3
+            },
+            {
+              "id": "dfdbfce2-1179-4c35-80e3-24e542a52fb6",
+              "name": "minSupplierRating",
+              "type": "number",
+              "value": 3.5
+            },
+            {
+              "id": "504d6af2-5313-4970-a4d8-571aca2d5b7c",
+              "name": "maxRiskScore",
+              "type": "number",
+              "value": 60
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "2ae3bb55-ab48-4cf5-8c23-6e698af4fd90",
+      "name": "JS - Normalize Procurement Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        992,
+        512
+      ],
+      "parameters": {
+        "jsCode": "const cfg = $input.first().json;\nconst body = (cfg.body && typeof cfg.body === 'object') ? cfg.body : {};\n\nconst defaults = {\n  requestId: 'PR-' + Date.now(),\n  requester: 'user@example.com',\n  department: 'Field Operations',\n  itemDescription: 'Ruggedized laptops for field engineers: 16GB RAM, 512GB SSD, 3-year on-site warranty',\n  quantity: 100,\n  budget: 140000,\n  currency: 'USD',\n  neededByDays: 30,\n  suppliers: [\n    { name: 'TechSource Global', email: 'user@example.com', country: 'US', rating: 4.6, quotedUnitPrice: 1420, leadTimeDays: 21, paymentTerms: 'Net 30', minAcceptableUnitPrice: 1250 },\n    { name: 'RuggedWorks Ltd', email: 'user@example.com', country: 'DE', rating: 4.2, quotedUnitPrice: 1350, leadTimeDays: 28, paymentTerms: 'Net 45', minAcceptableUnitPrice: 1180 },\n    { name: 'QuickIT Distribution', email: 'user@example.com', country: 'IN', rating: 3.8, quotedUnitPrice: 1290, leadTimeDays: 35, paymentTerms: 'Net 15', minAcceptableUnitPrice: 1120 },\n    { name: 'BargainBytes', email: 'user@example.com', country: 'CN', rating: 3.1, quotedUnitPrice: 1010, leadTimeDays: 24, paymentTerms: '100% upfront', minAcceptableUnitPrice: 980 }\n  ]\n};\n\nconst req = { ...defaults, ...body };\nif (!Array.isArray(req.suppliers) || req.suppliers.length === 0) req.suppliers = defaults.suppliers;\nreq.quantity = Number(req.quantity) || defaults.quantity;\nreq.budget = Number(req.budget) || defaults.budget;\nreq.neededByDays = Number(req.neededByDays) || defaults.neededByDays;\n\nreturn [{\n  json: {\n    request: req,\n    config: {\n      anthropicModel: cfg.anthropicModel,\n      slackChannel: cfg.slackChannel,\n      autoApproveLimit: Number(cfg.autoApproveLimit),\n      maxNegotiationRounds: Number(cfg.maxNegotiationRounds),\n      minSupplierRating: Number(cfg.minSupplierRating),\n      maxRiskScore: Number(cfg.maxRiskScore)\n    }\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f49e8c5b-4ee1-4ab7-be8a-89e55dabdd8b",
+      "name": "HTTP Request - Claude: Planner Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1216,
+        512
+      ],
+      "parameters": {
+        "url": "https://api.anthropic.com/v1/messages",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{ JSON.stringify({ model: $json.config.anthropicModel, max_tokens: 1500, system: 'You are the Planner Agent in a multi-agent procurement system. Given a purchase request and company policy, produce a sourcing plan. Provide: category (string), normalizedSpecs (array of strings), mustHaveTerms (array of contract terms that are non-negotiable), niceToHaveTerms (array of strings), evaluationCriteria (array of objects with name and weight, weights summing to 1), targetUnitPrice (number, an ambitious but realistic price per unit), walkAwayUnitPrice (number, the maximum acceptable price per unit and never above budget divided by quantity), negotiationLevers (array of strings), riskFlags (array of strings), and strategy (string, 2-3 sentences). Respond with ONLY a JSON object with exactly those keys. No prose, no markdown fences.', messages: [ { role: 'user', content: JSON.stringify({ item: $json.request.itemDescription, quantity: $json.request.quantity, budget: $json.request.budget, currency: $json.request.currency, neededByDays: $json.request.neededByDays, department: $json.request.department, supplierCount: $json.request.suppliers.length, policy: { autoApproveLimit: $json.config.autoApproveLimit, minSupplierRating: $json.config.minSupplierRating, maxRiskScore: $json.config.maxRiskScore } }, null, 2) } ] }) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2,
+      "continueOnFail": true
+    },
+    {
+      "id": "17f1bca3-35df-4f92-90c9-91b6e7bf6cc5",
+      "name": "JS - Parse Procurement Plan",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1440,
+        512
+      ],
+      "parameters": {
+        "jsCode": "const ctx = $('JS - Normalize Procurement Request').first().json;\nconst resp = $input.first().json;\nconst r = ctx.request;\n\nconst textBlock = (resp.content || []).find(b => b.type === 'text');\nlet plan;\ntry {\n  plan = JSON.parse((textBlock?.text || '{}').replace(/```json|```/g, '').trim());\n} catch (e) {\n  plan = {};\n}\n\nconst perUnitBudget = r.budget / r.quantity;\nplan.targetUnitPrice = Number(plan.targetUnitPrice) > 0 ? Number(plan.targetUnitPrice) : Math.round(perUnitBudget * 0.9 * 100) / 100;\nplan.walkAwayUnitPrice = Math.min(Number(plan.walkAwayUnitPrice) > 0 ? Number(plan.walkAwayUnitPrice) : perUnitBudget, perUnitBudget);\nplan.mustHaveTerms = Array.isArray(plan.mustHaveTerms) ? plan.mustHaveTerms : [];\nplan.negotiationLevers = Array.isArray(plan.negotiationLevers) ? plan.negotiationLevers : ['payment terms', 'lead time', 'warranty', 'volume discount'];\nplan.riskFlags = Array.isArray(plan.riskFlags) ? plan.riskFlags : [];\nplan.strategy = plan.strategy || 'Fallback plan: negotiate toward 90% of per-unit budget.';\n\nreturn [{ json: { request: r, config: ctx.config, plan } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "bed754b1-9e0c-4c57-80ac-b813005095a7",
+      "name": "JS - Split Suppliers",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1664,
+        512
+      ],
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nconst r = d.request;\n\nreturn r.suppliers.map(s => ({\n  json: {\n    requestId: r.requestId,\n    requester: r.requester,\n    department: r.department,\n    itemDescription: r.itemDescription,\n    quantity: r.quantity,\n    budget: r.budget,\n    currency: r.currency,\n    neededByDays: r.neededByDays,\n    config: d.config,\n    plan: d.plan,\n    supplier: s\n  }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "83080f9e-5ce0-421a-b26a-11b573213614",
+      "name": "Loop Over Suppliers",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        1856,
+        320
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "01f1ddef-8ef0-4ac7-9e3b-7b6badf3204a",
+      "name": "JS - Prepare Negotiation Round",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2112,
+        288
+      ],
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\n\nreturn [{\n  json: {\n    ...d,\n    round: d.round ?? 0,\n    currentUnitPrice: d.currentUnitPrice ?? Number(d.supplier.quotedUnitPrice),\n    history: d.history || [],\n    agreed: false,\n    finished: false\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "273865df-24d8-457c-a4b7-7b98bb1fdc46",
+      "name": "HTTP Request - Claude: Negotiator Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2336,
+        208
+      ],
+      "parameters": {
+        "url": "https://api.anthropic.com/v1/messages",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{ JSON.stringify({ model: $json.config.anthropicModel, max_tokens: 900, system: 'You are the Negotiator Agent in a multi-agent procurement system. Given the sourcing plan, the supplier current offer and the negotiation history, propose the next counter-offer. Open near the target price and concede gradually across rounds. Never propose a price above the walk-away price. Use the negotiation levers (payment terms, lead time, warranty, volume tiers) as trade-offs. Set walkAway to true ONLY if the supplier clearly cannot meet the walk-away price after repeated rounds. Respond with ONLY a JSON object with keys: counterUnitPrice (number), requestedConcessions (array of strings), message (string, a short professional message to the supplier), walkAway (boolean), rationale (string). No prose, no markdown fences.', messages: [ { role: 'user', content: JSON.stringify({ item: $json.itemDescription, quantity: $json.quantity, currency: $json.currency, round: $json.round + 1, maxRounds: $json.config.maxNegotiationRounds, plan: { targetUnitPrice: $json.plan.targetUnitPrice, walkAwayUnitPrice: $json.plan.walkAwayUnitPrice, mustHaveTerms: $json.plan.mustHaveTerms, negotiationLevers: $json.plan.negotiationLevers }, supplier: { name: $json.supplier.name, rating: $json.supplier.rating, leadTimeDays: $json.supplier.leadTimeDays, paymentTerms: $json.supplier.paymentTerms, quotedUnitPrice: $json.supplier.quotedUnitPrice, currentUnitPrice: $json.currentUnitPrice }, history: $json.history }, null, 2) } ] }) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2,
+      "continueOnFail": true
+    },
+    {
+      "id": "7de388b5-8c74-4aa5-ad8a-14e1f95b10b4",
+      "name": "JS - Parse Negotiation & Supplier Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2560,
+        208
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) { try { return $(name).item.json; } catch (e) { return $(name).first().json; } }\nconst state = ref('JS - Prepare Negotiation Round');\nconst resp = $input.first().json;\n\nconst round2 = n => Math.round(n * 100) / 100;\nconst plan = state.plan;\nconst maxRounds = Number(state.config.maxNegotiationRounds) || 3;\nconst target = Number(plan.targetUnitPrice);\nconst walkAwayPrice = Number(plan.walkAwayUnitPrice);\nconst current = Number(state.currentUnitPrice);\n\nconst textBlock = (resp.content || []).find(b => b.type === 'text');\nlet neg;\ntry {\n  neg = JSON.parse((textBlock?.text || '{}').replace(/```json|```/g, '').trim());\n} catch (e) {\n  neg = {};\n}\n\n// Guardrail: the counter-offer must be a positive number below the current price.\nlet counter = Number(neg.counterUnitPrice);\nif (!isFinite(counter) || counter <= 0 || counter >= current) counter = round2(current * 0.95);\n\n// ---- SIMULATED SUPPLIER RESPONSE (replace with a real supplier portal / RFQ API / email reply) ----\nconst round = state.round + 1;\nconst floor = isFinite(Number(state.supplier.minAcceptableUnitPrice)) ? Number(state.supplier.minAcceptableUnitPrice) : current * 0.9;\nconst walkAway = neg.walkAway === true;\n\nlet agreed = false;\nlet supplierPrice = current;\nlet supplierResponse = '';\n\nif (walkAway) {\n  supplierResponse = 'Buyer walked away';\n} else if (counter >= floor) {\n  agreed = true;\n  supplierPrice = counter;\n  supplierResponse = 'Supplier accepted the counter-offer';\n} else {\n  supplierPrice = Math.max(floor, round2(current - (current - counter) * 0.4));\n  supplierResponse = 'Supplier countered at ' + supplierPrice;\n  if (supplierPrice <= target) agreed = true;\n}\n\nlet finished = agreed || walkAway || round >= maxRounds;\n// Out of rounds: accept the supplier's last price only if it is within the walk-away price.\nif (finished && !agreed && !walkAway && supplierPrice <= walkAwayPrice) {\n  agreed = true;\n  supplierResponse += ' (accepted: within walk-away price)';\n}\n// ---- END SIMULATION ----\n\nconst history = [...(state.history || []), {\n  round,\n  ourCounter: counter,\n  requestedConcessions: neg.requestedConcessions || [],\n  message: neg.message || '',\n  supplierPrice,\n  supplierResponse\n}];\n\nreturn [{\n  json: {\n    ...state,\n    round,\n    currentUnitPrice: supplierPrice,\n    agreed,\n    finished,\n    walkAway,\n    finalUnitPrice: agreed ? supplierPrice : null,\n    totalCost: agreed ? round2(supplierPrice * state.quantity) : null,\n    history\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "2d304674-e7eb-4f27-8b8f-225fe358d6f5",
+      "name": "IF - Negotiation Finished?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2784,
+        288
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "21bb92c8-5066-48bc-b5f9-2ffe6dc2bc6b",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.finished }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "932f564f-558d-4454-8f82-dcfcf702d766",
+      "name": "HTTP Request - Claude: Validator Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3008,
+        288
+      ],
+      "parameters": {
+        "url": "https://api.anthropic.com/v1/messages",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{ JSON.stringify({ model: $json.config.anthropicModel, max_tokens: 900, system: 'You are the Validator Agent in a multi-agent procurement system. Audit a negotiated supplier deal against the sourcing plan. Check total cost versus budget, lead time versus the deadline, payment terms, must-have terms, supplier rating and country risk, and price plausibility (a suspiciously low price or upfront payment can signal quality or fraud risk). If the deal was not agreed, passed must be false. Respond with ONLY a JSON object with keys: passed (boolean), riskScore (number from 0 to 100, higher means riskier), issues (array of strings), recommendation (string). No prose, no markdown fences.', messages: [ { role: 'user', content: JSON.stringify({ item: $json.itemDescription, quantity: $json.quantity, budget: $json.budget, currency: $json.currency, neededByDays: $json.neededByDays, plan: { mustHaveTerms: $json.plan.mustHaveTerms, riskFlags: $json.plan.riskFlags, targetUnitPrice: $json.plan.targetUnitPrice, walkAwayUnitPrice: $json.plan.walkAwayUnitPrice }, deal: { supplier: $json.supplier.name, rating: $json.supplier.rating, country: $json.supplier.country, agreed: $json.agreed, finalUnitPrice: $json.finalUnitPrice, totalCost: $json.totalCost, leadTimeDays: $json.supplier.leadTimeDays, paymentTerms: $json.supplier.paymentTerms, negotiationRounds: $json.round } }, null, 2) } ] }) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2,
+      "continueOnFail": true
+    },
+    {
+      "id": "b0760e3f-5e30-4364-9fd3-b8848401db3d",
+      "name": "JS - Parse Validation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3232,
+        288
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) { try { return $(name).item.json; } catch (e) { return $(name).first().json; } }\nconst state = ref('JS - Parse Negotiation & Supplier Response');\nconst resp = $input.first().json;\n\nconst textBlock = (resp.content || []).find(b => b.type === 'text');\nlet v;\ntry {\n  v = JSON.parse((textBlock?.text || '{}').replace(/```json|```/g, '').trim());\n} catch (e) {\n  v = {};\n}\n\nconst issues = Array.isArray(v.issues) ? [...v.issues] : [];\nconst cfg = state.config;\nlet passed = state.agreed && v.passed !== false;\n\n// Deterministic policy checks (these always apply, regardless of what the agent says)\nif (!state.agreed) issues.push('No agreement reached with supplier');\nif (state.agreed && state.totalCost > state.budget) { passed = false; issues.push('Total cost exceeds budget'); }\nif (Number(state.supplier.leadTimeDays) > state.neededByDays) { passed = false; issues.push('Lead time exceeds required delivery window'); }\nif (Number(state.supplier.rating) < cfg.minSupplierRating) { passed = false; issues.push('Supplier rating below minimum (' + cfg.minSupplierRating + ')'); }\n\nconst riskScore = isFinite(Number(v.riskScore)) ? Number(v.riskScore) : 50;\n\nreturn [{\n  json: {\n    requestId: state.requestId,\n    itemDescription: state.itemDescription,\n    quantity: state.quantity,\n    budget: state.budget,\n    currency: state.currency,\n    neededByDays: state.neededByDays,\n    config: state.config,\n    plan: state.plan,\n    supplierName: state.supplier.name,\n    supplierEmail: state.supplier.email,\n    supplierCountry: state.supplier.country,\n    supplierRating: Number(state.supplier.rating),\n    leadTimeDays: Number(state.supplier.leadTimeDays),\n    paymentTerms: state.supplier.paymentTerms,\n    rounds: state.round,\n    agreed: state.agreed,\n    finalUnitPrice: state.finalUnitPrice,\n    totalCost: state.totalCost,\n    validationPassed: passed,\n    riskScore,\n    issues,\n    recommendation: v.recommendation || '',\n    history: state.history\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9a846921-7e71-4b2f-af60-47eabfff0082",
+      "name": "Postgres - Upsert Offer",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        3456,
+        288
+      ],
+      "parameters": {
+        "query": "INSERT INTO procurement_offers (request_id, supplier_name, final_unit_price, total_cost, lead_time_days, payment_terms, negotiation_rounds, agreed, validation_passed, risk_score, issues, negotiation_history, updated_at)\nVALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12::jsonb, NOW())\nON CONFLICT (request_id, supplier_name) DO UPDATE SET\n  final_unit_price = EXCLUDED.final_unit_price,\n  total_cost = EXCLUDED.total_cost,\n  lead_time_days = EXCLUDED.lead_time_days,\n  payment_terms = EXCLUDED.payment_terms,\n  negotiation_rounds = EXCLUDED.negotiation_rounds,\n  agreed = EXCLUDED.agreed,\n  validation_passed = EXCLUDED.validation_passed,\n  risk_score = EXCLUDED.risk_score,\n  issues = EXCLUDED.issues,\n  negotiation_history = EXCLUDED.negotiation_history,\n  updated_at = NOW()\nRETURNING request_id, supplier_name;",
+        "options": {
+          "queryReplacement": "={{ [ $json.requestId, $json.supplierName, $json.finalUnitPrice, $json.totalCost, $json.leadTimeDays, $json.paymentTerms, $json.rounds, $json.agreed, $json.validationPassed, $json.riskScore, JSON.stringify($json.issues), JSON.stringify($json.history) ] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5,
+      "continueOnFail": true
+    },
+    {
+      "id": "9a81c6e1-6653-483b-9188-df9b76ae195a",
+      "name": "JS - Restore Offer Record",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3680,
+        320
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) { try { return $(name).item.json; } catch (e) { return $(name).first().json; } }\n// The Postgres node replaces the item with the query result, so put the full offer back\n// before returning to the loop. Loop Over Suppliers then collects every offer on its \"done\" output.\nconst offer = ref('JS - Parse Validation');\nreturn [{ json: offer }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "d7ddbfe7-5c94-457b-8bf2-13229423dbe0",
+      "name": "JS - Rank Offers",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1984,
+        1072
+      ],
+      "parameters": {
+        "jsCode": "const offers = $input.all().map(i => i.json).filter(o => o && o.requestId);\nconst ctx = offers[0];\nconst round2 = n => Math.round(n * 100) / 100;\n\nconst eligible = offers.filter(o => o.agreed && o.validationPassed);\nconst rejected = offers.filter(o => !(o.agreed && o.validationPassed));\n\nconst norm = (v, min, max, invert) => max === min ? 1 : (invert ? (max - v) / (max - min) : (v - min) / (max - min));\nconst prices = eligible.map(o => o.finalUnitPrice);\nconst leads = eligible.map(o => o.leadTimeDays);\nconst pMin = Math.min(...prices), pMax = Math.max(...prices);\nconst lMin = Math.min(...leads), lMax = Math.max(...leads);\n\nconst ranked = eligible.map(o => {\n  const score = 0.5 * norm(o.finalUnitPrice, pMin, pMax, true)\n    + 0.2 * norm(o.leadTimeDays, lMin, lMax, true)\n    + 0.2 * (o.supplierRating / 5)\n    + 0.1 * (1 - o.riskScore / 100);\n  return {\n    supplierName: o.supplierName,\n    supplierEmail: o.supplierEmail,\n    finalUnitPrice: o.finalUnitPrice,\n    totalCost: o.totalCost,\n    leadTimeDays: o.leadTimeDays,\n    paymentTerms: o.paymentTerms,\n    supplierRating: o.supplierRating,\n    riskScore: o.riskScore,\n    issues: o.issues,\n    score: round2(score)\n  };\n}).sort((a, b) => b.score - a.score);\n\nconst rejectedSummary = rejected.map(o => ({ supplierName: o.supplierName, reasons: o.issues }));\n\nreturn [{\n  json: {\n    requestId: ctx.requestId,\n    itemDescription: ctx.itemDescription,\n    quantity: ctx.quantity,\n    budget: ctx.budget,\n    currency: ctx.currency,\n    config: ctx.config,\n    plan: ctx.plan,\n    totalOffers: offers.length,\n    eligibleCount: eligible.length,\n    ranked,\n    rejectedSummary\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7d66ce94-684d-4fb9-bfe8-16649b37accc",
+      "name": "HTTP Request - Claude: Approval Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2224,
+        1072
+      ],
+      "parameters": {
+        "url": "https://api.anthropic.com/v1/messages",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{ JSON.stringify({ model: $json.config.anthropicModel, max_tokens: 900, system: 'You are the Approval Agent in a multi-agent procurement system. You receive ranked, validated supplier offers and the approval policy. Decide exactly one of: auto_approve, escalate, reject. Use auto_approve only if the top offer passed validation, its totalCost is within autoApproveLimit and its riskScore is within maxRiskScore. Use escalate when a human should decide (high value, elevated risk, close scores or open issues). Use reject when no offer is acceptable. Respond with ONLY a JSON object with keys: decision (string), recommendedSupplier (string, must be one of the ranked supplier names or empty), rationale (string), conditions (array of strings to attach to the purchase order). No prose, no markdown fences.', messages: [ { role: 'user', content: JSON.stringify({ item: $json.itemDescription, quantity: $json.quantity, budget: $json.budget, currency: $json.currency, policy: { autoApproveLimit: $json.config.autoApproveLimit, maxRiskScore: $json.config.maxRiskScore }, rankedOffers: $json.ranked.slice(0, 3), rejectedOffers: $json.rejectedSummary }, null, 2) } ] }) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2,
+      "continueOnFail": true
+    },
+    {
+      "id": "807d1078-2da6-46cf-a3ae-305c1cfb444d",
+      "name": "JS - Parse Approval Decision",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2432,
+        1072
+      ],
+      "parameters": {
+        "jsCode": "const ctx = $('JS - Rank Offers').first().json;\nconst resp = $input.first().json;\n\nconst textBlock = (resp.content || []).find(b => b.type === 'text');\nlet ai;\ntry {\n  ai = JSON.parse((textBlock?.text || '{}').replace(/```json|```/g, '').trim());\n} catch (e) {\n  ai = {};\n}\n\nconst notes = [];\nlet route = ['auto_approve', 'escalate', 'reject'].includes(ai.decision) ? ai.decision : 'escalate';\nif (route === 'escalate' && !ai.decision) notes.push('Approval agent output unreadable: defaulted to human escalation');\n\nconst ranked = ctx.ranked || [];\nconst chosen = ranked.find(o => o.supplierName === ai.recommendedSupplier) || ranked[0] || null;\nconst cfg = ctx.config;\n\nif (!chosen) {\n  route = 'reject';\n  notes.push('No eligible offers (agreed and validated)');\n} else {\n  if (route === 'auto_approve') {\n    if (chosen.totalCost > cfg.autoApproveLimit) { route = 'escalate'; notes.push('Guardrail: total exceeds auto-approve limit'); }\n    if (chosen.riskScore > cfg.maxRiskScore) { route = 'escalate'; notes.push('Guardrail: risk score exceeds maximum'); }\n  }\n  if (chosen.totalCost > ctx.budget && route !== 'reject') { route = 'escalate'; notes.push('Guardrail: total exceeds budget'); }\n}\n\nreturn [{\n  json: {\n    requestId: ctx.requestId,\n    itemDescription: ctx.itemDescription,\n    quantity: ctx.quantity,\n    budget: ctx.budget,\n    currency: ctx.currency,\n    config: cfg,\n    route,\n    chosenOffer: chosen,\n    rationale: ai.rationale || (chosen ? 'Top ranked offer selected' : 'No eligible offers'),\n    conditions: Array.isArray(ai.conditions) ? ai.conditions : [],\n    guardrailNotes: notes,\n    eligibleCount: ctx.eligibleCount,\n    totalOffers: ctx.totalOffers\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "18538f66-2a85-4bdf-b832-d99ee0ffa84d",
+      "name": "Switch - Approval Route",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        2656,
+        1056
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "auto_approve",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "ef942a8d-5d05-4265-901e-7fc6094cc1b6",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "auto_approve"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "escalate",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "68a37257-3615-45f7-961b-6af1e5ae2548",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "escalate"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "reject",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "6b275d5b-2113-42c7-8613-0418cce2e86f",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "reject"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "4ea76aaa-1e20-4d0a-baf7-71a7caf9851b",
+      "name": "Set - Mark Auto Approved",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3680,
+        560
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ffa0da0e-b9d1-455a-9fea-c338cdcd4ba8",
+              "name": "finalStatus",
+              "type": "string",
+              "value": "approved"
+            },
+            {
+              "id": "1b1c05b0-55c3-4685-85c1-1c524104fc8f",
+              "name": "approvedBy",
+              "type": "string",
+              "value": "approval-agent (auto)"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "0078629b-4433-4e98-a2fc-75b31add8991",
+      "name": "Slack - Request Human Approval",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        2912,
+        1072
+      ],
+      "webhookId": "18196908-12b1-4f03-8c65-723c849d87d5",
+      "parameters": {
+        "text": "=\ud83d\uded2 *Approval needed* for {{ $json.requestId }}\nItem: {{ $json.itemDescription }} (x{{ $json.quantity }})\nRecommended supplier: *{{ $json.chosenOffer.supplierName }}*\nTotal: {{ $json.currency }} {{ $json.chosenOffer.totalCost }} (budget {{ $json.currency }} {{ $json.budget }})\nUnit price: {{ $json.chosenOffer.finalUnitPrice }} | Lead time: {{ $json.chosenOffer.leadTimeDays }} days | Terms: {{ $json.chosenOffer.paymentTerms }}\nRisk score: {{ $json.chosenOffer.riskScore }} | Eligible offers: {{ $json.eligibleCount }}/{{ $json.totalOffers }}\nRationale: {{ $json.rationale }}\nGuardrail notes: {{ $json.guardrailNotes.join('; ') || 'none' }}\n\n<{{ $execution.resumeUrl }}?decision=approved|\u2705 Approve>   |   <{{ $execution.resumeUrl }}?decision=rejected|\u274c Reject>",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $json.config.slackChannel }}"
+        },
+        "otherOptions": {}
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "1a1e03f4-9f5b-46fe-b183-0250104e5a6d",
+      "name": "Wait - Human Decision",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        3120,
+        1072
+      ],
+      "webhookId": "d8864978-4cd9-4713-9eb2-febc1d267272",
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "810c22f5-78b0-46ac-b93a-d1f0adc57108",
+      "name": "IF - Human Approved?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3344,
+        928
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "7dab4c22-b022-4799-88cd-478bd9e1d1f3",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ ($json.query || {}).decision }}",
+              "rightValue": "approved"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "4e6c7098-82b0-4c60-809d-46b3d5e8d4fe",
+      "name": "Set - Mark Human Approved",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3680,
+        752
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "497c101a-1e45-4fbf-bb65-6ef04d707c90",
+              "name": "finalStatus",
+              "type": "string",
+              "value": "approved"
+            },
+            {
+              "id": "853a97bf-d4c6-4457-a928-7ef4af94c550",
+              "name": "approvedBy",
+              "type": "string",
+              "value": "human approver (Slack)"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "cc9404f6-aa91-4173-abe2-466873cd858e",
+      "name": "Set - Mark Human Rejected",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3680,
+        944
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bb9f7f24-b1b9-4a0a-b201-29795b80f62c",
+              "name": "finalStatus",
+              "type": "string",
+              "value": "rejected"
+            },
+            {
+              "id": "3d918109-cf0f-4e95-a821-6d54b9a8e237",
+              "name": "approvedBy",
+              "type": "string",
+              "value": "human approver (Slack)"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "cb4a592d-1f41-4e45-99dd-c228a106e81d",
+      "name": "Set - Mark Rejected",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3680,
+        1136
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "60439c6a-be86-4958-a8a7-957cf19ef562",
+              "name": "finalStatus",
+              "type": "string",
+              "value": "rejected"
+            },
+            {
+              "id": "b431c49d-ec3e-4f1c-b9ee-d329b43faf91",
+              "name": "approvedBy",
+              "type": "string",
+              "value": "approval-agent (auto)"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "bf65071b-7466-4c43-998a-659db4b79e58",
+      "name": "Postgres - Save Decision",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        3904,
+        816
+      ],
+      "parameters": {
+        "query": "INSERT INTO procurement_decisions (request_id, status, chosen_supplier, total_cost, approved_by, rationale, decided_at)\nVALUES ($1, $2, $3, $4, $5, $6, NOW())\nON CONFLICT (request_id) DO UPDATE SET\n  status = EXCLUDED.status,\n  chosen_supplier = EXCLUDED.chosen_supplier,\n  total_cost = EXCLUDED.total_cost,\n  approved_by = EXCLUDED.approved_by,\n  rationale = EXCLUDED.rationale,\n  decided_at = NOW()\nRETURNING request_id, status, approved_by;",
+        "options": {
+          "queryReplacement": "={{ (() => { const d = $('JS - Parse Approval Decision').first().json; return [ d.requestId, $json.finalStatus, d.chosenOffer ? d.chosenOffer.supplierName : null, d.chosenOffer ? d.chosenOffer.totalCost : null, $json.approvedBy, d.rationale ]; })() }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5,
+      "continueOnFail": true
+    },
+    {
+      "id": "41fb6e68-ed88-41c8-a4a1-e447c11f1666",
+      "name": "Slack - Post Outcome",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        4128,
+        816
+      ],
+      "webhookId": "13c9d541-aa45-46c0-b6ad-9702293584b8",
+      "parameters": {
+        "text": "={{ $json.status === 'approved' ? '\u2705 Procurement APPROVED' : '\u274c Procurement REJECTED' }}: {{ $('JS - Parse Approval Decision').first().json.requestId }}\nItem: {{ $('JS - Parse Approval Decision').first().json.itemDescription }}\nSupplier: {{ $('JS - Parse Approval Decision').first().json.chosenOffer ? $('JS - Parse Approval Decision').first().json.chosenOffer.supplierName : 'n/a' }}\nTotal: {{ $('JS - Parse Approval Decision').first().json.chosenOffer ? $('JS - Parse Approval Decision').first().json.chosenOffer.totalCost : 'n/a' }}\nDecided by: {{ $json.approved_by || 'n/a' }}\nRationale: {{ $('JS - Parse Approval Decision').first().json.rationale }}\n\nFull audit trail: procurement_offers and procurement_decisions in Postgres.",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('JS - Parse Approval Decision').first().json.config.slackChannel }}"
+        },
+        "otherOptions": {}
+      },
+      "typeVersion": 2.3
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "180f1ae8-bfc1-4a73-8f0f-a0896cc63d45",
+  "nodeGroups": [],
+  "connections": {
+    "JS - Rank Offers": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Claude: Approval Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Suppliers": {
+      "main": [
+        [
+          {
+            "node": "JS - Rank Offers",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "JS - Prepare Negotiation Round",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Mark Rejected": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Save Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Human Approved?": {
+      "main": [
+        [
+          {
+            "node": "Set - Mark Human Approved",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Mark Human Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Split Suppliers": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Suppliers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Parse Validation": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Upsert Offer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - Human Decision": {
+      "main": [
+        [
+          {
+            "node": "IF - Human Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Upsert Offer": {
+      "main": [
+        [
+          {
+            "node": "JS - Restore Offer Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Approval Route": {
+      "main": [
+        [
+          {
+            "node": "Set - Mark Auto Approved",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack - Request Human Approval",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Mark Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Save Decision": {
+      "main": [
+        [
+          {
+            "node": "Slack - Post Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Mark Auto Approved": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Save Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Procurement Config": {
+      "main": [
+        [
+          {
+            "node": "JS - Normalize Procurement Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Restore Offer Record": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Suppliers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Mark Human Approved": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Save Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Mark Human Rejected": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Save Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Negotiation Finished?": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Claude: Validator Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "JS - Prepare Negotiation Round",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Parse Procurement Plan": {
+      "main": [
+        [
+          {
+            "node": "JS - Split Suppliers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Parse Approval Decision": {
+      "main": [
+        [
+          {
+            "node": "Switch - Approval Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Prepare Negotiation Round": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Claude: Negotiator Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger - Start Request": {
+      "main": [
+        [
+          {
+            "node": "Set - Procurement Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Request Human Approval": {
+      "main": [
+        [
+          {
+            "node": "Wait - Human Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - New Procurement Request": {
+      "main": [
+        [
+          {
+            "node": "Set - Procurement Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Normalize Procurement Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Claude: Planner Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Claude: Planner Agent": {
+      "main": [
+        [
+          {
+            "node": "JS - Parse Procurement Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Claude: Approval Agent": {
+      "main": [
+        [
+          {
+            "node": "JS - Parse Approval Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Claude: Validator Agent": {
+      "main": [
+        [
+          {
+            "node": "JS - Parse Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Claude: Negotiator Agent": {
+      "main": [
+        [
+          {
+            "node": "JS - Parse Negotiation & Supplier Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Parse Negotiation & Supplier Response": {
+      "main": [
+        [
+          {
+            "node": "IF - Negotiation Finished?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

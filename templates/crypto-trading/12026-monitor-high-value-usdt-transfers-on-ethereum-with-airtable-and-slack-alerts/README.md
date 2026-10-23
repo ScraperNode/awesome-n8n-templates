@@ -1,6 +1,6 @@
 # 📈 Monitor high-value USDT transfers on Ethereum with Airtable and Slack alerts
 
-> ⚡ **42 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **73 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

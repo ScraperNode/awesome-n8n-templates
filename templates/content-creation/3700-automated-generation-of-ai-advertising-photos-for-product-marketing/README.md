@@ -1,6 +1,6 @@
 # 🎬 Automated generation of AI advertising photos for product marketing
 
-> ⚡ **5,950 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **6,515 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

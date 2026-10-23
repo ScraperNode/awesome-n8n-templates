@@ -1,6 +1,6 @@
 # 🎬 Generate SEO blog content with GPT-4, Perplexity & WordPress auto-publishing
 
-> ⚡ **3,149 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,533 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

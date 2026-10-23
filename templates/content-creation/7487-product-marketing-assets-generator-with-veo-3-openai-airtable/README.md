@@ -1,6 +1,6 @@
 # 🎬 Product marketing assets generator with VEO 3, OpenAI & Airtable
 
-> ⚡ **1,041 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,125 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

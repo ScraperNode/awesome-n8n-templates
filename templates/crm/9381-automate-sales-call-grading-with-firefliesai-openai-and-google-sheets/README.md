@@ -1,6 +1,6 @@
 # 🤝 Automate sales call grading with Fireflies.ai, OpenAI, and Google Sheets
 
-> ⚡ **128 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **180 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

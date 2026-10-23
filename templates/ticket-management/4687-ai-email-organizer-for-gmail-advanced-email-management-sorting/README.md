@@ -1,6 +1,6 @@
 # 🎫 AI email organizer for GMail - advanced email management & sorting
 
-> ⚡ **7,427 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **9,787 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

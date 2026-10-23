@@ -1,6 +1,6 @@
 # 🎯 Automatically analyze meeting effectiveness with AI & send Slack feedback
 
-> ⚡ **128 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **133 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

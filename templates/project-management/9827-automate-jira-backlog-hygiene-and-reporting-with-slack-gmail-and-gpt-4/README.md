@@ -1,6 +1,6 @@
 # 📋 Automate Jira backlog hygiene and reporting with Slack, Gmail and GPT-4
 
-> ⚡ **170 views** · 📋 [Project Management](../)
+> ⚡ **213 views** · 📋 [Project Management](../)
 
 ## Description
 

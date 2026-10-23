@@ -1,6 +1,6 @@
 # ⚒️ Monitor IoT sustainability compliance and ESG reports with OpenAI, Airtable, Slack and Gmail
 
-> ⚡ **102 views** · ⚒️ [Engineering](../)
+> ⚡ **164 views** · ⚒️ [Engineering](../)
 
 ## Description
 

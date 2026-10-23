@@ -1,6 +1,6 @@
 # 🤝 Automate GoHighLevel client onboarding with Google Drive, Gmail, Calendar & Slack
 
-> ⚡ **639 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **880 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

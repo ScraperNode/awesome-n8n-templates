@@ -1,6 +1,6 @@
 # 🤝 Add new contacts from Autopilot to Airtable
 
-> ⚡ **606 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **632 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

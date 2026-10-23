@@ -1,6 +1,6 @@
 # 🔍 🛠️ X (formerly Twitter) tool MCP server 💪 all 8 operations
 
-> ⚡ **182 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **205 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

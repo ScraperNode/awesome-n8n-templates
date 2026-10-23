@@ -1,6 +1,6 @@
 # ⚡ Transform voice memos into daily journals & tasks with OMI.ME & Gemini AI
 
-> ⚡ **1,080 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,196 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

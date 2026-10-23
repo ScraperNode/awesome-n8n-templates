@@ -1,6 +1,6 @@
 # 🧾 Generate invoices, save to Drive and send email to customer with JS + G Sheets
 
-> ⚡ **8,126 views** · 🧾 [Invoice Processing](../)
+> ⚡ **8,687 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

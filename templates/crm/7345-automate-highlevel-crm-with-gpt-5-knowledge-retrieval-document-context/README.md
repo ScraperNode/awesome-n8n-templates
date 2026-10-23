@@ -1,6 +1,6 @@
 # 🤝 Automate HighLevel CRM with GPT-5, knowledge retrieval & document context
 
-> ⚡ **324 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **404 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 Create a new user in Notion based on the signup form submission
 
-> ⚡ **1,909 views** · 🔧 [Miscellaneous](../)
+> ⚡ **2,005 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

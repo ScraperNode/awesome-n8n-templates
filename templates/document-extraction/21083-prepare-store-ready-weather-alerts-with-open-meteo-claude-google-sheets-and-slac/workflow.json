@@ -1,0 +1,574 @@
+{
+  "name": "Prepare stores for rain, heat and cold with Open-Meteo forecasts and Claude, numbers checked by code",
+  "nodes": [
+    {
+      "id": "88f4bd6b-8fe7-43c3-8fa7-d5c30434c9f1",
+      "name": "Every day at 15:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        -100
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 15
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "8586a09f-afa5-4d7d-89d4-22aa0a46ba06",
+      "name": "Run now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        150
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "d6e59fa1-6863-4d7c-81f9-3a75cd7431d5",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "forecast_days",
+              "type": "number",
+              "value": 3
+            },
+            {
+              "id": "c2",
+              "name": "rain_probability_pct",
+              "type": "number",
+              "value": 60
+            },
+            {
+              "id": "c3",
+              "name": "heavy_rain_mm",
+              "type": "number",
+              "value": 10
+            },
+            {
+              "id": "c4",
+              "name": "hot_c",
+              "type": "number",
+              "value": 33
+            },
+            {
+              "id": "c5",
+              "name": "cold_c",
+              "type": "number",
+              "value": 3
+            },
+            {
+              "id": "c6",
+              "name": "timezone",
+              "type": "string",
+              "value": "auto"
+            },
+            {
+              "id": "c7",
+              "name": "language",
+              "type": "string",
+              "value": "en"
+            },
+            {
+              "id": "c8",
+              "name": "output_language",
+              "type": "string",
+              "value": "English"
+            },
+            {
+              "id": "c9",
+              "name": "max_message_chars",
+              "type": "number",
+              "value": 160
+            },
+            {
+              "id": "c10",
+              "name": "ng_words",
+              "type": "string",
+              "value": "guaranteed, always, never"
+            }
+          ]
+        },
+        "includeOtherFields": false
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "7147df64-1f2c-46dd-8a59-3cb744a1164d",
+      "name": "Read Stores tab",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "resource": "sheet",
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Stores"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.7,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "9903f414-d85b-4b11-881d-3fce6ab99098",
+      "name": "Check the stores",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        820,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// ---- weather ahead: the events are decided by code ---------------------------------------------------------\nconst nfkc = (s) => String(s ?? '').normalize('NFKC');\nconst num = (v) => { const n = Number(String(v ?? '').trim()); return String(v ?? '').trim() !== '' && Number.isFinite(n) ? n : NaN; };\n\nfunction readStores(rows) {\n  const stores = [], problems = [];\n  rows.forEach((r, i) => {\n    const name = String(r.store ?? '').trim();\n    if (!name && String(r.lat ?? '').trim() === '' && String(r.lon ?? '').trim() === '') return;\n    const lat = num(r.lat), lon = num(r.lon);\n    if (!name || !(lat >= -90 && lat <= 90) || !(lon >= -180 && lon <= 180)) { problems.push('row ' + (i + 2) + ' (' + (name || '?') + '): needs store, lat and lon'); return; }\n    stores.push({ name, lat, lon, notes: String(r.notes ?? '').trim(), contact: String(r.contact ?? '').trim() });\n  });\n  return { stores, problems };\n}\n\n// one fact per flagged day: what the forecast says and which rule it hit\nfunction weatherFacts(store, forecast, cfg) {\n  const d = forecast?.daily ?? {};\n  const facts = [];\n  (d.time ?? []).forEach((date, i) => {\n    const v = { date, max_c: d.temperature_2m_max?.[i], min_c: d.temperature_2m_min?.[i], rain_probability_pct: d.precipitation_probability_max?.[i], rain_mm: d.precipitation_sum?.[i] };\n    const events = [];\n    if (v.rain_probability_pct >= Number(cfg.rain_probability_pct)) events.push('rain');\n    if (v.rain_mm >= Number(cfg.heavy_rain_mm)) events.push('heavy_rain');\n    if (v.max_c >= Number(cfg.hot_c)) events.push('hot');\n    if (v.min_c <= Number(cfg.cold_c)) events.push('cold');\n    if (events.length) facts.push({ id: 'F' + (facts.length + 1), store: store.name, events, values: v });\n  });\n  return facts;\n}\n\n// numbers a sentence may use: the forecast values only. Dates are allowed only in a date shape (10\u670817\u65e5, 10/17, 17\u65e5)\n// and are removed before the check, so \"10% off\" cannot hide behind the month 10.\nfunction numbersOf(facts) {\n  const s = new Set();\n  for (const f of facts) for (const [k, v] of Object.entries(f.values)) {\n    if (k === 'date') continue;\n    if (typeof v === 'number' && Number.isFinite(v)) { s.add(String(v)); s.add(String(Math.round(v))); s.add(String(Math.round(v * 10) / 10)); }\n  }\n  return s;\n}\nfunction stripDates(text, facts) {\n  const md = new Set(), days = new Set(), years = new Set();\n  for (const f of facts) { const [y, m, d] = String(f.values.date).split('-').map(Number); md.add(m + '/' + d); days.add(d); years.add(y); }\n  return nfkc(text)\n    .replace(/(\\d{4})\\s*\u5e74/g, (all, y) => (years.has(Number(y)) ? ' ' : all))\n    // a range: 10\u670816\uff5e18\u65e5, 10/16-18\n    .replace(/(\\d{1,2})\\s*[\u6708\\/]\\s*(\\d{1,2})\\s*\u65e5?\\s*[\u301c\uff5e~\\-\u2013]\\s*(\\d{1,2})\\s*\u65e5?/g, (all, m, a, b) => (md.has(Number(m) + '/' + Number(a)) && md.has(Number(m) + '/' + Number(b)) ? ' ' : all))\n    .replace(/(\\d{1,2})\\s*\u6708\\s*(\\d{1,2})\\s*\u65e5/g, (all, m, d) => (md.has(Number(m) + '/' + Number(d)) ? ' ' : all))\n    .replace(/(\\d{1,2})\\/(\\d{1,2})(?!\\d)/g, (all, m, d) => (md.has(Number(m) + '/' + Number(d)) ? ' ' : all))\n    .replace(/(\\d{1,2})\\s*\u65e5/g, (all, d) => (days.has(Number(d)) ? ' ' : all))\n    .replace(/\\d{4}-\\d{2}-\\d{2}/g, (all) => (facts.some((f) => f.values.date === all) ? ' ' : all));\n}\n\nfunction checkTexts(raw, facts, cfg) {\n  let ai = null;\n  try {\n    const t = String(raw ?? '').replace(/^\\s*```(?:json)?\\s*/i, '').replace(/\\s*```\\s*$/, '').trim();\n    const a = t.indexOf('{'), z = t.lastIndexOf('}');\n    ai = JSON.parse(a >= 0 && z > a ? t.slice(a, z + 1) : t);\n  } catch (e) { ai = null; }\n  if (!ai) return { ok: false, problem: 'the AI output could not be read as JSON', memo: [], message: null };\n  const byId = new Map(facts.map((f) => [f.id, f]));\n  const ng = String(cfg.ng_words ?? '').split(/[,\u3001]\\s*/).map((w) => w.trim()).filter(Boolean);\n  const check = (text, ids, isMessage) => {\n    const problems = [];\n    const used = (Array.isArray(ids) ? ids : []).map(String).filter((id) => byId.has(id)).map((id) => byId.get(id));\n    if (!String(text ?? '').trim()) problems.push('empty');\n    if (!used.length) problems.push('no fact referenced');\n    const allowed = numbersOf(used);\n    const bad = [...new Set(stripDates(text, used).match(/\\d+(?:\\.\\d+)?/g) ?? [])].filter((n) => !allowed.has(n) && !allowed.has(String(Number(n))));\n    if (bad.length) problems.push('numbers not in the forecast: ' + bad.join(', '));\n    if (isMessage) {\n      const len = [...nfkc(text)].length;\n      if (len > Number(cfg.max_message_chars)) problems.push('too long: ' + len + ' characters (limit ' + cfg.max_message_chars + ')');\n      const hit = ng.filter((w) => nfkc(text).includes(nfkc(w)));\n      if (hit.length) problems.push('words you do not use: ' + hit.join(', '));\n    }\n    return { text: String(text ?? '').trim(), ok: problems.length === 0, problems: problems.join('; ') };\n  };\n  const memo = (Array.isArray(ai.staff_memo) ? ai.staff_memo : []).slice(0, 5).map((m) => check(m?.text, m?.fact_ids, false));\n  const message = ai.customer_message ? check(ai.customer_message.text, ai.customer_message.fact_ids, true) : null;\n  return { ok: true, problem: '', memo, message };\n}\n\nconst LABEL = { rain: { ja: '\u96e8', en: 'rain' }, heavy_rain: { ja: '\u5927\u96e8', en: 'heavy rain' }, hot: { ja: '\u6691\u3055', en: 'heat' }, cold: { ja: '\u5bd2\u3055', en: 'cold' } };\nfunction slackText(store, facts, checked, cfg) {\n  const ja = String(cfg.language || 'en').toLowerCase().startsWith('ja');\n  const L = (e) => LABEL[e][ja ? 'ja' : 'en'];\n  const rows = facts.map((f) => '\u2022 ' + f.values.date + ' [' + f.events.map(L).join(', ') + '] ' + (ja ? '\u6700\u9ad8' : 'max ') + f.values.max_c + '\u00b0C / ' + (ja ? '\u6700\u4f4e' : 'min ') + f.values.min_c + '\u00b0C / ' + (ja ? '\u964d\u6c34\u78ba\u7387' : 'rain ') + f.values.rain_probability_pct + '% / ' + f.values.rain_mm + ' mm').join('\\n');\n  const mark = (x) => (x.ok ? '\u2713 ' : ':warning: ') + x.text + (x.ok ? '' : '  _(' + x.problems + ')_');\n  const out = [(ja ? ':sun_behind_rain_cloud: *\u5929\u6c17\u306e\u6e96\u5099* ' : ':sun_behind_rain_cloud: *Weather ahead* ') + store.name + (store.contact ? ' ' + (/^[UW][A-Z0-9]{6,}$/.test(store.contact) ? '<@' + store.contact + '>' : store.contact) : ''),\n    (ja ? '*\u4e88\u5831\uff08Open-Meteo\u3001\u30b3\u30fc\u30c9\u304c\u5224\u5b9a\uff09*\\n' : '*Forecast (Open-Meteo, flagged by code)*\\n') + rows];\n  if (!checked.ok) out.push(':warning: ' + checked.problem);\n  else {\n    if (checked.memo.length) out.push((ja ? '*\u30b9\u30bf\u30c3\u30d5\u5411\u3051\u306e\u6e96\u5099\uff08AI\u3001\u30b3\u30fc\u30c9\u304c\u7167\u5408\uff09*\\n' : '*Prep for the staff (AI, checked by code)*\\n') + checked.memo.map(mark).join('\\n'));\n    if (checked.message) out.push((ja ? '*\u304a\u5ba2\u69d8\u5411\u3051\u306e\u6587\u306e\u6848\uff08\u4f7f\u3046\u524d\u306b\u8aad\u3093\u3067\u304f\u3060\u3055\u3044\uff09*\\n' : '*Draft for customers (read before you use it)*\\n') + mark(checked.message));\n  }\n  out.push(ja ? '_\u4e88\u5831\u306f\u5916\u308c\u308b\u3053\u3068\u304c\u3042\u308a\u307e\u3059\u3002\u524d\u3082\u3063\u3066\u52d5\u304f\u305f\u3081\u306e\u76ee\u5b89\u3067\u3059\u3002_' : '_Forecasts can be wrong. This is a heads-up, not a promise._');\n  return out.join('\\n');\n}\n\nconst { stores, problems } = readStores($input.all().map((i) => i.json));\nif (problems.length) throw new Error('Fix the Stores tab: ' + problems.join('; '));\nif (!stores.length) throw new Error('The Stores tab has no store yet (columns: store, lat, lon, notes, contact).');\nreturn stores.map((s) => ({ json: s }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "6b3e0f79-a0fd-4de3-8b09-d32e4022bb50",
+      "name": "Get forecast (Open-Meteo)",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        1040,
+        0
+      ],
+      "parameters": {
+        "url": "=https://api.open-meteo.com/v1/forecast?latitude={{ $json.lat }}&longitude={{ $json.lon }}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum&timezone={{ encodeURIComponent($('Config').first().json.timezone) }}&forecast_days={{ $('Config').first().json.forecast_days }}",
+        "method": "GET",
+        "options": {
+          "timeout": 30000,
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 500
+            }
+          }
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "6efc55e3-3cb4-4c5e-8be1-dca0590276a5",
+      "name": "Find weather events",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1420,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// ---- weather ahead: the events are decided by code ---------------------------------------------------------\nconst nfkc = (s) => String(s ?? '').normalize('NFKC');\nconst num = (v) => { const n = Number(String(v ?? '').trim()); return String(v ?? '').trim() !== '' && Number.isFinite(n) ? n : NaN; };\n\nfunction readStores(rows) {\n  const stores = [], problems = [];\n  rows.forEach((r, i) => {\n    const name = String(r.store ?? '').trim();\n    if (!name && String(r.lat ?? '').trim() === '' && String(r.lon ?? '').trim() === '') return;\n    const lat = num(r.lat), lon = num(r.lon);\n    if (!name || !(lat >= -90 && lat <= 90) || !(lon >= -180 && lon <= 180)) { problems.push('row ' + (i + 2) + ' (' + (name || '?') + '): needs store, lat and lon'); return; }\n    stores.push({ name, lat, lon, notes: String(r.notes ?? '').trim(), contact: String(r.contact ?? '').trim() });\n  });\n  return { stores, problems };\n}\n\n// one fact per flagged day: what the forecast says and which rule it hit\nfunction weatherFacts(store, forecast, cfg) {\n  const d = forecast?.daily ?? {};\n  const facts = [];\n  (d.time ?? []).forEach((date, i) => {\n    const v = { date, max_c: d.temperature_2m_max?.[i], min_c: d.temperature_2m_min?.[i], rain_probability_pct: d.precipitation_probability_max?.[i], rain_mm: d.precipitation_sum?.[i] };\n    const events = [];\n    if (v.rain_probability_pct >= Number(cfg.rain_probability_pct)) events.push('rain');\n    if (v.rain_mm >= Number(cfg.heavy_rain_mm)) events.push('heavy_rain');\n    if (v.max_c >= Number(cfg.hot_c)) events.push('hot');\n    if (v.min_c <= Number(cfg.cold_c)) events.push('cold');\n    if (events.length) facts.push({ id: 'F' + (facts.length + 1), store: store.name, events, values: v });\n  });\n  return facts;\n}\n\n// numbers a sentence may use: the forecast values only. Dates are allowed only in a date shape (10\u670817\u65e5, 10/17, 17\u65e5)\n// and are removed before the check, so \"10% off\" cannot hide behind the month 10.\nfunction numbersOf(facts) {\n  const s = new Set();\n  for (const f of facts) for (const [k, v] of Object.entries(f.values)) {\n    if (k === 'date') continue;\n    if (typeof v === 'number' && Number.isFinite(v)) { s.add(String(v)); s.add(String(Math.round(v))); s.add(String(Math.round(v * 10) / 10)); }\n  }\n  return s;\n}\nfunction stripDates(text, facts) {\n  const md = new Set(), days = new Set(), years = new Set();\n  for (const f of facts) { const [y, m, d] = String(f.values.date).split('-').map(Number); md.add(m + '/' + d); days.add(d); years.add(y); }\n  return nfkc(text)\n    .replace(/(\\d{4})\\s*\u5e74/g, (all, y) => (years.has(Number(y)) ? ' ' : all))\n    // a range: 10\u670816\uff5e18\u65e5, 10/16-18\n    .replace(/(\\d{1,2})\\s*[\u6708\\/]\\s*(\\d{1,2})\\s*\u65e5?\\s*[\u301c\uff5e~\\-\u2013]\\s*(\\d{1,2})\\s*\u65e5?/g, (all, m, a, b) => (md.has(Number(m) + '/' + Number(a)) && md.has(Number(m) + '/' + Number(b)) ? ' ' : all))\n    .replace(/(\\d{1,2})\\s*\u6708\\s*(\\d{1,2})\\s*\u65e5/g, (all, m, d) => (md.has(Number(m) + '/' + Number(d)) ? ' ' : all))\n    .replace(/(\\d{1,2})\\/(\\d{1,2})(?!\\d)/g, (all, m, d) => (md.has(Number(m) + '/' + Number(d)) ? ' ' : all))\n    .replace(/(\\d{1,2})\\s*\u65e5/g, (all, d) => (days.has(Number(d)) ? ' ' : all))\n    .replace(/\\d{4}-\\d{2}-\\d{2}/g, (all) => (facts.some((f) => f.values.date === all) ? ' ' : all));\n}\n\nfunction checkTexts(raw, facts, cfg) {\n  let ai = null;\n  try {\n    const t = String(raw ?? '').replace(/^\\s*```(?:json)?\\s*/i, '').replace(/\\s*```\\s*$/, '').trim();\n    const a = t.indexOf('{'), z = t.lastIndexOf('}');\n    ai = JSON.parse(a >= 0 && z > a ? t.slice(a, z + 1) : t);\n  } catch (e) { ai = null; }\n  if (!ai) return { ok: false, problem: 'the AI output could not be read as JSON', memo: [], message: null };\n  const byId = new Map(facts.map((f) => [f.id, f]));\n  const ng = String(cfg.ng_words ?? '').split(/[,\u3001]\\s*/).map((w) => w.trim()).filter(Boolean);\n  const check = (text, ids, isMessage) => {\n    const problems = [];\n    const used = (Array.isArray(ids) ? ids : []).map(String).filter((id) => byId.has(id)).map((id) => byId.get(id));\n    if (!String(text ?? '').trim()) problems.push('empty');\n    if (!used.length) problems.push('no fact referenced');\n    const allowed = numbersOf(used);\n    const bad = [...new Set(stripDates(text, used).match(/\\d+(?:\\.\\d+)?/g) ?? [])].filter((n) => !allowed.has(n) && !allowed.has(String(Number(n))));\n    if (bad.length) problems.push('numbers not in the forecast: ' + bad.join(', '));\n    if (isMessage) {\n      const len = [...nfkc(text)].length;\n      if (len > Number(cfg.max_message_chars)) problems.push('too long: ' + len + ' characters (limit ' + cfg.max_message_chars + ')');\n      const hit = ng.filter((w) => nfkc(text).includes(nfkc(w)));\n      if (hit.length) problems.push('words you do not use: ' + hit.join(', '));\n    }\n    return { text: String(text ?? '').trim(), ok: problems.length === 0, problems: problems.join('; ') };\n  };\n  const memo = (Array.isArray(ai.staff_memo) ? ai.staff_memo : []).slice(0, 5).map((m) => check(m?.text, m?.fact_ids, false));\n  const message = ai.customer_message ? check(ai.customer_message.text, ai.customer_message.fact_ids, true) : null;\n  return { ok: true, problem: '', memo, message };\n}\n\nconst LABEL = { rain: { ja: '\u96e8', en: 'rain' }, heavy_rain: { ja: '\u5927\u96e8', en: 'heavy rain' }, hot: { ja: '\u6691\u3055', en: 'heat' }, cold: { ja: '\u5bd2\u3055', en: 'cold' } };\nfunction slackText(store, facts, checked, cfg) {\n  const ja = String(cfg.language || 'en').toLowerCase().startsWith('ja');\n  const L = (e) => LABEL[e][ja ? 'ja' : 'en'];\n  const rows = facts.map((f) => '\u2022 ' + f.values.date + ' [' + f.events.map(L).join(', ') + '] ' + (ja ? '\u6700\u9ad8' : 'max ') + f.values.max_c + '\u00b0C / ' + (ja ? '\u6700\u4f4e' : 'min ') + f.values.min_c + '\u00b0C / ' + (ja ? '\u964d\u6c34\u78ba\u7387' : 'rain ') + f.values.rain_probability_pct + '% / ' + f.values.rain_mm + ' mm').join('\\n');\n  const mark = (x) => (x.ok ? '\u2713 ' : ':warning: ') + x.text + (x.ok ? '' : '  _(' + x.problems + ')_');\n  const out = [(ja ? ':sun_behind_rain_cloud: *\u5929\u6c17\u306e\u6e96\u5099* ' : ':sun_behind_rain_cloud: *Weather ahead* ') + store.name + (store.contact ? ' ' + (/^[UW][A-Z0-9]{6,}$/.test(store.contact) ? '<@' + store.contact + '>' : store.contact) : ''),\n    (ja ? '*\u4e88\u5831\uff08Open-Meteo\u3001\u30b3\u30fc\u30c9\u304c\u5224\u5b9a\uff09*\\n' : '*Forecast (Open-Meteo, flagged by code)*\\n') + rows];\n  if (!checked.ok) out.push(':warning: ' + checked.problem);\n  else {\n    if (checked.memo.length) out.push((ja ? '*\u30b9\u30bf\u30c3\u30d5\u5411\u3051\u306e\u6e96\u5099\uff08AI\u3001\u30b3\u30fc\u30c9\u304c\u7167\u5408\uff09*\\n' : '*Prep for the staff (AI, checked by code)*\\n') + checked.memo.map(mark).join('\\n'));\n    if (checked.message) out.push((ja ? '*\u304a\u5ba2\u69d8\u5411\u3051\u306e\u6587\u306e\u6848\uff08\u4f7f\u3046\u524d\u306b\u8aad\u3093\u3067\u304f\u3060\u3055\u3044\uff09*\\n' : '*Draft for customers (read before you use it)*\\n') + mark(checked.message));\n  }\n  out.push(ja ? '_\u4e88\u5831\u306f\u5916\u308c\u308b\u3053\u3068\u304c\u3042\u308a\u307e\u3059\u3002\u524d\u3082\u3063\u3066\u52d5\u304f\u305f\u3081\u306e\u76ee\u5b89\u3067\u3059\u3002_' : '_Forecasts can be wrong. This is a heads-up, not a promise._');\n  return out.join('\\n');\n}\n\nconst cfg = $('Config').first().json;\nconst stores = $('Check the stores').all().map((i) => i.json);\nconst out = [];\n$input.all().forEach((it, i) => {\n  if (!it.json.daily) throw new Error('The forecast for ' + stores[i].name + ' could not be read: ' + JSON.stringify(it.json).slice(0, 200));\n  const facts = weatherFacts(stores[i], it.json, cfg);\n  if (facts.length) out.push({ json: { store: stores[i], facts } });\n});\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c0674970-7df0-4c67-8051-b3524d6753c9",
+      "name": "AI: Write prep and message",
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "onError": "continueRegularOutput",
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "claude-haiku-4-5-20251001"
+        },
+        "options": {
+          "maxTokens": 1200,
+          "temperature": 0
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "=You help a store prepare for the weather of the next days. The flagged days below were found by code from the forecast. Use ONLY these facts.\n\n# Store\n{{ $json.store.name }}{{ $json.store.notes ? \" (\" + $json.store.notes + \")\" : \"\" }}\n\n# Rules\n- Write in {{ $(\"Config\").first().json.output_language }}.\n- staff_memo: 2 to 4 short, practical items for the staff (stock, staffing, entrance, deliveries, outdoor seats...). Each item lists the fact ids it is about.\n- customer_message: one short message the store could send to customers (LINE, social media), at most {{ $(\"Config\").first().json.max_message_chars }} characters, friendly, no promises. List its fact ids.\n- Copy every number exactly as in the facts (temperature, probability, millimetres, the date). Do not calculate new numbers. Do not invent discounts or offers.\n- Output JSON only (no explanation, no code block): {\"staff_memo\": [{\"text\": \"...\", \"fact_ids\": [\"F1\"]}], \"customer_message\": {\"text\": \"...\", \"fact_ids\": [\"F1\"]}}\n\n# Facts (JSON)\n{{ JSON.stringify($json.facts) }}"
+            }
+          ]
+        },
+        "resource": "text",
+        "simplify": true,
+        "operation": "message"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c9a9889b-14d7-4ea7-8286-f41cbc54f4d5",
+      "name": "Check the texts",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2020,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// ---- weather ahead: the events are decided by code ---------------------------------------------------------\nconst nfkc = (s) => String(s ?? '').normalize('NFKC');\nconst num = (v) => { const n = Number(String(v ?? '').trim()); return String(v ?? '').trim() !== '' && Number.isFinite(n) ? n : NaN; };\n\nfunction readStores(rows) {\n  const stores = [], problems = [];\n  rows.forEach((r, i) => {\n    const name = String(r.store ?? '').trim();\n    if (!name && String(r.lat ?? '').trim() === '' && String(r.lon ?? '').trim() === '') return;\n    const lat = num(r.lat), lon = num(r.lon);\n    if (!name || !(lat >= -90 && lat <= 90) || !(lon >= -180 && lon <= 180)) { problems.push('row ' + (i + 2) + ' (' + (name || '?') + '): needs store, lat and lon'); return; }\n    stores.push({ name, lat, lon, notes: String(r.notes ?? '').trim(), contact: String(r.contact ?? '').trim() });\n  });\n  return { stores, problems };\n}\n\n// one fact per flagged day: what the forecast says and which rule it hit\nfunction weatherFacts(store, forecast, cfg) {\n  const d = forecast?.daily ?? {};\n  const facts = [];\n  (d.time ?? []).forEach((date, i) => {\n    const v = { date, max_c: d.temperature_2m_max?.[i], min_c: d.temperature_2m_min?.[i], rain_probability_pct: d.precipitation_probability_max?.[i], rain_mm: d.precipitation_sum?.[i] };\n    const events = [];\n    if (v.rain_probability_pct >= Number(cfg.rain_probability_pct)) events.push('rain');\n    if (v.rain_mm >= Number(cfg.heavy_rain_mm)) events.push('heavy_rain');\n    if (v.max_c >= Number(cfg.hot_c)) events.push('hot');\n    if (v.min_c <= Number(cfg.cold_c)) events.push('cold');\n    if (events.length) facts.push({ id: 'F' + (facts.length + 1), store: store.name, events, values: v });\n  });\n  return facts;\n}\n\n// numbers a sentence may use: the forecast values only. Dates are allowed only in a date shape (10\u670817\u65e5, 10/17, 17\u65e5)\n// and are removed before the check, so \"10% off\" cannot hide behind the month 10.\nfunction numbersOf(facts) {\n  const s = new Set();\n  for (const f of facts) for (const [k, v] of Object.entries(f.values)) {\n    if (k === 'date') continue;\n    if (typeof v === 'number' && Number.isFinite(v)) { s.add(String(v)); s.add(String(Math.round(v))); s.add(String(Math.round(v * 10) / 10)); }\n  }\n  return s;\n}\nfunction stripDates(text, facts) {\n  const md = new Set(), days = new Set(), years = new Set();\n  for (const f of facts) { const [y, m, d] = String(f.values.date).split('-').map(Number); md.add(m + '/' + d); days.add(d); years.add(y); }\n  return nfkc(text)\n    .replace(/(\\d{4})\\s*\u5e74/g, (all, y) => (years.has(Number(y)) ? ' ' : all))\n    // a range: 10\u670816\uff5e18\u65e5, 10/16-18\n    .replace(/(\\d{1,2})\\s*[\u6708\\/]\\s*(\\d{1,2})\\s*\u65e5?\\s*[\u301c\uff5e~\\-\u2013]\\s*(\\d{1,2})\\s*\u65e5?/g, (all, m, a, b) => (md.has(Number(m) + '/' + Number(a)) && md.has(Number(m) + '/' + Number(b)) ? ' ' : all))\n    .replace(/(\\d{1,2})\\s*\u6708\\s*(\\d{1,2})\\s*\u65e5/g, (all, m, d) => (md.has(Number(m) + '/' + Number(d)) ? ' ' : all))\n    .replace(/(\\d{1,2})\\/(\\d{1,2})(?!\\d)/g, (all, m, d) => (md.has(Number(m) + '/' + Number(d)) ? ' ' : all))\n    .replace(/(\\d{1,2})\\s*\u65e5/g, (all, d) => (days.has(Number(d)) ? ' ' : all))\n    .replace(/\\d{4}-\\d{2}-\\d{2}/g, (all) => (facts.some((f) => f.values.date === all) ? ' ' : all));\n}\n\nfunction checkTexts(raw, facts, cfg) {\n  let ai = null;\n  try {\n    const t = String(raw ?? '').replace(/^\\s*```(?:json)?\\s*/i, '').replace(/\\s*```\\s*$/, '').trim();\n    const a = t.indexOf('{'), z = t.lastIndexOf('}');\n    ai = JSON.parse(a >= 0 && z > a ? t.slice(a, z + 1) : t);\n  } catch (e) { ai = null; }\n  if (!ai) return { ok: false, problem: 'the AI output could not be read as JSON', memo: [], message: null };\n  const byId = new Map(facts.map((f) => [f.id, f]));\n  const ng = String(cfg.ng_words ?? '').split(/[,\u3001]\\s*/).map((w) => w.trim()).filter(Boolean);\n  const check = (text, ids, isMessage) => {\n    const problems = [];\n    const used = (Array.isArray(ids) ? ids : []).map(String).filter((id) => byId.has(id)).map((id) => byId.get(id));\n    if (!String(text ?? '').trim()) problems.push('empty');\n    if (!used.length) problems.push('no fact referenced');\n    const allowed = numbersOf(used);\n    const bad = [...new Set(stripDates(text, used).match(/\\d+(?:\\.\\d+)?/g) ?? [])].filter((n) => !allowed.has(n) && !allowed.has(String(Number(n))));\n    if (bad.length) problems.push('numbers not in the forecast: ' + bad.join(', '));\n    if (isMessage) {\n      const len = [...nfkc(text)].length;\n      if (len > Number(cfg.max_message_chars)) problems.push('too long: ' + len + ' characters (limit ' + cfg.max_message_chars + ')');\n      const hit = ng.filter((w) => nfkc(text).includes(nfkc(w)));\n      if (hit.length) problems.push('words you do not use: ' + hit.join(', '));\n    }\n    return { text: String(text ?? '').trim(), ok: problems.length === 0, problems: problems.join('; ') };\n  };\n  const memo = (Array.isArray(ai.staff_memo) ? ai.staff_memo : []).slice(0, 5).map((m) => check(m?.text, m?.fact_ids, false));\n  const message = ai.customer_message ? check(ai.customer_message.text, ai.customer_message.fact_ids, true) : null;\n  return { ok: true, problem: '', memo, message };\n}\n\nconst LABEL = { rain: { ja: '\u96e8', en: 'rain' }, heavy_rain: { ja: '\u5927\u96e8', en: 'heavy rain' }, hot: { ja: '\u6691\u3055', en: 'heat' }, cold: { ja: '\u5bd2\u3055', en: 'cold' } };\nfunction slackText(store, facts, checked, cfg) {\n  const ja = String(cfg.language || 'en').toLowerCase().startsWith('ja');\n  const L = (e) => LABEL[e][ja ? 'ja' : 'en'];\n  const rows = facts.map((f) => '\u2022 ' + f.values.date + ' [' + f.events.map(L).join(', ') + '] ' + (ja ? '\u6700\u9ad8' : 'max ') + f.values.max_c + '\u00b0C / ' + (ja ? '\u6700\u4f4e' : 'min ') + f.values.min_c + '\u00b0C / ' + (ja ? '\u964d\u6c34\u78ba\u7387' : 'rain ') + f.values.rain_probability_pct + '% / ' + f.values.rain_mm + ' mm').join('\\n');\n  const mark = (x) => (x.ok ? '\u2713 ' : ':warning: ') + x.text + (x.ok ? '' : '  _(' + x.problems + ')_');\n  const out = [(ja ? ':sun_behind_rain_cloud: *\u5929\u6c17\u306e\u6e96\u5099* ' : ':sun_behind_rain_cloud: *Weather ahead* ') + store.name + (store.contact ? ' ' + (/^[UW][A-Z0-9]{6,}$/.test(store.contact) ? '<@' + store.contact + '>' : store.contact) : ''),\n    (ja ? '*\u4e88\u5831\uff08Open-Meteo\u3001\u30b3\u30fc\u30c9\u304c\u5224\u5b9a\uff09*\\n' : '*Forecast (Open-Meteo, flagged by code)*\\n') + rows];\n  if (!checked.ok) out.push(':warning: ' + checked.problem);\n  else {\n    if (checked.memo.length) out.push((ja ? '*\u30b9\u30bf\u30c3\u30d5\u5411\u3051\u306e\u6e96\u5099\uff08AI\u3001\u30b3\u30fc\u30c9\u304c\u7167\u5408\uff09*\\n' : '*Prep for the staff (AI, checked by code)*\\n') + checked.memo.map(mark).join('\\n'));\n    if (checked.message) out.push((ja ? '*\u304a\u5ba2\u69d8\u5411\u3051\u306e\u6587\u306e\u6848\uff08\u4f7f\u3046\u524d\u306b\u8aad\u3093\u3067\u304f\u3060\u3055\u3044\uff09*\\n' : '*Draft for customers (read before you use it)*\\n') + mark(checked.message));\n  }\n  out.push(ja ? '_\u4e88\u5831\u306f\u5916\u308c\u308b\u3053\u3068\u304c\u3042\u308a\u307e\u3059\u3002\u524d\u3082\u3063\u3066\u52d5\u304f\u305f\u3081\u306e\u76ee\u5b89\u3067\u3059\u3002_' : '_Forecasts can be wrong. This is a heads-up, not a promise._');\n  return out.join('\\n');\n}\n\nconst cfg = $('Config').first().json;\nconst ev = $('Find weather events').all().map((i) => i.json);\nreturn $input.all().map((it, i) => {\n  const raw = it.json.content?.[0]?.text ?? it.json.text;\n  const checked = checkTexts(raw, ev[i].facts, cfg);\n  return { json: { store: ev[i].store.name, text: slackText(ev[i].store, ev[i].facts, checked, cfg) } };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "058e75e5-18f3-4a3d-8601-f9e25423f6a6",
+      "name": "Post to Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        2240,
+        0
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "select": "channel",
+        "resource": "message",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "operation": "post",
+        "messageType": "text",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "typeVersion": 2.7
+    },
+    {
+      "id": "832beba5-fe39-4951-89ee-f181ad5d9e18",
+      "name": "Run once: set up the sheet",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        800
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "2bf3f2d2-f566-4a94-87d9-b7f648fe0d8e",
+      "name": "Add the Stores tab",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        440,
+        800
+      ],
+      "parameters": {
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $(\"Spreadsheet ID\").first().json.spreadsheet_id }}:batchUpdate",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={\"requests\":[{\"addSheet\":{\"properties\":{\"title\":\"Stores\"}}}]}",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api"
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "1ad20b1b-cb71-45d5-89e5-ced00e3419e7",
+      "name": "Write the header row",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        660,
+        800
+      ],
+      "parameters": {
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $(\"Spreadsheet ID\").first().json.spreadsheet_id }}/values:batchUpdate",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={\"valueInputOption\":\"RAW\",\"data\":[{\"range\":\"'Stores'!A1\",\"values\":[[\"store\",\"lat\",\"lon\",\"notes\",\"contact\"]]}]}",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api"
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "b0b0b0b0-0000-4000-8000-0000000000a8",
+      "name": "Spreadsheet ID",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        800
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sid1",
+              "name": "spreadsheet_id",
+              "type": "string",
+              "value": "PASTE_YOUR_SPREADSHEET_ID_HERE"
+            }
+          ]
+        },
+        "includeOtherFields": false
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "sticky-2-73766a78",
+      "name": "Section 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        -284
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 420,
+        "height": 604,
+        "content": "## 1. Every day at 15:00\nConfig holds the limits for rain, heat and cold, the language, the time zone and the banned words."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-3-618ae98a",
+      "name": "Section 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        540,
+        -158
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 640,
+        "height": 328,
+        "content": "## 2. Stores and forecasts\nYour stores from the sheet, then one Open-Meteo forecast per store."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-4-92e1fd00",
+      "name": "Section 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1360,
+        -288
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 200,
+        "height": 458,
+        "content": "## 3. Code flags the days\nRain, heavy rain, heat and cold are decided by your limits, in code. Stores with nothing flagged stop here."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-5-c465f46e",
+      "name": "Section 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1740,
+        -158
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 640,
+        "height": 328,
+        "content": "## 4. Claude writes, code checks\nNumbers and dates must be in the forecast; the customer draft must fit the length and avoid banned words."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-6-cbe5f53a",
+      "name": "Section 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        642
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 860,
+        "height": 328,
+        "content": "## Run once: set up the sheet\nPaste your spreadsheet ID and run once: it adds the Stores tab with its header row."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-1-e28b1fda",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -130,
+        -1368
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 780,
+        "height": 940,
+        "content": "## Rain, heat or cold ahead? Tell each store in time\nEvery afternoon the workflow reads the free **Open-Meteo** forecast (no key) for each store in your `Stores` tab. **Code flags the days** with rain, heavy rain, heat or cold, using your limits. For the flagged stores, Claude writes a short prep list for the staff and a draft message for customers, and **code checks both**: every temperature, probability, amount and date must be in the forecast, the customer draft must fit your length and avoid your banned words. Slack gets one message per store.\n\n### How it works\n1. Read the stores (name, lat, lon, notes, contact). A wrong coordinate stops the run with a clear message.\n2. One forecast request per store (default 3 days). Code turns the flagged days into numbered facts.\n3. Claude writes with the fact ids it used; checks mark anything that fails with a warning.\n\n### Setup\n1. Blank Google Sheet: paste its ID in **Spreadsheet ID**, run **Run once**, select the sheet in the Google Sheets node.\n2. Fill the Stores tab (right-click a place in Google Maps to copy lat and lon).\n3. Credentials: Google Sheets, Anthropic, Slack (pick a channel).\n4. Set the limits, language, time zone and banned words in **Config**. Publish.\n\n### Note\nForecasts can be wrong. Read the customer draft before you send it."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Read Stores tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run now": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Spreadsheet ID": {
+      "main": [
+        [
+          {
+            "node": "Add the Stores tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the texts": {
+      "main": [
+        [
+          {
+            "node": "Post to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Stores tab": {
+      "main": [
+        [
+          {
+            "node": "Check the stores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the stores": {
+      "main": [
+        [
+          {
+            "node": "Get forecast (Open-Meteo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add the Stores tab": {
+      "main": [
+        [
+          {
+            "node": "Write the header row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every day at 15:00": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find weather events": {
+      "main": [
+        [
+          {
+            "node": "AI: Write prep and message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get forecast (Open-Meteo)": {
+      "main": [
+        [
+          {
+            "node": "Find weather events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Write prep and message": {
+      "main": [
+        [
+          {
+            "node": "Check the texts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run once: set up the sheet": {
+      "main": [
+        [
+          {
+            "node": "Spreadsheet ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

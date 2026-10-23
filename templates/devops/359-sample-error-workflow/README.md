@@ -1,6 +1,6 @@
 # ⚙️ Sample error workflow
 
-> ⚡ **1,834 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,965 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

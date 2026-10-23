@@ -1,6 +1,6 @@
 # ⚡ Sync events from Excel to Google Calendar with GPT-4o-Mini smart summaries
 
-> ⚡ **224 views** · ⚡ [Personal Productivity](../)
+> ⚡ **265 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

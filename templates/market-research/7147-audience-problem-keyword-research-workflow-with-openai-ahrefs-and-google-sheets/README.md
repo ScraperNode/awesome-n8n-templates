@@ -1,6 +1,6 @@
 # 📊 Audience problem keyword research workflow with OpenAI, Ahrefs and Google Sheets
 
-> ⚡ **710 views** · 📊 [Market Research & Insights](../)
+> ⚡ **785 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

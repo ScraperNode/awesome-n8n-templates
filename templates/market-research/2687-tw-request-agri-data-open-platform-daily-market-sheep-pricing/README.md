@@ -1,6 +1,6 @@
 # 📊 TW-Request-Agri data open platform-daily market sheep pricing
 
-> ⚡ **603 views** · 📊 [Market Research & Insights](../)
+> ⚡ **621 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

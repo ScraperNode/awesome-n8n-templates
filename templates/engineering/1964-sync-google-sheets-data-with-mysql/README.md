@@ -1,6 +1,6 @@
 # ⚒️ Sync Google Sheets data with MySQL
 
-> ⚡ **9,352 views** · ⚒️ [Engineering](../)
+> ⚡ **9,481 views** · ⚒️ [Engineering](../)
 
 ## Description
 

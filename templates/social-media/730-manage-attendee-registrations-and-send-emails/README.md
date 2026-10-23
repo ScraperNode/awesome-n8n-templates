@@ -1,6 +1,6 @@
 # 📱 Manage attendee registrations and send emails
 
-> ⚡ **3,583 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **3,576 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

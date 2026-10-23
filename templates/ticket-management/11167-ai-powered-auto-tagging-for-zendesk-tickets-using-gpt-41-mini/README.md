@@ -1,6 +1,6 @@
 # 🎫 AI-powered auto-tagging for Zendesk tickets using GPT-4.1-mini
 
-> ⚡ **166 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **228 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Trigger outbound Vapi AI voice calls from new Jotform submissions
 
-> ⚡ **1,182 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,331 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

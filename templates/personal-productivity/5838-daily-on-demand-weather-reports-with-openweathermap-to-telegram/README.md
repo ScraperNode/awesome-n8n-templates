@@ -1,6 +1,6 @@
 # ⚡ Daily & on-demand weather reports with OpenWeatherMap to Telegram
 
-> ⚡ **137 views** · ⚡ [Personal Productivity](../)
+> ⚡ **157 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

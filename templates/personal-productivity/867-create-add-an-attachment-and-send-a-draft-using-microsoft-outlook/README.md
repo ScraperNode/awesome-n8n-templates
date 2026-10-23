@@ -1,6 +1,6 @@
 # ⚡ Create, add an attachment, and send a draft using Microsoft Outlook
 
-> ⚡ **10,536 views** · ⚡ [Personal Productivity](../)
+> ⚡ **10,757 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

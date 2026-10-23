@@ -1,6 +1,6 @@
 # 📊 Generate property investment reports with GPT-4, SerpAPI, Google Docs & Airtable
 
-> ⚡ **131 views** · 📊 [Market Research & Insights](../)
+> ⚡ **138 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

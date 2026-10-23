@@ -1,6 +1,6 @@
 # 🎫 AI-powered customer feedback collection with GPT-4o, Google Sheets & Slack alerts
 
-> ⚡ **73 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **105 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

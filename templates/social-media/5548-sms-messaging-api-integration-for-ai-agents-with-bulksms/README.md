@@ -1,6 +1,6 @@
 # 📱 Sms messaging API integration for AI agents with BulkSMS
 
-> ⚡ **1,002 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,124 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

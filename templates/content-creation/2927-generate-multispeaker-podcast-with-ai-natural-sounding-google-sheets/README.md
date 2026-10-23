@@ -1,6 +1,6 @@
 # 🎬 Generate multispeaker podcast 🎙️ with AI natural-sounding 🤖🧠 & Google Sheets
 
-> ⚡ **2,066 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,960 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📁 Simple file based key value store (WriteKey)
 
-> ⚡ **1,686 views** · 📁 [File Management](../)
+> ⚡ **1,693 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Sync contacts, consent, and segments between KlickTipp and Pipedrive
 
-> ⚡ **2 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **10 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

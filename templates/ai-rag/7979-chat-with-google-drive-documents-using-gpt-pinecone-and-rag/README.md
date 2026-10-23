@@ -1,6 +1,6 @@
 # 🔍 Chat with Google Drive documents using GPT, Pinecone, and RAG
 
-> ⚡ **2,205 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **2,458 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

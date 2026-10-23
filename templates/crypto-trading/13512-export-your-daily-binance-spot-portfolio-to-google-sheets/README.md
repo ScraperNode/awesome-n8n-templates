@@ -1,6 +1,6 @@
 # 📈 Export your daily Binance spot portfolio to Google Sheets
 
-> ⚡ **42 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **90 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 📚 Auto-generate documentation for n8n workflows with GPT and Docsify
 
-> ⚡ **12,006 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **12,657 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

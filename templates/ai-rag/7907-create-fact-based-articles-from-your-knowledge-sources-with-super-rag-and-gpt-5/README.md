@@ -1,6 +1,6 @@
 # 🔍 Create fact-based articles from your knowledge sources with Super RAG and GPT-5
 
-> ⚡ **520 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **575 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

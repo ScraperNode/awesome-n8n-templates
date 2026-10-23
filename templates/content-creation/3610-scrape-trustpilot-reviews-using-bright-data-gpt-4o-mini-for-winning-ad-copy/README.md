@@ -1,6 +1,6 @@
-# 🎬 Scrape Trustpilot reviews using Bright Data & GPT-4o-mini for winning ad copy
+# 🎬 Scrape Trustpilot reviews using Bright Data & GPT-5.5 for winning ad copy
 
-> ⚡ **1,061 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,104 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -9,7 +9,7 @@
 ## Description
 
 ## 🔍 Competitor Review Scraper & Ad Copy Generator
-(Trustpilot + Bright Data + GPT-4o-mini)
+(Trustpilot + Bright Data + GPT-5.5)
 
 ### 📌 Who It's For
 Marketers, business owners, and agencies looking to:
@@ -51,7 +51,7 @@ Summarizes common negative feedback
 
 5. Generate Ad Copy
 
-Sends the summary to OpenAI GPT-4o-mini
+Sends the summary to OpenAI GPT-5.5
 
 Produces 3 variations of ad copy targeting pain points
 
@@ -80,7 +80,7 @@ Google Sheets: OAuth2
 
 Bright Data: Authorization Header
 
-OpenAI: API Key for GPT-4o-mini
+OpenAI: API Key for GPT-5,4
 
 **Step 3: Import Workflow
 **
@@ -101,7 +101,7 @@ Receive ad copy + review insights via email
 
 - Focusing on 1–2 star reviews yields the most actionable pain points
 
-- You can customize GPT-4o-mini prompts for tone or vertical
+- You can customize GPT-5.5 prompts for tone or vertical
 
 ### 💬 Support & Feedback
 Need help or customization?

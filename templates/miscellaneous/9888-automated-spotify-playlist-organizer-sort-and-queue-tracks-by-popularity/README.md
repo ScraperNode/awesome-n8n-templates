@@ -1,6 +1,6 @@
 # 🔧 Automated Spotify playlist organizer - sort and queue tracks by popularity
 
-> ⚡ **302 views** · 🔧 [Miscellaneous](../)
+> ⚡ **421 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

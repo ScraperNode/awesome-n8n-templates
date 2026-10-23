@@ -1,6 +1,6 @@
 # 📋 Generate daily Jira summaries & weekly reports with Azure OpenAI and Gmail
 
-> ⚡ **383 views** · 📋 [Project Management](../)
+> ⚡ **463 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Analyze documents & web content with GPT-4o Q&A assistant
 
-> ⚡ **611 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **852 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

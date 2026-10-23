@@ -1,6 +1,6 @@
 # 🔬 Convert addresses to latLong with Google Sheets and Google Maps API
 
-> ⚡ **3,627 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **3,770 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Monitor & manage Docker containers with Telegram bot & AI log analysis
 
-> ⚡ **5,291 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **10,211 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

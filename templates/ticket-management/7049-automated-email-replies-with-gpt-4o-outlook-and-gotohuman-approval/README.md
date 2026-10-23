@@ -1,6 +1,6 @@
 # 🎫 Automated email replies with GPT-4o, Outlook, and GoToHuman approval
 
-> ⚡ **1,801 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **2,109 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

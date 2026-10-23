@@ -1,6 +1,6 @@
 # 🧾 Save n8n Cloud invoices received in Gmail in Google Drive
 
-> ⚡ **3,524 views** · 🧾 [Invoice Processing](../)
+> ⚡ **3,656 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

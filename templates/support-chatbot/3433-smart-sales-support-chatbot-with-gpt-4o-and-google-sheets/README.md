@@ -1,6 +1,6 @@
 # 💬 Smart sales support chatbot with GPT-4o and Google Sheets
 
-> ⚡ **9,463 views** · 💬 [Support Chatbots](../)
+> ⚡ **10,006 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Analyze sales calls & route leads with GPT-4o, Airtable and Trello
 
-> ⚡ **84 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **135 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

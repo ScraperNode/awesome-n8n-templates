@@ -1,6 +1,6 @@
 # 🎬 Generate videos from text descriptions using Wan 2.2 T2V Fast and Replicate
 
-> ⚡ **2,321 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,653 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

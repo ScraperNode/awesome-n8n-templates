@@ -1,6 +1,6 @@
 # ⚡ Angie, personal AI assistant with Telegram voice and text
 
-> ⚡ **300,650 views** · ⚡ [Personal Productivity](../)
+> ⚡ **430,275 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

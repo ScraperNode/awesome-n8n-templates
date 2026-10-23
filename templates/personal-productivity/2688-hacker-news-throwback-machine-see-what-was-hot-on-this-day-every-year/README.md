@@ -1,6 +1,6 @@
 # ⚡ Hacker News throwback machine - see what was hot on this day, every year!
 
-> ⚡ **5,476 views** · ⚡ [Personal Productivity](../)
+> ⚡ **5,503 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

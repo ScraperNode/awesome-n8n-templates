@@ -1,0 +1,757 @@
+{
+  "id": "aYxFVcXEzEAolvl3",
+  "meta": {
+    "instanceId": "8b29fd35b42488a11044f5a1ef31516e6f8984c89f487878d42472a451cb826c",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "JobTrackr",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "38434289-088e-4497-b3cf-f1907dbdca26",
+      "name": "Backfill Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        21248,
+        5440
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "1d3b89f4-3ed5-4916-8a22-e3c9e1d3ebcb",
+      "name": "Gmail Backfill",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        21472,
+        5440
+      ],
+      "webhookId": "e9f04967-9ed8-4d83-8eb6-11de9ebe7981",
+      "parameters": {
+        "limit": 100,
+        "filters": {
+          "q": "category:primary OR category:updates"
+        },
+        "operation": "getAll"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "aBr2BX5HE8ouJICP",
+          "name": "Gmail account"
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "30ae373f-df87-43be-93b6-e499108a922e",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        21472,
+        5696
+      ],
+      "parameters": {
+        "filters": {
+          "q": "(category:primary OR category:updates) AND (application OR interview OR hiring OR update OR career)"
+        },
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "aBr2BX5HE8ouJICP",
+          "name": "Gmail account"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "eb808d9e-fb62-4da5-b8c5-5e69577ce58e",
+      "name": "Preprocess Email",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        21696,
+        5536
+      ],
+      "parameters": {
+        "functionCode": "const items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const msg = item.json;\n\n  const emailId = msg.id || msg.emailId || msg.messageId || '';\n  const threadId = msg.threadId || '';\n\n  // Extract headers from raw Gmail API format\n  const headers = (msg.payload && msg.payload.headers) ? msg.payload.headers : [];\n  const getHeader = (name) => {\n    const h = headers.find(h => h.name && h.name.toLowerCase() === name.toLowerCase());\n    return h ? h.value : '';\n  };\n\n  // SUBJECT\n  let subject = '';\n  if (msg.subject && typeof msg.subject === 'string') subject = msg.subject;\n  if (!subject) subject = getHeader('Subject');\n  if (!subject && msg.headers && msg.headers.subject) subject = msg.headers.subject;\n  if (!subject && msg.headers && msg.headers.Subject) subject = msg.headers.Subject;\n  if (!subject) {\n    for (const key of Object.keys(msg)) {\n      if (key.toLowerCase() === 'subject' && typeof msg[key] === 'string' && msg[key]) {\n        subject = msg[key]; break;\n      }\n    }\n  }\n  if (!subject) subject = '(no subject)';\n\n  // FROM\n  let from = '';\n  if (msg.from && typeof msg.from === 'string') from = msg.from;\n  if (!from && msg.sender && typeof msg.sender === 'string') from = msg.sender;\n  if (!from) from = getHeader('From');\n  if (!from && msg.headers && msg.headers.from) from = msg.headers.from;\n  if (!from && msg.headers && msg.headers.From) from = msg.headers.From;\n  if (!from) {\n    for (const key of Object.keys(msg)) {\n      if (key.toLowerCase() === 'from' && typeof msg[key] === 'string' && msg[key]) {\n        from = msg[key]; break;\n      }\n    }\n  }\n  if (!from) from = '(unknown sender)';\n\n  // BODY TEXT: get raw HTML first for link extraction\n  let rawHtml = '';\n  let rawText = '';\n  const htmlFields = ['textHtml', 'text_html', 'html'];\n  const textFields = ['text', 'textPlain', 'text_plain', 'body', 'content'];\n  for (const f of htmlFields) {\n    if (msg[f] && typeof msg[f] === 'string' && msg[f].length > 20) { rawHtml = msg[f]; break; }\n  }\n  for (const f of textFields) {\n    if (msg[f] && typeof msg[f] === 'string' && msg[f].length > 20) { rawText = msg[f]; break; }\n  }\n  if (!rawHtml && !rawText && msg.payload) {\n    const extractBody = (payload, mime) => {\n      if (!payload) return '';\n      if (payload.mimeType && payload.mimeType.includes(mime) && payload.body && payload.body.data) {\n        try { return Buffer.from(payload.body.data, 'base64').toString('utf-8'); } catch(e) { return ''; }\n      }\n      if (payload.parts && Array.isArray(payload.parts)) {\n        for (const part of payload.parts) { const t = extractBody(part, mime); if (t) return t; }\n      }\n      return '';\n    };\n    rawHtml = extractBody(msg.payload, 'html');\n    if (!rawText) rawText = extractBody(msg.payload, 'plain');\n  }\n  if (!rawHtml && !rawText && msg.snippet) rawText = msg.snippet;\n\n  // EXTRACT LINKS from HTML before stripping\n  const links = [];\n  const linkSource = rawHtml || rawText || '';\n  const hrefRegex = /href=\"([^\"]+)\"/gi;\n  let hrefMatch;\n  while ((hrefMatch = hrefRegex.exec(linkSource)) !== null) {\n    const url = hrefMatch[1];\n    if (url && url.startsWith('http') && !url.includes('unsubscribe') && !url.includes('mailto:') && !url.includes('list-manage') && !url.includes('tracking') && !url.includes('click.') && !url.includes('open.') && url.length > 10) {\n      links.push(url);\n    }\n  }\n  // Also extract plain text URLs\n  const urlRegex = /https?:\\/\\/[^\\s<>\"'\\)\\]]+/gi;\n  let urlMatch;\n  const plainText = rawText || '';\n  while ((urlMatch = urlRegex.exec(plainText)) !== null) {\n    const url = urlMatch[0];\n    if (!url.includes('unsubscribe') && !url.includes('mailto:') && !links.includes(url)) {\n      links.push(url);\n    }\n  }\n  // Find the best candidature/application link\n  let applicationLink = '';\n  const priorityKeywords = ['application', 'candidat', 'status', 'portal', 'career', 'job', 'offer', 'interview', 'dashboard', 'profile', 'workday', 'greenhouse', 'lever', 'ashby', 'icims', 'taleo', 'successfactors', 'smartrecruiters', 'bamboo', 'myworkday', 'jobs.lever', 'boards.greenhouse'];\n  for (const link of links) {\n    const lower = link.toLowerCase();\n    if (priorityKeywords.some(kw => lower.includes(kw))) {\n      applicationLink = link;\n      break;\n    }\n  }\n  if (!applicationLink && links.length > 0) applicationLink = links[0];\n\n  // Clean text for AI\n  let text = (rawHtml || rawText || '').replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();\n  if (text.length > 2500) text = text.substring(0, 2500);\n\n  // DATE\n  let emailDate = new Date().toISOString().split('T')[0];\n  if (msg.internalDate) {\n    emailDate = new Date(parseInt(msg.internalDate)).toISOString().split('T')[0];\n  } else if (msg.date) {\n    try { emailDate = new Date(msg.date).toISOString().split('T')[0]; } catch(e) {}\n  } else {\n    const dateHeader = getHeader('Date');\n    if (dateHeader) try { emailDate = new Date(dateHeader).toISOString().split('T')[0]; } catch(e) {}\n  }\n\n  results.push({\n    json: { emailId, threadId, subject, from, text, emailDate, applicationLink }\n  });\n}\n\nreturn results;"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5abb7c44-029a-4a1f-b291-835c1dea5343",
+      "name": "Filter Non-Job Emails",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        21920,
+        5536
+      ],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.text }}",
+              "value2": "newsletter.*(weekly|daily|digest)|discount|\\bsale\\b|promotional offer|limited.time.deal",
+              "operation": "regex"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c26263c8-10ae-465e-974f-3cb6db981a6c",
+      "name": "Build AI Payload",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        22144,
+        5536
+      ],
+      "parameters": {
+        "functionCode": "const items = $input.all();\nconst results = [];\n\nconst SYSTEM_PROMPT = 'You are a job email classifier. Read the email and return ONLY a JSON object, no other text.\\n\\nDISCARD: If the email is a digest or newsletter listing MULTIPLE jobs, return {\"company\":\"unknown\",\"role\":\"unknown\",\"status\":\"unknown\",\"confidence\":1.0}\\n\\nSTATUS (pick one):\\n- applied: application received, submitted, under review\\n- rejected: not selected, not moving forward, unfortunately, regret\\n- interview: interview scheduled, assessment, shortlisted, next round\\n- offer: job offer extended\\n- unknown: not about a specific job application\\n\\nIMPORTANT: Emails from LinkedIn, Naukri, or any job portal about YOUR specific application MUST be classified normally. Only use unknown for mass digest emails.\\n\\nExtract company name from email body or sender. Extract job title from email body (must be real title, never articles like the/a). If unsure, use unknown.\\n\\nReturn ONLY: {\"company\":\"name\",\"role\":\"title\",\"status\":\"status\",\"confidence\":0.9}';\n\n// Provider configs: Ollama only (local, unlimited, no rate limits)\nconst providers = [\n  {\n    name: 'ollama',\n    url: 'http://ollama:11434/v1/chat/completions',\n    model: 'llama3.1:8b',\n    authHeader: ''\n  }\n];\n\nfor (const item of items) {\n  const from = item.json.from || '';\n  const subject = item.json.subject || '';\n  const body = (item.json.text || '').substring(0, 3500);\n  const userMsg = 'Classify this email. Read the FULL body to extract the job role and company:\\\\n\\\\nSubject: ' + subject + '\\\\nFrom: ' + from + '\\\\n\\\\nFull Email Body:\\\\n' + body;\n  const messages = [\n    { role: 'system', content: SYSTEM_PROMPT },\n    { role: 'user', content: userMsg }\n  ];\n\n  const providerPayloads = providers.map(p => ({\n    name: p.name,\n    url: p.url,\n    auth: p.authHeader,\n    body: JSON.stringify({ model: p.model, temperature: 0, messages })\n  }));\n\n  results.push({ json: { ...item.json, providerPayloads, currentProviderIndex: 0 } });\n}\nreturn results;"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cfe077db-d130-414d-8b1f-937187f9c54d",
+      "name": "AI Classification",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        22368,
+        5536
+      ],
+      "parameters": {
+        "url": "={{ $json.providerPayloads[$json.currentProviderIndex].url }}",
+        "body": "={{ $json.providerPayloads[$json.currentProviderIndex].body }}",
+        "method": "POST",
+        "options": {
+          "timeout": 300000,
+          "batching": {
+            "batch": {
+              "batchSize": 5,
+              "batchInterval": 3000
+            }
+          }
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "sendHeaders": true,
+        "rawContentType": "application/json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $json.providerPayloads[$json.currentProviderIndex].auth }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "186ab719-b12e-48e9-9a48-174dd23ce60b",
+      "name": "Parse AI Response (Groq)",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        22592,
+        5536
+      ],
+      "parameters": {
+        "functionCode": "const items = $input.all();\nlet originalItems = [];\ntry { originalItems = $('Build AI Payload').all(); } catch(e) {}\n\nconst results = [];\nconst defaultFallback = { company: 'unknown', role: 'unknown', status: 'unknown', confidence: 0 };\nconst STATUS_MAP = { applied:'applied', 'application received':'applied', submitted:'applied', 'under review':'applied', received:'applied', pending:'applied', acknowledged:'applied', confirmation:'applied', confirmed:'applied', processing:'applied', 'in progress':'applied', 'in review':'applied', reviewing:'applied', 'being reviewed':'applied', 'under consideration':'applied', considered:'applied', 'application submitted':'applied', 'successfully submitted':'applied', 'thank you for applying':'applied', 'we have received':'applied', rejected:'rejected', 'not selected':'rejected', declined:'rejected', unsuccessful:'rejected', 'not moving forward':'rejected', closed:'rejected', filled:'rejected', 'position closed':'rejected', 'position filled':'rejected', 'no longer available':'rejected', passed:'rejected', 'not shortlisted':'rejected', regret:'rejected', unfortunately:'rejected', 'unable to proceed':'rejected', 'not proceeding':'rejected', denied:'rejected', 'did not qualify':'rejected', disqualified:'rejected', 'moved on':'rejected', 'other candidates':'rejected', 'not a fit':'rejected', 'not the right fit':'rejected', interview:'interview', 'interview scheduled':'interview', shortlisted:'interview', assessment:'interview', scheduled:'interview', 'next steps':'interview', 'next round':'interview', 'phone screen':'interview', screening:'interview', 'technical round':'interview', 'hr round':'interview', 'coding test':'interview', 'online assessment':'interview', 'test invited':'interview', hackerrank:'interview', codility:'interview', invited:'interview', invitation:'interview', 'call scheduled':'interview', discussion:'interview', 'move forward':'interview', 'moving forward':'interview', 'like to meet':'interview', 'schedule a call':'interview', 'your availability':'interview', offer:'offer', offered:'offer', 'job offer':'offer', selected:'offer', congratulations:'offer', 'welcome aboard':'offer', joining:'offer', onboarding:'offer', 'start date':'offer', compensation:'offer', unknown:'unknown' };\n\nfor (let i = 0; i < items.length; i++) {\n  let parsed = { ...defaultFallback };\n  try {\n    const choices = items[i].json.choices;\n    if (choices && choices.length > 0) {\n      const content = choices[0].message && choices[0].message.content ? choices[0].message.content : '';\n      const cleaned = content.replace(/```json|```/gi, '').trim();\n      let candidate = null;\n      try { candidate = JSON.parse(cleaned); } catch(e1) {\n        const m = cleaned.match(/\\{[\\s\\S]*?\\}/);\n        if (m) try { candidate = JSON.parse(m[0]); } catch(e2) {}\n      }\n      if (candidate) {\n        parsed.company = candidate.company || 'unknown';\n        parsed.role = candidate.role || 'unknown';\n        const raw = String(candidate.status || 'unknown').toLowerCase().trim();\n        parsed.status = STATUS_MAP[raw] || 'unknown';\n        parsed.confidence = typeof candidate.confidence === 'number' ? candidate.confidence : parseFloat(candidate.confidence) || 0;\n      }\n    }\n  } catch (e) {}\n  const orig = (originalItems[i] && originalItems[i].json) || {};\n  results.push({ json: { ...orig, aiResult: parsed } });\n}\nreturn results;"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "91690ec2-501a-4817-bfc0-d44fc0732b23",
+      "name": "Final Merge Logic",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        22816,
+        5536
+      ],
+      "parameters": {
+        "functionCode": "const items = $input.all();\nconst results = [];\nconst STATUS_NORM = { applied:'applied', 'application received':'applied', submitted:'applied', 'under review':'applied', received:'applied', pending:'applied', acknowledged:'applied', confirmation:'applied', confirmed:'applied', processing:'applied', 'in progress':'applied', 'in review':'applied', reviewing:'applied', 'being reviewed':'applied', 'under consideration':'applied', considered:'applied', 'application submitted':'applied', 'successfully submitted':'applied', 'application confirmed':'applied', 'we received':'applied', 'has been received':'applied', 'profile received':'applied', 'resume received':'applied', 'cv received':'applied', 'thank you for your interest':'applied', 'thank you for applying':'applied', 'application is being':'applied', 'is being processed':'applied', 'being processed':'applied', rejected:'rejected', 'not selected':'rejected', declined:'rejected', unsuccessful:'rejected', 'not moving forward':'rejected', closed:'rejected', filled:'rejected', 'position closed':'rejected', 'position filled':'rejected', 'no longer available':'rejected', passed:'rejected', 'not shortlisted':'rejected', regret:'rejected', unfortunately:'rejected', 'unable to proceed':'rejected', 'not proceeding':'rejected', denied:'rejected', 'did not qualify':'rejected', disqualified:'rejected', 'moved on':'rejected', 'other candidates':'rejected', 'not a fit':'rejected', 'not the right fit':'rejected', 'will not be moving':'rejected', 'decided not to':'rejected', 'chosen not to':'rejected', 'no longer considering':'rejected', 'not able to':'rejected', 'not in a position':'rejected', 'decided to move':'rejected', 'appreciate your time':'rejected', 'decided to pursue':'rejected', 'will not be proceeding':'rejected', 'not to move forward':'rejected', 'concluded':'rejected', 'did not advance':'rejected', interview:'interview', 'interview scheduled':'interview', shortlisted:'interview', assessment:'interview', scheduled:'interview', 'next steps':'interview', 'next round':'interview', 'phone screen':'interview', screening:'interview', 'technical round':'interview', 'hr round':'interview', 'coding test':'interview', 'online assessment':'interview', 'test invited':'interview', hackerrank:'interview', codility:'interview', invited:'interview', invitation:'interview', 'call scheduled':'interview', discussion:'interview', 'move forward':'interview', 'moving forward':'interview', 'schedule a call':'interview', 'like to invite':'interview', 'pleased to invite':'interview', 'would like to meet':'interview', 'virtual interview':'interview', 'onsite interview':'interview', 'panel interview':'interview', 'final round':'interview', 'first round':'interview', 'second round':'interview', 'phone interview':'interview', 'video interview':'interview', 'zoom interview':'interview', 'teams call':'interview', 'meet link':'interview', offer:'offer', offered:'offer', 'job offer':'offer', selected:'offer', congratulations:'offer', 'welcome aboard':'offer', joining:'offer', onboarding:'offer', 'pleased to extend':'offer', 'happy to offer':'offer', 'offer of employment':'offer', 'employment offer':'offer', 'compensation package':'offer' };\n\n// Keyword-based body scan fallback when AI returns unknown\nconst BODY_PATTERNS = [\n  { re: /unfortunately|regret to inform|we regret|not.{0,10}(selected|shortlisted|moving forward|proceeding)|position.{0,10}(filled|closed)|moved.{0,15}other candidates|will not be|won.t be|unable to (offer|proceed)|decided not to (move|proceed|advance)|chosen not to (move|proceed)|no longer considering|not to move forward|not in a position to|decided to (move|pursue) .{0,20}(other|different)|will not be (moving|proceeding)|after careful (consideration|review).{0,30}(not|unable|decided)|we (have|had) decided|appreciate.{0,20}(time|interest|effort).{0,30}(however|but|unfortunately)|at this time.{0,20}(not|unable)|did not (advance|qualify|meet)|your (application|candidacy).{0,20}(not|unsuccessful)/i, status: 'rejected' },\n  { re: /interview.{0,20}(scheduled|invitation|invite|confirmed)|schedule.{0,15}(interview|call|meeting|discussion)|your availability|shortlisted for|next round|phone screen|technical round|coding (test|challenge|assessment)|online assessment|hackerrank|codility|would like to (invite|meet|schedule|discuss)|pleased to invite|we.d like to (invite|meet|set up)|zoom.{0,10}(link|meeting|call)|teams.{0,10}(meeting|call|link)|google meet|calendly|please.{0,20}(join|attend|confirm).{0,20}(interview|call|meeting)|invite you (to|for)|like to set up|move you (forward|to the next)|progressing.{0,15}(next|further)|advance.{0,15}(next|further)/i, status: 'interview' },\n  { re: /pleased to (offer|extend)|offer letter|job offer|welcome aboard|congratulations.{0,20}(offer|selected|join)|compensation.{0,10}(package|details)|start date.{0,20}(offer|letter|join)|joining.{0,10}(letter|date|details)|offer of employment|employment offer|happy to (offer|extend)|delighted to (offer|extend)/i, status: 'offer' },\n  { re: /thank.{0,15}(applying|application|interest|submitting)|application.{0,15}(received|submitted|confirmed|has been)|successfully (submitted|applied|received)|we (have )?received your|under review|your (application|profile|resume|cv).{0,15}(received|submitted|under|being)|confirm.{0,20}(application|submission|receipt)|application.{0,10}(is being|has been|was) (reviewed|processed|received)|your.{0,10}(application|submission).{0,10}(to|for)/i, status: 'applied' }\n];\n\nfor (const item of items) {\n  const data = item.json;\n  const aiResult = data.aiResult || { company: 'unknown', role: 'unknown', status: 'unknown', confidence: 0 };\n\n  const rawStatus = String(aiResult.status || 'unknown').toLowerCase().trim();\n  let finalStatus = STATUS_NORM[rawStatus] || 'unknown';\n\n  // Fallback: if AI returned unknown, scan original email body with keyword patterns\n  if (finalStatus === 'unknown') {\n    const bodyText = (data.text || '') + ' ' + (data.subject || '');\n    for (const p of BODY_PATTERNS) {\n      if (p.re.test(bodyText)) {\n        finalStatus = p.status;\n        break;\n      }\n    }\n  }\n\n  // Predominant rejection override: 'unfortunately' in body = almost always rejection\n  const bodyCheck = (data.text || '') + ' ' + (data.subject || '');\n  if (/unfortunately/i.test(bodyCheck) && finalStatus !== 'rejected') {\n    finalStatus = 'rejected';\n  }\n\n  if (finalStatus === 'unknown') continue;\n\n  // Company: AI -> sender display name -> domain -> body scan. Skip if all fail.\n  const GENERIC_DOMAINS = /^(gmail|googlemail|yahoo|hotmail|outlook|live|aol|icloud|protonmail|mail|email|ymail|zoho|naukri|linkedin|indeed|glassdoor|monster|lever|greenhouse|ashby|icims|smartrecruiters|workday|taleo|successfactors|myworkday|bamboohr|jobvite|breezy|recruitee|hirebridge|paypal|google|notifications?|no-?reply|bounce|mailer|postmaster)$/i;\n  let company = (aiResult.company && aiResult.company !== 'unknown' && aiResult.company.length > 1) ? aiResult.company : '';\n  if (!company) {\n    const fromStr = data.from || '';\n    const displayMatch = fromStr.match(/^([^<]+?)\\s*</);\n    if (displayMatch) {\n      let displayName = displayMatch[1].trim().replace(/[\"']/g, '').trim();\n      if (displayName.length > 1 && !/^(no-?reply|notifications?|careers?|jobs?|hiring|talent|recruit|hr|team|info|support|admin|hello|mailer)$/i.test(displayName) && !/noreply|no-reply/i.test(displayName)) {\n        company = displayName;\n      }\n    }\n  }\n  if (!company) {\n    const fromStr = data.from || '';\n    const domainMatch = fromStr.match(/@([^>\\s]+)/);\n    if (domainMatch) {\n      const fullDomain = domainMatch[1].toLowerCase();\n      const parts = fullDomain.split('.');\n      if (parts.length >= 2) {\n        const domainName = parts[parts.length - 2];\n        if (!GENERIC_DOMAINS.test(domainName) && domainName.length > 1) {\n          company = domainName.charAt(0).toUpperCase() + domainName.slice(1);\n        }\n      }\n    }\n  }\n  if (!company) {\n    const bodyText = (data.text || '') + ' ' + (data.subject || '');\n    const COMPANY_PATTERNS = [\n      /(?:team at|from|at)\\s+([A-Z][A-Za-z0-9 &.-]{1,40})(?:\\s+(?:Inc|Ltd|Corp|LLC|Pvt|Limited|GmbH|Co\\.?|Group|Technologies|Tech|Software|Solutions|Services|Consulting|Labs|Studio|Digital|Global|India|Systems))?(?:[.,;!?\\n]|\\s+(?:is|has|we|would|are|regret|thank|appreciat))/i,\n      /(?:your application (?:to|at|with|for .{0,40} at))\\s+([A-Z][A-Za-z0-9 &.-]{1,40})(?:\\s|[.,;!?])/i,\n      /(?:on behalf of|representing)\\s+([A-Z][A-Za-z0-9 &.-]{1,40})(?:\\s|[.,;!?])/i,\n      /(?:welcome to|joining)\\s+([A-Z][A-Za-z0-9 &.-]{1,40})(?:[.,;!?\\n]|\\s)/i\n    ];\n    for (const pat of COMPANY_PATTERNS) {\n      const m = bodyText.match(pat);\n      if (m && m[1]) {\n        let extracted = m[1].trim();\n        if (extracted.length > 1 && extracted.length < 50 && !/^(the|a|an|our|your|this|that|we|us)$/i.test(extracted)) {\n          company = extracted;\n          break;\n        }\n      }\n    }\n  }\n  if (!company) continue;\n\n  // Role: trust AI, fallback to regex extraction from email body\n  let role = (aiResult.role && aiResult.role !== 'unknown' && aiResult.role.length > 2) ? aiResult.role : '';\n  if (!role) {\n    const bodyText = (data.text || '') + ' ' + (data.subject || '');\n    const ROLE_PATTERNS = [\n      /(?:apply for|applied (?:for|to)|applying for|for the (?:role|position) of|application for|your application for|regarding the|opportunity for)\\s+(?:the\\s+)?([A-Za-z][A-Za-z0-9 \\/&,.-]{2,50}?)(?:\\s+(?:position|role|opening|at|with|in|-|,)|[.,;!?\\n]|$)/i,\n      /(?:apply for|applied (?:for|to)|applying for|application for|your application for)\\s+(?:the\\s+)?([A-Za-z][A-Za-z0-9 \\/&,.-]{2,55})\\s+(?:role|position|opening)/i,\n      /(?:position|role|job title|designation|opening)\\s*[:\u2013\u2014-]\\s*([A-Za-z][A-Za-z0-9 \\/&,.-]{2,50})(?:[.,;!?\\n]|$)/i,\n      /(?:interview|assessment|test|screen)\\s+(?:for|regarding)\\s+(?:the\\s+)?([A-Za-z][A-Za-z0-9 \\/&,.-]{2,50}?)(?:\\s+(?:position|role|at|with)|[.,;!?\\n]|$)/i,\n      /(?:we|team)\\s+(?:are|is)\\s+(?:looking for|hiring|seeking)\\s+(?:a\\s+|an\\s+)?([A-Za-z][A-Za-z0-9 \\/&,.-]{2,50}?)(?:\\s+(?:to |who |with |at |in )|[.,;!?\\n]|$)/i,\n      /(?:^|\\n)\\s*(?:re:\\s*)?(?:application|update|status)\\s*(?:[-\u2013:]|for)\\s*([A-Za-z][A-Za-z0-9 \\/&,.-]{2,50}?)(?:\\s+(?:at|with|-)\\s|[.,;!?\\n]|$)/im\n    ];\n    const STOP_WORDS = /^(the|a|an|this|that|your|our|my|hi|hello|dear|update|status|application|thank|thanks|regarding|re|fwd|fw|team|we|you|i|please|note|important|urgent|action|required|new|from|to)$/i;\n    for (const pat of ROLE_PATTERNS) {\n      const m = bodyText.match(pat);\n      if (m && m[1]) {\n        let extracted = m[1].trim().replace(/\\s+(at|with|in|for|and|the|a|an|is|are|to)$/i, '').trim();\n        if (extracted.length > 2 && extracted.length < 60 && !STOP_WORDS.test(extracted.split(' ')[0])) {\n          role = extracted.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');\n          break;\n        }\n      }\n    }\n  }\n  if (!role) role = 'unknown';\n\n  const emailDate = data.emailDate || new Date().toISOString().split('T')[0];\n\n  const payload = {\n    company,\n    role,\n    status: finalStatus,\n    'Application Link': data.applicationLink || '',\n    'Last Update Date': emailDate\n  };\n\n  if (finalStatus === 'applied') {\n    payload['Applied Date'] = emailDate;\n  }\n\n  results.push({ json: payload });\n}\n\nif (results.length === 0) return [];\nreturn results;"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2da9c536-162e-4f7f-ab22-279d1d69c94d",
+      "name": "Build Judging Payload",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        23040,
+        5536
+      ],
+      "parameters": {
+        "functionCode": "const items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const payload = item.json;\n  const messages = [\n    { role: 'system', content: 'You are a final QA judge for a job application tracker. You receive a JSON object with fields: company, role, status, Application Link, Last Update Date. Your job: verify this is genuinely a job application update (applied, rejected, interview, or offer) and NOT a promotional email, newsletter, spam, job-portal digest, or unrelated email that slipped through. Return ONLY valid JSON with no extra text: {\"isValid\": true/false, \"reason\": \"one-line reason\"}. Set isValid=false if the status does not belong to applied/rejected/interview/offer categories or the data looks like spam/promo.' },\n    { role: 'user', content: JSON.stringify(payload) }\n  ];\n\n  results.push({\n    json: {\n      ...payload,\n      judgingPayload: JSON.stringify({ model: 'llama3.1:8b', temperature: 0, messages })\n    }\n  });\n}\n\nreturn results;"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "89ba380f-82a7-426f-8aad-f9c45a64cbb9",
+      "name": "Judging AI Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        23264,
+        5536
+      ],
+      "parameters": {
+        "url": "http://ollama:11434/v1/chat/completions",
+        "body": "={{ $json.judgingPayload }}",
+        "method": "POST",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "sendHeaders": true,
+        "rawContentType": "application/json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "44e78bbe-0927-4f25-aa70-358e4252dbba",
+      "name": "Parse Final Judging",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        23488,
+        5536
+      ],
+      "parameters": {
+        "functionCode": "const items = $input.all();\nlet originalItems = [];\ntry { originalItems = $('Build Judging Payload').all(); } catch(e) { originalItems = $items('Build Judging Payload'); }\n\nconst results = [];\nconst validStatuses = ['applied', 'rejected', 'interview', 'offer'];\n\nfor (let i = 0; i < items.length; i++) {\n  const data = items[i].json;\n  const originalData = originalItems[i].json;\n\n  // Fail-open: if judging AI errored, pass item through (don't drop)\n  let isValid = true;\n  const isError = data.error || data.errorMessage || data.statusCode === 429 || data.statusCode >= 400;\n\n  if (!isError) {\n    try {\n      if (data.choices && data.choices.length > 0) {\n        const content = data.choices[0].message.content;\n        const cleaned = content.replace(/```json|```/gi, '').trim();\n        const parsed = JSON.parse(cleaned);\n        if (parsed.isValid === false) isValid = false;\n      }\n    } catch (e) {\n      // Parse fail = let it through\n    }\n  }\n  // isError = true means judging service unavailable, let item through\n\n  if (!isValid) continue;\n\n  const clean = {\n    company: originalData.company || 'unknown',\n    role: originalData.role || 'unknown',\n    status: validStatuses.includes(originalData.status) ? originalData.status : 'unknown',\n    'Application Link': originalData['Application Link'] || '',\n    'Last Update Date': originalData['Last Update Date'] || ''\n  };\n  if (originalData['Applied Date']) clean['Applied Date'] = originalData['Applied Date'];\n\n  if (clean.status === 'unknown') continue;\n\n  results.push({ json: clean });\n}\n\nreturn results;"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ffed8051-cb5d-42c1-a3c7-a998946409a5",
+      "name": "Upsert Row in Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        23712,
+        5536
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [
+            {
+              "id": "company",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "company",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "role",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "role",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application Link",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Application Link",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Update Date",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Last Update Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Applied Date",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Applied Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1tUQC5UNw_1DYc1tqhjTIaxYTevuezsNq1yWbP_HVOMc/edit?gid=938686807#gid=938686807"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1tUQC5UNw_1DYc1tqhjTIaxYTevuezsNq1yWbP_HVOMc"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lsSnaqavNWH3wN96",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4
+    },
+    {
+      "id": "3f655fd6-00a2-4235-96c8-2d6339847f80",
+      "name": "Daily Summary Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        21248,
+        5856
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9ee229ba-53b0-4fdc-b915-e1bf93d308e5",
+      "name": "Read All Applications",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        21472,
+        5856
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1tUQC5UNw_1DYc1tqhjTIaxYTevuezsNq1yWbP_HVOMc/edit?gid=938686807#gid=938686807"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1tUQC5UNw_1DYc1tqhjTIaxYTevuezsNq1yWbP_HVOMc"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lsSnaqavNWH3wN96",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4
+    },
+    {
+      "id": "7a350d96-fba5-4e4e-ae9f-60fa04ca6ee1",
+      "name": "Summarize Applications",
+      "type": "n8n-nodes-base.function",
+      "position": [
+        21696,
+        5856
+      ],
+      "parameters": {
+        "functionCode": "const items = $input.all();\n\nconst counts = { applied: 0, interview: 0, rejected: 0, offer: 0, unknown: 0 };\nconst total = items.length;\n\nfor (const item of items) {\n  const status = (item.json.status || 'unknown').toLowerCase();\n  if (counts.hasOwnProperty(status)) {\n    counts[status]++;\n  } else {\n    counts.unknown++;\n  }\n}\n\nconst today = new Date().toISOString().split('T')[0];\n\nconst summaryText = [\n  `\ud83d\udcca Daily Job Application Summary \u2014 ${today}`,\n  `Total tracked: ${total}`,\n  `\u2705 Applied:    ${counts.applied}`,\n  `\ud83d\uddd3 Interview:  ${counts.interview}`,\n  `\u274c Rejected:   ${counts.rejected}`,\n  `\ud83c\udf89 Offer:      ${counts.offer}`,\n  `\u2753 Unknown:    ${counts.unknown}`\n].join('\\n');\n\nreturn [{ json: { summary: summaryText, counts, total, date: today } }];"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "729633da-be04-4af1-825b-0abf7321283d",
+      "name": "Write Summary to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        21920,
+        5856
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [
+            {
+              "id": "company",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "company",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "role",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "role",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application Link",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Application Link",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Update Date",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Last Update Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Applied Date",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Applied Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1tUQC5UNw_1DYc1tqhjTIaxYTevuezsNq1yWbP_HVOMc/edit?gid=938686807#gid=938686807"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1tUQC5UNw_1DYc1tqhjTIaxYTevuezsNq1yWbP_HVOMc"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lsSnaqavNWH3wN96",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4
+    },
+    {
+      "id": "7d31324e-b0e8-4532-a4dc-c3700f5a078e",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        21408,
+        5328
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 256,
+        "height": 256,
+        "content": "### Authorize  & Authenticate\n\n- you have authorize here and give permission to read your mail data"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f5408b73-c28c-4f18-bb7b-53ce9829c3c1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        21392,
+        5600
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 288,
+        "height": 224,
+        "content": "### Authorize  & Authenticate\n\n- you have authorize here and give permission to read your mail data"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6039e1a4-c46c-4be4-82a0-bfae6e60c7f6",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        23648,
+        5376
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 256,
+        "height": 336,
+        "content": "### Authorize  & Authenticate\n\n- you have authorize here and give permission to insert data\n\n- go to link and enable sheets API- https://console.cloud.google.com/ "
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d93c429a-41a7-40bc-88be-6f1136e2af9c",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        20672,
+        5856
+      ],
+      "parameters": {
+        "width": 352,
+        "height": 176,
+        "content": "## Summary \n\n- this just summarises your entire data with proper categories"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "98fca5c6-c5ac-49fb-9a08-987d2c0a0e53",
+      "name": "Overview1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        20624,
+        4896
+      ],
+      "parameters": {
+        "width": 500,
+        "height": 748,
+        "content": "## Job Application Tracker\nAutomate your job search by monitoring Gmail for application status updates. Extracts company, role, and status (Applied, Interview, Rejected, Offer) using AI and saves them to Google Sheets.\n\n## Setup Instructions\n1. **Credentials**: Connect your Gmail and Google Sheets accounts.\n2. **Configuration**: Set your Google Sheet URL in the **Sheet** nodes.\n3. **AI**: Ensure Ollama is running locally.\n4. **Docker** : Ensure you have docker installed (https://www.docker.com/products/docker-desktop/)\n5. Create a docker-compose.yml file and paste the below details in it and run the command  docker compose up -d \n\n\nservices:\n  n8n:\n    image: n8nio/n8n\n    ports:\n      - \"5679:5678\"\n    env_file:\n      - .env\n    volumes:\n      - ~/.n8n:/home/node/.n8n\n    restart: unless-stopped\n    depends_on:\n      - ollama\n\n  ollama:\n    image: ollama/ollama\n    ports:\n      - \"11434:11434\"\n    volumes:\n      - ollama_data:/root/.ollama\n    restart: unless-stopped\n\nvolumes:\n  ollama_data:\n\n\n"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "versionId": "81e33730-ed33-4c06-a07b-1ba5517fb9aa",
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Preprocess Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Backfill": {
+      "main": [
+        [
+          {
+            "node": "Preprocess Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Backfill Trigger": {
+      "main": [
+        [
+          {
+            "node": "Gmail Backfill",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build AI Payload": {
+      "main": [
+        [
+          {
+            "node": "AI Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preprocess Email": {
+      "main": [
+        [
+          {
+            "node": "Filter Non-Job Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Classification": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response (Groq)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Merge Logic": {
+      "main": [
+        [
+          {
+            "node": "Build Judging Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Judging AI Request": {
+      "main": [
+        [
+          {
+            "node": "Parse Final Judging",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Final Judging": {
+      "main": [
+        [
+          {
+            "node": "Upsert Row in Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Judging Payload": {
+      "main": [
+        [
+          {
+            "node": "Judging AI Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Summary Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read All Applications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Non-Job Emails": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Build AI Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read All Applications": {
+      "main": [
+        [
+          {
+            "node": "Summarize Applications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Applications": {
+      "main": [
+        [
+          {
+            "node": "Write Summary to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response (Groq)": {
+      "main": [
+        [
+          {
+            "node": "Final Merge Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

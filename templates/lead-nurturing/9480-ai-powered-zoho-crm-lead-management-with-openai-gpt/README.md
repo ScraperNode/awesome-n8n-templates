@@ -1,6 +1,6 @@
 # 💬 AI-Powered Zoho CRM Lead Management with OpenAI GPT
 
-> ⚡ **447 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **527 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

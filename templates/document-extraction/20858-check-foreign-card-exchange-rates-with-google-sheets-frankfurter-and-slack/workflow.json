@@ -1,0 +1,660 @@
+{
+  "name": "Check foreign-currency card charges against market exchange rates",
+  "nodes": [
+    {
+      "id": "244c774f-358b-4bbc-8e8d-787184852006",
+      "name": "Every month",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        -100
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "triggerAtHour": 9,
+              "monthsInterval": 1,
+              "triggerAtDayOfMonth": 1
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "b10766f9-e5b2-4117-8237-8ceebee09d18",
+      "name": "Check now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        150
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "f6bfe48e-a1b6-4708-8cc6-11272dded18e",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "base_currency",
+              "type": "string",
+              "value": "JPY"
+            },
+            {
+              "id": "c2",
+              "name": "date_col",
+              "type": "string",
+              "value": "Date"
+            },
+            {
+              "id": "c3",
+              "name": "merchant_col",
+              "type": "string",
+              "value": "Merchant"
+            },
+            {
+              "id": "c4",
+              "name": "billed_col",
+              "type": "string",
+              "value": "Billed"
+            },
+            {
+              "id": "c5",
+              "name": "foreign_col",
+              "type": "string",
+              "value": "Foreign amount"
+            },
+            {
+              "id": "c6",
+              "name": "currency_col",
+              "type": "string",
+              "value": "Currency"
+            },
+            {
+              "id": "c7",
+              "name": "premium_warn_pct",
+              "type": "number",
+              "value": 4
+            },
+            {
+              "id": "c8",
+              "name": "premium_low_pct",
+              "type": "number",
+              "value": -2
+            },
+            {
+              "id": "c9",
+              "name": "lookback_days",
+              "type": "number",
+              "value": 7
+            },
+            {
+              "id": "c10",
+              "name": "fx_api",
+              "type": "string",
+              "value": "https://api.frankfurter.dev/v1"
+            }
+          ]
+        },
+        "includeOtherFields": false
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "4bac7b99-8d26-468a-8c07-35daa6b4f268",
+      "name": "Read FX statement tab",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "outputFormatting": {
+            "values": {
+              "date": "SERIAL_NUMBER",
+              "general": "UNFORMATTED_VALUE"
+            }
+          }
+        },
+        "resource": "sheet",
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "FX statement"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.7,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "3e5797a4-7d3e-430d-86d6-e16f8b9e09a2",
+      "name": "Plan rates",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        820,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// ---- foreign-currency charges against the market rate (all arithmetic in code) ------------------------------\nconst nfkc = (s) => String(s ?? '').normalize('NFKC');\nfunction hash(str) {\n  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;\n  for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }\n  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);\n  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);\n  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);\n}\nconst isoOf = (y, m, d) => { const t = new Date(Date.UTC(y, m - 1, d)); return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d ? t.toISOString().slice(0, 10) : ''; };\nconst dayNo = (iso) => Math.round(new Date(iso + 'T00:00:00Z').getTime() / 86400000);\nconst fromDayNo = (n) => new Date(n * 86400000).toISOString().slice(0, 10);\n\n// a date from a spreadsheet: a serial number (days since 1899-12-30), 2026-09-05, 2026/9/5 or 2026\u5e749\u67085\u65e5\nfunction parseDate(v) {\n  if (/^\\d{5}(\\.\\d+)?$/.test(String(v).trim()) && Number(v) > 20000 && Number(v) < 80000) return new Date(Date.UTC(1899, 11, 30) + Math.floor(Number(v)) * 86400000).toISOString().slice(0, 10);\n  const m = nfkc(v).trim().match(/(\\d{4})\\s*[-\\/.\u5e74]\\s*(\\d{1,2})\\s*[-\\/.\u6708]\\s*(\\d{1,2})/);\n  return m ? isoOf(+m[1], +m[2], +m[3]) : '';\n}\n// an amount, also as text with marks: \"\u00a56,780\", \"6,780\u5186\", \"(500)\" is negative\nfunction parseAmount(v) {\n  let s = nfkc(v).trim();\n  if (!s) return NaN;\n  const neg = /^[(\u25b2\u25b3-]/.test(s) || /-$/.test(s);\n  s = s.replace(/[\u00a5\uffe5$\u20ac\u00a3\u5186,\\s()\u25b2\u25b3\\-]/g, '');\n  const n = Number(s);\n  return Number.isFinite(n) && s !== '' ? (neg ? -n : n) : NaN;\n}\n\n// ---- 1. which rows are foreign charges, and which exchange rates are needed? -----------------------------------\n// rows = FX-statement-tab rows, cfg = { base_currency, date_col, merchant_col, billed_col, foreign_col, currency_col, fx_api, lookback_days }\nfunction planRates(rows, cfg) {\n  const base = String(cfg.base_currency || 'JPY').toUpperCase();\n  const parsed = [];\n  let skipped = 0;\n  const seen = new Map();\n  rows.forEach((r, i) => {\n    const cur = nfkc(r[cfg.currency_col]).trim().toUpperCase();\n    if (!cur || cur === base) { skipped++; return; } // a domestic charge\n    const date = parseDate(r[cfg.date_col]);\n    const merchant = String(r[cfg.merchant_col] ?? '').trim();\n    const billed = parseAmount(r[cfg.billed_col]);\n    const foreign = parseAmount(r[cfg.foreign_col]);\n    const k = date + '|' + merchant + '|' + billed + '|' + foreign + '|' + cur;\n    const n = (seen.get(k) ?? 0) + 1; seen.set(k, n);\n    parsed.push({ row_key: 'fx-' + hash(k) + '#' + n, row: i + 2, date, merchant, currency: cur, foreign, billed });\n  });\n  const lookback = Number(cfg.lookback_days) || 7;\n  const byCur = new Map();\n  for (const p of parsed) {\n    if (!p.date || !/^[A-Z]{3}$/.test(p.currency)) continue;\n    const e = byCur.get(p.currency) ?? { from: p.date, to: p.date };\n    if (p.date < e.from) e.from = p.date;\n    if (p.date > e.to) e.to = p.date;\n    byCur.set(p.currency, e);\n  }\n  const currencies = [...byCur.entries()].map(([currency, e]) => {\n    const from = fromDayNo(dayNo(e.from) - lookback);\n    return { currency, from, to: e.to, url: cfg.fx_api + '/' + from + '..' + e.to + '?base=' + currency + '&symbols=' + base };\n  });\n  return { parsed, currencies, skipped };\n}\n\n// the newest rate on or before the date, at most lookback days back (weekends and bank holidays have no rate)\nfunction rateFor(series, date, lookback) {\n  if (!series?.rates) return null;\n  let best = null;\n  for (const d of Object.keys(series.rates)) if (d <= date && dayNo(date) - dayNo(d) <= lookback && (!best || d > best)) best = d;\n  const v = best ? series.rates[best]?.[Object.keys(series.rates[best])[0]] : null;\n  return best && Number.isFinite(Number(v)) ? { date: best, rate: Number(v) } : null;\n}\n\n// ---- 2. the check --------------------------------------------------------------------------------------------\n// seriesBy = { USD: <the API response>, ... } (a failed call: anything without \"rates\")\nfunction checkCharges(plan, seriesBy, cfg) {\n  const base = String(cfg.base_currency || 'JPY').toUpperCase();\n  const warn = Number(cfg.premium_warn_pct), low = Number(cfg.premium_low_pct), lookback = Number(cfg.lookback_days) || 7;\n  const checkedAt = cfg.now;\n  return plan.parsed.map((p) => {\n    const row = { row_key: p.row_key, date: p.date, merchant: p.merchant, currency: p.currency, foreign_amount: Number.isFinite(p.foreign) ? p.foreign : '', billed: Number.isFinite(p.billed) ? p.billed : '',\n      rate_date: '', market_rate: '', expected_billed: '', effective_rate: '', premium_pct: '', extra: '', status: '', note: '', checked_at: checkedAt };\n    if (!p.date) { row.status = 'Check data'; row.note = 'row ' + p.row + ': the date could not be read (year first, like 2026-09-05)'; return row; }\n    if (!(p.foreign > 0) || !(p.billed > 0)) { row.status = 'Check data'; row.note = 'row ' + p.row + ': the foreign amount and the billed amount must both be positive numbers'; return row; }\n    row.effective_rate = Math.round((p.billed / p.foreign) * 1000) / 1000;\n    const hit = rateFor(seriesBy[p.currency], p.date, lookback);\n    if (!hit) { row.status = 'Rate unavailable'; row.note = 'no ' + p.currency + '/' + base + ' rate within ' + lookback + ' days before ' + p.date + ' (the API may not support ' + p.currency + ')'; return row; }\n    const expected = p.foreign * hit.rate;\n    const premium = (p.billed / expected - 1) * 100;\n    row.rate_date = hit.date; row.market_rate = hit.rate; row.expected_billed = Math.round(expected * 100) / 100;\n    row.premium_pct = Math.round(premium * 100) / 100; row.extra = Math.round((p.billed - expected) * 100) / 100;\n    if (premium > warn) { row.status = 'High premium'; row.note = 'billed ' + row.premium_pct + '% above the market rate (limit ' + warn + '%)'; }\n    else if (premium < low) { row.status = 'Below market'; row.note = 'billed ' + Math.abs(row.premium_pct) + '% below the market rate: check the amounts or the currency'; }\n    else row.status = 'OK';\n    if (hit.date !== p.date) row.note = (row.note ? row.note + '; ' : '') + 'rate of ' + hit.date + ' used (no rate on ' + p.date + ')';\n    return row;\n  });\n}\n\nfunction summarize(rows, base, skipped) {\n  const count = {};\n  for (const r of rows) count[r.status] = (count[r.status] ?? 0) + 1;\n  const priced = rows.filter((r) => r.extra !== '');\n  const totalExtra = priced.reduce((s, r) => s + r.extra, 0);\n  const total = priced.reduce((s, r) => s + r.billed, 0);\n  const worst = rows.filter((r) => r.status === 'High premium').sort((a, b) => b.extra - a.extra).slice(0, 5);\n  const head = '*Foreign-currency charges* - ' + Object.entries(count).map(([k, v]) => k + ': ' + v).join(', ') + (skipped ? ' (' + skipped + ' ' + base + ' rows skipped)' : '');\n  const money = '\\nBilled ' + Math.round(total) + ' ' + base + ' on ' + priced.length + ' charges; ' + (totalExtra >= 0 ? Math.round(totalExtra) + ' ' + base + ' above' : Math.round(-totalExtra) + ' ' + base + ' below') + ' the market rate in total (ECB reference rates, a yardstick, not the card network rate).';\n  const lines = worst.map((r) => '\u2022 ' + r.date + ' ' + r.merchant + ' ' + r.foreign_amount + ' ' + r.currency + ' -> ' + r.billed + ' ' + base + ' (+' + r.premium_pct + '%, ' + Math.round(r.extra) + ' ' + base + ')');\n  const flagged = rows.filter((r) => ['Check data', 'Rate unavailable', 'Below market'].includes(r.status)).slice(0, 5).map((r) => '\u2022 ' + r.status + ': ' + r.date + ' ' + r.merchant + ' - ' + r.note);\n  return [head + money, lines.length ? '*Highest premiums*\\n' + lines.join('\\n') : '', flagged.length ? '*Look at these*\\n' + flagged.join('\\n') : ''].filter(Boolean).join('\\n');\n}\n\nconst cfg = $('Config').first().json;\nconst rows = $('Read FX statement tab').all().map((i) => i.json);\n// a wrong column name would make every row look domestic and be skipped without a word: stop with a clear message instead\nif (rows.length) {\n  const have = Object.keys(rows[0]);\n  const wanted = [cfg.date_col, cfg.merchant_col, cfg.billed_col, cfg.foreign_col, cfg.currency_col];\n  const missing = wanted.filter((c) => !have.includes(c)).map((c) => '\"' + c + '\"');\n  if (missing.length) throw new Error('The FX statement tab has no column named ' + missing.join(', ') + '. Columns found: ' + have.filter((k) => k !== 'row_number').join(', ') + '. Change the column names in Config.');\n}\nconst plan = planRates(rows, cfg);\nif (!plan.currencies.length) return [{ json: { none: true, skipped: plan.skipped, rows: rows.length } }];\nreturn plan.currencies.map((c) => ({ json: { none: false, ...c } }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "0f451221-88fc-4e65-808e-3d3e518fa9c7",
+      "name": "Any foreign charges?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1040,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "f1",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.none }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "ab593341-0da0-4015-828e-c3d5bb5b69db",
+      "name": "Get rates",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        1640,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "method": "GET",
+        "options": {
+          "timeout": 30000,
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 500
+            }
+          }
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "2fbefb7e-2f4d-4ced-8711-e175e049a3f6",
+      "name": "Check charges",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2020,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// ---- foreign-currency charges against the market rate (all arithmetic in code) ------------------------------\nconst nfkc = (s) => String(s ?? '').normalize('NFKC');\nfunction hash(str) {\n  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;\n  for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }\n  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);\n  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);\n  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);\n}\nconst isoOf = (y, m, d) => { const t = new Date(Date.UTC(y, m - 1, d)); return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d ? t.toISOString().slice(0, 10) : ''; };\nconst dayNo = (iso) => Math.round(new Date(iso + 'T00:00:00Z').getTime() / 86400000);\nconst fromDayNo = (n) => new Date(n * 86400000).toISOString().slice(0, 10);\n\n// a date from a spreadsheet: a serial number (days since 1899-12-30), 2026-09-05, 2026/9/5 or 2026\u5e749\u67085\u65e5\nfunction parseDate(v) {\n  if (/^\\d{5}(\\.\\d+)?$/.test(String(v).trim()) && Number(v) > 20000 && Number(v) < 80000) return new Date(Date.UTC(1899, 11, 30) + Math.floor(Number(v)) * 86400000).toISOString().slice(0, 10);\n  const m = nfkc(v).trim().match(/(\\d{4})\\s*[-\\/.\u5e74]\\s*(\\d{1,2})\\s*[-\\/.\u6708]\\s*(\\d{1,2})/);\n  return m ? isoOf(+m[1], +m[2], +m[3]) : '';\n}\n// an amount, also as text with marks: \"\u00a56,780\", \"6,780\u5186\", \"(500)\" is negative\nfunction parseAmount(v) {\n  let s = nfkc(v).trim();\n  if (!s) return NaN;\n  const neg = /^[(\u25b2\u25b3-]/.test(s) || /-$/.test(s);\n  s = s.replace(/[\u00a5\uffe5$\u20ac\u00a3\u5186,\\s()\u25b2\u25b3\\-]/g, '');\n  const n = Number(s);\n  return Number.isFinite(n) && s !== '' ? (neg ? -n : n) : NaN;\n}\n\n// ---- 1. which rows are foreign charges, and which exchange rates are needed? -----------------------------------\n// rows = FX-statement-tab rows, cfg = { base_currency, date_col, merchant_col, billed_col, foreign_col, currency_col, fx_api, lookback_days }\nfunction planRates(rows, cfg) {\n  const base = String(cfg.base_currency || 'JPY').toUpperCase();\n  const parsed = [];\n  let skipped = 0;\n  const seen = new Map();\n  rows.forEach((r, i) => {\n    const cur = nfkc(r[cfg.currency_col]).trim().toUpperCase();\n    if (!cur || cur === base) { skipped++; return; } // a domestic charge\n    const date = parseDate(r[cfg.date_col]);\n    const merchant = String(r[cfg.merchant_col] ?? '').trim();\n    const billed = parseAmount(r[cfg.billed_col]);\n    const foreign = parseAmount(r[cfg.foreign_col]);\n    const k = date + '|' + merchant + '|' + billed + '|' + foreign + '|' + cur;\n    const n = (seen.get(k) ?? 0) + 1; seen.set(k, n);\n    parsed.push({ row_key: 'fx-' + hash(k) + '#' + n, row: i + 2, date, merchant, currency: cur, foreign, billed });\n  });\n  const lookback = Number(cfg.lookback_days) || 7;\n  const byCur = new Map();\n  for (const p of parsed) {\n    if (!p.date || !/^[A-Z]{3}$/.test(p.currency)) continue;\n    const e = byCur.get(p.currency) ?? { from: p.date, to: p.date };\n    if (p.date < e.from) e.from = p.date;\n    if (p.date > e.to) e.to = p.date;\n    byCur.set(p.currency, e);\n  }\n  const currencies = [...byCur.entries()].map(([currency, e]) => {\n    const from = fromDayNo(dayNo(e.from) - lookback);\n    return { currency, from, to: e.to, url: cfg.fx_api + '/' + from + '..' + e.to + '?base=' + currency + '&symbols=' + base };\n  });\n  return { parsed, currencies, skipped };\n}\n\n// the newest rate on or before the date, at most lookback days back (weekends and bank holidays have no rate)\nfunction rateFor(series, date, lookback) {\n  if (!series?.rates) return null;\n  let best = null;\n  for (const d of Object.keys(series.rates)) if (d <= date && dayNo(date) - dayNo(d) <= lookback && (!best || d > best)) best = d;\n  const v = best ? series.rates[best]?.[Object.keys(series.rates[best])[0]] : null;\n  return best && Number.isFinite(Number(v)) ? { date: best, rate: Number(v) } : null;\n}\n\n// ---- 2. the check --------------------------------------------------------------------------------------------\n// seriesBy = { USD: <the API response>, ... } (a failed call: anything without \"rates\")\nfunction checkCharges(plan, seriesBy, cfg) {\n  const base = String(cfg.base_currency || 'JPY').toUpperCase();\n  const warn = Number(cfg.premium_warn_pct), low = Number(cfg.premium_low_pct), lookback = Number(cfg.lookback_days) || 7;\n  const checkedAt = cfg.now;\n  return plan.parsed.map((p) => {\n    const row = { row_key: p.row_key, date: p.date, merchant: p.merchant, currency: p.currency, foreign_amount: Number.isFinite(p.foreign) ? p.foreign : '', billed: Number.isFinite(p.billed) ? p.billed : '',\n      rate_date: '', market_rate: '', expected_billed: '', effective_rate: '', premium_pct: '', extra: '', status: '', note: '', checked_at: checkedAt };\n    if (!p.date) { row.status = 'Check data'; row.note = 'row ' + p.row + ': the date could not be read (year first, like 2026-09-05)'; return row; }\n    if (!(p.foreign > 0) || !(p.billed > 0)) { row.status = 'Check data'; row.note = 'row ' + p.row + ': the foreign amount and the billed amount must both be positive numbers'; return row; }\n    row.effective_rate = Math.round((p.billed / p.foreign) * 1000) / 1000;\n    const hit = rateFor(seriesBy[p.currency], p.date, lookback);\n    if (!hit) { row.status = 'Rate unavailable'; row.note = 'no ' + p.currency + '/' + base + ' rate within ' + lookback + ' days before ' + p.date + ' (the API may not support ' + p.currency + ')'; return row; }\n    const expected = p.foreign * hit.rate;\n    const premium = (p.billed / expected - 1) * 100;\n    row.rate_date = hit.date; row.market_rate = hit.rate; row.expected_billed = Math.round(expected * 100) / 100;\n    row.premium_pct = Math.round(premium * 100) / 100; row.extra = Math.round((p.billed - expected) * 100) / 100;\n    if (premium > warn) { row.status = 'High premium'; row.note = 'billed ' + row.premium_pct + '% above the market rate (limit ' + warn + '%)'; }\n    else if (premium < low) { row.status = 'Below market'; row.note = 'billed ' + Math.abs(row.premium_pct) + '% below the market rate: check the amounts or the currency'; }\n    else row.status = 'OK';\n    if (hit.date !== p.date) row.note = (row.note ? row.note + '; ' : '') + 'rate of ' + hit.date + ' used (no rate on ' + p.date + ')';\n    return row;\n  });\n}\n\nfunction summarize(rows, base, skipped) {\n  const count = {};\n  for (const r of rows) count[r.status] = (count[r.status] ?? 0) + 1;\n  const priced = rows.filter((r) => r.extra !== '');\n  const totalExtra = priced.reduce((s, r) => s + r.extra, 0);\n  const total = priced.reduce((s, r) => s + r.billed, 0);\n  const worst = rows.filter((r) => r.status === 'High premium').sort((a, b) => b.extra - a.extra).slice(0, 5);\n  const head = '*Foreign-currency charges* - ' + Object.entries(count).map(([k, v]) => k + ': ' + v).join(', ') + (skipped ? ' (' + skipped + ' ' + base + ' rows skipped)' : '');\n  const money = '\\nBilled ' + Math.round(total) + ' ' + base + ' on ' + priced.length + ' charges; ' + (totalExtra >= 0 ? Math.round(totalExtra) + ' ' + base + ' above' : Math.round(-totalExtra) + ' ' + base + ' below') + ' the market rate in total (ECB reference rates, a yardstick, not the card network rate).';\n  const lines = worst.map((r) => '\u2022 ' + r.date + ' ' + r.merchant + ' ' + r.foreign_amount + ' ' + r.currency + ' -> ' + r.billed + ' ' + base + ' (+' + r.premium_pct + '%, ' + Math.round(r.extra) + ' ' + base + ')');\n  const flagged = rows.filter((r) => ['Check data', 'Rate unavailable', 'Below market'].includes(r.status)).slice(0, 5).map((r) => '\u2022 ' + r.status + ': ' + r.date + ' ' + r.merchant + ' - ' + r.note);\n  return [head + money, lines.length ? '*Highest premiums*\\n' + lines.join('\\n') : '', flagged.length ? '*Look at these*\\n' + flagged.join('\\n') : ''].filter(Boolean).join('\\n');\n}\n\nconst cfg = { ...$('Config').first().json, now: $now.toISO() };\nconst rows = $('Read FX statement tab').all().map((i) => i.json);\nconst plan = planRates(rows, cfg);\nconst wanted = $('Plan rates').all().map((i) => i.json);\nconst seriesBy = {};\n$input.all().forEach((it, i) => { if (it.json.rates) seriesBy[wanted[i].currency] = it.json; });\nconst results = checkCharges(plan, seriesBy, cfg);\nreturn results.length ? results.map((r) => ({ json: r })) : [{ json: { row_key: 'none', status: 'Nothing to check', note: 'no foreign-currency rows', checked_at: cfg.now } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "44dfa6bf-d77f-4bbe-8e60-eb3a3b3711d1",
+      "name": "Add to FX check tab",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2240,
+        0
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [
+            "row_key"
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "FX check"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "94b82706-5ab7-42d8-8ef7-63a6ce1165e2",
+      "name": "Build summary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2460,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// ---- foreign-currency charges against the market rate (all arithmetic in code) ------------------------------\nconst nfkc = (s) => String(s ?? '').normalize('NFKC');\nfunction hash(str) {\n  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;\n  for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }\n  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);\n  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);\n  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);\n}\nconst isoOf = (y, m, d) => { const t = new Date(Date.UTC(y, m - 1, d)); return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d ? t.toISOString().slice(0, 10) : ''; };\nconst dayNo = (iso) => Math.round(new Date(iso + 'T00:00:00Z').getTime() / 86400000);\nconst fromDayNo = (n) => new Date(n * 86400000).toISOString().slice(0, 10);\n\n// a date from a spreadsheet: a serial number (days since 1899-12-30), 2026-09-05, 2026/9/5 or 2026\u5e749\u67085\u65e5\nfunction parseDate(v) {\n  if (/^\\d{5}(\\.\\d+)?$/.test(String(v).trim()) && Number(v) > 20000 && Number(v) < 80000) return new Date(Date.UTC(1899, 11, 30) + Math.floor(Number(v)) * 86400000).toISOString().slice(0, 10);\n  const m = nfkc(v).trim().match(/(\\d{4})\\s*[-\\/.\u5e74]\\s*(\\d{1,2})\\s*[-\\/.\u6708]\\s*(\\d{1,2})/);\n  return m ? isoOf(+m[1], +m[2], +m[3]) : '';\n}\n// an amount, also as text with marks: \"\u00a56,780\", \"6,780\u5186\", \"(500)\" is negative\nfunction parseAmount(v) {\n  let s = nfkc(v).trim();\n  if (!s) return NaN;\n  const neg = /^[(\u25b2\u25b3-]/.test(s) || /-$/.test(s);\n  s = s.replace(/[\u00a5\uffe5$\u20ac\u00a3\u5186,\\s()\u25b2\u25b3\\-]/g, '');\n  const n = Number(s);\n  return Number.isFinite(n) && s !== '' ? (neg ? -n : n) : NaN;\n}\n\n// ---- 1. which rows are foreign charges, and which exchange rates are needed? -----------------------------------\n// rows = FX-statement-tab rows, cfg = { base_currency, date_col, merchant_col, billed_col, foreign_col, currency_col, fx_api, lookback_days }\nfunction planRates(rows, cfg) {\n  const base = String(cfg.base_currency || 'JPY').toUpperCase();\n  const parsed = [];\n  let skipped = 0;\n  const seen = new Map();\n  rows.forEach((r, i) => {\n    const cur = nfkc(r[cfg.currency_col]).trim().toUpperCase();\n    if (!cur || cur === base) { skipped++; return; } // a domestic charge\n    const date = parseDate(r[cfg.date_col]);\n    const merchant = String(r[cfg.merchant_col] ?? '').trim();\n    const billed = parseAmount(r[cfg.billed_col]);\n    const foreign = parseAmount(r[cfg.foreign_col]);\n    const k = date + '|' + merchant + '|' + billed + '|' + foreign + '|' + cur;\n    const n = (seen.get(k) ?? 0) + 1; seen.set(k, n);\n    parsed.push({ row_key: 'fx-' + hash(k) + '#' + n, row: i + 2, date, merchant, currency: cur, foreign, billed });\n  });\n  const lookback = Number(cfg.lookback_days) || 7;\n  const byCur = new Map();\n  for (const p of parsed) {\n    if (!p.date || !/^[A-Z]{3}$/.test(p.currency)) continue;\n    const e = byCur.get(p.currency) ?? { from: p.date, to: p.date };\n    if (p.date < e.from) e.from = p.date;\n    if (p.date > e.to) e.to = p.date;\n    byCur.set(p.currency, e);\n  }\n  const currencies = [...byCur.entries()].map(([currency, e]) => {\n    const from = fromDayNo(dayNo(e.from) - lookback);\n    return { currency, from, to: e.to, url: cfg.fx_api + '/' + from + '..' + e.to + '?base=' + currency + '&symbols=' + base };\n  });\n  return { parsed, currencies, skipped };\n}\n\n// the newest rate on or before the date, at most lookback days back (weekends and bank holidays have no rate)\nfunction rateFor(series, date, lookback) {\n  if (!series?.rates) return null;\n  let best = null;\n  for (const d of Object.keys(series.rates)) if (d <= date && dayNo(date) - dayNo(d) <= lookback && (!best || d > best)) best = d;\n  const v = best ? series.rates[best]?.[Object.keys(series.rates[best])[0]] : null;\n  return best && Number.isFinite(Number(v)) ? { date: best, rate: Number(v) } : null;\n}\n\n// ---- 2. the check --------------------------------------------------------------------------------------------\n// seriesBy = { USD: <the API response>, ... } (a failed call: anything without \"rates\")\nfunction checkCharges(plan, seriesBy, cfg) {\n  const base = String(cfg.base_currency || 'JPY').toUpperCase();\n  const warn = Number(cfg.premium_warn_pct), low = Number(cfg.premium_low_pct), lookback = Number(cfg.lookback_days) || 7;\n  const checkedAt = cfg.now;\n  return plan.parsed.map((p) => {\n    const row = { row_key: p.row_key, date: p.date, merchant: p.merchant, currency: p.currency, foreign_amount: Number.isFinite(p.foreign) ? p.foreign : '', billed: Number.isFinite(p.billed) ? p.billed : '',\n      rate_date: '', market_rate: '', expected_billed: '', effective_rate: '', premium_pct: '', extra: '', status: '', note: '', checked_at: checkedAt };\n    if (!p.date) { row.status = 'Check data'; row.note = 'row ' + p.row + ': the date could not be read (year first, like 2026-09-05)'; return row; }\n    if (!(p.foreign > 0) || !(p.billed > 0)) { row.status = 'Check data'; row.note = 'row ' + p.row + ': the foreign amount and the billed amount must both be positive numbers'; return row; }\n    row.effective_rate = Math.round((p.billed / p.foreign) * 1000) / 1000;\n    const hit = rateFor(seriesBy[p.currency], p.date, lookback);\n    if (!hit) { row.status = 'Rate unavailable'; row.note = 'no ' + p.currency + '/' + base + ' rate within ' + lookback + ' days before ' + p.date + ' (the API may not support ' + p.currency + ')'; return row; }\n    const expected = p.foreign * hit.rate;\n    const premium = (p.billed / expected - 1) * 100;\n    row.rate_date = hit.date; row.market_rate = hit.rate; row.expected_billed = Math.round(expected * 100) / 100;\n    row.premium_pct = Math.round(premium * 100) / 100; row.extra = Math.round((p.billed - expected) * 100) / 100;\n    if (premium > warn) { row.status = 'High premium'; row.note = 'billed ' + row.premium_pct + '% above the market rate (limit ' + warn + '%)'; }\n    else if (premium < low) { row.status = 'Below market'; row.note = 'billed ' + Math.abs(row.premium_pct) + '% below the market rate: check the amounts or the currency'; }\n    else row.status = 'OK';\n    if (hit.date !== p.date) row.note = (row.note ? row.note + '; ' : '') + 'rate of ' + hit.date + ' used (no rate on ' + p.date + ')';\n    return row;\n  });\n}\n\nfunction summarize(rows, base, skipped) {\n  const count = {};\n  for (const r of rows) count[r.status] = (count[r.status] ?? 0) + 1;\n  const priced = rows.filter((r) => r.extra !== '');\n  const totalExtra = priced.reduce((s, r) => s + r.extra, 0);\n  const total = priced.reduce((s, r) => s + r.billed, 0);\n  const worst = rows.filter((r) => r.status === 'High premium').sort((a, b) => b.extra - a.extra).slice(0, 5);\n  const head = '*Foreign-currency charges* - ' + Object.entries(count).map(([k, v]) => k + ': ' + v).join(', ') + (skipped ? ' (' + skipped + ' ' + base + ' rows skipped)' : '');\n  const money = '\\nBilled ' + Math.round(total) + ' ' + base + ' on ' + priced.length + ' charges; ' + (totalExtra >= 0 ? Math.round(totalExtra) + ' ' + base + ' above' : Math.round(-totalExtra) + ' ' + base + ' below') + ' the market rate in total (ECB reference rates, a yardstick, not the card network rate).';\n  const lines = worst.map((r) => '\u2022 ' + r.date + ' ' + r.merchant + ' ' + r.foreign_amount + ' ' + r.currency + ' -> ' + r.billed + ' ' + base + ' (+' + r.premium_pct + '%, ' + Math.round(r.extra) + ' ' + base + ')');\n  const flagged = rows.filter((r) => ['Check data', 'Rate unavailable', 'Below market'].includes(r.status)).slice(0, 5).map((r) => '\u2022 ' + r.status + ': ' + r.date + ' ' + r.merchant + ' - ' + r.note);\n  return [head + money, lines.length ? '*Highest premiums*\\n' + lines.join('\\n') : '', flagged.length ? '*Look at these*\\n' + flagged.join('\\n') : ''].filter(Boolean).join('\\n');\n}\n\nconst cfg = $('Config').first().json;\nconst rows = $('Check charges').all().map((i) => i.json).filter((r) => r.row_key !== 'none');\nconst skipped = $('Plan rates').all()[0]?.json?.skipped ?? 0;\nreturn [{ json: { text: summarize(rows, String(cfg.base_currency || 'JPY').toUpperCase(), skipped) } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "34878313-5d3a-4471-847e-4d1209faf1c8",
+      "name": "Nothing to check",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1260,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nreturn [{ json: { text: '*Foreign-currency charges* - nothing to check: ' + j.rows + ' rows on the FX statement tab, none in a foreign currency.' } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "47e20f05-8591-419c-81a6-21ba5ad10fdc",
+      "name": "Post to Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        2680,
+        150
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "select": "channel",
+        "resource": "message",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "operation": "post",
+        "messageType": "text",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "typeVersion": 2.7
+    },
+    {
+      "id": "0b9f5233-d4e5-4e8e-89f2-0df3914dd493",
+      "name": "Run once: set up the sheet",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        800
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "bbaef02f-85b2-4399-871f-310718ed4443",
+      "name": "Add the FX statement and FX check tabs",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        440,
+        800
+      ],
+      "parameters": {
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $(\"Spreadsheet ID\").first().json.spreadsheet_id }}:batchUpdate",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={\"requests\":[{\"addSheet\":{\"properties\":{\"title\":\"FX statement\"}}},{\"addSheet\":{\"properties\":{\"title\":\"FX check\"}}}]}",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api"
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "f6ef1056-f707-4f81-84aa-9c6d494ebc30",
+      "name": "Write the header rows",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        660,
+        800
+      ],
+      "parameters": {
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $(\"Spreadsheet ID\").first().json.spreadsheet_id }}/values:batchUpdate",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={\"valueInputOption\":\"RAW\",\"data\":[{\"range\":\"'FX statement'!A1\",\"values\":[[\"Date\",\"Merchant\",\"Billed\",\"Foreign amount\",\"Currency\"]]},{\"range\":\"'FX check'!A1\",\"values\":[[\"row_key\",\"date\",\"merchant\",\"currency\",\"foreign_amount\",\"billed\",\"rate_date\",\"market_rate\",\"expected_billed\",\"effective_rate\",\"premium_pct\",\"extra\",\"status\",\"note\",\"checked_at\"]]}]}",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api"
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "b0b0b0b0-0000-4000-8000-0000000000a5",
+      "name": "Spreadsheet ID",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        800
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sid1",
+              "name": "spreadsheet_id",
+              "type": "string",
+              "value": "PASTE_YOUR_SPREADSHEET_ID_HERE"
+            }
+          ]
+        },
+        "includeOtherFields": false
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "sticky-2-a3df06e8",
+      "name": "Section 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        -284
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 420,
+        "height": 604,
+        "content": "## 1. Triggers and settings\nRuns monthly or on demand. Config holds your currency, the column names and the premium limits."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-3-bed96747",
+      "name": "Section 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        540,
+        -158
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 860,
+        "height": 628,
+        "content": "## 2. Which rows, which rates?\nFinds the foreign rows and the date range of each currency. A wrong column name stops the run with a clear message."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-4-79833ec9",
+      "name": "Section 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1580,
+        -288
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 200,
+        "height": 458,
+        "content": "## 3. Market rates\nOne request per currency to the free Frankfurter API (no key). A currency it does not know is reported, not guessed."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-5-5dfac735",
+      "name": "Section 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1960,
+        -158
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 860,
+        "height": 478,
+        "content": "## 4. Check in code, save, report\nCode calculates the expected amount and the premium. Results are saved by row, so a re-run does not duplicate. Slack gets the summary."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-6-25e06a03",
+      "name": "Section 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        642
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 860,
+        "height": 328,
+        "content": "## Run once: set up the sheet\nPaste your spreadsheet ID, run this branch once, and it adds the two tabs and the header rows. Running it twice fails, because the tabs exist."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-1-6771ac3e",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -130,
+        -1348
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 780,
+        "height": 920,
+        "content": "## Did the card charge you a fair exchange rate?\nPaste your card statement lines for foreign purchases (date, merchant, billed amount in your own currency, foreign amount, currency). For each line the workflow fetches the **market rate of that day** from the free Frankfurter API (no key), calculates what the charge should have been, and shows **how many percent more (or less) you were billed**. **All arithmetic is code; there is no AI.**\n\n### How it works\n1. Monthly, or on demand, it reads the `FX statement` tab. Domestic rows are skipped.\n2. One request per currency fetches all the rates needed (weekends and holidays use the last rate before).\n3. Each row gets the market rate, the expected amount, the effective rate, the premium in percent and the extra amount, and a status: **OK**, **High premium**, **Below market** (check the data), **Rate unavailable**, **Check data**.\n4. Rows go to the `FX check` tab. Slack gets the total, the highest premiums and the rows to look at.\n\n### Setup\n1. Blank Google Sheet: paste its ID in **Spreadsheet ID**, run **Run once** (adds the FX statement and FX check tabs), then select the sheet in the Google Sheets nodes.\n2. Credentials: Google Sheets and Slack (pick a channel).\n3. Paste the statement rows, set your currency and column names in **Config**, run **Check now**.\n\n### Customization\nChange the base currency, the premium limits and the look-back days in **Config**."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Read FX statement tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check now": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get rates": {
+      "main": [
+        [
+          {
+            "node": "Check charges",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan rates": {
+      "main": [
+        [
+          {
+            "node": "Any foreign charges?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every month": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build summary": {
+      "main": [
+        [
+          {
+            "node": "Post to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check charges": {
+      "main": [
+        [
+          {
+            "node": "Add to FX check tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Spreadsheet ID": {
+      "main": [
+        [
+          {
+            "node": "Add the FX statement and FX check tabs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nothing to check": {
+      "main": [
+        [
+          {
+            "node": "Post to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add to FX check tab": {
+      "main": [
+        [
+          {
+            "node": "Build summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any foreign charges?": {
+      "main": [
+        [
+          {
+            "node": "Get rates",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nothing to check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read FX statement tab": {
+      "main": [
+        [
+          {
+            "node": "Plan rates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run once: set up the sheet": {
+      "main": [
+        [
+          {
+            "node": "Spreadsheet ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add the FX statement and FX check tabs": {
+      "main": [
+        [
+          {
+            "node": "Write the header rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

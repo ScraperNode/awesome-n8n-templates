@@ -1,6 +1,6 @@
 # 📖 Build a knowledge base chatbot with OpenAI, RAG and MongoDB vector embeddings
 
-> ⚡ **13,894 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **14,877 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

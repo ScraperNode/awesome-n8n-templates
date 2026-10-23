@@ -1,6 +1,6 @@
 # ⚡ Add a event to Google Calendar automatically
 
-> ⚡ **12,211 views** · ⚡ [Personal Productivity](../)
+> ⚡ **12,169 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

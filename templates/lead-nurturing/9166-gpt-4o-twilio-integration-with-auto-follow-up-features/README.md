@@ -1,6 +1,6 @@
 # 💬 GPT-4o: Twilio integration with auto follow-up features
 
-> ⚡ **217 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **265 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

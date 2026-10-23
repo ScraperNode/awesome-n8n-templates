@@ -1,6 +1,6 @@
 # 📊 Monitor Google Search rankings with SerpApi and Google Sheets
 
-> ⚡ **19 views** · 📊 [Market Research & Insights](../)
+> ⚡ **92 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Send a message via AWS SNS
 
-> ⚡ **863 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **877 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 🛠️ Strava tool MCP server 💪 all 9 operations
 
-> ⚡ **614 views** · 🔧 [Miscellaneous](../)
+> ⚡ **659 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

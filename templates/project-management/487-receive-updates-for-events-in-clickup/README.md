@@ -1,6 +1,6 @@
 # 📋 Receive updates for events in ClickUp
 
-> ⚡ **2,511 views** · 📋 [Project Management](../)
+> ⚡ **2,515 views** · 📋 [Project Management](../)
 
 ## Description
 

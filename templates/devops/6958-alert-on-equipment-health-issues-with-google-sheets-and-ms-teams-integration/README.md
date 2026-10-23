@@ -1,6 +1,6 @@
 # ⚙️ Alert on equipment health issues with Google Sheets and MS Teams integration
 
-> ⚡ **384 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **475 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

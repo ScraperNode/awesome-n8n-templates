@@ -1,6 +1,6 @@
 # 📖 Automatically document n8n workflows directly in Notion database
 
-> ⚡ **4,860 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **4,892 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

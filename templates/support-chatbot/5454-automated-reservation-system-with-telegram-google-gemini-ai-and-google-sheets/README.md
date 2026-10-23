@@ -1,6 +1,6 @@
 # 💬 Automated reservation system with Telegram, Google Gemini AI, and Google Sheets
 
-> ⚡ **4,303 views** · 💬 [Support Chatbots](../)
+> ⚡ **5,082 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

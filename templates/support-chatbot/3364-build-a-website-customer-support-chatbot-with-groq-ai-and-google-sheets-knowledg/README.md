@@ -1,6 +1,6 @@
 # 💬 Build a website customer support chatbot with Groq AI and Google Sheets knowledge base
 
-> ⚡ **254 views** · 💬 [Support Chatbots](../)
+> ⚡ **330 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

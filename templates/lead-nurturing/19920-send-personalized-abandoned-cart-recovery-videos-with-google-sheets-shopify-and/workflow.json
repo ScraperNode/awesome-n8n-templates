@@ -1,0 +1,1282 @@
+{
+  "name": "Create personalized abandoned-cart recovery videos from Google Sheets with Zvid",
+  "nodes": [
+    {
+      "id": "zvid-ac-0001",
+      "name": "Test manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        50,
+        240
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "zvid-ac-0002",
+      "name": "Every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        310,
+        240
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "zvid-ac-0003",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        570,
+        240
+      ],
+      "parameters": {
+        "mode": "raw",
+        "options": {},
+        "jsonOutput": "{\n  \"apiUrl\": \"https://api.zvid.io\",\n  \"editorUrl\": \"https://editor.zvid.io\",\n  \"source\": \"sheet\",\n  \"shopDomain\": \"\",\n  \"apiVersion\": \"2024-07\",\n  \"abandonedAfterHours\": 6,\n  \"maxAgeHours\": 48,\n  \"brandName\": \"Northlane\",\n  \"storeUrl\": \"northlane.example\",\n  \"brandBackground\": \"#12100E\",\n  \"brandAccent\": \"#E2714B\",\n  \"accentSoft\": \"#F0B08C\",\n  \"creamColor\": \"#F6F1E9\",\n  \"mutedColor\": \"#9C948A\",\n  \"headingFont\": \"Sora\",\n  \"accentFont\": \"Fraunces\",\n  \"uiFont\": \"DM Sans\",\n  \"currencySymbol\": \"$\",\n  \"hookLine\": \"you left something behind.\",\n  \"hookNote\": \"Your cart is still saved \u2014 for now.\",\n  \"cartKicker\": \"STILL IN YOUR CART\",\n  \"cartNote\": \"We saved your cart. Nothing stays reserved forever.\",\n  \"totalLabel\": \"YOUR CART TOTAL\",\n  \"ctaText\": \"Complete your order\",\n  \"ctaSubline\": \"Pick up exactly where you left off.\",\n  \"musicUrl\": \"https://cdn.pixabay.com/audio/2026/02/24/audio_3f375fdf97.mp3\",\n  \"musicVolume\": 0.16,\n  \"maxMusicBytes\": 5242880,\n  \"resolution\": \"instagram-reel\",\n  \"frameRate\": 30,\n  \"sendEmail\": false,\n  \"emailFrom\": \"user@example.com\",\n  \"emailSubject\": \"{firstName}, your cart is still saved\",\n  \"emailIntro\": \"We kept your cart exactly where you left it. Here is a quick look at what is waiting.\",\n  \"emailButtonText\": \"Complete your order\",\n  \"statusDoneValue\": \"done\",\n  \"dryRun\": false,\n  \"pollSeconds\": 10,\n  \"timeoutMinutes\": 20\n}"
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "zvid-ac-0004",
+      "name": "Source?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1050,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "source--cond",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ String($('Config').first().json.source || 'sheet').toLowerCase() === 'sheet' }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zvid-ac-0005",
+      "name": "Read carts sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        1310,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "resource": "sheet",
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-ac-0006",
+      "name": "Pick next cart",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1570,
+        240
+      ],
+      "parameters": {
+        "jsCode": "// The Google Sheets node emits one item per row plus a row_number field.\n// Keep the FIRST row whose Status column is empty \u2014 row_number lets the update\n// node at the end mark exactly this row as done \u2014 and fold the flat\n// Item1/Item2/Item3 columns into the one shape the builder expects.\n//\n// Read carts sheet runs with alwaysOutputData, so a sheet holding nothing but\n// its header row arrives as ONE blank item instead of no items at all. Without\n// that this node would never run and the friendly \"Nothing to recover\" branch\n// behind it could never fire \u2014 a documented message that can never appear is\n// its own bug. Drop the blank placeholder before counting anything.\nconst isEmpty = (v) => v === undefined || v === null || String(v).trim() === '';\nconst clean = (v) => String(v == null ? '' : v).trim();\nconst CELLS = ['Email', 'FirstName', 'CheckoutUrl',\n  'Item1', 'Item1Image', 'Item1Price',\n  'Item2', 'Item2Image', 'Item2Price',\n  'Item3', 'Item3Image', 'Item3Price'];\nconst rows = $input.all()\n  .map((i) => (i && i.json) || {})\n  .filter((r) => Object.keys(r).length > 0);\n\n// A row where every cell is blank has an empty Status too, so picking it would\n// park the workflow on the same dead row on every single run and no real cart\n// behind it would ever be reached. Skip those and keep walking.\nlet skippedBlank = 0;\nlet row = null;\nfor (const r of rows) {\n  if (!isEmpty(r.Status)) continue;\n  if (!CELLS.some((k) => !isEmpty(r[k]))) {\n    skippedBlank += 1;\n    continue;\n  }\n  row = r;\n  break;\n}\nif (!row) {\n  return [{ json: { found: false, source: 'sheet', checked: rows.length, skippedBlank } }];\n}\n\nconst items = [];\nfor (let i = 1; i <= 3; i += 1) {\n  const title = clean(row['Item' + i]);\n  if (!title) continue;\n  items.push({\n    title,\n    imageUrl: clean(row['Item' + i + 'Image']),\n    price: clean(row['Item' + i + 'Price']),\n  });\n}\nif (!items.length) {\n  throw new Error('Row ' + row.row_number + ' has no Item1. Fill at least one item, or put anything in its Status cell to skip the row.');\n}\n\nconst email = clean(row.Email);\nif (email && !email.includes('@')) {\n  throw new Error('Row ' + row.row_number + ' has an Email that is not an address: \"' + email + '\".');\n}\n\nreturn [{\n  json: {\n    found: true,\n    source: 'sheet',\n    email,\n    firstName: clean(row.FirstName),\n    items,\n    // The sheet has no total column on purpose \u2014 the builder adds the item\n    // prices up so the number on screen always matches the items on screen.\n    totalPrice: '',\n    checkoutUrl: clean(row.CheckoutUrl),\n    cartRef: 'row-' + row.row_number,\n    rowNumber: row.row_number,\n    checked: rows.length,\n  },\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-ac-0007",
+      "name": "Poll checkouts",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        1830,
+        240
+      ],
+      "parameters": {
+        "url": "=https://{{ $('Config').first().json.shopDomain }}/admin/api/{{ $('Config').first().json.apiVersion }}/checkouts.json?limit=25",
+        "options": {
+          "timeout": 20000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-ac-0008",
+      "name": "Pick abandoned checkout",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1830,
+        480
+      ],
+      "parameters": {
+        "jsCode": "// Shopify has NO abandoned-checkout webhook topic, so the production path\n// polls GET /admin/api/<version>/checkouts.json \u2014 that endpoint only ever\n// returns checkouts that were never completed \u2014 and applies the age window\n// here: older than abandonedAfterHours (give them time to come back on their\n// own) but younger than maxAgeHours (a two-week-old cart is not a recovery\n// opportunity, it is spam).\nconst cfg = $('Config').first().json;\nconst shop = String(cfg.shopDomain || '').trim();\nif (!shop) {\n  throw new Error('Config.source is \"shopify\" but Config.shopDomain is empty. Set it to yourstore.myshopify.com, or set source back to \"sheet\".');\n}\n\n// Poll checkouts runs with fullResponse + neverError, so a real answer arrives\n// as { statusCode, headers, body } and a swallowed transport error arrives as\n// an item with no statusCode at all. Read both shapes \u2014 and never translate an\n// HTTP failure into a cheerful \"nothing to recover\": a wrong token, a missing\n// scope or a typo'd shop host has to say so out loud.\nconst res = $input.first().json || {};\nconst enveloped = Object.prototype.hasOwnProperty.call(res, 'statusCode');\nconst status = enveloped\n  ? Number(res.statusCode)\n  : (Array.isArray(res.checkouts) ? 200 : 0);\n\nif (!Number.isFinite(status) || status === 0) {\n  throw new Error('Could not reach ' + shop + '. shopDomain looks like \"your-store.myshopify.com\", and the X-Shopify-Access-Token Header Auth credential must be attached to Poll checkouts.');\n}\nif (status === 401 || status === 403) {\n  throw new Error('Shopify rejected the token (HTTP ' + status + '). The custom app needs the read_checkouts scope and the header name must be X-Shopify-Access-Token.');\n}\nif (status === 404) {\n  throw new Error('Shopify answered HTTP 404 for https://' + shop + '/admin/api/' + String(cfg.apiVersion || '') + '/checkouts.json. Check Config.shopDomain and Config.apiVersion.');\n}\nif (status !== 200) {\n  throw new Error('Shopify answered HTTP ' + status + ': ' + JSON.stringify(enveloped ? res.body : res).slice(0, 300));\n}\n\nlet body = enveloped ? res.body : res;\nif (typeof body === 'string') {\n  try {\n    body = JSON.parse(body);\n  } catch (e) {\n    throw new Error('Shopify answered HTTP 200 but the body was not JSON. Config.shopDomain must be the admin host (your-store.myshopify.com), not a storefront domain that redirects.');\n  }\n}\nif (!body || typeof body !== 'object' || !Array.isArray(body.checkouts)) {\n  throw new Error('Shopify answered HTTP 200 but the body carried no \"checkouts\" array. Check Config.shopDomain and Config.apiVersion \u2014 /admin/api/<version>/checkouts.json is the endpoint this expects.');\n}\nconst list = body.checkouts;\nconst minAge = Number(cfg.abandonedAfterHours ?? 6);\nconst maxAge = Number(cfg.maxAgeHours ?? 48);\nconst clean = (v) => String(v == null ? '' : v).trim();\n\n// Static data is what stops the same checkout being recovered twice \u2014 there is\n// no sheet to write \"done\" into in this mode.\nconst store = $getWorkflowStaticData('global');\nif (!Array.isArray(store.sentCheckoutIds)) store.sentCheckoutIds = [];\nconst sent = new Set(store.sentCheckoutIds.map(String));\n\nconst now = Date.now();\nconst eligible = list\n  .filter((c) => c && !c.completed_at)\n  .map((c) => ({ c, ageHours: (now - new Date(c.updated_at || c.created_at || 0).getTime()) / 3600000 }))\n  .filter((x) => Number.isFinite(x.ageHours) && x.ageHours >= minAge && x.ageHours <= maxAge)\n  .filter((x) => clean(x.c.email).includes('@'))\n  .filter((x) => !sent.has(String(x.c.id)))\n  .filter((x) => Array.isArray(x.c.line_items) && x.c.line_items.length > 0)\n  // Oldest first: the cart closest to falling out of the window is the one\n  // worth recovering now.\n  .sort((a, b) => b.ageHours - a.ageHours);\n\nif (!eligible.length) {\n  return [{ json: { found: false, source: 'shopify', checked: list.length } }];\n}\n\nconst picked = eligible[0];\nconst c = picked.c;\nconst who = c.customer || c.billing_address || c.shipping_address || {};\nconst items = c.line_items.slice(0, 3).map((li) => ({\n  title: clean(li.title || li.name),\n  // /checkouts.json does not reliably carry a product image. When it is\n  // missing the builder draws a designed numbered tile instead of a broken\n  // picture box \u2014 see the Shopify note for how to add real images.\n  imageUrl: clean(li.image_url || li.image),\n  price: clean(li.price),\n}));\n\nreturn [{\n  json: {\n    found: true,\n    source: 'shopify',\n    email: clean(c.email),\n    firstName: clean(who.first_name),\n    items,\n    totalPrice: clean(c.total_price),\n    checkoutUrl: clean(c.abandoned_checkout_url),\n    cartRef: 'checkout-' + c.id,\n    checkoutId: c.id,\n    ageHours: Math.round(picked.ageHours * 10) / 10,\n    checked: list.length,\n  },\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-ac-0009",
+      "name": "Cart found?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2310,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cart-found--cond",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.found }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zvid-ac-0010",
+      "name": "Nothing to recover",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2570,
+        240
+      ],
+      "parameters": {
+        "jsCode": "// No cart qualified. That is a normal, successful outcome \u2014 not an error.\nconst cfg = $('Config').first().json;\nconst picked = $input.first().json;\nconst isShopify = picked.source === 'shopify';\nconst checked = picked.checked ?? 0;\nconst skippedBlank = Number(picked.skippedBlank || 0);\n\n// The sheet branch has three distinct \"nothing to do\" endings and they mean\n// different things to the person reading the run \u2014 an empty sheet is a setup\n// step, blank rows are housekeeping, everything-done is success.\nlet sheetReason;\nif (checked === 0) {\n  sheetReason = 'The carts sheet has no data rows yet \u2014 only the header. Add a row with Item1 filled in and Status left empty.';\n} else {\n  sheetReason = 'No row with an empty Status column. Add carts to the sheet, or clear a Status cell to re-send one.';\n  if (skippedBlank) {\n    sheetReason += ' ' + skippedBlank + ' completely blank row(s) were skipped.';\n  }\n}\n\nreturn [{\n  json: {\n    rendered: false,\n    source: picked.source,\n    checked,\n    skippedBlank,\n    reason: isShopify\n      ? 'No open checkout is between ' + (cfg.abandonedAfterHours ?? 6) + ' and ' + (cfg.maxAgeHours ?? 48) +\n        ' hours old with an email address and at least one line item (already-recovered checkouts are skipped).'\n      : sheetReason,\n  },\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-ac-0011",
+      "name": "Check music",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        3050,
+        240
+      ],
+      "parameters": {
+        "url": "={{ $('Config').first().json.musicUrl }}",
+        "method": "HEAD",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {}
+          },
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "zvid-ac-0012",
+      "name": "Music guard",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3310,
+        240
+      ],
+      "parameters": {
+        "jsCode": "// A render must NEVER fail because a nice-to-have music bed is unreachable or\n// bigger than the plan's audio cap \u2014 the renderer rejects the whole project\n// when an audio asset is over the limit. Unreachable or oversized => render\n// without music and say so in the summary.\nconst cfg = $('Config').first().json;\n\n// Exactly one of the two source branches ran; referencing the other throws, so\n// the lookup is deliberately guarded rather than assumed.\nlet cart = null;\ntry { cart = $('Pick next cart').first().json; } catch (e) { cart = null; }\nif (!cart || cart.found !== true) {\n  try { cart = $('Pick abandoned checkout').first().json; } catch (e) { /* keep null */ }\n}\nif (!cart || cart.found !== true) {\n  throw new Error('Could not read the picked cart. Were \"Pick next cart\" / \"Pick abandoned checkout\" renamed?');\n}\n\nconst probe = $input.first().json || {};\nlet music = null;\nlet musicNote = 'no music bed configured';\nconst src = String(cfg.musicUrl || '').trim();\nif (src) {\n  const status = Number(probe.statusCode);\n  const headers = probe.headers || {};\n  const bytes = Number(headers['content-length'] || headers['Content-Length'] || 0);\n  const limit = Number(cfg.maxMusicBytes ?? 5242880);\n  if (status === 200 && (!bytes || bytes <= limit)) {\n    music = { src: src };\n    musicNote = 'ok' + (bytes ? ' (' + bytes + ' bytes)' : '');\n  } else if (status !== 200) {\n    musicNote = 'skipped: HEAD answered ' + (Number.isFinite(status) && status ? 'HTTP ' + status : 'nothing (unreachable)');\n  } else {\n    musicNote = 'skipped: ' + bytes + ' bytes exceeds maxMusicBytes (' + limit + ')';\n  }\n}\n\nreturn [{ json: Object.assign({}, cart, { music: music, musicNote: musicNote }) }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-ac-0013",
+      "name": "Build project JSON",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        50,
+        1160
+      ],
+      "parameters": {
+        "jsCode": "function fitCartImageUrl(value) {\n  const src = String(value || '').trim();\n  // This stock-library image host supports a bounding box. Restrict rewriting\n  // to this exact host; arbitrary product URLs may be signed or use other APIs.\n  const match = /^(https:\\/\\/images\\.pexels\\.com\\/[^?#]+)(?:\\?([^#]*))?(#.*)?$/i.exec(src);\n  if (!match) return src;\n  const params = (match[2] || '').split('&').filter(Boolean)\n    .filter(part => !/^(?:w|h|fit|dpr)=/i.test(part));\n  return match[1] + '?' + [...params, 'w=1920', 'h=1920', 'fit=max', 'dpr=1'].join('&') + (match[3] || '');\n}\n\n// === buildProject \u2014 identical to the frame-reviewed standalone builder ===\n// Abandoned checkout -> a personal 1080x1920 cart-recovery reel.\n// Three scenes: the personal hook (their first item), the cart line-up\n// (1-3 item cards, layout adapts to the count) and the total + CTA card.\nfunction buildProject(config, data) {\n  const cfg = config || {};\n  const clean = (v) => String(v == null ? '' : v).replace(/\\s+/g, ' ').trim();\n  const esc = (s) =>\n    String(s).replace(/[&<>\"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]));\n  const round = (n) => Math.round(n * 100) / 100;\n\n  // ---- brand knobs --------------------------------------------------------\n  const brandName = clean(cfg.brandName) || 'Your store';\n  const storeUrl = clean(cfg.storeUrl) || 'yourstore.example';\n  const bg = clean(cfg.brandBackground) || '#12100E';\n  const accent = clean(cfg.brandAccent) || '#E2714B';\n  const accentSoft = clean(cfg.accentSoft) || '#F0B08C';\n  const cream = clean(cfg.creamColor) || '#F6F1E9';\n  const muted = clean(cfg.mutedColor) || '#9C948A';\n  const headingFont = clean(cfg.headingFont) || 'Sora';\n  const accentFont = clean(cfg.accentFont) || 'Fraunces';\n  const uiFont = clean(cfg.uiFont) || 'DM Sans';\n  const currency = clean(cfg.currencySymbol) || '$';\n\n  const hookLine = clean(cfg.hookLine) || 'you left something behind.';\n  const hookNote = clean(cfg.hookNote) || 'Your cart is still saved \u2014 for now.';\n  const cartKicker = clean(cfg.cartKicker) || 'STILL IN YOUR CART';\n  const cartNote = clean(cfg.cartNote) || 'We saved your cart. Nothing stays reserved forever.';\n  const totalLabel = clean(cfg.totalLabel) || 'YOUR CART TOTAL';\n  const ctaText = clean(cfg.ctaText) || 'Complete your order';\n  const ctaSubline = clean(cfg.ctaSubline) || 'Pick up exactly where you left off.';\n\n  // ---- cart data ----------------------------------------------------------\n  const firstNameRaw = clean(data.firstName);\n  // Only ever a first name goes near the video; the email address never does\n  // (it would end up in the public CDN filename).\n  const firstName = firstNameRaw ? firstNameRaw.slice(0, 24) : '';\n  const rawItems = Array.isArray(data.items) ? data.items : [];\n  const items = rawItems\n    .map((it) => ({\n      title: clean(it && it.title),\n      imageUrl: fitCartImageUrl(it && it.imageUrl),\n      priceRaw: clean(it && it.price),\n    }))\n    .filter((it) => it.title)\n    .slice(0, 3);\n  if (!items.length) throw new Error('This cart has no line items with a title \u2014 nothing to render.');\n\n  // Only public http(s) images make it into the design; anything else falls\n  // back to a designed numbered tile instead of a broken picture box.\n  for (const it of items) {\n    if (!/^https?:\\/\\//i.test(it.imageUrl)) it.imageUrl = '';\n  }\n  const heroImage = (items.find((it) => it.imageUrl) || {}).imageUrl || '';\n\n  // ---- money --------------------------------------------------------------\n  // Prices arrive as free text (\"$49\", \"1,049.00\", \"49,00\"). Parse what we can;\n  // when even one item is unparseable the total line is replaced rather than\n  // shown wrong.\n  const parseMoney = (s) => {\n    const t = String(s || '').replace(/[^\\d.,-]/g, '').trim();\n    if (!t) return null;\n    let n;\n    if (/^-?\\d{1,3}(,\\d{3})+(\\.\\d+)?$/.test(t)) n = Number(t.replace(/,/g, ''));\n    else if (/^-?\\d{1,3}(\\.\\d{3})+(,\\d+)?$/.test(t)) n = Number(t.replace(/\\./g, '').replace(',', '.'));\n    else n = Number(t.replace(',', '.'));\n    return Number.isFinite(n) ? n : null;\n  };\n  const groupNum = (n, withCents) => {\n    const fixed = withCents || Math.abs(n % 1) > 0.0001 ? n.toFixed(2) : String(Math.round(n));\n    const [intPart, dec] = fixed.split('.');\n    return intPart.replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',') + (dec ? '.' + dec : '');\n  };\n  const hasSymbol = (s) => /[^\\d\\s.,-]/.test(String(s || ''));\n  // Cents are shown on the total only when the store itself quotes cents \u2014\n  // \"$128.00 + $42.00 = $170\" reads wrong, \"= $170.00\" reads right.\n  const showsCents = items.some((it) => /[.,]\\d{2}(\\D|$)/.test(it.priceRaw));\n  const displayPrice = (raw) => {\n    if (!raw || !/\\d/.test(raw)) return '';\n    if (hasSymbol(raw)) return raw;\n    const n = parseMoney(raw);\n    return n === null ? raw : currency + groupNum(n, showsCents);\n  };\n\n  const parsedPrices = items.map((it) => parseMoney(it.priceRaw));\n  const suppliedTotal = parseMoney(data.totalPrice);\n  const allPriced = items.length > 0 && parsedPrices.every((p) => p !== null);\n  const totalNumber = suppliedTotal !== null ? suppliedTotal : allPriced ? parsedPrices.reduce((a, b) => a + b, 0) : null;\n  const totalDisplay = totalNumber === null ? '' : currency + groupNum(totalNumber, showsCents);\n\n  // ---- type metrics -------------------------------------------------------\n  // Greedy word-wrap estimate. AVG_EM was measured on the production\n  // renderer (Sora 700 at 33 px sets 18.6 px per character = 0.565 em) and\n  // rounded up, so the estimate errs towards shrinking type, never towards\n  // overflow.\n  const AVG_EM = 0.575;\n  const wrapLines = (text, fontPx, boxPx, avgEm) => {\n    const perLine = Math.max(6, Math.floor(boxPx / (fontPx * avgEm)));\n    let lines = 1;\n    let used = 0;\n    for (const w of String(text).split(' ')) {\n      const need = used === 0 ? w.length : used + 1 + w.length;\n      if (need <= perLine) { used = need; continue; }\n      lines += 1;\n      used = Math.min(w.length, perLine);\n    }\n    return lines;\n  };\n  // Shrinks a product title until it wraps into at most `maxLines`, then\n  // ellipsises what is still too long. Nothing ever spills out of a card.\n  const fitTitle = (text, sizes, boxPx, maxLines) => {\n    for (const size of sizes) {\n      if (wrapLines(text, size, boxPx, AVG_EM) <= maxLines) return { text, size };\n    }\n    const smallest = sizes[sizes.length - 1];\n    const perLine = Math.max(6, Math.floor(boxPx / (smallest * AVG_EM)));\n    const budget = Math.max(12, perLine * maxLines - 1);\n    let cut = String(text).slice(0, budget);\n    const lastSpace = cut.lastIndexOf(' ');\n    if (lastSpace > budget * 0.6) cut = cut.slice(0, lastSpace);\n    return { text: cut.replace(/[\\s,.;:-]+$/, '') + '\u2026', size: smallest };\n  };\n\n  // ---- shared markup ------------------------------------------------------\n  // A thumbnail tile: the product photo when we have one, a numbered accent\n  // tile when we do not, so a missing image still looks designed.\n  const thumbTile = (item, index, size, radius) =>\n    item.imageUrl\n      ? \"<div style='width:\" + size + 'px; height:' + size + 'px; flex:none; border-radius:' + radius +\n        \"px; overflow:hidden; background:rgba(246,241,233,0.10);'><img src='\" + esc(item.imageUrl) +\n        \"' width='\" + size + \"' height='\" + size + \"' alt='' style='width:\" + size + 'px; height:' + size +\n        \"px; object-fit:cover; display:block;'/></div>\"\n      : \"<div style='width:\" + size + 'px; height:' + size + 'px; flex:none; border-radius:' + radius +\n        'px; background:rgba(226,113,75,0.16); color:' + accent + '; font-size:' + Math.round(size * 0.3) +\n        'px; font-weight:800; line-height:' + size + \"px; text-align:center;'>\" + (index + 1) + '</div>';\n\n  const svgOpen = \"<svg width='1080' height='1920' viewBox='0 0 1080 1920' xmlns='http://www.w3.org/2000/svg'>\";\n\n  // ==== scene 1 \u2014 the personal hook ========================================\n  const s1Seconds = 4.6;\n  const transitionSeconds = 0.5;\n\n  const nameSize = firstName.length <= 10 ? 92 : firstName.length <= 16 ? 76 : 62;\n  const nameY = 1168;\n  const hookSize = hookLine.length <= 30 ? 76 : hookLine.length <= 46 ? 66 : 56;\n  const hookY = nameY + Math.round(nameSize * 1.14) + 6;\n  const hookLines = wrapLines(hookLine, hookSize, 900, AVG_EM);\n  const noteY = hookY + Math.round(hookLines * hookSize * 1.08) + 44;\n\n  const s1 = {\n    id: 'hook',\n    duration: s1Seconds,\n    backgroundColor: bg,\n    transition: 'smoothup',\n    transitionId: 'cart',\n    transitionDuration: transitionSeconds,\n    visuals: [],\n  };\n\n  // The customer's own product photo, blurred and dimmed, is the backdrop:\n  // no stock footage to go stale, and the palette always matches the product.\n  if (heroImage) {\n    s1.visuals.push({\n      type: 'IMAGE', src: heroImage, width: 1080, height: 1920, position: 'center-center', resize: 'cover',\n      zoom: { depth: 1.14 }, filter: { blur: '5', brightness: -26, saturate: -14 },\n      track: 0, enterBegin: 0, exitEnd: s1Seconds,\n    });\n  }\n  s1.visuals.push({\n    type: 'SVG', width: 1080, height: 1920, track: 1, enterBegin: 0, exitEnd: s1Seconds,\n    svg: svgOpen +\n      \"<defs><linearGradient id='acvHookShade' x1='0' y1='0' x2='0' y2='1'>\" +\n      \"<stop offset='0' stop-color='\" + bg + \"' stop-opacity='0.78'/>\" +\n      \"<stop offset='0.32' stop-color='\" + bg + \"' stop-opacity='0.5'/>\" +\n      \"<stop offset='0.58' stop-color='\" + bg + \"' stop-opacity='0.72'/>\" +\n      \"<stop offset='1' stop-color='\" + bg + \"' stop-opacity='0.96'/></linearGradient>\" +\n      \"<radialGradient id='acvHookGlow' cx='0.5' cy='0.36' r='0.6'>\" +\n      \"<stop offset='0' stop-color='\" + accent + \"' stop-opacity='0.28'/>\" +\n      \"<stop offset='1' stop-color='\" + accent + \"' stop-opacity='0'/></radialGradient></defs>\" +\n      \"<rect width='1080' height='1920' fill='url(#acvHookShade)'/>\" +\n      \"<rect width='1080' height='1920' fill='url(#acvHookGlow)'/>\" +\n      \"<rect x='48' y='48' width='984' height='1824' rx='40' fill='none' stroke='rgba(246,241,233,0.18)' stroke-width='1.5'/>\" +\n      // With no product photo the frame would read flat, so the card gets a\n      // pair of halo rings instead of the blurred backdrop.\n      (heroImage\n        ? ''\n        : \"<circle cx='540' cy='680' r='404' fill='none' stroke='\" + accent + \"' stroke-opacity='0.32' stroke-width='2'/>\" +\n          \"<circle cx='540' cy='680' r='446' fill='none' stroke='\" + accent + \"' stroke-opacity='0.14' stroke-width='1'/>\") +\n      // corner ticks framing the product card (card box 230,300 -> 850,1060)\n      \"<path d='M206 348 L206 276 L278 276' fill='none' stroke='\" + accent + \"' stroke-width='4' stroke-opacity='0.85'/>\" +\n      \"<path d='M874 348 L874 276 L802 276' fill='none' stroke='\" + accent + \"' stroke-width='4' stroke-opacity='0.85'/>\" +\n      \"<path d='M206 1012 L206 1084 L278 1084' fill='none' stroke='\" + accent + \"' stroke-width='4' stroke-opacity='0.85'/>\" +\n      \"<path d='M874 1012 L874 1084 L802 1084' fill='none' stroke='\" + accent + \"' stroke-width='4' stroke-opacity='0.85'/>\" +\n      \"<path d='M90 1120 L200 1120' stroke='rgba(246,241,233,0.28)' stroke-width='1.5'/>\" +\n      '</svg>',\n  });\n  s1.visuals.push({\n    type: 'TEXT', x: 540, y: 128, anchor: 'top-center', track: 2,\n    enterBegin: 0.2, enterEnd: 0.7, enterAnimation: 'fade', exitEnd: s1Seconds,\n    style: { fontFamily: uiFont, color: cream },\n    html: \"<div style='display:inline-block; border:1.5px solid rgba(246,241,233,0.5); border-radius:999px; padding:15px 36px; color:\" +\n      cream + \"; font-size:25px; font-weight:700; letter-spacing:6px;'>\" + esc(brandName.toUpperCase()) + '</div>',\n  });\n  if (heroImage) {\n    s1.visuals.push({\n      type: 'IMAGE', src: heroImage, x: 540, y: 680, width: 620, height: 760, anchor: 'center-center',\n      radius: { tl: 40, tr: 40, bl: 40, br: 40 }, zoom: { depth: 1.07 },\n      track: 3, enterBegin: 0.1, enterEnd: 0.75, enterAnimation: 'smoothup', exitEnd: s1Seconds,\n    });\n  } else {\n    const placeholder = fitTitle(items[0].title, [58, 50, 44], 520, 3);\n    // Same box the hero photo would occupy (620x760 centred on 540,680), but\n    // declared top-left with no `height`: every TEXT element in this design\n    // sizes itself from its own html so the layout lint never mistakes a card\n    // for a collision with the full-frame backdrop.\n    s1.visuals.push({\n      type: 'TEXT', x: 230, y: 300, width: 620, anchor: 'top-left', track: 3,\n      enterBegin: 0.1, enterEnd: 0.75, enterAnimation: 'smoothup', exitEnd: s1Seconds,\n      style: { fontFamily: headingFont, color: cream },\n      html: \"<div style='width:620px; height:760px; border-radius:40px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:rgba(246,241,233,0.07); box-shadow:inset 0 0 0 1.5px rgba(246,241,233,0.16);'>\" +\n        \"<div style='width:520px; color:\" + cream + '; font-size:' + placeholder.size +\n        \"px; line-height:1.12; font-weight:700; text-align:center;'>\" + esc(placeholder.text) + '</div></div>',\n    });\n  }\n  if (firstName) {\n    s1.visuals.push({\n      type: 'TEXT', x: 90, y: nameY, width: 900, anchor: 'top-left', track: 4,\n      enterBegin: 0.55, enterEnd: 1.05, enterAnimation: 'smoothup', exitEnd: s1Seconds,\n      style: { fontFamily: accentFont, color: accentSoft },\n      html: \"<div style='color:\" + accentSoft + '; font-size:' + nameSize +\n        \"px; line-height:1.06; font-style:italic; font-weight:500;'>\" + esc(firstName) + ',</div>',\n    });\n  }\n  s1.visuals.push({\n    type: 'TEXT', x: 90, y: firstName ? hookY : nameY, width: 900, anchor: 'top-left', track: 5,\n    enterBegin: 0.8, enterEnd: 1.3, enterAnimation: 'smoothup', exitEnd: s1Seconds,\n    style: { fontFamily: headingFont, color: cream },\n    html: \"<div style='color:\" + cream + '; font-size:' + hookSize +\n      \"px; line-height:1.08; font-weight:800; letter-spacing:-1px;'>\" + esc(hookLine) + '</div>',\n  });\n  s1.visuals.push({\n    type: 'TEXT', x: 90, y: firstName ? noteY : noteY - Math.round(nameSize * 1.14) - 6, width: 860,\n    anchor: 'top-left', track: 6,\n    enterBegin: 1.35, enterEnd: 1.8, enterAnimation: 'fade', exitEnd: s1Seconds,\n    style: { fontFamily: uiFont, color: muted },\n    html: \"<div style='color:\" + muted + \"; font-size:30px; line-height:1.4; font-weight:500;'>\" + esc(hookNote) + '</div>',\n  });\n\n  // ==== scene 2 \u2014 the cart line-up ========================================\n  const n = items.length;\n  const s2Seconds = n === 1 ? 5.0 : n === 2 ? 5.8 : 6.4;\n  const s2 = {\n    id: 'cart',\n    duration: s2Seconds,\n    backgroundColor: bg,\n    transition: 'fade',\n    transitionId: 'cta',\n    transitionDuration: transitionSeconds,\n    visuals: [],\n  };\n  if (heroImage) {\n    s2.visuals.push({\n      type: 'IMAGE', src: heroImage, width: 1080, height: 1920, position: 'center-center', resize: 'cover',\n      zoom: { depth: 1.1 }, filter: { blur: '7', brightness: -46, saturate: -26 },\n      track: 0, enterBegin: 0, exitEnd: s2Seconds,\n    });\n  }\n  s2.visuals.push({\n    type: 'SVG', width: 1080, height: 1920, track: 1, enterBegin: 0, exitEnd: s2Seconds,\n    svg: svgOpen +\n      \"<defs><linearGradient id='acvCartShade' x1='0' y1='0' x2='0' y2='1'>\" +\n      \"<stop offset='0' stop-color='\" + bg + \"' stop-opacity='0.9'/>\" +\n      \"<stop offset='0.5' stop-color='\" + bg + \"' stop-opacity='0.82'/>\" +\n      \"<stop offset='1' stop-color='\" + bg + \"' stop-opacity='0.95'/></linearGradient></defs>\" +\n      \"<rect width='1080' height='1920' fill='url(#acvCartShade)'/>\" +\n      \"<rect x='48' y='48' width='984' height='1824' rx='40' fill='none' stroke='rgba(246,241,233,0.16)' stroke-width='1.5'/>\" +\n      \"<rect x='90' y='330' width='900' height='2' fill='rgba(246,241,233,0.16)'/>\" +\n      \"<rect x='90' y='326' width='104' height='6' rx='3' fill='\" + accent + \"'/>\" +\n      '</svg>',\n  });\n  s2.visuals.push({\n    type: 'TEXT', x: 90, y: 150, anchor: 'top-left', track: 2,\n    enterBegin: 0.3, enterEnd: 0.7, enterAnimation: 'fade', exitEnd: s2Seconds,\n    style: { fontFamily: uiFont, color: accentSoft },\n    html: \"<div style='color:\" + accentSoft + \"; font-size:25px; font-weight:700; letter-spacing:6px;'>\" +\n      esc(cartKicker.toUpperCase()) + '</div>',\n  });\n  s2.visuals.push({\n    type: 'TEXT', x: 90, y: 198, width: 900, anchor: 'top-left', track: 3,\n    enterBegin: 0.4, enterEnd: 0.85, enterAnimation: 'smoothup', exitEnd: s2Seconds,\n    style: { fontFamily: headingFont, color: cream },\n    html: \"<div style='color:\" + cream + \"; font-size:66px; line-height:1.04; font-weight:800; letter-spacing:-1px;'>\" +\n      n + (n === 1 ? ' item' : ' items') + \" waiting</div>\",\n  });\n\n  const cardShell = (w, h, radius) =>\n    'width:' + w + 'px; height:' + h + 'px; border-radius:' + radius +\n    'px; overflow:hidden; background:rgba(246,241,233,0.075); box-shadow:inset 0 0 0 1.5px rgba(246,241,233,0.15);';\n\n  // The card block always starts just under the rule and lands near y=1460,\n  // so 1, 2 and 3 items each fill the frame instead of floating in it.\n  let rowsBottom;\n  if (n === 1) {\n    const item = items[0];\n    const title = fitTitle(item.title, [46, 42, 38], 828, 2);\n    const price = displayPrice(item.priceRaw);\n    const cardY = 420;\n    const media = item.imageUrl\n      ? \"<div style='width:836px; height:780px; margin:32px 0 0 32px; border-radius:24px; overflow:hidden; background:rgba(246,241,233,0.10);'><img src='\" +\n        esc(item.imageUrl) + \"' width='836' height='780' alt='' style='width:836px; height:780px; object-fit:cover; display:block;'/></div>\"\n      : \"<div style='width:836px; height:780px; margin:32px 0 0 32px; border-radius:24px; background:rgba(226,113,75,0.14); box-shadow:inset 0 0 0 1.5px rgba(226,113,75,0.35);'></div>\";\n    s2.visuals.push({\n      type: 'TEXT', x: 90, y: cardY, width: 900, anchor: 'top-left', track: 4,\n      enterBegin: 0.75, enterEnd: 1.3, enterAnimation: 'smoothup', exitEnd: s2Seconds,\n      style: { fontFamily: headingFont, color: cream },\n      html: \"<div style='\" + cardShell(900, 1090, 34) + \"'>\" + media +\n        \"<div style='margin:30px 0 0 34px; width:828px;'>\" +\n        \"<div style='color:\" + cream + '; font-size:' + title.size + \"px; line-height:1.14; font-weight:700;'>\" + esc(title.text) + '</div>' +\n        (price ? \"<div style='margin-top:16px; color:\" + accent + \"; font-size:44px; font-weight:800;'>\" + esc(price) + '</div>' : '') +\n        '</div></div>',\n    });\n    rowsBottom = cardY + 1090;\n  } else {\n    const two = n === 2;\n    const cardH = two ? 500 : 330;\n    const gap = two ? 64 : 40;\n    const thumb = two ? 380 : 250;\n    const textW = 808 - thumb;\n    const titleSizes = two ? [38, 34, 30] : [36, 33, 30];\n    const maxLines = 3;\n    const priceSize = two ? 38 : 34;\n    const startY = two ? 460 : 430;\n    items.forEach((item, i) => {\n      const title = fitTitle(item.title, titleSizes, textW, maxLines);\n      const price = displayPrice(item.priceRaw);\n      const y = startY + i * (cardH + gap);\n      s2.visuals.push({\n        type: 'TEXT', x: 90, y: y, width: 900, anchor: 'top-left', track: 4 + i,\n        enterBegin: round(0.7 + i * 0.28), enterEnd: round(1.2 + i * 0.28), enterAnimation: 'smoothleft', exitEnd: s2Seconds,\n        style: { fontFamily: headingFont, color: cream },\n        html: \"<div style='\" + cardShell(900, cardH, 28) + \" display:flex; align-items:center;'>\" +\n          \"<div style='width:5px; height:\" + thumb + \"px; flex:none; border-radius:0 4px 4px 0; background:\" + accent + \";'></div>\" +\n          \"<div style='width:25px; flex:none;'></div>\" +\n          thumbTile(item, i, thumb, 20) +\n          \"<div style='width:28px; flex:none;'></div>\" +\n          \"<div style='width:\" + textW + \"px; flex:none;'>\" +\n          \"<div style='color:\" + cream + '; font-size:' + title.size + \"px; line-height:1.16; font-weight:700;'>\" + esc(title.text) + '</div>' +\n          (price ? \"<div style='margin-top:12px; color:\" + accent + '; font-size:' + priceSize + \"px; font-weight:800;'>\" + esc(price) + '</div>' : '') +\n          '</div></div>',\n      });\n    });\n    rowsBottom = startY + n * cardH + (n - 1) * gap;\n  }\n  const cartNoteY = Math.min(1700, Math.max(1580, rowsBottom + 130));\n  s2.visuals.push({\n    type: 'TEXT', x: 540, y: cartNoteY, width: 880, anchor: 'top-center', track: 9,\n    enterBegin: round(0.9 + n * 0.28), enterEnd: round(1.35 + n * 0.28), enterAnimation: 'fade', exitEnd: s2Seconds,\n    style: { fontFamily: uiFont, color: muted },\n    html: \"<div style='text-align:center; color:\" + muted + \"; font-size:29px; line-height:1.42; font-weight:500;'>\" +\n      esc(cartNote) + '</div>',\n  });\n\n  // ==== scene 3 \u2014 total + CTA =============================================\n  const s3Seconds = 5.2;\n  const totalSize = totalDisplay.length <= 7 ? 152 : totalDisplay.length <= 9 ? 132 : 112;\n  const s3 = {\n    id: 'cta',\n    duration: s3Seconds,\n    backgroundColor: bg,\n    visuals: [\n      {\n        type: 'SVG', width: 1080, height: 1920, track: 0, enterBegin: 0, exitEnd: s3Seconds,\n        svg: svgOpen +\n          \"<defs><radialGradient id='acvCtaGlow' cx='0.5' cy='0.42' r='0.85'>\" +\n          \"<stop offset='0' stop-color='\" + accent + \"' stop-opacity='0.3'/>\" +\n          \"<stop offset='0.55' stop-color='\" + accent + \"' stop-opacity='0.06'/>\" +\n          \"<stop offset='1' stop-color='\" + accent + \"' stop-opacity='0'/></radialGradient></defs>\" +\n          \"<rect width='1080' height='1920' fill='\" + bg + \"'/>\" +\n          \"<rect width='1080' height='1920' fill='url(#acvCtaGlow)'/>\" +\n          \"<rect x='48' y='48' width='984' height='1824' rx='40' fill='none' stroke='rgba(246,241,233,0.2)' stroke-width='1.5'/>\" +\n          \"<circle cx='540' cy='700' r='300' fill='none' stroke='\" + accent + \"' stroke-opacity='0.3' stroke-width='2'/>\" +\n          \"<circle cx='540' cy='700' r='332' fill='none' stroke='\" + accent + \"' stroke-opacity='0.12' stroke-width='1'/>\" +\n          \"<path d='M120 1616 L120 1800 L304 1800' fill='none' stroke='\" + accent + \"' stroke-width='6' stroke-opacity='0.8'/>\" +\n          \"<path d='M960 304 L960 120 L776 120' fill='none' stroke='\" + accent + \"' stroke-width='6' stroke-opacity='0.8'/>\" +\n          '</svg>',\n      },\n      {\n        type: 'TEXT', x: 540, y: 128, anchor: 'top-center', track: 1,\n        enterBegin: 0.15, enterEnd: 0.6, enterAnimation: 'fade', exitEnd: s3Seconds,\n        style: { fontFamily: uiFont, color: cream },\n        html: \"<div style='display:inline-block; border:1.5px solid rgba(246,241,233,0.5); border-radius:999px; padding:15px 36px; color:\" +\n          cream + \"; font-size:25px; font-weight:700; letter-spacing:6px;'>\" + esc(brandName.toUpperCase()) + '</div>',\n      },\n    ],\n  };\n  // The total is optically centred inside the ring: the number grows upward\n  // from a fixed baseline so the \"3 items \u00b7 saved for \u2026\" line never moves.\n  const itemsLineY = 800;\n  if (totalDisplay) {\n    const totalY = itemsLineY - 34 - Math.round(totalSize * 1.02);\n    s3.visuals.push({\n      type: 'TEXT', x: 540, y: totalY - 60, anchor: 'top-center', track: 2,\n      enterBegin: 0.4, enterEnd: 0.85, enterAnimation: 'fade', exitEnd: s3Seconds,\n      style: { fontFamily: uiFont, color: muted },\n      html: \"<div style='text-align:center; color:\" + muted + \"; font-size:25px; font-weight:700; letter-spacing:6px;'>\" +\n        esc(totalLabel.toUpperCase()) + '</div>',\n    });\n    s3.visuals.push({\n      type: 'TEXT', x: 540, y: totalY, width: 940, anchor: 'top-center', track: 3,\n      enterBegin: 0.55, enterEnd: 1.0, enterAnimation: 'smoothup', exitEnd: s3Seconds,\n      style: { fontFamily: headingFont, color: cream },\n      html: \"<div style='text-align:center; color:\" + cream + '; font-size:' + totalSize +\n        \"px; line-height:1.02; font-weight:800; letter-spacing:-3px;'>\" + esc(totalDisplay) + '</div>',\n    });\n  } else {\n    s3.visuals.push({\n      type: 'TEXT', x: 540, y: 590, width: 900, anchor: 'top-center', track: 3,\n      enterBegin: 0.5, enterEnd: 0.95, enterAnimation: 'smoothup', exitEnd: s3Seconds,\n      style: { fontFamily: headingFont, color: cream },\n      html: \"<div style='text-align:center; color:\" + cream +\n        \"; font-size:82px; line-height:1.14; font-weight:800; letter-spacing:-2px;'>Your cart<br/>is waiting.</div>\",\n    });\n  }\n  s3.visuals.push({\n    type: 'TEXT', x: 540, y: itemsLineY, width: 900, anchor: 'top-center', track: 4,\n    enterBegin: 0.9, enterEnd: 1.3, enterAnimation: 'fade', exitEnd: s3Seconds,\n    style: { fontFamily: uiFont, color: accentSoft },\n    html: \"<div style='text-align:center; color:\" + accentSoft + \"; font-size:30px; font-weight:600; letter-spacing:1px;'>\" +\n      n + (n === 1 ? ' item' : ' items') + ' \u00b7 saved for ' + esc(firstName || 'you') + '</div>',\n  });\n  s3.visuals.push({\n    type: 'TEXT', x: 540, y: 1010, anchor: 'top-center', track: 5,\n    enterBegin: 1.15, enterEnd: 1.65, enterAnimation: 'circleopen', exitEnd: s3Seconds,\n    // The pill paints ink-on-accent (the html below wins), but `style.color` is\n    // what the contrast lint reads and it can only see the scene background \u2014\n    // so declare the accent, which is the ratio the pill really achieves.\n    style: { fontFamily: headingFont, color: accent },\n    html: \"<div style='display:inline-block; background:\" + accent + '; color:' + bg +\n      \"; border-radius:999px; padding:30px 66px; font-size:42px; font-weight:800;'>\" + esc(ctaText) + ' \u2192</div>',\n  });\n  s3.visuals.push({\n    type: 'TEXT', x: 540, y: 1186, width: 840, anchor: 'top-center', track: 6,\n    enterBegin: 1.5, enterEnd: 1.9, enterAnimation: 'fade', exitEnd: s3Seconds,\n    style: { fontFamily: uiFont, color: muted },\n    html: \"<div style='text-align:center; color:\" + muted + \"; font-size:29px; line-height:1.42; font-weight:500;'>\" +\n      esc(ctaSubline) + '</div>',\n  });\n  s3.visuals.push({\n    type: 'TEXT', x: 540, y: 1318, width: 900, anchor: 'top-center', track: 7,\n    enterBegin: 1.7, enterEnd: 2.15, enterAnimation: 'smoothup', exitEnd: s3Seconds,\n    style: { fontFamily: headingFont, color: cream },\n    html: \"<div style='width:900px; height:140px; display:flex; align-items:center; justify-content:center;'>\" +\n      items.map((item, i) => \"<div style='width:\" + (i ? 24 : 0) + \"px; flex:none;'></div>\" + thumbTile(item, i, 124, 20)).join('') +\n      '</div>',\n  });\n  s3.visuals.push({\n    type: 'TEXT', x: 540, y: 1520, anchor: 'top-center', track: 8,\n    enterBegin: 1.95, enterEnd: 2.3, enterAnimation: 'fade', exitEnd: s3Seconds,\n    style: { fontFamily: uiFont, color: muted },\n    html: \"<div style='text-align:center; color:\" + muted + \"; font-size:26px; font-weight:600; letter-spacing:4px;'>\" +\n      esc(storeUrl.replace(/^https?:\\/\\//i, '').replace(/\\/+$/, '').toUpperCase()) + '</div>',\n  });\n\n  // ---- payload ------------------------------------------------------------\n  const totalSeconds = round(s1Seconds + s2Seconds + s3Seconds - 2 * transitionSeconds);\n\n  // The finished video sits on a public CDN, so the filename carries a first\n  // name and a hash of the cart contents \u2014 never the email address.\n  let hash = 0;\n  const hashSeed = items.map((it) => it.title).join('|') + '|' + (data.cartRef || '') + '|' + (totalDisplay || '');\n  for (let i = 0; i < hashSeed.length; i += 1) hash = (hash * 31 + hashSeed.charCodeAt(i)) % 2821109907456;\n  const slug = (s) => String(s).toLowerCase().normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');\n  const safeName = ('cart-' + (slug(firstName) || 'customer') + '-' + hash.toString(36)).slice(0, 60);\n\n  const payload = {\n    name: safeName,\n    resolution: clean(cfg.resolution) || 'instagram-reel',\n    frameRate: Number(cfg.frameRate || 30),\n    backgroundColor: bg,\n    outputFormat: 'mp4',\n    scenes: [s1, s2, s3],\n  };\n  // NOTE: no `track` on audios \u2014 the render API rejects audios[].track.\n  if (data.music && data.music.src) {\n    payload.audios = [{ src: data.music.src, volume: Number(cfg.musicVolume ?? 0.16) }];\n  }\n\n  return {\n    payload,\n    meta: {\n      firstName: firstName || null,\n      itemCount: n,\n      itemTitles: items.map((it) => it.title),\n      itemsWithImages: items.filter((it) => it.imageUrl).length,\n      heroImage: heroImage || null,\n      totalDisplay: totalDisplay || null,\n      totalNumber: totalNumber,\n      layout: n === 1 ? 'single-hero-card' : n === 2 ? 'two-tall-rows' : 'three-rows',\n      s1Seconds, s2Seconds, s3Seconds, transitionSeconds, totalSeconds,\n      musicUsed: Boolean(data.music && data.music.src),\n      musicNote: data.musicNote || null,\n      checkoutUrl: data.checkoutUrl || null,\n      projectName: safeName,\n    },\n  };\n}\n\n// === n8n glue ===\nconst config = $('Config').first().json;\nconst cart = $input.first().json;\nconst built = buildProject(config, {\n  firstName: cart.firstName,\n  items: cart.items,\n  totalPrice: cart.totalPrice,\n  checkoutUrl: cart.checkoutUrl,\n  cartRef: cart.cartRef,\n  music: cart.music,\n  musicNote: cart.musicNote,\n});\nbuilt.meta.rowNumber = cart.rowNumber ?? null;\nbuilt.meta.checkoutId = cart.checkoutId ?? null;\nbuilt.meta.source = cart.source || 'sheet';\nbuilt.meta.email = cart.email || null;\nreturn [{ json: built }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-ac-0014",
+      "name": "Validate project (free)",
+      "type": "@zvid/n8n-nodes-zvid.zvid",
+      "position": [
+        310,
+        1160
+      ],
+      "parameters": {
+        "source": "json",
+        "resource": "render",
+        "operation": "validate",
+        "projectJson": "={{ JSON.stringify(({ payload: $json.payload }).payload) }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "zvid-ac-0015",
+      "name": "Check validation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        570,
+        1160
+      ],
+      "parameters": {
+        "jsCode": "// The free validate endpoint runs the exact pipeline a render submission runs,\n// so a failure here is a payload bug \u2014 surface the field list instead of a\n// generic HTTP error.\nconst res = $input.first().json;\nconst status = res.statusCode ?? (res.valid === true ? 200 : 400);\nconst body = res.body || { ...res, details: res.errors ?? res.details };\n\nif (status !== 200) {\n  const details = Array.isArray(body.details)\n    ? body.details.map((d) => '  - ' + d.field + ': ' + d.message).join('\\n')\n    : JSON.stringify(body).slice(0, 500);\n  throw new Error('Zvid rejected the project (HTTP ' + status + '): ' + (body.message || body.error) + '\\n' + details);\n}\n\nconst build = $('Build project JSON').first().json;\nreturn [{\n  json: {\n    ...build,\n    creditsRequired: body.creditsRequired,\n    warnings: body.warnings || [],\n    schemaVersion: body.schemaVersion,\n  },\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-ac-0016",
+      "name": "Dry run?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1050,
+        1160
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "dry-run--cond",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Config').first().json.dryRun }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zvid-ac-0017",
+      "name": "Save draft to editor",
+      "type": "@zvid/n8n-nodes-zvid.zvid",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        1310,
+        1160
+      ],
+      "parameters": {
+        "resource": "project",
+        "operation": "create",
+        "projectJson": "={{ JSON.stringify(({ name: $json.payload.name, payload: $json.payload }).payload) }}",
+        "projectName": "={{ ({ name: $json.payload.name, payload: $json.payload }).name }}"
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-ac-0018",
+      "name": "Dry run summary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1570,
+        1160
+      ],
+      "parameters": {
+        "jsCode": "// Dry run: everything except the paid render. Open editorLink to preview the\n// exact video, then set dryRun to false in Config to go live. The sheet row is\n// NOT marked done and no email is sent on a dry run, so the next real run\n// picks the same cart.\nconst cfg = $('Config').first().json;\nconst d = $('Check validation').first().json;\n\n// The draft save is best-effort (onError: continue) so a hiccup there never\n// hides the rest of the dry-run report.\nlet editorLink = null;\nlet draftId = null;\ntry {\n  const project = $('Save draft to editor').first().json.project;\n  if (project && project.id) {\n    draftId = project.id;\n    editorLink = String(cfg.editorUrl || 'https://editor.zvid.io').replace(/\\/+$/, '') + '/?project=' + project.id;\n  }\n} catch (e) { /* draft step skipped or failed */ }\n\nreturn [{\n  json: {\n    dryRun: true,\n    firstName: d.meta.firstName,\n    itemCount: d.meta.itemCount,\n    items: d.meta.itemTitles,\n    cartTotal: d.meta.totalDisplay,\n    layout: d.meta.layout,\n    source: d.meta.source,\n    sheetRow: d.meta.rowNumber,\n    music: d.meta.musicNote,\n    editorLink,\n    draftId,\n    creditsRequired: d.creditsRequired,\n    videoSeconds: d.meta.totalSeconds,\n    warnings: d.warnings,\n    sheetUpdated: false,\n    emailSent: false,\n    nextStep: editorLink\n      ? 'Open editorLink to preview the draft, then set dryRun to false in Config to render, mark the row done and (if sendEmail is on) email the customer.'\n      : 'Set dryRun to false in Config to render this for real.',\n    payload: d.payload,\n  },\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-ac-0019",
+      "name": "Submit render",
+      "type": "@zvid/n8n-nodes-zvid.zvid",
+      "maxTries": 3,
+      "position": [
+        2050,
+        1160
+      ],
+      "parameters": {
+        "source": "json",
+        "resource": "render",
+        "operation": "create",
+        "renderType": "video",
+        "projectJson": "={{ JSON.stringify(({ payload: $json.payload }).payload) }}",
+        "waitForCompletion": false
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-ac-0020",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        2310,
+        1160
+      ],
+      "webhookId": "a71c4e08-9d52-4b36-bf10-6c8a2d5e7f43",
+      "parameters": {
+        "unit": "seconds",
+        "amount": "={{ $('Config').first().json.pollSeconds }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "zvid-ac-0021",
+      "name": "Get render status",
+      "type": "@zvid/n8n-nodes-zvid.zvid",
+      "maxTries": 3,
+      "position": [
+        2570,
+        1160
+      ],
+      "parameters": {
+        "jobId": "={{ $('Submit render').first().json.jobId }}",
+        "resource": "render",
+        "operation": "get",
+        "waitForCompletion": false
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-ac-0022",
+      "name": "Render finished?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2830,
+        1160
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "render-finished--cond",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.state === 'completed' }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zvid-ac-0023",
+      "name": "Still rendering?",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2830,
+        1400
+      ],
+      "parameters": {
+        "jsCode": "// Fails fast on a failed render and stops the poll loop from running forever.\nconst cfg = $('Config').first().json;\nconst job = $input.first().json;\n\nif (job.state === 'failed') {\n  throw new Error('Render failed: ' + (job.failedReason || 'no reason given'));\n}\n\nconst maxPolls = Math.ceil((Number(cfg.timeoutMinutes || 20) * 60) / Number(cfg.pollSeconds || 10));\nif ($runIndex + 1 >= maxPolls) {\n  throw new Error('Render did not finish within ' + cfg.timeoutMinutes + ' minutes (job ' + job.id + ', state ' + job.state + ').');\n}\n\nreturn $input.all();\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-ac-0024",
+      "name": "Prepare recovery email",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        50,
+        2080
+      ],
+      "parameters": {
+        "jsCode": "// Turns the finished render into the delivery payload: the video URL plus a\n// short HTML email that matches the video's palette. The {firstName} style\n// placeholders in Config are substituted HERE so the email node itself stays a\n// plain send with no expressions to debug.\nconst cfg = $('Config').first().json;\nconst build = $('Check validation').first().json;\nconst job = $input.first().json;\nconst meta = build.meta;\n\nconst videoUrl = typeof job.result === 'string' ? job.result : (job.result ? job.result.url : null);\nif (!videoUrl) {\n  throw new Error('The render completed but returned no video URL (job ' + job.id + ').');\n}\n\n// Sheet / Shopify text is untrusted \u2014 escape everything that reaches the HTML.\nconst esc = (s) => String(s == null ? '' : s).replace(/[&<>\"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst firstName = meta.firstName || 'there';\nconst fill = (tpl) => String(tpl == null ? '' : tpl)\n  .replace(/\\{firstName\\}/g, firstName)\n  .replace(/\\{brandName\\}/g, String(cfg.brandName || ''))\n  .replace(/\\{total\\}/g, meta.totalDisplay || '')\n  .replace(/\\{itemCount\\}/g, String(meta.itemCount));\n\nconst subject = fill(cfg.emailSubject || '{firstName}, your cart is still saved');\nconst intro = fill(cfg.emailIntro || 'We kept your cart exactly where you left it.');\nconst buttonText = String(cfg.emailButtonText || 'Complete your order');\nconst checkoutUrl = String(meta.checkoutUrl || '');\nconst bg = String(cfg.brandBackground || '#12100E');\nconst accent = String(cfg.brandAccent || '#E2714B');\nconst cream = String(cfg.creamColor || '#F6F1E9');\nconst muted = String(cfg.mutedColor || '#9C948A');\n\n// Only http(s) links are turned into anchors; anything else becomes plain text\n// so a malformed CheckoutUrl cannot inject a javascript: link.\nconst safeLink = (u) => (/^https?:\\/\\//i.test(u) ? esc(u) : '');\nconst safeCheckout = safeLink(checkoutUrl);\n\nconst itemRows = (meta.itemTitles || [])\n  .map((t) => '<tr><td style=\"padding:6px 0; color:' + muted + '; font-size:15px;\">&bull; ' + esc(t) + '</td></tr>')\n  .join('');\n\nconst emailHtml =\n  '<div style=\"font-family:Helvetica,Arial,sans-serif; background:' + bg + '; color:' + cream +\n  '; padding:40px 32px; border-radius:18px; max-width:560px; margin:auto;\">' +\n  '<p style=\"letter-spacing:4px; color:' + accent + '; font-size:12px; margin:0 0 16px; text-transform:uppercase;\">' +\n  esc(cfg.brandName || 'Your store') + '</p>' +\n  '<h1 style=\"font-size:28px; line-height:1.2; margin:0 0 16px; font-weight:700;\">' + esc(firstName) + ', you left something behind.</h1>' +\n  '<p style=\"color:' + muted + '; font-size:15px; line-height:1.6; margin:0 0 20px;\">' + esc(intro) + '</p>' +\n  '<table style=\"width:100%; border-collapse:collapse; margin:0 0 24px;\">' + itemRows + '</table>' +\n  (meta.totalDisplay ? '<p style=\"font-size:22px; font-weight:700; margin:0 0 24px;\">' + esc(meta.totalDisplay) + '</p>' : '') +\n  (safeCheckout\n    ? '<a href=\"' + safeCheckout + '\" style=\"display:inline-block; background:' + accent + '; color:' + bg +\n      '; font-weight:bold; padding:14px 34px; border-radius:999px; text-decoration:none;\">' + esc(buttonText) + '</a>'\n    : '') +\n  '<p style=\"margin:26px 0 0;\"><a href=\"' + esc(videoUrl) + '\" style=\"color:' + accent +\n  '; font-size:14px;\">Watch the 15-second recap of your cart</a></p>' +\n  '</div>';\n\nreturn [{\n  json: {\n    videoUrl,\n    jobId: job.id,\n    email: meta.email,\n    firstName,\n    itemCount: meta.itemCount,\n    cartTotal: meta.totalDisplay,\n    checkoutUrl,\n    rowNumber: meta.rowNumber,\n    checkoutId: meta.checkoutId,\n    source: meta.source,\n    creditsCharged: build.creditsRequired,\n    emailSubject: subject,\n    emailHtml,\n  },\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-ac-0025",
+      "name": "Email the customer?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        310,
+        2080
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "send-email--cond",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Config').first().json.sendEmail === true && String($json.email || '').includes('@') }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zvid-ac-0026",
+      "name": "Send recovery email",
+      "type": "n8n-nodes-base.emailSend",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        570,
+        2080
+      ],
+      "parameters": {
+        "html": "={{ $('Prepare recovery email').first().json.emailHtml }}",
+        "options": {},
+        "subject": "={{ $('Prepare recovery email').first().json.emailSubject }}",
+        "toEmail": "={{ $('Prepare recovery email').first().json.email }}",
+        "fromEmail": "={{ $('Config').first().json.emailFrom }}",
+        "emailFormat": "html"
+      },
+      "retryOnFail": true,
+      "typeVersion": 2.1,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-ac-0027",
+      "name": "Sheet mode?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1050,
+        2080
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "sheet-mode--cond",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ String($('Config').first().json.source || 'sheet').toLowerCase() === 'sheet' }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zvid-ac-0028",
+      "name": "Mark cart recovered",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        1310,
+        2080
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Status": "={{ $('Config').first().json.statusDoneValue }}",
+            "VideoUrl": "={{ $('Prepare recovery email').first().json.videoUrl }}",
+            "row_number": "={{ $('Build project JSON').first().json.meta.rowNumber }}"
+          },
+          "schema": [
+            {
+              "id": "row_number",
+              "type": "number",
+              "display": true,
+              "removed": false,
+              "readOnly": true,
+              "required": false,
+              "displayName": "row_number",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VideoUrl",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "VideoUrl",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "row_number"
+          ]
+        },
+        "options": {},
+        "resource": "sheet",
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.7,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-ac-0029",
+      "name": "Remember sent checkout",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1570,
+        2080
+      ],
+      "parameters": {
+        "jsCode": "// Shopify mode has no sheet to write \"done\" into, so the checkout id is\n// remembered in the workflow's static data \u2014 that is what stops the same cart\n// being recovered twice. The list is capped so it cannot grow forever.\nconst d = $('Prepare recovery email').first().json;\nconst store = $getWorkflowStaticData('global');\nif (!Array.isArray(store.sentCheckoutIds)) store.sentCheckoutIds = [];\n\nconst id = String(d.checkoutId == null ? '' : d.checkoutId);\nif (id && !store.sentCheckoutIds.map(String).includes(id)) {\n  store.sentCheckoutIds.push(id);\n}\nif (store.sentCheckoutIds.length > 500) {\n  store.sentCheckoutIds = store.sentCheckoutIds.slice(-500);\n}\n\nreturn [{ json: { remembered: id || null, rememberedCount: store.sentCheckoutIds.length } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-ac-0030",
+      "name": "Run summary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2050,
+        2080
+      ],
+      "parameters": {
+        "jsCode": "// Final report for a live run. By the time this executes the row is marked\n// done (sheet mode) or the checkout id is remembered (Shopify mode), and the\n// recovery email has been attempted if it was switched on.\nconst cfg = $('Config').first().json;\nconst d = $('Prepare recovery email').first().json;\nconst build = $('Check validation').first().json;\n\n// The email node only runs on one branch, so its absence is expected.\nlet emailSent = false;\ntry {\n  const r = $('Send recovery email').first().json;\n  emailSent = Boolean(r) && !r.error;\n} catch (e) { emailSent = false; }\n\nreturn [{\n  json: {\n    rendered: true,\n    videoUrl: d.videoUrl,\n    jobId: d.jobId,\n    firstName: d.firstName,\n    itemCount: build.meta.itemCount,\n    items: build.meta.itemTitles,\n    cartTotal: build.meta.totalDisplay,\n    layout: build.meta.layout,\n    videoSeconds: build.meta.totalSeconds,\n    creditsCharged: build.creditsRequired,\n    music: build.meta.musicNote,\n    source: build.meta.source,\n    sheetRow: build.meta.rowNumber,\n    sheetStatus: build.meta.source === 'shopify' ? null : cfg.statusDoneValue,\n    checkoutUrl: d.checkoutUrl,\n    emailSent,\n    emailTo: emailSent ? d.email : null,\n  },\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-ac-0031",
+      "name": "\u25b6 Watch video",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        2570,
+        2080
+      ],
+      "parameters": {
+        "url": "={{ $json.videoUrl }}",
+        "options": {
+          "timeout": 30000
+        },
+        "requestMethod": "GET",
+        "authentication": "none",
+        "jsonParameters": false,
+        "responseFormat": "file",
+        "dataPropertyName": "data"
+      },
+      "retryOnFail": true,
+      "typeVersion": 2,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-watch-ready",
+      "name": "Video ready to watch?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2310,
+        2080
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "zvid-watch-ready-condition",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ !$json.dryRun && /^https?:\\/\\//i.test(String(($json.videoUrl) || '')) }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "publication-overview-abandoned-cart-video",
+      "name": "Workflow overview and setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -800,
+        0
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 720,
+        "height": 1160,
+        "content": "## Create personalized cart-recovery videos\n\n### How it works\nRead an abandoned cart from Google Sheets or Shopify and render a video showing up to three items. Optional email includes the checkout link. The completed result is recorded for the selected source.\n\n### Setup\n1. Install **`@zvid/n8n-nodes-zvid`** from **Settings \u2192 Community nodes** before credentials. A workspace owner/admin may need to install it.\n2. Create a **Zvid API** credential with [your API key](https://app.zvid.io/api-keys) and Base URL `https://api.zvid.io`. Select it on every Zvid node.\n3. Connect both Google Sheets nodes to the same spreadsheet and tab. Default source is sheet; Shopify mode requires its checkout access.\n4. Set brandName, storeUrl and recovery copy in Config. Optional sending requires sendEmail=true, SMTP and an approved sender.\n5. **dryRun=false** renders and spends Zvid credits. Set it to **true** for an editor draft and quote.\n6. Test manually and review the output before activating automatic runs.\n\n### Customization\nAdjust branding, media and timing in the configuration node. [Detailed setup guide](https://github.com/Zvid-io/zvid-n8n/blob/master/workflows/abandoned-cart-video.md)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-abandoned-cart-video-configure",
+      "name": "1. Choose settings and an entry point",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 880,
+        "height": 520,
+        "content": "## 1. Choose settings and an entry point\n\nComplete the overview setup first. Use the manual trigger for a test, then check the trigger settings and workflow timezone before activation."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-abandoned-cart-video-source",
+      "name": "2. Load one abandoned cart",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1000,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1140,
+        "height": 760,
+        "content": "## 2. Load one abandoned cart\n\nSelect sheet or Shopify in Config. Connect the selected source and use only checkout data you are authorized to process."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-abandoned-cart-video-eligible",
+      "name": "3. Check the cart input",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2260,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 620,
+        "height": 520,
+        "content": "## 3. Check the cart input\n\nHeaders: Email, FirstName, Item1, Item1Image, Item1Price, Item2, Item2Image, Item2Price, Item3, Item3Image, Item3Price, CheckoutUrl, Status, VideoUrl. Item1 is required; leave Status empty."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-abandoned-cart-video-music",
+      "name": "4. Check the background music",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3000,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 620,
+        "height": 520,
+        "content": "## 4. Check the background music\n\nCheck the configured track or stock candidates before use. Follow the guard\u2019s result when music is unavailable."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-abandoned-cart-video-validate",
+      "name": "5. Build and validate the design",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        920
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 880,
+        "height": 520,
+        "content": "## 5. Build and validate the design\n\nPrepare the media and video design, then validate the payload and credit quote. Resolve validation errors before submitting a render."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-abandoned-cart-video-preview",
+      "name": "6. Choose an optional editor preview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1000,
+        920
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 880,
+        "height": 520,
+        "content": "## 6. Choose an optional editor preview\n\ndryRun=true returns an editor draft and credit quote. The default false branch renders and spends Zvid credits; upstream AI services may charge separately."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-abandoned-cart-video-render",
+      "name": "7. Render and wait for completion",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2000,
+        920
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1140,
+        "height": 760,
+        "content": "## 7. Render and wait for completion\n\nSubmit the render, then check its status until completion or timeout. Keep each result paired with its source item. Check Zvid before retrying a timed-out job."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-abandoned-cart-video-email",
+      "name": "8. Prepare optional recovery delivery",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        1840
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 880,
+        "height": 520,
+        "content": "## 8. Prepare optional recovery delivery\n\nEmail and the checkout link are used for delivery, not rendered in the video. Enable SMTP sending only after a private test."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-abandoned-cart-video-record",
+      "name": "9. Record the completed checkout",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1000,
+        1840
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 880,
+        "height": 520,
+        "content": "## 9. Record the completed checkout\n\nSave the result to the sheet or remember the Shopify checkout. This avoids selecting the same completed item again."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "zvid-watch-instructions",
+      "name": "10. Review the finished media",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2000,
+        1840
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 880,
+        "height": 520,
+        "content": "## 10. Review the finished media\n\nOpen Watch video \u2192 Binary \u2192 data \u2192 View. Select each output item for batches; image outputs open as images. Empty links and preview results skip the download. Each request times out after 30 seconds; completed links remain available."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get render status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Source?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Source?": {
+      "main": [
+        [
+          {
+            "node": "Read carts sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Poll checkouts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dry run?": {
+      "main": [
+        [
+          {
+            "node": "Save draft to editor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Submit render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every hour": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cart found?": {
+      "main": [
+        [
+          {
+            "node": "Check music",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nothing to recover",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check music": {
+      "main": [
+        [
+          {
+            "node": "Music guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Music guard": {
+      "main": [
+        [
+          {
+            "node": "Build project JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run summary": {
+      "main": [
+        [
+          {
+            "node": "Video ready to watch?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheet mode?": {
+      "main": [
+        [
+          {
+            "node": "Mark cart recovered",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Remember sent checkout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit render": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test manually": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick next cart": {
+      "main": [
+        [
+          {
+            "node": "Cart found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll checkouts": {
+      "main": [
+        [
+          {
+            "node": "Pick abandoned checkout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check validation": {
+      "main": [
+        [
+          {
+            "node": "Dry run?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read carts sheet": {
+      "main": [
+        [
+          {
+            "node": "Pick next cart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render finished?": {
+      "main": [
+        [
+          {
+            "node": "Prepare recovery email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Still rendering?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still rendering?": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get render status": {
+      "main": [
+        [
+          {
+            "node": "Render finished?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build project JSON": {
+      "main": [
+        [
+          {
+            "node": "Validate project (free)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email the customer?": {
+      "main": [
+        [
+          {
+            "node": "Send recovery email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sheet mode?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark cart recovered": {
+      "main": [
+        [
+          {
+            "node": "Run summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send recovery email": {
+      "main": [
+        [
+          {
+            "node": "Sheet mode?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save draft to editor": {
+      "main": [
+        [
+          {
+            "node": "Dry run summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video ready to watch?": {
+      "main": [
+        [
+          {
+            "node": "\u25b6 Watch video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Prepare recovery email": {
+      "main": [
+        [
+          {
+            "node": "Email the customer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remember sent checkout": {
+      "main": [
+        [
+          {
+            "node": "Run summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick abandoned checkout": {
+      "main": [
+        [
+          {
+            "node": "Cart found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate project (free)": {
+      "main": [
+        [
+          {
+            "node": "Check validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

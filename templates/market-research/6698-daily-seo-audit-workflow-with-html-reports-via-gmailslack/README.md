@@ -1,6 +1,6 @@
 # 📊 Daily SEO audit workflow with HTML reports via Gmail/Slack
 
-> ⚡ **887 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,004 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

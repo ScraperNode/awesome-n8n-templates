@@ -1,6 +1,6 @@
 # ⚒️ Learn JavaScript data processing with code node: filtering, analysis & export examples
 
-> ⚡ **1,105 views** · ⚒️ [Engineering](../)
+> ⚡ **1,478 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Query and monitor Shopify orders via Telegram bot commands
 
-> ⚡ **2,098 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,392 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

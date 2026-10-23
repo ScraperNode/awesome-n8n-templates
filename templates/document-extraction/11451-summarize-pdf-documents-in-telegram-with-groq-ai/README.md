@@ -1,6 +1,6 @@
 # 🔬 Summarize PDF documents in Telegram with Groq AI
 
-> ⚡ **62 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **219 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Create multilingual localized speech audio with GPT-4 and ElevenLabs
 
-> ⚡ **161 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **184 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

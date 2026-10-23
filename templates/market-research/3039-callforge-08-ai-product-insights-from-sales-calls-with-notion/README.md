@@ -1,6 +1,6 @@
 # 📊 CallForge - 08 - AI product insights from sales calls with Notion
 
-> ⚡ **1,293 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,353 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

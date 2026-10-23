@@ -1,6 +1,6 @@
 # ⚒️ Orchestrate enterprise MCP AI tool access with Claude and Google Sheets
 
-> ⚡ **6 views** · ⚒️ [Engineering](../)
+> ⚡ **112 views** · ⚒️ [Engineering](../)
 
 ## Description
 

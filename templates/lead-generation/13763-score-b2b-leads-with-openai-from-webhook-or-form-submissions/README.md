@@ -1,6 +1,6 @@
 # 🎣 Score B2B leads with OpenAI from webhook or form submissions
 
-> ⚡ **1 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **87 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

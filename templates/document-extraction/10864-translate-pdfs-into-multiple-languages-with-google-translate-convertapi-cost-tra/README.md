@@ -1,6 +1,6 @@
 # 🔬 Translate PDFs into multiple languages with Google Translate & ConvertAPI cost tracking
 
-> ⚡ **141 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **209 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

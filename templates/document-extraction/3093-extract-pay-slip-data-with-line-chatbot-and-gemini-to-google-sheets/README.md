@@ -1,6 +1,6 @@
 # 🔬 Extract pay slip data with Line Chatbot and Gemini to Google Sheets
 
-> ⚡ **3,312 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **3,515 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

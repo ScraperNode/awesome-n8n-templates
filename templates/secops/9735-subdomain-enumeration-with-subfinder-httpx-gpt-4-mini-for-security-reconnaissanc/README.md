@@ -1,6 +1,6 @@
 # 🔒 Subdomain enumeration with Subfinder, HTTPX & GPT-4-Mini for security reconnaissance
 
-> ⚡ **1,807 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,804 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

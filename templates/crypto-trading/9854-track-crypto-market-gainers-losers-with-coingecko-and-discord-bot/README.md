@@ -1,6 +1,6 @@
 # 📈 Track crypto market gainers & losers with CoinGecko and Discord bot
 
-> ⚡ **70 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **90 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

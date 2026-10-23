@@ -1,6 +1,6 @@
 # 🤝 Upload large files to Kommo/AmoCRM with automatic file chunking
 
-> ⚡ **690 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **770 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

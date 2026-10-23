@@ -1,6 +1,6 @@
 # ⚡ Agentic Telegram AI bot with with LangChain nodes and new tools
 
-> ⚡ **28,085 views** · ⚡ [Personal Productivity](../)
+> ⚡ **28,480 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

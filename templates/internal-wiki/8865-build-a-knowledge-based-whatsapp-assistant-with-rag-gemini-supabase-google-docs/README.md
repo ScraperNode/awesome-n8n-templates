@@ -1,6 +1,6 @@
 # 📖 Build a knowledge-based WhatsApp assistant with RAG, Gemini, Supabase & Google Docs
 
-> ⚡ **239 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **296 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

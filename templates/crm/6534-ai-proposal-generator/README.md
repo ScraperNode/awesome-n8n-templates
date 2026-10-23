@@ -1,6 +1,6 @@
 # 🤝 AI proposal generator
 
-> ⚡ **3,707 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **5,210 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

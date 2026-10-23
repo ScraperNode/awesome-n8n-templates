@@ -1,6 +1,6 @@
 # ⚡ AI chatbot that can search the web
 
-> ⚡ **90,090 views** · ⚡ [Personal Productivity](../)
+> ⚡ **93,679 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

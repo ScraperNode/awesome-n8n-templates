@@ -1,6 +1,6 @@
 # 🎫 Create a new Freshdesk ticket
 
-> ⚡ **2,246 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **2,325 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

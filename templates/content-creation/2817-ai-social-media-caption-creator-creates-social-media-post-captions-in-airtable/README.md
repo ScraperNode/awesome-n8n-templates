@@ -1,6 +1,6 @@
 # 🎬 AI social media caption creator creates social media post captions in Airtable
 
-> ⚡ **4,803 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,960 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

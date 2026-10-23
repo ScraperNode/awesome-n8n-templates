@@ -1,6 +1,6 @@
 # 👥 AI-Powered Employee Database Management via Telegram using OpenAI and Airtable
 
-> ⚡ **2,616 views** · 👥 [HR & Recruitment](../)
+> ⚡ **2,790 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

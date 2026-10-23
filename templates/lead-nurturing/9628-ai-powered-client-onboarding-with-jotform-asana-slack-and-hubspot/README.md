@@ -1,6 +1,6 @@
 # 💬 AI-powered client onboarding with Jotform, Asana, Slack, and HubSpot
 
-> ⚡ **510 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **634 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

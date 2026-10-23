@@ -1,6 +1,6 @@
 # 🧾 Invoice processor & validator with OCR, AI & Google Sheets
 
-> ⚡ **30,722 views** · 🧾 [Invoice Processing](../)
+> ⚡ **34,710 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

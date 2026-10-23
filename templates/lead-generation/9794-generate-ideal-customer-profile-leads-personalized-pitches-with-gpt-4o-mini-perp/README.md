@@ -1,6 +1,6 @@
 # 🎣 Generate ideal customer profile leads & personalized pitches with GPT-4o-mini, Perplexity and Apify
 
-> ⚡ **161 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **240 views** · 🎣 [Lead Generation & Enrichment](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

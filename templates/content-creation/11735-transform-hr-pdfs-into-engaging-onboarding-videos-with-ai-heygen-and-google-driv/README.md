@@ -1,6 +1,6 @@
 # 🎬 Transform HR PDFs into engaging onboarding videos with AI, HeyGen and Google Drive
 
-> ⚡ **312 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **469 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Enrich company domains with business data using Perplexity AI and Google Sheets
 
-> ⚡ **674 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **715 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

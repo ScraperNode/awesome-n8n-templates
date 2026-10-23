@@ -1,6 +1,6 @@
 # 🎬 Publish Google Docs to WordPress with advance RankMath SEO & Gemini analysis
 
-> ⚡ **136 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **238 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

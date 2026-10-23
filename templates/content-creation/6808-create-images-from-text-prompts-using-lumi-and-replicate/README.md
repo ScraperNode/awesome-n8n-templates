@@ -1,6 +1,6 @@
 # 🎬 Create images from text prompts using Lumi and Replicate
 
-> ⚡ **901 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **966 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

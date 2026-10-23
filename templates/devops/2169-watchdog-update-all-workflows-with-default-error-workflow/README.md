@@ -1,6 +1,6 @@
 # ⚙️ Watchdog: Update All Workflows With Default Error Workflow
 
-> ⚡ **1,204 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,259 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

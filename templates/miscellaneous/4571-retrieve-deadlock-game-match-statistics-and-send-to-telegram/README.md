@@ -1,6 +1,6 @@
 # 🔧 Retrieve deadlock game match statistics and send to Telegram
 
-> ⚡ **166 views** · 🔧 [Miscellaneous](../)
+> ⚡ **199 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

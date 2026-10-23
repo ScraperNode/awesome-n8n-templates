@@ -1,6 +1,6 @@
 # 🎯 Collect & summarize multilingual news with NewsAPI, OpenAI & Google Sheets
 
-> ⚡ **428 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **502 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

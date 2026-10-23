@@ -1,6 +1,6 @@
 # ⚡ Automatic Gmail categorization and labeling with AI
 
-> ⚡ **6,113 views** · ⚡ [Personal Productivity](../)
+> ⚡ **7,822 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 Sync Notion database pages as ClickUp tasks
 
-> ⚡ **3,051 views** · 📋 [Project Management](../)
+> ⚡ **3,090 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Exporting Tawk.to help center articles to Google Drive as markdown files
 
-> ⚡ **127 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **202 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

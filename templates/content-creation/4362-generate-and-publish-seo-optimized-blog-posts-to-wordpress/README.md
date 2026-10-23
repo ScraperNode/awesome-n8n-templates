@@ -1,14 +1,14 @@
 # 🎬 Generate and Publish SEO-Optimized Blog Posts to WordPress
 
-> ⚡ **1,024 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,056 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 
-**BlogBlitz** is a powerful `n8n` workflow that automates the creation and publishing of SEO-optimized blog posts to WordPress, saving you hours of manual content creation. Triggered on a schedule or via Telegram, it generates high-quality, 1,500–2,500-word articles complete with titles, slugs, meta descriptions, images, and more.
+**BlogBlitz** is a powerful [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) workflow that automates SEO-optimized WordPress publishing, saving hours of manual work. Triggered on schedule or via Telegram, it generates high-quality 1,500–2,500-word articles with titles, slugs, meta descriptions, and images.
 
+*Last updated: September 2026.*
 
-
-## 🎯 Who is this for?
+## Who is this for?
 
 * **Bloggers** who want fresh, consistent content.
 * **Content marketers** aiming for SEO efficiency.
@@ -16,7 +16,7 @@
 
 
 
-## 🚨 Problem Solved
+## Problem Solved
 
 Manually creating engaging, SEO-friendly content is time-consuming and requires writing expertise. BlogBlitz solves this by:
 
@@ -26,7 +26,7 @@ Manually creating engaging, SEO-friendly content is time-consuming and requires 
 
 
 
-## ⚙️ What This Workflow Does
+## What This Workflow Does
 
 | Feature               | Description                                                                                                                             |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
@@ -39,22 +39,22 @@ Manually creating engaging, SEO-friendly content is time-consuming and requires 
 | **Notifies**          | Sends publish alerts via **Discord webhook** and **Telegram message**                                                                   |
 
 
-## 🚀 Setup Instructions
+## Setup Instructions
 
-### ✅ Requirements
+### Requirements
 
-* Self-hosted or cloud **[n8n instance](https://n8n.partnerlinks.io/khaisastudio)**
+* Self-hosted or cloud **[n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin)**
 * Stable internet connection
 
-### 🔐 Credentials Needed
+### Credentials Needed
 
-* **WordPress API** (`wp-json/wp/v2`)
+* **WordPress API** (`wp-json/wp/v2`, [REST API docs](https://developer.wordpress.org/rest-api/))
 * **OpenAI API** (text + image generation)
 * **OpenRouter API** (category & title generation)
 * **Telegram Bot API**
 * **Discord Webhook**
 
-### 🔧 WordPress Configuration
+### WordPress Configuration
 
 * Set up post **categories**:
 
@@ -67,7 +67,7 @@ Manually creating engaging, SEO-friendly content is time-consuming and requires 
 
 
 
-## 🧩 Node Setup
+## Node Setup
 
 * **Telegram Trigger** — Initiates workflow with `/generate`
 * **Schedule Trigger** — Runs workflow every 3 hours
@@ -80,7 +80,7 @@ Manually creating engaging, SEO-friendly content is time-consuming and requires 
 
 
 
-## 🛠️ Customization Tips
+## Customization Tips
 
 | Feature           | How to Customize                                     |
 | ----------------- | ---------------------------------------------------- |
@@ -92,16 +92,16 @@ Manually creating engaging, SEO-friendly content is time-consuming and requires 
 
 
 
-## 📦 Pre-Requirements
+## Pre-Requirements
 
-* **n8n Instance** (Cloud/Self-hosted)
+* **[n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) Instance** (Cloud/Self-hosted)
 * Install: `@n8n/n8n-nodes-langchain`
 * All required API credentials configured
 * WordPress categories set
 * Admin user ID available
 
 
-## 🔧 Nodes Used
+## Nodes Used
 
 * `Telegram Trigger`
 * `Schedule Trigger`
@@ -113,16 +113,28 @@ Manually creating engaging, SEO-friendly content is time-consuming and requires 
 
 
 
-## ✅ Test the Workflow
+## Test the Workflow
 
-1. Deploy and connect your n8n instance.
+1. Deploy and connect your [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance.
 2. Send `/generate` to your Telegram bot.
 3. Check your WordPress site for the newly published post!
+
+### Quick Answers
+**How often does it publish?**  
+Every 3 hours by default, or on demand with `/generate` on Telegram.  
+**What comes with each article?**  
+Title, slug, focus keyphrase, meta description, featured image, and proper category.  
+**Where do I get notified?**  
+Publish alerts go to Discord and Telegram automatically.  
+
 ---
-*Made by: [Khaisa Studio](https://khaisa.studio)*  
-*Tag: youtube, summarizer, telegram, openai*  
-*Category: AI Automation, Video Tools*
-Need a custom? contact me on **[LinkedIn](https://www.linkedin.com/in/khmuhtadin/)** or **[Web](khmuhtadin.com)**
+*Made by: [khmuhtadin](https://khmuhtadin.com)*  
+*Tag: wordpress, blog, seo, openai, telegram*  
+*Category: AI Automation, Blogging*
+Need a custom? contact me on **[LinkedIn](https://www.linkedin.com/in/khmuhtadin/)** or **[Web](https://khmuhtadin.com)**
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

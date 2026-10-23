@@ -1,6 +1,6 @@
 # 🔬 Convert radiology images to patient-friendly reports with GPT-4 Vision & PDF email
 
-> ⚡ **823 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **960 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

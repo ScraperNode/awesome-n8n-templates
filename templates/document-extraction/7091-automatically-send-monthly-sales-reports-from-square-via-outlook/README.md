@@ -1,6 +1,6 @@
 # 🔬 Automatically send monthly sales reports from Square via Outlook
 
-> ⚡ **416 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **542 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

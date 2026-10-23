@@ -1,56 +1,60 @@
 # 🎣 Automatic lead export from Fluentform to Google Sheets with form categorization
 
-> ⚡ **846 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **880 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 
-## ❓ What Problem Does It Solve?
+Stop copy-pasting form leads into spreadsheets. The **Fluentform Export** workflow captures form submissions and newsletter signups automatically and organizes them into Google Sheets, the moment they come in.
 
-Manual exporting or copying of leads and newsletter signups from web forms to spreadsheets is time-consuming, error-prone, and delays follow-ups or marketing activities. Traditional workflows can lose data due to mistakes or lack of automation.  The **Fluentform Export** workflow automates the capture and organization of form submissions and newsletter signups into Google Sheets
+*Last updated: September 2026.*
 
-## 💡 Why Use this workflow?
+## What Problem Does It Solve?
 
-- **Save Time:** Automate tedious manual data entry for form leads and newsletter signups
-- **Avoid Data Loss:** Ensure all submissions are reliably logged with real-time updates
-- **Organized Data:** Separate sheets for newsletter and contact form data maintain clarity
-- **Easy Integration:** Works seamlessly with Fluentform submissions and Google Sheets
-- **Flexible & Scalable:** Quickly adapt to changes in form structure or spreadsheet columns
+Manual exporting or copying of leads and newsletter signups from web forms to spreadsheets is time-consuming, error-prone, and delays follow-ups. Entries get lost, marketing waits. This workflow automates the capture and organization of every submission into Google Sheets.
 
-## ⚡ Who Is This For?
+## Why Use this workflow?
 
-- **Marketers & Growth Teams:** Automatically gather leads and newsletter contacts to fuel campaigns
-- **Small to Medium Businesses:** Reduce overhead from manual data management and errors
-- **Customer Support Teams:** Keep track of form submissions in a centralized, accessible place
-- **Website Admins:** Simplify data workflow from Fluentform plugins without coding
+- **Save Time:** No more tedious manual data entry for form leads and newsletter signups.
+- **Avoid Data Loss:** Every submission is logged reliably with real-time updates.
+- **Organized Data:** Separate sheets for newsletter and contact form data keep things clear.
+- **Easy Integration:** Works directly with Fluentform submissions and Google Sheets.
+- **Flexible & Scalable:** Adapts quickly to form structure or spreadsheet column changes.
+
+## Who Is This For?
+
+- **Marketers & Growth Teams:** Gather leads and newsletter contacts automatically to fuel campaigns.
+- **Small to Medium Businesses:** Cut overhead from manual data management and errors.
+- **Customer Support Teams:** Track form submissions in one centralized, accessible place.
+- **Website Admins:** Simplify the Fluentform-to-Sheets flow without coding.
 
 
-## 🔧 What This Workflow Does
+## What This Workflow Does
 
-- **⏱ Trigger:** Listens for incoming POST requests from Fluentform via webhook
-- **📎 Step 2:** Evaluates if the submission is a newsletter signup or a form based on a specific token
-- **🔄 Step 3 (Newsletter Path):** Maps email from newsletter submissions and appends/updates Google Sheets "News Letter" tab
-- **🔄 Step 3 (Form Path):** Extracts full name, email, phone, subject, and message fields and appends/updates the Google Sheets "form" tab
-- **💌 Step 4:** Sends a JSON success response back to Fluentform confirming receipt
+* **Trigger:** Listens for incoming POST requests from Fluentform via webhook.
+* **Classify:** Checks whether the submission is a newsletter signup or a contact form based on a specific token.
+* **Newsletter Path:** Maps the email from newsletter submissions and appends/updates the Google Sheets "News Letter" tab.
+* **Form Path:** Extracts full name, email, phone, subject, and message fields and appends/updates the Google Sheets "form" tab.
+* **Respond:** Sends a JSON success response back to Fluentform confirming receipt.
 
-## 🔐 Setup Instructions
+## Setup Instructions
 
-1. **Import** the provided `.json` workflow file into your n8n instance
+1. **Import** the provided `.json` workflow file into your [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance ([docs](https://docs.n8n.io/) if you are new)
 2. **Set up credentials:**
    - Google Sheets OAuth2 credential with access to your target spreadsheets
 3. **Customize** workflow elements:
-   - Update Fluentform webhook URL in your Fluentform settings to the n8n webhook URL generated
+   - Update Fluentform webhook URL in your Fluentform settings to the [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) webhook URL generated
    - Adjust field names or spreadsheet columns if your form structure changes
 4. **Update** spreadsheet IDs and sheet names used in the Google Sheets nodes to match your own Sheets
 5. **Test** workflow thoroughly with actual Fluentform submissions to verify data flows correctly
 
-## 🧩 Pre-Requirements
+## Pre-Requirements
 
-- Running **[n8n instance](https://n8n.partnerlinks.io/khaisastudio) (Cloud or self-hosted)**
+- Running **[n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin) (Cloud or self-hosted)**
 - Google account with access to Google Sheets and OAuth credentials
 - Fluentform installed on your website with ability to set webhook URL
 - Target Google Sheets prepared with tabs named "News Letter" and "form" with expected columns
 
-## 🧠 Nodes Used
+## Nodes Used
 
 - Webhook (POST - Retrieve Leads)
 - If (Form or newsletter?)
@@ -58,12 +62,23 @@ Manual exporting or copying of leads and newsletter signups from web forms to sp
 - Google Sheets (Append/update for newsletter and form sheets)
 - Respond to Webhook
 
-## 📞 Support
+### Quick Answers
+**Where does each submission go?**  
+Newsletter signups land in the "News Letter" tab, contact forms in the "form" tab.  
+**How does it tell them apart?**  
+A specific token in the submission marks it as newsletter or form.  
+**What if my form fields change?**  
+Adjust the field names or spreadsheet columns in the nodes to match.  
 
-**Made by:** [khaisa Studio](khaisa.studio)  
+## Support
+
+**Made by:** [khmuhtadin](https://khmuhtadin.com)  
 **Tag:** automation, Google Sheets, Fluentform, Leads 
 **Category:** Marketing  
-**Need a custom?** **[Contact Me](https://khmuhtadin.com)**
+**Need a custom?** **[Contact Me](https://khmuhtadin.com/contact)**
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

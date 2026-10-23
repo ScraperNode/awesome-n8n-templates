@@ -1,6 +1,6 @@
 # 🎬 Automate WordPress & WooCommerce content with OpenAI: Reviews, comments & updates
 
-> ⚡ **71 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **92 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

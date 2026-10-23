@@ -1,6 +1,6 @@
 # 🎯 Import research papers from Telegram to Zotero with AI abstract summaries
 
-> ⚡ **255 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **349 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

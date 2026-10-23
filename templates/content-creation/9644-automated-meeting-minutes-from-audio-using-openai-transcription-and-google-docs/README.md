@@ -1,6 +1,6 @@
 # 🎬 Automated meeting minutes from audio using OpenAI transcription and Google Docs
 
-> ⚡ **589 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **794 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

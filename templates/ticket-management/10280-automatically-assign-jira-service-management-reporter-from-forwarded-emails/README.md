@@ -1,6 +1,6 @@
 # 🎫 Automatically assign Jira Service Management reporter from forwarded emails
 
-> ⚡ **392 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **621 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Add TypeScript Intellisense support to code nodes with JSDoc
 
-> ⚡ **282 views** · ⚒️ [Engineering](../)
+> ⚡ **348 views** · ⚒️ [Engineering](../)
 
 ## Description
 

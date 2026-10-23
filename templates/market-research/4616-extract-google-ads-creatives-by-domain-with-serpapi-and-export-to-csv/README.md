@@ -1,6 +1,6 @@
 # 📊 Extract Google Ads creatives by domain with SerpAPI and export to CSV
 
-> ⚡ **1,346 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,424 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

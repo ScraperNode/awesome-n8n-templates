@@ -1,6 +1,6 @@
 # 📋 Create Jira tickets from Streamlit forms with webhook & REST API
 
-> ⚡ **286 views** · 📋 [Project Management](../)
+> ⚡ **386 views** · 📋 [Project Management](../)
 
 ## Description
 

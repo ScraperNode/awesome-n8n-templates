@@ -1,6 +1,6 @@
 # ⚡ Build a multi-modal Telegram AI assistant with Gemini, voice & image generation
 
-> ⚡ **3,490 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,972 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

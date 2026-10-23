@@ -1,6 +1,6 @@
 # 🔬 Aggregate marketing spend data with custom pivots & VLOOKUPs in Google Sheets
 
-> ⚡ **216 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **317 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

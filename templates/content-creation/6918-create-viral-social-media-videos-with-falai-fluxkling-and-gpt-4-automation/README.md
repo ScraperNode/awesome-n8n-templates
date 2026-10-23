@@ -1,6 +1,6 @@
 # 🎬 Create viral social media videos with FalAI Flux/Kling and GPT-4 automation
 
-> ⚡ **3,010 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,658 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

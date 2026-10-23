@@ -1,6 +1,6 @@
 # 🎣 🛠️ Clearbit tool MCP server
 
-> ⚡ **131 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **188 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Food menu update notifier
 
-> ⚡ **1,050 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,175 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

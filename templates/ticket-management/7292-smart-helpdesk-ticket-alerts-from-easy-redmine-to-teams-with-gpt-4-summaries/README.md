@@ -1,28 +1,28 @@
-# 🎫 Smart helpdesk ticket alerts from Easy Redmine to Teams with GPT-4 summaries
+# 🎫 Smart helpdesk ticket alerts from Easy8 to Teams with GPT-4 summaries
 
-> ⚡ **1,133 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,214 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 
-# Automated Helpdesk Ticket Alerts to Microsoft Teams from Easy Redmine
+# Automated Helpdesk Ticket Alerts to Microsoft Teams from Easy8
 
 ## Intro/Overview
-This workflow automatically posts a Microsoft Teams message whenever a new helpdesk ticket is created in Easy Redmine. It’s perfect for IT teams who want real-time visibility into new issues without constantly checking ticket queues or inboxes. By integrating Easy Redmine with Teams, this setup ensures tickets are discussed and resolved faster, improving both response and resolution times.
+This workflow automatically posts a Microsoft Teams message whenever a new helpdesk ticket is created in Easy8. It’s perfect for IT teams who want real-time visibility into new issues without constantly checking ticket queues or inboxes. By integrating Easy8 with Teams, this setup ensures tickets are discussed and resolved faster, improving both response and resolution times.
 
 ---
 
 ## How it works
 
-1. **Catch Easy Webhook – New Issue Created**  
-   - Triggers whenever Easy Redmine sends a webhook for a newly created ticket.  
-   - Uses the webhook URL generated from Easy Redmine’s webhook settings.
+1. **Catch Easy8 Webhook – New Issue Created**  
+   - Triggers whenever Easy8 sends a webhook for a newly created ticket.  
+   - Uses the webhook URL generated from Easy8’s webhook settings.
 
 2. **Get a new ticket by ID**  
-   - Fetches full ticket details (subject, priority, description) via the Easy Redmine API using the ticket ID from the webhook payload.
+   - Fetches full ticket details (subject, priority, description) via the Easy8 API using the ticket ID from the webhook payload.
 
 3. **Pick Description & Create URL to Issue**  
    - Extracts the ticket description.  
-   - Builds a direct link to the ticket in Easy Redmine for quick access.
+   - Builds a direct link to the ticket in Easy8 for quick access.
 
 4. **AI Agent – Description Processing**  
    - Uses an AI model to summarize the ticket and suggest possible solutions based on the issue description.
@@ -37,17 +37,17 @@ This workflow automatically posts a Microsoft Teams message whenever a new helpd
 
 1. **Import the workflow** into your n8n instance.
 2. **Set up credentials**:
-   - Easy Redmine API credentials with permission to read helpdesk tickets.
+   - Easy8 API credentials with permission to read helpdesk tickets.
    - Microsoft Teams credentials for posting messages to a channel.
-3. **Configure Easy Redmine webhook** 
+3. **Configure Easy8 webhook** 
 	- To trigger on ticket creation events. 
-	- Insert n8n webhook URL to your active Easy Redmine Webhook which can be created at https://easy-redmine-application.com/easy_web_hooks
+	- Insert n8n webhook URL to your active Easy8 Webhook 
 4. **Adjust node settings**:
-   - In the webhook node, use your Easy Redmine webhook URL.
+   - In the webhook node, use your Easy8 webhook URL.
    - In the “Get a new ticket by ID” node, insert your API endpoint and authentication.
    - In the Teams message node, select the correct Teams channel.
 5. **Adjust timezone or scheduling** if your team works across different time zones.
-6. **Test the workflow** by creating a sample ticket in Easy Redmine and confirming that it posts to Teams.
+6. **Test the workflow** by creating a sample ticket in Easy8 and confirming that it posts to Teams.
 
 ---
 
@@ -61,8 +61,8 @@ This workflow automatically posts a Microsoft Teams message whenever a new helpd
 
 ## Requirements
 
-- Easy Redmine application
-- Easy Redmine technical user for API calls with “read” permissions on tickets
+- Easy8 application
+- Easy8 technical user for API calls with “read” permissions on tickets
 - Microsoft Teams technical user for API calls with “post message” permissions
 - Active n8n instance
 

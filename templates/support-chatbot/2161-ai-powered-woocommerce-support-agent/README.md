@@ -1,6 +1,6 @@
 # 💬 AI-powered WooCommerce Support-Agent
 
-> ⚡ **20,000 views** · 💬 [Support Chatbots](../)
+> ⚡ **20,650 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

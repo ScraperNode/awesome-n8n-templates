@@ -1,6 +1,6 @@
 # 👥 Automate interview scheduling and data cleanup with Cal.com and Google Sheets
 
-> ⚡ **244 views** · 👥 [HR & Recruitment](../)
+> ⚡ **271 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

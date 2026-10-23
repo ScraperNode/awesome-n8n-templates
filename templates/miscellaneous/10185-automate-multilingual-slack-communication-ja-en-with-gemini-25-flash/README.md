@@ -1,6 +1,6 @@
 # 🔧 Automate multilingual Slack communication (JA ⇄ EN) with Gemini 2.5 Flash
 
-> ⚡ **361 views** · 🔧 [Miscellaneous](../)
+> ⚡ **629 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

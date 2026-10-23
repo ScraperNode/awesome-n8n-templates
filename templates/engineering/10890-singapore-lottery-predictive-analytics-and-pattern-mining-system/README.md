@@ -1,6 +1,6 @@
 # ⚒️ Singapore Lottery Predictive Analytics and Pattern Mining System
 
-> ⚡ **176 views** · ⚒️ [Engineering](../)
+> ⚡ **485 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Sync tasks automatically from Todoist to Notion
 
-> ⚡ **6,178 views** · ⚡ [Personal Productivity](../)
+> ⚡ **6,318 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

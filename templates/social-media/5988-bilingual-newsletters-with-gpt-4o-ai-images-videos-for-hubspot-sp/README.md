@@ -1,6 +1,6 @@
 # 📱 Bilingual newsletters with GPT-4o, AI images & videos for HubSpot & SP
 
-> ⚡ **321 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **368 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

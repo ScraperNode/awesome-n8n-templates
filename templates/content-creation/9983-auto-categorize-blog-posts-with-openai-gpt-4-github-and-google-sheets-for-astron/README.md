@@ -1,6 +1,6 @@
 # 🎬 Auto-categorize blog posts with OpenAI GPT-4, GitHub, and Google Sheets for Astro/Next.js
 
-> ⚡ **256 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **319 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

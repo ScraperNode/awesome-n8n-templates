@@ -1,6 +1,6 @@
 # 📖 Generate AI meeting notes from Zoom with GPT-4, Google Docs & Slack
 
-> ⚡ **418 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **541 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

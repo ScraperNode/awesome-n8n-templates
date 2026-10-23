@@ -1,6 +1,6 @@
 # 📊 Generate complete SEO strategy reports with SerpAPI data and GPT-4 Agent team
 
-> ⚡ **3,800 views** · 📊 [Market Research & Insights](../)
+> ⚡ **5,680 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
 >

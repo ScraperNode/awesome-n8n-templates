@@ -1,6 +1,6 @@
 # 🔬 Automate image validation tasks using AI Vision
 
-> ⚡ **26,524 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **26,863 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

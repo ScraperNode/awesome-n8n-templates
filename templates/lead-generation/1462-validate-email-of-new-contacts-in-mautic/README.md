@@ -1,6 +1,6 @@
 # 🎣 Validate email of new contacts in Mautic
 
-> ⚡ **5,394 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **5,921 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

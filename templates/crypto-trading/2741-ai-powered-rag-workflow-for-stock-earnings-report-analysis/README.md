@@ -1,6 +1,6 @@
 # 📈 AI-powered RAG workflow for stock earnings report analysis
 
-> ⚡ **17,964 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **18,008 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

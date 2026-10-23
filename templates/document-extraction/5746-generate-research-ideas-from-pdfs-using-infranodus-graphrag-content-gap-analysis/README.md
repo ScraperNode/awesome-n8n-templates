@@ -1,6 +1,6 @@
 # 🔬 Generate research ideas from PDFs using InfraNodus GraphRAG content gap analysis
 
-> ⚡ **712 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **766 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

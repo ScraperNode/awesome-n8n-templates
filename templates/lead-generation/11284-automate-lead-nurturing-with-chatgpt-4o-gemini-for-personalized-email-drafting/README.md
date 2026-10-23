@@ -1,6 +1,6 @@
 # 🎣 Automate lead nurturing with ChatGPT-4o & Gemini for personalized email drafting
 
-> ⚡ **352 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **479 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

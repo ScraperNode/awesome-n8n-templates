@@ -1,6 +1,6 @@
 # ⚡ Get real-time international space station visibility alerts with N2YO and Telegram
 
-> ⚡ **66 views** · ⚡ [Personal Productivity](../)
+> ⚡ **80 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

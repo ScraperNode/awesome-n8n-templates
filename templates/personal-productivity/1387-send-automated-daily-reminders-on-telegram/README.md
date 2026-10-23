@@ -1,6 +1,6 @@
 # ⚡ Send automated daily reminders on Telegram
 
-> ⚡ **6,681 views** · ⚡ [Personal Productivity](../)
+> ⚡ **6,771 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

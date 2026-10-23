@@ -1,6 +1,6 @@
 # 🎣 Auto-enrich & sync companies from Google Sheets to HubSpot using GPT-4o-mini
 
-> ⚡ **434 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **443 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

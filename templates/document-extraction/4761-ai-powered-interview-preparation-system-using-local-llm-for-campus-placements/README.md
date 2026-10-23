@@ -1,6 +1,6 @@
 # 🔬 AI-powered interview preparation system using local LLM for campus placements
 
-> ⚡ **288 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **324 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

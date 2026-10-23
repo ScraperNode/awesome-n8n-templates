@@ -1,6 +1,6 @@
 # 👥 AI resume screening & evaluation for HR with GPT-4 & Google Workspace
 
-> ⚡ **1,070 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,280 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

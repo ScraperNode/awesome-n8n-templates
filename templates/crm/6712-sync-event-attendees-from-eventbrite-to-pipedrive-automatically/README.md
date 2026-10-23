@@ -1,6 +1,6 @@
 # 🤝 Sync event attendees from Eventbrite to Pipedrive automatically
 
-> ⚡ **213 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **286 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Automatically add watermarks to images with Telegram Bot and ImageKit.io
 
-> ⚡ **38 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **74 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

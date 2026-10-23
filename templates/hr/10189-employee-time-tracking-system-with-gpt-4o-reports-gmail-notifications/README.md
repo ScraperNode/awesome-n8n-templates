@@ -1,6 +1,6 @@
 # 👥 Employee time tracking system with GPT-4o reports & Gmail notifications
 
-> ⚡ **294 views** · 👥 [HR & Recruitment](../)
+> ⚡ **378 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Recover abandoned onboarding users with personalized emails via Postgres, Gmail & Slack
 
-> ⚡ **25 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **47 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

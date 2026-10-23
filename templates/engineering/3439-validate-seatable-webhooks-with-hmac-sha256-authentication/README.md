@@ -1,6 +1,6 @@
 # ⚒️ Validate Seatable webhooks with HMAC SHA256 authentication
 
-> ⚡ **773 views** · ⚒️ [Engineering](../)
+> ⚡ **921 views** · ⚒️ [Engineering](../)
 
 ## Description
 

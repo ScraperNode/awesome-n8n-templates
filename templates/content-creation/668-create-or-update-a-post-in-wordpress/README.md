@@ -1,6 +1,6 @@
 # 🎬 Create or update a post in WordPress
 
-> ⚡ **11,891 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **11,895 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Monitor Reddit for sales opportunities with GPT-4o and create Asana tasks
 
-> ⚡ **97 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **173 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

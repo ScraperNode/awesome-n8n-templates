@@ -1,6 +1,6 @@
 # 🔧 Insert and retrieve data from a table in Stackby
 
-> ⚡ **605 views** · 🔧 [Miscellaneous](../)
+> ⚡ **655 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

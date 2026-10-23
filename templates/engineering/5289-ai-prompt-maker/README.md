@@ -1,6 +1,6 @@
 # ⚒️ 🛠️ AI Prompt Maker
 
-> ⚡ **18,119 views** · ⚒️ [Engineering](../)
+> ⚡ **22,215 views** · ⚒️ [Engineering](../)
 
 ## Description
 

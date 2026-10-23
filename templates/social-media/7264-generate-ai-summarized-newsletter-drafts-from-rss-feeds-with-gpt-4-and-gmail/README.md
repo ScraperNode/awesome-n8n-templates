@@ -1,6 +1,6 @@
 # 📱 Generate AI-summarized newsletter drafts from RSS feeds with GPT-4 and Gmail
 
-> ⚡ **1,536 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,704 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

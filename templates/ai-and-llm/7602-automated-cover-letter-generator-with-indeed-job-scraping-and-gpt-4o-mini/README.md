@@ -1,6 +1,6 @@
 # ✨ Automated cover letter generator with Indeed job scraping and GPT-4o-mini
 
-> ⚡ **1,152 views** · ✨ [AI & LLMs](../)
+> ⚡ **1,361 views** · ✨ [AI & LLMs](../)
 
 > 💡 **Pro Tip** — Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.
 >

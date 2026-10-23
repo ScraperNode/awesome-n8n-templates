@@ -1,6 +1,6 @@
 # 📱 Create daily Israeli economic newsletter using RSS and GPT-4o
 
-> ⚡ **3,215 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **3,436 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

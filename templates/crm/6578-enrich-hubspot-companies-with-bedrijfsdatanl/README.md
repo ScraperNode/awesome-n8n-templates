@@ -1,6 +1,6 @@
 # 🤝 Enrich HubSpot companies with Bedrijfsdata.nl
 
-> ⚡ **147 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **160 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Send an email
 
-> ⚡ **15,529 views** · ⚡ [Personal Productivity](../)
+> ⚡ **15,816 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

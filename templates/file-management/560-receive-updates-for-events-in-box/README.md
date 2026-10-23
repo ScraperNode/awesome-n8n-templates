@@ -1,6 +1,6 @@
 # 📁 Receive updates for events in Box
 
-> ⚡ **633 views** · 📁 [File Management](../)
+> ⚡ **681 views** · 📁 [File Management](../)
 
 ## Description
 

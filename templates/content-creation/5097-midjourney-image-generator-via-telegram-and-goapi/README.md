@@ -1,6 +1,6 @@
 # 🎬 Midjourney Image Generator via Telegram and GoAPI
 
-> ⚡ **2,792 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,002 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

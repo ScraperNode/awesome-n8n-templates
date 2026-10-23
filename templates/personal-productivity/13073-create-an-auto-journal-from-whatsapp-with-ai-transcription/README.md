@@ -1,6 +1,6 @@
 # ⚡ Create an auto-journal from WhatsApp with AI transcription
 
-> ⚡ **76 views** · ⚡ [Personal Productivity](../)
+> ⚡ **314 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

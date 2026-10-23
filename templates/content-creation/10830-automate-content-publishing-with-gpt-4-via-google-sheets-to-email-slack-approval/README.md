@@ -1,6 +1,6 @@
 # 🎬 Automate content publishing with GPT-4 via Google Sheets to email & Slack approval
 
-> ⚡ **133 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **166 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

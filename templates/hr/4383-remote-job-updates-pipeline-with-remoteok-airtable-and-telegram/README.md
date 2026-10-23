@@ -1,6 +1,6 @@
 # 👥 Remote job updates pipeline with RemoteOK, Airtable, and Telegram
 
-> ⚡ **769 views** · 👥 [HR & Recruitment](../)
+> ⚡ **846 views** · 👥 [HR & Recruitment](../)
 
 > 💡 **Pro Tip** — Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.
 >

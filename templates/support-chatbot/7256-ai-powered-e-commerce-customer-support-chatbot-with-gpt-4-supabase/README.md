@@ -1,6 +1,6 @@
 # 💬 AI-powered e-commerce customer support chatbot with GPT-4 & Supabase
 
-> ⚡ **4,061 views** · 💬 [Support Chatbots](../)
+> ⚡ **5,086 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

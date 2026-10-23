@@ -1,6 +1,6 @@
 # ✨ Send personalized healthcare joke emails with OpenAI, Gmail, and Google Sheets
 
-> ⚡ **248 views** · ✨ [AI & LLMs](../)
+> ⚡ **281 views** · ✨ [AI & LLMs](../)
 
 ## Description
 

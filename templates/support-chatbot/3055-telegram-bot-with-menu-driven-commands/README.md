@@ -1,6 +1,6 @@
 # 💬 Telegram bot with menu-driven commands
 
-> ⚡ **19,008 views** · 💬 [Support Chatbots](../)
+> ⚡ **19,266 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate hyper-realistic images from Telegram via Gemini Nano Banana 2
 
-> ⚡ **92 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **502 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

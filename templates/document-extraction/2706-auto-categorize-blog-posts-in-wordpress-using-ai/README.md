@@ -1,6 +1,6 @@
 # 🔬 Auto-categorize blog posts in wordpress using A.I.
 
-> ⚡ **5,397 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **5,403 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

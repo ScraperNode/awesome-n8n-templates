@@ -1,6 +1,6 @@
 # 🎯 Transform cloud documentation into security baselines with OpenAI and GDrive
 
-> ⚡ **556 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **722 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

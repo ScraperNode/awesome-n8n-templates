@@ -1,6 +1,6 @@
 # 🤝 Get all leads from Zoho CRM
 
-> ⚡ **4,824 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **4,977 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

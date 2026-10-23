@@ -1,6 +1,6 @@
 # 🤖 Automatically reply to customer emails with Airtable, Gmail, and GPT-4.1 Mini
 
-> ⚡ **678 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **932 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

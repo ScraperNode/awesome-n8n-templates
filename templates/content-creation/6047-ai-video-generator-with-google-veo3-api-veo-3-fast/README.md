@@ -1,6 +1,6 @@
 # 🎬 AI video generator with Google Veo3 API (Veo 3 fast)
 
-> ⚡ **14,939 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **17,022 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

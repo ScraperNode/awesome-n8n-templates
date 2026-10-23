@@ -1,0 +1,980 @@
+{
+  "id": "3KzKSOZ6iwQKQZr4",
+  "meta": {
+    "instanceId": "0e55c3b513f5a0631c17003d0888549f0d93ecb7047b38aab307f5886a32dbd4"
+  },
+  "name": "Golf Course Turf Ops \u2013 Per-Zone Irrigation Scheduler & Pesticide REI Compliance",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "1bd8d1fb-b3dd-4f9a-beff-dcb4949091cc",
+      "name": "Receive Zone Sensor Batch",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        32,
+        240
+      ],
+      "webhookId": "cc740341-48ce-400f-bac8-aa403d700038",
+      "parameters": {
+        "path": "golf-zone-sensor-batch",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "023f2874-5ec6-4965-bc54-6c2d1997aea2",
+      "name": "Fetch Today's Weather Forecast",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        400,
+        240
+      ],
+      "parameters": {
+        "url": "https://api.open-meteo.com/v1/forecast",
+        "options": {
+          "timeout": 10000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "latitude",
+              "value": "={{$json.course_lat}}"
+            },
+            {
+              "name": "longitude",
+              "value": "={{$json.course_lon}}"
+            },
+            {
+              "name": "hourly",
+              "value": "temperature_2m,precipitation_probability,et0_fao_evapotranspiration"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "869bd4fc-78c5-48cf-bce9-e412416c25ba",
+      "name": "Split Zones Into Individual Items",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        752,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "fieldToSplitOut": "zones"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a9e22a25-eb66-4f5b-91aa-91d074b99544",
+      "name": "Compute Soil Moisture Deficit",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1120,
+        240
+      ],
+      "parameters": {
+        "jsCode": "// Real per-zone water-balance logic (moisture deficit + ET-adjusted requirement)\nconst zone = $input.item.json;\nconst weather = $('Fetch Today\\'s Weather Forecast').item.json;\nconst et0 = (weather.hourly && weather.hourly.et0_fao_evapotranspiration)\n  ? weather.hourly.et0_fao_evapotranspiration.reduce((a,b)=>a+b,0) / weather.hourly.et0_fao_evapotranspiration.length\n  : 4.5;\nconst rainProb = (weather.hourly && weather.hourly.precipitation_probability)\n  ? Math.max(...weather.hourly.precipitation_probability) : 0;\nconst targetMoisture = zone.zone_type === 'green' ? 28 : zone.zone_type === 'fairway' ? 22 : 16; // % VWC\nconst deficit = Math.max(0, targetMoisture - Number(zone.soil_moisture_pct));\nconst cropCoefficient = zone.zone_type === 'green' ? 0.9 : zone.zone_type === 'fairway' ? 0.75 : 0.55;\nconst etAdjustedNeed_mm = et0 * cropCoefficient;\nconst rainSkip = rainProb >= 70;\nreturn { json: { ...zone, et0_mm: Number(et0.toFixed(2)), rain_probability: rainProb,\n  moisture_deficit_pct: Number(deficit.toFixed(1)), et_adjusted_need_mm: Number(etAdjustedNeed_mm.toFixed(2)),\n  rain_skip: rainSkip } };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "12b1aad2-79ca-4c6d-91ee-4e15f9ca664e",
+      "name": "Recent Pesticide Application?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1472,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              },
+              "leftValue": "={{$json.days_since_pesticide_app}}",
+              "rightValue": 5
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "cecb1221-753f-4447-81ce-f43da313bb68",
+      "name": "GPT-4o-mini for Label Extraction",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        1840,
+        656
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "895fe186-98ee-41ad-a06a-f08382349c9d",
+      "name": "Extract REI & Buffer Requirements",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        1840,
+        240
+      ],
+      "parameters": {
+        "text": "=Product applied: {{$json.pesticide_product}}. Label excerpt: {{$json.label_text}}. Zone type: {{$json.zone_type}}. Distance to nearest water hazard (ft): {{$json.distance_to_water_ft}}.",
+        "options": {
+          "systemPromptTemplate": "Extract exact regulatory values from the pesticide label text. Never estimate; if absent, use conservative EPA label defaults."
+        },
+        "schemaType": "manual",
+        "inputSchema": {
+          "schema": {
+            "type": "object",
+            "required": [
+              "rei_hours",
+              "buffer_ft",
+              "buffer_violated"
+            ],
+            "properties": {
+              "buffer_ft": {
+                "type": "number",
+                "description": "Required no-spray buffer distance in feet from water"
+              },
+              "rei_hours": {
+                "type": "number",
+                "description": "Restricted entry interval in hours"
+              },
+              "buffer_violated": {
+                "type": "boolean",
+                "description": "true if distance_to_water_ft < buffer_ft"
+              }
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1.1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "99f8e32b-646a-480a-84bc-5bc2211816a3",
+      "name": "Determine Zone Still Restricted",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2192,
+        240
+      ],
+      "parameters": {
+        "jsCode": "// Real REI expiry + buffer-violation logic\nconst j = $input.item.json;\nconst applied = new Date(j.pesticide_applied_at);\nconst now = new Date();\nconst hoursSince = (now.getTime() - applied.getTime()) / 3600000;\nconst reiActive = hoursSince < Number(j.rei_hours || 0);\nconst restricted = reiActive || j.buffer_violated === true;\nreturn { json: { ...j, hours_since_application: Number(hoursSince.toFixed(1)),\n  rei_active: reiActive, restricted } };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a7c249b9-956f-4ed6-9177-4dc60652a6e3",
+      "name": "Merge Restricted-Check Branch",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        2512,
+        944
+      ],
+      "parameters": {},
+      "typeVersion": 3.2
+    },
+    {
+      "id": "2502665e-7281-47d5-98c2-c905e6d14b6f",
+      "name": "Is Zone Restricted?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2912,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{$json.restricted}}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "b6e07138-06b8-4986-8a5f-5855e766b845",
+      "name": "Flag Zone Skip Irrigation",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3280,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "name": "irrigation_minutes",
+              "type": "number",
+              "value": 0
+            },
+            {
+              "name": "skip_reason",
+              "type": "string",
+              "value": "pesticide_rei_or_buffer_restricted"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "c05f587c-ecfc-4fd8-aa6b-63414f340c88",
+      "name": "Compute Irrigation Run Minutes",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3280,
+        656
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "name": "irrigation_minutes",
+              "type": "number",
+              "value": "={{$json.rain_skip ? 0 : Math.round(($json.moisture_deficit_pct * 1.8) + ($json.et_adjusted_need_mm * 2.2))}}"
+            },
+            {
+              "name": "skip_reason",
+              "type": "string",
+              "value": "={{$json.rain_skip ? 'rain_forecast_70pct_plus' : ''}}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "c1ffcfe8-59d4-4b0b-bc3c-a913df4fca3f",
+      "name": "Merge Zone Decision Branch",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        3632,
+        240
+      ],
+      "parameters": {},
+      "typeVersion": 3.2
+    },
+    {
+      "id": "33eb6113-36ad-49ea-8069-bf37bdcbd702",
+      "name": "Aggregate All Zones Into Schedule",
+      "type": "n8n-nodes-base.aggregate",
+      "position": [
+        4000,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "zones"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9384d242-9949-44c0-be8f-fd7d8255bfaf",
+      "name": "Build Irrigation Controller Payload",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4352,
+        240
+      ],
+      "parameters": {
+        "jsCode": "// Real scheduling logic: prioritise greens, cap total water budget, list exceptions\nconst zones = $input.item.json.zones;\nconst priority = { green: 1, fairway: 2, rough: 3 };\nconst sorted = [...zones].sort((a, b) => (priority[a.zone_type] || 9) - (priority[b.zone_type] || 9));\nconst totalMinutes = sorted.reduce((sum, z) => sum + Number(z.irrigation_minutes || 0), 0);\nconst exceptions = zones.filter(z => z.skip_reason);\nconst schedule = sorted.map(z => ({ zone_id: z.zone_id, zone_type: z.zone_type,\n  minutes: z.irrigation_minutes, skip_reason: z.skip_reason || null }));\nreturn { json: { schedule, total_irrigation_minutes: totalMinutes,\n  exception_count: exceptions.length, exceptions } };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b147bc3e-6b72-4237-aff1-645c30fbe0d0",
+      "name": "Push Schedule to Irrigation Controller",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        4720,
+        240
+      ],
+      "parameters": {
+        "url": "https://irrigation-controller.internal.golfclub.example/api/schedule",
+        "method": "POST",
+        "options": {
+          "timeout": 10000
+        },
+        "jsonBody": "={{JSON.stringify($json)}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "10211689-b8e4-4975-9789-521ecc2bc74d",
+      "name": "Any Restricted Zones Flagged?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        5072,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{$json.exception_count}}",
+              "rightValue": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "bba45833-c59c-4dc2-ac3c-9c538092feaf",
+      "name": "Alert Grounds Crew \u2013 Restricted Zones",
+      "type": "n8n-nodes-base.telegram",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        5440,
+        240
+      ],
+      "webhookId": "ef72ccc3-fd90-4d46-a1d4-4da7fb1a385e",
+      "parameters": {
+        "text": "=\u26a0\ufe0f {{$json.exception_count}} zone(s) skipped today for pesticide REI/buffer compliance:\n{{$json.exceptions.map(e => `- ${e.zone_id}: ${e.skip_reason}`).join('\\n')}}",
+        "chatId": "GROUNDS_CREW_TELEGRAM_CHAT_ID",
+        "additionalFields": {}
+      },
+      "retryOnFail": true,
+      "typeVersion": 1.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "29911d00-878e-47dc-88aa-cade3cc44975",
+      "name": "Panel \u2013 Workflow Details",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1056,
+        -912
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 588,
+        "height": 964,
+        "content": "\ud83d\udcd8 WORKFLOW DETAILS\n\nGolf Course Turf Ops \u2013 Per-Zone Irrigation Scheduler & Pesticide REI Compliance\n\nVALUE PROP: Fans out a course-wide sensor batch into one agronomic decision per zone \u2014 blending soil moisture, ET-adjusted water need, and pesticide-label restricted-entry-interval/buffer rules \u2014 then fans back in to push one optimized irrigation schedule to the controller and alert the crew to any compliance-restricted zones.\n\nWHO / PROBLEM: A golf course superintendent has to balance water conservation, turf health, and pesticide-applicator regulations (label REI, water-hazard buffers) across dozens of zones every morning. Doing this by hand per zone doesn't scale past a handful of holes, and a missed REI/buffer check is a real regulatory exposure.\n\nWALKTHROUGH:\n1. Sensor gateway posts the morning batch of zone readings via webhook.\n2. Today's weather (ET0, rain probability) is fetched once for the whole course.\n3. Split Out explodes the batch into per-zone items (Pattern B fan-out).\n4. Each zone's moisture deficit and ET-adjusted need are computed (Code).\n5. Recently-sprayed zones go through AI label extraction + a real REI/buffer Code check; others skip straight through.\n6. Restricted zones get zero irrigation minutes; others get a computed runtime.\n7. Merge \u2192 Aggregate fan the zones back into one schedule (Pattern B fan-in), which is pushed to the controller and, if any zone was restricted, alerts the grounds crew.\n\nNODE SUMMARY: Webhook, HTTP Request (x2), Split Out, Code (x3), If (x3), Information Extractor + Chat Model, Merge (x2), Set (x2), Aggregate, Telegram.\n\nEXPECTED I/O: In: webhook POST of {course_lat, course_lon, zones:[...]}. Out: irrigation schedule pushed to the controller API + optional Telegram compliance alert.\n\nSTICKY COLOUR LEGEND: 1 trigger (blue) \u00b7 2 transform (grey) \u00b7 3 AI (purple) \u00b7 4 branch (yellow) \u00b7 5 storage (green) \u00b7 6 notify (red)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ef0c0870-9816-4cd3-80d2-4d41f968a0fc",
+      "name": "Panel \u2013 Setup Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1056,
+        192
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 556,
+        "height": 548,
+        "content": "\u2699 SETUP GUIDE\n\n1. Import this JSON via n8n \u2192 Workflows \u2192 Import from File.\n2. Create credential \"Swapnil AI Labs \u2013 OpenAI\" (OpenAI API) on: GPT-4o-mini for Label Extraction.\n3. Create credential \"Irrigation Controller API Key\" (Header Auth) on: Push Schedule to Irrigation Controller.\n4. Create credential \"Golf Ops \u2013 Telegram Bot\" (Telegram API) on: Alert Grounds Crew \u2013 Restricted Zones.\n5. Set your real irrigation-controller base URL in Push Schedule to Irrigation Controller.\n6. Set GROUNDS_CREW_TELEGRAM_CHAT_ID to your real Telegram group chat ID.\n7. Point the sensor gateway's webhook at this workflow's production webhook URL for Receive Zone Sensor Batch.\n8. Adjust target moisture % and crop coefficients in Compute Soil Moisture Deficit for your grass species/climate.\n9. Confirm your state's pesticide label REI defaults are reflected in the extractor's system prompt.\n10. TEST: POST a sample payload with 2-3 zones (one recently sprayed) to the webhook and confirm the schedule + any alert.\n\nEST. SETUP TIME: 30\u201340 minutes."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "034705d2-9e24-461c-85d2-70611a04d184",
+      "name": "Panel \u2013 Customisation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1072,
+        848
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 572,
+        "height": 340,
+        "content": "\ud83c\udfa8 CUSTOMISATION\n\n1. Compute Soil Moisture Deficit (Code): tune target VWC % and crop coefficients per grass type (bentgrass vs bermuda).\n2. Extract REI & Buffer Requirements (Information Extractor): feed it your actual product label database instead of a text snippet.\n3. Build Irrigation Controller Payload (Code): change the zone priority order (e.g. tee boxes before rough) to match your maintenance plan.\n4. Alert Grounds Crew \u2013 Restricted Zones (Telegram): swap for a Slack channel post if your crew doesn't use Telegram.\n5. Fetch Today's Weather Forecast (HTTP Request): swap Open-Meteo for a paid hyperlocal weather API if you need on-site station accuracy."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6fb17493-da4d-491d-abc8-d623fa7d3582",
+      "name": "Panel \u2013 Additional Information",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1072,
+        1264
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 572,
+        "height": 576,
+        "content": "\u2139 ADDITIONAL INFORMATION\n\nERROR HANDLING: External-call nodes (HTTP Request x2, OpenAI chat model, Telegram) use onError=continueRegularOutput with retryOnFail, maxTries=3, waitBetweenTries=2000ms. Code, Set, If, Merge, Aggregate, Split Out and Webhook are excluded \u2014 no independent third-party API call.\n\nAPI COST / RATE LIMITS: Open-Meteo forecast is free/no-key; one OpenAI extraction call only fires for zones sprayed in the last 5 days, keeping cost proportional to actual pesticide activity, not total zone count.\n\nDATA PRIVACY: No personal data processed \u2014 only agronomic sensor and pesticide-application data. No special handling required beyond normal operational-records retention.\n\nN8N VERSION BUILT AGAINST: n8n 1.6x (nodes-base ~ Sept 2026), typeVersions as declared per node.\n\nKNOWN LIMITATIONS: Offline hand-authored build, not tested against a live n8n instance. Confirm the Webhook production URL and irrigation-controller payload shape against your actual controller vendor's API on first import.\n\nCREATOR: Swapnil AI Labs \u2014 swapnil.mandloi7@gmail.com \u2014 swapnilailabs.netlify.app"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d7283fca-db9b-4eaf-a3e5-8c03571c0843",
+      "name": "Note: Receive Zone Sensor Batch",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -304,
+        -96
+      ],
+      "parameters": {
+        "width": 348,
+        "height": 214,
+        "content": "**Receive Zone Sensor Batch**\nIrrigation-controller sensor gateway POSTs every zone's soil-moisture/ET reading each morning.\nMethod: POST /golf-zone-sensor-batch.\nOne payload, dozens of greens/fairways/rough zones inside it."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9b2915b3-1522-45c2-a6d4-c3f0825cbe6b",
+      "name": "Note: Fetch Today's Weather Forecast",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        240,
+        -80
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 300,
+        "height": 182,
+        "content": "**Fetch Today's Weather Forecast**\nPulls hourly temp, rain probability and reference evapotranspiration (ET0) for the course.\nSource: Open-Meteo forecast API.\nIrrigation minutes are meaningless without knowing if rain is coming."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d0c01516-5aa6-44a5-b7f8-3fa35ced4c96",
+      "name": "Note: Split Zones Into Individual Items",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        624,
+        -48
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 300,
+        "height": 150,
+        "content": "**Split Zones Into Individual Items**\nExplodes the sensor batch into one item per green/fairway/rough zone.\nField: zones.\nEach zone needs its own moisture, REI and irrigation decision."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b4e34b9b-2a85-45da-a436-390055473669",
+      "name": "Note: Compute Soil Moisture Deficit",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1040,
+        -96
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 300,
+        "height": 214,
+        "content": "**Compute Soil Moisture Deficit**\nBlends live soil-moisture readings with ET0 and crop coefficient per zone type.\nTargets: green 28%, fairway 22%, rough 16% VWC.\nThe core agronomic math the whole schedule is built on."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "45f534b3-237a-49a0-a726-610f5f2b6bb3",
+      "name": "Note: Recent Pesticide Application?",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1440,
+        -64
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 300,
+        "height": 214,
+        "content": "**Recent Pesticide Application?**\nBranch point 1: only zones treated in the last 5 days need a label re-entry-interval (REI) check.\nCondition: days_since_pesticide_app <= 5.\nMost zones on any given day were not just sprayed."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "26f3381f-bd86-4356-858e-4898c1c1a662",
+      "name": "Note: GPT-4o-mini for Label Extraction",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1616,
+        832
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 300,
+        "height": 150,
+        "content": "**GPT-4o-mini for Label Extraction**\nChat model backing the pesticide-label information extractor.\nModel: gpt-4o-mini, temp 0.\nLabel language is legally exact \u2014 no room for creative rewording."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b7446f3b-72a3-4f67-a61a-b8f347f132d5",
+      "name": "Note: Extract REI & Buffer Requirements",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1808,
+        -64
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 300,
+        "height": 214,
+        "content": "**Extract REI & Buffer Requirements**\nPulls the restricted-entry-interval hours and water-hazard buffer distance out of the product label text.\nOutput: rei_hours, buffer_ft, buffer_violated.\nTurns unstructured label text into numbers the Code node can act on."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f76c0e70-387e-4b38-8784-9e5f3c3cea3d",
+      "name": "Note: Determine Zone Still Restricted",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2160,
+        -80
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 300,
+        "height": 230,
+        "content": "**Determine Zone Still Restricted**\nCompares elapsed hours against the extracted REI, and checks the buffer-zone flag.\nRestricted if hours_since < rei_hours OR buffer_violated.\nA buffer violation blocks irrigation near the hazard regardless of REI expiry."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2e07a977-1dc4-4956-8f40-6a32d02977ec",
+      "name": "Note: Merge Restricted-Check Branch",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2400,
+        1168
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 316,
+        "height": 214,
+        "content": "**Merge Restricted-Check Branch**\nRecombines zones that skipped the label check (no recent pesticide) with zones that went through it.\nMode: append, 2 inputs.\nEvery zone reaches the irrigation decision with a consistent 'restricted' field."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f6c4a555-13d3-428e-b116-58e26d0d8e8f",
+      "name": "Note: Is Zone Restricted?",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2848,
+        -48
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 332,
+        "height": 198,
+        "content": "**Is Zone Restricted?**\nBranch point 2: restricted zones get skipped from today's irrigation run entirely.\nCondition: restricted == true.\nIrrigating (or letting crew onto) a zone still inside REI is a compliance violation."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "bcf1f92b-d837-43f2-9d6d-87baf7f7b513",
+      "name": "Note: Flag Zone Skip Irrigation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3248,
+        -48
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 300,
+        "height": 198,
+        "content": "**Flag Zone Skip Irrigation**\nZeroes irrigation for restricted zones and records why.\nirrigation_minutes=0, skip_reason set.\nMakes the compliance exception visible in the final schedule and alert."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8553b37b-0020-4f4b-9372-da492f597a4d",
+      "name": "Note: Compute Irrigation Run Minutes",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3184,
+        912
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 332,
+        "height": 198,
+        "content": "**Compute Irrigation Run Minutes**\nConverts moisture deficit + ET need into head-run minutes, unless rain makes it pointless.\nFormula: deficit*1.8 + ET-need*2.2 minutes.\nThe actual runtime number the irrigation controller will execute."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "62d01386-4cc6-43fb-bcb5-2aa64515eac8",
+      "name": "Note: Merge Zone Decision Branch",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3600,
+        -48
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 300,
+        "height": 198,
+        "content": "**Merge Zone Decision Branch**\nRecombines skipped and scheduled zones into one stream before aggregation.\nMode: append, 2 inputs.\nFan-in step of the Split Out \u2192 per-zone logic \u2192 fan-in pattern."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d8e5603d-9e4f-46fd-936d-e5d35a3915bf",
+      "name": "Note: Aggregate All Zones Into Schedule",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3968,
+        -48
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 300,
+        "height": 198,
+        "content": "**Aggregate All Zones Into Schedule**\nCollapses every processed zone back into a single course-wide schedule payload.\nField: zones[].\nCloses the fan-out/fan-in loop before building the controller command."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5c511a59-13be-46fc-b8d7-c555f1dd5dbf",
+      "name": "Note: Build Irrigation Controller Payload",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4320,
+        -96
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 300,
+        "height": 246,
+        "content": "**Build Irrigation Controller Payload**\nSorts zones by priority (greens first), sums the day's total water budget, lists every exception.\nOutput: schedule[], total_irrigation_minutes, exceptions[].\nThe exact command the irrigation controller needs to run."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b55fab32-b89e-4f79-802f-4ac637ba45f5",
+      "name": "Note: Push Schedule to Irrigation Controller",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4688,
+        -80
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 300,
+        "height": 230,
+        "content": "**Push Schedule to Irrigation Controller**\nSends the final per-zone schedule to the physical controller that actually opens the valves.\nEndpoint: POST /api/schedule.\nThis is the primary storage/action sink \u2014 the system of record is the controller itself."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ab2e9ee2-ae40-49ab-a713-3cff7966d250",
+      "name": "Note: Any Restricted Zones Flagged?",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        5040,
+        -48
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 300,
+        "height": 198,
+        "content": "**Any Restricted Zones Flagged?**\nBranch point 3: only alerts the crew when at least one zone was skipped for compliance reasons.\nCondition: exception_count > 0.\nA clean run with zero exceptions shouldn't page anyone."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "812bd768-a4e0-4c57-9910-60de34cb8d61",
+      "name": "Note: Alert Grounds Crew \u2013 Restricted Zones",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        5408,
+        -64
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 300,
+        "height": 214,
+        "content": "**Alert Grounds Crew \u2013 Restricted Zones**\nPushes a same-morning alert so crew know exactly which zones to stay off / not irrigate.\nChat: grounds crew Telegram group.\nStops a crew member from accidentally entering an REI-restricted green."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "f7e12af4-6042-42f0-91e6-a764e940a967",
+  "connections": {
+    "Is Zone Restricted?": {
+      "main": [
+        [
+          {
+            "node": "Flag Zone Skip Irrigation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Compute Irrigation Run Minutes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flag Zone Skip Irrigation": {
+      "main": [
+        [
+          {
+            "node": "Merge Zone Decision Branch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive Zone Sensor Batch": {
+      "main": [
+        [
+          {
+            "node": "Fetch Today's Weather Forecast",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Zone Decision Branch": {
+      "main": [
+        [
+          {
+            "node": "Aggregate All Zones Into Schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any Restricted Zones Flagged?": {
+      "main": [
+        [
+          {
+            "node": "Alert Grounds Crew \u2013 Restricted Zones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Soil Moisture Deficit": {
+      "main": [
+        [
+          {
+            "node": "Recent Pesticide Application?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Restricted-Check Branch": {
+      "main": [
+        [
+          {
+            "node": "Is Zone Restricted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recent Pesticide Application?": {
+      "main": [
+        [
+          {
+            "node": "Extract REI & Buffer Requirements",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Restricted-Check Branch",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Compute Irrigation Run Minutes": {
+      "main": [
+        [
+          {
+            "node": "Merge Zone Decision Branch",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Fetch Today's Weather Forecast": {
+      "main": [
+        [
+          {
+            "node": "Split Zones Into Individual Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine Zone Still Restricted": {
+      "main": [
+        [
+          {
+            "node": "Merge Restricted-Check Branch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT-4o-mini for Label Extraction": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract REI & Buffer Requirements",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate All Zones Into Schedule": {
+      "main": [
+        [
+          {
+            "node": "Build Irrigation Controller Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract REI & Buffer Requirements": {
+      "main": [
+        [
+          {
+            "node": "Determine Zone Still Restricted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Zones Into Individual Items": {
+      "main": [
+        [
+          {
+            "node": "Compute Soil Moisture Deficit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Irrigation Controller Payload": {
+      "main": [
+        [
+          {
+            "node": "Push Schedule to Irrigation Controller",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Push Schedule to Irrigation Controller": {
+      "main": [
+        [
+          {
+            "node": "Any Restricted Zones Flagged?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

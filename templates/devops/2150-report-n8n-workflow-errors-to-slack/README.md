@@ -1,6 +1,6 @@
 # ⚙️ 🚨 Report n8n workflow errors to Slack
 
-> ⚡ **2,248 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,269 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

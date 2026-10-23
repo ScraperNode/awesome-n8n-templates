@@ -1,6 +1,6 @@
 # 📈 Cryptocurrency dip alerts for Bitcoin & Ethereum via Telegram, Slack & SMS
 
-> ⚡ **656 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **706 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

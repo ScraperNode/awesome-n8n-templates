@@ -1,6 +1,6 @@
 # 🎬 Generate UGC videos from product images with GPT-4, Fal.ai & KIE.ai via Telegram
 
-> ⚡ **1,523 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,698 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

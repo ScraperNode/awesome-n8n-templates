@@ -1,6 +1,6 @@
 # ⚙️ Automate website performance analysis and comparison using Gemini and PageSpeed Insights
 
-> ⚡ **1,483 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,713 views** · ⚙️ [DevOps & CI/CD](../)
 
 > 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
 >
@@ -8,22 +8,23 @@
 
 ## Description
 
-The **Page Speed Insight** workflow automates website performance analysis by integrating Google PageSpeed Insights API with Discord messaging and Gemini. This n8n workflow provides expert-level performance audits and comparisons, delivering actionable insights for website owners, SEO professionals, and developers.
+Know exactly how fast your site is, without opening a single tool. The **Page Speed Insight** workflow audits website performance with the Google PageSpeed Insights API and Gemini, then delivers clear, actionable reports straight to Discord. Single URL or side-by-side comparison, your call.
 
 ![Screenshot 20250719 at 14.25.27.png](fileId:1807)
 
-Disclaimer: this workflow using community nodes [Google PageSpeed Insights Community Node](https://www.npmjs.com/package/n8n-nodes-google-pagespeed) 
+Disclaimer: this workflow uses the community node [Google PageSpeed Insights Community Node](https://www.npmjs.com/package/n8n-nodes-google-pagespeed)
+
+*Last updated: September 2026.*
+
+## Why Use Page Speed Insight?
+
+- **Save Time:** Analyze and compare website speeds instantly, no manual tool juggling.
+- **Eliminate Guesswork:** Get audit reports that turn technical data into clear next steps.
+- **Improve Website Outcomes:** Spot critical bottlenecks and fixes, prioritized by AI analysis.
+- **Seamless Integration:** Drop in URLs and receive reports via Discord, ready for team discussion.
 
 
-## 💡 Why Use Page Speed Insight?
-
-- **Save Time:** Instantly analyze and compare website speeds without manual tool usage
-- **Eliminate Guesswork:** Receive expert audit reports that translate technical data into clear, actionable insights
-- **Improve Website Outcomes:** Identify critical bottlenecks and enhancements prioritized by AI-driven analysis
-- **Seamless Integration:** Pull URLs and deliver reports directly via Discord for team collaboration and immediate response
-
-
-## ⚡ Who Is This For?
+## Who Is This For?
 
 - Webmasters and website owners seeking fast, automated performance checks
 - SEO analysts who need consistent, data-backed website comparisons
@@ -31,24 +32,24 @@ Disclaimer: this workflow using community nodes [Google PageSpeed Insights Commu
 - Digital agencies managing multiple client sites with ongoing monitoring needs
 
 
-## 🔧 What This Workflow Does
+## What This Workflow Does
 
-- **⏱ Trigger:** Discord message containing URLs or scheduled execution
-- **📎 Parse:** Extracts URLs and determines analysis type (single/comparison)
-- **🔍 Analyze:** Calls Google PageSpeed API for performance data
-- **🤖 Process:** AI generates user-friendly reports from raw Lighthouse JSON
-- **💌 Deliver:** Sends chunked reports to Discord channels
-- **🗂 Log:** Stores execution data for review and improvement
+- **Trigger:** Discord message containing URLs or scheduled execution
+- **Parse:** Extracts URLs and determines analysis type (single/comparison)
+- **Analyze:** Calls Google PageSpeed API for performance data
+- **Process:** AI turns raw Lighthouse JSON into user-friendly reports
+- **Deliver:** Sends chunked reports to Discord channels
+- **Log:** Stores execution data for review and improvement
 
 ![Screenshot 20250719 at 14.27.24.png](fileId:1806)
 
-## 🔐 Setup Instructions
+## Setup Instructions
 
-1. Import the provided JSON workflow into your n8n instance
+1. Import the provided JSON workflow into your [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance
 
 2. Set up credentials for:
    - Google PageSpeed API (ensure you have a valid API key — get yours [here](https://developers.google.com/speed/docs/insights/v5/get-started))
-   - Discord Bot API with permissions to read messages and send messages in your chosen guild/channel
+   - Discord Bot API ([developer docs](https://discord.com/developers/docs/intro)) with permissions to read messages and send messages in your chosen guild/channel
 
 3. Customize the workflow by adjusting:
    - Discord guild and channel IDs where messages are monitored and results posted
@@ -58,16 +59,16 @@ Disclaimer: this workflow using community nodes [Google PageSpeed Insights Commu
 4. Test thoroughly with real URLs and Discord interaction to confirm smooth data flow and output quality
 
 
-## 🧩 Pre-Requirements
+## Pre-Requirements
 
-- Active n8n instance (Cloud or self-hosted)
+- Active [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance (Cloud or self-hosted)
 - [n8n Google PageSpeed community node](https://www.npmjs.com/package/n8n-nodes-google-pagespeed)
 - Google PageSpeed Insights API key
 - Discord Bot credentials with channel access
 - Google Gemini AI credentials (recommended)
 
 
-## 🛠️ Customize It Further
+## Customize It Further
 
 - Extend to analyze desktop performance or other device types easily by modifying the PageSpeed API call
 - Integrate with Slack, email, or other team tools alongside Discord for broader notification
@@ -75,7 +76,7 @@ Disclaimer: this workflow using community nodes [Google PageSpeed Insights Commu
 
 
 
-## 🧠 Nodes Used
+## Nodes Used
 
 - [Google PageSpeed Insights Community Node](https://www.npmjs.com/package/n8n-nodes-google-pagespeed)
 - Discord (getAllMessages, sendMessage)
@@ -85,15 +86,24 @@ Disclaimer: this workflow using community nodes [Google PageSpeed Insights Commu
 - Switch (message type handling)
 - Sticky Notes (workflow guidance)
 
+### Quick Answers
+**How do I run an audit?**  
+Send URLs in a Discord message or let the schedule trigger it automatically.  
+**Single URL or comparison?**  
+Both. It detects whether you sent one URL or several and adjusts the analysis.  
+**What do I need first?**  
+A Google PageSpeed API key, Discord bot credentials, and Gemini credentials.  
 
+## Support
 
-## 📞 Support
-
-Made by: **[khaisa Studio](https://khaisa.studio?utm_source=n8nofficial)**  
+Made by: **[khmuhtadin](https://khmuhtadin.com)**  
 **Tag:** automation, performance, SEO, google-pagespeed, discord  
 **Category:** Monitoring & Reporting  
 
-Need a custom solution? **[Contact Me](https://khaisa.studio/pages/contact)**
+Need a custom solution? **[Contact Me](https://khmuhtadin.com/contact)**
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

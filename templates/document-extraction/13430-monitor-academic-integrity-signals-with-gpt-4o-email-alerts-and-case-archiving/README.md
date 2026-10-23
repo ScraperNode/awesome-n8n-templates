@@ -1,6 +1,6 @@
 # 🔬 Monitor academic integrity signals with GPT-4o, email alerts and case archiving
 
-> ⚡ **4 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **38 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

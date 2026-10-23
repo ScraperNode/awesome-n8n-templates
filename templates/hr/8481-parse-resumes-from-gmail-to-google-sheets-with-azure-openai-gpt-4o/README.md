@@ -1,6 +1,6 @@
 # 👥 Parse resumes from Gmail to Google Sheets with Azure OpenAI GPT-4o
 
-> ⚡ **60 views** · 👥 [HR & Recruitment](../)
+> ⚡ **80 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

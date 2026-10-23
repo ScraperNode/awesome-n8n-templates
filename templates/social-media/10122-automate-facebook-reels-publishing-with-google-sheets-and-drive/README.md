@@ -1,6 +1,6 @@
 # 📱 Automate Facebook reels publishing with Google Sheets and Drive
 
-> ⚡ **1,105 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,050 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

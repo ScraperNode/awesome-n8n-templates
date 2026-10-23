@@ -1,6 +1,6 @@
 # ⚡ 💬 Daily WhatsApp group summarizer – GPT-4o, Google Sheets & Evolution API
 
-> ⚡ **2,304 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,446 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

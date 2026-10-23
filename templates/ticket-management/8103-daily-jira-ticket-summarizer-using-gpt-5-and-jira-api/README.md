@@ -1,6 +1,6 @@
 # 🎫 Daily Jira ticket summarizer using GPT-5 and Jira API
 
-> ⚡ **1,364 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,574 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

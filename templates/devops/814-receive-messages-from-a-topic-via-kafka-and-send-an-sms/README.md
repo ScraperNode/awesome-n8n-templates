@@ -1,6 +1,6 @@
 # ⚙️ Receive messages from a topic via Kafka and send an SMS
 
-> ⚡ **4,017 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **4,239 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

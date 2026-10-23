@@ -1,6 +1,6 @@
 # ⚒️ 🔍 Visualize your n8n workflows with Mermaid.js!
 
-> ⚡ **7,549 views** · ⚒️ [Engineering](../)
+> ⚡ **8,526 views** · ⚒️ [Engineering](../)
 
 ## Description
 

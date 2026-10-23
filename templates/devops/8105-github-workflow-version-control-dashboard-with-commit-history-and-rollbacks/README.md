@@ -1,6 +1,6 @@
 # ⚙️ GitHub workflow version control dashboard with commit history and rollbacks
 
-> ⚡ **258 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **397 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate ASMR rainforest videos from text with Seedream & Seedance on fal.ai
 
-> ⚡ **489 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **539 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

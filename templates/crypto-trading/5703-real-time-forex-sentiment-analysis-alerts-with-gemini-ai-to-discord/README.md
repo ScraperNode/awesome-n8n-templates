@@ -1,6 +1,6 @@
 # 📈 Real-time forex sentiment analysis & alerts with Gemini AI to Discord
 
-> ⚡ **382 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **443 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

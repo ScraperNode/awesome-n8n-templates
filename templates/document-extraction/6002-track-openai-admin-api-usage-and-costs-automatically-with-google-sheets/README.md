@@ -1,6 +1,6 @@
 # 🔬 Track OpenAI Admin API usage and costs automatically with Google Sheets
 
-> ⚡ **219 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **295 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

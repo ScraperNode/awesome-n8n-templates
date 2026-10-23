@@ -1,6 +1,6 @@
 # 📱 Send personalized WhatsApp templates triggered by KlickTipp with auto-responses
 
-> ⚡ **3,785 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **4,576 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

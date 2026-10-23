@@ -1,6 +1,6 @@
 # 🎣 Automate lead processing from landing pages with Zoho CRM, Jira & Slack
 
-> ⚡ **147 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **221 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

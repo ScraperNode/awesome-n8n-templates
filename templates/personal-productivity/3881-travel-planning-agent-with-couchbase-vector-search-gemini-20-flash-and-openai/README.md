@@ -1,6 +1,6 @@
 # ⚡ Travel planning agent with Couchbase vector search, Gemini 2.0 Flash and OpenAI
 
-> ⚡ **1,271 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,338 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

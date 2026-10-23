@@ -1,6 +1,6 @@
 # 💬 Automated bulk cold email sender using Gmail, SMTP and Google Sheets
 
-> ⚡ **6,731 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **9,430 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

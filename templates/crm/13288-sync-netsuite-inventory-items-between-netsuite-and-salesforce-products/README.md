@@ -1,6 +1,6 @@
 # 🤝 Sync NetSuite inventory items between NetSuite and Salesforce products
 
-> ⚡ **38 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **240 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

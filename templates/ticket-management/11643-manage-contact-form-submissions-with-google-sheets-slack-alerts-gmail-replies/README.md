@@ -1,6 +1,6 @@
 # 🎫 Manage contact form submissions with Google Sheets, Slack alerts & Gmail replies
 
-> ⚡ **228 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **360 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Magento maintenance via natural language with GPT and Telegram/WhatsApp
 
-> ⚡ **222 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **507 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 Create a self-updating RAG chatbot with Google Drive, Gemini, and Supabase
 
-> ⚡ **1,560 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **1,915 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

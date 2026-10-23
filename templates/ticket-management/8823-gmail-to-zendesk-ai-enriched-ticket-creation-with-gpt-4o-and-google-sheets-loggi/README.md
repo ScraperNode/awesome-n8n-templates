@@ -1,6 +1,6 @@
 # 🎫 Gmail to Zendesk: AI-enriched ticket creation with GPT-4o and Google Sheets logging
 
-> ⚡ **87 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **95 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Summarize text with RapidAPI and log results to Google Sheets
 
-> ⚡ **407 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **442 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

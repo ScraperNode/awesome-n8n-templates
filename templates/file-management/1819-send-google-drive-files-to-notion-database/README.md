@@ -1,6 +1,6 @@
 # 📁 Send Google Drive files to Notion database
 
-> ⚡ **3,918 views** · 📁 [File Management](../)
+> ⚡ **3,990 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔍 Build an advanced multi-query RAG system with Supabase and GPT-5
 
-> ⚡ **1,989 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **2,521 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

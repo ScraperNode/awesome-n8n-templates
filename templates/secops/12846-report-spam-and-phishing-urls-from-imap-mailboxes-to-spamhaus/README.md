@@ -1,6 +1,6 @@
 # 🔒 Report spam and phishing URLs from IMAP mailboxes to Spamhaus
 
-> ⚡ **57 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **387 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

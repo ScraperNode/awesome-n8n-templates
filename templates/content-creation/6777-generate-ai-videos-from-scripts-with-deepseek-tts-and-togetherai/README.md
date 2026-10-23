@@ -1,6 +1,6 @@
 # 🎬 Generate AI videos from scripts with DeepSeek, TTS, and Together.ai
 
-> ⚡ **35,251 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **96,377 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

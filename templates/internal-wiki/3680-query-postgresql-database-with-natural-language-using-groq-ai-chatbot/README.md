@@ -1,6 +1,6 @@
 # 📖 Query PostgreSQL database with natural language using Groq AI chatbot
 
-> ⚡ **1,042 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **1,107 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

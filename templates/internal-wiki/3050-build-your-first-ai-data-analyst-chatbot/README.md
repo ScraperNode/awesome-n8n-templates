@@ -1,6 +1,6 @@
 # 📖 Build your first AI data analyst chatbot
 
-> ⚡ **168,641 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **175,630 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

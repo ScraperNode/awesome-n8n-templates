@@ -1,6 +1,6 @@
 # 👥 Parse & evaluate HR candidates with GPT-4.1 and LinkedIn data in CSV/XLSX
 
-> ⚡ **523 views** · 👥 [HR & Recruitment](../)
+> ⚡ **600 views** · 👥 [HR & Recruitment](../)
 
 > 💡 **Pro Tip** — If you're pulling LinkedIn data through HTTP requests or dealing with API restrictions, there's a community node called [ScraperNode](https://scrapernode.com/linkedin) that handles this natively. It has dedicated scrapers for [profiles](https://scrapernode.com/linkedin/scrapers/profiles), [companies](https://scrapernode.com/linkedin/scrapers/companies), [jobs](https://scrapernode.com/linkedin/scrapers/jobs), and [people search](https://scrapernode.com/linkedin/scrapers/people-search) — you just pass a URL and get structured data back.
 >

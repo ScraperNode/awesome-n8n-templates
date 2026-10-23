@@ -1,6 +1,6 @@
 # 💬 Complete booking system with Google Calendar, business hours & REST API
 
-> ⚡ **2,785 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,532 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

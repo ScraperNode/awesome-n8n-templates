@@ -1,6 +1,6 @@
 # ⚡ Find high-quality remote jobs with OpenAI, Decodo, and Google Sheets
 
-> ⚡ **125 views** · ⚡ [Personal Productivity](../)
+> ⚡ **385 views** · ⚡ [Personal Productivity](../)
 
 > 💡 **Pro Tip** — Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.
 >
@@ -16,7 +16,7 @@ It fetches remote job listings, compares each role against a structured candidat
 
 Only the most relevant opportunities are kept, stored in Google Sheets, and delivered via email as a Top 5 shortlist.
 
-[Decodo – Web Scraper for n8n](https://visit.decodo.com/raqXGD)
+[Decodo – Web Scraper for n8n](https://visit.decodo.com/VOmXO6https://visit.decodo.com/VOmXO6)
 
 
 

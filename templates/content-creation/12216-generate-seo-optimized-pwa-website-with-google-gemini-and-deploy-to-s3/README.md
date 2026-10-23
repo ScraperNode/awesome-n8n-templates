@@ -1,6 +1,6 @@
 # 🎬 Generate SEO-optimized PWA website with Google Gemini and deploy to S3
 
-> ⚡ **7 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **41 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

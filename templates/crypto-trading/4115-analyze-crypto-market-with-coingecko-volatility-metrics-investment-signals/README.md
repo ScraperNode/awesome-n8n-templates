@@ -1,6 +1,6 @@
 # 📈 Analyze crypto market with CoinGecko: volatility metrics & investment signals
 
-> ⚡ **9,148 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **9,464 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

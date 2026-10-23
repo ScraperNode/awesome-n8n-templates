@@ -1,6 +1,6 @@
 # ⚒️ Prevent concurrent workflow runs using Redis
 
-> ⚡ **925 views** · ⚒️ [Engineering](../)
+> ⚡ **975 views** · ⚒️ [Engineering](../)
 
 ## Description
 

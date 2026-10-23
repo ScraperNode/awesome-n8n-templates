@@ -1,6 +1,6 @@
 # 💬 Automate restaurant marketing & booking with Excel, VAPI voice agent & calendar
 
-> ⚡ **8,819 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **11,223 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

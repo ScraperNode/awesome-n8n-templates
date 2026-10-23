@@ -1,6 +1,6 @@
 # 🔒 Assess credential risk and route mitigation actions with GPT-4o-mini
 
-> ⚡ **17 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **44 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎯 Automate Gmail email triage with Eisenhower Matrix and GPT-4.1-mini
 
-> ⚡ **6,497 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **6,609 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

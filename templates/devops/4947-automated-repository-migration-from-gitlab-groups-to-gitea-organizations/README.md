@@ -1,6 +1,6 @@
 # ⚙️ Automated repository migration from GitLab groups to Gitea organizations
 
-> ⚡ **139 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **158 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

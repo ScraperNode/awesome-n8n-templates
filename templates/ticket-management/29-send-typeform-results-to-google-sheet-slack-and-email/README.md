@@ -1,6 +1,6 @@
 # 🎫 Send Typeform results to Google Sheet, Slack and email
 
-> ⚡ **2,450 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **2,512 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

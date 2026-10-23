@@ -1,6 +1,6 @@
 # 👥 Automated resume scoring with Gemini LLM, Gmail and Notion job profiles
 
-> ⚡ **4,199 views** · 👥 [HR & Recruitment](../)
+> ⚡ **4,963 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

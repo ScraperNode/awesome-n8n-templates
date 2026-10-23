@@ -1,6 +1,6 @@
 # 🎬 AI: summarize podcast episode and enhance using Wikipedia
 
-> ⚡ **13,563 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **13,428 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

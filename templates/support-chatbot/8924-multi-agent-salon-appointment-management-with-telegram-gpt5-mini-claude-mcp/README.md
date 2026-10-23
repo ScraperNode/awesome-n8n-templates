@@ -1,6 +1,6 @@
 # 💬 Multi-agent salon appointment management with Telegram, GPT5-mini & Claude MCP
 
-> ⚡ **442 views** · 💬 [Support Chatbots](../)
+> ⚡ **568 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

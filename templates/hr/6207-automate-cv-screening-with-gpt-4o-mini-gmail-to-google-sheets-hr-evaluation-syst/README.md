@@ -1,6 +1,6 @@
 # 👥 Automate CV screening with GPT-4o-mini: Gmail to Google Sheets HR evaluation system
 
-> ⚡ **3,289 views** · 👥 [HR & Recruitment](../)
+> ⚡ **3,547 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

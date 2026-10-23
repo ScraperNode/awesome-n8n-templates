@@ -1,6 +1,6 @@
 # 💬 Analyze sales calls with GPT-4 and deliver coaching feedback via Slack & Sheets
 
-> ⚡ **115 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **238 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

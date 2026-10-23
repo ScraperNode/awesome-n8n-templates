@@ -1,6 +1,6 @@
 # 💬 Create a knowledge base chatbot with OpenAI and Notion for website embedding
 
-> ⚡ **403 views** · 💬 [Support Chatbots](../)
+> ⚡ **489 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

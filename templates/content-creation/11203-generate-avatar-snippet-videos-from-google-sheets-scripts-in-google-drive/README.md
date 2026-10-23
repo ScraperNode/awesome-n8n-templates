@@ -1,6 +1,6 @@
 # 🎬 Generate avatar snippet videos from Google Sheets scripts in Google Drive
 
-> ⚡ **234 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **355 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

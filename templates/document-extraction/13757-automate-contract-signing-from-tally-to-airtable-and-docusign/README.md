@@ -1,6 +1,6 @@
 # 🔬 Automate contract signing from Tally to Airtable and DocuSign
 
-> ⚡ **18 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **80 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

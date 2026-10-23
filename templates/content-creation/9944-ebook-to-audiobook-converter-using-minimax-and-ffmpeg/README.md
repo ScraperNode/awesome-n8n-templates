@@ -1,6 +1,6 @@
 # 🎬 Ebook to audiobook converter using MiniMax and FFmpeg
 
-> ⚡ **768 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **965 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

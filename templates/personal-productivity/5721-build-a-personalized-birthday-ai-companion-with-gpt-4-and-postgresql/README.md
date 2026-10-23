@@ -1,6 +1,6 @@
 # ⚡ Build a personalized birthday AI companion with GPT-4 and PostgreSQL
 
-> ⚡ **537 views** · ⚡ [Personal Productivity](../)
+> ⚡ **592 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

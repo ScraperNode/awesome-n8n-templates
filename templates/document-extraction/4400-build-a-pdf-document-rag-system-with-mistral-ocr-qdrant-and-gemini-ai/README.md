@@ -1,6 +1,6 @@
 # 🔬 Build a PDF Document RAG System with Mistral OCR, Qdrant and Gemini AI
 
-> ⚡ **44,739 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **48,046 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

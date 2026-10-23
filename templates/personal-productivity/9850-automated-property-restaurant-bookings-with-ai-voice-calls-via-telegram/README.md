@@ -1,6 +1,6 @@
 # ⚡ Automated property & restaurant bookings with AI voice calls via Telegram
 
-> ⚡ **1,365 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,940 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

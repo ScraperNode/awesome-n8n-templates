@@ -1,6 +1,6 @@
 # 🎫 Xano Support Ticket Router (AI + Xano Node Integration)
 
-> ⚡ **25 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **39 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

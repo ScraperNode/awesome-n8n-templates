@@ -1,6 +1,6 @@
 # 🤝 Complete client onboarding: Form to Monday.com, Google Drive & Email
 
-> ⚡ **288 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **415 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

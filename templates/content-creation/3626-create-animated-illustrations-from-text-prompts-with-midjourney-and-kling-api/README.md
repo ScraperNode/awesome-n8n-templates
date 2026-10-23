@@ -1,6 +1,6 @@
 # 🎬 Create animated illustrations from text prompts with Midjourney and Kling API
 
-> ⚡ **3,386 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,583 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 👥 Analyze workforce data and generate planning reports with GPT-4o
 
-> ⚡ **23 views** · 👥 [HR & Recruitment](../)
+> ⚡ **102 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

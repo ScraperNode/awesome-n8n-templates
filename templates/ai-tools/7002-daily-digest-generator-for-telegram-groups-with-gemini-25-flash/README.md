@@ -1,6 +1,6 @@
 # 🎯 Daily digest generator for Telegram groups with Gemini 2.5 Flash
 
-> ⚡ **937 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **1,072 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 3D figurine orthographic views with Midjourney and GPT-4o-image API
 
-> ⚡ **997 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,077 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

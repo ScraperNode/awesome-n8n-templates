@@ -1,6 +1,6 @@
 # 🎬 Create, update, and get a post in Ghost
 
-> ⚡ **3,759 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,903 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

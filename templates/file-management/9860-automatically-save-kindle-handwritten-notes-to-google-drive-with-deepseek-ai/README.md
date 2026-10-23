@@ -1,6 +1,6 @@
 # 📁 Automatically save Kindle handwritten notes to Google Drive with DeepSeek AI
 
-> ⚡ **202 views** · 📁 [File Management](../)
+> ⚡ **248 views** · 📁 [File Management](../)
 
 ## Description
 

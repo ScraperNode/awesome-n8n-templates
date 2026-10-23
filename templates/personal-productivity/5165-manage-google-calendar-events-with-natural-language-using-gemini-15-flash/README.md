@@ -1,6 +1,6 @@
 # ⚡ Manage Google Calendar events with natural language using Gemini 1.5 Flash
 
-> ⚡ **207 views** · ⚡ [Personal Productivity](../)
+> ⚡ **216 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

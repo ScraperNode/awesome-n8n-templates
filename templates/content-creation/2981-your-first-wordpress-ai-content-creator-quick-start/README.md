@@ -1,6 +1,6 @@
 # 🎬 ✍️🌄 Your first Wordpress + AI content creator - quick start
 
-> ⚡ **14,654 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **14,632 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 Store form submission in Airtable
 
-> ⚡ **2,022 views** · 🔧 [Miscellaneous](../)
+> ⚡ **2,083 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

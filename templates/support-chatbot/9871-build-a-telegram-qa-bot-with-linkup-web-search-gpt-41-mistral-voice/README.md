@@ -1,6 +1,6 @@
 # 💬 Build a Telegram Q&A bot with Linkup web search, GPT-4.1 & Mistral voice
 
-> ⚡ **277 views** · 💬 [Support Chatbots](../)
+> ⚡ **327 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

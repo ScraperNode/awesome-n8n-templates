@@ -1,6 +1,6 @@
 # 🔬 Create an event file and send it as an email attachment
 
-> ⚡ **5,445 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **5,651 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

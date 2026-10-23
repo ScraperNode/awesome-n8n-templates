@@ -1,6 +1,6 @@
 # ⚙️ Create, update, and get an incident on PagerDuty
 
-> ⚡ **721 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **747 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

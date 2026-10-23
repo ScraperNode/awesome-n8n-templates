@@ -1,6 +1,6 @@
 # ⚙️ Set up complete MERN stack development environment on Linux server
 
-> ⚡ **275 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **311 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

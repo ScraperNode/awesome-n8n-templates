@@ -1,6 +1,6 @@
 # ⚡ Convert URL-encoded webhook data from amoCRM to structured array
 
-> ⚡ **425 views** · ⚡ [Personal Productivity](../)
+> ⚡ **590 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

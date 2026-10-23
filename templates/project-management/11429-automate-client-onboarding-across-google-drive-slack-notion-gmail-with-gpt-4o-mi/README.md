@@ -1,6 +1,6 @@
 # 📋 Automate client onboarding across Google Drive, Slack, Notion & Gmail with GPT-4o-mini
 
-> ⚡ **200 views** · 📋 [Project Management](../)
+> ⚡ **304 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate DraftKings DFS lineups with GPT-4o, Google Sheets, email and Slack alerts
 
-> ⚡ **6 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **28 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >

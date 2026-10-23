@@ -1,6 +1,6 @@
 # 🎬 Auto-generate & post AI images to Facebook using Gemini & Pollinations AI
 
-> ⚡ **7,880 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **10,554 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — If you've run into Facebook's Graph API permission restrictions, [ScraperNode](https://scrapernode.com/facebook) is a community node that scrapes [pages](https://scrapernode.com/facebook/scrapers/profiles), [groups](https://scrapernode.com/facebook/scrapers/groups), [posts](https://scrapernode.com/facebook/scrapers/posts), and [comments](https://scrapernode.com/facebook/scrapers/comments) directly — no app review needed.
 >

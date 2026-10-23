@@ -1,6 +1,6 @@
 # 👥 Generate tailored interview questions with GPT-4 based on CV, JD, and round
 
-> ⚡ **1,292 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,648 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Weekly Magento 2 stuck order reporting with Gmail & Google Sheets
 
-> ⚡ **49 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **63 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

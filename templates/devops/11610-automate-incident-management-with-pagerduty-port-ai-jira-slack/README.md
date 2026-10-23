@@ -1,6 +1,6 @@
 # ⚙️ Automate Incident Management with PagerDuty, Port AI, Jira & Slack
 
-> ⚡ **95 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **208 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

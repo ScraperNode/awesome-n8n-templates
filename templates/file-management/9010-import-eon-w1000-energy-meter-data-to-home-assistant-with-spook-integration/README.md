@@ -1,6 +1,6 @@
 # 📁 Import E.ON W1000 energy meter data to Home Assistant with Spook integration
 
-> ⚡ **329 views** · 📁 [File Management](../)
+> ⚡ **439 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 AI-powered LinkedIn content engine (n8n + OpenAI + Perplexity + Replicate)
 
-> ⚡ **2,111 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,327 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

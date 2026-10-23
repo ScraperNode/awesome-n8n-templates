@@ -1,6 +1,6 @@
 # ⚙️ Generate Azure VM timeline reports with Google Gemini AI chat assistant
 
-> ⚡ **682 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **724 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

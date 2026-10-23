@@ -1,6 +1,6 @@
 # 📁 Download and merge multiple PDFs from URLs with the CustomJS API
 
-> ⚡ **2,421 views** · 📁 [File Management](../)
+> ⚡ **2,604 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Purge n8n execution history located in Mysql
 
-> ⚡ **2,418 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,458 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

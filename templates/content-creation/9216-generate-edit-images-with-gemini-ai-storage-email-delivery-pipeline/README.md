@@ -1,6 +1,6 @@
 # 🎬 Generate & edit images with Gemini AI: storage & email delivery pipeline
 
-> ⚡ **79 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **106 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

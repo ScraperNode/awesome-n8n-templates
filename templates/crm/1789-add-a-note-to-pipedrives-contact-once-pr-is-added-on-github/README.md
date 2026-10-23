@@ -1,6 +1,6 @@
 # 🤝 Add a note to Pipedrive's contact once PR is added on GitHub
 
-> ⚡ **1,089 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,178 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

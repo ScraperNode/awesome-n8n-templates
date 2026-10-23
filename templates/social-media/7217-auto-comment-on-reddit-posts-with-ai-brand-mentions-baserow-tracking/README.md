@@ -1,6 +1,6 @@
 # 📱 Auto-comment on Reddit posts with AI brand mentions & Baserow tracking
 
-> ⚡ **924 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,045 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

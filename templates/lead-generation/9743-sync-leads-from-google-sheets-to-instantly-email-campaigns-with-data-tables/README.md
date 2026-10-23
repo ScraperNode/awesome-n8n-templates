@@ -1,6 +1,6 @@
 # 🎣 Sync leads from Google Sheets to instantly email campaigns with data tables
 
-> ⚡ **505 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **640 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

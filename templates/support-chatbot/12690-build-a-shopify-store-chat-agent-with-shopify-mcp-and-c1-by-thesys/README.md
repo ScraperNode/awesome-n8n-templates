@@ -1,6 +1,6 @@
 # 💬 Build a Shopify store chat agent with Shopify MCP and C1 by Thesys
 
-> ⚡ **40 views** · 💬 [Support Chatbots](../)
+> ⚡ **170 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

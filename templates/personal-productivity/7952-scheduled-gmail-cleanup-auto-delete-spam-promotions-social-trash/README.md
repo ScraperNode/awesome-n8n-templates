@@ -1,6 +1,6 @@
 # ⚡ Scheduled Gmail cleanup - auto-delete spam, promotions, social & trash
 
-> ⚡ **1,455 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,268 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

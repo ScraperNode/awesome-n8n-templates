@@ -1,6 +1,6 @@
 # 🎬 Qr code generator via webhook
 
-> ⚡ **5,529 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **6,424 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

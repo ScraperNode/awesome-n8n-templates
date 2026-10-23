@@ -1,6 +1,6 @@
 # ⚒️ Create a complete AI engineering department with OpenAI O3 and specialized agents
 
-> ⚡ **2,728 views** · ⚒️ [Engineering](../)
+> ⚡ **3,131 views** · ⚒️ [Engineering](../)
 
 ## Description
 

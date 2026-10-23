@@ -1,6 +1,6 @@
 # 🔬 Evaluate vendor PDFs with OpenAI and auto-respond via Slack and webhook
 
-> ⚡ **5 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **41 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

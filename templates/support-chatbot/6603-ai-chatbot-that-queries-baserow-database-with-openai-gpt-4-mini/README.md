@@ -1,6 +1,6 @@
 # 💬 AI chatbot that queries Baserow database with OpenAI GPT-4 mini
 
-> ⚡ **82 views** · 💬 [Support Chatbots](../)
+> ⚡ **100 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

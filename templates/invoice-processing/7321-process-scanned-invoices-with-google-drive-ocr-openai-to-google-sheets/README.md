@@ -1,6 +1,6 @@
 # 🧾 Process scanned invoices with Google Drive, OCR & OpenAI to Google Sheets
 
-> ⚡ **1,572 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,858 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

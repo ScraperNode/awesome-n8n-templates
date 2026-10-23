@@ -1,6 +1,6 @@
 # 💬 Abandoned cart recovery for Shopify via Gmail, Google Sheets & Twilio (no-code)
 
-> ⚡ **1,296 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,344 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

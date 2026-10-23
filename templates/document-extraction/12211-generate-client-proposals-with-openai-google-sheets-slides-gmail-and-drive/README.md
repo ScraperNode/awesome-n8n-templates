@@ -1,6 +1,6 @@
 # 🔬 Generate client proposals with OpenAI, Google Sheets, Slides, Gmail, and Drive
 
-> ⚡ **222 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **340 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Research US legal regulations with CourtListener, LegiScan, OpenRouter and web search
 
-> ⚡ **82 views** · 📊 [Market Research & Insights](../)
+> ⚡ **143 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

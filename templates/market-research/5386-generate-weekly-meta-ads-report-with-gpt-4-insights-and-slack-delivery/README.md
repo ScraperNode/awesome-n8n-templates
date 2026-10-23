@@ -1,6 +1,6 @@
 # 📊 Generate weekly Meta Ads report with GPT-4 insights and Slack delivery
 
-> ⚡ **3,967 views** · 📊 [Market Research & Insights](../)
+> ⚡ **4,287 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

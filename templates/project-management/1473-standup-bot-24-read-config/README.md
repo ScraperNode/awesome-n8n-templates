@@ -1,6 +1,6 @@
 # 📋 Standup bot (2/4): read config
 
-> ⚡ **1,456 views** · 📋 [Project Management](../)
+> ⚡ **1,480 views** · 📋 [Project Management](../)
 
 ## Description
 

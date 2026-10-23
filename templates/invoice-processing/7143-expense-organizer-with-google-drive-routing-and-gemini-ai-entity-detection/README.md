@@ -1,6 +1,6 @@
 # 🧾 Expense organizer with Google Drive routing and Gemini AI entity detection
 
-> ⚡ **784 views** · 🧾 [Invoice Processing](../)
+> ⚡ **982 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

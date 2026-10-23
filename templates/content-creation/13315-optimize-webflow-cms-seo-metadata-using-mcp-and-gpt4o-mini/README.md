@@ -1,6 +1,6 @@
 # 🎬 Optimize Webflow CMS SEO metadata using MCP and GPT‑4o-mini
 
-> ⚡ **63 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **228 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

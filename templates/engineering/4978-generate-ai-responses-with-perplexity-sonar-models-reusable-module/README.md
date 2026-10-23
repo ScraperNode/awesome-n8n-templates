@@ -1,6 +1,6 @@
 # ⚒️ Generate AI Responses with Perplexity Sonar Models (Reusable Module)
 
-> ⚡ **433 views** · ⚒️ [Engineering](../)
+> ⚡ **494 views** · ⚒️ [Engineering](../)
 
 ## Description
 

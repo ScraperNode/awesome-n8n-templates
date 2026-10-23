@@ -1,6 +1,6 @@
 # 🔬 Decrypt legacy PDF archives with HTML to PDF, PostgreSQL and Google Drive
 
-> ⚡ **11 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **40 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

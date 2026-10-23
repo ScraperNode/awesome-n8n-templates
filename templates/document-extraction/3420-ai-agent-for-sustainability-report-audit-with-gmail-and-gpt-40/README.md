@@ -1,6 +1,6 @@
 # 🔬 🌲 AI agent for sustainability report audit with Gmail and GPT-40
 
-> ⚡ **1,675 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,790 views** · 🔬 [Document Extraction & Analysis](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

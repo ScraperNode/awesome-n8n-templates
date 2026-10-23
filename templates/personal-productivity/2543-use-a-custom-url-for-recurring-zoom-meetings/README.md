@@ -1,6 +1,6 @@
 # ⚡ Use a custom URL for recurring Zoom meetings
 
-> ⚡ **1,570 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,600 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

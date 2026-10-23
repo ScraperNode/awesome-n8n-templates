@@ -1,6 +1,6 @@
 # ⚒️ Fetch scriptures dynamically from get Bible API
 
-> ⚡ **1,051 views** · ⚒️ [Engineering](../)
+> ⚡ **1,155 views** · ⚒️ [Engineering](../)
 
 ## Description
 

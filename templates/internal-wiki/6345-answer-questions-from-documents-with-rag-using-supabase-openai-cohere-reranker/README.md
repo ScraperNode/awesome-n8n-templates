@@ -1,6 +1,6 @@
 # 📖 Answer questions from documents with RAG using Supabase, OpenAI & Cohere reranker
 
-> ⚡ **1,523 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **1,672 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

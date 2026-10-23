@@ -1,6 +1,6 @@
 # ⚙️ Automate incident response with Jira, Slack, Google Sheets & Drive
 
-> ⚡ **674 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,060 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

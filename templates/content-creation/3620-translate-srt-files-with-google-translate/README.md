@@ -1,6 +1,6 @@
 # 🎬 Translate SRT files with Google Translate
 
-> ⚡ **1,657 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,953 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

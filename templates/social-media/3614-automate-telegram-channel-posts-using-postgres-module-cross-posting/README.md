@@ -1,6 +1,6 @@
 # 📱 Automate Telegram channel posts using Postgres (Module "Cross-Posting")
 
-> ⚡ **680 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **762 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

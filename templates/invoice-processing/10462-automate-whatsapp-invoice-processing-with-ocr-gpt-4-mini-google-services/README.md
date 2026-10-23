@@ -1,6 +1,6 @@
 # 🧾 Automate WhatsApp invoice processing with OCR, GPT-4 Mini & Google Services
 
-> ⚡ **1,146 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,999 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

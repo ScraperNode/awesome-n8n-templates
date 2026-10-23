@@ -1,6 +1,6 @@
 # 👥 Employee attrition risk detection & HR alerts using Azure OpenAI GPT-4o-mini & Gmail
 
-> ⚡ **185 views** · 👥 [HR & Recruitment](../)
+> ⚡ **250 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

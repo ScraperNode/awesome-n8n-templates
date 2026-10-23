@@ -1,6 +1,6 @@
 # 🎯 Daily AI news digest with RSS, Llama 3.2 summarization & Telegram delivery
 
-> ⚡ **2,338 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **3,059 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Create secure interactive applications with WhatsApp flows end-to-end encryption
 
-> ⚡ **1,101 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,353 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

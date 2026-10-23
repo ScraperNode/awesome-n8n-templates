@@ -1,6 +1,6 @@
 # 👥 AI-powered CV extractor: Google Drive to Sheet with GPT-4 + Slack for recruiters
 
-> ⚡ **1,166 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,398 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

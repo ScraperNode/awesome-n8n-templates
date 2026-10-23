@@ -1,6 +1,6 @@
 # 🔬 WebhookDocs: generate swagger preview of your active workflows
 
-> ⚡ **1,209 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,442 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

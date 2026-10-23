@@ -1,6 +1,6 @@
 # 🤝 Create a new user in Intercom
 
-> ⚡ **826 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **866 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

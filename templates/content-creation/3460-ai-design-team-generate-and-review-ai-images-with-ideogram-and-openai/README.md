@@ -1,6 +1,6 @@
 # 🎬 🎨 AI design team - generate and review AI images with Ideogram and OpenAI
 
-> ⚡ **12,350 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **13,254 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

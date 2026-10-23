@@ -1,6 +1,6 @@
 # ⚡ Family assistant: Schedule, meal & routine management with Email & Telegram
 
-> ⚡ **637 views** · ⚡ [Personal Productivity](../)
+> ⚡ **730 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Google Drive to Pinecone vector storage workflow
 
-> ⚡ **294 views** · ⚡ [Personal Productivity](../)
+> ⚡ **369 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

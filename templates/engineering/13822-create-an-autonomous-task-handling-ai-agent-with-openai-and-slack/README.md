@@ -1,6 +1,6 @@
 # ⚒️ Create an autonomous task-handling AI agent with OpenAI and Slack
 
-> ⚡ **29 views** · ⚒️ [Engineering](../)
+> ⚡ **325 views** · ⚒️ [Engineering](../)
 
 ## Description
 

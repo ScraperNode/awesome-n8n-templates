@@ -1,6 +1,6 @@
 # 📱 Create a user profile in Vero
 
-> ⚡ **374 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **388 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

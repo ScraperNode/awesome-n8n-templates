@@ -1,6 +1,6 @@
 # 🔬 Convert meeting recordings to notes & action items with AssemblyAI, GPT-4 & Sheets
 
-> ⚡ **363 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **593 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

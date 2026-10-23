@@ -1,6 +1,6 @@
 # 📋 Daily task reminder system: Airtable to Slack automated notifications
 
-> ⚡ **1,778 views** · 📋 [Project Management](../)
+> ⚡ **1,941 views** · 📋 [Project Management](../)
 
 ## Description
 

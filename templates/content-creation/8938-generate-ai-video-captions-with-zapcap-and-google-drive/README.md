@@ -1,6 +1,6 @@
 # 🎬 Generate AI video captions with ZapCap and Google Drive
 
-> ⚡ **375 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **391 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

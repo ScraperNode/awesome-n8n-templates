@@ -1,6 +1,6 @@
 # 🔒 Cybersecurity assistant with GPT-4, Telegram bot & command execution
 
-> ⚡ **1,878 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,301 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

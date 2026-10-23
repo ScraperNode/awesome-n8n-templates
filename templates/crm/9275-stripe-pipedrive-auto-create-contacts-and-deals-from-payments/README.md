@@ -1,6 +1,6 @@
 # 🤝 Stripe → Pipedrive: Auto create contacts and deals from payments
 
-> ⚡ **146 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **185 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Process images with Background Remover AI and track results in Google Sheets
 
-> ⚡ **754 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **876 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

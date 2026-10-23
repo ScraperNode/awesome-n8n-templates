@@ -1,6 +1,6 @@
 # 🔬 Extract web page data from Gmail links and save to Google Sheets
 
-> ⚡ **186 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **220 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

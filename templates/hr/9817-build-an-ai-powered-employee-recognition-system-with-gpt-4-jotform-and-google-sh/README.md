@@ -1,6 +1,6 @@
 # 👥 Build an AI-powered employee recognition system with GPT-4, Jotform and Google Sheets
 
-> ⚡ **91 views** · 👥 [HR & Recruitment](../)
+> ⚡ **110 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

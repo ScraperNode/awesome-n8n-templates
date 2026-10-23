@@ -1,6 +1,6 @@
 # 🔬 Convert tour PDFs to vector database using Google Drive, LangChain & OpenAI
 
-> ⚡ **1,389 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,586 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

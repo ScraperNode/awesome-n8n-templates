@@ -1,6 +1,6 @@
 # 🤝 Complete Shopify to Odoo integration: Sync orders, products & customers
 
-> ⚡ **991 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,080 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

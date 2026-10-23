@@ -1,6 +1,6 @@
 # 📱 Send scheduled RSS news digest emails with formatted HTML in Gmail
 
-> ⚡ **732 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **896 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

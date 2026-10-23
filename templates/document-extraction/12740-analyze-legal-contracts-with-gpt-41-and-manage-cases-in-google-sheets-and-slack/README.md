@@ -1,6 +1,6 @@
 # 🔬 Analyze legal contracts with GPT-4.1 and manage cases in Google Sheets and Slack
 
-> ⚡ **480 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **597 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

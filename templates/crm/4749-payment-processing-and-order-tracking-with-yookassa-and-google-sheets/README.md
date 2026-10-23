@@ -1,6 +1,6 @@
 # 🤝 Payment processing and order tracking with YooKassa and Google Sheets
 
-> ⚡ **1,069 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,284 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

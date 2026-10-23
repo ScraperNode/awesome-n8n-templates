@@ -1,6 +1,6 @@
 # 🎬 Create hours-long wave music videos with Suno, ffmpeg-api and YouTube
 
-> ⚡ **970 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,766 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

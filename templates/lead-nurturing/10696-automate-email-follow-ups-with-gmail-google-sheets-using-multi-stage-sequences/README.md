@@ -1,6 +1,6 @@
 # 💬 Automate email follow-ups with Gmail & Google Sheets using multi-stage sequences
 
-> ⚡ **298 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **583 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

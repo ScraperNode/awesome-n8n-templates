@@ -1,6 +1,6 @@
 # 🎣 Scrape & enrich Google Maps leads with Decodo API and Gemini 2.5 Flash
 
-> ⚡ **439 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **497 views** · 🎣 [Lead Generation & Enrichment](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -8,34 +8,34 @@
 
 ## Description
 
-This workflow scrapes Google Maps via Decodo API, analyzes each business using Google Gemini 2.5 Flash, scores lead quality, and generates ready to send outreach emails.
+Turn Google Maps into a lead machine. This workflow scrapes listings with the Decodo API, scores each business with Google Gemini, and writes ready-to-send outreach emails. Research that took 20 minutes per lead now runs 100 leads in under an hour.
 
+*Last updated: September 2026.*
 
 ## Why Use This Workflow?
 
-- **Time Savings:** Reduces manual lead research from 20 minutes per lead to 30 seconds processing 100 leads in under an hour
-- **Cost Reduction:** Eliminates $300-500/month spent on lead databases and enrichment tools like Apollo or ZoomInfo
-
-- **Scalability:** Process 500+ leads daily without additional staff or subscription costs
+- **Time Savings:** Manual lead research drops from 20 minutes per lead to 30 seconds. 100 leads in under an hour.
+- **Cost Reduction:** Skip $300-500/month lead databases and enrichment tools like Apollo or ZoomInfo.
+- **Scalability:** Process 500+ leads daily without extra staff or subscriptions.
 
 
 ## Ideal For
 
-- **Sales Teams & BDRs:** Building targeted prospect lists for local businesses (restaurants, retail, service providers) with verified contact data and personalized outreach hooks
-- **Digital Marketing Agencies:** Identifying high-value clients in specific niches (e.g., "restaurants without websites in Chicago") and automating first-touch campaigns
-- **B2B SaaS Companies:** Finding businesses matching ideal customer profiles based on ratings, reviews, and digital maturity indicators
-- **Local Service Providers:** Generating qualified leads for web design, SEO, POS systems, or booking software tailored to underserved markets
+- **Sales Teams & BDRs:** Targeted prospect lists for local businesses (restaurants, retail, service providers) with verified contacts and outreach hooks.
+- **Digital Marketing Agencies:** High-value clients in specific niches (e.g., "restaurants without websites in Chicago") with automated first-touch campaigns.
+- **B2B SaaS Companies:** Businesses matching ideal customer profiles based on ratings, reviews, and digital maturity.
+- **Local Service Providers:** Qualified leads for web design, SEO, POS systems, or booking software in underserved markets.
 
 
 
 ## How It Works
 
-1. **Trigger:** Manually start the workflow or schedule it to run on specific intervals (e.g., daily/weekly)
-2. **Data Collection:** Scrapes Google Maps search results using Decodo API based on your query (e.g., "coffee shops in Austin"), country, and language settings
-3. **Processing:** Parses raw HTML responses into structured lead objects with business name, address, phone, website, ratings, reviews, and coordinates
-4. **Intelligence Layer:** Google Gemini 2.5 Flash analyzes each lead to generate value propositions, identify pain points, create outreach hooks, and assign a 1-10 quality score
-5. **Output & Delivery:** Filters leads scoring ≥7, generates personalized email templates, and saves all data to Google Sheets with enrichment timestamps
-6. **Storage & Logging:** Maintains complete lead database with outreach status tracking; error handler sends Telegram notifications for failed executions
+1. **Trigger:** Start manually or schedule it (e.g., daily/weekly).
+2. **Data Collection:** Scrapes Google Maps results with the Decodo API using your query (e.g., "coffee shops in Austin"), country, and language.
+3. **Processing:** Parses raw HTML into structured leads: business name, address, phone, website, ratings, reviews, coordinates.
+4. **Intelligence Layer:** Google Gemini analyzes each lead for value propositions, pain points, outreach hooks, and a 1-10 quality score.
+5. **Output & Delivery:** Leads scoring 7+ get personalized email templates. Everything saves to Google Sheets with enrichment timestamps.
+6. **Storage & Logging:** Complete lead database with outreach status tracking. Telegram alerts on failed runs.
 
 
 
@@ -45,18 +45,18 @@ This workflow scrapes Google Maps via Decodo API, analyzes each business using G
 
 | Requirement | Type | Purpose |
 |-------------|------|---------|
-| [n8n instance](https://n8n.partnerlinks.io/khmuhtadin) | Essential | Workflow execution platform |
-| [Decodo Scraper API](dashboard.decodo.com/register?referral_code=744f4d340e73d131117de4af6a3129e343f0f8e4) | Essential | Google Maps data extraction (get key at [dashboard.decodo.com](dashboard.decodo.com/register?referral_code=744f4d340e73d131117de4af6a3129e343f0f8e4)) |
+| [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin) | Essential | Workflow execution platform |
+| [Decodo Scrapper API](https://visit.decodo.com/1G9ox6) | Essential | Google Maps data extraction (get key at [dashboard.decodo.com](https://dashboard.decodo.com/register?referral_code=744f4d340e73d131117de4af6a3129e343f0f8e4)) |
 | Google Gemini API | Essential | AI-powered lead analysis and scoring |
 | Google Sheets | Essential | Lead database and outreach tracking |
 | Telegram Bot (optional) | Optional | Real-time error notifications |
 
 ### Installation Steps
 
-1. Import the JSON file to your [n8n instance](https://n8n.partnerlinks.io/khmuhtadin)
+1. Import the JSON file to your [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin)
 
 2. **Configure credentials:**
-   - **Decodo API:** Create HTTP Header Auth credential with header name `Authorization` and value `Basic [YOUR_API_KEY]` get from [Decodo dashboard](https://dashboard.decodo.com/web-scraping-api/scraper)
+   - **[Decodo API](https://visit.decodo.com/1G9ox6):** Create HTTP Header Auth credential with header name `Authorization` and value `Basic [YOUR_API_KEY]` get from [Decodo dashboard](https://dashboard.decodo.com/web-scraping-api/scraper)
    - **Google Gemini API:** Add your Google AI API key in the "2.5 Flash" node credentials
    - **Google Sheets OAuth2:** Authenticate with your Google account (both "Save to Google Sheets" and "Save Outreach To Sheets" nodes)
    - **Telegram (optional):** Add bot token and replace `YOUR-CHAT-ID` in "Send Error Notification" node
@@ -143,17 +143,28 @@ This workflow scrapes Google Maps via Decodo API, analyzes each business using G
 
 ---
 
+### Quick Answers
+**How do I start small?**  
+Set `resultsLimit: 5` first to verify connections, Sheets formatting, and AI output quality.  
+**What counts as a hot lead?**  
+Score ≥7 plus validated contact info. Adjust the threshold in "Filter Hot Leads".  
+**Where does everything land?**  
+Google Sheets: all enriched leads in one tab, hot leads with messages in another.  
+
 ## Credits & Links
 
-**Created by:** [Khaisa Studio](https://khaisa.studio)
+**Made by:** [khmuhtadin](https://khmuhtadin.com)
 
 **Category:** Sales & CRM | **Tags:** lead-generation, google-maps, ai-enrichment, sales-automation, prospecting
 
-**Need custom workflows?** [Contact us](https://khaisa.studio/contact)
+**Need custom workflows?** [Contact me](https://khmuhtadin.com/contact)
 
 **Connect with the creator:**
 
 [Portfolio](https://khmuhtadin.com) • [Workflows](https://khaisa.studio/products/) • [LinkedIn](https://www.linkedin.com/in/khmuhtadin/) • [Medium](https://medium.com/@khaisastudio) • [Threads](https://www.threads.com/@khmuhtadin)
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

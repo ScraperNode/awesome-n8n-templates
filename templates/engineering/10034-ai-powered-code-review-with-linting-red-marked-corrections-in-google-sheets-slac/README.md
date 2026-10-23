@@ -1,6 +1,6 @@
 # ⚒️ AI-powered code review with linting, red-marked corrections in Google Sheets & Slack
 
-> ⚡ **129 views** · ⚒️ [Engineering](../)
+> ⚡ **241 views** · ⚒️ [Engineering](../)
 
 ## Description
 

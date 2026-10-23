@@ -1,6 +1,6 @@
 # ⚒️ Build your own PostgreSQL MCP server
 
-> ⚡ **9,419 views** · ⚒️ [Engineering](../)
+> ⚡ **10,188 views** · ⚒️ [Engineering](../)
 
 ## Description
 

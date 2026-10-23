@@ -1,6 +1,6 @@
 # ⚙️ Automate ETL error monitoring with AI classification, Sheets logging & Jira alerts
 
-> ⚡ **69 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **143 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

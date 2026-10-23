@@ -1,6 +1,6 @@
 # 🎣 Auto-sync and qualify HubSpot CRM contacts with Lusha bulk enrichment
 
-> ⚡ **1 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **51 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

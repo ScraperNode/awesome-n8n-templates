@@ -1,6 +1,6 @@
 # 💬 Medical Q&A chatbot for urology using RAG with Pinecone and GPT-4o
 
-> ⚡ **4,175 views** · 💬 [Support Chatbots](../)
+> ⚡ **4,574 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

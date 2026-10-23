@@ -1,6 +1,6 @@
 # 🤝 Automate Shopify orders from Airtable with Gmail confirmations
 
-> ⚡ **239 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **308 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

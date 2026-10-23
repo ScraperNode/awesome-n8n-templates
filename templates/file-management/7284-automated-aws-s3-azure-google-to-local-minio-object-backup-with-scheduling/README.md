@@ -1,6 +1,6 @@
 # 📁 Automated AWS S3 / Azure / Google to local MinIO object backup with scheduling
 
-> ⚡ **716 views** · 📁 [File Management](../)
+> ⚡ **906 views** · 📁 [File Management](../)
 
 ## Description
 

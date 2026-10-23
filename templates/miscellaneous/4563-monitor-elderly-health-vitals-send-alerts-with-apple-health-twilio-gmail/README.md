@@ -1,6 +1,6 @@
 # 🔧 Monitor elderly health vitals & send alerts with Apple Health, Twilio & Gmail
 
-> ⚡ **949 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,193 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

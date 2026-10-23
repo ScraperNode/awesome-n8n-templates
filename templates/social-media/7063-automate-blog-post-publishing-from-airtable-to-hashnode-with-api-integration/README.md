@@ -1,6 +1,6 @@
 # 📱 Automate blog post publishing from Airtable to Hashnode with API integration
 
-> ⚡ **270 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **301 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

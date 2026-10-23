@@ -1,6 +1,6 @@
 # 🎫 Automate Google My Business responses with Gemini AI and Google Sheets tracking
 
-> ⚡ **136 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **330 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

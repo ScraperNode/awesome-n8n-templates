@@ -1,6 +1,6 @@
 # 🎫 Draft Gmail replies with OpenAI and OpenRouter for an inbox-zero workflow
 
-> ⚡ **80 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **198 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

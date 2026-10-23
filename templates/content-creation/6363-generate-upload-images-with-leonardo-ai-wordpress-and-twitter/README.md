@@ -1,6 +1,6 @@
 # 🎬 Generate & upload images with Leonardo AI, WordPress and Twitter
 
-> ⚡ **1,695 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,886 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

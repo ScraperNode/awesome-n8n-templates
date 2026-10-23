@@ -1,6 +1,6 @@
 # ⚡ Send Daily Meetings in Google Calendar to Telegram
 
-> ⚡ **11,511 views** · ⚡ [Personal Productivity](../)
+> ⚡ **11,574 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

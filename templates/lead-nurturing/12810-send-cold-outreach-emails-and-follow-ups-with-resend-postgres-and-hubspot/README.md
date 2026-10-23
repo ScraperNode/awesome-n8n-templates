@@ -1,6 +1,6 @@
 # 💬 Send cold outreach emails and follow-ups with Resend, Postgres and HubSpot
 
-> ⚡ **70 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **297 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

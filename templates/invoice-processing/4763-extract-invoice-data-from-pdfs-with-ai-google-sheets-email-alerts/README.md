@@ -1,6 +1,6 @@
 # 🧾 Extract invoice data from PDFs with AI - Google Sheets  Email alerts
 
-> ⚡ **1,248 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,366 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

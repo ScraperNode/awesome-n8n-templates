@@ -1,6 +1,6 @@
 # 📊 Track play store app rankings with SerpApi, Baserow & Slack alerts
 
-> ⚡ **121 views** · 📊 [Market Research & Insights](../)
+> ⚡ **145 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 Generate AI trading alerts from CoinGecko and Alpha Vantage via Slack, email and SMS
 
-> ⚡ **480 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **4,549 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

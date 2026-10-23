@@ -1,6 +1,6 @@
 # 🎬 Bytedance Seedream 3: text-to-image transformation template
 
-> ⚡ **1,135 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,205 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Receive updates for Bitbucket events
 
-> ⚡ **2,199 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,346 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Send automated payment reminders for Xero invoices via Outlook email
 
-> ⚡ **130 views** · 🧾 [Invoice Processing](../)
+> ⚡ **250 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

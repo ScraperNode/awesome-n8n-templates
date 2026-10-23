@@ -1,6 +1,6 @@
 # 📱 Send a message with a Discord bot
 
-> ⚡ **8,651 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **8,756 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

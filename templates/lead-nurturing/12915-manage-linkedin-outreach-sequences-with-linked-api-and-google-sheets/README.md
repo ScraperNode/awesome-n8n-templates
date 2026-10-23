@@ -1,6 +1,6 @@
 # 💬 Manage LinkedIn outreach sequences with Linked API and Google Sheets
 
-> ⚡ **108 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **540 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

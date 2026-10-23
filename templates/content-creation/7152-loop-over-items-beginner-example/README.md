@@ -1,6 +1,6 @@
 # 🎬 Loop over items — beginner example
 
-> ⚡ **4,794 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,433 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

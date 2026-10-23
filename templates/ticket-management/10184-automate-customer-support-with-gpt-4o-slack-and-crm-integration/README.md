@@ -1,6 +1,6 @@
 # 🎫 Automate customer support with GPT-4o, Slack, and CRM integration
 
-> ⚡ **97 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **151 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

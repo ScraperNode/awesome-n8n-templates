@@ -1,6 +1,6 @@
 # 📊 AI automate UX feedback: Sentiment & emotion analysis in Google Sheets + OpenAI
 
-> ⚡ **341 views** · 📊 [Market Research & Insights](../)
+> ⚡ **480 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

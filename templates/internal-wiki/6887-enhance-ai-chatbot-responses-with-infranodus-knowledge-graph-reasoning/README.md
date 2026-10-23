@@ -1,6 +1,6 @@
 # 📖 Enhance AI chatbot responses with InfraNodus knowledge graph reasoning
 
-> ⚡ **665 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **699 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

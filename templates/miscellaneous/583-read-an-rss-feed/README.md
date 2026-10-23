@@ -1,6 +1,6 @@
 # 🔧 Read an RSS feed
 
-> ⚡ **4,682 views** · 🔧 [Miscellaneous](../)
+> ⚡ **5,055 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

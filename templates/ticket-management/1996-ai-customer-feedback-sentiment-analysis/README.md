@@ -1,6 +1,6 @@
 # 🎫 AI customer feedback sentiment analysis
 
-> ⚡ **10,131 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **10,278 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

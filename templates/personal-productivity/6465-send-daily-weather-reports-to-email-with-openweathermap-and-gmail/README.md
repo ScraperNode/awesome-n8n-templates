@@ -1,6 +1,6 @@
 # ⚡ Send daily weather reports to email with OpenWeatherMap and Gmail
 
-> ⚡ **568 views** · ⚡ [Personal Productivity](../)
+> ⚡ **714 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

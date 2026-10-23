@@ -1,6 +1,6 @@
 # 📈 Track crypto prices & FX rates with CoinGecko & ExchangeRate-API to Notion
 
-> ⚡ **276 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **317 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

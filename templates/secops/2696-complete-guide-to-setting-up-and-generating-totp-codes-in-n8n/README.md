@@ -1,6 +1,6 @@
 # 🔒 Complete guide to setting up and generating TOTP codes in n8n 🔐
 
-> ⚡ **1,373 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,555 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

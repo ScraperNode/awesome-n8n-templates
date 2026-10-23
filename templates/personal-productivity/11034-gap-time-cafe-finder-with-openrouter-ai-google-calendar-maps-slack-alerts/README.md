@@ -1,6 +1,6 @@
 # ⚡ Gap-time cafe finder with OpenRouter AI, Google Calendar, Maps & Slack alerts
 
-> ⚡ **136 views** · ⚡ [Personal Productivity](../)
+> ⚡ **199 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

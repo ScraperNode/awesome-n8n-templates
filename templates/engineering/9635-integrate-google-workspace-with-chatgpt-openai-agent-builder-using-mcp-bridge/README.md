@@ -1,6 +1,6 @@
 # ⚒️ Integrate Google Workspace with ChatGPT & OpenAI Agent Builder using MCP Bridge
 
-> ⚡ **439 views** · ⚒️ [Engineering](../)
+> ⚡ **656 views** · ⚒️ [Engineering](../)
 
 ## Description
 

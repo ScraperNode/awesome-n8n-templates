@@ -1,6 +1,6 @@
 # 👥 Automate CV screening & analysis with Telegram, Gemini AI & Google Workspace
 
-> ⚡ **670 views** · 👥 [HR & Recruitment](../)
+> ⚡ **823 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

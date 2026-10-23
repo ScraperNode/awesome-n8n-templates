@@ -1,6 +1,6 @@
 # 🤝 Automatically send weekly sales reports from Square via Outlook
 
-> ⚡ **118 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **138 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Vector database as a big data analysis tool for AI agents [1/3 anomaly][1/2 KNN]
 
-> ⚡ **3,815 views** · ⚒️ [Engineering](../)
+> ⚡ **3,823 views** · ⚒️ [Engineering](../)
 
 ## Description
 

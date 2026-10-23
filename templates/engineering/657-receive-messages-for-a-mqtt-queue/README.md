@@ -1,6 +1,6 @@
 # ⚒️ Receive messages for a MQTT queue
 
-> ⚡ **4,197 views** · ⚒️ [Engineering](../)
+> ⚡ **4,360 views** · ⚒️ [Engineering](../)
 
 ## Description
 

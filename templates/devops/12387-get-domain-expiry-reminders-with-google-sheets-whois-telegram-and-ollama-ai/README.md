@@ -1,6 +1,6 @@
 # ⚙️ Get domain expiry reminders with Google Sheets, WHOIS, Telegram, and Ollama AI
 
-> ⚡ **453 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,120 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

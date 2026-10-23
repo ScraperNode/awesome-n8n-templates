@@ -1,6 +1,6 @@
 # 📋 Send preventive maintenance schedules with Google Sheets and Gmail ICS invites
 
-> ⚡ **864 views** · 📋 [Project Management](../)
+> ⚡ **1,006 views** · 📋 [Project Management](../)
 
 ## Description
 

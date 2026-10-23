@@ -1,6 +1,6 @@
-# 📖 Query Airtable data from ChatGPT using an MCP server
+# 📖 Connect your Airtable data to your AI (ChatGPT, Claude etc.) with an MCP
 
-> ⚡ **7 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **49 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

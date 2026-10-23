@@ -1,6 +1,6 @@
 # 🎬 WordPress blog automation with Airtable interface, human review & AI research v2
 
-> ⚡ **128 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **199 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

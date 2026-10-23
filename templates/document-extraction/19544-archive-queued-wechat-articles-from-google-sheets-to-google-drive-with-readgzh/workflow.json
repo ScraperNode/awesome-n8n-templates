@@ -1,0 +1,753 @@
+{
+  "name": "Archive queued WeChat articles from Google Sheets to Google Drive with ReadGZH",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "start-manually",
+      "name": "Start manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        320
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "queue-settings",
+      "name": "Queue settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        320
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sheet",
+              "name": "spreadsheetId",
+              "type": "string",
+              "value": "REPLACE_WITH_SPREADSHEET_ID"
+            },
+            {
+              "id": "tab",
+              "name": "sheetName",
+              "type": "string",
+              "value": "Queue"
+            },
+            {
+              "id": "folder",
+              "name": "folderId",
+              "type": "string",
+              "value": "REPLACE_WITH_DRIVE_FOLDER_ID"
+            },
+            {
+              "id": "batch",
+              "name": "maxBatch",
+              "type": "number",
+              "value": 5
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "check-configuration",
+      "name": "Check configuration",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        440,
+        320
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const c=$json; if(!c.spreadsheetId || !c.folderId || /REPLACE_WITH/.test(c.spreadsheetId+c.folderId)) throw new Error('Configure spreadsheetId and folderId first.'); return {json:c};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "read-queue",
+      "name": "Read queue",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        660,
+        320
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Queue settings').first().json.sheetName }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Queue settings').first().json.spreadsheetId }}"
+        }
+      },
+      "typeVersion": 4.6
+    },
+    {
+      "id": "select-pending-rows",
+      "name": "Select pending rows",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        880,
+        320
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function canonical(raw) {\n  const s = String(raw || '').trim();\n  const short = s.match(/^https:\\/\\/mp\\.weixin\\.qq\\.com\\/s\\/([A-Za-z0-9_-]+)(?:[?#].*)?$/);\n  if (short) return {url: 'https://mp.weixin.qq.com/s/' + short[1], parameterName: 'url', parameterValue: 'https://mp.weixin.qq.com/s/' + short[1]};\n  const share = s.match(/^https:\\/\\/readgzh\\.site\\/s\\/([A-Za-z0-9_-]+)\\/?$/);\n  if (share) return {url: 'https://readgzh.site/s/' + share[1], parameterName: 's', parameterValue: share[1]};\n  if (/^https:\\/\\/mp\\.weixin\\.qq\\.com\\/s\\?[^\\s#]+$/.test(s)) return {url: s, parameterName:'url', parameterValue:s};\n  throw new Error('Use a public WeChat /s/ URL or ReadGZH /s/ share URL.');\n}\nfunction prepare(rows, maxBatch) {\n  if (!Number.isInteger(maxBatch) || maxBatch < 1 || maxBatch > 20) throw new Error('maxBatch must be an integer from 1 to 20');\n  const ids = new Set();\n  for (const row of rows) {\n    const id = String(row.queue_id || '').trim();\n    if (!/^[A-Za-z0-9_-]{1,64}$/.test(id) || ids.has(id)) throw new Error('Every row needs a unique queue_id (letters, digits, underscore or hyphen, max 64).');\n    ids.add(id);\n  }\n  const reserved = new Set();\n  for (const r of rows) if (['done','processing','needs_review'].includes(String(r.status).trim())) {\n    try { reserved.add(canonical(r.article_url).url); } catch {}\n  }\n  const out = [];\n  for (let i=0; i<rows.length && out.length<maxBatch; i++) {\n    const r=rows[i];\n    if (String(r.status).trim() !== 'pending') continue;\n    const base={queue_id:String(r.queue_id).trim(), article_url:String(r.article_url || '').trim(), valid:false, status:'error', output_url:'', error:''};\n    try {\n      if (r.output_url) throw new Error('Existing output_url: inspect the archived file before resetting this row.');\n      const parsed=canonical(r.article_url);\n      if (reserved.has(parsed.url)) {base.status='duplicate'; base.error='URL already queued or archived; inspect the original row.';}\n      else { Object.assign(base,parsed,{valid:true,status:'processing'}); reserved.add(parsed.url); }\n    } catch(e) {base.error=e.message;}\n    out.push({json:base,pairedItem:{item:i}});\n  }\n  return out;\n}\nreturn prepare($input.all().map(i=>i.json), Number($('Queue settings').first().json.maxBatch));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "process-one-row",
+      "name": "Process one row",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        1100,
+        320
+      ],
+      "parameters": {
+        "options": {},
+        "batchSize": 1
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "valid-new-article",
+      "name": "Valid new article",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1320,
+        420
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "Valid new article",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "mark-processing",
+      "name": "Mark processing",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1540,
+        320
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "error": "",
+            "status": "processing",
+            "queue_id": "={{ $('Process one row').item.json.queue_id }}",
+            "output_url": "",
+            "updated_at": "={{ $now.toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "queue_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "queue_id",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "output_url",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "output_url",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "error",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "updated_at",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "queue_id"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Queue settings').first().json.sheetName }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Queue settings').first().json.spreadsheetId }}"
+        }
+      },
+      "typeVersion": 4.6
+    },
+    {
+      "id": "fetch-article",
+      "name": "Fetch article",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        1760,
+        320
+      ],
+      "parameters": {
+        "url": "https://api.readgzh.site/rd",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "text",
+              "outputPropertyName": "body"
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "={{ $('Process one row').item.json.parameterName }}",
+              "value": "={{ $('Process one row').item.json.parameterValue }}"
+            },
+            {
+              "name": "format",
+              "value": "text"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "validate-article",
+      "name": "Validate article",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1980,
+        320
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function article(response, queue) {\n  const base={...queue,ok:false,status:'error',output_url:'',error:''};\n  if (response.error) return {...base,error:'Network/request failure; inspect the execution before retrying.'};\n  const code=Number(response.statusCode);\n  if (code!==200) return {...base,error:code===429?'ReadGZH quota/rate limit. Wait or configure your own credential before resetting to pending.':'ReadGZH HTTP '+(code || 'unknown')};\n  const md=String(response.body || '').trim();\n  if (!md || /^[<{\\[]/.test(md) || !/^#\\s+\\S/m.test(md)) return {...base,error:'Response is not recognizable article Markdown.'};\n  if (/next[_ ]part|[?&]part=2|\u7ee7\u7eed.{0,8}\u4e0b\u4e00\u90e8\u5206/i.test(md)) return {...base,error:'Possible multi-part response; inspect and retrieve all parts before archiving.'};\n  const title=(md.match(/^#\\s+(.+)$/m)||[])[1] || 'article';\n  const safe=title.replace(/[<>:\"/\\\\|?*\\x00-\\x1f]/g,'-').replace(/[. ]+$/g,'').slice(0,80)||'article';\n  return {...base,ok:true,status:'processing',markdown:md+'\\n',fileName:queue.queue_id+'-'+safe+'.md'};\n}\nreturn {json:article($json, $('Process one row').item.json)};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "usable-markdown",
+      "name": "Usable Markdown",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2200,
+        320
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "Usable Markdown",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "create-markdown-file",
+      "name": "Create Markdown file",
+      "type": "n8n-nodes-base.convertToFile",
+      "position": [
+        2420,
+        220
+      ],
+      "parameters": {
+        "options": {
+          "encoding": "utf8",
+          "fileName": "={{ $json.fileName }}"
+        },
+        "operation": "toText",
+        "sourceProperty": "markdown",
+        "binaryPropertyName": "data"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "archive-to-drive",
+      "name": "Archive to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "onError": "continueRegularOutput",
+      "position": [
+        2640,
+        220
+      ],
+      "parameters": {
+        "name": "={{ $json.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive",
+          "cachedResultName": "My Drive"
+        },
+        "options": {},
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Queue settings').first().json.folderId }}"
+        },
+        "resource": "file",
+        "operation": "upload",
+        "inputDataFieldName": "data"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "capture-upload-result",
+      "name": "Capture upload result",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2860,
+        220
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function uploaded(result, queue) {\n  const id=String(result.id || '');\n  if (result.error || !/^[A-Za-z0-9_-]+$/.test(id)) return {...queue,status:'needs_review',output_url:'',error:'Drive upload result uncertain. Inspect target folder before retrying; do not blindly reset to pending.'};\n  return {...queue,status:'done',output_url:'https://drive.google.com/file/d/'+id+'/view',error:''};\n}\nreturn {json:uploaded($json, $('Process one row').item.json)};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "write-row-result",
+      "name": "Write row result",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3100,
+        500
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "error": "={{ $json.error }}",
+            "status": "={{ $json.status }}",
+            "queue_id": "={{ $('Process one row').item.json.queue_id }}",
+            "output_url": "={{ $json.output_url }}",
+            "updated_at": "={{ $now.toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "queue_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "queue_id",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "output_url",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "output_url",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "error",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "updated_at",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "queue_id"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Queue settings').first().json.sheetName }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Queue settings').first().json.spreadsheetId }}"
+        }
+      },
+      "typeVersion": 4.6
+    },
+    {
+      "id": "batch-finished",
+      "name": "Batch finished",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1320,
+        100
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "overview",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -650,
+        -180
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 600,
+        "height": 1050,
+        "content": "# Archive queued WeChat articles to Google Drive\n\n## Who is this for?\nResearchers and knowledge workers archiving public WeChat articles from a shared reading queue into their own Google Drive folder.\n\n## How it works\nRead pending rows from Google Sheets, validate URLs, skip duplicate URLs, and process a bounded batch sequentially. ReadGZH extracts article Markdown; the workflow creates a file in Google Drive and writes its link and outcome back to the queue. Invalid URLs and API errors are recorded per row. Uncertain upload outcomes require manual review rather than automatic re-upload.\n\n## Setup\nCreate a Queue sheet with columns `queue_id`, `article_url`, `status`, `output_url`, `error`, `updated_at`. Every row needs a unique ID. Set rows to `pending` to opt in. Configure the spreadsheet and folder in Queue settings and connect Google Sheets and Google Drive credentials. Run manually without overlapping executions. Default batch size is five.\n\n## Requirements and recovery\nReadGZH offers limited anonymous access; optionally configure Header Auth credentials using your own API key. See [API documentation](https://readgzh.site/docs). Extraction may consume credits. Private, deleted or paid articles may fail; images remain remote links. Inspect any `processing` or `needs_review` row and its Drive file before retrying. Sheet-write failures stop execution. This is not exactly-once delivery.\n\nMaintainer disclosure: provided by the [ReadGZH](https://readgzh.site/) project. No LLM subscription is required.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "queue-setup",
+      "name": "Queue setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -100
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1050,
+        "height": 230,
+        "content": "## 1. Configure a private queue\nCreate headers: queue_id, article_url, status, output_url, error, updated_at. Unique queue_id for EVERY row; enter pending to opt in. Configure Google Sheets credentials on all three Sheets nodes, Google Drive credentials on the upload node. Set document and folder IDs in Queue settings. Keep existing folder sharing private. Start manually; do not overlap executions."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "recovery",
+      "name": "Recovery",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1100,
+        700
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1050,
+        "height": 250,
+        "content": "## 2. Safe recovery\nOnly pending rows run. done, error, duplicate, processing and needs_review are skipped. processing is written BEFORE the API call. On a crash or writeback failure, inspect Drive for the queue_id-prefixed filename before resetting a row. This prevents blind re-uploads but is NOT a transaction or a concurrency lock. Upload has no automatic retry. Sheet failure stops the batch deliberately."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "readgzh-setup",
+      "name": "ReadGZH setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2200,
+        -120
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1050,
+        "height": 250,
+        "content": "## 3. API and output\nAnonymous access is quota limited. Optionally select Generic Credential Type \u2192 Header Auth on Fetch article, with Authorization: Bearer YOUR_KEY stored in credentials, never in JSON. HTTP failure has one bounded retry; HTTP 429 is recorded without immediate retry. Review original title, ending, tables and images. Markdown image URLs are not an offline image archive. No LLM or public sharing action is included."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Read queue": {
+      "main": [
+        [
+          {
+            "node": "Select pending rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch article": {
+      "main": [
+        [
+          {
+            "node": "Validate article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue settings": {
+      "main": [
+        [
+          {
+            "node": "Check configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start manually": {
+      "main": [
+        [
+          {
+            "node": "Queue settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark processing": {
+      "main": [
+        [
+          {
+            "node": "Fetch article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process one row": {
+      "main": [
+        [
+          {
+            "node": "Batch finished",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Valid new article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Usable Markdown": {
+      "main": [
+        [
+          {
+            "node": "Create Markdown file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write row result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Archive to Drive": {
+      "main": [
+        [
+          {
+            "node": "Capture upload result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate article": {
+      "main": [
+        [
+          {
+            "node": "Usable Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write row result": {
+      "main": [
+        [
+          {
+            "node": "Process one row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid new article": {
+      "main": [
+        [
+          {
+            "node": "Mark processing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write row result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check configuration": {
+      "main": [
+        [
+          {
+            "node": "Read queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select pending rows": {
+      "main": [
+        [
+          {
+            "node": "Process one row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Markdown file": {
+      "main": [
+        [
+          {
+            "node": "Archive to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Capture upload result": {
+      "main": [
+        [
+          {
+            "node": "Write row result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

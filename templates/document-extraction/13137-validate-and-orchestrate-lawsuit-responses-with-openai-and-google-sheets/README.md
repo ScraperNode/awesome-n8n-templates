@@ -1,6 +1,6 @@
 # 🔬 Validate and orchestrate lawsuit responses with OpenAI and Google Sheets
 
-> ⚡ **42 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **163 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

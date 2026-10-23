@@ -1,6 +1,6 @@
 # 🔒 Venafi Cloud Slack cert bot
 
-> ⚡ **1,103 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,136 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

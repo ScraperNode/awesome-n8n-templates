@@ -1,6 +1,6 @@
 # 🎬 Auto-generate SEO meta descriptions & keywords for Magento 2 with GPT-4.1 & LangChain
 
-> ⚡ **95 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **118 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

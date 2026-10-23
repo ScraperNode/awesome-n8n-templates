@@ -1,6 +1,6 @@
 # 🎣 Verifying email deliverability using  google sheets and Effibotics API
 
-> ⚡ **1,795 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,787 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

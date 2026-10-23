@@ -1,6 +1,6 @@
 # ⚒️ Send updates about the position of the ISS every minute to a topic in Kafka
 
-> ⚡ **1,753 views** · ⚒️ [Engineering](../)
+> ⚡ **1,813 views** · ⚒️ [Engineering](../)
 
 ## Description
 

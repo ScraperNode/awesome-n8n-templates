@@ -1,6 +1,6 @@
 # 🎬 Generate social media campaign images with Mistral AI & Pollinations.ai
 
-> ⚡ **485 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **553 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Transform voice notes into business reviews with Groq Whisper & GPT-5 to Google Slides
 
-> ⚡ **98 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **154 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

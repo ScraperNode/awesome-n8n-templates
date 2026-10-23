@@ -1,6 +1,6 @@
 # 🔧 🛠️ Spotify tool MCP server 💪 all 30 operations
 
-> ⚡ **197 views** · 🔧 [Miscellaneous](../)
+> ⚡ **225 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

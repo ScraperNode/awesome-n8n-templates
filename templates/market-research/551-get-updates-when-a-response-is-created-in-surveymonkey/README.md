@@ -1,6 +1,6 @@
 # 📊 Get updates when a response is created in SurveyMonkey
 
-> ⚡ **757 views** · 📊 [Market Research & Insights](../)
+> ⚡ **804 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

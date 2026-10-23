@@ -1,6 +1,6 @@
 # ⚡ Get email notifications for newly uploaded Google Drive files
 
-> ⚡ **2,742 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,774 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

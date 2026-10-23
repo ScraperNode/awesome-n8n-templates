@@ -1,6 +1,6 @@
 # 🤝 Automated Slack-to-Jira issue creation with attachments
 
-> ⚡ **352 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **554 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

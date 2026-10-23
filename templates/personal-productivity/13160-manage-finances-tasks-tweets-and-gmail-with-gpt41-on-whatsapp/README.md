@@ -1,6 +1,6 @@
 # ⚡ Manage finances, tasks, tweets and Gmail with GPT‑4.1 on WhatsApp
 
-> ⚡ **122 views** · ⚡ [Personal Productivity](../)
+> ⚡ **436 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

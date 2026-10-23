@@ -1,6 +1,6 @@
 # 💬 Create a human-like Evolution API WhatsApp agent with Redis, PostgreSQL and Gemini
 
-> ⚡ **963 views** · 💬 [Support Chatbots](../)
+> ⚡ **4,095 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

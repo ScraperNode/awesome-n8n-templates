@@ -1,6 +1,6 @@
 # ⚡ Manage tasks & send scheduled reminders with Telegram Bot, Google Sheets & GPT-4o mini
 
-> ⚡ **3,940 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,679 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

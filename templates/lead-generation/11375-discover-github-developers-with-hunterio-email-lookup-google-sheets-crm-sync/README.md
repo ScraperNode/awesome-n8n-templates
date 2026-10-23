@@ -1,6 +1,6 @@
 # 🎣 Discover GitHub developers with Hunter.io email lookup & Google Sheets CRM sync
 
-> ⚡ **27 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **35 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

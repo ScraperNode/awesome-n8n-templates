@@ -1,6 +1,6 @@
 # 🤝 Predict customer churn daily using ML or LLM models and notify via Slack/email
 
-> ⚡ **14 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **153 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

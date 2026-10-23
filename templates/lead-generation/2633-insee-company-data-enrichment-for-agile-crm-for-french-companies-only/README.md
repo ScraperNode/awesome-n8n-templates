@@ -1,6 +1,6 @@
 # 🎣 INSEE company data enrichment for Agile CRM (For French companies only)
 
-> ⚡ **1,418 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,599 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

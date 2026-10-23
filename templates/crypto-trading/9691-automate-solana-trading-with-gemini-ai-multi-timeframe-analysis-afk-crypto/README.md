@@ -1,6 +1,6 @@
 # 📈 Automate Solana trading with Gemini AI, multi-timeframe analysis & AFK Crypto
 
-> ⚡ **1,241 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,849 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Extract & organize email invoices with Gmail, Drive & OpenAI GPT
 
-> ⚡ **440 views** · 🧾 [Invoice Processing](../)
+> ⚡ **677 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

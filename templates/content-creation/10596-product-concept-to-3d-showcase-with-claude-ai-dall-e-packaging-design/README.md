@@ -1,6 +1,6 @@
 # 🎬 Product concept to 3D showcase with Claude AI & DALL-E packaging design
 
-> ⚡ **306 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **525 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

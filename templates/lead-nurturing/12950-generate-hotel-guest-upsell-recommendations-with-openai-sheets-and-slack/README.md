@@ -1,6 +1,6 @@
 # 💬 Generate hotel guest upsell recommendations with OpenAI, Sheets and Slack
 
-> ⚡ **76 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **180 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Gpt-4.1 mini-powered learning management automation
 
-> ⚡ **179 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **300 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

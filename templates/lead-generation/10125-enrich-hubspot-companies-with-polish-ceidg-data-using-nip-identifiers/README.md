@@ -1,6 +1,6 @@
 # 🎣 Enrich HubSpot companies with Polish CEIDG data using NIP identifiers
 
-> ⚡ **372 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **896 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

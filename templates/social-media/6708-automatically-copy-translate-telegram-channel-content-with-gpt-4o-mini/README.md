@@ -1,6 +1,6 @@
 # 📱 Automatically copy & translate Telegram channel content with GPT-4o-mini
 
-> ⚡ **1,799 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,262 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

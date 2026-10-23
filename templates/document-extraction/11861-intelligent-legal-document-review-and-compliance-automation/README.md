@@ -1,6 +1,6 @@
 # 🔬 Intelligent legal document review and compliance automation
 
-> ⚡ **740 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **5,089 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

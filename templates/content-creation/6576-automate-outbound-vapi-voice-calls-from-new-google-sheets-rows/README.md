@@ -1,6 +1,6 @@
 # 🎬 Automate outbound Vapi voice calls from new Google Sheets rows
 
-> ⚡ **2,143 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,395 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

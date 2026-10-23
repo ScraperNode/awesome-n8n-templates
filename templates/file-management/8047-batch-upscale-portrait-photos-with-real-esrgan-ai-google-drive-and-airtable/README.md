@@ -1,6 +1,6 @@
 # 📁 Batch upscale portrait photos with Real-ESRGAN AI, Google Drive and Airtable
 
-> ⚡ **436 views** · 📁 [File Management](../)
+> ⚡ **609 views** · 📁 [File Management](../)
 
 ## Description
 

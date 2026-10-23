@@ -1,6 +1,6 @@
 # 🧾 Automate medical billing with Google Sheets and Gmail
 
-> ⚡ **796 views** · 🧾 [Invoice Processing](../)
+> ⚡ **875 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

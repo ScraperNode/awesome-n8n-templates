@@ -1,6 +1,6 @@
 # 🔬 Generate research questions from PDFs using InfraNodus content gap analysis
 
-> ⚡ **918 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **996 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

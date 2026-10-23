@@ -1,12 +1,14 @@
 # 🔧 Event ticketing backend: auto QR tickets with Google Sheets & Gmail
 
-> ⚡ **427 views** · 🔧 [Miscellaneous](../)
+> ⚡ **628 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 
 Ticketing Backend automates registration, QR-ticket generation, email delivery, and check-in validation using Google Sheets, Gmail, and a webhook scanner — reducing manual ticket prep from ~3 hours to under 5 minutes for 200 attendees.
 
 ![Screenshot 20251005 at 15.01.48.png](fileId:2765)
+
+*Last updated: September 2026.*
 
 ## Why Use This Workflow?
 
@@ -32,7 +34,7 @@ Ticketing Backend automates registration, QR-ticket generation, email delivery, 
 3. **Processing (Ticket Generation):** Scheduled job (START runs every minute) finds rows with Payment Status = PAID and Email Sent = NO.
 4. **Intelligence Layer:** For each ticket: generate unique Ticket ID (TL-YYYYMMDD-XXXX-N-HASH), build QR payload JSON, create QR image via qrserver API, and build HTML email with embedded base64 QR.
 5. **Output & Delivery:** Send ticket email(s) via Gmail; write one Tickets row per generated ticket and mark Email Sent = YES in Register.
-6. **Storage & Logging:** All participant & ticket records persisted to Google Sheets; check-in events update row (Checked In = YES and Checkin TIme).
+6. **Storage & Logging:** All participant & ticket records persisted to Google Sheets; check-in events update row (Checked In = YES and Checkin Time).
 
 ### Core Endpoints
 
@@ -53,17 +55,17 @@ Ticketing Backend automates registration, QR-ticket generation, email delivery, 
 
 | Requirement | Type | Purpose |
 |-------------|------|---------|
-| [n8n instance]([https://n8n.partnerlinks.io/khmuhtadin](https://n8n.partnerlinks.io/khmuhtadin)) | Essential | Host the workflow and webhooks |
+| [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin) | Essential | Host the workflow and webhooks |
 | Google account (Sheets + Gmail) | Essential | Store tickets & send emails |
 | Google Sheet | Essential | Register & Tickets data store |
 | Public webhook URL / reverse proxy | Essential | Expose /v1/register & /v1/scanner to scanners/clients |
 | qrserver.com (public API) | Optional | Generate QR images (no credentials) |
 
-&gt; **Important:** Make sure your n8n instance URL is publicly accessible or use a tunneling/reverse proxy so webhooks can receive POSTs.
+&gt; **Important:** Make sure your [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance URL is publicly accessible or use a tunneling/reverse proxy so webhooks can receive POSTs.
 
 ### Installation Steps
 
-1. Import the JSON into your [n8n instance([https://n8n.partnerlinks.io/khmuhtadin](https://n8n.partnerlinks.io/khmuhtadin)).
+1. Import the JSON into your [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin).
 2. **Configure credentials:**
    - **Google Sheets OAuth2:** Grant access to Google Drive & Sheets API (spreadsheets.readonly & spreadsheets).
    - **Gmail OAuth2:** Grant send email scope (Gmail send).
@@ -103,7 +105,7 @@ Ticketing Backend automates registration, QR-ticket generation, email delivery, 
 | Parse Barcode (Code) | Parses incoming scanner payload | Expects JSON in body.barcode |
 | Get Tickets (Google Sheets) | Lookup ticket by Ticket ID | Filters Tickets tab by Ticket ID |
 | Ticket Available? (If) | Validates existence & Checked In status | Branches to update or return error |
-| Update Ticket Status (Google Sheets) | Mark Checked In = YES | Sets Checkin TIme to scannedAt |
+| Update Ticket Status (Google Sheets) | Mark Checked In = YES | Sets Checkin Time to scannedAt |
 | Checked IN / Already Checked IN (RespondToWebhook) | Respond payloads for scanner | JSON responses with status & metadata |
 
 ### Workflow Logic
@@ -134,7 +136,7 @@ Ticketing Backend automates registration, QR-ticket generation, email delivery, 
 | Ticket exists but cannot update | Google Sheets API auth / permission error | Reconnect Google Sheets OAuth2 credential; ensure the service account/user has edit access to the sheet |
 | Emails not sent | Gmail OAuth2 credential missing or Gmail API quota reached | Reauthorize Gmail credential; consider switching to SendGrid/Mailgun for large volumes |
 | Duplicate check-in allowed | Logic checking "Checked In" value mismatch (case/format) | Normalize the Checked In field values and use strict comparisons in Ticket Available? node |
-| Slow generation for many tickets | Sequential QR calls and sends | Use parallel execution or a dedicated email service; increase worker resources for n8n instance |
+| Slow generation for many tickets | Sequential QR calls and sends | Use parallel execution or a dedicated email service; increase worker resources for [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance |
 
 ---
 
@@ -149,23 +151,34 @@ Ticketing Backend automates registration, QR-ticket generation, email delivery, 
 ### Scenario 2: Regional Festival (2,000 tickets)
 
 - **Challenge:** High volume requires reliable delivery and check-in speed.
-- **Solution:** Use this workflow but replace Gmail with a transactional email provider (SendGrid) and host n8n on a scalable instance. Monitor Google Sheets and email provider quotas.
+- **Solution:** Use this workflow but replace Gmail with a transactional email provider (SendGrid) and host [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) on a scalable instance. Monitor Google Sheets and email provider quotas.
 - **Result:** Automated delivery scales; on-site check-in handled via the /v1/scanner endpoint with near-instant validation.
 
 ---
 
+### Quick Answers
+**How do tickets get generated?**  
+Mark registrations as PAID with Email Sent = NO. The scheduled job runs every minute, generates QR tickets, and emails them.  
+**How does check-in work?**  
+The scanner POSTs barcode JSON to `/v1/scanner`. The sheet validates the ticket and marks Checked In.  
+**What about quotas at scale?**  
+Watch Gmail and Google Sheets API quotas. For high volume, swap in SendGrid or Mailgun.  
+
 ## Additional Information
 
-**Created by:** [Khmuhtadin](https://khmuhtadin.com/contact) 
+**Made by:** [khmuhtadin](https://khmuhtadin.com) 
 **Category:** Event Automation, Ticketing Backend  
 **Tags:** `google-sheets`, `gmail`, `qr-code`, `webhook`, `ticketing`
 
-Need custom workflows or help adapting this for your event? **[Contact us](https://khaisa.studio/contact)** 
+Need custom workflows or help adapting this for your event? **[Contact me](https://khmuhtadin.com/contact)** 
 
-**Note:** Import the JSON into your [n8n instance](https://n8n.partnerlinks.io/khmuhtadin) to get started.
+**Note:** Import the JSON into your [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin) to get started.
 
 My Social:
 [Threads](https://www.threads.com/@khmuhtadin) [LinkedIn](https://www.linkedin.com/in/khmuhtadin/) [Medium](https://medium.com/@khaisastudio) **[Workflow Collections](https://khaisa.studio/products/)** [portfolio](https://khmuhtadin.com)
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

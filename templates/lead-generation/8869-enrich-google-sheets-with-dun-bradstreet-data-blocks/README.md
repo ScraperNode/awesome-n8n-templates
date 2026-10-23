@@ -1,6 +1,6 @@
 # 🎣 Enrich Google Sheets with Dun & Bradstreet data blocks
 
-> ⚡ **211 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **283 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

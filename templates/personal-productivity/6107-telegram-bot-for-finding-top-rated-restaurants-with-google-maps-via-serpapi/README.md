@@ -1,6 +1,6 @@
 # ⚡ Telegram bot for finding top-rated restaurants with Google Maps via SerpAPI
 
-> ⚡ **568 views** · ⚡ [Personal Productivity](../)
+> ⚡ **678 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

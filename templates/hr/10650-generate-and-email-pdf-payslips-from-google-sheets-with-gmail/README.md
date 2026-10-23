@@ -1,12 +1,14 @@
 # 👥 Generate and email PDF payslips from Google Sheets with Gmail
 
-> ⚡ **345 views** · 👥 [HR & Recruitment](../)
+> ⚡ **586 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 
 This workflow automates the entire payslip process by pulling payroll data directly from Google Sheets, generating a professional and secure PDF for each employee, and emailing it to them instantly. Save hours of manual HR administration, eliminate human error, and ensure timely, confidential delivery of payslips every month.
 
 ![Screenshot 20251109 at 15.44.02.png](fileId:3254)
+
+*Last updated: September 2026.*
 
 ## Why Use This Workflow?
 
@@ -41,14 +43,14 @@ This workflow automates the entire payslip process by pulling payroll data direc
 
 | Requirement | Type | Purpose |
 | :--- | :--- | :--- |
-| [n8n instance](https://n8n.partnerlinks.io/khmuhtadin) | Essential | The platform to run the automation. |
+| [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin) | Essential | The platform to run the automation. |
 | Google Sheets Account | Essential | To store and manage employee payroll data. |
 | Gmail Account | Essential | To send the generated PDF payslips to employees. |
 | Google Cloud Project | Essential | To create OAuth2 credentials for Sheets and Gmail. |
 
 ### Installation Steps
 
-1.  Import the JSON file to your [n8n instance](https://n8n.partnerlinks.io/khmuhtadin).
+1.  Import the JSON file to your [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin).
 2.  **Configure credentials:**
     -   **Google Sheets:** Create or use existing OAuth2 credentials from the Google Cloud Console. Ensure the Google Sheets API is enabled.
     -   **Gmail:** Create or use existing OAuth2 credentials. Ensure the Gmail API is enabled. Often, you can use the same credential for both services.
@@ -71,7 +73,7 @@ This workflow automates the entire payslip process by pulling payroll data direc
 | **Google Sheets** | Reads payroll data and updates the 'sent' status. | `Spreadsheet ID`, `Sheet Name`, and `Bank Account` as the key for matching rows to update. |
 | **Filter** | Processes only employees who haven't received a payslip. | Condition: `{{ $json["Is Email Sent"] }}` equals `no`. |
 | **Code** | Formats currency, creates dynamic tables, and converts numbers to words. | Maps input columns from the sheet to output variables for the HTML template. |
-| **Puppeteer** | Converts the styled HTML into a downloadable PDF file. | `page.pdf` settings define the format (A4), margins, and scale. |
+| **Puppeteer** | Converts the styled HTML into a downloadable PDF file ([docs](https://pptr.dev/)). | `page.pdf` settings define the format (A4), margins, and scale. |
 | **Gmail** | Emails the generated PDF to the corresponding employee. | `To`, `Subject`, and `Attachment` fields use expressions to pull data from previous nodes. |
 | **Set** | Stores global configuration like company name and payroll date. | All company-specific details that appear on the payslip. |
 
@@ -102,7 +104,7 @@ The workflow operates on an idempotent loop principle. It first reads all data, 
 | :--- | :--- | :--- |
 | PDF formatting is broken or misaligned. | Invalid HTML/CSS in the template, or an expression is returning an empty value. | Verify all expressions in the `Generate Payslip HTML` node are linked correctly. Use an online validator to check for HTML syntax errors. |
 | Workflow processes the same employees again. | The `Mark Email Sent in Sheet` node failed, or the `Filter` is misconfigured. | Ensure the `Filter` node checks for "no" (case-sensitive). Verify the `Mark Email Sent` node has write permissions and is correctly identifying the row to update. |
-| Emails are not being sent. | Incorrect Gmail API permissions or invalid credentials. | Re-authenticate your Gmail credential in n8n. Check your Google Cloud Project to ensure the Gmail API is enabled and has not hit its usage quota. |
+| Emails are not being sent. | Incorrect Gmail API permissions or invalid credentials. | Re-authenticate your Gmail credential in [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Check your Google Cloud Project to ensure the Gmail API is enabled and has not hit its usage quota. |
 
 ## Use Case Examples
 
@@ -120,12 +122,23 @@ The workflow operates on an idempotent loop principle. It first reads all data, 
 
 ---
 
-**Created by:** [Khaisa Studio](https://khaisa.studio)  
+**Made by:** [khmuhtadin](https://khmuhtadin.com)  
 **Category:** HR & Recruiting | **Tags:** Google Sheets, Gmail, PDF, HR, Automation, Puppeteer, Payroll  
-**Need custom workflows?** [Contact us](https://khaisa.studio/contact)
+**Need custom workflows?** [Contact me](https://khmuhtadin.com/contact)
 
 **Connect with the creator:**  
 [Portfolio](https://khmuhtadin.com) • [Workflows](https://khaisa.studio/products/) • [LinkedIn](https://www.linkedin.com/in/khmuhtadin/) • [Medium](https://medium.com/@khaisastudio) • [Threads](https://www.threads.com/@khmuhtadin)
+
+### Quick Answers
+**Will employees get duplicate payslips?**  
+No. Each sent payslip is marked in the sheet, and re-runs skip processed rows.  
+**How do I run payroll?**  
+Manually, with full control over timing. Optionally swap the Manual Trigger for a monthly Schedule Trigger.  
+**Is the amount spelled out?**  
+Yes. Take-home pay is converted into words (Indonesian) on every payslip.  
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

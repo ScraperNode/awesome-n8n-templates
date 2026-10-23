@@ -1,6 +1,6 @@
 # 📱 Generate and send AI news newsletters automatically with GPT & Gmail
 
-> ⚡ **5,972 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **6,944 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

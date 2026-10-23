@@ -1,6 +1,6 @@
 # 🎬 Create and publish AI recipe infographics with Gemini, Nanobanana Pro and Blotato
 
-> ⚡ **166 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **411 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

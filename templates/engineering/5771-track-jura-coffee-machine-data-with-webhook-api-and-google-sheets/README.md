@@ -1,6 +1,6 @@
 # ⚒️ Track Jura coffee machine data with webhook API and Google Sheets
 
-> ⚡ **313 views** · ⚒️ [Engineering](../)
+> ⚡ **369 views** · ⚒️ [Engineering](../)
 
 ## Description
 

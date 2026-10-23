@@ -1,6 +1,6 @@
 # ⚡ Sync Google Calendar events to Outlook
 
-> ⚡ **6,337 views** · ⚡ [Personal Productivity](../)
+> ⚡ **6,617 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

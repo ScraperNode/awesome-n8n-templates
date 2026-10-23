@@ -1,6 +1,6 @@
 # 📋 AI meeting summary & action item tracker with Notion, Slack, and Gmail
 
-> ⚡ **553 views** · 📋 [Project Management](../)
+> ⚡ **998 views** · 📋 [Project Management](../)
 
 ## Description
 

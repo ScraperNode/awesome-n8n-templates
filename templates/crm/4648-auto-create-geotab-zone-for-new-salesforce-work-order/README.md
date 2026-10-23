@@ -1,6 +1,6 @@
 # 🤝 Auto-create Geotab zone for new Salesforce work order
 
-> ⚡ **395 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **439 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

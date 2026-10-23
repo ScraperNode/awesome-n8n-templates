@@ -1,6 +1,6 @@
-# 🎣 Enrich Airtable company records with web research using OpenAI GPT-4o
+# 🎣 AI Company Research Agent (n8n+Airtable)
 
-> ⚡ **4 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **80 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

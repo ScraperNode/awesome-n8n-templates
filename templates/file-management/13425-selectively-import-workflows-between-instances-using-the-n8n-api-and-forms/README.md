@@ -1,6 +1,6 @@
 # 📁 Selectively import workflows between instances using the n8n API and forms
 
-> ⚡ **2 views** · 📁 [File Management](../)
+> ⚡ **60 views** · 📁 [File Management](../)
 
 ## Description
 

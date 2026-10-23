@@ -1,6 +1,6 @@
 # 🎬 Daily ad spend monitoring with Google Sheets and Slack threshold alerts
 
-> ⚡ **498 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **555 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Manage coupon campaigns and customer chats with WhatsApp and PostgreSQL
 
-> ⚡ **1 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **25 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

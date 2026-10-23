@@ -1,6 +1,6 @@
 # 💬 Automate sales for digital products & SaaS with AI (GPT-4o)
 
-> ⚡ **9,800 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **9,991 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >

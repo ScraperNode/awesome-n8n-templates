@@ -1,6 +1,6 @@
 # 🎬 Generate 🤖🧠 AI-powered video 🎥 from image and upload it on Google Drive
 
-> ⚡ **3,377 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,588 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

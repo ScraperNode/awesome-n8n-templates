@@ -1,6 +1,6 @@
 # ⚙️ Nightly n8n backup to Dropbox
 
-> ⚡ **7,199 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **7,256 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

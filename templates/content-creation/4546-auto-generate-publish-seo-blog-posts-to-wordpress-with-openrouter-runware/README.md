@@ -1,27 +1,27 @@
 # 🎬 Auto-Generate & Publish SEO Blog Posts to WordPress with OpenRouter & Runware
 
-> ⚡ **1,242 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,295 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 
-Automate Blog Creation and Publishing with Ultra-Low Cost AI
+Blog posts at near-zero cost. This [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) workflow, **BlogBlitz: Runware Edition**, automates SEO-optimized WordPress publishing with **entirely free OpenRouter AI models** for text and metadata, plus **ultra-low-cost Runware AI** for realistic featured images (as low as $0.0016 per image).
 
-This n8n workflow — **BlogBlizt: Runaware Edition** — automates the creation, enrichment, and publishing of SEO-optimized blog posts for WordPress using **entirely free OpenRouter AI models** for text and metadata generation, plus **ultra-low-cost Runware AI** for realistic featured images (as low as $0.0016 per image).
+It runs every 3 hours or on demand via Telegram. Each run generates 1,500–3,500-word articles on trending topics in Technology, AI, Tech Facts, History, or Tips, all with catchy titles, slugs, meta descriptions, and visuals.
 
-It’s triggered every 3 hours or manually via Telegram. Each run generates 1,500–3,500-word articles on trending topics in Technology, AI, Tech Facts, History, or Tips — all complete with catchy titles, slugs, meta descriptions, and visuals.
+*Last updated: September 2026.*
 
 ---
-### 💰 Why This Is So Cost-Efficient
+### Why This Is So Cost-Efficient
 
-- ✅ **Free** metadata + article generation (OpenRouter free-tier models)
-- 💸 **Only cost** is for image generation via Runware:
+- **Free** metadata + article generation (OpenRouter free-tier models)
+- **Only cost** is image generation via Runware:
   - Image generation: ~$0.0016/image (the cheapest model could be $0,00065)
 
-This is **ideal for scale** — generating dozens of high-quality blog posts with minimal expense.
+This is **ideal for scale**: dozens of high-quality blog posts with minimal expense.
 
 ---
 
-### ⚡ Who Is This For?
+### Who Is This For?
 
 - Bloggers who want high-quality content without writing
 - SEO marketers seeking fresh, long-form articles
@@ -30,37 +30,37 @@ This is **ideal for scale** — generating dozens of high-quality blog posts wit
 
 ---
 
-### ❓ What Problem Does It Solve?
+### What Problem Does It Solve?
 
-Creating SEO-rich blog content is time-consuming, expensive, and requires expertise. BlogBlizt eliminates this friction by using free models (OpenRouter) to generate text and metadata — making this workflow **nearly free to operate**, with the **only cost being the featured image (~$0.0016/image)**.
-
----
-
-### 🔧 What This Workflow Does
-
-- ⏱ **Triggers**: Every 3 hours (or via Telegram command: `generate`)
-- 🧠 **Generates Metadata**: Title, slug, category, focus keyphrase, and meta description using OpenRouter
-- ✍️ **Writes SEO Article**: 1,500–3,500 words with headings, H2/H3s, CTA, and outbound links
-- 🖼️ **Creates Image**: Generates realistic 1024×1024 blog image with Runware AI
-- 📤 **Publishes to WordPress**: Auto-publishes with category ID, featured image, and Yoast SEO fields
-- 📣 **Notifies**: Sends publish link to Discord and Telegram (optional)
+Creating SEO-rich blog content is time-consuming, expensive, and requires expertise. BlogBlitz removes that friction with free models (OpenRouter) for text and metadata, so the workflow is **nearly free to operate**. The **only cost is the featured image (~$0.0016/image)**.
 
 ---
 
-### 🔐 Setup Instructions
+### What This Workflow Does
 
-- Import `.json` into n8n
+* **Triggers**: Every 3 hours (or via Telegram command: `generate`)
+* **Generates Metadata**: Title, slug, category, focus keyphrase, and meta description using OpenRouter
+* **Writes SEO Article**: 1,500–3,500 words with headings, H2/H3s, CTA, and outbound links
+* **Creates Image**: Generates realistic 1024×1024 blog image with Runware AI
+* **Publishes to WordPress**: Auto-publishes with category ID, featured image, and Yoast SEO fields
+* **Notifies**: Sends publish link to Discord and Telegram (optional)
+
+---
+
+### Setup Instructions
+
+- Import `.json` into [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin)
 - Add credentials:
-  - OpenRouter API (free LLMs like LLaMA-3, Nemotron)
+  - OpenRouter API (free LLMs like LLaMA-3, Nemotron, [docs](https://openrouter.ai/))
   - Runware API key ([get it here](https://docs.runware.ai/docs/api-access))
   - (Optional) Telegram Bot + Discord Webhook
 - Test by sending the word `generate` via Telegram
 
 ---
 
-### 🧩 Pre-Requirements
+### Pre-Requirements
 
-- Self-hosted or cloud-based **[n8n instance](https://n8n.partnerlinks.io/khaisastudio)**
+- Self-hosted or cloud-based **[n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin)**
 - WordPress with category IDs configured:
   - Technology → `3`
   - AI → `4`
@@ -75,17 +75,17 @@ Creating SEO-rich blog content is time-consuming, expensive, and requires expert
 
 ---
 
-### 🛠️ Customize It Further
+### Customize It Further
 
-- Change writing tone or prompt in `✍️ Compose SEO Article Content` node
-- Cofigure the category
+- Change writing tone or prompt in `Compose SEO Article Content` node
+- Configure the category
 - Swap free LLMs (Claude, Gemini, GPT, etc.) in OpenRouter settings
 - Adjust schedule (every 6h, daily, etc.)
 - Extend alerts (email, Slack, Notion)
 
 ---
 
-### 🧠 Nodes Used
+### Nodes Used
 
 - Schedule Trigger
 - Telegram Trigger
@@ -97,12 +97,23 @@ Creating SEO-rich blog content is time-consuming, expensive, and requires expert
 
 ---
 
-### 📞 Support
+### Quick Answers
+**What does it actually cost to run?**  
+Text and metadata are free via OpenRouter free-tier models. You only pay ~$0.0016 per featured image.  
+**How often does it publish?**  
+Every 3 hours by default, or manually with `generate` on Telegram.  
+**How long are the articles?**  
+1,500–3,500 words with headings, CTA, and outbound links.  
 
-Created by: [Khaisa Studio](https://khaisa.studio)  
-Tag: youtube, summarizer, telegram, openai  
-Category: AI Automation, Video Tools
-Need a custom? contact me on **[LinkedIn](https://www.linkedin.com/in/khmuhtadin/)** or **[Web](khmuhtadin.com)**
+### Support
+
+Created by: [khmuhtadin](https://khmuhtadin.com)  
+Tag: wordpress, blog, seo, openai, telegram  
+Category: AI Automation, Blogging
+Need a custom? contact me on **[LinkedIn](https://www.linkedin.com/in/khmuhtadin/)** or **[Web](https://khmuhtadin.com)**
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

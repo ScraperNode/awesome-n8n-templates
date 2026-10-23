@@ -1,6 +1,6 @@
 # 📊 Monitor Twitter accounts & generate intelligence summaries with Gemini AI & Telegram
 
-> ⚡ **1,023 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,164 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

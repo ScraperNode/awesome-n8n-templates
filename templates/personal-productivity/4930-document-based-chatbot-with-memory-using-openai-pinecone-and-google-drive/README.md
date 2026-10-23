@@ -1,6 +1,6 @@
 # ⚡ Document-based chatbot with memory using OpenAI, Pinecone and Google Drive
 
-> ⚡ **4,092 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,318 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

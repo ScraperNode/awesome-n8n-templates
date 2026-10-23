@@ -1,6 +1,6 @@
 # 📋 Standup bot (4/4): worker
 
-> ⚡ **5,817 views** · 📋 [Project Management](../)
+> ⚡ **5,888 views** · 📋 [Project Management](../)
 
 ## Description
 

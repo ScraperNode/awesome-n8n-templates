@@ -1,6 +1,6 @@
 # 🔒 Intelligent AI digest for security, privacy, and compliance feeds
 
-> ⚡ **19,960 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **27,892 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

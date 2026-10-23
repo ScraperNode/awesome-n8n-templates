@@ -1,6 +1,6 @@
 # 🎫 Gmail to Zendesk ticket automation with Google Sheets logging
 
-> ⚡ **98 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **110 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

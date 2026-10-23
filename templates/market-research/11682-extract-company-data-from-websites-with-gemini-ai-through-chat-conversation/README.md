@@ -1,6 +1,6 @@
 # 📊 Extract company data from websites with Gemini AI through chat conversation
 
-> ⚡ **149 views** · 📊 [Market Research & Insights](../)
+> ⚡ **205 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

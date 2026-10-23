@@ -1,6 +1,6 @@
 # 📱 Automated marketing campaign email system with GPT-4 and HubSpot customer tracking
 
-> ⚡ **63 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **172 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

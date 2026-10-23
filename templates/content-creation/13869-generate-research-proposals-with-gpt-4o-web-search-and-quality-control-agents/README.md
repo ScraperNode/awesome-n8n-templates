@@ -1,6 +1,6 @@
 # 🎬 Generate research proposals with GPT-4o, web search, and quality control agents
 
-> ⚡ **466 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **807 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

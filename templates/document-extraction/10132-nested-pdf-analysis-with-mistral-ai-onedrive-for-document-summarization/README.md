@@ -1,6 +1,6 @@
 # 🔬 Nested PDF analysis with Mistral AI & OneDrive for document summarization
 
-> ⚡ **720 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **863 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Automate order confirmations with VAPI Voice AI & timezone intelligence
 
-> ⚡ **852 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,002 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

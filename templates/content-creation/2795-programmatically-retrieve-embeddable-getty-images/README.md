@@ -1,6 +1,6 @@
 # 🎬 Programmatically retrieve embeddable Getty Images
 
-> ⚡ **359 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **346 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 AI-powered webinar feedback replies with GPT-4, Google Sheets, and Gmail
 
-> ⚡ **91 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **100 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Store Gmail email details in MySQL database
 
-> ⚡ **552 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **676 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

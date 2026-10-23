@@ -1,6 +1,6 @@
 # ⚒️ Generate workflow JSON files from webhook prompts using Azure OpenAI GPT-4o-mini
 
-> ⚡ **23 views** · ⚒️ [Engineering](../)
+> ⚡ **491 views** · ⚒️ [Engineering](../)
 
 ## Description
 

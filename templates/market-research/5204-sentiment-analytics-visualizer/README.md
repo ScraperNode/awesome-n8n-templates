@@ -1,6 +1,6 @@
 # 📊 Sentiment analytics visualizer
 
-> ⚡ **2,584 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,984 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

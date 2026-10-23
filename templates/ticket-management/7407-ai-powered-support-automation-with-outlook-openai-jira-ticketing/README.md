@@ -1,6 +1,6 @@
 # 🎫 AI-powered support automation with Outlook, OpenAI & JIRA ticketing
 
-> ⚡ **1,008 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,272 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

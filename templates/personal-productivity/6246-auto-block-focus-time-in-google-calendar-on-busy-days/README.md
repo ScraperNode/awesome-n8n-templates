@@ -1,6 +1,6 @@
 # ⚡ Auto-block focus time in Google Calendar on busy days
 
-> ⚡ **169 views** · ⚡ [Personal Productivity](../)
+> ⚡ **188 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

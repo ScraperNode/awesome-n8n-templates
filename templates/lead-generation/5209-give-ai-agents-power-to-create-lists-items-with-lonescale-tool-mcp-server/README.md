@@ -1,6 +1,6 @@
 # 🎣 Give AI agents power to create lists, items with LoneScale tool MCP Server
 
-> ⚡ **156 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **172 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

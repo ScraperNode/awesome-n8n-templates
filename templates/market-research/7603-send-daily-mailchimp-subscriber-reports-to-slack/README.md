@@ -1,6 +1,6 @@
 # 📊 Send daily Mailchimp subscriber reports to Slack
 
-> ⚡ **253 views** · 📊 [Market Research & Insights](../)
+> ⚡ **278 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

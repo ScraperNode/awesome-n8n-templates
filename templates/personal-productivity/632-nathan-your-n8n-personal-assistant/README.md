@@ -1,6 +1,6 @@
 # ⚡ Nathan: Your n8n personal assistant
 
-> ⚡ **9,224 views** · ⚡ [Personal Productivity](../)
+> ⚡ **10,217 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

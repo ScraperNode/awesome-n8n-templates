@@ -1,6 +1,6 @@
 # 🔬 Ingest Excel data into Oracle and chat with it using Select AI and Azure OpenAI
 
-> ⚡ **137 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **493 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

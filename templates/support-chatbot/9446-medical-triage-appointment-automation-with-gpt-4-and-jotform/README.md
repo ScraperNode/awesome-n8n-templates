@@ -1,6 +1,6 @@
 # 💬 Medical triage & appointment automation with GPT-4 and Jotform
 
-> ⚡ **553 views** · 💬 [Support Chatbots](../)
+> ⚡ **922 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

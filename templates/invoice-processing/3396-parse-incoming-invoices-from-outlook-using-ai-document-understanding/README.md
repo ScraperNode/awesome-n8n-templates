@@ -1,6 +1,6 @@
 # 🧾 Parse incoming invoices from Outlook using AI Document Understanding
 
-> ⚡ **18,398 views** · 🧾 [Invoice Processing](../)
+> ⚡ **21,747 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

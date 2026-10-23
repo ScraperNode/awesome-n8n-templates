@@ -1,6 +1,6 @@
 # 🎫 Auto-respond to Gmail enquiries using GPT-4o, Dumpling AI & LangChain agent
 
-> ⚡ **10,611 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **10,885 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

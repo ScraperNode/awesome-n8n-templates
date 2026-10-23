@@ -1,6 +1,6 @@
 # 🧾 Credit card payment reminder & tracking-for Taiwan banks
 
-> ⚡ **1,229 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,153 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

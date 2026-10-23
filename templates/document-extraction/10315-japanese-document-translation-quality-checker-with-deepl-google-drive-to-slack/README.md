@@ -1,6 +1,6 @@
 # 🔬 Japanese document translation quality checker with DeepL & Google Drive to Slack
 
-> ⚡ **78 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **150 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

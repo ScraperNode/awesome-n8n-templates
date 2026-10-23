@@ -1,6 +1,6 @@
 # 🤖 Unified business orchestrator with Google Gemini, Notion, and Telegram for CEOs
 
-> ⚡ **197 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **267 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

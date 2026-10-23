@@ -1,6 +1,6 @@
 # 💬 Process customer feedback with OpenAI, PDF reports, Gmail & Slack notifications
 
-> ⚡ **292 views** · 💬 [Support Chatbots](../)
+> ⚡ **413 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

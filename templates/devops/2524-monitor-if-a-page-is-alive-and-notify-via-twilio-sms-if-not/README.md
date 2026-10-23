@@ -1,6 +1,6 @@
 # ⚙️ Monitor if a page is alive and notify via Twilio SMS if not
 
-> ⚡ **2,850 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,858 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

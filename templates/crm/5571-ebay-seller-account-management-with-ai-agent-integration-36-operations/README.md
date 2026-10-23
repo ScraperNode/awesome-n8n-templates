@@ -1,6 +1,6 @@
 # 🤝 eBay seller account management with AI agent integration (36 operations)
 
-> ⚡ **418 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **577 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Manage incident reporting in PagerDuty and CrateDB
 
-> ⚡ **1,034 views** · ⚒️ [Engineering](../)
+> ⚡ **1,065 views** · ⚒️ [Engineering](../)
 
 ## Description
 

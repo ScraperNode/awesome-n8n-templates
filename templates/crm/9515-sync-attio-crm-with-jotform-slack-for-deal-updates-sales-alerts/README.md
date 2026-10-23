@@ -1,6 +1,6 @@
 # 🤝 Sync Attio CRM with Jotform & Slack for deal updates & sales alerts
 
-> ⚡ **57 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **77 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

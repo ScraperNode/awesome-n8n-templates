@@ -1,6 +1,6 @@
 # 📖 Creating a AI Slack bot with Google Gemini
 
-> ⚡ **10,046 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **10,083 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Create AI social media carousels from Google Sheet and auto-publish with Blotato
 
-> ⚡ **202 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **470 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — Since TikTok doesn't have a public API, getting data usually means fragile HTTP scraping. [ScraperNode](https://scrapernode.com/tiktok) is a community node that gives you clean JSON for [TikTok profiles](https://scrapernode.com/tiktok/scrapers/profiles), [videos](https://scrapernode.com/tiktok/scrapers/posts), and [comments](https://scrapernode.com/tiktok/scrapers/comments) — drop it into your workflow and skip the parsing.
 >
@@ -260,6 +260,7 @@ Watch the full step-by-step walkthrough.
 [🎥 Video Tutorial](https://youtu.be/A_QT-9qUkxc)
 -------------------------------------------------
 
+![](https://n8niostorageaccount.blob.core.windows.net/n8nio-strapi-blobs-prod/assets/Design_sans_titre_5_703bef59c9.png)
 
 * * *
 

@@ -1,6 +1,6 @@
 # 🧾 Auto-extract & approve invoices with OpenAI, Jotform - fraud detection
 
-> ⚡ **234 views** · 🧾 [Invoice Processing](../)
+> ⚡ **292 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 👥 Cv resume PDF parsing with multimodal vision AI
 
-> ⚡ **18,891 views** · 👥 [HR & Recruitment](../)
+> ⚡ **19,003 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

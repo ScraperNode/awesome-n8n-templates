@@ -1,6 +1,6 @@
 # 💬 Automate salon appointment management with WhatsApp, GPT & Google Calendar
 
-> ⚡ **5,413 views** · 💬 [Support Chatbots](../)
+> ⚡ **5,908 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

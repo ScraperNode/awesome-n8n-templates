@@ -1,6 +1,6 @@
 # 🎣 Create, update, and get a profile in Humantic AI
 
-> ⚡ **868 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **870 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

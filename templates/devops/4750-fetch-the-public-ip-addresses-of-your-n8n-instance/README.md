@@ -1,6 +1,6 @@
 # ⚙️ Fetch the public IP addresses of your n8n instance
 
-> ⚡ **1,315 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,603 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

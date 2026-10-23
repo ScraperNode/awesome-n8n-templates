@@ -1,6 +1,6 @@
 # 💬 Auto-send welcome messages to Vtiger CRM leads via Evolution API WhatsApp
 
-> ⚡ **1,068 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,234 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

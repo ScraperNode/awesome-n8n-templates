@@ -1,6 +1,6 @@
 # ⚒️ Get the value of a key from Redis
 
-> ⚡ **1,813 views** · ⚒️ [Engineering](../)
+> ⚡ **1,820 views** · ⚒️ [Engineering](../)
 
 ## Description
 

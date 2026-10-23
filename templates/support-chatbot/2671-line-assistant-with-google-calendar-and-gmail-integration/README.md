@@ -1,6 +1,6 @@
 # 💬 LINE assistant with Google Calendar and Gmail integration
 
-> ⚡ **2,803 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,821 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

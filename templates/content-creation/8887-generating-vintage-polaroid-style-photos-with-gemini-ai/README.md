@@ -1,6 +1,6 @@
 # 🎬 Generating vintage Polaroid style photos with Gemini AI
 
-> ⚡ **280 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **329 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

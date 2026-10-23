@@ -1,6 +1,6 @@
 # 🎫 Automated multilingual Gmail draft reply with OpenAI GPT-4o
 
-> ⚡ **2,260 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **2,523 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

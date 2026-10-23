@@ -1,6 +1,6 @@
 # 💬 Automate property maintenance requests with GPT-4o-mini, Jotform and Gmail
 
-> ⚡ **363 views** · 💬 [Support Chatbots](../)
+> ⚡ **541 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

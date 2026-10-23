@@ -1,6 +1,6 @@
 # 📈 Automated US stock portfolio analysis with Telegram, Perplexity AI & PDF reports
 
-> ⚡ **573 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **650 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

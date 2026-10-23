@@ -1,6 +1,6 @@
 # 🔬 AI-powered cover letter generator with resume matching & Google Docs
 
-> ⚡ **293 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **502 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

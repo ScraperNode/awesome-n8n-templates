@@ -1,6 +1,6 @@
 # 💬 Email outreach drafter based on HubSpot data
 
-> ⚡ **1,340 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,657 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

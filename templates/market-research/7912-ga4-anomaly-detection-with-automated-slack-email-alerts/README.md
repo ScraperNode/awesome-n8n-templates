@@ -1,6 +1,6 @@
 # 📊 Ga4 anomaly detection with automated Slack & email alerts
 
-> ⚡ **53 views** · 📊 [Market Research & Insights](../)
+> ⚡ **80 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

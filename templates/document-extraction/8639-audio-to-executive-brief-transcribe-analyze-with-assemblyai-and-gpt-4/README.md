@@ -1,6 +1,6 @@
 # 🔬 Audio to executive brief: Transcribe & analyze with AssemblyAI and GPT-4
 
-> ⚡ **476 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **563 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

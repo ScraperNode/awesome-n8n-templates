@@ -1,6 +1,6 @@
 # 🔬 Google Docs MCP server — read & write access for agents
 
-> ⚡ **125 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **305 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

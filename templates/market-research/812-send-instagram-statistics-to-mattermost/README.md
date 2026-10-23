@@ -1,6 +1,6 @@
 # 📊 Send Instagram statistics to Mattermost
 
-> ⚡ **3,484 views** · 📊 [Market Research & Insights](../)
+> ⚡ **3,481 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Send a ChatGPT email reply and save responses to Google Sheets
 
-> ⚡ **18,975 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **19,118 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

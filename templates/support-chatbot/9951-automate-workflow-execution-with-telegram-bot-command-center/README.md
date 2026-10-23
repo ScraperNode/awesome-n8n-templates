@@ -1,6 +1,6 @@
 # 💬 Automate workflow execution with Telegram Bot Command Center
 
-> ⚡ **547 views** · 💬 [Support Chatbots](../)
+> ⚡ **673 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

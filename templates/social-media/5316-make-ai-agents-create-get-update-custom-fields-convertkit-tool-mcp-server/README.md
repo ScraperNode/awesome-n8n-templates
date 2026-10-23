@@ -1,6 +1,6 @@
 # 📱 Make AI agents create, get, update custom fields 🛠️ ConvertKit tool MCP server
 
-> ⚡ **133 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **152 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

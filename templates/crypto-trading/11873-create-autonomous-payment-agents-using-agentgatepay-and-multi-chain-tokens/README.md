@@ -1,6 +1,6 @@
 # 📈 Create autonomous payment agents using AgentGatePay and multi-chain tokens
 
-> ⚡ **63 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **111 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

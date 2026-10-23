@@ -1,6 +1,6 @@
 # 🎣 Alert via Gmail when a great lead submits form with MadKudu and Hunter
 
-> ⚡ **782 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **815 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

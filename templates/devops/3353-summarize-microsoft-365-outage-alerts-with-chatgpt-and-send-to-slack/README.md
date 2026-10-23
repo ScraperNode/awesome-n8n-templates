@@ -1,6 +1,6 @@
 # ⚙️ Summarize Microsoft 365 outage alerts with ChatGPT and send to Slack
 
-> ⚡ **1,867 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,112 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

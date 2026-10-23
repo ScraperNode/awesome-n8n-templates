@@ -1,6 +1,6 @@
 # 🎬 Generate LinkedIn carousel images from text with Mistral AI & S3 Storage
 
-> ⚡ **291 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **467 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

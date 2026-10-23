@@ -1,6 +1,6 @@
 # 🎯 Create AI-curated tech news digests with GPT-4.1 Mini and Notion Database
 
-> ⚡ **411 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **501 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Debounce Telegram support messages and aggregate replies with OpenAI
 
-> ⚡ **40 views** · 💬 [Support Chatbots](../)
+> ⚡ **209 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

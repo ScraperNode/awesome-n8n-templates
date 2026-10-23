@@ -1,6 +1,6 @@
 # 💬 Route and reassign leads with SLA using Google Sheets and Slack
 
-> ⚡ **14 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **42 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

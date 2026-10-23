@@ -1,6 +1,6 @@
 # 🎬 Generate Podcast Transcript Summaries & Keywords with OpenAI and Gmail
 
-> ⚡ **1,031 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,103 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

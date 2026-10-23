@@ -1,6 +1,6 @@
 # 🎬 Edit images with text prompts using Bytedance Seededit 3.0 via Replicate API
 
-> ⚡ **540 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **571 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

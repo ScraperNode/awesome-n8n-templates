@@ -1,6 +1,6 @@
 # 📊 Client feedback collector & analyzer (Form → AI summary → Email + Social draft)
 
-> ⚡ **1,516 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,687 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

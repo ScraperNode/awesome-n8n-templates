@@ -1,6 +1,6 @@
 # ⚡ AI-powered email forwarding to WhatsApp with Gmail, Outlook & Google Gemini
 
-> ⚡ **1,067 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,673 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

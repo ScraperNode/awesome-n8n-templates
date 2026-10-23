@@ -1,6 +1,6 @@
 # 📋 Triage product UAT feedback with OpenAI, Notion, Slack and Gmail
 
-> ⚡ **64 views** · 📋 [Project Management](../)
+> ⚡ **94 views** · 📋 [Project Management](../)
 
 ## Description
 

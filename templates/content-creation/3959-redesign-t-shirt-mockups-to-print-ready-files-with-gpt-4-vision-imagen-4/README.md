@@ -1,6 +1,6 @@
 # 🎬 Redesign t-shirt mockups to print-ready files with GPT-4 vision & Imagen 4
 
-> ⚡ **6,155 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **6,516 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

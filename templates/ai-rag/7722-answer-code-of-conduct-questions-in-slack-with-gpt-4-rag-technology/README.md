@@ -1,6 +1,6 @@
 # 🔍 Answer code of conduct questions in Slack with GPT-4 & RAG technology
 
-> ⚡ **149 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **170 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

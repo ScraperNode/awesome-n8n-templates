@@ -1,6 +1,6 @@
 # 🤝 Automate client renewal alerts from GoHighLevel to Gmail, Slack & Google Sheets
 
-> ⚡ **237 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **331 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

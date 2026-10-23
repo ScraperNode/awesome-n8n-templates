@@ -1,6 +1,6 @@
 # 📊 Generate personalized startup ideas with Claude analysis and Gmail reports
 
-> ⚡ **1,242 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,410 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

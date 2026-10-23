@@ -1,6 +1,6 @@
 # 🎬 Generate AI-powered images using IBM Granite Vision 3.3 2B with Replicate
 
-> ⚡ **653 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **743 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

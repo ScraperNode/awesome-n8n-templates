@@ -1,6 +1,6 @@
 # 🔬 AI agent for realtime insights on meetings
 
-> ⚡ **18,388 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **18,440 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

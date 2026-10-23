@@ -1,6 +1,6 @@
 # 🎣 Generate and research sales leads with Jina AI & OpenAI email automation via Gmail
 
-> ⚡ **59 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **96 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

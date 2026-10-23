@@ -1,6 +1,6 @@
 # 🎬 Create anti-cheating tests from PDFs with GPT-4o-mini and Google Docs
 
-> ⚡ **43 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **48 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

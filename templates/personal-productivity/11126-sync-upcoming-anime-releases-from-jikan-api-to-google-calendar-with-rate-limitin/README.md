@@ -1,6 +1,6 @@
 # ⚡ Sync upcoming anime releases from Jikan API to Google Calendar with rate limiting
 
-> ⚡ **75 views** · ⚡ [Personal Productivity](../)
+> ⚡ **141 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Monitor employee policy compliance with GPT-4, Slack, and email alerts
 
-> ⚡ **7 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **43 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

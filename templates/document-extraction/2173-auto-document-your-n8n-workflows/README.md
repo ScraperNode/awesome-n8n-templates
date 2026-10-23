@@ -1,6 +1,6 @@
 # 🔬 Auto document your n8n workflows
 
-> ⚡ **11,161 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **11,267 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

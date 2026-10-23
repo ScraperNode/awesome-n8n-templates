@@ -1,6 +1,6 @@
 # ⚡ Archive Spotify's discover weekly playlist
 
-> ⚡ **2,056 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,080 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

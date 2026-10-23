@@ -1,6 +1,6 @@
 # 🔬 Watermark and password-protect new Google Drive PDFs with Autype
 
-> ⚡ **1 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

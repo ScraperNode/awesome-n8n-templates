@@ -1,6 +1,6 @@
 # 🎬 Generate biblical character vlogs with GPT-4o and Veo3 AI video generator
 
-> ⚡ **1,616 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,227 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

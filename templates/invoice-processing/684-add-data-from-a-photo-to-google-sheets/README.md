@@ -1,6 +1,6 @@
 # 🧾 Add data from a photo to Google Sheets
 
-> ⚡ **5,876 views** · 🧾 [Invoice Processing](../)
+> ⚡ **6,121 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

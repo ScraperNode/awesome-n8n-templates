@@ -1,6 +1,6 @@
 # 📁 Write a file to the host machine
 
-> ⚡ **2,752 views** · 📁 [File Management](../)
+> ⚡ **2,830 views** · 📁 [File Management](../)
 
 ## Description
 

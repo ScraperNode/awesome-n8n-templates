@@ -1,6 +1,6 @@
 # 📈 Get Colombian peso to USD exchange rate with Telegram bot and AI date recognition
 
-> ⚡ **360 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **402 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

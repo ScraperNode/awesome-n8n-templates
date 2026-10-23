@@ -1,0 +1,366 @@
+{
+  "name": "Send Hyperliquid wallet fill alerts to Telegram",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "manual",
+      "name": "Preview manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        320
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "schedule",
+      "name": "Every 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        120
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "config",
+      "name": "Wallet settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        230,
+        180
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "wallet",
+              "name": "walletAddress",
+              "type": "string",
+              "value": "PASTE_PUBLIC_WALLET_ADDRESS"
+            },
+            {
+              "id": "label",
+              "name": "walletLabel",
+              "type": "string",
+              "value": "Watched wallet"
+            },
+            {
+              "id": "chat",
+              "name": "telegramChatId",
+              "type": "string",
+              "value": "PASTE_TELEGRAM_CHAT_ID"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "prepare",
+      "name": "Prepare request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        460,
+        180
+      ],
+      "parameters": {
+        "jsCode": "// Read-only Hyperliquid query. Manual executions are preview-only.\nconst config = $input.first().json;\nconst wallet = String(config.walletAddress || '').trim().toLowerCase();\nif (!/^0x[0-9a-f]{40}$/.test(wallet) || /^0x0{40}$/.test(wallet)) {\n  throw new Error('Set walletAddress to a non-zero public master-account or subaccount address. Never enter a private key.');\n}\nconst preview = $execution.mode === 'manual';\nconst chatId = String(config.telegramChatId || '').trim();\nif (!preview && !/^(?:-?\\d+|@[A-Za-z][A-Za-z0-9_]{4,})$/.test(chatId)) {\n  throw new Error('Set telegramChatId and select Telegram credentials before enabling scheduled runs.');\n}\nconst store = $getWorkflowStaticData('global');\nconst previous = store.hlWalletMonitor;\nif (previous && (previous.version !== 1 || !Number.isSafeInteger(previous.endTime) || !Number.isSafeInteger(previous.baselineAt) || !Array.isArray(previous.seen))) {\n  throw new Error('Invalid stored checkpoint. Inspect the saved state instead of silently resetting the monitor.');\n}\nconst state = !preview && previous?.wallet === wallet ? previous : null;\nconst endTime = Date.now() - 10_000; // Brief indexing delay; overlap below catches some late records.\nconst overlapMs = 120_000;\nif (state && state.endTime >= endTime) throw new Error('Non-increasing checkpoint time. Check clock/overlapping runs.');\nif (state && endTime - state.endTime > 86_400_000) {\n  throw new Error('Monitor inactive for over 24h. Historical coverage cannot be guaranteed. Reconcile the gap before creating a fresh baseline.');\n}\nconst startTime = state ? Math.max(state.baselineAt, state.endTime - overlapMs) : endTime - (preview ? 900_000 : 300_000);\nreturn [{json: {\n  wallet, label: String(config.walletLabel || 'Watched wallet').slice(0, 40), chatId,\n  preview, initial: !state, endTime, overlapMs,\n  baselineAt: state ? state.baselineAt : endTime,\n  previousEndTime: state ? state.endTime : null,\n  seen: state ? state.seen : [],\n  request: {type: 'userFillsByTime', user: wallet, startTime, endTime, aggregateByTime: false},\n}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "fetch",
+      "name": "Read Hyperliquid fills",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 3,
+      "position": [
+        690,
+        180
+      ],
+      "parameters": {
+        "url": "https://api.hyperliquid.xyz/info",
+        "method": "POST",
+        "options": {
+          "timeout": 20000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify($json.request) }}",
+        "sendBody": true,
+        "specifyBody": "json"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 1500
+    },
+    {
+      "id": "build",
+      "name": "Build alert",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        920,
+        180
+      ],
+      "parameters": {
+        "jsCode": "const ctx = $('Prepare request').first().json;\nconst response = $input.first().json;\nif (response.statusCode !== 200 || !Array.isArray(response.body)) {\n  throw new Error('Hyperliquid did not return a successful fill array; checkpoint unchanged.');\n}\n// Conservative guard: docs specify 2,000 fills, and a generic 500 element/block page limit.\n// This small-wallet template has no pagination. Reject >=500 rather than assume completeness.\nif (response.body.length >= 500) {\n  throw new Error('500+ fills returned: possible pagination/retention gap. This template is for lower-volume wallets; checkpoint unchanged.');\n}\nconst decimal = /^-?\\d+(?:\\.\\d+)?$/;\nfunction validDecimal(value, positive = false) {\n  return typeof value === 'string' && value.length <= 50 && decimal.test(value) && Number.isFinite(Number(value)) && (!positive || Number(value) > 0);\n}\nfunction identity(fill) {\n  if (!(typeof fill.tid === 'string' && /^\\d+$/.test(fill.tid)) && !(Number.isSafeInteger(fill.tid) && fill.tid >= 0)) {\n    throw new Error('Missing or unsafe trade ID; cannot deduplicate reliably.');\n  }\n  return `${fill.coin}:${String(fill.tid)}`;\n}\nfunction units(value, scale) {\n  const negative = value.startsWith('-');\n  const [whole, part = ''] = value.replace(/^-/, '').split('.');\n  return BigInt(whole + part.padEnd(scale, '0')) * (negative ? -1n : 1n);\n}\nfunction action(fill) {\n  if (fill.coin.startsWith('@') || fill.coin.includes('/')) return fill.side === 'B' ? 'Spot buy' : 'Spot sell';\n  if (!validDecimal(fill.startPosition)) return `${fill.side === 'B' ? 'Buy' : 'Sell'} fill (position change unknown)`;\n  const scale = Math.max((fill.startPosition.split('.')[1] || '').length, (fill.sz.split('.')[1] || '').length);\n  const before = units(fill.startPosition, scale);\n  const delta = units(fill.sz, scale) * (fill.side === 'B' ? 1n : -1n);\n  const after = before + delta;\n  if (before === 0n) return after > 0n ? 'Open long' : 'Open short';\n  if (after === 0n) return before > 0n ? 'Close long' : 'Close short';\n  if (before > 0n && after < 0n) return 'Reverse long to short';\n  if (before < 0n && after > 0n) return 'Reverse short to long';\n  const added = before > 0n ? delta > 0n : delta < 0n;\n  return `${added ? 'Increase' : 'Reduce'} ${before > 0n ? 'long' : 'short'}`;\n}\nfunction esc(value) {\n  return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\nfunction compactNumber(value) {\n  const n = Number(value);\n  return Math.abs(n) >= 1e12 || (n !== 0 && Math.abs(n) < 1e-8) ? n.toExponential(6) : n.toLocaleString('en-US', {maximumFractionDigits: 8});\n}\nconst unique = new Map();\nfor (const fill of response.body) {\n  if (!fill || typeof fill.coin !== 'string' || !fill.coin || fill.coin.length > 60 || !['A', 'B'].includes(fill.side) || !validDecimal(fill.px, true) || !validDecimal(fill.sz, true) || !Number.isSafeInteger(fill.time) || fill.time < ctx.request.startTime || fill.time > ctx.endTime) {\n    throw new Error('Malformed or out-of-window fill; checkpoint unchanged.');\n  }\n  const key = identity(fill);\n  const old = unique.get(key);\n  if (old && ['px', 'sz', 'time', 'side', 'startPosition'].some(field => old[field] !== fill[field])) throw new Error('Conflicting records for a trade ID.');\n  unique.set(key, {...fill, key});\n}\nconst ordered = [...unique.values()].sort((a, b) => a.time - b.time || a.key.localeCompare(b.key));\nconst known = new Set(ctx.seen.map(row => row.key));\nconst fresh = ordered.filter(fill => !known.has(fill.key) && (ctx.preview || fill.time > ctx.baselineAt));\nconst recent = new Map(ctx.seen.filter(row => row.time >= ctx.endTime - ctx.overlapMs).map(row => [row.key, row]));\nfor (const fill of ordered) if (fill.time >= ctx.endTime - ctx.overlapMs) recent.set(fill.key, {key: fill.key, time: fill.time});\nconst checkpoint = {version: 1, wallet: ctx.wallet, baselineAt: ctx.baselineAt, endTime: ctx.endTime, seen: [...recent.values()]};\nconst trackerUrl = `https://marketdepthlab.com/tools/hyperliquid-wallet-tracker/#address=${ctx.wallet}`;\nconst display = fresh.slice(-6);\nconst lines = [\n  `<b>Hyperliquid wallet fills${ctx.preview ? ' \u2014 PREVIEW' : ''}</b>`,\n  esc(ctx.label), `<code>${ctx.wallet}</code>`,\n  `${fresh.length} ${ctx.preview ? 'recent' : 'newly observed'} fill(s); times in UTC`, '',\n];\nfor (const fill of display) {\n  const fee = validDecimal(fill.fee) && typeof fill.feeToken === 'string'\n    ? ` | Fee ${esc(compactNumber(fill.fee))} ${esc(fill.feeToken.slice(0, 15))}` : '';\n  lines.push(`<b>${esc(fill.coin)} \u00b7 ${esc(action(fill))}</b>`);\n  lines.push(`${esc(compactNumber(fill.sz))} @ ${esc(compactNumber(fill.px))}${fee}`);\n  lines.push(new Date(fill.time).toISOString().replace('T', ' ').replace('.000Z', 'Z'), '');\n}\nif (fresh.length > display.length) lines.push(`Showing the latest ${display.length} of ${fresh.length} fills in this batch.`, '');\nlines.push(`<a href=\"${trackerUrl}\">Inspect this wallet on Market Depth Lab</a>`);\nlines.push('Fill activity only; not a complete portfolio or deposit/withdrawal monitor.');\nconst message = lines.join('\\n');\nif (message.length > 4000) throw new Error('Message exceeds safe Telegram length; checkpoint unchanged.');\nconst baselineOnly = ctx.initial && !ctx.preview;\nreturn [{json: {\n  status: ctx.preview ? 'preview_only' : baselineOnly ? 'baseline_created_no_alert' : fresh.length ? 'new_fills' : 'no_new_fills',\n  preview: ctx.preview, send: !ctx.preview && !baselineOnly && fresh.length > 0,\n  chatId: ctx.chatId, wallet: ctx.wallet, previousEndTime: ctx.previousEndTime,\n  count: fresh.length, displayedCount: display.length, message, trackerUrl,\n  checkpoint, actions: display.map(fill => ({id: fill.key, action: action(fill), coin: fill.coin})),\n}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "if",
+      "name": "Send a new fill alert?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1150,
+        180
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "should-send",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.send }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "telegram",
+      "name": "Telegram alert",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1380,
+        80
+      ],
+      "parameters": {
+        "text": "={{ $json.message }}",
+        "chatId": "={{ $json.chatId }}",
+        "resource": "message",
+        "operation": "sendMessage",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false,
+          "disable_web_page_preview": true
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "commit",
+      "name": "Save checkpoint or preview",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1620,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const batch = $('Build alert').first().json;\nif (batch.preview) return [{json: {status: 'preview_only', message: batch.message, count: batch.count, stateSaved: false}}];\n// The send branch reaches this node only after a successful Telegram response.\nif (batch.send) {\n  const delivery = $input.first().json;\n  const result = delivery.result || delivery;\n  if (!Number.isSafeInteger(result.message_id)) throw new Error('Telegram delivery not confirmed; checkpoint unchanged.');\n}\nconst store = $getWorkflowStaticData('global');\nconst current = store.hlWalletMonitor;\nif (current?.wallet === batch.wallet && current.endTime !== batch.previousEndTime) {\n  throw new Error('Concurrent checkpoint change detected. Run one execution at a time.');\n}\nstore.hlWalletMonitor = batch.checkpoint;\nreturn [{json: {status: batch.status, count: batch.count, checkpointTime: new Date(batch.checkpoint.endTime).toISOString(), stateSavedOnSuccessfulExecution: true}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "setup",
+      "name": "Start here - overview and setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -750,
+        -280
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 620,
+        "height": 980,
+        "content": "# Send Hyperliquid wallet fill alerts to Telegram\n\n## Who is this for?\n\nAnyone following a public Hyperliquid trading address who wants alerts without repeatedly checking a dashboard. Use one lower-volume wallet per workflow.\n\n## How it works\n\nEvery five minutes, the workflow reads Hyperliquid\u2019s public Info API. The first scheduled run silently establishes a baseline. Later runs deduplicate fills and send a Telegram summary showing up to six recent trades, including perpetual position changes, prices, sizes, and available fees.\n\nEach alert links to the same address in the [Market Depth Lab Hyperliquid Wallet Tracker](https://marketdepthlab.com/tools/hyperliquid-wallet-tracker/). Market Depth Lab created this template and companion tool.\n\n## Requirements and setup\n\n1. Import into n8n. Enter a public master-account or subaccount address, label, and Telegram chat ID in **Wallet settings**.\n2. Select your Telegram bot credential in **Telegram alert**.\n3. Run **Preview manually** and inspect the final output; manual runs never send messages or save checkpoints.\n4. Activate when ready. Check execution history for failures.\n\nNo wallet connection, private key, or Hyperliquid trading API key is needed.\n\n## Customization and limits\n\nChange the address and label for another wallet. Keep executions sequential. This monitors fills, not deposits, withdrawals, or funding.\n\nStatic-data persistence is experimental. Interrupted deliveries can duplicate alerts; late fills can be missed. Responses of 500+ fills or checkpoint gaps over 24 hours stop with an error. See workflow notes for details."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "read",
+      "name": "Guide read",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        590,
+        -260
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 490,
+        "height": 300,
+        "content": "## 2. Read public fills\nEvery five minutes, query Hyperliquid with a two-minute overlap and a ten-second delay. First scheduled success creates a silent baseline.\n\n500+ rows, malformed responses or a gap over 24 hours stop the run instead of silently skipping history. Intended for lower-volume wallets, not high-frequency accounts."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "send",
+      "name": "Guide send",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1110,
+        -260
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 600,
+        "height": 270,
+        "content": "## 3. Alert, then checkpoint\nOne message per batch, latest six fills shown. Spot codes and returned HIP-3 prefixes are preserved. Position-change labels apply to perpetual fills.\n\nLink opens the selected address in Market Depth Lab. No trading action is performed."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "limits",
+      "name": "Guide limits",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        550,
+        410
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 1140,
+        "height": 310,
+        "content": "## Before publishing this workflow in n8n\nUse one sequential execution per workflow; timeout is 120s, schedule is 5m. Static data persists only after successful **published/active scheduled** runs. It is experimental and not suitable for high-frequency/overlapping runs.\n\nCheck Executions for API errors; attach your own error workflow if needed. Delivery is at-least-once: an interrupted send/checkpoint may duplicate a message. Late records beyond the overlap and upstream retention limits may be missed.\n\nThis monitors returned fills for one address, not deposits, withdrawals, funding, all subaccounts or a complete cross-DEX portfolio. Clone the workflow for another address; check limits before scaling."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1",
+    "executionTimeout": 120,
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "connections": {
+    "Build alert": {
+      "main": [
+        [
+          {
+            "node": "Send a new fill alert?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram alert": {
+      "main": [
+        [
+          {
+            "node": "Save checkpoint or preview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Wallet settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare request": {
+      "main": [
+        [
+          {
+            "node": "Read Hyperliquid fills",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wallet settings": {
+      "main": [
+        [
+          {
+            "node": "Prepare request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preview manually": {
+      "main": [
+        [
+          {
+            "node": "Wallet settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Hyperliquid fills": {
+      "main": [
+        [
+          {
+            "node": "Build alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a new fill alert?": {
+      "main": [
+        [
+          {
+            "node": "Telegram alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save checkpoint or preview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

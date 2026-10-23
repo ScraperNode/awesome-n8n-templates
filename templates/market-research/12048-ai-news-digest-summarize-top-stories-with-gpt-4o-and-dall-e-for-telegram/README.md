@@ -1,6 +1,6 @@
 # 📊 AI news digest: Summarize top stories with GPT-4o and DALL-E for Telegram
 
-> ⚡ **219 views** · 📊 [Market Research & Insights](../)
+> ⚡ **333 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

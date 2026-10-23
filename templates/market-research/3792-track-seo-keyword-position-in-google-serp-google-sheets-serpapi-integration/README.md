@@ -1,6 +1,6 @@
 # 📊 Track SEO keyword position in Google SERP (Google Sheets + SerpAPI integration)
 
-> ⚡ **1,779 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,002 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

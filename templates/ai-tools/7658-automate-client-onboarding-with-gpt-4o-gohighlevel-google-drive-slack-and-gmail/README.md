@@ -1,6 +1,6 @@
 # 🎯 Automate Client Onboarding with GPT-4o, GoHighLevel, Google Drive, Slack, and Gmail
 
-> ⚡ **130 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **151 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

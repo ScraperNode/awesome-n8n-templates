@@ -1,6 +1,6 @@
 # 🧾 Upload invoices from Gmail to Google Drive
 
-> ⚡ **4,747 views** · 🧾 [Invoice Processing](../)
+> ⚡ **4,728 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

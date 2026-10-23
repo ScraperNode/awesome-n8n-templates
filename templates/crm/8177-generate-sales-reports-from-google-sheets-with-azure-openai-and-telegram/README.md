@@ -1,6 +1,6 @@
 # 🤝 Generate sales reports from Google Sheets with Azure OpenAI and Telegram
 
-> ⚡ **61 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **83 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

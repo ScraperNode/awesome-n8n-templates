@@ -1,6 +1,6 @@
 # 📈 Tracking your crypto portfolio in Airtable
 
-> ⚡ **3,771 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **3,758 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Create personalized diet plans from health reports with Ollama AI and email automation
 
-> ⚡ **1,023 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,532 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

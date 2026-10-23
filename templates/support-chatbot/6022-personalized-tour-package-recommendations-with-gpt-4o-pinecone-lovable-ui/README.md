@@ -1,6 +1,6 @@
 # 💬 Personalized tour package recommendations with GPT-4o, Pinecone & Lovable UI
 
-> ⚡ **1,591 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,803 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

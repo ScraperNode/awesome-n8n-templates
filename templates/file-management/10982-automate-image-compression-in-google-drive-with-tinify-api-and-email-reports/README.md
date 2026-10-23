@@ -1,6 +1,6 @@
 # 📁 🗜️ Automate image compression in Google Drive with Tinify API and email reports
 
-> ⚡ **128 views** · 📁 [File Management](../)
+> ⚡ **182 views** · 📁 [File Management](../)
 
 ## Description
 

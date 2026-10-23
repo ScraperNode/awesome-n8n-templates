@@ -1,6 +1,6 @@
 # 📊 Automated SEO watchlist: continuous audits with Decodo, Gemini & Google Sheets
 
-> ⚡ **179 views** · 📊 [Market Research & Insights](../)
+> ⚡ **248 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

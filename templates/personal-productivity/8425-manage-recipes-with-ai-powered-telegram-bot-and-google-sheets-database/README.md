@@ -1,6 +1,6 @@
 # ⚡ Manage recipes with AI-powered Telegram bot and Google Sheets database
 
-> ⚡ **72 views** · ⚡ [Personal Productivity](../)
+> ⚡ **100 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

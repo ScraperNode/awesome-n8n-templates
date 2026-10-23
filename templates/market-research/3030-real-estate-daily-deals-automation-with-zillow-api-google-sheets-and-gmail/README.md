@@ -1,6 +1,6 @@
 # 📊 Real estate daily deals automation with Zillow API, Google Sheets and Gmail
 
-> ⚡ **2,633 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,537 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

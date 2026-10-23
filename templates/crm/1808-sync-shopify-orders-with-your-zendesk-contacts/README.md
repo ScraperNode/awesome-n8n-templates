@@ -1,6 +1,6 @@
 # 🤝 Sync Shopify orders with your Zendesk contacts
 
-> ⚡ **1,085 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,181 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

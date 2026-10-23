@@ -1,6 +1,6 @@
 # 📋 Manage Jira issues with natural language via Telegram and GPT-4o
 
-> ⚡ **360 views** · 📋 [Project Management](../)
+> ⚡ **437 views** · 📋 [Project Management](../)
 
 ## Description
 

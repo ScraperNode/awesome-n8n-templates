@@ -1,6 +1,6 @@
 # 📖 Build a RAG agent with n8n, Qdrant & OpenAI
 
-> ⚡ **1,087 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **2,256 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 AI-Powered Cold Calling Automation with Vapi.ai, GPT-4o & Google Sheets
 
-> ⚡ **1,263 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,397 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 > 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
 >

@@ -1,6 +1,6 @@
 # 🎬 Video speech enhancement with OpenAI Whisper and GPT-4o TTS for multilingual delivery
 
-> ⚡ **34 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **49 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

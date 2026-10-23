@@ -1,6 +1,6 @@
 # ⚙️ Back up self-hosted workflows to Google Drive daily with change detection
 
-> ⚡ **180 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **483 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Create fact-based blog outlines with GPT-4o & Tavily search data
 
-> ⚡ **187 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **267 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

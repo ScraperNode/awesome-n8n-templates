@@ -1,6 +1,6 @@
 # 🔬 Auto-send FireFlies meeting summaries via email using Gemini 2.5 Pro
 
-> ⚡ **152 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **198 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

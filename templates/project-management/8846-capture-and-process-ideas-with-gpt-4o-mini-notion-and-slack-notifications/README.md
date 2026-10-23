@@ -1,6 +1,6 @@
 # 📋 Capture and process ideas with GPT-4o-mini, Notion and Slack notifications
 
-> ⚡ **125 views** · 📋 [Project Management](../)
+> ⚡ **158 views** · 📋 [Project Management](../)
 
 ## Description
 

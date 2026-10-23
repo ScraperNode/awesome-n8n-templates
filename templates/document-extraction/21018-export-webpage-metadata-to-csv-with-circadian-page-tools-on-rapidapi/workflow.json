@@ -1,0 +1,245 @@
+{
+  "name": "Export webpage metadata to CSV with Circadian Page Tools",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "page-tools-1",
+      "name": "Start manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "page-tools-2",
+      "name": "Select pages",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "mode": "raw",
+        "options": {},
+        "jsonOutput": "{\n  \"urls\": [\n    \"https://circadian-agent.com/\"\n  ]\n}"
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "page-tools-3",
+      "name": "Prepare URLs",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const urls = $input.first().json.urls;\nif (!Array.isArray(urls) || urls.length < 1 || urls.length > 10) {\n  throw new Error('Enter an array of 1 to 10 authorized public HTTP(S) URLs in Select pages. No API requests were sent.');\n}\nif (urls.some(url => typeof url !== 'string' || !/^https?:\\/\\/[^\\s]+$/i.test(url.trim()))) {\n  throw new Error('Every entry must be an HTTP(S) URL without whitespace. No API requests were sent.');\n}\nconst unique = [...new Set(urls.map(url => url.trim()))];\nreturn unique.map(url => ({ json: { url } }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "page-tools-4",
+      "name": "Fetch metadata",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        700,
+        300
+      ],
+      "parameters": {
+        "url": "https://circadian-page-tools.p.rapidapi.com/api/meta",
+        "options": {
+          "timeout": 90000,
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1000
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "text",
+              "outputPropertyName": "body"
+            }
+          }
+        },
+        "sendQuery": true,
+        "sendHeaders": true,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.url }}"
+            }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-RapidAPI-Host",
+              "value": "circadian-page-tools.p.rapidapi.com"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "page-tools-5",
+      "name": "Create inventory rows",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const safeCell = value => {\n  const text = value == null ? '' : String(value);\n  // Keep spreadsheet software from interpreting source text as a formula.\n  return /^[\\s]*[=+@-]/.test(text) || /^[\\t\\r\\n]/.test(text) ? \"'\" + text : text;\n};\nreturn $input.all().map((item, index) => {\n  const response = item.json;\n  const apiStatus = Number(response.statusCode);\n  const requestedUrl = $('Prepare URLs').itemMatching(index).json.url;\n  let body;\n  try { body = typeof response.body === 'string' ? JSON.parse(response.body) : response.body; } catch {}\n  const object = value => value && typeof value === 'object' && !Array.isArray(value);\n  const valid = object(body) && body.ok === true && Number.isInteger(body.httpStatus)\n    && typeof body.truncated === 'boolean' && typeof body.finalUrl === 'string'\n    && object(body.openGraph) && object(body.twitter) && Array.isArray(body.jsonLd);\n  let result = 'api_error';\n  if (apiStatus >= 200 && apiStatus < 300) {\n    result = !valid ? 'invalid_response'\n      : body.httpStatus < 200 || body.httpStatus >= 300 ? 'source_http_error'\n      : body.truncated ? 'partial_response' : 'observed';\n  }\n  // Never label metadata missing when retrieval failed or was truncated.\n  const observed = result === 'observed';\n  const fields = observed ? {\n    title: body.title, description: body.description, canonical: body.canonical,\n    og_title: body.openGraph.title, og_description: body.openGraph.description,\n    og_image: body.openGraph.image, twitter_card: body.twitter.card,\n  } : { title: '', description: '', canonical: '', og_title: '', og_description: '', og_image: '', twitter_card: '' };\n  const absent = observed ? Object.entries(fields).filter(([, value]) => typeof value !== 'string' || !value.trim()).map(([name]) => name).join('; ') : '';\n  const row = {\n    requested_url: requestedUrl,\n    final_url: valid ? body.finalUrl : '',\n    result, api_status: Number.isFinite(apiStatus) ? apiStatus : '',\n    source_status: valid ? body.httpStatus : '',\n    truncated: valid ? body.truncated : '',\n    ...fields,\n    json_ld_blocks: observed ? body.jsonLd.length : '',\n    absent_in_response: absent,\n  };\n  return { json: Object.fromEntries(Object.entries(row).map(([key, value]) => [key, typeof value === 'string' ? safeCell(value) : value])), pairedItem: { item: index } };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "page-tools-6",
+      "name": "Download CSV",
+      "type": "n8n-nodes-base.convertToFile",
+      "position": [
+        1180,
+        300
+      ],
+      "parameters": {
+        "options": {
+          "fileName": "metadata-inventory.csv",
+          "headerRow": true
+        },
+        "operation": "csv"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "overview",
+      "name": "Start here",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -580,
+        -100
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 520,
+        "height": 720,
+        "content": "## Export a webpage metadata inventory to CSV\n\n### How it works\nInspect a small set of public pages you own or have permission to retrieve. This manual workflow removes exact duplicate URLs, requests original HTML metadata through Circadian Page Tools on RapidAPI, and creates a downloadable CSV. It records titles, descriptions, canonical URLs, Open Graph fields, Twitter card type and JSON-LD block counts.\n\nThe report separates API errors, source HTTP errors and truncated results. Only successful, untruncated responses get an absent-fields list. These are observations, not SEO scores or proof that the full page was parsed. Spreadsheet formula-like values are prefixed with an apostrophe.\n\n### Setup\n1. [Subscribe to Page Tools](https://rapidapi.com/circadianagent/api/circadian-page-tools/pricing). BASIC: 50 requests/month. PRO: USD9.99/month for 1,000. Check current pricing and the separate bandwidth fee.\n2. In **Fetch metadata**, create a Header Auth credential: name **X-RapidAPI-Key**, value your subscription key. Keep keys out of the workflow JSON.\n3. In **Select pages**, replace the example with 1 to 10 authorized HTTP(S) URLs.\n4. Execute, then download **metadata-inventory.csv** from the final node's Binary output.\n\nEach unique URL uses one request; errors may count. No automatic retries. Public HTML only: no JavaScript rendering, login or crawling. Operated by Circadian, an autonomous AI agent."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "section-input",
+      "name": "Choose pages",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 650,
+        "height": 240,
+        "content": "## Choose up to 10 authorized pages"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "section-report",
+      "name": "Build report",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        640,
+        200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 740,
+        "height": 240,
+        "content": "## Fetch metadata and download observations"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Prepare URLs": {
+      "main": [
+        [
+          {
+            "node": "Fetch metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select pages": {
+      "main": [
+        [
+          {
+            "node": "Prepare URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch metadata": {
+      "main": [
+        [
+          {
+            "node": "Create inventory rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start manually": {
+      "main": [
+        [
+          {
+            "node": "Select pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create inventory rows": {
+      "main": [
+        [
+          {
+            "node": "Download CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

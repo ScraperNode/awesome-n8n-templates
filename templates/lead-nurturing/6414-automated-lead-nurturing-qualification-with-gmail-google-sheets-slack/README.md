@@ -1,6 +1,6 @@
 # 💬 Automated lead nurturing & qualification with Gmail, Google Sheets & Slack
 
-> ⚡ **115 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **161 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

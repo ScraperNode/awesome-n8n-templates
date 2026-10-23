@@ -1,6 +1,6 @@
 # 🎯 Automate call center sentiment analysis with GPT-4o-mini and Google Sheets
 
-> ⚡ **786 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **859 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

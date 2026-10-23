@@ -1,6 +1,6 @@
 # 💬 Multilingual WhatsApp translator with OpenAI Whisper & GPT-4 and HubSpot integration
 
-> ⚡ **585 views** · 💬 [Support Chatbots](../)
+> ⚡ **618 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

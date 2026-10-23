@@ -1,6 +1,6 @@
 # 🔒 Extract actionable security insights from HackerOne reports with Google Gemini
 
-> ⚡ **773 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **875 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

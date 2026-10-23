@@ -1,6 +1,6 @@
 # 📁 Download and compress folder from S3 to ZIP file
 
-> ⚡ **1,727 views** · 📁 [File Management](../)
+> ⚡ **1,799 views** · 📁 [File Management](../)
 
 ## Description
 

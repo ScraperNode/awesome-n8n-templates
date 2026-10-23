@@ -1,6 +1,6 @@
 # 🔒 Automate SIEM alert enrichment with MITRE ATT&CK, Qdrant & Zendesk in n8n
 
-> ⚡ **14,300 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **14,750 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

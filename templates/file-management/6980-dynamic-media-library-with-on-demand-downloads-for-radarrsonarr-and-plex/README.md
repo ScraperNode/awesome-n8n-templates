@@ -1,6 +1,6 @@
 # 📁 Dynamic media library with on-demand downloads for Radarr/Sonarr and Plex
 
-> ⚡ **459 views** · 📁 [File Management](../)
+> ⚡ **528 views** · 📁 [File Management](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

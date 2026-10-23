@@ -1,6 +1,6 @@
 # 📋 Schedule supplier follow-ups from Airtable POs to Google Calendar with AI, Slack & Gmail
 
-> ⚡ **100 views** · 📋 [Project Management](../)
+> ⚡ **143 views** · 📋 [Project Management](../)
 
 ## Description
 

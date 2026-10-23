@@ -1,6 +1,6 @@
 # 🤝 Create a contact in ActiveCampaign
 
-> ⚡ **1,578 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,621 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

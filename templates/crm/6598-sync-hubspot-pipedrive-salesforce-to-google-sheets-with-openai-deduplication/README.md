@@ -1,6 +1,6 @@
 # 🤝 Sync HubSpot, Pipedrive & Salesforce to Google Sheets with OpenAI deduplication
 
-> ⚡ **313 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **351 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

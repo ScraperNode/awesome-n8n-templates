@@ -1,6 +1,6 @@
 # 💬 Restaurant GPT-4 receptionist for bookings & delivery using Vapi, Telegram, Airtable
 
-> ⚡ **979 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,210 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

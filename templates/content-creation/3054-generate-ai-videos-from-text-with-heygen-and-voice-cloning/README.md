@@ -1,6 +1,6 @@
 # 🎬 Generate AI videos from text with HeyGen and voice cloning.
 
-> ⚡ **20,475 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **25,590 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

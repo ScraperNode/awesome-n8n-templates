@@ -1,6 +1,6 @@
 # 🎫 Automate email categorization & response generation with Gmail & GPT-4
 
-> ⚡ **1,278 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,404 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

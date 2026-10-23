@@ -1,6 +1,6 @@
 # 🔧 Sync Amazon Luna Prime games to Google Sheets with automatic updates
 
-> ⚡ **36 views** · 🔧 [Miscellaneous](../)
+> ⚡ **65 views** · 🔧 [Miscellaneous](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -8,150 +8,44 @@
 
 ## Description
 
-## Amazon Luna Prime Games Catalog Tracker (Auto-Sync to Google Sheets)**
+## Quick overview
+Automatically fetch Amazon Luna games included with Prime, detect newly added titles, synchronize the catalog with Google Sheets, and optionally send Discord notifications when new games become available.
 
-Automatically fetch, organize, and maintain an updated catalog of **Amazon Luna – Included with Prime** games.This workflow regularly queries Amazon’s official Luna endpoint, extracts complete metadata, and syncs everything into Google Sheets without duplicates.
+## How it works
+1. Scheduled refresh — The workflow runs every five days at 3:00 PM by default; the schedule can be changed in n8n.
+2. Amazon Luna fetch — An HTTP Request calls the Luna backend with configurable locale and marketplace headers to retrieve the current Included with Prime catalog.
+3. Game parsing — JavaScript extracts structured metadata including ASIN, title, release year, publishers, genres, product URL, images, and age rating.
+4. New-game detection — Retrieved titles are compared with Google Sheets records, primarily by ASIN and with title as a fallback.
+5. Google Sheets sync — Games are appended or updated in the selected sheet to keep the catalog synchronized without duplicate records.
+6. Discord notification — Newly detected games can be filtered, batched, and sent to Discord with game details and artwork.
 
-Ideal for:
+## Setup
+1. Import the workflow — Import workflow.json into n8n.
+2. Configure Amazon headers — Update the Edit Fields node with the locale, marketplace ID, Origin, Referer, Accept-Language, and User-Agent for your target Amazon region.
+3. Connect Google Sheets — Configure credentials, document, and sheet for reading the existing catalog and writing synchronized records.
+4. Configure Discord — Connect Discord OAuth2 and select the target server and channel, or remove/replace this branch if notifications are not required.
+5. Review the schedule — Keep the default five-day interval or choose your preferred refresh frequency.
+6. Activate the workflow — Run a manual test, verify rows and notifications, then activate it.
 
-* tracking monthly **Prime Luna rotations**
-  
-* keeping a personal archive of games
-  
-* monitoring **new games appearing on Amazon Games / Prime Gaming**, so you can instantly play titles you’re interested in
-  
-* building dashboards or gaming databases
-  
-* powering notification systems (Discord, Telegram, email, etc.)
-  
+## Requirements
+- n8n instance
+- Google Sheets account and credentials
+- Google Sheet used as the game catalog
+- Network access to the Amazon Luna endpoint
+- Discord account and n8n Discord OAuth2 credentials (optional)
+- Alternative notification service such as Telegram, Slack, email, or webhook (optional)
+- Additional branches for multiple Amazon marketplaces (optional)
 
-* * *
+## Customization
+- Region — Change locale, marketplace ID, Origin, Referer, and language headers for another supported marketplace.
+- Schedule — Adjust how often the Luna catalog is refreshed.
+- Stored metadata — Extend or reduce fields extracted by the Code node and mapped to Google Sheets.
+- Notifications — Replace Discord with another n8n-supported messaging, email, or webhook integration.
+- Multi-region tracking — Duplicate the fetch, parsing, synchronization, and notification logic for separate regional catalogs.
 
-### **Overview**
-
-Amazon Luna’s “Included with Prime” lineup changes frequently, with new games added and old ones removed.Instead of checking manually, this n8n template fully automates the process:
-
-* Fetches the latest list from Amazon’s backend
-  
-* Extracts detailed metadata from the response
-  
-* Syncs the data into Google Sheets
-  
-* Avoids duplicates by updating existing rows
-  
-* Supports all major Amazon regions
-  
-
-Once configured, it runs automatically—keeping your game catalog correct, clean, and always up to date.
-
-* * *
-
-#### 🛠️ **How the workflow works**
-
-**1. Scheduled Trigger**
-
-Starts the workflow on a set schedule (default: every 5 days at 3:00 PM).You can change both frequency and time freely.
-
-**2. HTTP Request to Amazon Luna**
-
-Calls Amazon Luna’s regional endpoint and retrieves the full **“Included with Prime”** catalog.
-
-**3. JavaScript Code Node – Data Extraction**
-
-Parses the JSON response and extracts structured fields:
-
-* Title
-  
-* Genres
-  
-* Release Year
-  
-* ASIN
-  
-* Image URLs
-  
-* Additional metadata
-  
-
-The result is a clean, ready-to-use dataset.
-
-**4. Google Sheets – Insert or Update Rows**
-
-Each game is written into the selected Google Sheet:
-
-* Existing games get updated
-  
-* New games are appended
-  
-
-The **Title** acts as the unique identifier to prevent duplicates.
-
-* * *
-
-## ⚙️ **Configuration Parameters**
-
-| Parameter | Description | Recommended values |
-| --- | --- | --- |
-| **x-amz-locale** | Language + region | `it_IT` 🇮🇹 · `en_US` 🇺🇸 · `de_DE` 🇩🇪 · `fr_FR` 🇫🇷 · `es_ES` 🇪🇸 · `en_GB` 🇬🇧 · `ja_JP` 🇯🇵 · `en_CA` 🇨🇦 |
-| **x-amz-marketplace-id** | Marketplace backend ID | `APJ6JRA9NG5V4` 🇮🇹 · `ATVPDKIKX0DER` 🇺🇸 · `A1PA6795UKMFR9` 🇩🇪 · `A13V1IB3VIYZZH` 🇫🇷 · `A1RKKUPIHCS9HS` 🇪🇸 · `A1F83G8C2ARO7P` 🇬🇧 · `A1VC38T7YXB528` 🇯🇵 · `A2EUQ1WTGCTBG2` 🇨🇦 |
-| **Accept-Language** | Response language | Example: `it-IT,it;q=0.9,en;q=0.8` |
-| **User-Agent** | Browser-like request | Default or updated UA |
-| **Trigger interval** | Refresh frequency | Every 5 days at 3:00 PM (modifiable) |
-| **Google Sheet** | Storage output | Select your file + sheet |
-
-You can adapt these headers to fetch data from any supported country.
-
-* * *
-
-💡 **Tips & Customization**
-
-#### 🌍 Regional catalogs
-
-Duplicate the HTTP Request + Code + Sheet block to track multiple countries (US, DE, JP, UK…).
-
-#### 🧹 No duplicates
-
-The workflow updates rows intelligently, ensuring a clean catalog even after many runs.
-
-#### 🗂️ Move data anywhere
-
-Send the output to:
-
-* Airtable
-  
-* Databases (MySQL, Postgres, MongoDB…)
-  
-* Notion
-  
-* CSV
-  
-* REST APIs
-  
-* BI dashboards
-  
-
-#### 🔔 Add notifications (Discord, Telegram, Email, etc.)
-
-You can pair this template with a notification workflow.When used with **Discord**, the notification message can include:
-
-* game title
-  
-* description or metadata
-  
-* **the game’s image**, automatically downloaded and attached
-  
-
-This makes notifications visually informative and perfect for tracking new Prime titles.
-
-* * *
-
-### 🔒 **Important Notes**
-
-* All retrieved data belongs to **Amazon**.
-  
-* The workflow is intended for **personal, testing, or educational use only**.
-  
-* Do not republish or redistribute collected data without permission.
+## Additional info
+Amazon may change Luna endpoints or request requirements; review the request configuration if fetching stops working.
+Amazon data remains subject to Amazon's applicable terms and policies.
 
 ## 🔗 Nodes Used
 

@@ -1,6 +1,6 @@
 # 📋 Send Airtable data as tasks to Trello
 
-> ⚡ **893 views** · 📋 [Project Management](../)
+> ⚡ **889 views** · 📋 [Project Management](../)
 
 ## Description
 

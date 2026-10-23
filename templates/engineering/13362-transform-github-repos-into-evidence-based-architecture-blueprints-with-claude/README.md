@@ -1,6 +1,6 @@
 # ⚒️ Transform GitHub repos into evidence-based architecture blueprints with Claude
 
-> ⚡ **54 views** · ⚒️ [Engineering](../)
+> ⚡ **150 views** · ⚒️ [Engineering](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

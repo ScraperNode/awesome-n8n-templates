@@ -1,6 +1,6 @@
 # ⚡ Receive updates on appointments via Acuity Scheduling
 
-> ⚡ **1,311 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,428 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

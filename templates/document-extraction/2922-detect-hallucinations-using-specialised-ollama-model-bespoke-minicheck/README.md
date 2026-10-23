@@ -1,6 +1,6 @@
 # 🔬 Detect hallucinations using specialised Ollama model bespoke-minicheck
 
-> ⚡ **3,058 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,981 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

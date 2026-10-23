@@ -1,0 +1,819 @@
+{
+  "id": "1arwkKJJ0FjTVkwl",
+  "meta": {
+    "instanceId": "8443f10082278c46aa5cf3acf8ff0f70061a2c58bce76efac814b16290845177"
+  },
+  "name": "Generate Clean Plates with Seedance and Automate Object Removal, QC, and Delivery",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "1845c31c-5bb6-4d87-a145-ae1f95eb1ebe",
+      "name": "Webhook: Clean Plate Request",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        832,
+        784
+      ],
+      "webhookId": "clean-plate-webhook-001",
+      "parameters": {
+        "path": "clean-plate-request",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b166fe15-cdc1-48db-8e3f-12d093197b42",
+      "name": "Validate & Extract Input",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1072,
+        784
+      ],
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body;\n\nconst required = ['plateImageUrl', 'removalBrief', 'shotCode'];\nfor (const field of required) {\n  if (!body[field] || String(body[field]).trim() === '') {\n    throw new Error(`Validation failed: '${field}' is required.`);\n  }\n}\n\nconst data = {\n  plateImageUrl:    body.plateImageUrl.trim(),\n  removalBrief:     body.removalBrief.trim(),\n  shotCode:         body.shotCode.trim(),\n  sequenceCode:     body.sequenceCode?.trim() || body.shotCode.split('_')[0] || 'SEQ-000',\n  projectId:        body.projectId?.trim() || 'PROJ-001',\n  objectType:       body.objectType?.trim() || 'unwanted_object',  // wire | sign | crew | rig | general\n  frameRange:       body.frameRange?.trim() || '1-100',\n  frameRate:        body.frameRate || 24,\n  qcThreshold:      body.qcThreshold || 0.85,   // 0-1, how clean must result be to auto-notify\n  notionDatabaseId: body.notionDatabaseId?.trim() || null,\n  supervisorEmail:  body.supervisorEmail?.trim() || null,\n  requestTimestamp: new Date().toISOString()\n};\n\nreturn [{ json: data }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e93a948a-7977-4126-8cdd-da7b6a31bcdd",
+      "name": "Fan-Out: 4 Clean Plate Passes",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1312,
+        784
+      ],
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nconst p = d.removalBrief;\n\nconst objectInstructions = {\n  'wire':    'Remove all visible wires, cables, and rigging hardware. Leave background clean and seamless.',\n  'sign':    'Remove modern signage, replace with period-appropriate or clean background. Seamless integration.',\n  'crew':    'Remove crew members, equipment, and production elements. Fill with natural background.',\n  'rig':     'Remove camera rigs, support structures, and mechanical equipment. Restore background.',\n  'general': 'Remove the specified unwanted elements. Restore background to clean natural state.'\n};\n\nconst objectNote = objectInstructions[d.objectType] || objectInstructions['general'];\nconst techNote = `Shot: ${d.shotCode}, frames ${d.frameRange} at ${d.frameRate}fps. Seamless clean plate, no visible artifacts, photorealistic result.`;\n\nconst variations = [\n  {\n    variantId: 'CP-V1',\n    passType:  'clean_plate',\n    label:     'Clean Plate \u2013 Primary',\n    safePrompt: JSON.stringify(`${p}. ${objectNote} ${techNote} Primary clean plate pass, maximum quality removal, background reconstruction must be invisible. Static locked-off camera --duration 5 --camerafixed true`).slice(1,-1)\n  },\n  {\n    variantId: 'CP-V2',\n    passType:  'clean_plate_alt',\n    label:     'Clean Plate \u2013 Alternative',\n    safePrompt: JSON.stringify(`${p}. ${objectNote} ${techNote} Alternative interpretation of background reconstruction. Slightly different fill approach. Static locked-off camera --duration 5 --camerafixed true`).slice(1,-1)\n  },\n  {\n    variantId: 'CP-V3',\n    passType:  'foreground_removal',\n    label:     'Foreground Removal Pass',\n    safePrompt: JSON.stringify(`${p}. Isolate and remove all foreground elements specified. Show only the clean background plate. ${techNote} Pure background extraction pass --duration 5 --camerafixed true`).slice(1,-1)\n  },\n  {\n    variantId: 'CP-V4',\n    passType:  'difference_preview',\n    label:     'Difference Map Preview',\n    safePrompt: JSON.stringify(`Visual difference map showing what was removed: highlight changed regions in bright color (red/yellow) against dark background. Show exact areas of removal for ${p}. ${techNote} QC reference pass --duration 5 --camerafixed true`).slice(1,-1)\n  }\n];\n\nreturn variations.map(v => ({ json: { ...v, ...d } }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "190abb7a-f8ee-4d63-81d9-dfb46a2be7cf",
+      "name": "Build Clean Plate Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1552,
+        784
+      ],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\n// Always use image-to-video since we need the plate image as reference\nconst body = {\n  model: 'seedance-1-5-pro-251215',\n  content: [\n    { type: 'text', text: input.safePrompt },\n    { type: 'image_url', image_url: { url: input.plateImageUrl } }\n  ],\n  generate_audio: false,\n  ratio: 'adaptive',\n  duration: 5,\n  watermark: false\n};\n\nreturn [{\n  json: {\n    ...input,\n    requestBody: JSON.stringify(body),\n    mode: 'image_to_video'\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c1238448-bee6-419b-af11-ea8e2d510ebb",
+      "name": "Seedance: Generate Clean Pass",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1792,
+        784
+      ],
+      "parameters": {
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{ JSON.parse($json.requestBody) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.3
+    },
+    {
+      "id": "bf8a8ea6-7faa-4f1b-a7c7-0b2a66214e7e",
+      "name": "Merge Job ID + Metadata",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2032,
+        784
+      ],
+      "parameters": {
+        "jsCode": "const httpResult = $input.first().json;\nconst variantData = $('Build Clean Plate Request').first().json;\nreturn [{ json: { ...variantData, id: httpResult.id, jobStatus: httpResult.status } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7a6c4518-a2df-42e4-87e9-a3ab2e3c924b",
+      "name": "Poll: Check Job Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2272,
+        784
+      ],
+      "parameters": {
+        "url": "=",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_TOKEN_HERE"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.3
+    },
+    {
+      "id": "939a6274-388f-44c1-af3a-e35c8539c727",
+      "name": "Wait 20s",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        2416,
+        1056
+      ],
+      "webhookId": "cp-wait-webhook-001",
+      "parameters": {
+        "amount": 20
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "bef102c7-032e-4bac-903e-e47690531e00",
+      "name": "Render Complete?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2512,
+        784
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cp-cond-001",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "succeeded"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "0076c0d9-feae-462e-b84f-b0732b65dee8",
+      "name": "Build Clean Plate Metadata + QC",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2736,
+        768
+      ],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst variantData = $('Merge Job ID + Metadata').first().json;\n\nlet videoUrl = null;\nif (input.content && input.content.video_url) {\n  videoUrl = input.content.video_url;\n}\nif (!videoUrl) {\n  videoUrl = input.output_url || input.video_url || `URL not found. Job ID: ${input.id}`;\n}\n\n// QC Score \u2014 simulated here based on resolution and status\n// In production this would be a real pixel comparison\nconst resolutionScore = input.resolution === '1080p' ? 1.0 : input.resolution === '720p' ? 0.85 : 0.7;\nconst qcScore = resolutionScore; // simplified QC\nconst qcPassed = qcScore >= (variantData.qcThreshold || 0.85);\n\nconst passIcons = {\n  'clean_plate':        '\ud83e\uddf9',\n  'clean_plate_alt':    '\ud83d\udd04',\n  'foreground_removal': '\u2702\ufe0f',\n  'difference_preview': '\ud83d\udd0d'\n};\n\nreturn [{\n  json: {\n    variantId:        variantData.variantId,\n    passType:         variantData.passType,\n    passIcon:         passIcons[variantData.passType] || '\ud83c\udfac',\n    label:            variantData.label,\n    shotCode:         variantData.shotCode,\n    sequenceCode:     variantData.sequenceCode,\n    projectId:        variantData.projectId,\n    videoUrl:         videoUrl,\n    plateImageUrl:    variantData.plateImageUrl,\n    removalBrief:     variantData.removalBrief,\n    objectType:       variantData.objectType,\n    frameRange:       variantData.frameRange,\n    frameRate:        variantData.frameRate,\n    notionDatabaseId: variantData.notionDatabaseId,\n    supervisorEmail:  variantData.supervisorEmail,\n    jobId:            input.id,\n    resolution:       input.resolution,\n    duration:         input.duration,\n    qcScore:          qcScore,\n    qcPassed:         qcPassed,\n    qcThreshold:      variantData.qcThreshold,\n    generatedAt:      new Date().toISOString(),\n    tags: {\n      asset_type:     'clean_plate',\n      pass_type:      variantData.passType,\n      object_type:    variantData.objectType,\n      shot_code:      variantData.shotCode,\n      frame_range:    variantData.frameRange,\n      qc_passed:      qcPassed,\n      qc_score:       qcScore,\n      ai_generated:   true,\n      review_status:  qcPassed ? 'auto_approved' : 'needs_review',\n      workflow:       'clean_plate_generator'\n    }\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "05df9813-796a-47a3-967e-717455bb0a3f",
+      "name": "QC Check: Passes Threshold?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3008,
+        816
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "qc-cond-001",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.qcPassed }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "34930ec2-c4bd-447a-8851-01232765b47d",
+      "name": "Generate Nuke Comp Script",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3232,
+        608
+      ],
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\n\nconst nukeScript = `# Nuke Script \u2013 AI Clean Plate Comp Template\n# Shot: ${d.shotCode} | Sequence: ${d.sequenceCode}\n# Object Removal: ${d.objectType} | Pass: ${d.passType}\n# QC Score: ${d.qcScore} | QC Passed: ${d.qcPassed}\n# Auto-generated by Clean Plate Generator workflow\n# Date: ${new Date().toISOString()}\n\nset cut_paste_input [stack 0]\nversion 15.0\n\n# \u2500\u2500\u2500 ORIGINAL PLATE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nRead {\n file \"${d.plateImageUrl}\"\n format \"1920 1080 0 0 1920 1080 1 HD_1080\"\n name Read_ORIGINAL_PLATE\n label \"Original Plate\"\n xpos 0\n ypos -400\n}\n\n# \u2500\u2500\u2500 AI CLEAN PLATE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nRead {\n file \"${d.videoUrl}\"\n format \"1920 1080 0 0 1920 1080 1 HD_1080\"\n name Read_AI_CLEAN_PLATE\n label \"AI Clean \u2013 ${d.label}\"\n xpos 200\n ypos -400\n}\n\n# \u2500\u2500\u2500 DIFFERENCE MAP \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nMerge2 {\n inputs 2\n operation difference\n name Merge_DIFF_MAP\n label \"Difference Map\"\n xpos 100\n ypos -300\n}\n\nGrade {\n blackpoint 0\n whitepoint 0.05\n name Grade_DIFF_BOOST\n label \"Boost Difference\"\n xpos 100\n ypos -240\n}\n\n# \u2500\u2500\u2500 MAIN COMP MERGE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nMerge2 {\n inputs 2\n operation over\n name Merge_CLEAN_OVER_PLATE\n label \"Clean over Original\"\n xpos 100\n ypos -100\n}\n\n# \u2500\u2500\u2500 GRADE MATCH \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nColorCorrect {\n name CC_Grade_Match\n label \"Grade Match to Plate\"\n xpos 100\n ypos 0\n}\n\n# \u2500\u2500\u2500 WRITE NODES \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nWrite {\n file \"/mnt/delivery/${d.shotCode}/clean_plate_${d.passType}_v001.####.exr\"\n file_type exr\n colorspace linear\n name Write_CLEAN_PLATE\n label \"Output Clean Plate\"\n xpos 0\n ypos 100\n}\n\nWrite {\n file \"/mnt/delivery/${d.shotCode}/diff_map_${d.passType}_v001.####.exr\"\n file_type exr\n colorspace linear\n name Write_DIFF_MAP\n label \"Output Diff Map\"\n xpos 200\n ypos 100\n}\n`;\n\nreturn [{ json: {\n  ...d,\n  nukeScript:     nukeScript,\n  nukeScriptName: `${d.shotCode}_clean_${d.passType}_v001.nk`,\n  nukeScriptPath: `/comp_templates/${d.shotCode}/${d.shotCode}_clean_${d.passType}_v001.nk`,\n  folderStructure: {\n    cleanPlates:    `/delivery/${d.shotCode}/clean_plates/`,\n    differenceMaps: `/delivery/${d.shotCode}/diff_maps/`,\n    nukeScripts:    `/delivery/${d.shotCode}/nuke_scripts/`\n  }\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "11dea254-8274-48fb-8a9b-029e7e3308bc",
+      "name": "Download Clean Plate Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3616,
+        800
+      ],
+      "parameters": {
+        "url": "={{ $json.videoUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.3
+    },
+    {
+      "id": "5df88f1b-96ec-4489-9f21-221a04a4e4dd",
+      "name": "Google Drive: Upload Clean Plate",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        3904,
+        800
+      ],
+      "parameters": {
+        "name": "={{ $('Generate Nuke Comp Script').first().json.shotCode }}_{{ $('Generate Nuke Comp Script').first().json.passType }}_{{ $('Generate Nuke Comp Script').first().json.variantId }}.mp4",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "options": {},
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1fL57MP1QWsF0O_n7WuqfzJ0hO6I9Csrh",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1fL57MP1QWsF0O_n7WuqfzJ0hO6I9Csrh",
+          "cachedResultName": "Simulation FX Concept Generator "
+        }
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "credential-id",
+          "name": "Automations.ai"
+        }
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "f22c8936-37b8-4f15-8b33-a2cb82279830",
+      "name": "Aggregate All Passes",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4112,
+        528
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst nukeItems = $('Generate Nuke Comp Script').all();\n\nconst passes = nukeItems.map((item) => {\n  const d = item.json;\n  const qcBadge = d.qcPassed ? '\u2705 Auto-Approved' : '\u26a0\ufe0f Needs Review';\n  return `${d.passIcon} *${d.label}* (${d.variantId})\\n> \ud83c\udfac <${d.videoUrl}|Watch Pass>\\n> \ud83d\udd0d QC Score: ${(d.qcScore * 100).toFixed(0)}% \u2014 ${qcBadge}\\n> \ud83d\udcdd Nuke: ${d.nukeScriptName}\\n> \ud83d\udcc1 Clean Plates: ${d.folderStructure.cleanPlates}\\n> \ud83d\udcc5 ${d.generatedAt}`;\n});\n\nconst first = nukeItems[0].json;\nconst allPassed = nukeItems.every(i => i.json.qcPassed);\n\nreturn [{\n  json: {\n    shotCode:      first.shotCode,\n    sequenceCode:  first.sequenceCode,\n    objectType:    first.objectType,\n    removalBrief:  first.removalBrief,\n    passLines:     passes.join('\\n\\n'),\n    totalPasses:   passes.length,\n    allQcPassed:   allPassed,\n    nukeScript:    first.nukeScript,\n    nukeScriptName: first.nukeScriptName,\n    folderStructure: first.folderStructure,\n    generatedAt:   new Date().toISOString()\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "6dce94fe-8de1-4bf4-b523-22ceb5d90dde",
+      "name": "Slack: Notify Paint/Comp Team",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        4400,
+        384
+      ],
+      "webhookId": "59dbedfc-3151-4f6f-9019-e79fe28ac1a1",
+      "parameters": {
+        "text": "=\ud83e\uddf9 *AI Clean Plate Ready \u2013 {{ $json.shotCode }}* {{ $json.allQcPassed ? '\u2705 All QC Passed' : '\u26a0\ufe0f Some Passes Need Review' }}\n\n\ud83d\udccb *Shot:* {{ $json.shotCode }} | *Sequence:* {{ $json.sequenceCode }}\n\ud83c\udfaf *Object Type:* {{ $json.objectType }}\n\ud83d\udcdd *Brief:* {{ $json.removalBrief }}\n\ud83d\udcca *Total Passes:* {{ $json.totalPasses }}\n\n*Generated Passes:*\n{{ $json.passLines }}\n\n\ud83d\udcc1 *Folder Structure:*\n> Clean Plates: {{ $json.folderStructure.cleanPlates }}\n> Diff Maps: {{ $json.folderStructure.differenceMaps }}\n> Nuke Scripts: {{ $json.folderStructure.nukeScripts }}\n\n\ud83d\udcdd *Nuke Script:* {{ $json.nukeScriptName }}\n```\n{{ $json.nukeScript }}\n```\n\n_{{ $json.allQcPassed ? 'All passes auto-approved \u2014 ready for comp!' : 'Some passes need artist review before use.' }}_\n_Generated at: {{ $json.generatedAt }}_",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "C0ANFAL4WJ2",
+          "cachedResultName": "social"
+        },
+        "otherOptions": {},
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "33185252-2326-4683-8f6e-ae9170930389",
+      "name": "Slack: QC Failed \u2014 Artist Review",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        3360,
+        1152
+      ],
+      "webhookId": "93ee4e81-b2b6-4538-931d-a86d06aa36e8",
+      "parameters": {
+        "text": "=\u26a0\ufe0f *Clean Plate QC Failed \u2013 Needs Artist Review \u2013 {{ $json.shotCode }}*\n\n\ud83d\udccb *Shot:* {{ $json.shotCode }}\n\ud83c\udfaf *Object Type:* {{ $json.objectType }}\n\ud83d\udcdd *Brief:* {{ $json.removalBrief }}\n\n> QC score below threshold \u2014 artist review required before use.\n> \ud83c\udfac <{{ $json.videoUrl }}|View Result>\n> \ud83d\udcc5 {{ $json.generatedAt }}\n\n_Please review manually and approve or re-submit._",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "C0ANFAL4WJ2",
+          "cachedResultName": "social"
+        },
+        "otherOptions": {},
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "ba7a8922-509e-4a99-9931-d3f9ec75efc1",
+      "name": "Create a database page",
+      "type": "n8n-nodes-base.notion",
+      "position": [
+        3696,
+        528
+      ],
+      "parameters": {
+        "title": "AI-Assisted Clean Plate",
+        "options": {},
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "32f802b9-1fa0-80da-b562-e27227bc9319",
+          "cachedResultUrl": "https://www.notion.so/32f802b91fa080dab562e27227bc9319",
+          "cachedResultName": "AI-Assisted Clean Plate & Object Removal"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "plateImageUrl|rich_text",
+              "textContent": "={{ $json.plateImageUrl }}"
+            },
+            {
+              "key": "projectId|rich_text",
+              "textContent": "={{ $json.projectId }}"
+            },
+            {
+              "key": "sequenceCode|rich_text",
+              "textContent": "={{ $json.sequenceCode }}"
+            },
+            {
+              "key": "variantId|title",
+              "title": "={{ $json.variantId }}"
+            },
+            {
+              "key": "videoUrl|rich_text",
+              "textContent": "={{ $json.videoUrl }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "notionApi": {
+          "id": "credential-id",
+          "name": "saurabh notion"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "9d556eab-3bb8-4390-9bfb-509c832cc363",
+      "name": "Send Telegram1",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        4400,
+        688
+      ],
+      "webhookId": "884081b8-142f-4d67-889f-621f3946881a",
+      "parameters": {
+        "text": "=\ud83e\uddf9 *AI Clean Plate Ready \u2013 {{ $json.shotCode }}* {{ $json.allQcPassed ? '\u2705 All QC Passed' : '\u26a0\ufe0f Some Passes Need Review' }}\n\n\ud83d\udccb *Shot:* {{ $json.shotCode }} | *Sequence:* {{ $json.sequenceCode }}\n\ud83c\udfaf *Object Type:* {{ $json.objectType }}\n\ud83d\udcdd *Brief:* {{ $json.removalBrief }}\n\ud83d\udcca *Total Passes:* {{ $json.totalPasses }}\n\n*Generated Passes:*\n{{ $json.passLines }}\n\n\ud83d\udcc1 *Folder Structure:*\n> Clean Plates: {{ $json.folderStructure.cleanPlates }}\n> Diff Maps: {{ $json.folderStructure.differenceMaps }}\n> Nuke Scripts: {{ $json.folderStructure.nukeScripts }}\n\n\n_{{ $json.allQcPassed ? 'All passes auto-approved \u2014 ready for comp!' : 'Some passes need artist review before use.' }}_\n_Generated at: {{ $json.generatedAt }}_",
+        "chatId": "=963318735",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "credential-id",
+          "name": "Saurabh Telegram account 2"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "d118d7e7-9117-4fbb-b182-f15200021174",
+      "name": "\ud83d\udccb Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -304,
+        -16
+      ],
+      "parameters": {
+        "width": 756,
+        "height": 548,
+        "content": "## \ud83c\udfac AI Clean Plate Generator\n\n### How it works\nThis workflow automates AI-assisted clean plate generation for VFX production. When triggered via webhook, it fans out four parallel render passes \u2014 primary clean plate, an alternative take, a foreground-removal pass, and a difference map \u2014 using the Seedance AI video model with your original plate image as reference.\n\nEach pass is polled until complete, then scored against a configurable QC threshold. Passes that clear the threshold are logged to Notion, uploaded to Google Drive, and shipped with a ready-to-use Nuke compositing script. The whole team gets notified via Slack and Telegram when results are ready.\n\n### Setup steps\n1. **Webhook** \u2014 Copy the webhook URL from the trigger node and use it in your shot management tool or pipeline script.\n2. **Seedance API** \u2014 Replace the `Authorization` header value in `Seedance: Generate Clean Pass` and `Poll: Check Job Status` with your own Seedance API key stored as an n8n credential.\n3. **Google Drive** \u2014 Connect a Google Drive OAuth2 credential and update the target folder ID in `Google Drive: Upload Clean Plate`.\n4. **Notion** \u2014 Connect a Notion integration credential and set the correct database ID for your clean plate log.\n5. **Slack & Telegram** \u2014 Connect credentials for both notification nodes and update the channel/chat IDs to match your team's setup.\n6. **QC Threshold** \u2014 Send `qcThreshold` (0\u20131) in the webhook payload to control auto-approval sensitivity. Defaults to `0.85`."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "fb0bd91a-5bf7-46f2-96d5-bbb75524c24b",
+      "name": "Section: Trigger & Validation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        752,
+        560
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 500,
+        "height": 472,
+        "content": "## \ud83d\udce1 Trigger & Validation\nAccepts incoming shot requests via POST webhook and validates required fields (`plateImageUrl`, `removalBrief`, `shotCode`). Enriches the payload with sensible defaults for optional fields like frame range, frame rate, project ID, and QC threshold before handing off downstream."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "85cb9817-b621-4990-ab37-5cb6b3b6558b",
+      "name": "Section: Pass Generation & AI Render",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1264,
+        560
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 684,
+        "height": 504,
+        "content": "## \ud83c\udf9e\ufe0f Pass Generation & AI Render\nFans out into four distinct render passes and builds image-to-video requests using the plate image as reference. Each pass is submitted to the Seedance API and the returned job ID is merged with the original metadata for downstream polling."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "daf79825-320a-421b-a0c9-3600b3df578f",
+      "name": "Section: Polling & Job Completion",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1984,
+        512
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 692,
+        "height": 840,
+        "content": "## \u23f3 Polling & Job Completion\nPolls the Seedance API every 20 seconds until the render job reports `succeeded`. If still processing, execution waits and retries automatically. Once complete, metadata and QC scores are assembled for the next stage."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3cc5f41c-ade7-4e0d-be9b-3b343cd7598a",
+      "name": "Section: QC Check & Nuke Script",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2688,
+        496
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 840,
+        "height": 856,
+        "content": "## \ud83d\udd0d QC Check & Nuke Script\nScores each rendered pass against the configured QC threshold. Passes that meet the bar get a Nuke compositing script auto-generated with Read, Merge, Grade, and Write nodes pre-wired. Failed passes trigger an immediate artist-review alert in Slack."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8e63b13d-0a36-4f52-81c2-fdf589574010",
+      "name": "Section: Asset Storage & Logging",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3568,
+        304
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 504,
+        "height": 696,
+        "content": "## \u2601\ufe0f Asset Storage & Logging\nDownloads the rendered video and uploads it to Google Drive under the correct shot folder. Simultaneously logs the pass metadata \u2014 variant ID, video URL, plate URL, project ID \u2014 to a Notion database for pipeline tracking and review."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "940e25f0-35c4-4aca-98fa-20d9e6896030",
+      "name": "Section: Team Notifications",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4080,
+        144
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 600,
+        "height": 792,
+        "content": "## \ud83d\udce3 Team Notifications\nAggregates all four passes into a single summary and sends it to both Slack and Telegram. The message includes per-pass QC scores, video links, Nuke script content, and folder paths \u2014 giving the paint and comp team everything they need at a glance."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "60a20a95-954b-4668-bfd0-a81bc5972ea2",
+      "name": "Security Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4336,
+        1088
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 356,
+        "height": 192,
+        "content": "## \ud83d\udd10 Credentials & Security\nUse n8n credential store for all secrets \u2014 Seedance API key, Google Drive OAuth2, Notion API, Slack OAuth2, and Telegram Bot token. Never hardcode tokens in node headers. Replace all sample IDs and folder paths with values from your own project."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "621abc1d-4163-4aaf-b480-f747bd03f812",
+      "name": "On Workflow Error",
+      "type": "n8n-nodes-base.errorTrigger",
+      "position": [
+        832,
+        1424
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "be1bebcd-f0a4-41f4-ac75-ac94e689e766",
+      "name": "Slack: Error Alert",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1088,
+        1424
+      ],
+      "webhookId": "36b019e6-a01f-483e-8300-214089e84f91",
+      "parameters": {
+        "text": "=\u274c *AI-Assisted Clean Plate & Object Removal\n\nError: {{ $json.message }}\nTime: {{ new Date().toISOString() }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "C0ANFAL4WJ2",
+          "cachedResultName": "social"
+        },
+        "otherOptions": {},
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "d78670ac-d147-4373-b60f-243b773ba28b",
+      "name": "Section: Error Handler",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        752,
+        1264
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 492,
+        "height": 328,
+        "content": "## \u26a0\ufe0f Error Handler\nCatches any failure across the entire workflow and immediately sends a Slack alert to the ops channel. Wire this to every sub-workflow or critical node to ensure no silent failures."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "50cb246d-493e-4ff6-9f33-cb75bec78b3c",
+  "connections": {
+    "Wait 20s": {
+      "main": [
+        [
+          {
+            "node": "Poll: Check Job Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render Complete?": {
+      "main": [
+        [
+          {
+            "node": "Build Clean Plate Metadata + QC",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 20s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On Workflow Error": {
+      "main": [
+        [
+          {
+            "node": "Slack: Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate All Passes": {
+      "main": [
+        [
+          {
+            "node": "Slack: Notify Paint/Comp Team",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Telegram1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a database page": {
+      "main": [
+        [
+          {
+            "node": "Aggregate All Passes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll: Check Job Status": {
+      "main": [
+        [
+          {
+            "node": "Render Complete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Job ID + Metadata": {
+      "main": [
+        [
+          {
+            "node": "Poll: Check Job Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate & Extract Input": {
+      "main": [
+        [
+          {
+            "node": "Fan-Out: 4 Clean Plate Passes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Clean Plate Request": {
+      "main": [
+        [
+          {
+            "node": "Seedance: Generate Clean Pass",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Nuke Comp Script": {
+      "main": [
+        [
+          {
+            "node": "Download Clean Plate Video",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Clean Plate Video": {
+      "main": [
+        [
+          {
+            "node": "Google Drive: Upload Clean Plate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QC Check: Passes Threshold?": {
+      "main": [
+        [
+          {
+            "node": "Generate Nuke Comp Script",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: QC Failed \u2014 Artist Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Clean Plate Request": {
+      "main": [
+        [
+          {
+            "node": "Validate & Extract Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fan-Out: 4 Clean Plate Passes": {
+      "main": [
+        [
+          {
+            "node": "Build Clean Plate Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seedance: Generate Clean Pass": {
+      "main": [
+        [
+          {
+            "node": "Merge Job ID + Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Clean Plate Metadata + QC": {
+      "main": [
+        [
+          {
+            "node": "QC Check: Passes Threshold?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive: Upload Clean Plate": {
+      "main": [
+        [
+          {
+            "node": "Aggregate All Passes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

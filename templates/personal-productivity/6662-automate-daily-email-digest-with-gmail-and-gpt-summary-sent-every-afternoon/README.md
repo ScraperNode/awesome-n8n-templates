@@ -1,6 +1,6 @@
 # ⚡ Automate Daily Email Digest with Gmail and GPT Summary Sent Every Afternoon
 
-> ⚡ **1,906 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,164 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

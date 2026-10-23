@@ -1,6 +1,6 @@
 # ⚡ Voice & text Telegram assistant with GPT-4.1-mini and conversation memory
 
-> ⚡ **1,303 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,587 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

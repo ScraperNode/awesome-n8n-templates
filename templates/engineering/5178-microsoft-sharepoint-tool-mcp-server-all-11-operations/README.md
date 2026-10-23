@@ -1,6 +1,6 @@
 # ⚒️ 🛠️ Microsoft SharePoint tool MCP Server 💪 all 11 operations
 
-> ⚡ **776 views** · ⚒️ [Engineering](../)
+> ⚡ **924 views** · ⚒️ [Engineering](../)
 
 ## Description
 

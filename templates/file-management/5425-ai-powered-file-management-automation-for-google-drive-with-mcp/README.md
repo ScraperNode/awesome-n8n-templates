@@ -1,6 +1,6 @@
 # 📁 AI-powered file management automation for Google Drive with MCP
 
-> ⚡ **4,974 views** · 📁 [File Management](../)
+> ⚡ **6,331 views** · 📁 [File Management](../)
 
 ## Description
 

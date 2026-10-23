@@ -1,6 +1,6 @@
 # ⚡ Monitor Strava and send email updates
 
-> ⚡ **1,136 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,187 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

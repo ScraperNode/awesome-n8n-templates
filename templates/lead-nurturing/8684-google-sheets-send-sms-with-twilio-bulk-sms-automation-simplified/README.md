@@ -1,6 +1,6 @@
 # 💬 Google Sheets send SMS with Twilio - bulk SMS automation simplified!
 
-> ⚡ **981 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,260 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

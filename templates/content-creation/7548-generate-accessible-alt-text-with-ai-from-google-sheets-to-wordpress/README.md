@@ -1,6 +1,6 @@
 # 🎬 Generate accessible alt text with AI from Google Sheets to WordPress
 
-> ⚡ **645 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **691 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 
@@ -74,7 +74,7 @@ This workflow is perfect for managing accessibility compliance across large Word
 
 ## 🔗 Nodes Used
 
-Google Sheets, HTTP Request, Filter, Chat Trigger, OpenAI
+Google Sheets, HTTP Request, Filter, OpenAI
 
 ## 📥 Import
 

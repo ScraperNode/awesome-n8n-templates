@@ -1,6 +1,6 @@
 # 🔬 Export Zammad objects (users, roles, groups, organizations) to Excel
 
-> ⚡ **1,018 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,112 views** · 🔬 [Document Extraction & Analysis](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

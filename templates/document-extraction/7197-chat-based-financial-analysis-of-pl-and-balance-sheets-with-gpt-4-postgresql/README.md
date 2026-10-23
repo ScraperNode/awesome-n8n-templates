@@ -1,6 +1,6 @@
 # 🔬 Chat-based financial analysis of P&L and balance sheets with GPT-4 & PostgreSQL
 
-> ⚡ **150 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **192 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

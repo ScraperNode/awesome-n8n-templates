@@ -1,6 +1,6 @@
 # 🎬 Zendesk pending ticket follow-up system with Gmail, Google Sheets & ClickUp
 
-> ⚡ **133 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **176 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

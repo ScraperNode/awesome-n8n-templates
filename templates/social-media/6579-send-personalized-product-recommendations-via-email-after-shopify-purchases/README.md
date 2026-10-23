@@ -1,6 +1,6 @@
 # 📱 Send personalized product recommendations via email after Shopify purchases
 
-> ⚡ **213 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **246 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

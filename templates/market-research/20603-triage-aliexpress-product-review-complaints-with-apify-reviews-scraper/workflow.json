@@ -1,0 +1,632 @@
+{
+  "name": "Triage AliExpress product review complaints with Apify",
+  "nodes": [
+    {
+      "id": "review-triage-1",
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        420
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "review-triage-2",
+      "name": "Configure product",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        280,
+        420
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "productUrl",
+              "name": "productUrl",
+              "type": "string",
+              "value": "https://www.aliexpress.com/item/3256812550576374.html"
+            },
+            {
+              "id": "maxReviews",
+              "name": "maxReviews",
+              "type": "number",
+              "value": 20
+            },
+            {
+              "id": "maxChargeUsd",
+              "name": "maxChargeUsd",
+              "type": "number",
+              "value": 0.08
+            },
+            {
+              "id": "lowRatingThreshold",
+              "name": "lowRatingThreshold",
+              "type": "number",
+              "value": 3
+            },
+            {
+              "id": "resumeRunId",
+              "name": "resumeRunId",
+              "type": "string",
+              "value": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "review-triage-3",
+      "name": "Validate product settings",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        560,
+        420
+      ],
+      "parameters": {
+        "jsCode": "const ACTOR_ID='wfBNb1rkpWRQhOufx';\nconst PRODUCT=/^https:\\/\\/(?:[a-z0-9-]+\\.)?aliexpress\\.com\\/item\\/\\d+\\.html(?:\\?.*)?$/i;\nconst CATEGORY_RULES=[\n  ['quality',['broken','damaged','defect','poor quality','stopped working','fake','flimsy']],\n  ['shipping',['shipping','delivery','arrived','late','delay','parcel','package']],\n  ['description',['not as described','different','wrong item','misleading','does not match']],\n  ['fit',['size','sizing','fit','too small','too large']],\n  ['service',['refund','return','seller','support','dispute']],\n];\n\nfunction validateConfig(raw){\n  const url=String(raw.productUrl??'').trim();\n  if(!PRODUCT.test(url))throw new Error('Use one public aliexpress.com /item/<number>.html product URL.');\n  const productUrl=url.split('?')[0];\n  const resumeRunId=String(raw.resumeRunId??'').trim();\n  if(resumeRunId&&!/^[a-zA-Z0-9]{12,32}$/.test(resumeRunId))throw new Error('resumeRunId must be a valid Apify run ID or blank.');\n  const maxReviews=Number(raw.maxReviews),maxChargeUsd=Number(raw.maxChargeUsd),lowRatingThreshold=Number(raw.lowRatingThreshold);\n  if(!Number.isInteger(maxReviews)||maxReviews<1||maxReviews>100)throw new Error('maxReviews must be 1\u2013100.');\n  if(!Number.isFinite(maxChargeUsd)||maxChargeUsd<0.01||maxChargeUsd>1)throw new Error('maxChargeUsd must be $0.01\u2013$1.');\n  if(!Number.isInteger(lowRatingThreshold)||lowRatingThreshold<1||lowRatingThreshold>3)throw new Error('lowRatingThreshold must be 1\u20133.');\n  return {productUrl,maxReviews,maxChargeUsd,lowRatingThreshold,resumeRunId};\n}\n\nfunction inspectStartedRun(run){\n  if(!run?.id||run.actId!==ACTOR_ID||!run.defaultDatasetId)throw new Error('Unexpected Apify Actor run response.');\n  return {runId:run.id,datasetId:run.defaultDatasetId,actorId:run.actId};\n}\n\nfunction inspectStatus(run,started,attempt){\n  if(run?.id!==started.runId||run.actId!==ACTOR_ID)throw new Error('Actor run identity changed while polling.');\n  if(run.status==='SUCCEEDED')return {finished:true,run};\n  if(['FAILED','ABORTED','TIMED-OUT'].includes(run.status))throw new Error(`Apify run ${run.id} ${run.status}. Inspect it before retrying.`);\n  if(!['READY','RUNNING'].includes(run.status))throw new Error(`Unexpected Actor status: ${run.status}.`);\n  if(attempt>=8)throw new Error(`Stopped polling ${run.id}; inspect Apify before starting another paid run.`);\n  return {finished:false,run};\n}\n\nfunction category(text){\n  const lower=text.toLowerCase();\n  return CATEGORY_RULES.find(([,words])=>words.some(word=>lower.includes(word)))?.[0]??'other';\n}\n\nfunction safeExcerpt(value){\n  return String(value||'').trim().replace(/\\s+/g,' ')\n    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi,'[email redacted]')\n    .replace(/\\+?\\d[\\d\\s().-]{7,}\\d/g,'[phone redacted]')\n    .slice(0,320);\n}\n\nfunction triageReviews(items,config,started){\n  if(!Array.isArray(items)||items.length>100)throw new Error('Expected a bounded review dataset (at most 100).');\n  const productId=config.productUrl.match(/\\/item\\/(\\d+)\\.html/)[1];\n  const seen=new Set(),ratings={1:0,2:0,3:0,4:0,5:0},issues={},variants={},examples=[];\n  let rejected=0;\n  for(const raw of items){\n    if(!raw||String(raw.productId)!==productId||!String(raw.reviewId??'').trim()){rejected++;continue;}\n    const rating=Number(raw.rating),id=String(raw.reviewId);\n    if(!Number.isInteger(rating)||rating<1||rating>5||seen.has(id)){rejected++;continue;}\n    seen.add(id);ratings[rating]++;\n    if(rating>config.lowRatingThreshold)continue;\n    const text=safeExcerpt(raw.translatedText||raw.text);\n    const issue=category(text),variant=String(raw.variant||'unspecified').trim().slice(0,80)||'unspecified';\n    issues[issue]=(issues[issue]||0)+1;variants[variant]=(variants[variant]||0)+1;\n    if(examples.length<12)examples.push({reviewId:id,rating,issue,variant,text,reviewDate:raw.date||null});\n  }\n  const lowCount=Object.entries(ratings).filter(([rating])=>Number(rating)<=config.lowRatingThreshold).reduce((n,[,count])=>n+count,0);\n  const issueCounts=Object.entries(issues).sort((a,b)=>b[1]-a[1]).map(([issue,count])=>({issue,count}));\n  const variantCounts=Object.entries(variants).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([variant,count])=>({variant,count}));\n  const attentionRequired=lowCount>=3||ratings[1]>=1;\n  return {productUrl:config.productUrl,runId:started.runId,datasetId:started.datasetId,sampled:items.length,valid:seen.size,rejected,ratings,lowRatingThreshold:config.lowRatingThreshold,lowCount,attentionRequired,issueCounts,variantCounts,examples,notes:['This is a relevance-ordered sample, not a complete or date-ordered trend.','Issue labels use simple keyword rules; verify original review text before decisions.','Reviewer names and country are intentionally omitted.'],checkedAt:new Date().toISOString()};\n}\n\nreturn [{json:validateConfig($json)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "review-triage-4",
+      "name": "Resume an existing run?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        860,
+        420
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "Resume an existing run?",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.resumeRunId !== '' }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "review-triage-5",
+      "name": "Load saved Apify run",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 3,
+      "position": [
+        1150,
+        280
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/actor-runs/' + $('Validate product settings').first().json.resumeRunId }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "apifyApi"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "review-triage-6",
+      "name": "Start bounded review run",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select your Apify API credential. A new Actor run may incur a charge.",
+      "position": [
+        1150,
+        560
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/acts/wfBNb1rkpWRQhOufx/runs?timeout=240&build=0.0.3&maxTotalChargeUsd=' + $('Validate product settings').first().json.maxChargeUsd }}",
+        "method": "POST",
+        "options": {
+          "timeout": 75000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ {productUrls:[{url:$('Validate product settings').first().json.productUrl}],maxReviewsPerProduct:$('Validate product settings').first().json.maxReviews,filter:'all',includeProductSummary:false} }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "apifyApi"
+      },
+      "notesInFlow": false,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "review-triage-7",
+      "name": "Capture Actor run",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1450,
+        420
+      ],
+      "parameters": {
+        "jsCode": "const ACTOR_ID='wfBNb1rkpWRQhOufx';\nconst PRODUCT=/^https:\\/\\/(?:[a-z0-9-]+\\.)?aliexpress\\.com\\/item\\/\\d+\\.html(?:\\?.*)?$/i;\nconst CATEGORY_RULES=[\n  ['quality',['broken','damaged','defect','poor quality','stopped working','fake','flimsy']],\n  ['shipping',['shipping','delivery','arrived','late','delay','parcel','package']],\n  ['description',['not as described','different','wrong item','misleading','does not match']],\n  ['fit',['size','sizing','fit','too small','too large']],\n  ['service',['refund','return','seller','support','dispute']],\n];\n\nfunction validateConfig(raw){\n  const url=String(raw.productUrl??'').trim();\n  if(!PRODUCT.test(url))throw new Error('Use one public aliexpress.com /item/<number>.html product URL.');\n  const productUrl=url.split('?')[0];\n  const resumeRunId=String(raw.resumeRunId??'').trim();\n  if(resumeRunId&&!/^[a-zA-Z0-9]{12,32}$/.test(resumeRunId))throw new Error('resumeRunId must be a valid Apify run ID or blank.');\n  const maxReviews=Number(raw.maxReviews),maxChargeUsd=Number(raw.maxChargeUsd),lowRatingThreshold=Number(raw.lowRatingThreshold);\n  if(!Number.isInteger(maxReviews)||maxReviews<1||maxReviews>100)throw new Error('maxReviews must be 1\u2013100.');\n  if(!Number.isFinite(maxChargeUsd)||maxChargeUsd<0.01||maxChargeUsd>1)throw new Error('maxChargeUsd must be $0.01\u2013$1.');\n  if(!Number.isInteger(lowRatingThreshold)||lowRatingThreshold<1||lowRatingThreshold>3)throw new Error('lowRatingThreshold must be 1\u20133.');\n  return {productUrl,maxReviews,maxChargeUsd,lowRatingThreshold,resumeRunId};\n}\n\nfunction inspectStartedRun(run){\n  if(!run?.id||run.actId!==ACTOR_ID||!run.defaultDatasetId)throw new Error('Unexpected Apify Actor run response.');\n  return {runId:run.id,datasetId:run.defaultDatasetId,actorId:run.actId};\n}\n\nfunction inspectStatus(run,started,attempt){\n  if(run?.id!==started.runId||run.actId!==ACTOR_ID)throw new Error('Actor run identity changed while polling.');\n  if(run.status==='SUCCEEDED')return {finished:true,run};\n  if(['FAILED','ABORTED','TIMED-OUT'].includes(run.status))throw new Error(`Apify run ${run.id} ${run.status}. Inspect it before retrying.`);\n  if(!['READY','RUNNING'].includes(run.status))throw new Error(`Unexpected Actor status: ${run.status}.`);\n  if(attempt>=8)throw new Error(`Stopped polling ${run.id}; inspect Apify before starting another paid run.`);\n  return {finished:false,run};\n}\n\nfunction category(text){\n  const lower=text.toLowerCase();\n  return CATEGORY_RULES.find(([,words])=>words.some(word=>lower.includes(word)))?.[0]??'other';\n}\n\nfunction safeExcerpt(value){\n  return String(value||'').trim().replace(/\\s+/g,' ')\n    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi,'[email redacted]')\n    .replace(/\\+?\\d[\\d\\s().-]{7,}\\d/g,'[phone redacted]')\n    .slice(0,320);\n}\n\nfunction triageReviews(items,config,started){\n  if(!Array.isArray(items)||items.length>100)throw new Error('Expected a bounded review dataset (at most 100).');\n  const productId=config.productUrl.match(/\\/item\\/(\\d+)\\.html/)[1];\n  const seen=new Set(),ratings={1:0,2:0,3:0,4:0,5:0},issues={},variants={},examples=[];\n  let rejected=0;\n  for(const raw of items){\n    if(!raw||String(raw.productId)!==productId||!String(raw.reviewId??'').trim()){rejected++;continue;}\n    const rating=Number(raw.rating),id=String(raw.reviewId);\n    if(!Number.isInteger(rating)||rating<1||rating>5||seen.has(id)){rejected++;continue;}\n    seen.add(id);ratings[rating]++;\n    if(rating>config.lowRatingThreshold)continue;\n    const text=safeExcerpt(raw.translatedText||raw.text);\n    const issue=category(text),variant=String(raw.variant||'unspecified').trim().slice(0,80)||'unspecified';\n    issues[issue]=(issues[issue]||0)+1;variants[variant]=(variants[variant]||0)+1;\n    if(examples.length<12)examples.push({reviewId:id,rating,issue,variant,text,reviewDate:raw.date||null});\n  }\n  const lowCount=Object.entries(ratings).filter(([rating])=>Number(rating)<=config.lowRatingThreshold).reduce((n,[,count])=>n+count,0);\n  const issueCounts=Object.entries(issues).sort((a,b)=>b[1]-a[1]).map(([issue,count])=>({issue,count}));\n  const variantCounts=Object.entries(variants).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([variant,count])=>({variant,count}));\n  const attentionRequired=lowCount>=3||ratings[1]>=1;\n  return {productUrl:config.productUrl,runId:started.runId,datasetId:started.datasetId,sampled:items.length,valid:seen.size,rejected,ratings,lowRatingThreshold:config.lowRatingThreshold,lowCount,attentionRequired,issueCounts,variantCounts,examples,notes:['This is a relevance-ordered sample, not a complete or date-ordered trend.','Issue labels use simple keyword rules; verify original review text before decisions.','Reviewer names and country are intentionally omitted.'],checkedAt:new Date().toISOString()};\n}\n\nreturn [{json:inspectStartedRun($json.body.data)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "review-triage-8",
+      "name": "Wait for Actor",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 3,
+      "position": [
+        1750,
+        420
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/actor-runs/' + $('Capture Actor run').first().json.runId + '?waitForFinish=30' }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "apifyApi"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "review-triage-9",
+      "name": "Check Actor status",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2030,
+        420
+      ],
+      "parameters": {
+        "jsCode": "const ACTOR_ID='wfBNb1rkpWRQhOufx';\nconst PRODUCT=/^https:\\/\\/(?:[a-z0-9-]+\\.)?aliexpress\\.com\\/item\\/\\d+\\.html(?:\\?.*)?$/i;\nconst CATEGORY_RULES=[\n  ['quality',['broken','damaged','defect','poor quality','stopped working','fake','flimsy']],\n  ['shipping',['shipping','delivery','arrived','late','delay','parcel','package']],\n  ['description',['not as described','different','wrong item','misleading','does not match']],\n  ['fit',['size','sizing','fit','too small','too large']],\n  ['service',['refund','return','seller','support','dispute']],\n];\n\nfunction validateConfig(raw){\n  const url=String(raw.productUrl??'').trim();\n  if(!PRODUCT.test(url))throw new Error('Use one public aliexpress.com /item/<number>.html product URL.');\n  const productUrl=url.split('?')[0];\n  const resumeRunId=String(raw.resumeRunId??'').trim();\n  if(resumeRunId&&!/^[a-zA-Z0-9]{12,32}$/.test(resumeRunId))throw new Error('resumeRunId must be a valid Apify run ID or blank.');\n  const maxReviews=Number(raw.maxReviews),maxChargeUsd=Number(raw.maxChargeUsd),lowRatingThreshold=Number(raw.lowRatingThreshold);\n  if(!Number.isInteger(maxReviews)||maxReviews<1||maxReviews>100)throw new Error('maxReviews must be 1\u2013100.');\n  if(!Number.isFinite(maxChargeUsd)||maxChargeUsd<0.01||maxChargeUsd>1)throw new Error('maxChargeUsd must be $0.01\u2013$1.');\n  if(!Number.isInteger(lowRatingThreshold)||lowRatingThreshold<1||lowRatingThreshold>3)throw new Error('lowRatingThreshold must be 1\u20133.');\n  return {productUrl,maxReviews,maxChargeUsd,lowRatingThreshold,resumeRunId};\n}\n\nfunction inspectStartedRun(run){\n  if(!run?.id||run.actId!==ACTOR_ID||!run.defaultDatasetId)throw new Error('Unexpected Apify Actor run response.');\n  return {runId:run.id,datasetId:run.defaultDatasetId,actorId:run.actId};\n}\n\nfunction inspectStatus(run,started,attempt){\n  if(run?.id!==started.runId||run.actId!==ACTOR_ID)throw new Error('Actor run identity changed while polling.');\n  if(run.status==='SUCCEEDED')return {finished:true,run};\n  if(['FAILED','ABORTED','TIMED-OUT'].includes(run.status))throw new Error(`Apify run ${run.id} ${run.status}. Inspect it before retrying.`);\n  if(!['READY','RUNNING'].includes(run.status))throw new Error(`Unexpected Actor status: ${run.status}.`);\n  if(attempt>=8)throw new Error(`Stopped polling ${run.id}; inspect Apify before starting another paid run.`);\n  return {finished:false,run};\n}\n\nfunction category(text){\n  const lower=text.toLowerCase();\n  return CATEGORY_RULES.find(([,words])=>words.some(word=>lower.includes(word)))?.[0]??'other';\n}\n\nfunction safeExcerpt(value){\n  return String(value||'').trim().replace(/\\s+/g,' ')\n    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi,'[email redacted]')\n    .replace(/\\+?\\d[\\d\\s().-]{7,}\\d/g,'[phone redacted]')\n    .slice(0,320);\n}\n\nfunction triageReviews(items,config,started){\n  if(!Array.isArray(items)||items.length>100)throw new Error('Expected a bounded review dataset (at most 100).');\n  const productId=config.productUrl.match(/\\/item\\/(\\d+)\\.html/)[1];\n  const seen=new Set(),ratings={1:0,2:0,3:0,4:0,5:0},issues={},variants={},examples=[];\n  let rejected=0;\n  for(const raw of items){\n    if(!raw||String(raw.productId)!==productId||!String(raw.reviewId??'').trim()){rejected++;continue;}\n    const rating=Number(raw.rating),id=String(raw.reviewId);\n    if(!Number.isInteger(rating)||rating<1||rating>5||seen.has(id)){rejected++;continue;}\n    seen.add(id);ratings[rating]++;\n    if(rating>config.lowRatingThreshold)continue;\n    const text=safeExcerpt(raw.translatedText||raw.text);\n    const issue=category(text),variant=String(raw.variant||'unspecified').trim().slice(0,80)||'unspecified';\n    issues[issue]=(issues[issue]||0)+1;variants[variant]=(variants[variant]||0)+1;\n    if(examples.length<12)examples.push({reviewId:id,rating,issue,variant,text,reviewDate:raw.date||null});\n  }\n  const lowCount=Object.entries(ratings).filter(([rating])=>Number(rating)<=config.lowRatingThreshold).reduce((n,[,count])=>n+count,0);\n  const issueCounts=Object.entries(issues).sort((a,b)=>b[1]-a[1]).map(([issue,count])=>({issue,count}));\n  const variantCounts=Object.entries(variants).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([variant,count])=>({variant,count}));\n  const attentionRequired=lowCount>=3||ratings[1]>=1;\n  return {productUrl:config.productUrl,runId:started.runId,datasetId:started.datasetId,sampled:items.length,valid:seen.size,rejected,ratings,lowRatingThreshold:config.lowRatingThreshold,lowCount,attentionRequired,issueCounts,variantCounts,examples,notes:['This is a relevance-ordered sample, not a complete or date-ordered trend.','Issue labels use simple keyword rules; verify original review text before decisions.','Reviewer names and country are intentionally omitted.'],checkedAt:new Date().toISOString()};\n}\n\nreturn [{json:inspectStatus($json.body.data,$('Capture Actor run').first().json,$runIndex)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "review-triage-10",
+      "name": "Run succeeded?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2310,
+        420
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "Run succeeded?",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.finished }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "review-triage-11",
+      "name": "Fetch bounded reviews",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 3,
+      "position": [
+        2600,
+        520
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/datasets/' + $('Capture Actor run').first().json.datasetId + '/items?format=json&limit=101&clean=1' }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "apifyApi"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "review-triage-12",
+      "name": "Triage reviews",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2880,
+        520
+      ],
+      "parameters": {
+        "jsCode": "const ACTOR_ID='wfBNb1rkpWRQhOufx';\nconst PRODUCT=/^https:\\/\\/(?:[a-z0-9-]+\\.)?aliexpress\\.com\\/item\\/\\d+\\.html(?:\\?.*)?$/i;\nconst CATEGORY_RULES=[\n  ['quality',['broken','damaged','defect','poor quality','stopped working','fake','flimsy']],\n  ['shipping',['shipping','delivery','arrived','late','delay','parcel','package']],\n  ['description',['not as described','different','wrong item','misleading','does not match']],\n  ['fit',['size','sizing','fit','too small','too large']],\n  ['service',['refund','return','seller','support','dispute']],\n];\n\nfunction validateConfig(raw){\n  const url=String(raw.productUrl??'').trim();\n  if(!PRODUCT.test(url))throw new Error('Use one public aliexpress.com /item/<number>.html product URL.');\n  const productUrl=url.split('?')[0];\n  const resumeRunId=String(raw.resumeRunId??'').trim();\n  if(resumeRunId&&!/^[a-zA-Z0-9]{12,32}$/.test(resumeRunId))throw new Error('resumeRunId must be a valid Apify run ID or blank.');\n  const maxReviews=Number(raw.maxReviews),maxChargeUsd=Number(raw.maxChargeUsd),lowRatingThreshold=Number(raw.lowRatingThreshold);\n  if(!Number.isInteger(maxReviews)||maxReviews<1||maxReviews>100)throw new Error('maxReviews must be 1\u2013100.');\n  if(!Number.isFinite(maxChargeUsd)||maxChargeUsd<0.01||maxChargeUsd>1)throw new Error('maxChargeUsd must be $0.01\u2013$1.');\n  if(!Number.isInteger(lowRatingThreshold)||lowRatingThreshold<1||lowRatingThreshold>3)throw new Error('lowRatingThreshold must be 1\u20133.');\n  return {productUrl,maxReviews,maxChargeUsd,lowRatingThreshold,resumeRunId};\n}\n\nfunction inspectStartedRun(run){\n  if(!run?.id||run.actId!==ACTOR_ID||!run.defaultDatasetId)throw new Error('Unexpected Apify Actor run response.');\n  return {runId:run.id,datasetId:run.defaultDatasetId,actorId:run.actId};\n}\n\nfunction inspectStatus(run,started,attempt){\n  if(run?.id!==started.runId||run.actId!==ACTOR_ID)throw new Error('Actor run identity changed while polling.');\n  if(run.status==='SUCCEEDED')return {finished:true,run};\n  if(['FAILED','ABORTED','TIMED-OUT'].includes(run.status))throw new Error(`Apify run ${run.id} ${run.status}. Inspect it before retrying.`);\n  if(!['READY','RUNNING'].includes(run.status))throw new Error(`Unexpected Actor status: ${run.status}.`);\n  if(attempt>=8)throw new Error(`Stopped polling ${run.id}; inspect Apify before starting another paid run.`);\n  return {finished:false,run};\n}\n\nfunction category(text){\n  const lower=text.toLowerCase();\n  return CATEGORY_RULES.find(([,words])=>words.some(word=>lower.includes(word)))?.[0]??'other';\n}\n\nfunction safeExcerpt(value){\n  return String(value||'').trim().replace(/\\s+/g,' ')\n    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi,'[email redacted]')\n    .replace(/\\+?\\d[\\d\\s().-]{7,}\\d/g,'[phone redacted]')\n    .slice(0,320);\n}\n\nfunction triageReviews(items,config,started){\n  if(!Array.isArray(items)||items.length>100)throw new Error('Expected a bounded review dataset (at most 100).');\n  const productId=config.productUrl.match(/\\/item\\/(\\d+)\\.html/)[1];\n  const seen=new Set(),ratings={1:0,2:0,3:0,4:0,5:0},issues={},variants={},examples=[];\n  let rejected=0;\n  for(const raw of items){\n    if(!raw||String(raw.productId)!==productId||!String(raw.reviewId??'').trim()){rejected++;continue;}\n    const rating=Number(raw.rating),id=String(raw.reviewId);\n    if(!Number.isInteger(rating)||rating<1||rating>5||seen.has(id)){rejected++;continue;}\n    seen.add(id);ratings[rating]++;\n    if(rating>config.lowRatingThreshold)continue;\n    const text=safeExcerpt(raw.translatedText||raw.text);\n    const issue=category(text),variant=String(raw.variant||'unspecified').trim().slice(0,80)||'unspecified';\n    issues[issue]=(issues[issue]||0)+1;variants[variant]=(variants[variant]||0)+1;\n    if(examples.length<12)examples.push({reviewId:id,rating,issue,variant,text,reviewDate:raw.date||null});\n  }\n  const lowCount=Object.entries(ratings).filter(([rating])=>Number(rating)<=config.lowRatingThreshold).reduce((n,[,count])=>n+count,0);\n  const issueCounts=Object.entries(issues).sort((a,b)=>b[1]-a[1]).map(([issue,count])=>({issue,count}));\n  const variantCounts=Object.entries(variants).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([variant,count])=>({variant,count}));\n  const attentionRequired=lowCount>=3||ratings[1]>=1;\n  return {productUrl:config.productUrl,runId:started.runId,datasetId:started.datasetId,sampled:items.length,valid:seen.size,rejected,ratings,lowRatingThreshold:config.lowRatingThreshold,lowCount,attentionRequired,issueCounts,variantCounts,examples,notes:['This is a relevance-ordered sample, not a complete or date-ordered trend.','Issue labels use simple keyword rules; verify original review text before decisions.','Reviewer names and country are intentionally omitted.'],checkedAt:new Date().toISOString()};\n}\n\nreturn [{json:triageReviews($json.body,$('Validate product settings').first().json,$('Capture Actor run').first().json)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "review-triage-13",
+      "name": "Needs attention?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3160,
+        520
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "Needs attention?",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.attentionRequired }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "review-triage-14",
+      "name": "Attention report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3440,
+        400
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{...$json,decision:'ATTENTION \u2014 review the examples and original text before taking action'}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "review-triage-15",
+      "name": "Routine report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3440,
+        660
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{...$json,decision:'ROUTINE \u2014 no one-star reviews and fewer than three low-rated reviews in this sample'}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "review-triage-16",
+      "name": "Optional Slack text",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2920,
+        1280
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{text:`AliExpress review triage for ${$json.productUrl}: ${$json.lowCount} low-rated reviews in ${$json.valid} valid sampled reviews. Top issue: ${$json.issueCounts?.[0]?.issue||'none'}. Check Apify run ${$json.runId} and verify original text before acting.`}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "review-triage-17",
+      "name": "Optional email digest",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3300,
+        1280
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{subject:`AliExpress review triage: ${$json.lowCount} low ratings`,body:`Product: ${$json.productUrl}\\nSampled: ${$json.sampled}\\nValid: ${$json.valid}\\nLow-rated: ${$json.lowCount}\\nIssues: ${JSON.stringify($json.issueCounts)}\\nApify run: ${$json.runId}\\nVerify original review text before acting.`}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "review-triage-18",
+      "name": "Start here",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        -760
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 1140,
+        "height": 720,
+        "content": "## Triage AliExpress review complaints\n\n### How it works\nRun this on demand for one public product with FalconScrape\u2019s AliExpress Reviews Scraper. Unlike a review tracker, this workflow does not maintain a spreadsheet or compare past runs. It creates a bounded review sample, validates review IDs and product identity, and produces a decision-ready report: rating distribution, low-rating count, issue buckets, affected variants, and a small set of examples. A one-star review or at least three low-rated reviews follows the attention branch; the rest follows the routine branch. The labels use transparent keyword rules, not AI, and may be wrong. Review original-language feedback before customer or product decisions. Reviewer names are omitted.\n\n### Setup\n1. Connect an **Apify API** credential to the Apify HTTP nodes. The Actor must be accessible to your account.\n2. In **Configure product**, enter one public AliExpress item URL. Start with 20 reviews, a $0.08 maximum Actor charge, and a three-star threshold. This template is free; Apify use and n8n hosting may incur charges.\n3. Leave `resumeRunId` blank for a new run. If n8n stops after starting the Actor, inspect Apify first and paste that run ID to resume rather than paying for another run. The dataset is a relevance-ordered sample, not a complete or strictly recent review feed.\n\n### Customization\nThe disconnected Slack and email formatter nodes are optional. Connect one after the attention or routine branch, then add your own destination node and credential. They do not send anything as shipped.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "review-triage-19",
+      "name": "1. Configure and resume",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        140
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1050,
+        "height": 600,
+        "content": "## 1. Set one product\nValidate a public product URL and bounded Actor spend. Leave the recovery ID blank for a new run, or use the saved Apify run ID after an interruption."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "review-triage-20",
+      "name": "2. Start and wait",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1080,
+        100
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1370,
+        "height": 680,
+        "content": "## 2. Get a completed sample\nStart the charge-capped Actor or reuse a saved run. Poll at most nine times; failures stop with the run ID for investigation. Do not blindly restart a paid run."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "review-triage-21",
+      "name": "3. Triage buyer issues",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2520,
+        40
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1230,
+        "height": 880,
+        "content": "## 3. Produce a report\nValidate product and review IDs, count ratings, classify low-rated text by simple keywords, and route attention versus routine reports. No Sheet writes or messages happen."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "review-triage-22",
+      "name": "Optional notification formats",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2780,
+        1010
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 990,
+        "height": 540,
+        "content": "## Optional: connect a destination\nThese floating Code nodes format Slack text or an email digest. Connect one after a report branch, then add your own Slack or email send node and credential."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Configure product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run succeeded?": {
+      "main": [
+        [
+          {
+            "node": "Fetch bounded reviews",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for Actor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Triage reviews": {
+      "main": [
+        [
+          {
+            "node": "Needs attention?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Actor": {
+      "main": [
+        [
+          {
+            "node": "Check Actor status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs attention?": {
+      "main": [
+        [
+          {
+            "node": "Attention report",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Routine report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Capture Actor run": {
+      "main": [
+        [
+          {
+            "node": "Wait for Actor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure product": {
+      "main": [
+        [
+          {
+            "node": "Validate product settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Actor status": {
+      "main": [
+        [
+          {
+            "node": "Run succeeded?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load saved Apify run": {
+      "main": [
+        [
+          {
+            "node": "Capture Actor run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch bounded reviews": {
+      "main": [
+        [
+          {
+            "node": "Triage reviews",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume an existing run?": {
+      "main": [
+        [
+          {
+            "node": "Load saved Apify run",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Start bounded review run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start bounded review run": {
+      "main": [
+        [
+          {
+            "node": "Capture Actor run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate product settings": {
+      "main": [
+        [
+          {
+            "node": "Resume an existing run?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

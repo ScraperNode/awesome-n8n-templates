@@ -1,0 +1,1708 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Classify Smartlead replies into Zoho CRM tasks and send a daily call list",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "hook2",
+      "name": "A Smartlead reply arrives",
+      "type": "n8n-nodes-base.webhook",
+      "notes": "In Smartlead: Settings > Webhooks, event EMAIL_REPLY, pointed at this node's production URL.",
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "smartlead-reply",
+      "parameters": {
+        "path": "smartlead-reply",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "onReceived"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "demo2",
+      "name": "Run the demo replies",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        570
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "cron2",
+      "name": "Every weekday, 07:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        380
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 7 * * 1-5"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "calls-now",
+      "name": "Build the call list now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        190
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "demo-replies",
+      "name": "load the demo replies",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        280,
+        570
+      ],
+      "parameters": {
+        "jsCode": "// \"Run the demo replies\" lands here. Six invented replies in the shape Smartlead's EMAIL_REPLY\n// webhook posts, one for each thing a reply can be: interested, not now, a referral, an\n// unsubscribe, an out-of-office, and one only a person should answer.\nconst base = { event_type: 'EMAIL_REPLY', campaign_id: 'demo-campaign-a', campaign_name: 'Tier A (demo)' };\nconst replies = [\n  { sl_email_lead_id: 'demo-1', sl_lead_email: 'user@example.com', to_name: 'Dana Reyes',\n    subject: 'Re: Ledgerly and your Q4 pipeline',\n    reply_message: { text: 'Thanks, the timing is actually good. Can you send a couple of slots for Thursday?\\n\\nOn Tue, 22 Sep, Sam wrote:\\n> Hi Dana...' } },\n  { sl_email_lead_id: 'demo-2', sl_lead_email: 'user@example.com', to_name: 'Marcus Obi',\n    subject: 'Re: Freightline',\n    reply_message: { text: 'Not a priority this quarter. Circle back in Q1 and we can look at it then.' } },\n  { sl_email_lead_id: 'demo-3', sl_lead_email: 'user@example.com', to_name: 'Aisha Khan',\n    subject: 'Re: Stackmart outbound',\n    reply_message: { text: \"I'm not the right person for this. Please loop in our RevOps lead, user@example.com.\" } },\n  { sl_email_lead_id: 'demo-4', sl_lead_email: 'user@example.com', to_name: 'Nora Quinn',\n    subject: 'Re: Vaultline',\n    reply_message: { text: 'Please remove me from your list.' } },\n  { sl_email_lead_id: 'demo-5', sl_lead_email: 'user@example.com', to_name: 'Grace Liu',\n    subject: 'Automatic reply: Parcelhub',\n    reply_message: { text: 'I am out of the office until Monday with limited access to email.' } },\n  { sl_email_lead_id: 'demo-6', sl_lead_email: 'user@example.com', to_name: 'Priya Nair',\n    subject: 'Re: Clinicflow',\n    reply_message: { text: 'Who gave you my email address?' } }\n];\nreturn replies.map((r) => ({ json: { body: Object.assign({}, base, r), _source: 'demo replies (invented)' } }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cfg2",
+      "name": "config",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// CLAY OUTBOUND SCORING ENGINE \u2014 CONFIG\n// Everything you might want to change lives in this one node. Nothing else in either\n// workflow needs editing.\n//\n// The same config node ships in BOTH workflows (\"01 score, enrich and route\" and\n// \"02 classify replies and build the call list\"). build.js regenerates both from this one\n// file, and validate.js fails if they drift apart, so you never paste it between them.\n//\n// A blank key or id means that step is SKIPPED, never that the run fails. Both workflows run\n// end to end on the invented demo prospects and demo replies, which is what lets this be\n// shown on a screen-share before a single credential exists.\n\n// ---------------------------------------------------------------- The safety switch\n// Ships true. While it is true, nothing is written to Zoho and nothing is sent to a live\n// Smartlead campaign or posted to the team: every payload is built in full and shown on a\n// STOP node instead.\nconst TEST_RUN = true;\n// Optional, only read while TEST_RUN is true. A Smartlead campaign id set here receives the\n// pushes instead of the real campaigns (at most TEST_CAP leads). It can only ever REDIRECT a\n// push, never cause a live one. Zoho is still not written in test mode.\nconst TEST_CAMPAIGN_ID = '';\nconst TEST_CAP = 3;\n\n// ---------------------------------------------------------------- Mapping the Clay row\n// Clay's HTTP API column posts one row as JSON to this workflow's webhook. You choose the key\n// names in that column's body; list every name you might use for each field here, and the\n// first one present on the row wins. Column names with spaces work as-is.\nconst CLAY_FIELDS = {\n  clay_row_id:  ['clay_row_id', 'Clay Row ID', 'row_id', 'id'],\n  first_name:   ['first_name', 'First Name', 'firstName'],\n  last_name:    ['last_name', 'Last Name', 'lastName'],\n  full_name:    ['full_name', 'Full Name', 'name', 'Name'],\n  title:        ['title', 'Job Title', 'job_title', 'Title'],\n  seniority:    ['seniority', 'Seniority'],\n  email:        ['email', 'Work Email', 'work_email', 'Email'],\n  phone:        ['phone', 'Mobile Phone', 'mobile_phone', 'Phone', 'Direct Phone'],\n  linkedin_url: ['linkedin_url', 'LinkedIn URL', 'LinkedIn Profile', 'linkedin'],\n  company:      ['company', 'Company Name', 'company_name', 'Company'],\n  domain:       ['domain', 'Company Domain', 'company_domain', 'Website'],\n  employees:    ['employees', 'Employee Count', 'employee_count', 'Company Size'],\n  industry:     ['industry', 'Industry'],\n  country:      ['country', 'Country', 'Location Country'],\n  technologies: ['technologies', 'Technologies', 'Tech Stack', 'tech_stack'],\n  // A Clay AI column's answer. If it names a persona from PERSONAS it is used as-is.\n  ai_persona:   ['ai_persona', 'AI Persona', 'Persona']\n};\n\n// ---------------------------------------------------------------- Scoring (PLACEHOLDER)\n// This table stands in for your own scoring method. It is a worked example, not your model:\n// replace the rules, keep the shape. Each rule adds its points when its test matches;\n// the total is clamped to 0..100.\n//   equals    field value equals one of the values (case-insensitive)\n//   contains  field value contains one of the words\n//   between   a number between min and max, inclusive\n//   any_of    a list field (technologies) contains any of the values\nconst SCORING = [\n  { label: 'C-level',               field: 'seniority',    equals: ['c-level'],                  points: 30 },\n  { label: 'VP',                    field: 'seniority',    equals: ['vp'],                       points: 25 },\n  { label: 'Director / Head of',    field: 'seniority',    equals: ['director'],                 points: 20 },\n  { label: 'Manager',               field: 'seniority',    equals: ['manager'],                  points: 10 },\n  { label: 'Revenue-owning title',  field: 'title',        contains: ['sales', 'revenue', 'growth'], points: 10 },\n  { label: 'Sweet-spot size',       field: 'employees',    between: [200, 1000],                 points: 25 },\n  { label: 'Mid size',              field: 'employees',    between: [50, 199],                   points: 15 },\n  { label: 'Large',                 field: 'employees',    between: [1001, 5000],                points: 15 },\n  { label: 'Target industry',       field: 'industry',     contains: ['software', 'fintech', 'saas'], points: 20 },\n  { label: 'Adjacent industry',     field: 'industry',     contains: ['logistics', 'healthcare'], points: 10 },\n  { label: 'Uses a CRM we integrate', field: 'technologies', any_of: ['salesforce', 'hubspot', 'zoho'], points: 10 },\n  { label: 'Core market',           field: 'country',      equals: ['united states', 'canada', 'united kingdom'], points: 5 }\n];\n\n// A disqualifier makes the prospect Reject whatever the score.\nconst DISQUALIFY = [\n  { label: 'Student or intern',     field: 'title',     contains: ['intern', 'student'] },\n  { label: 'Under 10 employees',    field: 'employees', between: [0, 9] },\n  { label: 'Competitor',            field: 'domain',    equals: [] }\n];\n\n// Tier thresholds, highest first. Below the last one is Reject.\nconst TIERS = [\n  { tier: 'A', min_score: 70 },\n  { tier: 'B', min_score: 50 },\n  { tier: 'C', min_score: 30 }\n];\n\n// Seniority when Clay did not send it, read off the title. First match wins.\nconst SENIORITY_FROM_TITLE = [\n  { seniority: 'c-level',  words: ['chief', 'ceo', 'cro', 'cfo', 'coo', 'cto', 'founder', 'president'] },\n  { seniority: 'vp',       words: ['vp', 'vice president'] },\n  { seniority: 'director', words: ['director', 'head of'] },\n  { seniority: 'manager',  words: ['manager', 'lead'] }\n];\n\n// Persona, first match on the title. A Clay AI column's answer (`ai_persona`) wins if it\n// names one of these personas.\nconst PERSONAS = [\n  { persona: 'Economic buyer',      words: ['ceo', 'founder', 'chief revenue', 'cro', 'vp sales', 'vp of sales', 'head of sales', 'sales director', 'director of sales'] },\n  { persona: 'Operator',            words: ['revenue operations', 'revops', 'sales operations', 'operations'] },\n  { persona: 'Technical evaluator', words: ['cto', 'it director', 'engineering', 'architect'] },\n  { persona: 'Champion',            words: ['manager', 'lead'] }\n];\n\n// What a rep should do next, by tier and persona. `Tier|Persona` wins over `Tier|*`.\nconst RECOMMENDED_ACTION = {\n  'A|Economic buyer': 'Call today, then sequence A',\n  'A|*':              'Call within 24 hours, then sequence A',\n  'B|*':              'Sequence B, call on any reply',\n  'C|*':              'Nurture only: no enrichment, no sequence',\n  'Reject|*':         'Do not contact'\n};\n\n// ---------------------------------------------------------------- Enrichment (the credits)\n// Only these tiers are ever sent to paid enrichment, highest score first, and never more\n// than ENRICH_BUDGET contacts in one run. The cap is enforced in code.\nconst ENRICH_TIERS  = ['A', 'B'];\nconst ENRICH_BUDGET = 4;\nconst CREDITS_PER_CONTACT = 1;\n// Apollo's people/match reveals a verified work email (and a phone if asked). Blank key ->\n// the demo enrichment stands in and the run says so.\nconst ENRICH_API_KEY = '';\nconst ENRICH_URL     = 'https://api.apollo.io/api/v1/people/match';\nconst REVEAL_PHONE   = false;   // phone reveals cost extra credits on most plans\n\n// ---------------------------------------------------------------- Verification\n// Every address is checked before it can reach a sending campaign. Anything the verifier did\n// not answer counts as a hold: it fails closed.\nconst VERIFIER_API_KEY = '';\nconst VERIFIER_URL     = 'https://api.millionverifier.com/api/v3/';\nconst ACCEPT_STATUSES  = ['ok', 'valid', 'deliverable'];\n\n// ---------------------------------------------------------------- Zoho CRM\n// A Self Client in the Zoho API console gives a client id and secret; generate a refresh\n// token with scope ZohoCRM.modules.ALL and ZohoCRM.coql.READ. The accounts base must match the\n// data centre the org lives in (.com, .eu, .in, .com.au).\nconst ZOHO_CLIENT_ID     = '';\nconst ZOHO_CLIENT_SECRET = '';\nconst ZOHO_REFRESH_TOKEN = '';\nconst ZOHO_API_BASE      = 'https://www.zohoapis.com';\nconst ZOHO_ACCOUNTS_BASE = 'https://accounts.zoho.com';\nconst ZOHO_API_VERSION   = 'v8';\n// Leads are upserted, matched on these fields in order, so a re-posted Clay row updates the\n// lead instead of duplicating it.\nconst ZOHO_DUPLICATE_CHECK = ['Email'];\n// Empty means Zoho's own workflow rules do NOT fire on these writes. Add 'workflow' to let them.\nconst ZOHO_TRIGGERS = [];\nconst LEAD_STATUS_BY_TIER = { A: 'Qualified - A', B: 'Qualified - B', C: 'Nurture' };\n// Custom field API names from Zoho (Setup > Developer Hub > APIs > API names). Blank ->\n// that field is not written.\nconst ZOHO_FIELDS = {\n  fit_score: '',          // e.g. Fit_Score (number)\n  tier: '',               // e.g. Fit_Tier (picklist A/B/C)\n  persona: '',            // e.g. Persona\n  recommended_action: '', // e.g. Recommended_Action\n  clay_row_id: ''         // e.g. Clay_Row_ID\n};\n// Who owns a tier in Zoho (user ids). Blank -> Zoho's default owner.\nconst OWNER_BY_TIER = { A: '', B: '', C: '' };\n// Reply states written back by workflow 02.\nconst REPLY_STATUS = {\n  interested: 'Replied - Interested',\n  not_now:    'Replied - Not now',\n  referral:   'Replied - Referral',\n  unsubscribe:'Unsubscribed',\n  needs_human:'Replied - Needs review'\n};\n\n// ---------------------------------------------------------------- Smartlead\nconst SMARTLEAD_API_KEY  = '';\nconst SMARTLEAD_API_BASE = 'https://server.smartlead.ai/api/v1';\n// One campaign per tier. Blank -> that tier is not pushed (C is never pushed).\nconst SMARTLEAD_CAMPAIGNS = { A: '', B: '' };\nconst SMARTLEAD_BATCH = 100;   // leads per request\n\n// ---------------------------------------------------------------- Reply classification (02)\n// OpenAI reads each reply into one class from REPLY_CLASSES. Blank key -> keyword rules only.\nconst OPENAI_API_KEY = '';\nconst OPENAI_MODEL   = 'gpt-4o-mini';\nconst OPENAI_URL     = 'https://api.openai.com/v1/chat/completions';\nconst REPLY_CLASSES  = ['interested', 'not_now', 'referral', 'unsubscribe', 'out_of_office', 'needs_human'];\n// Below this confidence the model's answer is not trusted and a person reads the reply.\nconst MIN_AI_CONFIDENCE = 0.6;\n// How many days out the follow-up task is due, by class.\nconst TASK_DUE_DAYS = { interested: 0, referral: 1, needs_human: 0, not_now: 60 };\n\n// ---------------------------------------------------------------- Team notifications + call list\n// A Slack (or Teams, or Google Chat) incoming-webhook URL. Blank -> shown, not posted.\nconst NOTIFY_WEBHOOK_URL = '';\n// The morning call list: A-tier leads not yet contacted by phone, plus every interested or\n// referral reply, ordered by who to ring first. Capped so it stays a list someone finishes.\nconst CALL_LIST_SIZE = 25;\nconst CALL_LIST_STATUSES = ['Replied - Interested', 'Replied - Referral', 'Qualified - A'];\n\n// ---------------------------------------------------------------- Derived: do not edit below\nconst MODE = TEST_RUN !== true ? 'live' : (TEST_CAMPAIGN_ID.trim() !== '' ? 'test' : 'preview');\nconst ZOHO_AUTH_READY = ZOHO_CLIENT_ID.trim() !== '' && ZOHO_CLIENT_SECRET.trim() !== '' &&\n                        ZOHO_REFRESH_TOKEN.trim() !== '';\nconst SMARTLEAD_READY = SMARTLEAD_API_KEY.trim() !== '';\n\nconst SETTINGS = {\n  mode: MODE,\n  test_campaign_id: TEST_CAMPAIGN_ID.trim(),\n  test_cap: TEST_CAP,\n  clay_fields: CLAY_FIELDS,\n  scoring: SCORING,\n  disqualify: DISQUALIFY,\n  tiers: TIERS,\n  seniority_from_title: SENIORITY_FROM_TITLE,\n  personas: PERSONAS,\n  recommended_action: RECOMMENDED_ACTION,\n  enrich_tiers: ENRICH_TIERS,\n  enrich_budget: ENRICH_BUDGET,\n  credits_per_contact: CREDITS_PER_CONTACT,\n  enrich_api_key: ENRICH_API_KEY,\n  enrich_url: ENRICH_URL,\n  reveal_phone: REVEAL_PHONE,\n  verifier_api_key: VERIFIER_API_KEY,\n  verifier_url: VERIFIER_URL,\n  accept_statuses: ACCEPT_STATUSES,\n  zoho_client_id: ZOHO_CLIENT_ID,\n  zoho_client_secret: ZOHO_CLIENT_SECRET,\n  zoho_refresh_token: ZOHO_REFRESH_TOKEN,\n  zoho_api_base: ZOHO_API_BASE.replace(/\\/+$/, ''),\n  zoho_accounts_base: ZOHO_ACCOUNTS_BASE.replace(/\\/+$/, ''),\n  zoho_api_version: ZOHO_API_VERSION,\n  zoho_duplicate_check: ZOHO_DUPLICATE_CHECK,\n  zoho_triggers: ZOHO_TRIGGERS,\n  lead_status_by_tier: LEAD_STATUS_BY_TIER,\n  zoho_fields: ZOHO_FIELDS,\n  owner_by_tier: OWNER_BY_TIER,\n  reply_status: REPLY_STATUS,\n  smartlead_api_key: SMARTLEAD_API_KEY,\n  smartlead_api_base: SMARTLEAD_API_BASE.replace(/\\/+$/, ''),\n  smartlead_campaigns: SMARTLEAD_CAMPAIGNS,\n  smartlead_batch: SMARTLEAD_BATCH,\n  openai_api_key: OPENAI_API_KEY,\n  openai_model: OPENAI_MODEL,\n  openai_url: OPENAI_URL,\n  reply_classes: REPLY_CLASSES,\n  min_ai_confidence: MIN_AI_CONFIDENCE,\n  task_due_days: TASK_DUE_DAYS,\n  notify_webhook_url: NOTIFY_WEBHOOK_URL,\n  call_list_size: CALL_LIST_SIZE,\n  call_list_statuses: CALL_LIST_STATUSES,\n\n  // Flags. Downstream nodes test these, never a key's emptiness.\n  enrich_enabled: ENRICH_API_KEY.trim() !== '',\n  verifier_enabled: VERIFIER_API_KEY.trim() !== '',\n  zoho_auth_ready: ZOHO_AUTH_READY,\n  zoho_enabled: ZOHO_AUTH_READY && MODE === 'live',\n  smartlead_enabled: SMARTLEAD_READY && (MODE === 'live' || MODE === 'test'),\n  ai_enabled: OPENAI_API_KEY.trim() !== '',\n  notify_enabled: NOTIFY_WEBHOOK_URL.trim() !== '' && MODE !== 'preview'\n};\n\n// config sits IN the data path: whatever the trigger delivered is passed along untouched\n// under `incoming`, one item in, one item out. A trigger with no payload (the schedule, a\n// manual run) still produces one item, so $('config').first().json always resolves.\nconst incoming = $input.all().length ? $input.all().map((i) => i.json || {}) : [{}];\nreturn incoming.map((payload) => ({ json: Object.assign({}, SETTINGS, { incoming: payload }) }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "route",
+      "name": "building the call list?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        840,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "route-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Every weekday, 07:30').isExecuted || $('Build the call list now').isExecuted }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "reply-read",
+      "name": "read the reply",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1120,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// One clean reply per incoming Smartlead webhook. Smartlead's payload has changed shape over\n// time, so each field is read from the names it has been sent under. The quoted history below\n// the reply is cut off: the classifier reads what the person wrote, not our own email back.\nconst str = (v) => String(v === undefined || v === null ? '' : v).trim();\nconst firstOf = (o, keys) => { for (const k of keys) { if (str(o[k])) return str(o[k]); } return ''; };\n\nfunction stripQuoted(text) {\n  const lines = str(text).replace(/\\r/g, '').split('\\n');\n  const out = [];\n  for (const l of lines) {\n    if (/^\\s*>/.test(l) || /^On .+wrote:\\s*$/.test(l) || /^-{2,}\\s*Original Message/i.test(l) || /^From: /.test(l)) break;\n    out.push(l);\n  }\n  return out.join('\\n').trim();\n}\n\nreturn $input.all().map((item) => {\n  const j = item.json || {};\n  const payload = j.incoming || j;\n  const b = payload.body !== undefined ? payload.body : payload;\n  const msg = b.reply_message || {};\n  const raw = typeof msg === 'string' ? msg : (msg.text || str(msg.html).replace(/<[^>]+>/g, ' '));\n  return {\n    json: {\n      lead_email: firstOf(b, ['sl_lead_email', 'lead_email', 'from_email', 'email']).toLowerCase(),\n      lead_name: firstOf(b, ['to_name', 'lead_name', 'from_name']),\n      lead_id: firstOf(b, ['sl_email_lead_id', 'lead_id', 'sl_lead_id']),\n      campaign_id: firstOf(b, ['campaign_id']),\n      campaign_name: firstOf(b, ['campaign_name']),\n      subject: firstOf(b, ['subject']),\n      text: stripQuoted(raw),\n      received_at: str(msg.time) || new Date().toISOString(),\n      _source: payload._source || 'Smartlead webhook'\n    }\n  };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ai-on",
+      "name": "AI configured?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1400,
+        380
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ai-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.ai_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "ai-req",
+      "name": "build the AI request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1680,
+        380
+      ],
+      "parameters": {
+        "jsCode": "// The OpenAI request, one per reply. The model gets the subject and the reply text and nothing\n// else, and must answer in a fixed JSON schema: one class from REPLY_CLASSES, a confidence, and\n// a referral email only if the reply names one. It decides nothing downstream; the class does.\nconst cfg = $('config').first().json;\nconst classes = cfg.reply_classes || [];\n\nconst system = 'You classify replies to a B2B sales email. Answer with one class:\\n' +\n  '- interested: wants a call, a demo, pricing or more detail\\n' +\n  '- not_now: not interested yet, or asks to be contacted later\\n' +\n  '- referral: says someone else is the right person\\n' +\n  '- unsubscribe: asks not to be contacted again\\n' +\n  '- out_of_office: an automatic reply\\n' +\n  '- needs_human: anything else, including hostile or unclear replies\\n' +\n  'Only set referral_email if the reply contains that address. Never invent one.';\n\nreturn $input.all().map((item) => {\n  const r = item.json;\n  return {\n    json: Object.assign({}, r, {\n      _ai_body: {\n        model: cfg.openai_model,\n        temperature: 0,\n        messages: [\n          { role: 'system', content: system },\n          { role: 'user', content: 'Subject: ' + r.subject + '\\n\\n' + r.text.slice(0, 4000) }\n        ],\n        response_format: {\n          type: 'json_schema',\n          json_schema: {\n            name: 'reply_class',\n            strict: true,\n            schema: {\n              type: 'object',\n              additionalProperties: false,\n              required: ['class', 'confidence', 'referral_email'],\n              properties: {\n                class: { type: 'string', enum: classes },\n                confidence: { type: 'number' },\n                referral_email: { type: 'string' }\n              }\n            }\n          }\n        }\n      }\n    })\n  };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "kw",
+      "name": "classify by keywords",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1680,
+        570
+      ],
+      "parameters": {
+        "jsCode": "// No OPENAI_API_KEY, so the keyword rules classify every reply. Anything they cannot place is\n// \"needs_human\": a person reads it, rather than a rule guessing.\n// The keyword rules, in order. First match wins, so the order is the policy: an unsubscribe\n// beats everything, and an auto-reply is never mistaken for interest.\n//\n// Only the reply's own text is read, never the subject line: a reply's subject is \"Re:\" plus\n// OUR subject, and a word in our own copy (\"your Q4 pipeline\") must not decide what the\n// prospect meant. The one exception is the auto-reply check, where \"Automatic reply:\" in the\n// subject is the strongest signal there is.\nfunction keywordClass(subject, text) {\n  const t = String(text || '').toLowerCase();\n  const subj = String(subject || '').toLowerCase();\n  const email = (String(text || '').match(/[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}/i) || [''])[0].toLowerCase();\n  const ooo = /(out of (the )?office|automatic reply|auto-?reply|on (annual )?leave|limited access to email|away until)/;\n  const rules = [\n    ['unsubscribe', (x) => /(unsubscribe|remove me|take me off|stop (emailing|contacting)|do not (email|contact)|opt(-| )?out)/.test(x)],\n    ['out_of_office', (x) => ooo.test(x) || ooo.test(subj)],\n    ['referral', (x) => /(not the right person|wrong person|loop in|reach out to|speak (to|with) (our|my)|better contact)/.test(x)],\n    ['not_now', (x) => /(not (a )?priority|not right now|not now|circle back|next (quarter|year)|\\bq[1-4]\\b|later this year|not interested)/.test(x)],\n    ['interested', (x) => /(interested|sounds good|let'?s (talk|chat|meet)|book|slots?|call|demo|pricing|how much|send (me )?(more|details)|timing is (actually )?good)/.test(x)]\n  ];\n  for (const [cls, test] of rules) {\n    if (test(t)) {\n      if (cls === 'referral' && !email) return { class: 'referral', confidence: 0.6, referral_email: '' };\n      return { class: cls, confidence: 0.75, referral_email: cls === 'referral' ? email : '' };\n    }\n  }\n  return { class: 'needs_human', confidence: 0.5, referral_email: '' };\n}\nreturn $input.all().map((item) => {\n  const r = item.json;\n  const k = keywordClass(r.subject, r.text);\n  return { json: Object.assign({}, r, { class: k.class, confidence: k.confidence,\n    referral_email: k.referral_email, classified_by: 'keyword rules' }) };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ai",
+      "name": "OpenAI - classify the reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "The model reads the reply into one class from REPLY_CLASSES, in a strict JSON schema. It decides nothing else, and a failed call falls back to the keyword rules.",
+      "onError": "continueRegularOutput",
+      "position": [
+        1960,
+        380
+      ],
+      "parameters": {
+        "url": "={{ $('config').first().json.openai_url }}",
+        "method": "POST",
+        "options": {
+          "timeout": 30000
+        },
+        "jsonBody": "={{ JSON.stringify($json._ai_body) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $('config').first().json.openai_api_key }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "ai-apply",
+      "name": "apply the AI reading",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2240,
+        380
+      ],
+      "parameters": {
+        "jsCode": "// Reads the model's answer, and does not trust it blindly:\n//   * a class outside REPLY_CLASSES, or an answer that does not parse -> the keyword rules\n//   * confidence below MIN_AI_CONFIDENCE -> needs_human, a person reads it\n//   * a referral email that is not in the reply text is dropped, never used\n//   * an unsubscribe the keyword rules catch always wins, whatever the model said\n// The keyword rules, in order. First match wins, so the order is the policy: an unsubscribe\n// beats everything, and an auto-reply is never mistaken for interest.\n//\n// Only the reply's own text is read, never the subject line: a reply's subject is \"Re:\" plus\n// OUR subject, and a word in our own copy (\"your Q4 pipeline\") must not decide what the\n// prospect meant. The one exception is the auto-reply check, where \"Automatic reply:\" in the\n// subject is the strongest signal there is.\nfunction keywordClass(subject, text) {\n  const t = String(text || '').toLowerCase();\n  const subj = String(subject || '').toLowerCase();\n  const email = (String(text || '').match(/[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}/i) || [''])[0].toLowerCase();\n  const ooo = /(out of (the )?office|automatic reply|auto-?reply|on (annual )?leave|limited access to email|away until)/;\n  const rules = [\n    ['unsubscribe', (x) => /(unsubscribe|remove me|take me off|stop (emailing|contacting)|do not (email|contact)|opt(-| )?out)/.test(x)],\n    ['out_of_office', (x) => ooo.test(x) || ooo.test(subj)],\n    ['referral', (x) => /(not the right person|wrong person|loop in|reach out to|speak (to|with) (our|my)|better contact)/.test(x)],\n    ['not_now', (x) => /(not (a )?priority|not right now|not now|circle back|next (quarter|year)|\\bq[1-4]\\b|later this year|not interested)/.test(x)],\n    ['interested', (x) => /(interested|sounds good|let'?s (talk|chat|meet)|book|slots?|call|demo|pricing|how much|send (me )?(more|details)|timing is (actually )?good)/.test(x)]\n  ];\n  for (const [cls, test] of rules) {\n    if (test(t)) {\n      if (cls === 'referral' && !email) return { class: 'referral', confidence: 0.6, referral_email: '' };\n      return { class: cls, confidence: 0.75, referral_email: cls === 'referral' ? email : '' };\n    }\n  }\n  return { class: 'needs_human', confidence: 0.5, referral_email: '' };\n}\nconst cfg = $('config').first().json;\nconst classes = cfg.reply_classes || [];\nconst src = $('build the AI request');\n\nreturn $input.all().map((reply, i) => {\n  let r = {};\n  try { r = src.itemMatching(i).json; } catch (e) { r = (src.all()[i] || { json: {} }).json; }\n  r = Object.assign({}, r);\n  delete r._ai_body;\n  const kw = keywordClass(r.subject, r.text);\n\n  let ai = null;\n  try {\n    const content = reply.json.choices[0].message.content;\n    ai = typeof content === 'string' ? JSON.parse(content) : content;\n  } catch (e) { ai = null; }\n\n  let out;\n  if (!ai || !classes.includes(ai.class)) {\n    out = Object.assign({}, kw, { classified_by: 'keyword rules (AI answer did not parse)' });\n  } else if (Number(ai.confidence) < Number(cfg.min_ai_confidence || 0.6)) {\n    out = { class: 'needs_human', confidence: Number(ai.confidence), referral_email: '',\n      classified_by: 'AI (' + cfg.openai_model + '), below MIN_AI_CONFIDENCE' };\n  } else {\n    const ref = String(ai.referral_email || '').toLowerCase();\n    out = { class: ai.class, confidence: Number(ai.confidence),\n      referral_email: ref && r.text.toLowerCase().includes(ref) ? ref : '',\n      classified_by: 'AI (' + cfg.openai_model + ')' };\n  }\n  if (kw.class === 'unsubscribe' && out.class !== 'unsubscribe') {\n    out = Object.assign({}, kw, { classified_by: 'keyword rules (unsubscribe always wins)' });\n  }\n  return { json: Object.assign(r, out) };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "follow",
+      "name": "decide the follow-up",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2520,
+        380
+      ],
+      "parameters": {
+        "jsCode": "// What happens next for each reply, decided from its class and nothing else:\n//\n//   interested   Zoho status + a task due today + the team is told     (a person calls)\n//   referral     Zoho status + a task to contact the named person + told\n//   needs_human  Zoho status + a task due today + told                  (a person reads it)\n//   not_now      Zoho status + a task in TASK_DUE_DAYS.not_now days\n//   unsubscribe  Zoho Email_Opt_Out + status, and suppressed in Smartlead\n//   out_of_office nothing: Smartlead carries on with the sequence\n//\n// The bot never replies to anyone. Every reply that needs an answer becomes a person's task.\nconst cfg = $('config').first().json;\nconst S = cfg.reply_status || {};\nconst due = cfg.task_due_days || {};\nconst today = new Date();\nconst dayPlus = (n) => new Date(today.getTime() + Number(n || 0) * 86400000).toISOString().slice(0, 10);\n\nconst subjects = {\n  interested: (r) => 'Call ' + (r.lead_name || r.lead_email) + ': replied interested',\n  referral: (r) => 'Contact the referral from ' + (r.lead_name || r.lead_email) + (r.referral_email ? ': ' + r.referral_email : ''),\n  needs_human: (r) => 'Read and answer ' + (r.lead_name || r.lead_email) + \"'s reply\",\n  not_now: (r) => 'Follow up with ' + (r.lead_name || r.lead_email) + ': asked for later'\n};\n\nreturn $input.all().map((item) => {\n  const r = Object.assign({}, item.json);\n  const c = r.class;\n  r._write_zoho = c !== 'out_of_office';\n  r._status = S[c] || '';\n  r._opt_out = c === 'unsubscribe';\n  r._suppress = c === 'unsubscribe';\n  r._notify = ['interested', 'referral', 'needs_human'].includes(c);\n  r._task = subjects[c] ? {\n    subject: subjects[c](r),\n    due_date: dayPlus(due[c]),\n    priority: c === 'not_now' ? 'Normal' : 'High',\n    description: 'Reply (' + c + ', ' + r.classified_by + '): \"' + r.text.slice(0, 500) + '\"'\n  } : null;\n  r._action = c === 'out_of_office' ? 'ignored: auto-reply, the sequence continues'\n    : c === 'unsubscribe' ? 'opted out in Zoho, unsubscribed in Smartlead'\n    : 'Zoho status \"' + r._status + '\" and a task due ' + r._task.due_date;\n  return { json: r };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zu-build",
+      "name": "build the Zoho updates",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2800,
+        380
+      ],
+      "parameters": {
+        "jsCode": "// One upsert for every reply that changes the lead: its Lead_Status, and Email_Opt_Out for an\n// unsubscribe. Matched on email, so the lead that workflow 01 created is updated. If Clay never\n// created it, the upsert creates it, which is why Last_Name is always sent.\n//\n// The tasks cannot be created yet: a Zoho task hangs off the lead's record id, and the id is\n// what this upsert returns. `build the tasks` pairs them after the write.\nconst cfg = $('config').first().json;\nconst replies = $input.all().map((i) => i.json).filter((r) => r._write_zoho);\n\nconst records = replies.slice(0, 100).map((r) => {\n  const parts = String(r.lead_name || '').split(/\\s+/).filter(Boolean);\n  const rec = {\n    Email: r.lead_email,\n    Last_Name: parts.slice(1).join(' ') || parts[0] || r.lead_email.split('@')[0],\n    Lead_Status: r._status\n  };\n  if (parts.length > 1) rec.First_Name = parts[0];\n  if (r._opt_out) rec.Email_Opt_Out = true;\n  return rec;\n});\n\nreturn [{\n  json: {\n    _count: records.length,\n    _replies: replies.map((r) => ({ email: r.lead_email, name: r.lead_name, class: r.class, task: r._task })),\n    _zoho: {\n      url: cfg.zoho_api_base + '/crm/' + cfg.zoho_api_version + '/Leads/upsert',\n      body: { data: records, duplicate_check_fields: ['Email'], trigger: cfg.zoho_triggers || [] }\n    }\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zu-on",
+      "name": "writing to Zoho?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3080,
+        380
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "zu-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.zoho_enabled && $json._count > 0 }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zu-token",
+      "name": "Zoho - get an access token",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Exchanges the refresh token for a one-hour access token. The OAuth values come from config; this node only runs when Zoho is connected and the run is live.",
+      "onError": "continueRegularOutput",
+      "position": [
+        3360,
+        380
+      ],
+      "parameters": {
+        "url": "={{ $('config').first().json.zoho_accounts_base + '/oauth/v2/token' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 20000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "refresh_token",
+              "value": "={{ $('config').first().json.zoho_refresh_token }}"
+            },
+            {
+              "name": "client_id",
+              "value": "={{ $('config').first().json.zoho_client_id }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $('config').first().json.zoho_client_secret }}"
+            },
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "zu-preview",
+      "name": "STOP: preview - Zoho updates shown",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3360,
+        570
+      ],
+      "parameters": {
+        "jsCode": "// Zoho was not written: TEST_RUN is true, the OAuth values are blank, or no reply changed a\n// lead. The exact upsert, and every task that would follow it, are here.\nconst cfg = $('config').first().json;\nconst j = $input.first().json;\nreturn [{\n  json: {\n    _outcome: 'preview: nothing written to Zoho',\n    _reason: j._count === 0 ? 'no reply changes a lead (out-of-office only)'\n      : (cfg.mode !== 'live' ? 'TEST_RUN is true, mode ' + cfg.mode\n        : 'ZOHO_CLIENT_ID / ZOHO_CLIENT_SECRET / ZOHO_REFRESH_TOKEN is blank'),\n    would_upsert: j._zoho.body,\n    then_tasks: j._replies.filter((r) => r.task).map((r) => Object.assign({ lead: r.email }, r.task))\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zu-read-token",
+      "name": "read the access token",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3640,
+        380
+      ],
+      "parameters": {
+        "jsCode": "// Reads the access token out of the refresh-token exchange. Zoho answers a failed refresh with\n// HTTP 200 and an `error` key in the body, so the body is checked here, not just the status.\nfunction readToken(res, request) {\n  if (res.error || !res.access_token) {\n    return {\n      _authed: false,\n      _why: res.error ? 'Zoho refused the refresh: ' + res.error : 'Zoho returned no access_token',\n      _hint: res.error === 'invalid_client'\n        ? 'ZOHO_CLIENT_ID and ZOHO_CLIENT_SECRET belong to a different data centre than ZOHO_ACCOUNTS_BASE'\n        : res.error === 'invalid_code'\n        ? 'the refresh token was revoked, or issued for different scopes'\n        : 'check ZOHO_ACCOUNTS_BASE matches the region the Self Client was registered in'\n    };\n  }\n  return Object.assign({}, request, { _authed: true, _access_token: res.access_token });\n}\nreturn [{ json: readToken($input.first().json || {}, $('build the Zoho updates').first().json) }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zu-authed",
+      "name": "authenticated?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3920,
+        380
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "zu-authed-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json._authed }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zu-upsert",
+      "name": "Zoho CRM - update the leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Upserts each lead matched on email: the new Lead_Status, and Email_Opt_Out for an unsubscribe. Returns the record ids the tasks hang off.",
+      "onError": "continueErrorOutput",
+      "position": [
+        4200,
+        380
+      ],
+      "parameters": {
+        "url": "={{ $json._zoho.url }}",
+        "method": "POST",
+        "options": {
+          "timeout": 30000
+        },
+        "jsonBody": "={{ JSON.stringify($json._zoho.body) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Zoho-oauthtoken ' + $json._access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "zu-noauth",
+      "name": "STOP: could not authenticate with Zoho",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4200,
+        570
+      ],
+      "parameters": {
+        "jsCode": "// The refresh-token exchange failed, so nothing was written. `_why` and `_hint` say which of\n// the usual causes it is.\nconst j = $input.first().json || {};\nreturn [{ json: { _outcome: 'could not authenticate with Zoho: nothing written', _why: j._why, _hint: j._hint } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zu-tasks",
+      "name": "build the tasks",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4480,
+        380
+      ],
+      "parameters": {
+        "jsCode": "// Pairs each upsert result with the reply it was sent for, and builds one Zoho task per reply\n// that needs a person, attached to the lead's record id. A record Zoho refused gets no task,\n// and is listed by name instead of silently dropping out.\nconst cfg = $('config').first().json;\nconst sent = $('build the Zoho updates').first().json;\nconst token = $('read the access token').first().json._access_token;\nconst res = $input.first().json || {};\nconst results = Array.isArray(res.data) ? res.data : [];\nconst withStatus = sent._replies;\n\nconst tasks = [];\nconst refused = [];\nresults.forEach((r, i) => {\n  const reply = withStatus[i] || {};\n  if (r.code !== 'SUCCESS') { refused.push({ email: reply.email, code: r.code, message: r.message }); return; }\n  if (!reply.task) return;\n  tasks.push({\n    Subject: reply.task.subject,\n    Due_Date: reply.task.due_date,\n    Priority: reply.task.priority,\n    Status: 'Not Started',\n    Description: reply.task.description,\n    What_Id: { id: r.details && r.details.id },\n    $se_module: 'Leads'\n  });\n});\n\nreturn [{\n  json: {\n    _access_token: token,\n    _task_count: tasks.length,\n    leads_updated: results.filter((r) => r.code === 'SUCCESS').length,\n    refused: refused,\n    _tasks: {\n      url: cfg.zoho_api_base + '/crm/' + cfg.zoho_api_version + '/Tasks',\n      body: { data: tasks, trigger: cfg.zoho_triggers || [] }\n    }\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zu-rejected",
+      "name": "STOP: Zoho rejected the write",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5320,
+        760
+      ],
+      "parameters": {
+        "jsCode": "// Zoho refused the whole request. A visible step with the response on it, never a run that\n// half-succeeded and said nothing. The usual three: INVALID_TOKEN (wrong data centre),\n// MANDATORY_NOT_FOUND (the layout needs a field this does not send), INVALID_DATA (a\n// Lead_Status in LEAD_STATUS_BY_TIER that does not exist in the org).\nconst j = $input.first().json || {};\nconst err = j.error || j;\nreturn [{\n  json: {\n    _outcome: 'Zoho write failed: nothing was written',\n    zoho_response: typeof err === 'string' ? err : JSON.stringify(err).slice(0, 600)\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zu-any",
+      "name": "tasks to create?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4760,
+        380
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "zu-any-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json._task_count > 0 }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zu-create",
+      "name": "Zoho CRM - create the tasks",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "One task per reply a person has to act on, attached to the lead by its record id.",
+      "onError": "continueErrorOutput",
+      "position": [
+        5040,
+        380
+      ],
+      "parameters": {
+        "url": "={{ $json._tasks.url }}",
+        "method": "POST",
+        "options": {
+          "timeout": 30000
+        },
+        "jsonBody": "={{ JSON.stringify($json._tasks.body) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Zoho-oauthtoken ' + $json._access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "zu-done",
+      "name": "STOP: Zoho updated",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5320,
+        570
+      ],
+      "parameters": {
+        "jsCode": "// The leads are updated in Zoho, and the tasks, if any were due, are created. Zoho answers the\n// task call per record too, so each is read rather than trusting the 200.\nconst built = $('build the tasks').first().json;\nlet taskResults = [];\ntry {\n  const res = $('Zoho CRM - create the tasks').first().json || {};\n  taskResults = (res.data || []).map((r) => ({ code: r.code, id: r.details && r.details.id, message: r.code === 'SUCCESS' ? '' : r.message }));\n} catch (e) { /* no tasks were due */ }\nreturn [{\n  json: {\n    _outcome: 'Zoho updated',\n    leads_updated: built.leads_updated,\n    refused: built.refused,\n    tasks_created: taskResults.filter((t) => t.code === 'SUCCESS').length,\n    tasks_refused: taskResults.filter((t) => t.code !== 'SUCCESS')\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "unsub",
+      "name": "unsubscribes for Smartlead",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2800,
+        760
+      ],
+      "parameters": {
+        "jsCode": "// Every unsubscribe, as a Smartlead call: POST /leads/{lead_id}/unsubscribe takes the lead out\n// of every campaign, not just the one they replied to. A reply with no lead id cannot be\n// matched, and is listed for a person to remove by hand rather than skipped silently.\nconst cfg = $('config').first().json;\nconst unsubs = $input.all().map((i) => i.json).filter((r) => r._suppress);\nif (!unsubs.length) return [{ json: { _none: true, _reason: 'no unsubscribes in this batch' } }];\nreturn unsubs.map((r) => ({\n  json: {\n    email: r.lead_email,\n    lead_id: r.lead_id,\n    _url: r.lead_id ? cfg.smartlead_api_base + '/leads/' + encodeURIComponent(r.lead_id) + '/unsubscribe' : '',\n    _reason: r.lead_id ? '' : 'no Smartlead lead id on the webhook: remove this lead by hand'\n  }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "unsub-on",
+      "name": "suppressing in Smartlead?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3080,
+        760
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "unsub-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.smartlead_enabled && !$json._none && !!$json.lead_id }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "unsub-call",
+      "name": "Smartlead - unsubscribe the lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Unsubscribes the lead from every campaign, not just the one they replied to.",
+      "onError": "continueRegularOutput",
+      "position": [
+        3360,
+        1140
+      ],
+      "parameters": {
+        "url": "={{ $json._url }}",
+        "method": "POST",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "={{ $('config').first().json.smartlead_api_key }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "unsub-preview",
+      "name": "STOP: preview - unsubscribe not sent",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3360,
+        1330
+      ],
+      "parameters": {
+        "jsCode": "// No Smartlead call was made: a preview run, no SMARTLEAD_API_KEY, no lead id, or nobody\n// unsubscribed. Each unsubscribe that would have been sent is listed.\nconst cfg = $('config').first().json;\nconst items = $input.all().map((i) => i.json);\nreturn [{\n  json: {\n    _outcome: 'preview: no unsubscribe sent to Smartlead',\n    _reason: items[0] && items[0]._none ? items[0]._reason\n      : (!cfg.smartlead_enabled ? (cfg.mode === 'preview' ? 'TEST_RUN is true' : 'SMARTLEAD_API_KEY is blank') : 'no lead id'),\n    would_unsubscribe: items.filter((u) => !u._none).map((u) => ({ email: u.email, url: u._url, note: u._reason }))\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "unsub-done",
+      "name": "STOP: unsubscribed in Smartlead",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3640,
+        1140
+      ],
+      "parameters": {
+        "jsCode": "// Smartlead confirmed (or refused) each unsubscribe. A refusal carries the response.\nconst src = $('suppressing in Smartlead?');\nreturn $input.all().map((reply, i) => {\n  let u = {};\n  try { u = src.itemMatching(i).json; } catch (e) { u = (src.all(0)[i] || { json: {} }).json; }\n  const b = reply.json || {};\n  const failed = !!(b.error || b.ok === false);\n  return { json: { _outcome: failed ? 'Smartlead refused the unsubscribe' : 'unsubscribed in Smartlead',\n    email: u.email, lead_id: u.lead_id, error: failed ? JSON.stringify(b.error || b).slice(0, 300) : '' } };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "alert",
+      "name": "compose the team alert",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2800,
+        570
+      ],
+      "parameters": {
+        "jsCode": "// One message to the team for the replies a person has to act on now: interested, referral,\n// needs a human. It quotes the reply, so nobody has to open Smartlead to know what was said.\nconst cfg = $('config').first().json;\nconst hot = $input.all().map((i) => i.json).filter((r) => r._notify);\nconst label = { interested: 'Interested', referral: 'Referral', needs_human: 'Needs a person' };\nconst lines = hot.map((r) => '\u2022 ' + label[r.class] + ': ' + (r.lead_name || r.lead_email) + ' <' + r.lead_email + '>' +\n  (r.referral_email ? ' \u2192 ' + r.referral_email : '') + '\\n   \"' + r.text.replace(/\\s+/g, ' ').slice(0, 200) + '\"');\nconst text = (cfg.mode === 'live' ? '' : '[' + cfg.mode.toUpperCase() + '] ') +\n  hot.length + ' repl' + (hot.length === 1 ? 'y needs' : 'ies need') + ' a person:\\n' + lines.join('\\n');\nreturn [{ json: { _count: hot.length, text: text, _notify_body: { text: text } } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "alert-on",
+      "name": "alerting the team?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3080,
+        570
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "alert-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.notify_enabled && $json._count > 0 }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "alert-post",
+      "name": "Notify - post the team alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Interested, referral and needs-a-person replies, quoted, to NOTIFY_WEBHOOK_URL.",
+      "onError": "continueRegularOutput",
+      "position": [
+        3360,
+        760
+      ],
+      "parameters": {
+        "url": "={{ $('config').first().json.notify_webhook_url }}",
+        "method": "POST",
+        "options": {
+          "timeout": 15000
+        },
+        "jsonBody": "={{ JSON.stringify($json._notify_body) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "alert-preview",
+      "name": "STOP: preview - alert not posted",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3360,
+        950
+      ],
+      "parameters": {
+        "jsCode": "// Not posted: a preview run, no NOTIFY_WEBHOOK_URL, or nothing needed a person. The message\n// that would have gone is `text`.\nconst j = $input.first().json;\nreturn [{ json: { _outcome: 'alert shown, not posted', replies: j._count, text: j.text } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "alert-done",
+      "name": "STOP: alert posted",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3640,
+        760
+      ],
+      "parameters": {
+        "jsCode": "// Posted to the team channel. A webhook that answered with an error is reported, not assumed.\nconst b = $input.first().json || {};\nconst failed = !!(b.error || b.ok === false);\nreturn [{ json: { _outcome: failed ? 'the team channel refused the post' : 'posted to the team channel',\n  error: failed ? JSON.stringify(b.error || b).slice(0, 300) : '' } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cl-on",
+      "name": "Zoho connected for the call list?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cl-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.zoho_auth_ready }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "cl-token",
+      "name": "Zoho - get a token for the call list",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Exchanges the refresh token for a one-hour access token. The OAuth values come from config; this node only runs when Zoho is connected and the run is live.",
+      "onError": "continueRegularOutput",
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $('config').first().json.zoho_accounts_base + '/oauth/v2/token' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 20000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "refresh_token",
+              "value": "={{ $('config').first().json.zoho_refresh_token }}"
+            },
+            {
+              "name": "client_id",
+              "value": "={{ $('config').first().json.zoho_client_id }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $('config').first().json.zoho_client_secret }}"
+            },
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "cl-demo",
+      "name": "use the demo pipeline",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1400,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// Zoho is not connected, so an invented pipeline stands in, in the same shape `read the leads`\n// produces: two interested replies, a referral, and two A-tier leads from earlier runs.\nconst now = Date.now();\nconst ago = (h) => new Date(now - h * 3600000).toISOString();\nconst rows = [\n  { name: 'Dana Reyes', company: 'Ledgerly', title: 'VP of Sales', phone: '+1234567890', email: 'user@example.com', status: 'Replied - Interested', score: 95, action: 'Call today, then sequence A', modified: ago(14) },\n  { name: 'Jamie Cole', company: 'Stackmart', title: 'RevOps Lead', phone: '', email: 'user@example.com', status: 'Replied - Referral', score: null, action: '', modified: ago(20) },\n  { name: 'Owen Park', company: 'Brightline Analytics', title: 'Head of Sales', phone: '+1234567890', email: 'user@example.com', status: 'Replied - Interested', score: 70, action: 'Call within 24 hours, then sequence A', modified: ago(3) },\n  { name: 'Elena Rossi', company: 'Corebill', title: 'VP Sales', phone: '+1234567890', email: 'user@example.com', status: 'Qualified - A', score: 92, action: 'Call within 24 hours, then sequence A', modified: ago(40) },\n  { name: 'Victor Hale', company: 'Shipwise', title: 'Chief Revenue Officer', phone: '', email: 'user@example.com', status: 'Qualified - A', score: 100, action: 'Call today, then sequence A', modified: ago(60) }\n];\nreturn [{ json: { source: 'demo pipeline (invented)', rows: rows, more: false } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cl-query",
+      "name": "build the call list query",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1680,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Reads the token, then builds one COQL query for everyone who belongs on today's list: the\n// Lead_Status values in CALL_LIST_STATUSES. COQL returns at most 2000 rows a call and 200 by\n// default; the list is capped far below that.\nfunction readToken(res, request) {\n  if (res.error || !res.access_token) {\n    return {\n      _authed: false,\n      _why: res.error ? 'Zoho refused the refresh: ' + res.error : 'Zoho returned no access_token',\n      _hint: res.error === 'invalid_client'\n        ? 'ZOHO_CLIENT_ID and ZOHO_CLIENT_SECRET belong to a different data centre than ZOHO_ACCOUNTS_BASE'\n        : res.error === 'invalid_code'\n        ? 'the refresh token was revoked, or issued for different scopes'\n        : 'check ZOHO_ACCOUNTS_BASE matches the region the Self Client was registered in'\n    };\n  }\n  return Object.assign({}, request, { _authed: true, _access_token: res.access_token });\n}\nconst cfg = $('config').first().json;\nconst t = readToken($input.first().json || {}, {});\nif (!t._authed) return [{ json: t }];\n\nconst F = cfg.zoho_fields || {};\nconst fields = ['First_Name', 'Last_Name', 'Company', 'Phone', 'Email', 'Lead_Status', 'Designation', 'Modified_Time'];\nif (F.fit_score) fields.push(F.fit_score);\nif (F.tier) fields.push(F.tier);\nif (F.recommended_action) fields.push(F.recommended_action);\nconst statuses = (cfg.call_list_statuses || []).map((s) => \"'\" + String(s).replace(/'/g, \"\\\\'\") + \"'\").join(', ');\n\nreturn [{\n  json: Object.assign(t, {\n    _coql: {\n      url: cfg.zoho_api_base + '/crm/' + cfg.zoho_api_version + '/coql',\n      body: { select_query: 'select ' + fields.join(', ') + ' from Leads where Lead_Status in (' + statuses +\n        ') order by Modified_Time desc limit 200' }\n    }\n  })\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cl-authed",
+      "name": "authenticated for the call list?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1960,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cl-authed-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json._authed }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "cl-read",
+      "name": "Zoho CRM - read the call list",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "One COQL query for every lead whose status is in CALL_LIST_STATUSES. Reading is allowed in any mode; it changes nothing.",
+      "onError": "continueErrorOutput",
+      "position": [
+        2240,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $json._coql.url }}",
+        "method": "POST",
+        "options": {
+          "timeout": 30000
+        },
+        "jsonBody": "={{ JSON.stringify($json._coql.body) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Zoho-oauthtoken ' + $json._access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "cl-noauth",
+      "name": "STOP: call list could not authenticate",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2240,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// The refresh-token exchange failed, so nothing was written. `_why` and `_hint` say which of\n// the usual causes it is.\nconst j = $input.first().json || {};\nreturn [{ json: { _outcome: 'could not authenticate with Zoho: nothing written', _why: j._why, _hint: j._hint } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cl-leads",
+      "name": "read the leads",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2520,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// COQL's answer as plain rows, in the same shape the demo pipeline uses, so ranking is one code\n// path either way. An empty result is { } with no data key, which reads as an empty list.\nconst cfg = $('config').first().json;\nconst F = cfg.zoho_fields || {};\nconst res = $input.first().json || {};\nconst rows = (res.data || []).map((l) => ({\n  name: [l.First_Name, l.Last_Name].filter(Boolean).join(' '),\n  company: l.Company || '',\n  title: l.Designation || '',\n  phone: l.Phone || '',\n  email: l.Email || '',\n  status: l.Lead_Status || '',\n  score: F.fit_score ? Number(l[F.fit_score] || 0) : null,\n  action: F.recommended_action ? (l[F.recommended_action] || '') : '',\n  modified: l.Modified_Time || ''\n}));\nreturn [{ json: { source: 'Zoho CRM', rows: rows, more: !!(res.info && res.info.more_records) } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cl-fail",
+      "name": "STOP: could not read Zoho",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2520,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// The COQL read failed, so no call list was built today. The response says why: most often\n// INVALID_QUERY (a field in ZOHO_FIELDS that does not exist) or OAUTH_SCOPE_MISMATCH (the\n// refresh token lacks ZohoCRM.coql.READ).\nconst j = $input.first().json || {};\nreturn [{ json: { _outcome: 'could not read Zoho: no call list today', zoho_response: JSON.stringify(j.error || j).slice(0, 600) } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cl-rank",
+      "name": "rank the call list",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2800,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Today's call list, in the order to ring: every interested reply first (the most recent at the\n// top, they are warmest), then referrals, then A-tier leads by fit score. Capped at\n// CALL_LIST_SIZE so it is a list someone can finish before lunch. A lead with no phone stays on\n// it, marked \"email instead\", rather than disappearing.\nconst cfg = $('config').first().json;\nconst S = cfg.reply_status || {};\nconst merged = $input.all().map((i) => i.json);\nconst src = merged.find((m) => m.rows) || { rows: [], source: 'none' };\n\nconst rank = (r) => r.status === S.interested ? 0 : (r.status === S.referral ? 1 : 2);\nconst sorted = src.rows.slice().sort((a, b) =>\n  rank(a) - rank(b) ||\n  (rank(a) < 2 ? String(b.modified).localeCompare(String(a.modified)) : (Number(b.score || 0) - Number(a.score || 0))));\nconst list = sorted.slice(0, Number(cfg.call_list_size || 25));\n\nconst why = (r) => r.status === S.interested ? 'replied interested'\n  : r.status === S.referral ? 'referred to by a prospect' : 'A tier, fit ' + (r.score === null ? '?' : r.score);\nconst lines = list.map((r, i) => (i + 1) + '. ' + r.name + ', ' + r.company + (r.title ? ' (' + r.title + ')' : '') +\n  ': ' + why(r) + '. ' + (r.phone ? r.phone : 'no phone, email ' + r.email) + (r.action ? '. ' + r.action : ''));\nconst day = new Date().toISOString().slice(0, 10);\nconst text = (cfg.mode === 'live' ? '' : '[' + cfg.mode.toUpperCase() + '] ') + 'Call list for ' + day +\n  ' (' + list.length + (sorted.length > list.length ? ' of ' + sorted.length : '') + ', from ' + src.source + ')\\n' + lines.join('\\n') +\n  (src.more ? '\\nZoho had more rows than one page: the list is from the most recent 200.' : '');\n\nreturn [{ json: { source: src.source, count: list.length, list: list.map((r) => Object.assign({ why: why(r) }, r)),\n  text: text, _notify_body: { text: text } } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cl-post-on",
+      "name": "posting the call list?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cl-post-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.notify_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "cl-post",
+      "name": "Notify - post the call list",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "The morning call list to NOTIFY_WEBHOOK_URL.",
+      "onError": "continueRegularOutput",
+      "position": [
+        3360,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $('config').first().json.notify_webhook_url }}",
+        "method": "POST",
+        "options": {
+          "timeout": 15000
+        },
+        "jsonBody": "={{ JSON.stringify($json._notify_body) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "cl-preview",
+      "name": "STOP: preview - call list shown",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3360,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// Not posted: a preview run or no NOTIFY_WEBHOOK_URL. The list is `text`, and each row with why\n// it is there is in `list`.\nconst j = $input.first().json;\nreturn [{ json: { _outcome: 'call list shown, not posted', count: j.count, text: j.text, list: j.list } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cl-done",
+      "name": "STOP: call list posted",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3640,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Posted to the team channel. A webhook that answered with an error is reported, not assumed.\nconst b = $input.first().json || {};\nconst failed = !!(b.error || b.ok === false);\nreturn [{ json: { _outcome: failed ? 'the team channel refused the post' : 'posted to the team channel',\n  error: failed ? JSON.stringify(b.error || b).slice(0, 300) : '' } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "sticky-00",
+      "name": "Note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -770
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 780,
+        "height": 730,
+        "content": "## Classify Smartlead replies into Zoho CRM tasks and send a daily call list\n\n**Who's it for**\nSales teams sequencing leads in Smartlead and tracking them in Zoho CRM, whose replies pile up in an inbox and whose reps decide who to call from memory.\n\n**How it works**\nA Smartlead reply webhook, or six demo replies, arrive here. `read the reply` cuts off the quoted history. Keyword rules classify it as interested, not now, referral, unsubscribe, out of office or needs a person. With an OpenAI key a model classifies into the same list in a strict schema, and is checked rather than trusted. Nothing replies automatically: interested, referral and unclear replies become a Zoho task and a team alert, not now becomes a task in 60 days, an unsubscribe is opted out in Zoho and removed from every Smartlead campaign. Every weekday at 07:30 a COQL read builds the call list: interested, then referrals, then A tier by score.\n\n**How to set up**\n1. Run **Run the demo replies** and **Build the call list now** first.\n2. Point a Smartlead EMAIL_REPLY webhook at **A Smartlead reply arrives**.\n3. Add the Zoho Self Client values, the Smartlead key and `NOTIFY_WEBHOOK_URL`.\n4. Set `TEST_RUN = false`.\n\n**Requirements**\nZoho CRM with a Self Client (modules and COQL scopes), a Smartlead account, and optionally an OpenAI key and a Slack incoming webhook.\n\n**How to customize**\n`REPLY_STATUS`, `TASK_DUE_DAYS`, `CALL_LIST_STATUSES` and `CALL_LIST_SIZE` in `config` decide what each reply writes and who gets called first."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-01",
+      "name": "Note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        840,
+        -264
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1600,
+        "height": 224,
+        "content": "### 1. Read and classify the reply\n\n`building the call list?` sends the schedule to the call list and replies to classification. `read the reply` reads the webhook under every field name Smartlead has used.\n\n`classify by keywords` always works. With a key, `OpenAI - classify the reply` answers in a strict schema; `apply the AI reading` drops an invented referral address, sends low confidence to a person, and lets an unsubscribe the rules catch always win."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-02",
+      "name": "Note 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2800,
+        -220
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 2720,
+        "height": 180,
+        "content": "### 2. Update the lead, then give a person the task\n\n`decide the follow-up` picks the action from the class alone. `build the Zoho updates` upserts each lead's status, and an opt-out for an unsubscribe, matched on email.\n\nA task hangs off the lead's record id, which the upsert returns, so `build the tasks` pairs them after the write. A refused record gets no task and is named on `STOP: Zoho updated`."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-03",
+      "name": "Note 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2800,
+        1470
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1040,
+        "height": 224,
+        "content": "### 3. Suppress and alert\n\n`Smartlead - unsubscribe the lead` removes an unsubscribe from every campaign, not just the one they replied to. A reply without a lead id is listed for manual removal.\n\n`compose the team alert` quotes each interested, referral and unclear reply to `NOTIFY_WEBHOOK_URL`, so nobody opens Smartlead to see what was said."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-04",
+      "name": "Note 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1120,
+        1770
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 2720,
+        "height": 158,
+        "content": "### 4. The morning call list\n\nOne COQL read of Zoho for every lead whose status is in `CALL_LIST_STATUSES`. `rank the call list` puts interested replies first, newest at the top, then referrals, then A tier by fit score, capped at `CALL_LIST_SIZE`. A lead with no phone stays on it, marked email instead. Without Zoho, `use the demo pipeline` stands in."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "config": {
+      "main": [
+        [
+          {
+            "node": "building the call list?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI configured?": {
+      "main": [
+        [
+          {
+            "node": "build the AI request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "classify by keywords",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "authenticated?": {
+      "main": [
+        [
+          {
+            "node": "Zoho CRM - update the leads",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: could not authenticate with Zoho",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read the leads": {
+      "main": [
+        [
+          {
+            "node": "rank the call list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read the reply": {
+      "main": [
+        [
+          {
+            "node": "AI configured?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "build the tasks": {
+      "main": [
+        [
+          {
+            "node": "tasks to create?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tasks to create?": {
+      "main": [
+        [
+          {
+            "node": "Zoho CRM - create the tasks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: Zoho updated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "writing to Zoho?": {
+      "main": [
+        [
+          {
+            "node": "Zoho - get an access token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: preview - Zoho updates shown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "alerting the team?": {
+      "main": [
+        [
+          {
+            "node": "Notify - post the team alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: preview - alert not posted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rank the call list": {
+      "main": [
+        [
+          {
+            "node": "posting the call list?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every weekday, 07:30": {
+      "main": [
+        [
+          {
+            "node": "config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run the demo replies": {
+      "main": [
+        [
+          {
+            "node": "load the demo replies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "apply the AI reading": {
+      "main": [
+        [
+          {
+            "node": "decide the follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "build the AI request": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - classify the reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "classify by keywords": {
+      "main": [
+        [
+          {
+            "node": "decide the follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "decide the follow-up": {
+      "main": [
+        [
+          {
+            "node": "build the Zoho updates",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "unsubscribes for Smartlead",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "compose the team alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "load the demo replies": {
+      "main": [
+        [
+          {
+            "node": "config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read the access token": {
+      "main": [
+        [
+          {
+            "node": "authenticated?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "use the demo pipeline": {
+      "main": [
+        [
+          {
+            "node": "rank the call list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "build the Zoho updates": {
+      "main": [
+        [
+          {
+            "node": "writing to Zoho?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "compose the team alert": {
+      "main": [
+        [
+          {
+            "node": "alerting the team?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "posting the call list?": {
+      "main": [
+        [
+          {
+            "node": "Notify - post the call list",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: preview - call list shown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build the call list now": {
+      "main": [
+        [
+          {
+            "node": "config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "building the call list?": {
+      "main": [
+        [
+          {
+            "node": "Zoho connected for the call list?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "read the reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "A Smartlead reply arrives": {
+      "main": [
+        [
+          {
+            "node": "config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "build the call list query": {
+      "main": [
+        [
+          {
+            "node": "authenticated for the call list?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "suppressing in Smartlead?": {
+      "main": [
+        [
+          {
+            "node": "Smartlead - unsubscribe the lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: preview - unsubscribe not sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zoho - get an access token": {
+      "main": [
+        [
+          {
+            "node": "read the access token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "unsubscribes for Smartlead": {
+      "main": [
+        [
+          {
+            "node": "suppressing in Smartlead?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify - post the call list": {
+      "main": [
+        [
+          {
+            "node": "STOP: call list posted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - classify the reply": {
+      "main": [
+        [
+          {
+            "node": "apply the AI reading",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zoho CRM - create the tasks": {
+      "main": [
+        [
+          {
+            "node": "STOP: Zoho updated",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: Zoho rejected the write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zoho CRM - update the leads": {
+      "main": [
+        [
+          {
+            "node": "build the tasks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: Zoho rejected the write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify - post the team alert": {
+      "main": [
+        [
+          {
+            "node": "STOP: alert posted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zoho CRM - read the call list": {
+      "main": [
+        [
+          {
+            "node": "read the leads",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: could not read Zoho",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Smartlead - unsubscribe the lead": {
+      "main": [
+        [
+          {
+            "node": "STOP: unsubscribed in Smartlead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "authenticated for the call list?": {
+      "main": [
+        [
+          {
+            "node": "Zoho CRM - read the call list",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: call list could not authenticate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zoho connected for the call list?": {
+      "main": [
+        [
+          {
+            "node": "Zoho - get a token for the call list",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "use the demo pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zoho - get a token for the call list": {
+      "main": [
+        [
+          {
+            "node": "build the call list query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

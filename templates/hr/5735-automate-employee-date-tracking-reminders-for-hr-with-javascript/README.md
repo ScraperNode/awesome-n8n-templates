@@ -1,6 +1,6 @@
 # 👥 Automate employee date tracking & reminders for HR with JavaScript
 
-> ⚡ **477 views** · 👥 [HR & Recruitment](../)
+> ⚡ **641 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

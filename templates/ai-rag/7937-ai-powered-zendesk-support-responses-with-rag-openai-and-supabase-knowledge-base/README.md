@@ -1,6 +1,6 @@
 # 🔍 AI-powered Zendesk support responses with RAG, OpenAI, and Supabase knowledge base
 
-> ⚡ **305 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **361 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

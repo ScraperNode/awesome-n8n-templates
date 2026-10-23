@@ -1,6 +1,6 @@
 # 🎬 Transform meeting transcripts into AI-generated presentations with Google Slides & Flux
 
-> ⚡ **1,023 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,257 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

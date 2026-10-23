@@ -1,6 +1,6 @@
 # 📋 Automated sprint reports from Jira to stakeholders via Gmail
 
-> ⚡ **704 views** · 📋 [Project Management](../)
+> ⚡ **956 views** · 📋 [Project Management](../)
 
 ## Description
 

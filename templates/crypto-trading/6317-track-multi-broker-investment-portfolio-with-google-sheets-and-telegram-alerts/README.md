@@ -1,6 +1,6 @@
 # 📈 Track multi-broker investment portfolio with Google Sheets and Telegram alerts
 
-> ⚡ **953 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,079 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

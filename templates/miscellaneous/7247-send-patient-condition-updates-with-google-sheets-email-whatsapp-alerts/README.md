@@ -1,6 +1,6 @@
 # 🔧 Send patient condition updates with Google Sheets, Email & WhatsApp alerts
 
-> ⚡ **641 views** · 🔧 [Miscellaneous](../)
+> ⚡ **671 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

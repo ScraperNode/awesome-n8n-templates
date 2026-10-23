@@ -1,6 +1,6 @@
 # 🤖 Create travel itineraries & send email confirmations with Gemini AI
 
-> ⚡ **1,002 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **1,349 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

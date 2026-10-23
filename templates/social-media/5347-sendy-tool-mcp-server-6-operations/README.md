@@ -1,6 +1,6 @@
 # 📱 🛠️ Sendy tool MCP server 💪 6 operations
 
-> ⚡ **132 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **147 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

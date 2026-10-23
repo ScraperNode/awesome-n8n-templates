@@ -1,6 +1,6 @@
 # 🔬 Automate verified visitor management with email verification, badges & Slack alerts
 
-> ⚡ **37 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **60 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

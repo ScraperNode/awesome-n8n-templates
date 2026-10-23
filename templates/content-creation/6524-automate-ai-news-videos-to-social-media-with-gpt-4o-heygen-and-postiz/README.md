@@ -1,6 +1,6 @@
 # 🎬 Automate AI news videos to social media with GPT-4o & HeyGen and Postiz
 
-> ⚡ **11,411 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **13,563 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

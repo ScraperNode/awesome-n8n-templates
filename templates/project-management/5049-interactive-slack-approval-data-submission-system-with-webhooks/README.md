@@ -1,6 +1,6 @@
 # 📋 Interactive Slack approval & data submission system with webhooks
 
-> ⚡ **1,603 views** · 📋 [Project Management](../)
+> ⚡ **1,893 views** · 📋 [Project Management](../)
 
 ## Description
 

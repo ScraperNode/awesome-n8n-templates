@@ -1,6 +1,6 @@
 # ⚙️ Get a Slack alert when a workflow went wrong
 
-> ⚡ **3,040 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **3,184 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

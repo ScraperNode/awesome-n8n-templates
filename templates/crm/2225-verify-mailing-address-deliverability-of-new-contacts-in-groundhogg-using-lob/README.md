@@ -1,6 +1,6 @@
 # 🤝 Verify mailing address deliverability of new contacts in Groundhogg using Lob
 
-> ⚡ **1,395 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,410 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

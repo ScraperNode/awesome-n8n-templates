@@ -1,6 +1,6 @@
 # 🎬 Automated product ad image creation with OpenAI, Gemini & Google Workspace
 
-> ⚡ **880 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,104 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

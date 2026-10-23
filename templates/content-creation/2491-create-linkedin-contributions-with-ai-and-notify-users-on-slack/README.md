@@ -1,6 +1,6 @@
 # 🎬 Create LinkedIn contributions with AI and notify users on Slack
 
-> ⚡ **5,270 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,266 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

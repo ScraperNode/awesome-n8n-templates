@@ -1,6 +1,6 @@
 # 📱 Automated quiz delivery from Google Sheets to Telegram with status tracking
 
-> ⚡ **688 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **859 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

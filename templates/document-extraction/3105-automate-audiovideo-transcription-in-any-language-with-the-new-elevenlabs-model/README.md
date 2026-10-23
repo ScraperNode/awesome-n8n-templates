@@ -1,6 +1,6 @@
 # 🔬 Automate audio/video transcription in any language with the new ElevenLabs model
 
-> ⚡ **8,439 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **8,912 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

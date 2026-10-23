@@ -1,6 +1,6 @@
 # 🔒 Check file hash reputation with VirusTotal and Slack alerts
 
-> ⚡ **9 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **212 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

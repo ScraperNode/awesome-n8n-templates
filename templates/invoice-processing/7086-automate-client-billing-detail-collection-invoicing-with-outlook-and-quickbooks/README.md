@@ -1,6 +1,6 @@
 # 🧾 Automate client billing detail collection & invoicing with Outlook and QuickBooks
 
-> ⚡ **589 views** · 🧾 [Invoice Processing](../)
+> ⚡ **682 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

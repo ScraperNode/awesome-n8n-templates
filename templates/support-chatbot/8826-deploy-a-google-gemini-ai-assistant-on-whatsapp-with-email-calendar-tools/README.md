@@ -1,6 +1,6 @@
 # 💬 Deploy a Google Gemini AI assistant on WhatsApp with email & calendar tools
 
-> ⚡ **652 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,220 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

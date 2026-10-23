@@ -1,6 +1,6 @@
 # 📱 Unsubscribe Mautic contacts from automated unsubscribe emails
 
-> ⚡ **1,416 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,453 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

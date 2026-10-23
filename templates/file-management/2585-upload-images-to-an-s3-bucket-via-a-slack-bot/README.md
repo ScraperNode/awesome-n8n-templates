@@ -1,6 +1,6 @@
 # 📁 Upload images to an S3 bucket via a Slack bot
 
-> ⚡ **2,749 views** · 📁 [File Management](../)
+> ⚡ **2,744 views** · 📁 [File Management](../)
 
 ## Description
 

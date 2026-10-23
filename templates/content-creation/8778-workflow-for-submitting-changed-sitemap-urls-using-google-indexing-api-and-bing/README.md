@@ -1,6 +1,6 @@
 # 🎬 Workflow for submitting changed sitemap URLs using Google Indexing API and Bing IndexNow
 
-> ⚡ **681 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **842 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

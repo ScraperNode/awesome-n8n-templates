@@ -1,6 +1,6 @@
 # 🔒 SSL/TLS certificate expiry monitor with Slack alert
 
-> ⚡ **248 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **295 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

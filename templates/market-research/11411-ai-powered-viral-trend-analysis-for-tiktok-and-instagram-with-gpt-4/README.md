@@ -1,6 +1,6 @@
 # 📊 AI-powered viral trend analysis for TikTok and Instagram with GPT-4
 
-> ⚡ **1,649 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,968 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — Heads up — if this workflow's Instagram scraping breaks (it happens whenever Meta updates their frontend), [ScraperNode](https://scrapernode.com/instagram) is a community node that handles [profiles](https://scrapernode.com/instagram/scrapers/profiles), [posts](https://scrapernode.com/instagram/scrapers/posts), [reels](https://scrapernode.com/instagram/scrapers/reels), and [comments](https://scrapernode.com/instagram/scrapers/comments) without any HTML parsing.
 >
@@ -18,7 +18,7 @@ Automatically discover, analyze, and report the most viral TikTok and Instagram 
 - **Filters and analyzes** content based on engagement, growth rate, and recency.
 - **Uses AI (OpenAI GPT-4 Vision & GPT-4)** to provide visual and trend analysis for each video.
 - **Identifies “super viral” content** and sends instant Slack alerts.
-- **Saves results to Google Sheets** and sends a daily email report with the top trends.
+- **Saves results to Google Sheets** and sends a daily email report with the top trends..
 
 ---
 

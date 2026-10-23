@@ -1,6 +1,6 @@
 # 🤝 Validate, deduplicate, and store customers via API with Supabase, Slack, Telegram, and email
 
-> ⚡ **64 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **97 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

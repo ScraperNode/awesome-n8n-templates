@@ -1,6 +1,6 @@
 # 💬 Bitrix24 chatbot application workflow example with webhook integration
 
-> ⚡ **4,246 views** · 💬 [Support Chatbots](../)
+> ⚡ **4,639 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate educational social media carousels with GPT-4.1, Templated.io & Google Drive
 
-> ⚡ **487 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **701 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

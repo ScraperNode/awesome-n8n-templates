@@ -1,6 +1,6 @@
 # 📈 Create a self-hosted blockchain payment processor with x402 and 1Shot API
 
-> ⚡ **659 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **757 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 Manage projects in Clockify
 
-> ⚡ **1,298 views** · 📋 [Project Management](../)
+> ⚡ **1,350 views** · 📋 [Project Management](../)
 
 ## Description
 

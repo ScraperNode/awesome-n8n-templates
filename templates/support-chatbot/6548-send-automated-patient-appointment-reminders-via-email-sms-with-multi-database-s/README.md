@@ -1,6 +1,6 @@
 # 💬 Send Automated Patient Appointment Reminders via Email & SMS with Multi-Database Support
 
-> ⚡ **209 views** · 💬 [Support Chatbots](../)
+> ⚡ **278 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Qualify great leads from n8n Form with MadKudu and Hunter and alert on Slack
 
-> ⚡ **918 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **931 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

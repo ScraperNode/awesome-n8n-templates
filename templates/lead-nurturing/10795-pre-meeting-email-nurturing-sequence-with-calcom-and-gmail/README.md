@@ -1,6 +1,6 @@
 # 💬 Pre-meeting email nurturing sequence with Cal.com and Gmail
 
-> ⚡ **137 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **193 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

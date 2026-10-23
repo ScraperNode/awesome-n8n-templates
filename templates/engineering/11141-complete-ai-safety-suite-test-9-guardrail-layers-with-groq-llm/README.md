@@ -1,6 +1,6 @@
 # ⚒️ Complete AI safety suite: test 9 guardrail layers with Groq LLM
 
-> ⚡ **378 views** · ⚒️ [Engineering](../)
+> ⚡ **955 views** · ⚒️ [Engineering](../)
 
 ## Description
 

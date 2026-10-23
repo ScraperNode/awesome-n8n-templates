@@ -1,6 +1,6 @@
 # 🎫 Create ticket for duplicate devices in Syncro
 
-> ⚡ **57 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **77 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

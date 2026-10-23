@@ -1,6 +1,6 @@
 # 🎣 Automate solar lead qualification & follow-ups with Google Sheets and Gmail
 
-> ⚡ **902 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **977 views** · 🎣 [Lead Generation & Enrichment](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

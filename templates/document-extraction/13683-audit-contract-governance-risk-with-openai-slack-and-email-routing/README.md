@@ -1,6 +1,6 @@
 # 🔬 Audit contract governance risk with OpenAI, Slack and email routing
 
-> ⚡ **5 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **66 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

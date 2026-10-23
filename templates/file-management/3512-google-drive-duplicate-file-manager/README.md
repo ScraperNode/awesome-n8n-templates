@@ -1,6 +1,6 @@
 # 📁 Google Drive duplicate file manager
 
-> ⚡ **1,296 views** · 📁 [File Management](../)
+> ⚡ **1,424 views** · 📁 [File Management](../)
 
 ## Description
 

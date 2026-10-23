@@ -1,6 +1,6 @@
 # 🎬 Enterprise knowledge search with GPT-4 Turbo, Google Drive & Academic APIs
 
-> ⚡ **981 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,087 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Summarize & reply to Slack channel messages with Claude AI assistant
 
-> ⚡ **673 views** · ⚡ [Personal Productivity](../)
+> ⚡ **900 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

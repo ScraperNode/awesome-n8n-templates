@@ -1,6 +1,6 @@
 # 📖 BambooHR AI-powered company policies and benefits chatbot
 
-> ⚡ **3,557 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **3,602 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

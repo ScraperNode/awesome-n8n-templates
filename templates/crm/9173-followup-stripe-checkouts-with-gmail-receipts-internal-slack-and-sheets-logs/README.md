@@ -1,6 +1,6 @@
 # 🤝 Followup Stripe checkouts with Gmail receipts, internal Slack, and Sheets logs
 
-> ⚡ **136 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **188 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

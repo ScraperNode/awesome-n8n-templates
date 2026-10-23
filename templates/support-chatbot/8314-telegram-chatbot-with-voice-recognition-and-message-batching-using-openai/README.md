@@ -1,6 +1,6 @@
 # 💬 Telegram chatbot with voice recognition and message batching using OpenAI
 
-> ⚡ **816 views** · 💬 [Support Chatbots](../)
+> ⚡ **975 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

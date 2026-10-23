@@ -1,6 +1,6 @@
 # ⚡ Download recently liked songs automatically with Spotify
 
-> ⚡ **3,408 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,813 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

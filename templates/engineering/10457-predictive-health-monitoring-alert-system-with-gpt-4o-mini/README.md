@@ -1,6 +1,6 @@
 # ⚒️ Predictive health monitoring & alert system with GPT-4o-mini
 
-> ⚡ **629 views** · ⚒️ [Engineering](../)
+> ⚡ **1,239 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Daily Magento 2 customer sync to Google Contacts & Sheets without duplicates
 
-> ⚡ **191 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **228 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

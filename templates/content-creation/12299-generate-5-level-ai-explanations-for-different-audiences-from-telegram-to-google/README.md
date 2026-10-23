@@ -1,6 +1,6 @@
 # 🎬 Generate 5-level AI explanations for different audiences from Telegram to Google Docs with GPT-4.1-mini
 
-> ⚡ **574 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **782 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

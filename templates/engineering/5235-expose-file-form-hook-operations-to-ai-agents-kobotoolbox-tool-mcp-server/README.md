@@ -1,6 +1,6 @@
 # ⚒️ Expose file, form, & hook operations to AI agents - KoBoToolbox tool MCP server
 
-> ⚡ **135 views** · ⚒️ [Engineering](../)
+> ⚡ **148 views** · ⚒️ [Engineering](../)
 
 ## Description
 

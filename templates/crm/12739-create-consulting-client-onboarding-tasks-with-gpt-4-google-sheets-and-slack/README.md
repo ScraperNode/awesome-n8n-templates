@@ -1,6 +1,6 @@
 # 🤝 Create consulting client onboarding tasks with GPT-4, Google Sheets and Slack
 
-> ⚡ **987 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,172 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

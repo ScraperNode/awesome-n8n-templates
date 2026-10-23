@@ -1,6 +1,6 @@
 # 🎫 Automate email triage & meeting scheduling with Gmail, GPT-4 & Google Calendar
 
-> ⚡ **485 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **968 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

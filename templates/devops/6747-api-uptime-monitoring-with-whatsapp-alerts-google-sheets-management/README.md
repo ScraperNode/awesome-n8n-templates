@@ -1,6 +1,6 @@
 # ⚙️ Api uptime monitoring with WhatsApp alerts & Google Sheets management
 
-> ⚡ **639 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,028 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

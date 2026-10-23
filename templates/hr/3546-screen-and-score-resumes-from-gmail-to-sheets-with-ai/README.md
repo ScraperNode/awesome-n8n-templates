@@ -1,6 +1,6 @@
 # 👥 Screen and score resumes from Gmail to Sheets with AI
 
-> ⚡ **6,932 views** · 👥 [HR & Recruitment](../)
+> ⚡ **7,207 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

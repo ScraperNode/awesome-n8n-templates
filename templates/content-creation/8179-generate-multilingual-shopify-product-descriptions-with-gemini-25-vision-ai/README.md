@@ -1,6 +1,6 @@
 # 🎬 Generate multilingual Shopify product descriptions with Gemini 2.5 Vision AI
 
-> ⚡ **981 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,086 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

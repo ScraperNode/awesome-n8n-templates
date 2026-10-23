@@ -1,6 +1,6 @@
 # 🎫 Automate email triage with GPT-4.1-mini classification and Gmail auto-replies
 
-> ⚡ **938 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,127 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

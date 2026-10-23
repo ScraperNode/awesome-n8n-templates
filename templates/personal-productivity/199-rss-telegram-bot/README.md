@@ -1,6 +1,6 @@
 # ⚡ RSS Telegram bot
 
-> ⚡ **4,139 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,215 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate text-to-video & image-to-video content with Seedance 1 Lite AI
 
-> ⚡ **2,028 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,310 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

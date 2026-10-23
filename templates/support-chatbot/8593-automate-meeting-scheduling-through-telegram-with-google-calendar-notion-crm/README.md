@@ -1,6 +1,6 @@
 # 💬 Automate meeting scheduling through Telegram with Google Calendar & Notion CRM
 
-> ⚡ **58 views** · 💬 [Support Chatbots](../)
+> ⚡ **71 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

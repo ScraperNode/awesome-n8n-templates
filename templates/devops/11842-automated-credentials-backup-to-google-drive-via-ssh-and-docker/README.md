@@ -1,6 +1,6 @@
 # ⚙️ Automated credentials backup to Google Drive via SSH and Docker
 
-> ⚡ **256 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **387 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

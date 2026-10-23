@@ -1,6 +1,6 @@
 # 💬 Generate personalized promotion emails with GPT-5 and Gmail context analysis
 
-> ⚡ **109 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **131 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

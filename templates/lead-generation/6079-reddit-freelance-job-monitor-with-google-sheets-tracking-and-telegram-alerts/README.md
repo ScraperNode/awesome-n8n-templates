@@ -1,6 +1,6 @@
 # 🎣 Reddit freelance job monitor with Google Sheets tracking and Telegram alerts
 
-> ⚡ **126 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **143 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

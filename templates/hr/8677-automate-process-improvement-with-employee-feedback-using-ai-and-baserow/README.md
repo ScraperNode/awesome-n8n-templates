@@ -1,6 +1,6 @@
 # 👥 Automate process improvement with employee feedback using AI and Baserow
 
-> ⚡ **389 views** · 👥 [HR & Recruitment](../)
+> ⚡ **581 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

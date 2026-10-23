@@ -1,6 +1,6 @@
 # ⚙️ Use Redis to rate-limit your low-code API
 
-> ⚡ **2,505 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,611 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

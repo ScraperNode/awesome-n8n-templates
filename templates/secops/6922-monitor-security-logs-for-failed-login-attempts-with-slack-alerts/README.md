@@ -1,6 +1,6 @@
 # 🔒 Monitor security logs for failed login attempts with Slack alerts
 
-> ⚡ **348 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **393 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

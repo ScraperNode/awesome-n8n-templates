@@ -1,6 +1,6 @@
 # 💬 Dynamic website assistant with DeepSeek AI, Pinecone Vectorstore & site-based routing
 
-> ⚡ **818 views** · 💬 [Support Chatbots](../)
+> ⚡ **866 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

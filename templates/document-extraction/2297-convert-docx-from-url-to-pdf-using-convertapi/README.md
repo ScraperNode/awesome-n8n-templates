@@ -1,6 +1,6 @@
 # 🔬 Convert DOCX (from URL) to PDF using ConvertAPI
 
-> ⚡ **1,825 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,889 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

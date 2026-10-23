@@ -1,6 +1,6 @@
 # 🔍 PDF proposal knowledge base with S3, OpenAI GPT-4o & Qdrant RAG agent
 
-> ⚡ **1,130 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **1,267 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

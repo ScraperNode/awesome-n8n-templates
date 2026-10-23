@@ -1,6 +1,6 @@
 # 🎣 Qualify leads with AI review analysis using Azure GPT-4o-mini and Google Sheets
 
-> ⚡ **153 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **168 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

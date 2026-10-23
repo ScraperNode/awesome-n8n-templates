@@ -1,6 +1,6 @@
 # 🤝 Send sales data from webhook to Mautic
 
-> ⚡ **2,603 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,610 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

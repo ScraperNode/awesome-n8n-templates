@@ -1,6 +1,6 @@
 # ⚙️ Backup all n8n workflows to Google Drive every 4 hours
 
-> ⚡ **44,547 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **75,456 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

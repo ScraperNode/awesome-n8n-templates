@@ -1,6 +1,6 @@
 # 📊 Send Google Analytics data to A.I. to analyze then save results in Baserow
 
-> ⚡ **6,471 views** · 📊 [Market Research & Insights](../)
+> ⚡ **6,568 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

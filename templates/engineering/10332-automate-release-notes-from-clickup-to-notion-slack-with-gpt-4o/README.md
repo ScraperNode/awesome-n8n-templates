@@ -1,6 +1,6 @@
 # ⚒️ Automate release notes from ClickUp to Notion & Slack with GPT-4o
 
-> ⚡ **175 views** · ⚒️ [Engineering](../)
+> ⚡ **249 views** · ⚒️ [Engineering](../)
 
 ## Description
 

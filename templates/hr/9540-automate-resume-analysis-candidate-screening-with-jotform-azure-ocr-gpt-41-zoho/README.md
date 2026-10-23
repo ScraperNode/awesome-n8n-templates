@@ -1,6 +1,6 @@
 # 👥 Automate Resume Analysis & Candidate Screening with JotForm, Azure OCR, GPT-4.1, Zoho CRM
 
-> ⚡ **139 views** · 👥 [HR & Recruitment](../)
+> ⚡ **194 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

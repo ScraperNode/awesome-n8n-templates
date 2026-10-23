@@ -1,6 +1,6 @@
 # ⚙️ Git backup of workflows and credentials
 
-> ⚡ **15,919 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **16,208 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

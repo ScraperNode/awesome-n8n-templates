@@ -1,6 +1,6 @@
 # 🔬 Generate event badges with QR codes, HTMLCSStoImage, Gmail & Google Sheets
 
-> ⚡ **81 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **94 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

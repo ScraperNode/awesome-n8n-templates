@@ -1,6 +1,6 @@
 # 🎣 Match students to scholarships with Claude AI, Airtable, and Google Sheets
 
-> ⚡ **56 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **228 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

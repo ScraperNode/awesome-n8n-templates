@@ -1,6 +1,6 @@
 # 💬 Complete business WhatsApp AI-powered RAG chatbot using OpenAI
 
-> ⚡ **42,925 views** · 💬 [Support Chatbots](../)
+> ⚡ **44,846 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

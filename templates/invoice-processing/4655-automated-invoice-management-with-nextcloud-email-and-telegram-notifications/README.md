@@ -1,6 +1,6 @@
 # 🧾 Automated invoice management with Nextcloud, email and Telegram notifications
 
-> ⚡ **1,156 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,359 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

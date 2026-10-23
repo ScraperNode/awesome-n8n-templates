@@ -1,6 +1,6 @@
 # 💬 Build a voice & text Telegram Bot with GPT-4.1-Mini and Gemini transcription
 
-> ⚡ **264 views** · 💬 [Support Chatbots](../)
+> ⚡ **374 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Create a website screenshot and send via Telegram channel
 
-> ⚡ **3,759 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **3,818 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

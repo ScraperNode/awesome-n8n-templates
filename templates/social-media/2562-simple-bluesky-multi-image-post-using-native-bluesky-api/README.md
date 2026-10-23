@@ -1,6 +1,6 @@
 # 📱 Simple Bluesky multi-image post using native Bluesky API
 
-> ⚡ **3,069 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **3,136 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

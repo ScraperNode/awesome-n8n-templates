@@ -1,6 +1,6 @@
 # 📋 Schedule daily email reminders from Google Sheets with Gmail
 
-> ⚡ **722 views** · 📋 [Project Management](../)
+> ⚡ **852 views** · 📋 [Project Management](../)
 
 ## Description
 

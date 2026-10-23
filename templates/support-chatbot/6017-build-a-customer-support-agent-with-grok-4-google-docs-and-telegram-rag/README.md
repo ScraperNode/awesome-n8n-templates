@@ -1,6 +1,6 @@
 # 💬 Build a customer support agent with Grok-4, Google Docs, and Telegram [RAG]
 
-> ⚡ **2,455 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,844 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

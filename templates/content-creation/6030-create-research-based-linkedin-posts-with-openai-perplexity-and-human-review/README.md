@@ -1,6 +1,6 @@
 # 🎬 Create research-based LinkedIn posts with OpenAI, Perplexity and human review
 
-> ⚡ **1,419 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,502 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

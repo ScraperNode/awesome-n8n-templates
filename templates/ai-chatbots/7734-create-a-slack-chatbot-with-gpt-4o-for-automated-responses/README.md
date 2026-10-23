@@ -1,6 +1,6 @@
 # 🤖 Create a Slack chatbot with GPT-4o for automated responses
 
-> ⚡ **459 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **526 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

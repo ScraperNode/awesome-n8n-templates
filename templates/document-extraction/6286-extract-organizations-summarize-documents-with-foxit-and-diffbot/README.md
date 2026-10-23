@@ -1,6 +1,6 @@
 # 🔬 Extract organizations & summarize documents with Foxit and Diffbot
 
-> ⚡ **350 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **389 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

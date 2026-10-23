@@ -1,6 +1,6 @@
 # 📋 Let AI agents manage clients, tasks 🛠️ Clockify tool MCP server 💪 all operations
 
-> ⚡ **176 views** · 📋 [Project Management](../)
+> ⚡ **186 views** · 📋 [Project Management](../)
 
 ## Description
 

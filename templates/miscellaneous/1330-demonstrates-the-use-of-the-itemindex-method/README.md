@@ -1,6 +1,6 @@
 # 🔧 Demonstrates the use of the $item(index) method
 
-> ⚡ **2,055 views** · 🔧 [Miscellaneous](../)
+> ⚡ **2,094 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

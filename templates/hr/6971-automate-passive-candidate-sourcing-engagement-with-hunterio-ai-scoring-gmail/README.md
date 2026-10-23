@@ -1,6 +1,6 @@
 # 👥 Automate passive candidate sourcing & engagement with Hunter.io, AI scoring & Gmail
 
-> ⚡ **113 views** · 👥 [HR & Recruitment](../)
+> ⚡ **147 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

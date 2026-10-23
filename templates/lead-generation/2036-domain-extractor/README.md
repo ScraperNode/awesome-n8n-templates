@@ -1,6 +1,6 @@
 # 🎣 Domain extractor
 
-> ⚡ **3,084 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **3,149 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

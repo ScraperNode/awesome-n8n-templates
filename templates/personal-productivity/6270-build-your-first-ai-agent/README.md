@@ -1,6 +1,6 @@
 # ⚡ Build your first AI agent
 
-> ⚡ **714,788 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,258,652 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

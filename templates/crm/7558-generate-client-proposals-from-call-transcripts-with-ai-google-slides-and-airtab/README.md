@@ -1,6 +1,6 @@
 # 🤝 Generate client proposals from call transcripts with AI, Google Slides and Airtable
 
-> ⚡ **859 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **933 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

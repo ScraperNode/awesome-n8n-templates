@@ -1,6 +1,6 @@
 # ⚡ Multi-modal expense tracking with Telegram, Gemini AI & Google Sheets
 
-> ⚡ **571 views** · ⚡ [Personal Productivity](../)
+> ⚡ **725 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

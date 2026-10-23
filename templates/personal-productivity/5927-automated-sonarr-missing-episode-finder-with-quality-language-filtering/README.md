@@ -1,6 +1,6 @@
 # ⚡ Automated Sonarr missing episode finder with quality & language filtering
 
-> ⚡ **633 views** · ⚡ [Personal Productivity](../)
+> ⚡ **818 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

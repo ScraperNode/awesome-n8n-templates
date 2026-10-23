@@ -1,6 +1,6 @@
 # 🔬 Automate school trip consent forms with email verification, PDF generation & Google Drive
 
-> ⚡ **138 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **193 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

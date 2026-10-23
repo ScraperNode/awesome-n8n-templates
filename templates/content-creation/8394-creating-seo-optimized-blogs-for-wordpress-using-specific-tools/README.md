@@ -1,6 +1,6 @@
 # 🎬 Creating SEO-optimized blogs for WordPress using specific tools
 
-> ⚡ **200 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **253 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Generate consensus-based answers using Claude, GPT, Grok and Gemini
 
-> ⚡ **205 views** · ⚒️ [Engineering](../)
+> ⚡ **851 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Build your own Google Drive MCP server
 
-> ⚡ **7,476 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **7,912 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

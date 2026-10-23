@@ -1,6 +1,6 @@
 # 🤝 Automate PDF purchase orders to sales orders in Adobe Commerce with AI
 
-> ⚡ **556 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **780 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

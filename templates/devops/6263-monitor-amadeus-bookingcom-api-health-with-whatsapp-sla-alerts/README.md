@@ -1,6 +1,6 @@
 # ⚙️ Monitor Amadeus & Booking.com API health with WhatsApp SLA alerts
 
-> ⚡ **411 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **580 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

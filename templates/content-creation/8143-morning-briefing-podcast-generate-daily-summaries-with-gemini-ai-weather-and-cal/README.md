@@ -1,6 +1,6 @@
 # 🎬 Morning briefing podcast: generate daily summaries with Gemini AI, weather, and calendar
 
-> ⚡ **1,223 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,530 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

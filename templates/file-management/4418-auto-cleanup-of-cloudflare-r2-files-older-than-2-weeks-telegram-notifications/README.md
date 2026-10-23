@@ -1,6 +1,6 @@
 # 📁 Auto-cleanup of Cloudflare R2 files older than 2 weeks (+ Telegram notifications)
 
-> ⚡ **549 views** · 📁 [File Management](../)
+> ⚡ **589 views** · 📁 [File Management](../)
 
 ## Description
 

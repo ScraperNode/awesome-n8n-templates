@@ -1,6 +1,6 @@
 # ⚙️ Redis locking for concurrent task handling
 
-> ⚡ **710 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **831 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

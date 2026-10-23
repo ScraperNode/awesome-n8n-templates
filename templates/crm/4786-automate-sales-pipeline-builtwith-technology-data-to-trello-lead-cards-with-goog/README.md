@@ -1,6 +1,6 @@
 # 🤝 Automate sales pipeline: BuiltWith technology data to Trello lead cards with Google Sheets
 
-> ⚡ **1,168 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,293 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

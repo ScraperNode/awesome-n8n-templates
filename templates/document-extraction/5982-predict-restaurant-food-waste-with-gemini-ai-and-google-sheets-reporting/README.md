@@ -1,6 +1,6 @@
 # 🔬 Predict restaurant food waste with Gemini AI and Google Sheets reporting
 
-> ⚡ **904 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **994 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

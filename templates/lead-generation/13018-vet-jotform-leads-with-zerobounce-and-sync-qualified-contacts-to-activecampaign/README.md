@@ -1,6 +1,6 @@
 # 🎣 Vet Jotform leads with ZeroBounce and sync qualified contacts to ActiveCampaign
 
-> ⚡ **13 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **65 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

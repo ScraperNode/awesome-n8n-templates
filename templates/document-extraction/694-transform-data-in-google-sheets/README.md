@@ -1,6 +1,6 @@
 # 🔬 Transform data in Google Sheets
 
-> ⚡ **5,417 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **5,524 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

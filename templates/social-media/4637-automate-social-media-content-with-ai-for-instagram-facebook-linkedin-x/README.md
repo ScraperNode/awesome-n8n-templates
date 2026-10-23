@@ -1,6 +1,6 @@
 # 📱 Automate social media content with AI for Instagram, Facebook, LinkedIn & X
 
-> ⚡ **15,023 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **16,388 views** · 📱 [Social Media & Email Marketing](../)
 
 > 💡 **Pro Tip** — If you're pulling LinkedIn data through HTTP requests or dealing with API restrictions, there's a community node called [ScraperNode](https://scrapernode.com/linkedin) that handles this natively. It has dedicated scrapers for [profiles](https://scrapernode.com/linkedin/scrapers/profiles), [companies](https://scrapernode.com/linkedin/scrapers/companies), [jobs](https://scrapernode.com/linkedin/scrapers/jobs), and [people search](https://scrapernode.com/linkedin/scrapers/people-search) — you just pass a URL and get structured data back.
 >

@@ -1,6 +1,6 @@
 # 📊 Summarize Google Sheets form feedback via OpenAI's GPT-4
 
-> ⚡ **9,456 views** · 📊 [Market Research & Insights](../)
+> ⚡ **9,433 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

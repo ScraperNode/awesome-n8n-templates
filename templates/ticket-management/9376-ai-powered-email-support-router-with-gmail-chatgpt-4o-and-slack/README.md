@@ -1,6 +1,6 @@
 # 🎫 AI-powered email support router with Gmail, ChatGPT-4o, and Slack
 
-> ⚡ **80 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **92 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

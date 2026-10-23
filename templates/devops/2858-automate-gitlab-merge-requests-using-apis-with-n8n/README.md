@@ -1,6 +1,6 @@
 # ⚙️ Automate GitLab merge requests using APIs with n8n
 
-> ⚡ **5,139 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **5,210 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

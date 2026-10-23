@@ -1,6 +1,6 @@
 # 🔍 Create, update alerts 🛠️ UptimeRobot tool MCP server 💪 all 21 operations
 
-> ⚡ **131 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **150 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

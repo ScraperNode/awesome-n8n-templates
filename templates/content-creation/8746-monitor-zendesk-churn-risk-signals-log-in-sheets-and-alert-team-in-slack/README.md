@@ -1,6 +1,6 @@
 # 🎬 Monitor Zendesk churn risk signals, log in Sheets, and alert team in Slack
 
-> ⚡ **137 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **146 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

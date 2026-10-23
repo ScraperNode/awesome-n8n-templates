@@ -1,6 +1,6 @@
 # ⚡ Automated birthday emails with Google Sheets, OpenRouter GPT-4o & Gmail
 
-> ⚡ **1,904 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,041 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

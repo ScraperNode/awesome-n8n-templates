@@ -1,6 +1,6 @@
 # ⚒️ 🛠️ State Management System for Long-Running Workflows with Wait Nodes
 
-> ⚡ **2,198 views** · ⚒️ [Engineering](../)
+> ⚡ **2,615 views** · ⚒️ [Engineering](../)
 
 ## Description
 

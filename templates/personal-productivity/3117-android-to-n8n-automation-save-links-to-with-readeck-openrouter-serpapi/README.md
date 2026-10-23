@@ -1,6 +1,6 @@
 # ⚡ Android to n8n automation | Save links to with Readeck, Openrouter, SerpAPI
 
-> ⚡ **3,714 views** · ⚡ [Personal Productivity](../)
+> ⚡ **5,086 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 AI-powered technical analyst with Perplexity R1 research
 
-> ⚡ **3,149 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **3,726 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

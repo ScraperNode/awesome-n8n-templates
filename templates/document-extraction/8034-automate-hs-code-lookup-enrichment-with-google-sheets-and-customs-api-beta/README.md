@@ -1,6 +1,6 @@
 # 🔬 Automate HS code lookup & enrichment with Google Sheets and customs API (beta)
 
-> ⚡ **556 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **734 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

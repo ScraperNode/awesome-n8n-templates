@@ -1,6 +1,6 @@
 # 📋 Automate Figma versioning and Jira updates with n8n webhook integration
 
-> ⚡ **6,059 views** · 📋 [Project Management](../)
+> ⚡ **6,292 views** · 📋 [Project Management](../)
 
 ## Description
 

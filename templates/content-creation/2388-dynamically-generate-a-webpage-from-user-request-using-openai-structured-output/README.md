@@ -1,6 +1,6 @@
 # 🎬 Dynamically generate a webpage from user request using OpenAI structured output
 
-> ⚡ **43,273 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **59,296 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

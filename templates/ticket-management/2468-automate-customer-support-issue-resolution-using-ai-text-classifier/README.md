@@ -1,6 +1,6 @@
 # 🎫 Automate customer support issue resolution using AI text classifier
 
-> ⚡ **28,198 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **28,780 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ 🐟 Smart fish feeder: weather-based feeding system with BMKG & Telegram alerts
 
-> ⚡ **152 views** · ⚒️ [Engineering](../)
+> ⚡ **186 views** · ⚒️ [Engineering](../)
 
 ## Description
 

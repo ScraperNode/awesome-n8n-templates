@@ -1,6 +1,6 @@
 # ⚡ Personal life manager with Telegram, Google services & voice-enabled AI
 
-> ⚡ **143,515 views** · ⚡ [Personal Productivity](../)
+> ⚡ **247,642 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

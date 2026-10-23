@@ -1,6 +1,6 @@
 # 🔬 Audit AI decisions and route risks with GPT-4.1-mini, Slack, and email reports
 
-> ⚡ **11 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **62 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Optimize technical manuals for RAG & agents with Blockify IdeaBlocks
 
-> ⚡ **76 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **88 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

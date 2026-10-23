@@ -1,6 +1,6 @@
 # 📖 Automate Document Q&A with Multi-Agent RAG Orchestration using Contextual AI & Gemini
 
-> ⚡ **1,265 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **3,275 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

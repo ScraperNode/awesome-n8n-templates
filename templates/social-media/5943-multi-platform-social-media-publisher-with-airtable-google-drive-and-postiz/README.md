@@ -1,6 +1,6 @@
 # 📱 Multi-platform social media publisher with Airtable, Google Drive, and Postiz
 
-> ⚡ **1,533 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,829 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

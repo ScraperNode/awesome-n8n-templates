@@ -1,6 +1,6 @@
 # 🎬 Auto-generate WordPress blog tags with GPT-4.1-mini and smart tag mapping
 
-> ⚡ **248 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **324 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

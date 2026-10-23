@@ -1,6 +1,6 @@
 # 🔬 Translate PDF documents from Google Drive folder with DeepL
 
-> ⚡ **6,299 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **6,613 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

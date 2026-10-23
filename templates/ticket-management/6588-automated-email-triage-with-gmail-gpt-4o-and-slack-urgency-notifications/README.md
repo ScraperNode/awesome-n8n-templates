@@ -1,6 +1,6 @@
 # 🎫 Automated email triage with Gmail, GPT-4o, and Slack urgency notifications
 
-> ⚡ **1,739 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,981 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Convert text to speech with OpenAI
 
-> ⚡ **12,662 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **13,049 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 Automate cryptocurrency analysis & reports with Google Gemini and CoinGecko email alerts
 
-> ⚡ **1,217 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,303 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

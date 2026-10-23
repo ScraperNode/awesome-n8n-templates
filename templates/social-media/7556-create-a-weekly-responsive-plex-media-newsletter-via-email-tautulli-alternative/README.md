@@ -1,6 +1,6 @@
 # 📱 Create a weekly responsive Plex Media newsletter via email (Tautulli alternative)
 
-> ⚡ **829 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,035 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

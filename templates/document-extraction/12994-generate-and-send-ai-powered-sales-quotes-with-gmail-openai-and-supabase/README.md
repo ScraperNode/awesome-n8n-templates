@@ -1,6 +1,6 @@
 # 🔬 Generate and send AI-powered sales quotes with Gmail, OpenAI and Supabase
 
-> ⚡ **18 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **173 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔒 Filter cybersecurity news for your tech stack (OpenAI + Pinecone RAG)
 
-> ⚡ **2,275 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,737 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

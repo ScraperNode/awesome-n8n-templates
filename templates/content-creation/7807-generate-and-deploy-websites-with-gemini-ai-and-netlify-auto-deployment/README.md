@@ -1,6 +1,6 @@
 # 🎬 Generate and deploy websites with Gemini AI and Netlify auto-deployment
 
-> ⚡ **109 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **145 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

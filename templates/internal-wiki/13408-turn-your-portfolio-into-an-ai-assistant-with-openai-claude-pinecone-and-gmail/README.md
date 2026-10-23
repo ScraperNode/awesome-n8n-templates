@@ -1,6 +1,6 @@
 # 📖 Turn your portfolio into an AI assistant with OpenAI, Claude, Pinecone and Gmail
 
-> ⚡ **28 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **93 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

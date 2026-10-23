@@ -1,6 +1,6 @@
 # ⚙️ Push and update files in GitHub
 
-> ⚡ **6,985 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **7,594 views** · ⚙️ [DevOps & CI/CD](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

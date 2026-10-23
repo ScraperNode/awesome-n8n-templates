@@ -1,6 +1,6 @@
 # 🎣 Enrich up to 1500 emails per hour with Dropcontact batch requests
 
-> ⚡ **3,555 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **3,531 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

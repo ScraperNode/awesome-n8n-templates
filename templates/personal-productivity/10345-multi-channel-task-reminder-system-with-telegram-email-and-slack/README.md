@@ -1,6 +1,6 @@
 # ⚡ Multi-channel task reminder system with Telegram, Email and Slack
 
-> ⚡ **203 views** · ⚡ [Personal Productivity](../)
+> ⚡ **305 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

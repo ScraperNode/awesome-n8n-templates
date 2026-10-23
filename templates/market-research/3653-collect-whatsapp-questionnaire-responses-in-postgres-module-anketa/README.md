@@ -1,6 +1,6 @@
 # 📊 Collect WhatsApp questionnaire responses in Postgres (Module "Anketa")
 
-> ⚡ **735 views** · 📊 [Market Research & Insights](../)
+> ⚡ **773 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

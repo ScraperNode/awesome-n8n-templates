@@ -1,6 +1,6 @@
 # 🔬 Streamlining document automation with n8n and JSReport
 
-> ⚡ **3,033 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **3,070 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

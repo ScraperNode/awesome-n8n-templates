@@ -1,6 +1,6 @@
 # 💬 Automate WhatsApp customer support with voice transcription, FAQ & appointment scheduling
 
-> ⚡ **2,845 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,482 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

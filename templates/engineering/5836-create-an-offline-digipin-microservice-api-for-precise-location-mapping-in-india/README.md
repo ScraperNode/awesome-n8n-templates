@@ -1,6 +1,6 @@
 # ⚒️ Create an offline DIGIPIN microservice API for precise location mapping in India
 
-> ⚡ **228 views** · ⚒️ [Engineering](../)
+> ⚡ **300 views** · ⚒️ [Engineering](../)
 
 ## Description
 

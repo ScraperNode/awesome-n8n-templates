@@ -1,6 +1,6 @@
 # ⚡ Sync tasks between Todoist and Notion with Redis-powered 2-way logic
 
-> ⚡ **58 views** · ⚡ [Personal Productivity](../)
+> ⚡ **212 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

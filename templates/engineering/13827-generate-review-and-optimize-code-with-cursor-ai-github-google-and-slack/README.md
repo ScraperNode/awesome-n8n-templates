@@ -1,6 +1,6 @@
 # ⚒️ Generate, review, and optimize code with Cursor AI, GitHub, Google, and Slack
 
-> ⚡ **104 views** · ⚒️ [Engineering](../)
+> ⚡ **915 views** · ⚒️ [Engineering](../)
 
 ## Description
 

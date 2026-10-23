@@ -1,6 +1,6 @@
 # 🎬 Edit images with text prompts using Gemini AI and Telegram Bot
 
-> ⚡ **1,539 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,474 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

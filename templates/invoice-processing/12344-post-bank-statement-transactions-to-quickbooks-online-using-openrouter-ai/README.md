@@ -1,6 +1,6 @@
 # 🧾 Post bank statement transactions to QuickBooks Online using OpenRouter AI
 
-> ⚡ **223 views** · 🧾 [Invoice Processing](../)
+> ⚡ **555 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎯 Automated resume screening & response system with Gemini AI, Gmail and Sheets
 
-> ⚡ **752 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **936 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

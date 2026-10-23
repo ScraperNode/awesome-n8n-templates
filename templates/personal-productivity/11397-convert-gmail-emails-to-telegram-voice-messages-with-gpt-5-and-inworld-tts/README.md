@@ -1,6 +1,6 @@
 # ⚡ Convert Gmail emails to Telegram voice messages with GPT-5 and Inworld TTS
 
-> ⚡ **68 views** · ⚡ [Personal Productivity](../)
+> ⚡ **118 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

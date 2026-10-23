@@ -1,6 +1,6 @@
 # 🤝 Build a Pipedrive MCP server with Google Gemini AI
 
-> ⚡ **1,492 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,630 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

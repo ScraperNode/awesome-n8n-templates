@@ -1,6 +1,6 @@
 # 🔧 Automated MIT AI news delivery to Discord with deduplication
 
-> ⚡ **93 views** · 🔧 [Miscellaneous](../)
+> ⚡ **152 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

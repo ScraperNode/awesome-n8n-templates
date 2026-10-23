@@ -1,6 +1,6 @@
 # 🔬 Create a speech-to-text API with OpenAI GPT4o-mini transcribe
 
-> ⚡ **4,638 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **5,604 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

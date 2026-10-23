@@ -1,6 +1,6 @@
 # 💬 Automate sales follow-ups with GPT-4o-mini, HubSpot, Slack, Teams & Telegram
 
-> ⚡ **420 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **511 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

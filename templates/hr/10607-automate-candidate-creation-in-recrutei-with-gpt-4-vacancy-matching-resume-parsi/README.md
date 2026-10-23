@@ -1,6 +1,6 @@
 # 👥 Automate candidate creation in Recrutei with GPT-4 vacancy matching & resume parsing
 
-> ⚡ **172 views** · 👥 [HR & Recruitment](../)
+> ⚡ **316 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

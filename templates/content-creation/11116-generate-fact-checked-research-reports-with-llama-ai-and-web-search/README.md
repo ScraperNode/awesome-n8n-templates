@@ -1,6 +1,6 @@
 # 🎬 Generate fact-checked research reports with Llama AI and Web search
 
-> ⚡ **195 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **310 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

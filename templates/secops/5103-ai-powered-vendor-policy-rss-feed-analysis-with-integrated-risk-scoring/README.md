@@ -1,6 +1,6 @@
 # 🔒 AI-Powered Vendor Policy & RSS Feed Analysis with Integrated Risk Scoring
 
-> ⚡ **1,937 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,270 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

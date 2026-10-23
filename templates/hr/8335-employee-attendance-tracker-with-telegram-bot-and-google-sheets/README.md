@@ -1,6 +1,6 @@
 # 👥 Employee attendance tracker with Telegram Bot and Google Sheets
 
-> ⚡ **1,769 views** · 👥 [HR & Recruitment](../)
+> ⚡ **2,570 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

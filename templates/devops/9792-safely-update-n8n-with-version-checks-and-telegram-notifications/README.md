@@ -1,6 +1,6 @@
 # ⚙️ Safely update n8n with version checks and Telegram notifications
 
-> ⚡ **174 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **202 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

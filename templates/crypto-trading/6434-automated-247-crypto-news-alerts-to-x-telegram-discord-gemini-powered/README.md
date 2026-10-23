@@ -1,6 +1,6 @@
 # 📈 Automated 24/7 crypto news alerts to X, Telegram & Discord (Gemini powered)
 
-> ⚡ **221 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **253 views** · 📈 [Crypto Trading & Stock Market](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >

@@ -1,6 +1,6 @@
 # 🎬 Generate Facebook marketing content from images with Telegram & Gemini
 
-> ⚡ **1,125 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,317 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

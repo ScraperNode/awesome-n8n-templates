@@ -1,6 +1,6 @@
 # ⚡ Sending an SMS with MessageBird
 
-> ⚡ **761 views** · ⚡ [Personal Productivity](../)
+> ⚡ **776 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

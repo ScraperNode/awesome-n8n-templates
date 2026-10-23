@@ -1,6 +1,6 @@
 # 🤖 AI-powered ServiceNow chat triage with GPT-4 — Incident & request router
 
-> ⚡ **788 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **928 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

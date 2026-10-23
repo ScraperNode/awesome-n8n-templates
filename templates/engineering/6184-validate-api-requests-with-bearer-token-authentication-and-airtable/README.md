@@ -1,6 +1,6 @@
 # ⚒️ Validate API requests with Bearer Token Authentication and Airtable
 
-> ⚡ **217 views** · ⚒️ [Engineering](../)
+> ⚡ **304 views** · ⚒️ [Engineering](../)
 
 ## Description
 

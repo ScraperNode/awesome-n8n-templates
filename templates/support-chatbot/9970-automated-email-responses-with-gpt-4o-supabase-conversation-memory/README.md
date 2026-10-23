@@ -1,6 +1,6 @@
 # 💬 Automated email responses with GPT-4O & Supabase conversation memory
 
-> ⚡ **562 views** · 💬 [Support Chatbots](../)
+> ⚡ **746 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

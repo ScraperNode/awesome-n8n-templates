@@ -1,6 +1,6 @@
 # 📊 Automated business KPI insights with GPT-4, MSSQL, analytics & multi-channel alerts
 
-> ⚡ **730 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,591 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

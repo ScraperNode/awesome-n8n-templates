@@ -1,6 +1,6 @@
 # 💬 Store chat data in Supabase PostgreSQL for WhatsApp/Slack chatbot
 
-> ⚡ **1,166 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,244 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Automated email digest from Gmail to Slack with GPT-4o summary
 
-> ⚡ **216 views** · 💬 [Support Chatbots](../)
+> ⚡ **236 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

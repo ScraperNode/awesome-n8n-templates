@@ -1,6 +1,6 @@
 # 💬 Build an OpenAI assistant with Google Drive integration
 
-> ⚡ **14,827 views** · 💬 [Support Chatbots](../)
+> ⚡ **14,580 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

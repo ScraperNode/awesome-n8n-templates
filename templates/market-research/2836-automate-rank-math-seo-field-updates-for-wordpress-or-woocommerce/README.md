@@ -1,6 +1,6 @@
 # 📊 Automate Rank Math SEO field updates for Wordpress or Woocommerce
 
-> ⚡ **6,376 views** · 📊 [Market Research & Insights](../)
+> ⚡ **6,705 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

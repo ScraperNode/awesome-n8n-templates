@@ -1,6 +1,6 @@
 # 💬 Automated AI cold calling system with VAPI.ai, Airtable, and smart follow-ups
 
-> ⚡ **441 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **656 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

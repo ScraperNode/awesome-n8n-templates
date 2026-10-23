@@ -1,6 +1,6 @@
 # 📈 Fetch real-time Coinbase spot market data with GPT-4o + Telegram
 
-> ⚡ **425 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **470 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 
@@ -52,10 +52,7 @@ This Telegram bot gives you:
 
 ## 📺 Setup Video Tutorial
 
-Watch the full setup guide on YouTube:
-
-[![Watch on YouTube](https://img.youtube.com/vi/AnLG0tnnhSs/0.jpg)](https://www.youtube.com/watch?v=AnLG0tnnhSs)
-
+Watch the full setup guide on YouTube: https://www.youtube.com/watch?v=AnLG0tnnhSs
 
 ---
 

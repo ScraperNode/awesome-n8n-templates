@@ -1,6 +1,6 @@
 # 🤖 Cheaper, faster, accurate answers with memory summarization & dynamic routing!
 
-> ⚡ **1,403 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **1,637 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

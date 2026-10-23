@@ -1,6 +1,6 @@
 # ⚡ Post new Google Calendar events to Telegram
 
-> ⚡ **3,656 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,822 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

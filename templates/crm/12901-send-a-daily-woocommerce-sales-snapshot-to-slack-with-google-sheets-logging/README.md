@@ -1,6 +1,6 @@
 # 🤝 Send a daily WooCommerce sales snapshot to Slack with Google Sheets logging
 
-> ⚡ **31 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **54 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

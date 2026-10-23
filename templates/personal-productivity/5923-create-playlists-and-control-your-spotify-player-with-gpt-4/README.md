@@ -1,6 +1,6 @@
 # ⚡ Create playlists and control your Spotify player with GPT-4
 
-> ⚡ **4,038 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,849 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

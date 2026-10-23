@@ -1,6 +1,6 @@
 # ⚡ AI-powered Gmail and Calendar assistant with Gemini chat interface
 
-> ⚡ **678 views** · ⚡ [Personal Productivity](../)
+> ⚡ **869 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

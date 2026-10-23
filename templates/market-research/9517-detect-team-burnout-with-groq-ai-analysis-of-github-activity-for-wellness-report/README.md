@@ -1,6 +1,6 @@
 # 📊 Detect team burnout with Groq AI analysis of GitHub activity for wellness reports
 
-> ⚡ **98 views** · 📊 [Market Research & Insights](../)
+> ⚡ **159 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

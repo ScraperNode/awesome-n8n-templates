@@ -1,6 +1,6 @@
 # 📖 Local chatbot with retrieval augmented generation (RAG)
 
-> ⚡ **110,801 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **140,481 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

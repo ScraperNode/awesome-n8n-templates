@@ -1,6 +1,6 @@
 # ⚒️ Build persistent chat memory with GPT-4o-mini and Qdrant vector database
 
-> ⚡ **1,991 views** · ⚒️ [Engineering](../)
+> ⚡ **2,363 views** · ⚒️ [Engineering](../)
 
 ## Description
 

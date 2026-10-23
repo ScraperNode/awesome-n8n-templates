@@ -1,6 +1,6 @@
 # 📊 Reddit AI digest
 
-> ⚡ **12,024 views** · 📊 [Market Research & Insights](../)
+> ⚡ **12,235 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

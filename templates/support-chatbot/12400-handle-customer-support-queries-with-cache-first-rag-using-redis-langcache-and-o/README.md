@@ -1,6 +1,6 @@
 # 💬 Handle customer support queries with cache-first RAG using Redis, LangCache and OpenAI
 
-> ⚡ **60 views** · 💬 [Support Chatbots](../)
+> ⚡ **189 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

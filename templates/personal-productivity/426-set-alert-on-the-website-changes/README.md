@@ -1,6 +1,6 @@
 # ⚡ Set alert on the website changes
 
-> ⚡ **4,070 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,129 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

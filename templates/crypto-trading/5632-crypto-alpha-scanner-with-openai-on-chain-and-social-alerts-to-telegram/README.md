@@ -1,6 +1,6 @@
 # 📈 Crypto alpha scanner with OpenAI - on-chain and social alerts to Telegram
 
-> ⚡ **370 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **428 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Send daily weather updates via a message using the Gotify node
 
-> ⚡ **1,413 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,455 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

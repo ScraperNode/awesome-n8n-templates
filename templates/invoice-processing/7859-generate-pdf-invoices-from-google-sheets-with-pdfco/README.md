@@ -1,6 +1,6 @@
 # 🧾 Generate PDF invoices from Google Sheets with PDF.co
 
-> ⚡ **346 views** · 🧾 [Invoice Processing](../)
+> ⚡ **414 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤖 Interactive Russian language tutor bot with GPT-4o and Telegram
 
-> ⚡ **330 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **499 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

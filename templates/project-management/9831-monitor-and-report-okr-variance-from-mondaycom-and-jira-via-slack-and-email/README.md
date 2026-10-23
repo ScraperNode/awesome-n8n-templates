@@ -1,6 +1,6 @@
 # 📋 Monitor and report OKR variance from Monday.com and Jira via Slack and Email
 
-> ⚡ **330 views** · 📋 [Project Management](../)
+> ⚡ **432 views** · 📋 [Project Management](../)
 
 ## Description
 

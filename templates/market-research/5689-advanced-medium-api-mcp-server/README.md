@@ -1,6 +1,6 @@
 # 📊 Advanced Medium API MCP server
 
-> ⚡ **439 views** · 📊 [Market Research & Insights](../)
+> ⚡ **467 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

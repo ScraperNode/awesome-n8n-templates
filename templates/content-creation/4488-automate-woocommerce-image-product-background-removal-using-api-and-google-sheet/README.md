@@ -1,6 +1,6 @@
 # 🎬 Automate WooCommerce image product background removal using API and Google Sheet
 
-> ⚡ **1,717 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,916 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

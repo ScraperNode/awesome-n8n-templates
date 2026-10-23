@@ -1,6 +1,6 @@
 # 🔬 Extract Arabic text from PDFs with Mistral OCR, Telegram Bot & Google Docs
 
-> ⚡ **507 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **755 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Customer onboarding automation with HubSpot, email sequences and team alerts
 
-> ⚡ **12,924 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **22,378 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

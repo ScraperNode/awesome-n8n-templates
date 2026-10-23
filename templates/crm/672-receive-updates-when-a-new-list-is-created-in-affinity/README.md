@@ -1,6 +1,6 @@
 # 🤝 Receive updates when a new list is created in Affinity
 
-> ⚡ **652 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **664 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

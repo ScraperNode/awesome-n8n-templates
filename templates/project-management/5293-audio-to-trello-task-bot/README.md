@@ -1,6 +1,6 @@
 # 📋 Audio-to-Trello task bot
 
-> ⚡ **3,234 views** · 📋 [Project Management](../)
+> ⚡ **3,838 views** · 📋 [Project Management](../)
 
 ## Description
 

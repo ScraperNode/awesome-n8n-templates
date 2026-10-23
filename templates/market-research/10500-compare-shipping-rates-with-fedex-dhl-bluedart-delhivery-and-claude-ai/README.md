@@ -1,6 +1,6 @@
 # 📊 Compare shipping rates with FedEx, DHL, BlueDart, Delhivery and Claude AI
 
-> ⚡ **41 views** · 📊 [Market Research & Insights](../)
+> ⚡ **127 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

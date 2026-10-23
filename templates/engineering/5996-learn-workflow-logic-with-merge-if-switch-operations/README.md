@@ -1,6 +1,6 @@
 # ⚒️ 🎓 Learn Workflow Logic with Merge, IF & Switch Operations
 
-> ⚡ **4,230 views** · ⚒️ [Engineering](../)
+> ⚡ **5,024 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔒 Monitor email data breaches with HIBP API and send Slack alerts
 
-> ⚡ **272 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **388 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

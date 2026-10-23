@@ -1,6 +1,6 @@
 # 🤝 Create a coupon on Paddle
 
-> ⚡ **658 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **661 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

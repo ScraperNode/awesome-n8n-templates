@@ -1,6 +1,6 @@
 # 🧾 Automate invoice processing with OCR, GPT-4 & Salesforce opportunity creation
 
-> ⚡ **1,347 views** · 🧾 [Invoice Processing](../)
+> ⚡ **2,348 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

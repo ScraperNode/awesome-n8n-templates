@@ -1,6 +1,6 @@
 # ⚡ Smart travel package finder: Search flights & hotels with Skyscanner-Booking.com
 
-> ⚡ **1,614 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,504 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Line chatbot with Google Sheets memory and Gemini AI
 
-> ⚡ **5,162 views** · 💬 [Support Chatbots](../)
+> ⚡ **5,657 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

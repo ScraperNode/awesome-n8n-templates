@@ -1,6 +1,6 @@
 # 👥 Daily BGV status digest: Track verifications with Google Sheets to Gmail alerts
 
-> ⚡ **62 views** · 👥 [HR & Recruitment](../)
+> ⚡ **81 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

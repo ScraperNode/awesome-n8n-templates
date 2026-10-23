@@ -1,6 +1,6 @@
 # 🔒 Ssl certificate expiry notifier (no paid APIs)
 
-> ⚡ **4,383 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **5,157 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

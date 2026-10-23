@@ -1,6 +1,6 @@
 # 📖 RAG chatbot with Supabase + TogetherAI + Openrouter
 
-> ⚡ **8,004 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **9,927 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

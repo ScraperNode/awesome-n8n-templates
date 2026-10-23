@@ -1,6 +1,6 @@
 # 🎬 Generate UGC images from form submissions with Google Gemini and Telegram
 
-> ⚡ **326 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **414 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

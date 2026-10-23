@@ -1,6 +1,6 @@
 # ⚒️ Track LLM token costs per customer using the Langchain code node
 
-> ⚡ **1,577 views** · ⚒️ [Engineering](../)
+> ⚡ **1,760 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Server & network monitoring alerts via WhatsApp using HetrixTools
 
-> ⚡ **542 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **861 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

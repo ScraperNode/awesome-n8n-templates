@@ -1,6 +1,6 @@
 # 📱 Client nurture & testimonial auto-pilot for Gumroad with Notion and Email
 
-> ⚡ **42 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **47 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

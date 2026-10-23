@@ -1,6 +1,6 @@
 # 🎬 Generate horror faceless shorts with OpenAI TTS, Replicate Video, and YouTube upload
 
-> ⚡ **4,525 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **6,608 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

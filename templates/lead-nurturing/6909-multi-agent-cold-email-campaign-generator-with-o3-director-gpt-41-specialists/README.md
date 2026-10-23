@@ -1,6 +1,6 @@
 # 💬 Multi-agent cold email campaign generator with O3 Director & GPT-4.1 specialists
 
-> ⚡ **2,752 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **3,033 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

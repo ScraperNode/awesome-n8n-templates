@@ -1,6 +1,6 @@
 # 💬 Create personalized B2B outreach emails with Tavily Research & OpenRouter LLM
 
-> ⚡ **358 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **524 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

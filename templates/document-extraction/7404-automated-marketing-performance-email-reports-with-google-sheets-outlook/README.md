@@ -1,6 +1,6 @@
 # 🔬 Automated marketing performance email reports with Google Sheets & Outlook
 
-> ⚡ **1,016 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,198 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

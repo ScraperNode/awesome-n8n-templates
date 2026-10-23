@@ -1,6 +1,6 @@
 # ⚡ Log workouts and get AI fitness analysis with a form, Google Gemini, Sheets, Slack, and Gmail
 
-> ⚡ **73 views** · ⚡ [Personal Productivity](../)
+> ⚡ **263 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

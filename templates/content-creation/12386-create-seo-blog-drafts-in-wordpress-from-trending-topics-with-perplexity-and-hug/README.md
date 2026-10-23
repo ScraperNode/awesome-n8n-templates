@@ -1,6 +1,6 @@
 # 🎬 Create SEO blog drafts in WordPress from trending topics with Perplexity and HuggingFace
 
-> ⚡ **820 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,388 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

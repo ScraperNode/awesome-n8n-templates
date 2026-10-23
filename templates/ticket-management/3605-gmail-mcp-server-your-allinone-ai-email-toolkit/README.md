@@ -1,6 +1,6 @@
 # 🎫 Gmail MCP server – your all‑in‑one AI email toolkit
 
-> ⚡ **12,802 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **13,775 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

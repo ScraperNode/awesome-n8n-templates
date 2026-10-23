@@ -1,6 +1,6 @@
 # 💬 Build a Telegram chatbot with Gemini
 
-> ⚡ **2,779 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,637 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

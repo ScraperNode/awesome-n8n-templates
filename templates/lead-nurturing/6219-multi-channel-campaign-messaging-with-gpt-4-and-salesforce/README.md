@@ -1,6 +1,6 @@
 # 💬 Multi-channel campaign messaging with GPT-4 and Salesforce
 
-> ⚡ **587 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **641 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

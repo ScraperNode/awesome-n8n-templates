@@ -1,6 +1,6 @@
 # ⚒️ Monetize your private LLM models with x402 & Ollama
 
-> ⚡ **745 views** · ⚒️ [Engineering](../)
+> ⚡ **832 views** · ⚒️ [Engineering](../)
 
 ## Description
 

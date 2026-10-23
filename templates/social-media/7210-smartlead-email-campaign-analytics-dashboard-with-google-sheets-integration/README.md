@@ -1,6 +1,6 @@
 # 📱 Smartlead email campaign analytics dashboard with Google Sheets integration
 
-> ⚡ **200 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **248 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Conversational VK bot with GPT-4 mini & Whisper voice transcription
 
-> ⚡ **516 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,215 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Personalized hotel reward emails for high-spenders with Salesforce, Gemini AI & Brevo
 
-> ⚡ **1,538 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,757 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

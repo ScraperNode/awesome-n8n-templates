@@ -1,6 +1,6 @@
 # 📋 Ai-powered bug tracking with GitHub issues and Telegram alerts using Gemini
 
-> ⚡ **501 views** · 📋 [Project Management](../)
+> ⚡ **547 views** · 📋 [Project Management](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

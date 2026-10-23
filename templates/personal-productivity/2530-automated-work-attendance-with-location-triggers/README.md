@@ -1,6 +1,6 @@
 # ⚡ Automated work attendance with location triggers
 
-> ⚡ **5,640 views** · ⚡ [Personal Productivity](../)
+> ⚡ **5,872 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Run bulk RAG queries from CSV with Lookio
 
-> ⚡ **334 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **357 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

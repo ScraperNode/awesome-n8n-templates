@@ -1,6 +1,6 @@
 # 📈 Get real-time NFT insights via Telegram with OpenSea & AI (Main interface)
 
-> ⚡ **762 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **884 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

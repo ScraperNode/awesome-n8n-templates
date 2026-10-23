@@ -1,6 +1,6 @@
 # 🔒 Auto-classify security incidents with GPT-4 and Google Sheets for SOC teams
 
-> ⚡ **138 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **183 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

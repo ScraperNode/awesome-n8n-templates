@@ -1,6 +1,6 @@
 # ⚒️ Optimize n8n workflow JSON using Azure OpenAI GPT-4o-mini
 
-> ⚡ **35 views** · ⚒️ [Engineering](../)
+> ⚡ **94 views** · ⚒️ [Engineering](../)
 
 ## Description
 

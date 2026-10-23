@@ -1,6 +1,6 @@
 # ⚒️ OpenAI assistant with custom tools
 
-> ⚡ **14,577 views** · ⚒️ [Engineering](../)
+> ⚡ **14,965 views** · ⚒️ [Engineering](../)
 
 ## Description
 

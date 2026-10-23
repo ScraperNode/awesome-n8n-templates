@@ -1,6 +1,6 @@
 # 🔬 Translate instructions using LingvaNex
 
-> ⚡ **615 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **630 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Automate 30-day coach training with SMS, Twilio & Google Sheets
 
-> ⚡ **75 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **89 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

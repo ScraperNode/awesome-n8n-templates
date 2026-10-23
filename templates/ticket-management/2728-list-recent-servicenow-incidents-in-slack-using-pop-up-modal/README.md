@@ -1,6 +1,6 @@
 # 🎫 List recent ServiceNow incidents in Slack using pop up modal
 
-> ⚡ **1,484 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,512 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Audit SharePoint Online external sharing and anonymous links with Microsoft Graph
 
-> ⚡ **50 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **82 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

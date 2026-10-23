@@ -1,6 +1,6 @@
 # 🎫 🛠️ Freshdesk tool MCP server 💪 all 10 operations
 
-> ⚡ **160 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **194 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Automated voice appointment booking with Vapi AI and Google Calendar
 
-> ⚡ **3,796 views** · 💬 [Support Chatbots](../)
+> ⚡ **5,226 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

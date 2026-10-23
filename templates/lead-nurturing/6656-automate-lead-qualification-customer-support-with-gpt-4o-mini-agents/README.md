@@ -1,6 +1,6 @@
 # 💬 Automate lead qualification & customer support with GPT-4o-mini agents
 
-> ⚡ **1,140 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,486 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

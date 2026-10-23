@@ -1,0 +1,1194 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Deterministic Email Auto Labeler Zero AI",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "e9c282c3-9f7a-45ee-a0be-571e23525ac5",
+      "name": "Watch Gmail Messages",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        32,
+        672
+      ],
+      "parameters": {
+        "filters": {
+          "q": "in:inbox newer_than:1d",
+          "readStatus": "both"
+        },
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "9ac47cfc-e636-41bf-81ed-6dde7f169386",
+      "name": "Configure Gmail Triage",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        256,
+        672
+      ],
+      "parameters": {
+        "jsCode": "// Delivery controls only. Define categories in Configure Label Rules.\nconst config = {\n  \"mode\": \"gmail\",\n  \"dry_run\": false,\n  \"allow_create_labels\": true,\n  \"allow_archive\": false,\n  \"allow_mark_read\": false,\n  \"mailbox_key\": \"gmail-primary\",\n  \"rule_version\": \"rules-v2.1\",\n  \"min_margin\": 10\n};\nreturn $input.all().map((item,index) => ({json:{raw:item.json,config},pairedItem:{item:index}}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "20caf39b-88a0-4534-a4f1-105dee97763c",
+      "name": "Fetch Full Gmail Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the SAME Gmail OAuth credential on all Gmail/HTTP nodes. HTTP error status is routed to review. No automatic replay of mailbox writes.",
+      "onError": "continueRegularOutput",
+      "position": [
+        480,
+        672
+      ],
+      "parameters": {
+        "url": "={{ 'https://gmail.googleapis.com/gmail/v1/users/me/messages/' + encodeURIComponent($json.raw.id) + '?format=full' }}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gmailOAuth2"
+      },
+      "notesInFlow": false,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "758d5867-33f8-4d9a-be8a-fb75db00c9dd",
+      "name": "Attach Gmail Context",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        704,
+        672
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const context = $('Configure Gmail Triage').item.json;\nconst ok = $json.statusCode === 200 && $json.body?.id === context.raw.id;\nreturn {json:{config:context.config,raw:ok ? $json.body : {id:context.raw.id,_fetch_error:true}}};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1799295b-5b53-475b-9154-4b5e6f43ad7d",
+      "name": "Normalize Gmail Message",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1120,
+        672
+      ],
+      "parameters": {
+        "jsCode": "// Handles Gmail REST format=full, simplified fields, and parsed IMAP-style objects.\nreturn $input.all().map((entry, index) => {\n  const { raw, config, rules } = entry.json;\n  const issues = [], warnings = [];\n  const obj = x => x !== null && typeof x === 'object' && !Array.isArray(x);\n  const r = obj(raw) ? raw : {};\n  if (!obj(raw)) issues.push('email_must_be_object');\n  const headers = Object.create(null);\n  function addHeader(key, value) {\n    if (typeof key !== 'string' || value == null || value === '') return;\n    if (Array.isArray(value)) value = value.filter(x => typeof x === 'string').join(' ');\n    if (typeof value !== 'string') { issues.push('invalid_header_value'); return; }\n    const k = key.toLowerCase();\n    const combined = [headers[k], value].filter(Boolean).join(' ');\n    if (combined.length > 8000) warnings.push('header_truncated');\n    headers[k] = combined.slice(0, 8000);\n  }\n  const h = r.payload?.headers ?? r.headers ?? {};\n  if (Array.isArray(h)) h.forEach(v => obj(v) ? addHeader(v.name, v.value) : issues.push('invalid_header'));\n  else if (obj(h)) Object.entries(h).forEach(([k,v]) => addHeader(k,v));\n  else issues.push('invalid_headers');\n  const getString = (value, fallback = '') => {\n    if (value == null) return fallback;\n    if (typeof value !== 'string') { issues.push('invalid_text_field'); return fallback; }\n    return value;\n  };\n  const fromValue = r.from ?? r.From ?? headers.from ?? '';\n  const fromRaw = obj(fromValue) ? fromValue.value?.[0]?.address ?? fromValue.text ?? '' : getString(fromValue);\n  const from = (String(fromRaw).match(/<([^<>]+)>/)?.[1] ?? String(fromRaw)).trim().toLowerCase();\n  const subject = getString(r.subject ?? r.Subject, headers.subject ?? '');\n  const textParts = [], htmlParts = [], attachments = [];\n  let partsSeen = 0;\n  function walk(part, depth = 0) {\n    if (!obj(part)) { issues.push('invalid_mime_part'); return; }\n    if (++partsSeen > 100 || depth > 10) { warnings.push('mime_limit_exceeded'); return; }\n    if (typeof part.filename === 'string' && part.filename) attachments.push({ filename: part.filename.slice(0, 255) });\n    if (!part.filename && typeof part.body?.data === 'string' && ['text/plain','text/html'].includes(part.mimeType)) {\n      if (part.body.data.length > 100000) warnings.push('body_truncated');\n      const decoded = Buffer.from(part.body.data.slice(0,100000), 'base64url').toString('utf8');\n      (part.mimeType === 'text/plain' ? textParts : htmlParts).push(decoded);\n    }\n    if (part.parts !== undefined && !Array.isArray(part.parts)) issues.push('invalid_mime_parts');\n    if (Array.isArray(part.parts)) part.parts.slice(0,101).forEach(p => walk(p, depth+1));\n  }\n  if (r.payload !== undefined) walk(r.payload);\n  if (r.payload && !textParts.length && !htmlParts.length && !r.text && !r.body && !r.html) warnings.push('body_unavailable_snippet_only');\n  if (r.attachments !== undefined && !Array.isArray(r.attachments)) issues.push('invalid_attachments');\n  if (Array.isArray(r.attachments)) {\n    if (r.attachments.length > 100) warnings.push('attachment_limit_exceeded');\n    for (const a of r.attachments.slice(0,100)) {\n      if (!obj(a) || typeof a.filename !== 'string') issues.push('invalid_attachment');\n      else attachments.push({ filename: a.filename.slice(0,255) });\n    }\n  }\n  const rawHtml = getString(r.html, htmlParts.join('\\n'));\n  if (rawHtml.length > 50000) warnings.push('html_truncated');\n  const html = rawHtml.slice(0,50000);\n  const strippedHtml = html.replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script>/gi,' ').replace(/<style\\b[^>]*>[\\s\\S]*?<\\/style>/gi,' ').replace(/<[^>]*>/g,' ').replace(/&nbsp;|&#160;/g,' ').replace(/&amp;/g,'&');\n  const body = getString(r.text ?? r.body, textParts.join('\\n') || strippedHtml || getString(r.snippet));\n  if (subject.length > 1000 || body.length > 50000) warnings.push('text_truncated');\n  if ('custom_taxonomy' in r) issues.push('message_supplied_rules_not_allowed_use_configure_node');\n  if (r.error || r._fetch_error) issues.push('gmail_fetch_failed');\n  const id = typeof r.id === 'string' ? r.id : '';\n  // Never substitute RFC Message-ID for the Gmail REST message ID.\n  return { json: { config, rules, issues: [...new Set(issues)], warnings: [...new Set(warnings)], content_incomplete: warnings.length > 0, email: { provider_message_id: id, from, subject: subject.slice(0,1000), body: body.slice(0,50000), headers, attachments, label_ids: Array.isArray(r.labelIds) ? r.labelIds.filter(v => typeof v === 'string') : [] } }, pairedItem: { item: index } };\n});\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "5f0dfa82-e8a6-405c-ab37-ed260d46ae19",
+      "name": "Validate Email and Rules",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1328,
+        672
+      ],
+      "parameters": {
+        "jsCode": "const seen = new Set();\nconst validLabel = name => typeof name === 'string' && name.length > 0 && name.length <= 200 && name === name.trim() && !/[\\x00-\\x1f\\x7f]/.test(name) && !name.split('/').some(part => !part.trim()) && !/^(INBOX|SPAM|TRASH|UNREAD|STARRED|IMPORTANT|SENT|DRAFT|DRAFTS|CHAT|CHATS|ALL|ALL MAIL|CATEGORY_.*)$/i.test(name);\nreturn $input.all().map((entry,index) => {\n  const x = entry.json, issues = [...x.issues], c = x.config, e = x.email;\n  const obj = v => v !== null && typeof v === 'object' && !Array.isArray(v);\n  if (!e.provider_message_id || e.provider_message_id.length > 256) issues.push('missing_or_invalid_message_id');\n  if (c.mode === 'gmail' && !/^[a-f0-9]+$/i.test(e.provider_message_id)) issues.push('invalid_gmail_message_id');\n  if (!/^[^\\s<>@]+@[^\\s<>@]+\\.[^\\s<>@]+$/.test(e.from)) issues.push('invalid_sender');\n  if (!e.subject && !e.body) issues.push('empty_message');\n  if (!obj(c.safety_labels) || !validLabel(c.safety_labels.security) || !validLabel(c.safety_labels.critical) || typeof c.safety_labels.create_if_missing !== 'boolean') issues.push('invalid_safety_label_config');\n  const key = `${c.mailbox_key}:${e.provider_message_id}`;\n  if (seen.has(key)) issues.push('duplicate_in_batch');\n  seen.add(key);\n  for (const flag of ['dry_run','allow_create_labels','allow_archive','allow_mark_read']) if (typeof c[flag] !== 'boolean') issues.push(`invalid_config_${flag}`);\n  if (!['demo','gmail'].includes(c.mode) || typeof c.mailbox_key !== 'string' || !c.mailbox_key.trim() || typeof c.rule_version !== 'string' || !c.rule_version.trim()) issues.push('invalid_config_identity');\n  if (!Number.isFinite(c.min_margin) || c.min_margin < 0 || c.min_margin > 100) issues.push('invalid_margin');\n  if (!Array.isArray(x.rules) || !x.rules.length || x.rules.length > 30) issues.push('invalid_rules_array');\n  else {\n    const ids = new Set();\n    for (const rule of x.rules) {\n      if (!obj(rule)) { issues.push('invalid_rule_object'); continue; }\n      if (typeof rule.id !== 'string' || !/^[a-z0-9_]{1,64}$/.test(rule.id) || ids.has(rule.id)) issues.push('invalid_or_duplicate_rule_id');\n      ids.add(rule.id);\n      if (!validLabel(rule.label)) issues.push('invalid_label_name');\n      if (rule.enabled !== undefined && typeof rule.enabled !== 'boolean') issues.push('invalid_rule_enabled');\n      if (rule.create_if_missing !== undefined && typeof rule.create_if_missing !== 'boolean') issues.push('invalid_rule_create_if_missing');\n      for (const field of ['priority','min_score']) if (!Number.isFinite(rule[field]) || rule[field] < 0 || rule[field] > 200) issues.push(`invalid_rule_${field}`);\n      if (!obj(rule.actions) || Object.keys(rule.actions).some(k => !['star','archive','mark_read'].includes(k)) || ['star','archive','mark_read'].some(k => typeof rule.actions[k] !== 'boolean')) issues.push('invalid_rule_actions');\n      if (!obj(rule.signals)) { issues.push('invalid_rule_signals'); continue; }\n      if (Object.keys(rule.signals).some(k => !['senders','subject_terms','body_terms','extensions','headers'].includes(k))) issues.push('unsupported_signal_use_literal_terms');\n      for (const field of ['senders','subject_terms','body_terms','extensions']) {\n        const list = rule.signals[field] ?? [];\n        if (!Array.isArray(list) || list.length > 30 || list.some(v => typeof v !== 'string' || !v.trim() || v.length > 160)) { issues.push(`invalid_signal_${field}`); continue; }\n        if (field === 'senders' && list.some(v => !/^(\\*|[a-z0-9.!#$%&'+/=?^_`{|}~-]+)@(?:[a-z0-9-]+\\.)+[a-z]{2,}$/i.test(v))) issues.push('sender_must_be_exact_address_or_domain_wildcard');\n        if (field === 'extensions' && list.some(v => !/^\\.[a-z0-9]{1,10}$/i.test(v))) issues.push('invalid_extension');\n      }\n      const headers = rule.signals.headers ?? {};\n      if (!obj(headers) || Object.keys(headers).length > 10) issues.push('invalid_rule_headers');\n      else for (const [key,value] of Object.entries(headers)) if (!/^[a-z0-9-]{1,80}$/.test(key) || !(value === true || (Array.isArray(value) && value.length > 0 && value.length <= 10 && value.every(v => typeof v === 'string' && v.length > 0 && v.length <= 80)))) issues.push('invalid_header_rule');\n    }\n  }\n  return { json: { ...x, issues: [...new Set(issues)], valid: issues.length === 0 }, pairedItem: { item: index } };\n});\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8caa35a2-53bd-48a8-8b49-9625be1c34f3",
+      "name": "Classify with Weighted Rules",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1552,
+        672
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map((entry,index) => {\n  const x = entry.json, e = x.email;\n  const candidates = [];\n  if (x.valid) for (const rule of x.rules) {\n    if (rule.enabled === false) continue;\n    let score = 0; const evidence = [], s = rule.signals;\n    const sender = (s.senders ?? []).find(v => v.startsWith('*@') ? e.from.split('@')[1] === v.slice(2).toLowerCase() : e.from === v.toLowerCase());\n    if (sender) { score += 30; evidence.push({ signal: 'sender', rule: sender, weight: 30 }); }\n    for (const [field,weight] of [['subject_terms',25],['body_terms',15]]) {\n      const value = (field === 'subject_terms' ? e.subject : e.body).toLowerCase();\n      const hits = (s[field] ?? []).filter(term => value.includes(term.toLowerCase()));\n      if (hits.length) { score += weight; evidence.push({ signal: field, rules: hits, weight }); }\n    }\n    const headerHits = Object.entries(s.headers ?? {}).filter(([key,values]) => {\n      const actual = e.headers[key]?.toLowerCase().trim();\n      return !!actual && (values === true || values.some(v => actual.split(';')[0].trim() === v.toLowerCase()));\n    }).map(([key]) => key);\n    // Cap the whole header vector: two bulk headers do not count as independent proof.\n    if (headerHits.length) { score += 40; evidence.push({ signal: 'headers', rules: headerHits, weight: 40 }); }\n    const extHits = (s.extensions ?? []).filter(ext => e.attachments.some(a => a.filename.toLowerCase().endsWith(ext.toLowerCase())));\n    if (extHits.length) { score += 15; evidence.push({ signal: 'extensions', rules: extHits, weight: 15 }); }\n    if (score >= rule.min_score) candidates.push({ id: rule.id, label: rule.label, score, priority: rule.priority, evidence, actions: rule.actions, create_if_missing: rule.create_if_missing !== false });\n  }\n  candidates.sort((a,b) => b.score-a.score || b.priority-a.priority || a.id.localeCompare(b.id));\n  return { json: { ...x, candidates, classification: candidates[0] ?? null }, pairedItem: { item: index } };\n});\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "820d23c4-f0c0-4971-b0d4-060f5b8e371c",
+      "name": "Protect OTP and Critical Alerts",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1808,
+        672
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map((entry,index) => {\n  const x = entry.json, reasons = [...x.issues], text = `${x.email.subject}\\n${x.email.body}`.toLowerCase();\n  const protectedKinds = [];\n  if (/\\b(?:otp|verification code|one[- ]time password|password reset|reset password|security alert|suspicious login|kode verifikasi|kode keamanan|reset kata sandi)\\b/i.test(text)) protectedKinds.push('security');\n  if (/\\b(?:build failed|deployment failed|deploy failed|pipeline failed|production down|service down|outage|critical alert|incident|severity[ :_-]*[01]|sev[ -]?[01]|p[01] incident|gagal deploy|layanan mati)\\b/i.test(text)) protectedKinds.push('critical_alert');\n  let decision = !x.valid ? 'needs_review' : x.classification ? 'actionable' : 'keep_in_inbox';\n  let chosen = x.classification;\n  if (x.valid && protectedKinds.length) {\n    const security = protectedKinds.includes('security');\n    chosen = { id: security ? 'protected_security' : 'protected_critical', label: security ? x.config.safety_labels.security : x.config.safety_labels.critical, create_if_missing: x.config.safety_labels.create_if_missing, score: null, priority: 200, evidence: [{ signal: 'safety_policy', rules: protectedKinds }], actions: { star: true, archive: false, mark_read: false } };\n    decision = 'actionable'; reasons.push('protected_message_keep_unread');\n  } else if (x.valid && x.candidates.length > 1 && x.candidates[0].score-x.candidates[1].score <= x.config.min_margin) {\n    decision = 'needs_review'; reasons.push('ambiguous_category_scores');\n  }\n  if (x.valid && !chosen) reasons.push('no_rule_reached_threshold');\n  if (x.content_incomplete) reasons.push('incomplete_content_no_archive_or_mark_read');\n  return { json: { ...x, classification: chosen, decision, reasons, protected_kinds: protectedKinds }, pairedItem: { item: index } };\n});\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e0998d65-0bf2-4f3f-9045-6d3641b3d0f1",
+      "name": "Build Gmail Action Plan",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2064,
+        672
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map((entry,index) => {\n  const x = entry.json, c = x.config, actionable = x.decision === 'actionable';\n  const a = actionable ? x.classification.actions : { star:false, archive:false, mark_read:false };\n  const protectedMessage = x.protected_kinds.length > 0 || x.content_incomplete === true;\n  const add = a.star ? ['STARRED'] : [], remove = [];\n  if (!protectedMessage && a.archive && c.allow_archive) remove.push('INBOX');\n  if (!protectedMessage && a.mark_read && c.allow_mark_read) remove.push('UNREAD');\n  const reasons = [...x.reasons];\n  if (a.archive && !c.allow_archive) reasons.push('archive_disabled_by_config');\n  if (a.mark_read && !c.allow_mark_read) reasons.push('mark_read_disabled_by_config');\n  const plan = { label_name: actionable ? x.classification.label : null, create_if_missing: actionable && x.classification.create_if_missing !== false, add_label_ids: add, remove_label_ids: remove };\n  const dry = c.mode !== 'gmail' || c.dry_run !== false;\n  const envelope = {\n    schema_version:'2.1', provider:c.mode === 'gmail' ? 'gmail' : 'fixture', mailbox_key:c.mailbox_key,\n    provider_message_id:x.email.provider_message_id || null, rule_version:c.rule_version,\n    decision:x.decision, status:x.decision === 'needs_review' ? 'needs_review' : x.decision === 'keep_in_inbox' ? 'kept' : 'planned',\n    dry_run:dry, reasons, warnings:x.warnings ?? [], content_incomplete:x.content_incomplete === true, protected_kinds:x.protected_kinds,\n    classification: x.classification ? { category_id:x.classification.id, label:x.classification.label, score:x.classification.score, evidence:x.classification.evidence } : null,\n    candidates:x.candidates.map(v => ({ category_id:v.id, label:v.label, score:v.score })),\n    requested_actions:{ ...a }, action_plan:plan,\n    // Deterministic reference only. This is NOT a durable deduplication lock.\n    operation_key:JSON.stringify([c.mailbox_key,x.email.provider_message_id,c.rule_version,plan]),\n    delivery:{ attempted:false, http_status:null, error_code:null },\n    config:{ allow_create_labels:c.allow_create_labels === true }\n  };\n  return { json:envelope, pairedItem:{ item:index } };\n});\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "4777dc62-a0fd-474a-b548-cc8a5120ac81",
+      "name": "Decide Next Action",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        2320,
+        656
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "actionable",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "condition",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.decision }}",
+                    "rightValue": "actionable"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "keep_in_inbox",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "condition",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.decision }}",
+                    "rightValue": "keep_in_inbox"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "needs_review"
+        }
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "66beafdf-5b60-4461-8705-a3075a8b4524",
+      "name": "Needs Review",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2656,
+        1136
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map((item,index) => ({json:{...item.json,decision:'needs_review',status:'needs_review'},pairedItem:{item:index}}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "3a439456-c1ad-4dde-ae9c-9967c04eeef3",
+      "name": "Keep in Inbox",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2656,
+        944
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map((item,index) => ({json:{...item.json,status:'kept'},pairedItem:{item:index}}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "083cfb24-aaa0-4134-a244-34cbdb3fa777",
+      "name": "Preview Gmail Actions",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2928,
+        560
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map((item,index) => ({json:{...item.json,status:'preview'},pairedItem:{item:index}}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e861e69d-9a13-454e-9b9e-fe14fe3de764",
+      "name": "Configure Label Rules",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        912,
+        672
+      ],
+      "parameters": {
+        "jsCode": "// EDIT HERE: use exact existing Gmail names or desired new names.\n// enabled: false pauses a rule. create_if_missing requires the global allow_create_labels switch too.\n// Subject match = 25 points; use min_score=25 to allow subject-only classification.\nconst safety_labels = { security: 'Triage/Security', critical: 'Triage/Critical Alerts', create_if_missing: true };\nconst rules = [\n  {\n    \"id\": \"invoice\",\n    \"label\": \"Triage/Invoices\",\n    \"priority\": 90,\n    \"min_score\": 25,\n    \"signals\": {\n      \"senders\": [\n        \"user@example.com\"\n      ],\n      \"subject_terms\": [\n        \"invoice\",\n        \"receipt\",\n        \"tagihan\",\n        \"kwitansi\"\n      ],\n      \"body_terms\": [\n        \"amount due\",\n        \"payment received\",\n        \"pembayaran berhasil\"\n      ],\n      \"extensions\": [\n        \".pdf\",\n        \".xml\"\n      ]\n    },\n    \"actions\": {\n      \"star\": true,\n      \"archive\": false,\n      \"mark_read\": false\n    },\n    \"enabled\": true,\n    \"create_if_missing\": true\n  },\n  {\n    \"id\": \"security\",\n    \"label\": \"Triage/Security\",\n    \"priority\": 100,\n    \"min_score\": 30,\n    \"signals\": {\n      \"subject_terms\": [\n        \"verification code\",\n        \"otp\",\n        \"password reset\",\n        \"kode verifikasi\"\n      ],\n      \"body_terms\": [\n        \"one-time password\",\n        \"security alert\"\n      ]\n    },\n    \"actions\": {\n      \"star\": true,\n      \"archive\": false,\n      \"mark_read\": false\n    },\n    \"enabled\": true,\n    \"create_if_missing\": true\n  },\n  {\n    \"id\": \"newsletter\",\n    \"label\": \"Triage/Newsletters\",\n    \"priority\": 40,\n    \"min_score\": 35,\n    \"signals\": {\n      \"subject_terms\": [\n        \"newsletter\",\n        \"weekly roundup\",\n        \"digest\"\n      ],\n      \"body_terms\": [\n        \"unsubscribe\",\n        \"manage preferences\"\n      ],\n      \"headers\": {\n        \"list-unsubscribe\": true,\n        \"precedence\": [\n          \"bulk\",\n          \"list\"\n        ]\n      }\n    },\n    \"actions\": {\n      \"star\": false,\n      \"archive\": true,\n      \"mark_read\": false\n    },\n    \"enabled\": true,\n    \"create_if_missing\": true\n  },\n  {\n    \"id\": \"automated\",\n    \"label\": \"Triage/Automated\",\n    \"priority\": 30,\n    \"min_score\": 35,\n    \"signals\": {\n      \"headers\": {\n        \"auto-submitted\": [\n          \"auto-generated\",\n          \"auto-replied\"\n        ]\n      },\n      \"subject_terms\": [\n        \"build succeeded\",\n        \"deployment succeeded\",\n        \"routine report\"\n      ]\n    },\n    \"actions\": {\n      \"star\": false,\n      \"archive\": true,\n      \"mark_read\": false\n    },\n    \"enabled\": true,\n    \"create_if_missing\": true\n  },\n  {\n    \"id\": \"vip\",\n    \"label\": \"Triage/Clients\",\n    \"priority\": 80,\n    \"min_score\": 30,\n    \"signals\": {\n      \"senders\": [\n        \"*@client.example.com\"\n      ],\n      \"subject_terms\": [\n        \"project proposal\",\n        \"proposal request\"\n      ],\n      \"body_terms\": [\n        \"project proposal\"\n      ]\n    },\n    \"actions\": {\n      \"star\": true,\n      \"archive\": false,\n      \"mark_read\": false\n    },\n    \"enabled\": true,\n    \"create_if_missing\": true\n  }\n];\nreturn $input.all().map((item,index) => ({json:{...item.json,config:{...item.json.config,safety_labels},rules},pairedItem:{item:index}}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "0234422c-788a-47c8-807f-95db617d848d",
+      "name": "Dry Run Enabled",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2656,
+        640
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "condition",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.dry_run }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "cb8b093f-3d55-45e4-895b-a592851a72a2",
+      "name": "Fetch Gmail Labels",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the SAME Gmail OAuth credential on all Gmail/HTTP nodes. HTTP error status is routed to review. No automatic replay of mailbox writes.",
+      "onError": "continueRegularOutput",
+      "position": [
+        2928,
+        704
+      ],
+      "parameters": {
+        "url": "https://gmail.googleapis.com/gmail/v1/users/me/labels",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gmailOAuth2"
+      },
+      "notesInFlow": false,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "5ce3914d-5073-44b2-9dd6-d62cc446104a",
+      "name": "Resolve Gmail Label",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3168,
+        704
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const p = $('Build Gmail Action Plan').item.json;\nconst response = $json;\nconst code = Number(response.statusCode) || null;\nconst fail = reason => ({ json:{ ...p, decision:'needs_review', status:'needs_review', resolution:'review', reasons:[...p.reasons,reason], delivery:{ attempted:false,http_status:code,error_code:reason } } });\nif (code !== 200 || !Array.isArray(response.body?.labels)) return fail('gmail_label_list_failed');\nconst matches = response.body.labels.filter(l => l.name === p.action_plan.label_name && l.type === 'user' && typeof l.id === 'string');\nif (matches.length > 1) return fail('ambiguous_label_mapping');\nif (matches.length === 1) return { json:{ ...p, resolution:'ready', resolved_label_id:matches[0].id } };\nif (p.config.allow_create_labels && p.action_plan.create_if_missing !== false && !p.dry_run) return { json:{ ...p,resolution:'create' } };\nreturn fail('label_missing_creation_disabled');\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c9e5b904-71da-453e-9d4b-46baea209e16",
+      "name": "Decide Label Resolution",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        3408,
+        688
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "ready",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "condition",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.resolution }}",
+                    "rightValue": "ready"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "create",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "condition",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.resolution }}",
+                    "rightValue": "create"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "needs_review"
+        }
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "6ee348f7-2e15-434f-bff8-c7413ac4116b",
+      "name": "Create Gmail Label",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the SAME Gmail OAuth credential on all Gmail/HTTP nodes. HTTP error status is routed to review. No automatic replay of mailbox writes.",
+      "onError": "continueRegularOutput",
+      "position": [
+        3680,
+        912
+      ],
+      "parameters": {
+        "url": "https://gmail.googleapis.com/gmail/v1/users/me/labels",
+        "method": "POST",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ { name: $json.action_plan.label_name, labelListVisibility: 'labelShow', messageListVisibility: 'show' } }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gmailOAuth2"
+      },
+      "notesInFlow": false,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "8b40c4bc-9407-4f8b-a68c-2c8e5ed42ffb",
+      "name": "Check Label Creation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3920,
+        912
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const p = $('Resolve Gmail Label').item.json;\nconst status = Number($json.statusCode) || null;\n// Another execution may have created the same label. Re-fetch once on 409.\nif ((status >= 200 && status < 300) || status === 409) return { json:{ ...p,resolution:'refresh',label_creation_status:status } };\nreturn { json:{ ...p,decision:'needs_review',status:'needs_review',resolution:'review',reasons:[...p.reasons,'gmail_label_create_failed'],delivery:{ attempted:false,http_status:status,error_code:'gmail_label_create_failed' } } };\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b7e3fbc1-e1d0-4dde-9732-dcc90204ef22",
+      "name": "Refresh Label Mapping",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4160,
+        912
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "condition",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.resolution }}",
+              "rightValue": "refresh"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "52f054ad-5b7d-484c-a44b-ea06ee2118c3",
+      "name": "Refresh Gmail Labels",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the SAME Gmail OAuth credential on all Gmail/HTTP nodes. HTTP error status is routed to review. No automatic replay of mailbox writes.",
+      "onError": "continueRegularOutput",
+      "position": [
+        4400,
+        912
+      ],
+      "parameters": {
+        "url": "https://gmail.googleapis.com/gmail/v1/users/me/labels",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gmailOAuth2"
+      },
+      "notesInFlow": false,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "1794bb55-6d8c-4d3b-8400-a816dc9cf80e",
+      "name": "Resolve Created Label",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4640,
+        912
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const p = $('Check Label Creation').item.json;\nconst status = Number($json.statusCode) || null;\nconst matches = status === 200 && Array.isArray($json.body?.labels) ? $json.body.labels.filter(l => l.name === p.action_plan.label_name && l.type === 'user' && typeof l.id === 'string') : [];\nif (matches.length === 1) return { json:{ ...p,resolution:'ready',resolved_label_id:matches[0].id } };\nreturn { json:{ ...p,decision:'needs_review',status:'needs_review',resolution:'review',reasons:[...p.reasons,'label_unresolved_after_create'],delivery:{ attempted:false,http_status:status,error_code:'label_unresolved_after_create' } } };\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "2002551d-6180-439a-8185-dfdec64f35b2",
+      "name": "Label ID Resolved",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4880,
+        912
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "condition",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.resolution }}",
+              "rightValue": "ready"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "c63404d8-1d9f-4fae-a044-d8d0c3f21f10",
+      "name": "Build Gmail Modify Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5184,
+        672
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map((item,index) => {\n  const p = item.json;\n  const add = [...new Set([...p.action_plan.add_label_ids,p.resolved_label_id])].filter(Boolean);\n  const remove = [...new Set(p.action_plan.remove_label_ids)];\n  const valid = p.provider === 'gmail' && p.dry_run === false && p.decision === 'actionable' && p.resolution === 'ready' && typeof p.resolved_label_id === 'string' && /^Label_/.test(p.resolved_label_id) && /^[a-f0-9]+$/i.test(p.provider_message_id) && remove.every(id => ['INBOX','UNREAD'].includes(id)) && !((p.protected_kinds.length || p.content_incomplete) && remove.length) && !add.some(id => remove.includes(id));\n  if (!valid) return { json:{ ...p,decision:'needs_review',status:'needs_review',ready_to_modify:false,reasons:[...p.reasons,'unsafe_or_incomplete_modify_plan'] },pairedItem:{item:index} };\n  const action_plan = { ...p.action_plan,add_label_ids:add,remove_label_ids:remove };\n  return { json:{ ...p,action_plan,ready_to_modify:true,modify_body:{ addLabelIds:add,removeLabelIds:remove } },pairedItem:{item:index} };\n});\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "345af857-2f90-4b2a-87a0-879eb6744864",
+      "name": "Safe to Modify Gmail",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        5424,
+        672
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "condition",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.ready_to_modify }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "d07e7237-51dd-4e3e-879b-57b3df07aaf6",
+      "name": "Modify Gmail Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the SAME Gmail OAuth credential on all Gmail/HTTP nodes. HTTP error status is routed to review. No automatic replay of mailbox writes.",
+      "onError": "continueRegularOutput",
+      "position": [
+        5664,
+        672
+      ],
+      "parameters": {
+        "url": "={{ 'https://gmail.googleapis.com/gmail/v1/users/me/messages/' + encodeURIComponent($json.provider_message_id) + '/modify' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ $json.modify_body }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gmailOAuth2"
+      },
+      "notesInFlow": false,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "760c8f24-8c96-4a24-adce-a20a7da218d7",
+      "name": "Verify Gmail Action Result",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5904,
+        672
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const p = $('Build Gmail Modify Request').item.json;\nconst status = Number($json.statusCode) || null;\nconst body = $json.body;\nconst success = status >= 200 && status < 300 && body?.id === p.provider_message_id && Array.isArray(body.labelIds) && p.modify_body.addLabelIds.every(id => body.labelIds.includes(id)) && p.modify_body.removeLabelIds.every(id => !body.labelIds.includes(id));\nconst transient = status === 429 || (status !== null && status >= 500) || (status === 403 && ['rateLimitExceeded','userRateLimitExceeded'].includes(body?.error?.errors?.[0]?.reason));\nconst error = success ? null : status === null || (status >= 200 && status < 300) ? 'verify_mailbox_before_replay' : transient ? 'transient_gmail_error_retry_later' : 'gmail_modify_failed';\nreturn { json:{ ...p,status:success ? 'applied' : 'needs_review',decision:success ? p.decision : 'needs_review',reasons:success ? p.reasons : [...p.reasons,error],delivery:{ attempted:true,http_status:status,error_code:error,retryable:transient,verified:success } } };\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "024f3d63-db49-4d9e-83ed-9ad835db7924",
+      "name": "Gmail Update Verified",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        6144,
+        672
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "condition",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "applied"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "2353da7e-6a39-43bf-b06b-8052af2ec700",
+      "name": "Record Applied Actions",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        6384,
+        656
+      ],
+      "parameters": {
+        "jsCode": "return $input.all();"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c5d9b991-c8fe-4392-8e4a-d0fd0702ffb5",
+      "name": "README \u2014 Start Here",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 1680,
+        "height": 340,
+        "content": "## Gmail integration \u2014 dry run first\nConnect the same Gmail OAuth credential to the trigger and five HTTP nodes. Run a test poll with dry_run=true. Configure Gmail Triage is the only place to enable writes.\n\nLabels and actions are suggestions until explicitly enabled in the Gmail companion. Configure Label Rules supports existing/new names, enabled and create_if_missing flags. Rules use literal terms, exact email addresses, and *@domain wildcards. No AI model or arbitrary custom regex. Score is not probability."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ac224d91-a4fe-4dbf-8cc5-882d58b8ef62",
+      "name": "Stage 1 \u2014 Input and Validation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        384
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1480,
+        "height": 610,
+        "content": "## 1. Normalize and validate\nGmail full MIME and parsed email fields \u2192 bounded text and filename metadata. Invalid fields, duplicate batch IDs, malformed rules go to Needs Review. Truncation is a warning: classify but never archive/read. Edit Configure Label Rules; email content cannot replace them."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "907aa414-7d78-4e2c-8bae-41cbc9089b84",
+      "name": "Stage 2 \u2014 Classification and Safety",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1488,
+        384
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1062,
+        "height": 460,
+        "content": "## 2. Classify, protect, and plan\nWeights: headers 40 (capped), sender 30, subject 25, body 15, attachment extension 15. Close matches \u2192 Needs Review. Security/critical patterns override bulk actions. The planner runs before Decision so every branch has the same envelope."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0dfeccfa-2e19-4d6b-81ea-f1d60589829f",
+      "name": "Stage 3 \u2014 Outcomes",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2560,
+        320
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 530,
+        "height": 1000,
+        "content": "## 3. Inspect outcomes\nPreview: planned Gmail changes, zero API writes.\nKeep: no mailbox action.\nNeeds Review: invalid data, ambiguity, duplicates, or API failures. This is an output for inspection, not a persistent queue. Final outputs omit message text and sender."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "13f6db78-a5ae-404b-8f50-1270e7132302",
+      "name": "Warning \u2014 Delivery Limits",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        1040
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 1110,
+        "height": 440,
+        "content": "## Deployment controls\ndry_run=true; allow_create_labels=false; allow_archive=false; allow_mark_read=false.\n\nNo durable dedup ledger, automatic rate-limit backoff, or exactly-once guarantee. Repeated Gmail label changes are state-setting operations, but replay can override later human changes. Inspect the mailbox after an unknown write result. Use a test mailbox first. Execution saving is disabled in exports; manually viewing nodes still reveals email content."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "34e8ff2d-783b-4f1c-b871-0b1a8180fdef",
+      "name": "Test Examples and Expected Results",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1152,
+        1040
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 1370,
+        "height": 440,
+        "content": "## Demo expectations\nInvoice \u2192 Triage/Invoices\nOTP with bulk headers \u2192 Triage/Security, never archive/read\nNewsletter \u2192 preview (archive switch initially off)\nFailed deployment \u2192 Triage/Critical Alerts, never archive/read\nVIP \u2192 Triage/Clients\nPersonal \u2192 Keep in Inbox\nAmbiguous invoice/newsletter \u2192 Needs Review\nMalformed input \u2192 Needs Review\n\nRun node test-runner.js for regression and mocked Gmail checks."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "49fd465c-17c6-42aa-84d3-2080cfe64147",
+      "name": "Stage 4 \u2014 Resolve or Create Labels",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3152,
+        384
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1920,
+        "height": 810,
+        "content": "## 4. Resolve Gmail label IDs\nOnly entered when dry_run=false. Exact user-label name lookup. Missing label \u2192 review unless creation explicitly enabled. Creation is followed by a fresh lookup; HTTP 409 also re-fetches once to handle concurrent creation. Other failures go to Needs Review."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e0e609d5-1af4-4413-ab43-126fedc22a3f",
+      "name": "Stage 5 \u2014 Apply and Verify",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        5120,
+        384
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1510,
+        "height": 460,
+        "content": "## 5. Apply one Gmail modify request\nOne request adds category/STARRED and optionally removes INBOX/UNREAD. A final guard rejects unsafe or unresolved plans. Check returned message ID and label state before status=applied. Errors are routed to review; no unbounded retry."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "nodeGroups": [],
+  "connections": {
+    "Dry Run Enabled": {
+      "main": [
+        [
+          {
+            "node": "Preview Gmail Actions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Gmail Labels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Label ID Resolved": {
+      "main": [
+        [
+          {
+            "node": "Build Gmail Modify Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Needs Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Gmail Label": {
+      "main": [
+        [
+          {
+            "node": "Check Label Creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide Next Action": {
+      "main": [
+        [
+          {
+            "node": "Dry Run Enabled",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Keep in Inbox",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Needs Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Gmail Labels": {
+      "main": [
+        [
+          {
+            "node": "Resolve Gmail Label",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Gmail Label": {
+      "main": [
+        [
+          {
+            "node": "Decide Label Resolution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach Gmail Context": {
+      "main": [
+        [
+          {
+            "node": "Configure Label Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Label Creation": {
+      "main": [
+        [
+          {
+            "node": "Refresh Label Mapping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Modify Gmail Message": {
+      "main": [
+        [
+          {
+            "node": "Verify Gmail Action Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refresh Gmail Labels": {
+      "main": [
+        [
+          {
+            "node": "Resolve Created Label",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Safe to Modify Gmail": {
+      "main": [
+        [
+          {
+            "node": "Modify Gmail Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Needs Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Watch Gmail Messages": {
+      "main": [
+        [
+          {
+            "node": "Configure Gmail Triage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure Label Rules": {
+      "main": [
+        [
+          {
+            "node": "Normalize Gmail Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Update Verified": {
+      "main": [
+        [
+          {
+            "node": "Record Applied Actions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Needs Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refresh Label Mapping": {
+      "main": [
+        [
+          {
+            "node": "Refresh Gmail Labels",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Needs Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Created Label": {
+      "main": [
+        [
+          {
+            "node": "Label ID Resolved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure Gmail Triage": {
+      "main": [
+        [
+          {
+            "node": "Fetch Full Gmail Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Gmail Action Plan": {
+      "main": [
+        [
+          {
+            "node": "Decide Next Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide Label Resolution": {
+      "main": [
+        [
+          {
+            "node": "Build Gmail Modify Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Gmail Label",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Needs Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Gmail Message": {
+      "main": [
+        [
+          {
+            "node": "Validate Email and Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Full Gmail Message": {
+      "main": [
+        [
+          {
+            "node": "Attach Gmail Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Email and Rules": {
+      "main": [
+        [
+          {
+            "node": "Classify with Weighted Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Gmail Modify Request": {
+      "main": [
+        [
+          {
+            "node": "Safe to Modify Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Gmail Action Result": {
+      "main": [
+        [
+          {
+            "node": "Gmail Update Verified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify with Weighted Rules": {
+      "main": [
+        [
+          {
+            "node": "Protect OTP and Critical Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Protect OTP and Critical Alerts": {
+      "main": [
+        [
+          {
+            "node": "Build Gmail Action Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

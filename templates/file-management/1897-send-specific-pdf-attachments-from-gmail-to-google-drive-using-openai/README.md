@@ -1,6 +1,6 @@
 # 📁 Send specific PDF attachments from Gmail to Google Drive using OpenAI
 
-> ⚡ **21,857 views** · 📁 [File Management](../)
+> ⚡ **22,117 views** · 📁 [File Management](../)
 
 ## Description
 

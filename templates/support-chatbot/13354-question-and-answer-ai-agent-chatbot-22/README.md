@@ -1,6 +1,6 @@
 # 💬 Question and Answer AI Agent Chatbot [2/2]
 
-> ⚡ **851 views** · 💬 [Support Chatbots](../)
+> ⚡ **4,101 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

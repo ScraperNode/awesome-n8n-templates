@@ -1,6 +1,6 @@
 # 💬 Build an AI chat agent for your Zendesk knowledge base with GPT-4.1 and InfraNodus GraphRAG
 
-> ⚡ **57 views** · 💬 [Support Chatbots](../)
+> ⚡ **146 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

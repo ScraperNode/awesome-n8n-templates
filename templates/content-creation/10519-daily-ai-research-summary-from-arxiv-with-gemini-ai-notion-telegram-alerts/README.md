@@ -1,6 +1,6 @@
 # 🎬 Daily AI research summary from arXiv with Gemini AI, Notion & Telegram alerts
 
-> ⚡ **564 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **876 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

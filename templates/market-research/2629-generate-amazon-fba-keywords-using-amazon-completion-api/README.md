@@ -1,6 +1,6 @@
 # 📊 Generate Amazon FBA keywords using Amazon Completion API
 
-> ⚡ **4,099 views** · 📊 [Market Research & Insights](../)
+> ⚡ **4,309 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

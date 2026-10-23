@@ -1,6 +1,6 @@
 # 💬 Telegram AI chatbot
 
-> ⚡ **221,673 views** · 💬 [Support Chatbots](../)
+> ⚡ **234,631 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

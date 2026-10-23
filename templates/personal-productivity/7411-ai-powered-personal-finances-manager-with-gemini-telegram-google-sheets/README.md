@@ -1,6 +1,6 @@
 # ⚡ AI-powered personal finances manager with Gemini, Telegram & Google Sheets
 
-> ⚡ **4,762 views** · ⚡ [Personal Productivity](../)
+> ⚡ **5,537 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

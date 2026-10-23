@@ -1,6 +1,6 @@
 # 📱 Automatically Post Latest Reddit Content to Discord with Image Extraction
 
-> ⚡ **1,488 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,616 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

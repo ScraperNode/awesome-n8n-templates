@@ -1,6 +1,6 @@
 # 🎬 Generate AI videos with OpenAI Sora 2 & upload to Google Drive
 
-> ⚡ **7,735 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **8,206 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

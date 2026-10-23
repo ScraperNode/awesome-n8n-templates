@@ -1,6 +1,6 @@
 # 🎬 Perform speech-to-text on recorded audio clips using Wit.ai
 
-> ⚡ **10,043 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **10,040 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

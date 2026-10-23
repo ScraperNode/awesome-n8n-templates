@@ -1,6 +1,6 @@
 # 🔬 Extract Thai bank slip data from LINE using SpaceOCR and save to Google Sheets
 
-> ⚡ **2,625 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,771 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

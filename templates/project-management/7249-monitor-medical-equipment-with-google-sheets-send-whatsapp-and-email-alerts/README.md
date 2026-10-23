@@ -1,6 +1,6 @@
 # 📋 Monitor medical equipment with Google Sheets & send WhatsApp and email alerts
 
-> ⚡ **607 views** · 📋 [Project Management](../)
+> ⚡ **714 views** · 📋 [Project Management](../)
 
 ## Description
 

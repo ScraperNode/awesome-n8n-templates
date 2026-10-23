@@ -1,6 +1,6 @@
 # 🔒 Enhance security operations with the Qualys Slack shortcut bot!
 
-> ⚡ **1,299 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,355 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

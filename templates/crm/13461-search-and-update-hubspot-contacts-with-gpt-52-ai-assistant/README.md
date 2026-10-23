@@ -1,6 +1,6 @@
-# 🤝 Search and update HubSpot contacts with GPT-5.2 AI assistant
+# 🤝 Hubspot AI Manager - Automate your CRM!
 
-> ⚡ **19 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **81 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Match WooCommerce orders to new Zendesk tickets and send confirmation emails
 
-> ⚡ **25 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **52 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

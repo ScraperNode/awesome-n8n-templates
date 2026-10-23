@@ -1,6 +1,6 @@
 # 📊 Conversational interviews with AI agents and n8n forms
 
-> ⚡ **31,088 views** · 📊 [Market Research & Insights](../)
+> ⚡ **31,300 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

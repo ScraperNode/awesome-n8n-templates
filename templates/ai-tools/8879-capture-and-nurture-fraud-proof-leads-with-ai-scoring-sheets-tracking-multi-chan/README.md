@@ -1,6 +1,6 @@
 # 🎯 Capture and nurture fraud-proof leads with AI scoring, sheets tracking & multi-channel alerts
 
-> ⚡ **189 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **248 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

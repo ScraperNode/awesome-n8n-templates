@@ -1,6 +1,6 @@
 # 📱 Add contacts to SendGrid automatically
 
-> ⚡ **712 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **731 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

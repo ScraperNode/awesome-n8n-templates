@@ -1,6 +1,6 @@
 # ⚒️ Prompt-based object detection with Gemini 2.0
 
-> ⚡ **3,197 views** · ⚒️ [Engineering](../)
+> ⚡ **3,336 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Japanese-to-English review sentiment analysis with GPT and Telegram alerts
 
-> ⚡ **10 views** · 📊 [Market Research & Insights](../)
+> ⚡ **16 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

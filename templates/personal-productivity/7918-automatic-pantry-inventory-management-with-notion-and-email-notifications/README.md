@@ -1,6 +1,6 @@
 # ⚡ Automatic pantry inventory management with Notion and email notifications
 
-> ⚡ **95 views** · ⚡ [Personal Productivity](../)
+> ⚡ **119 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

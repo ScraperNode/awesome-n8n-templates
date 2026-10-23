@@ -1,6 +1,6 @@
 # ⚒️ Conversational PostgreSQL agent with visuals, multi-KPI, and data editing (MCP)
 
-> ⚡ **2,214 views** · ⚒️ [Engineering](../)
+> ⚡ **2,273 views** · ⚒️ [Engineering](../)
 
 ## Description
 

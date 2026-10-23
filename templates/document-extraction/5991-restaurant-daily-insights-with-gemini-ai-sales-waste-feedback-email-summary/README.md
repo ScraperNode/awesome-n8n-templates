@@ -1,6 +1,6 @@
 # 🔬 Restaurant daily insights with Gemini AI - sales, waste & feedback email summary
 
-> ⚡ **991 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,138 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

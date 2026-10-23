@@ -1,6 +1,6 @@
 # 🤖 🍎 Update grocery lists in Asana via Telegram voice & text using GPT-4o mini
 
-> ⚡ **404 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **472 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

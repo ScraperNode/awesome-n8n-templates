@@ -1,6 +1,6 @@
 # 🔬 Parse & track orders from email with Gemini/GPT & Notion database sync
 
-> ⚡ **139 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **220 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

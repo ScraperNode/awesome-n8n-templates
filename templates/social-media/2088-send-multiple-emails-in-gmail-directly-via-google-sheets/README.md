@@ -1,6 +1,6 @@
 # 📱 Send multiple emails in Gmail directly via Google Sheets
 
-> ⚡ **53,020 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **77,321 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

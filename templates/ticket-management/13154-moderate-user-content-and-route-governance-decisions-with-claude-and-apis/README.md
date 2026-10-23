@@ -1,6 +1,6 @@
 # 🎫 Moderate user content and route governance decisions with Claude and APIs
 
-> ⚡ **5 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **64 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

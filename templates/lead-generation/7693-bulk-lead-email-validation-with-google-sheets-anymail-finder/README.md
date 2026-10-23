@@ -1,6 +1,6 @@
 # 🎣 Bulk lead email validation with Google Sheets & Anymail Finder
 
-> ⚡ **509 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **632 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

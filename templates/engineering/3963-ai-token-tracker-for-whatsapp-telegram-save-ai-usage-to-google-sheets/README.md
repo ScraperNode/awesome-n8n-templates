@@ -1,6 +1,6 @@
 # ⚒️ 📊 AI token tracker for WhatsApp & Telegram – Save AI usage to Google Sheets
 
-> ⚡ **651 views** · ⚒️ [Engineering](../)
+> ⚡ **708 views** · ⚒️ [Engineering](../)
 
 ## Description
 

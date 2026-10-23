@@ -1,6 +1,6 @@
 # 📁 Automatically upload scanned documents to Nextcloud via ScanservJS
 
-> ⚡ **650 views** · 📁 [File Management](../)
+> ⚡ **729 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 Chat with a Google Sheet using AI
 
-> ⚡ **61,565 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **64,564 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

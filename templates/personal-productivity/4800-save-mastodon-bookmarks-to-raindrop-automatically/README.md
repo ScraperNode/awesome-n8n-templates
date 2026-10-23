@@ -1,6 +1,6 @@
 # ⚡ Save Mastodon bookmarks to Raindrop automatically
 
-> ⚡ **228 views** · ⚡ [Personal Productivity](../)
+> ⚡ **268 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

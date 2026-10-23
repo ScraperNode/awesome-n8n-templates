@@ -1,6 +1,6 @@
 # 🔬 Transcribe audio files, summarize with GPT-4, and store in Notion
 
-> ⚡ **67,731 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **68,455 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

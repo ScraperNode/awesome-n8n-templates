@@ -1,6 +1,6 @@
 # 💬 Customer personality (BaZi, DISC, Numerology) with Gemini & Google Sheets
 
-> ⚡ **89 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **101 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

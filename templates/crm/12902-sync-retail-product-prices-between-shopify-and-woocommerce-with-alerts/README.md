@@ -1,6 +1,6 @@
 # 🤝 Sync retail product prices between Shopify and WooCommerce with alerts
 
-> ⚡ **43 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **104 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

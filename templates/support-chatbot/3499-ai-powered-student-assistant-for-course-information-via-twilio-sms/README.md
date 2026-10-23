@@ -1,6 +1,6 @@
 # 💬 AI-powered student assistant for course information via Twilio SMS
 
-> ⚡ **3,365 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,742 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

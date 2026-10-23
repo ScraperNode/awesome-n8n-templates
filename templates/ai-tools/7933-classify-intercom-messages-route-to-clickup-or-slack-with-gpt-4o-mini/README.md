@@ -1,6 +1,6 @@
 # 🎯 Classify Intercom messages & route to ClickUp or Slack with GPT-4o-mini
 
-> ⚡ **148 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **164 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

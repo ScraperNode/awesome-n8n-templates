@@ -1,6 +1,6 @@
 # 🤖 Telegram voice assistant with OpenAI & Gmail: manage & draft emails via voice
 
-> ⚡ **1,100 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **1,280 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

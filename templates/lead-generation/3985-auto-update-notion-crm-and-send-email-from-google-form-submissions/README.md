@@ -1,6 +1,6 @@
 # 🎣 Auto-update Notion CRM and send email from Google Form submissions
 
-> ⚡ **559 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **601 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

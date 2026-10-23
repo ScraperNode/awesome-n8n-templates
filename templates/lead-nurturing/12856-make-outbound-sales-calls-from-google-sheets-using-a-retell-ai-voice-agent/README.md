@@ -1,6 +1,6 @@
 # 💬 Make outbound sales calls from Google Sheets using a Retell AI voice agent
 
-> ⚡ **474 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,447 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

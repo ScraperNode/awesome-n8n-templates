@@ -1,6 +1,6 @@
 # 💬 Send AI-generated stale lead nudges from Notion CRM to Telegram with OpenAI
 
-> ⚡ **11 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **59 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Get AI meeting briefs from Google Calendar with SerpAPI, Azure OpenAI and Slack
 
-> ⚡ **66 views** · 📊 [Market Research & Insights](../)
+> ⚡ **124 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

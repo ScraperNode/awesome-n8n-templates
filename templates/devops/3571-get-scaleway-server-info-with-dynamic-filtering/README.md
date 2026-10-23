@@ -1,6 +1,6 @@
 # ⚙️ Get Scaleway server info with dynamic filtering
 
-> ⚡ **313 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **378 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

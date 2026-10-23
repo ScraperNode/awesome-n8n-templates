@@ -1,6 +1,6 @@
 # 🤝 Jotform automated commerce sync: Telegram confirmation & Zoho invoice
 
-> ⚡ **225 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **277 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

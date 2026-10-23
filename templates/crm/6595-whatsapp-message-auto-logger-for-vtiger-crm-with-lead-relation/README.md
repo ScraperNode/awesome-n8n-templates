@@ -1,6 +1,6 @@
 # 🤝 WhatsApp message auto-logger for Vtiger CRM with lead relation
 
-> ⚡ **390 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **447 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

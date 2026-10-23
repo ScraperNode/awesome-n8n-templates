@@ -1,6 +1,6 @@
 # ⚙️ Convert n8n tags into folders and move workflows
 
-> ⚡ **734 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **872 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

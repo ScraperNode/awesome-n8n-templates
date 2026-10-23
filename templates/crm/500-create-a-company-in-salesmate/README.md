@@ -1,6 +1,6 @@
 # 🤝 Create a company in Salesmate
 
-> ⚡ **486 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **513 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Summarize your emails with A.I. (via Openrouter) and send to Line messenger
 
-> ⚡ **4,941 views** · ⚡ [Personal Productivity](../)
+> ⚡ **5,118 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

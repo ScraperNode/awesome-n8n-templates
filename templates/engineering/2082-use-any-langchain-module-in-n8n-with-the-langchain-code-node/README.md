@@ -1,6 +1,6 @@
 # ⚒️ Use any LangChain module in n8n (with the LangChain code node)
 
-> ⚡ **12,741 views** · ⚒️ [Engineering](../)
+> ⚡ **12,819 views** · ⚒️ [Engineering](../)
 
 > 💡 **Pro Tip** — YouTube's API quotas can be a bottleneck when you're pulling data at scale. [ScraperNode](https://scrapernode.com/youtube) is a community node with dedicated scrapers for [channels](https://scrapernode.com/youtube/scrapers/channels), [videos](https://scrapernode.com/youtube/scrapers/videos), and [comments](https://scrapernode.com/youtube/scrapers/comments) — no quota limits, just structured data.
 >

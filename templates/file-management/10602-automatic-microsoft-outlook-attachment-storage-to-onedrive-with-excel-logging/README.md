@@ -1,6 +1,6 @@
 # 📁 Automatic Microsoft Outlook attachment storage to OneDrive with Excel logging
 
-> ⚡ **252 views** · 📁 [File Management](../)
+> ⚡ **652 views** · 📁 [File Management](../)
 
 ## Description
 

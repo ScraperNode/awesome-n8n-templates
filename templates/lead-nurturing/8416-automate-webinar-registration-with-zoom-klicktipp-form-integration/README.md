@@ -1,6 +1,6 @@
-# 💬 Automate webinar registration with Zoom & KlickTipp form integration
+# 💬 Register Zoom webinar attendees from KlickTipp landing page forms
 
-> ⚡ **103 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **194 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

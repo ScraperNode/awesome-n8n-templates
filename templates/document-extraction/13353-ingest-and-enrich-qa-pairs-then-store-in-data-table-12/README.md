@@ -1,6 +1,6 @@
 # 🔬 Ingest and enrich Q&A pairs then store in Data Table [1/2]
 
-> ⚡ **691 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **5,010 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

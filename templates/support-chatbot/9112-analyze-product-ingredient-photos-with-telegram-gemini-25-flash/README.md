@@ -1,6 +1,6 @@
 # 💬 Analyze product ingredient photos with Telegram & Gemini 2.5 Flash
 
-> ⚡ **377 views** · 💬 [Support Chatbots](../)
+> ⚡ **446 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

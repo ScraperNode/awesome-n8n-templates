@@ -1,6 +1,6 @@
 # ⚙️ Deploy docker Grafana, API backend for WHMCS/WISECP
 
-> ⚡ **421 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **490 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 Add product ideas to Notion via a Slack command
 
-> ⚡ **1,504 views** · 📋 [Project Management](../)
+> ⚡ **1,509 views** · 📋 [Project Management](../)
 
 ## Description
 

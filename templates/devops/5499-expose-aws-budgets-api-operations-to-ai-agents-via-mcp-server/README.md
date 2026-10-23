@@ -1,6 +1,6 @@
 # ⚙️ Expose AWS budgets API operations to AI agents via MCP server
 
-> ⚡ **254 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **296 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

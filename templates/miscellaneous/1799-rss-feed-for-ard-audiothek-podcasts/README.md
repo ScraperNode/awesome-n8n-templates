@@ -1,6 +1,6 @@
 # 🔧 Rss feed for ARD Audiothek podcasts
 
-> ⚡ **1,773 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,857 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

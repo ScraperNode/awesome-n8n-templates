@@ -1,6 +1,6 @@
 # 📊 Find top keywords for Youtube and Google and store them in NocoDB
 
-> ⚡ **3,448 views** · 📊 [Market Research & Insights](../)
+> ⚡ **3,434 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Automated Nicereply feedback routing to MS Teams by team and sentiment
 
-> ⚡ **190 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **245 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

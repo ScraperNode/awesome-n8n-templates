@@ -1,6 +1,6 @@
 # 🔬 Automate property inspections and reporting with OpenAI, Google Sheets and Slack
 
-> ⚡ **77 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **97 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Extract and track receipt data with VLM Run and Google Drive + Airtable
 
-> ⚡ **133 views** · 🧾 [Invoice Processing](../)
+> ⚡ **143 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

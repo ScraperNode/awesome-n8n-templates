@@ -1,6 +1,6 @@
 # ⚒️ Anthropic AI agent: Claude Sonnet 4 and Opus 4 with Think and Web Search tool
 
-> ⚡ **9,424 views** · ⚒️ [Engineering](../)
+> ⚡ **13,096 views** · ⚒️ [Engineering](../)
 
 ## Description
 

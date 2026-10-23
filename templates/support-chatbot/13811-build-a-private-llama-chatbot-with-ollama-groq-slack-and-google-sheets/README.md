@@ -1,6 +1,6 @@
 # 💬 Build a private Llama chatbot with Ollama, Groq, Slack and Google Sheets
 
-> ⚡ **32 views** · 💬 [Support Chatbots](../)
+> ⚡ **136 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

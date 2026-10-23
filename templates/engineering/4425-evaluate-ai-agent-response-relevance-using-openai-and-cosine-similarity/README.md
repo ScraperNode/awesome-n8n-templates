@@ -1,6 +1,6 @@
 # ⚒️ Evaluate AI agent response relevance using OpenAI and cosine similarity
 
-> ⚡ **1,117 views** · ⚒️ [Engineering](../)
+> ⚡ **1,302 views** · ⚒️ [Engineering](../)
 
 ## Description
 

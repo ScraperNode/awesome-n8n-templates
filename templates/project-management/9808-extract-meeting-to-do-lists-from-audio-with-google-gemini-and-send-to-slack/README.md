@@ -1,6 +1,6 @@
 # 📋 Extract meeting to-do lists from audio with Google Gemini and send to Slack
 
-> ⚡ **224 views** · 📋 [Project Management](../)
+> ⚡ **307 views** · 📋 [Project Management](../)
 
 ## Description
 

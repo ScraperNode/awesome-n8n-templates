@@ -1,6 +1,6 @@
 # ⚡ Movie release calendar: Add TMDB films to Google Calendar via Telegram Bot
 
-> ⚡ **155 views** · ⚡ [Personal Productivity](../)
+> ⚡ **289 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

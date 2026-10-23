@@ -1,6 +1,6 @@
 # 🎯 Automatically rename Gmail attachments with GPT-4o and save to Google Drive
 
-> ⚡ **1,507 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **1,831 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

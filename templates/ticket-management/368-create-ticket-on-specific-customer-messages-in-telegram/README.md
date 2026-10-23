@@ -1,6 +1,6 @@
 # 🎫 Create ticket on specific customer messages in Telegram
 
-> ⚡ **7,706 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **7,664 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

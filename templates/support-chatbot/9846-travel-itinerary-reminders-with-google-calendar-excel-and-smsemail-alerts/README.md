@@ -1,6 +1,6 @@
 # 💬 Travel itinerary reminders with Google Calendar, Excel, and SMS/Email alerts
 
-> ⚡ **735 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,107 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

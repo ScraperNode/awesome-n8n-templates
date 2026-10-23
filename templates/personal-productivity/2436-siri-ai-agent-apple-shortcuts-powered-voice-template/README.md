@@ -1,6 +1,6 @@
 # ⚡ Siri AI agent: Apple Shortcuts powered voice template
 
-> ⚡ **33,545 views** · ⚡ [Personal Productivity](../)
+> ⚡ **34,334 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

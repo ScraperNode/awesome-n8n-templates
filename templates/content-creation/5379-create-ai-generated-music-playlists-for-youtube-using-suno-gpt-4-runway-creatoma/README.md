@@ -1,6 +1,6 @@
-# 🎬 Create AI-generated music playlists for YouTube using Suno, GPT-4, Runway & Creatomate
+# 🎬 Create AI-generated music playlists for YouTube using Suno, Runway & Creatomate
 
-> ⚡ **856 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **934 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — YouTube's API quotas can be a bottleneck when you're pulling data at scale. [ScraperNode](https://scrapernode.com/youtube) is a community node with dedicated scrapers for [channels](https://scrapernode.com/youtube/scrapers/channels), [videos](https://scrapernode.com/youtube/scrapers/videos), and [comments](https://scrapernode.com/youtube/scrapers/comments) — no quota limits, just structured data.
 >
@@ -11,6 +11,8 @@
 # Automated AI Playlist Creator - Complete Music Production Pipeline
 
 Demo Youtube Video: [https://www.youtube.com/watch?v=B_RDqM0kcgc](https://www.youtube.com/watch?v=B_RDqM0kcgc)
+
+I made a saas for this workflow, you can check it out here: [Playlist craft](https://playlistcraft.com)
 
 ## Overview
 Transform your music creation process with this comprehensive 11-workflow automation system that generates complete music playlists from concept to YouTube publication. Using advanced AI services, this template creates original songs, lyrics, cover art, animated videos, and handles the entire publishing pipeline automatically.

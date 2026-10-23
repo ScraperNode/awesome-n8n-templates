@@ -1,6 +1,6 @@
 # 🤝 Analyze call recordings with OpenAI and update Zoho CRM leads automatically
 
-> ⚡ **333 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **496 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

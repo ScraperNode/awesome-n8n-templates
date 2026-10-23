@@ -1,6 +1,6 @@
 # ⚡ Analyze weekly notes with GPT-4 for actionable tasks & summaries
 
-> ⚡ **180 views** · ⚡ [Personal Productivity](../)
+> ⚡ **250 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

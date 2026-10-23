@@ -1,6 +1,6 @@
 # 💬 Auto-reply to FAQs on WhatsApp using Postgres (Module "FAQ")
 
-> ⚡ **1,168 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,200 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

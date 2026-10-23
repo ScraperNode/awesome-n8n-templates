@@ -1,6 +1,6 @@
 # 🔬 Monitor and enforce seller compliance with GPT-4o, email alerts and Slack
 
-> ⚡ **5 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **57 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

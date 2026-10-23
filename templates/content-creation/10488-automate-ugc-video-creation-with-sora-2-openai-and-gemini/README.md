@@ -1,6 +1,6 @@
 # 🎬 Automate UGC video creation with Sora 2, OpenAI, and Gemini
 
-> ⚡ **2,019 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,803 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

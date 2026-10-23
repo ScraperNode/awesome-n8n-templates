@@ -1,0 +1,479 @@
+{
+  "id": "cccc0000-0000-4000-8000-0000000000e2",
+  "name": "Rescue at-risk appointments with a two-hour WhatsApp check-in",
+  "nodes": [
+    {
+      "id": "b1000000-0000-4000-8000-000000000001",
+      "name": "Every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -280,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "b1000000-0000-4000-8000-000000000002",
+      "name": "Appointments (demo data)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -60,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// DEMO SOURCE so the template runs immediately. For production,\n// disable this node and read your appointments from Google Sheets.\n// Required columns: appointment_id, customer_name, phone, starts_at\n// (ISO), practitioner, treatment, status\nconst demoRows = [\n  {\n    appointment_id: 'APT-2001',\n    customer_name: 'Anna Voorbeeld',\n    phone: '+316****5678',\n    starts_at: new Date(Date.now() + 100 * 60 * 1000).toISOString(),\n    practitioner: 'Stylist A',\n    treatment: 'Hair treatment',\n    status: 'unconfirmed'\n  },\n  {\n    // broken on purpose: missing phone -> routed to the error log\n    appointment_id: 'APT-2002',\n    customer_name: 'Tom Voorbeeld',\n    starts_at: new Date(Date.now() + 26 * 3600 * 1000).toISOString(),\n    practitioner: 'Dr. Voorbeeld',\n    treatment: 'Intake',\n    status: 'unconfirmed'\n  },\n  {\n    appointment_id: 'APT-2003',\n    customer_name: 'Sara Voorbeeld',\n    phone: '+316****3344',\n    starts_at: new Date(Date.now() + 3 * 3600 * 1000).toISOString(),\n    practitioner: 'Stylist A',\n    treatment: 'Consultation',\n    status: 'confirmed'\n  }\n];\nreturn demoRows.map((row) => ({ json: row }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b1000000-0000-4000-8000-000000000004",
+      "name": "Send check-in (replace me)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1040,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Placeholder for the WhatsApp Business Cloud send node.\n// After import: add 'Send Message' (WhatsApp Business Cloud) here with your\n// credentials, wire In window -> Send -> Wait For Reply, then delete this node.\nconst items = $input.all();\nreturn items.map((item) => ({\n    json: { ...item.json, sent_at: new Date().toISOString(), transport: 'whatsapp_demo' }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b1000000-0000-4000-8000-000000000005",
+      "name": "Wait for reply (15 min)",
+      "type": "n8n-nodes-base.wait",
+      "onError": "continueRegularOutput",
+      "position": [
+        1340,
+        0
+      ],
+      "parameters": {
+        "resume": "webhook",
+        "options": {},
+        "limitType": "afterTimeInterval",
+        "resumeUnit": "minutes",
+        "resumeAmount": 15,
+        "limitWaitTime": true
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "b1000000-0000-4000-8000-000000000006",
+      "name": "Classify reply",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1560,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Classify the reply webhook body. The Wait node is resumed by a\n// webhook (resume: webhook API) whose body lands here.\nconst items = $input.all();\nconst out = [];\nfor (const item of items) {\n  const b = item.json;\n  const text = String(b.Body || b.text || '').trim().toUpperCase();\n  let verdict = 'no_reply';\n  if (/^(JA|J|YES|Y|OK|CONFIRM|C)([\\s!.,]|$)/.test(text)) verdict = 'confirmed';\n  else if (/^(NEE|N|NO|RESCHEDULE|CANCEL|WIJZIG)([\\s!.,]|$)/.test(text)) verdict = 'cancel_requested';\n  else if (text) verdict = 'unclear';\n  out.push({\n    json: {\n      appointment_id: b.appointment_id || 'unknown',\n      from: b.From || b.from || '',\n      raw_text: text,\n      verdict: verdict\n    }\n  });\n}\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b1000000-0000-4000-8000-000000000010",
+      "name": "Prepare + validate rows",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        160,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Validate each appointment row before anything is sent: a missing id or\n// phone, or an unparseable start time, would silently break the rescue.\n// Bad rows are routed to the error log with the exact reason; good rows\n// get a precomputed minutes_until the window gate reads.\nconst items = $input.all();\nconst out = [];\nfor (const item of items) {\n  const r = item.json;\n  const t = r.starts_at ? new Date(r.starts_at).getTime() : NaN;\n  let rowError = null;\n  if (!r.appointment_id) rowError = 'missing appointment_id';\n  else if (isNaN(t)) rowError = 'starts_at not parseable';\n  else if (!r.phone) rowError = 'missing phone';\n  else if (r.status && !['unconfirmed', 'confirmed', 'cancelled'].includes(r.status)) rowError = 'unknown status: ' + r.status;\n  out.push({\n    json: {\n      ...r,\n      starts_ts: isNaN(t) ? null : t,\n      minutes_until: isNaN(t) ? null : Math.round((t - Date.now()) / 60000),\n      row_valid: !rowError,\n      row_error: rowError\n    }\n  });\n}\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b1000000-0000-4000-8000-000000000011",
+      "name": "Row valid?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        340,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "rv1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.row_valid }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "b1000000-0000-4000-8000-000000000012",
+      "name": "Log invalid rows",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        420,
+        260
+      ],
+      "parameters": {
+        "jsCode": "// Error path: broken source rows land here with the exact reason instead\n// of silently vanishing. In production, write to a 'rescue_errors' sheet\n// so a human can fix the source data.\nconst items = $input.all();\nreturn items.map((item) => ({\n  json: {\n    error: 'invalid appointment row',\n    appointment_id: item.json.appointment_id || null,\n    reason: item.json.row_error || 'unknown',\n    seen_at: new Date().toISOString()\n  }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b1000000-0000-4000-8000-000000000013",
+      "name": "In T-2h window?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "w1",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "leftValue": "={{ $json.minutes_until }}",
+              "rightValue": 90
+            },
+            {
+              "id": "w2",
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              },
+              "leftValue": "={{ $json.minutes_until }}",
+              "rightValue": 150
+            },
+            {
+              "id": "w3",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "unconfirmed"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "b1000000-0000-4000-8000-000000000014",
+      "name": "Skip (not due)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        820,
+        260
+      ],
+      "parameters": {
+        "jsCode": "// Rows outside the 90-150 minute window, or already confirmed, pass by\n// harmlessly. They stay in the sheet; the next hourly run picks them up\n// when their time comes.\nconst items = $input.all();\nreturn items.map((item) => ({\n  json: {\n    skipped: true,\n    appointment_id: item.json.appointment_id,\n    minutes_until: item.json.minutes_until,\n    status: item.json.status,\n    skipped_at: new Date().toISOString()\n  }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b1000000-0000-4000-8000-000000000015",
+      "name": "Already checked in?",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        820,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// One check-in per appointment, guaranteed twice: the 90-150 minute\n// window plus this static-data guard. If the workflow fires twice inside\n// the band (manual run, timezone shift), the second run skips silently.\nconst staticData = $getWorkflowStaticData('global');\nstaticData.checked_in = staticData.checked_in || {};\nconst out = [];\nfor (const item of $input.all()) {\n  const r = item.json;\n  if (staticData.checked_in[r.appointment_id]) continue;\n  staticData.checked_in[r.appointment_id] = new Date().toISOString();\n  const dateStr = new Date(r.starts_ts).toLocaleString('en-GB', {\n    hour: '2-digit', minute: '2-digit'\n  });\n  const hrs = Math.round(r.minutes_until / 60);\n  out.push({ json: {\n    appointment_id: r.appointment_id,\n    customer_name: r.customer_name,\n    to: r.phone,\n    channel: 'whatsapp',\n    minutes_until: r.minutes_until,\n    message: 'Hi ' + r.customer_name + ', your ' + r.treatment + ' appointment with ' + r.practitioner + ' is in about ' + hrs + ' hour(s) at ' + dateStr + '. Can you make it? Reply YES or NO. No reply means we release your slot.'\n  }});\n}\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b1000000-0000-4000-8000-000000000016",
+      "name": "Confirmed?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1780,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "v1",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.verdict }}",
+              "rightValue": "confirmed"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "b1000000-0000-4000-8000-000000000017",
+      "name": "Mark confirmed (replace me)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2000,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "// Placeholder for your calendar/sheet update. After import: put a Google\n// Calendar or Sheets update here to mark the appointment confirmed, then\n// delete this node.\nconst items = $input.all();\nreturn items.map((item) => ({\n    json: { ...item.json, marked_at: new Date().toISOString(), mark_action: 'confirmed' }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b1000000-0000-4000-8000-000000000018",
+      "name": "Flag for staff (replace me)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2000,
+        160
+      ],
+      "parameters": {
+        "jsCode": "// Placeholder for the staff follow-up: cancel requests, unclear replies\n// and no-replies need a human. After import: wire this to Slack, email or\n// a 'needs_attention' sheet, then delete this node.\nconst items = $input.all();\nreturn items.map((item) => ({\n    json: { ...item.json, flagged_at: new Date().toISOString(), needs_staff: true }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-0000000000f1",
+      "name": "Sticky Note 00f1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -960,
+        -200
+      ],
+      "parameters": {
+        "width": 600,
+        "height": 950,
+        "content": "## Rescue at-risk appointments with a two-hour WhatsApp check-in\n\n### How it works\n1. Every hour, appointments are read and validated; broken rows go to an error log.\n2. Unconfirmed appointments starting in 90-150 minutes get one WhatsApp check-in.\n3. A static-data guard guarantees exactly one check-in per appointment.\n4. Replies are classified (YES/NO, English and Dutch) and routed: confirmed updates the calendar, anything else flags staff.\n\n### Setup steps\n- Import into n8n, then replace the demo data node with your Google Sheets source (columns are listed in the node).\n- Put a WhatsApp Business Cloud send node in place of the placeholder and wire the Wait node's resume webhook to your inbound webhook.\n- Point the two replace-me nodes at your calendar update and staff channel.\n\n### Requirements\nn8n on any plan. The demo run needs no credentials; production needs a Sheets or calendar credential plus WhatsApp Business Cloud.\n\n### Customization\nThe window (90-150 minutes), the wait time (15 minutes), and the YES/NO keywords (English and Dutch variants) are plain settings in the named nodes."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-0000000000f2",
+      "name": "Sticky Note 00f2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -320,
+        -200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 880,
+        "height": 620,
+        "content": "## 1. Data + validate\nHourly trigger plus appointment source. A code node validates every row; broken rows go to an error log with the exact reason."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-0000000000f3",
+      "name": "Sticky Note 00f3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        600,
+        -200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 660,
+        "height": 620,
+        "content": "## 2. T-2h check-in\nOne WhatsApp question per unconfirmed appointment 90-150 minutes before start. A static-data guard prevents double sends."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-0000000000f4",
+      "name": "Sticky Note 00f4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1300,
+        -200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 840,
+        "height": 620,
+        "content": "## 3. Reply handling\nWait for the reply and classify it. Confirmed updates the calendar; cancel, unclear and no-reply flag staff."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Confirmed?": {
+      "main": [
+        [
+          {
+            "node": "Mark confirmed (replace me)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Flag for staff (replace me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every hour": {
+      "main": [
+        [
+          {
+            "node": "Appointments (demo data)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Row valid?": {
+      "main": [
+        [
+          {
+            "node": "In T-2h window?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log invalid rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify reply": {
+      "main": [
+        [
+          {
+            "node": "Confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "In T-2h window?": {
+      "main": [
+        [
+          {
+            "node": "Already checked in?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip (not due)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already checked in?": {
+      "main": [
+        [
+          {
+            "node": "Send check-in (replace me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare + validate rows": {
+      "main": [
+        [
+          {
+            "node": "Row valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for reply (15 min)": {
+      "main": [
+        [
+          {
+            "node": "Classify reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appointments (demo data)": {
+      "main": [
+        [
+          {
+            "node": "Prepare + validate rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send check-in (replace me)": {
+      "main": [
+        [
+          {
+            "node": "Wait for reply (15 min)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

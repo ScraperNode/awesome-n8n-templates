@@ -1,6 +1,6 @@
 # ⚒️ Provide real-time updates for Notion databases via webhooks with Supabase
 
-> ⚡ **1,694 views** · ⚒️ [Engineering](../)
+> ⚡ **1,660 views** · ⚒️ [Engineering](../)
 
 ## Description
 

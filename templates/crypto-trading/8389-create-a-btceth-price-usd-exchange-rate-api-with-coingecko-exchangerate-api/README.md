@@ -1,6 +1,6 @@
 # 📈 Create a BTC/ETH price & USD exchange rate API with CoinGecko & ExchangeRate-API
 
-> ⚡ **304 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **349 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

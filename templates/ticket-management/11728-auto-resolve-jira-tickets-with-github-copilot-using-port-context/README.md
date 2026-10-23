@@ -1,6 +1,6 @@
 # 🎫 Auto-resolve Jira tickets with GitHub Copilot using Port Context
 
-> ⚡ **790 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,235 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

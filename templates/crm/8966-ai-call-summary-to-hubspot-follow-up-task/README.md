@@ -1,6 +1,6 @@
 # 🤝 AI call summary to HubSpot + follow-up task
 
-> ⚡ **3,853 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **4,052 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

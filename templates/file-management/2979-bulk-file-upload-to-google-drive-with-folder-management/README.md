@@ -1,6 +1,6 @@
 # 📁 Bulk file upload to Google Drive with folder management
 
-> ⚡ **6,895 views** · 📁 [File Management](../)
+> ⚡ **7,089 views** · 📁 [File Management](../)
 
 ## Description
 

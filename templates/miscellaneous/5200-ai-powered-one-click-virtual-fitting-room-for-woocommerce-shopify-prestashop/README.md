@@ -1,6 +1,6 @@
 # 🔧 AI-powered one-click virtual fitting room for WooCommerce, Shopify, Prestashop
 
-> ⚡ **3,894 views** · 🔧 [Miscellaneous](../)
+> ⚡ **4,845 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

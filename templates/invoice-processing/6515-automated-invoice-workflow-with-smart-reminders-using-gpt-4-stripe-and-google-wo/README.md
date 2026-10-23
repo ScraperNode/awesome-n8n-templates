@@ -1,6 +1,6 @@
 # 🧾 Automated invoice workflow with smart reminders using GPT-4, Stripe, and Google Workspace
 
-> ⚡ **133 views** · 🧾 [Invoice Processing](../)
+> ⚡ **161 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

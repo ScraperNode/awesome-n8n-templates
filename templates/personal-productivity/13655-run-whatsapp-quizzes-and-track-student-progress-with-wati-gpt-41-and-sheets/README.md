@@ -1,6 +1,6 @@
 # ⚡ Run WhatsApp quizzes and track student progress with Wati, GPT-4.1 and Sheets
 
-> ⚡ **18 views** · ⚡ [Personal Productivity](../)
+> ⚡ **78 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

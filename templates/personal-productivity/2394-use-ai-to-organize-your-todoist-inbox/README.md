@@ -1,6 +1,6 @@
 # ⚡ Use AI to organize your Todoist inbox
 
-> ⚡ **5,382 views** · ⚡ [Personal Productivity](../)
+> ⚡ **5,414 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

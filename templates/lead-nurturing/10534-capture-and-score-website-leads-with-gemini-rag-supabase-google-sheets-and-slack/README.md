@@ -1,6 +1,6 @@
 # 💬 Capture and score website leads with Gemini RAG, Supabase, Google Sheets and Slack alerts
 
-> ⚡ **28 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **153 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

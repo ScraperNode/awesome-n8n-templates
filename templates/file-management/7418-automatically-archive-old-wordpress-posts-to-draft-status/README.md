@@ -1,6 +1,6 @@
 # 📁 Automatically archive old WordPress posts to draft status
 
-> ⚡ **240 views** · 📁 [File Management](../)
+> ⚡ **289 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Generate Ethereum & Solana blockchain audit reports with PDF export to drive & Notion
 
-> ⚡ **280 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **343 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

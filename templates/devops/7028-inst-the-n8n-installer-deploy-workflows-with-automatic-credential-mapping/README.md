@@ -1,6 +1,6 @@
 # ⚙️ INST - the n8n installer: deploy workflows with automatic credential mapping
 
-> ⚡ **140 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **166 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Listen and process search results from Icypeas in real-time
 
-> ⚡ **594 views** · 📊 [Market Research & Insights](../)
+> ⚡ **614 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

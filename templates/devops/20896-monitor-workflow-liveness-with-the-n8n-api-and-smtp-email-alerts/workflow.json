@@ -1,0 +1,404 @@
+{
+  "name": "Monitor scheduled n8n workflows and email missed or failing runs with SMTP",
+  "nodes": [
+    {
+      "id": "1b20f3dc-cd20-448d-b3ef-2a5e5f3a5659",
+      "name": "Daily Trigger 09:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 9,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "0a6eb6ff-a9e9-41af-8ed6-12a5b8bfb2ad",
+      "name": "Set Configuration Values",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        224,
+        96
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-to",
+              "name": "notifyTo",
+              "type": "string",
+              "value": "you@example.com"
+            },
+            {
+              "id": "cfg-from",
+              "name": "notifyFrom",
+              "type": "string",
+              "value": "n8n <user@example.com>"
+            },
+            {
+              "id": "cfg-ov",
+              "name": "overrides",
+              "type": "string",
+              "value": "{}"
+            },
+            {
+              "id": "cfg-ign",
+              "name": "ignoreNamePattern",
+              "type": "string",
+              "value": ""
+            },
+            {
+              "id": "cfg-tol",
+              "name": "defaultToleranceHours",
+              "type": "number",
+              "value": 2
+            },
+            {
+              "id": "cfg-ret",
+              "name": "executionRetentionDays",
+              "type": "number",
+              "value": 14
+            },
+            {
+              "id": "cfg-rate",
+              "name": "errorRateThreshold",
+              "type": "number",
+              "value": 0.2
+            },
+            {
+              "id": "cfg-slow",
+              "name": "minSlowSeconds",
+              "type": "number",
+              "value": 60
+            }
+          ]
+        },
+        "includeOtherFields": false
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "c7769fd4-fd96-4812-bed9-d2a102cc3a59",
+      "name": "Manual Start Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        192
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "0cbe9eb1-6503-4f35-8c9f-2d6b3c16a919",
+      "name": "Fetch Active Workflows",
+      "type": "n8n-nodes-base.n8n",
+      "position": [
+        448,
+        96
+      ],
+      "parameters": {
+        "filters": {
+          "activeWorkflows": true,
+          "excludePinnedData": true
+        },
+        "resource": "workflow",
+        "operation": "getAll",
+        "returnAll": true
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3ddf427f-fb1b-4c2b-9212-ef340d234755",
+      "name": "Build Watch List from Schedules",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        672,
+        96
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Builds the watch list from the workflows themselves - no catalog to maintain.\n// Every ACTIVE workflow with an enabled Schedule Trigger is watched. Its expected\n// rhythm is read from the trigger: all fire times over a 400-day window are\n// generated and the LARGEST gap between two runs becomes the threshold. That way\n// weekday-only schedules (Mon-Fri) do not alarm on weekends.\n// Workflows without a schedule (webhook, sub-workflow) are watched only if you\n// give them a maxGapHours in 'overrides' (Set Configuration Values node).\nconst cfg = $('Set Configuration Values').first().json;\nlet overrides = {};\ntry { overrides = typeof cfg.overrides === 'object' && cfg.overrides ? cfg.overrides : JSON.parse(cfg.overrides || '{}'); }\ncatch (e) { throw new Error('overrides in Set Configuration Values is not valid JSON: ' + e.message); }\nlet ignoreRe = null;\nif (cfg.ignoreNamePattern) { try { ignoreRe = new RegExp(cfg.ignoreNamePattern, 'i'); } catch (e) { throw new Error('ignoreNamePattern in Set Configuration Values is not a valid regex'); } }\nconst defTol = Number(cfg.defaultToleranceHours) || 2;\nconst retentionH = (Number(cfg.executionRetentionDays) || 14) * 24;\n\nconst H = 3600 * 1000;\nconst WINDOW_START = Date.UTC(2026, 0, 5, 0, 0, 0); // a Monday, 00:00 UTC\nconst WINDOW_END = WINDOW_START + 400 * 24 * H; // > 1 year, so monthly rhythms see their longest month\n\n// --- minimal cron matcher: *, */n, a, a-b, a-b/n, lists; 5 or 6 fields ---\nconst NAMES = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };\nfunction field(spec, min, max) {\n  const set = new Set();\n  for (const part of String(spec).toLowerCase().split(',')) {\n    const m = part.match(/^(\\*|[a-z0-9]+(?:-[a-z0-9]+)?)(?:\\/(\\d+))?$/);\n    if (!m) return null;\n    const step = m[2] ? parseInt(m[2], 10) : 1;\n    let lo = min, hi = max;\n    if (m[1] !== '*') {\n      const [a, b] = m[1].split('-').map(x => (NAMES[x] !== undefined ? NAMES[x] : parseInt(x, 10)));\n      if (isNaN(a) || (b !== undefined && isNaN(b))) return null;\n      lo = a; hi = b !== undefined ? b : (m[2] ? max : a);\n    }\n    for (let v = lo; v <= hi; v += step) set.add(v);\n  }\n  return set;\n}\nfunction cronTimes(expr) {\n  let p = String(expr || '').trim().split(/\\s+/);\n  if (p.length === 5) p = ['0'].concat(p);\n  if (p.length !== 6) return null;\n  const mi = field(p[1], 0, 59), ho = field(p[2], 0, 23), dom = field(p[3], 1, 31), mo = field(p[4], 1, 12), dow = field(p[5], 0, 7);\n  if (!mi || !ho || !dom || !mo || !dow) return null;\n  if (dow.has(7)) dow.add(0);\n  const domAny = p[3] === '*' || p[3] === '?', dowAny = p[5] === '*' || p[5] === '?';\n  const out = [];\n  for (let day = WINDOW_START; day < WINDOW_END; day += 24 * H) {\n    const d = new Date(day);\n    if (!mo.has(d.getUTCMonth() + 1)) continue;\n    const dm = dom.has(d.getUTCDate()), dw = dow.has(d.getUTCDay());\n    const dayOk = domAny && dowAny ? true : domAny ? dw : dowAny ? dm : (dm || dw);\n    if (!dayOk) continue;\n    for (const hh of ho) { if (hh > 23) continue; for (const mm of mi) { if (mm < 60) out.push(day + (hh * 60 + mm) * 60000); } }\n  }\n  return out;\n}\nfunction every(stepMs, offsetMs) { const out = []; for (let t = WINDOW_START + (offsetMs || 0); t < WINDOW_END; t += stepMs) out.push(t); return out; }\n// Fire times of one Schedule Trigger rule entry (UTC; timezone shifts do not change gaps)\nfunction ruleTimes(r) {\n  const f = r.field || 'days';\n  if (f === 'cronExpression') return cronTimes(r.expression);\n  if (f === 'seconds') return every(60000);\n  if (f === 'minutes') return every((Number(r.minutesInterval) || 5) * 60000);\n  if (f === 'hours') return every((Number(r.hoursInterval) || 1) * H, (Number(r.triggerAtMinute) || 0) * 60000);\n  if (f === 'days') return every((Number(r.daysInterval) || 1) * 24 * H, ((Number(r.triggerAtHour) || 0) * 60 + (Number(r.triggerAtMinute) || 0)) * 60000);\n  if (f === 'weeks') {\n    const days = (Array.isArray(r.triggerAtDay) && r.triggerAtDay.length ? r.triggerAtDay : [0]).map(Number);\n    const n = Number(r.weeksInterval) || 1; const out = [];\n    for (let t = WINDOW_START; t < WINDOW_END; t += 24 * H) {\n      const d = new Date(t); const week = Math.floor((t - WINDOW_START) / (7 * 24 * H));\n      if (week % n === 0 && days.indexOf(d.getUTCDay()) !== -1) out.push(t + ((Number(r.triggerAtHour) || 0) * 60 + (Number(r.triggerAtMinute) || 0)) * 60000);\n    }\n    return out;\n  }\n  if (f === 'months') {\n    const n = Number(r.monthsInterval) || 1; const dom = Number(r.triggerAtDayOfMonth) || 1; const out = [];\n    for (let i = 0; i < 14; i += n) out.push(Date.UTC(2026, i, dom, Number(r.triggerAtHour) || 0, Number(r.triggerAtMinute) || 0));\n    return out;\n  }\n  return null;\n}\nfunction maxGapHours(times) {\n  if (!times || times.length < 2) return null;\n  times.sort((a, b) => a - b);\n  let g = 0; for (let i = 1; i < times.length; i++) g = Math.max(g, times[i] - times[i - 1]);\n  return Math.round(g / H * 100) / 100;\n}\n\nconst watch = [];\nconst skipped = [];\nfor (const it of $input.all()) {\n  const wf = it.json;\n  if (!wf || !wf.id || !wf.active) continue;\n  const ov = overrides[wf.id] || overrides[wf.name] || {};\n  if (ov.ignore === true || (ignoreRe && ignoreRe.test(wf.name || ''))) { skipped.push(wf.name + ' (ignored by configuration)'); continue; }\n  const triggers = (wf.nodes || []).filter(n => n.type === 'n8n-nodes-base.scheduleTrigger' && !n.disabled);\n  let gap = null; let source = '';\n  if (Number(ov.maxGapHours) > 0) { gap = Number(ov.maxGapHours); source = 'override'; }\n  else if (triggers.length) {\n    let all = []; let unreadable = false;\n    for (const t of triggers) for (const r of (((t.parameters || {}).rule || {}).interval || [{}])) {\n      const times = ruleTimes(r); if (times === null) unreadable = true; else all = all.concat(times);\n    }\n    gap = maxGapHours(all); source = 'schedule';\n    if (unreadable || gap === null) { skipped.push(wf.name + ' (schedule not readable - set maxGapHours in overrides)'); continue; }\n  } else continue; // no schedule, no override: not watched\n  const tol = Number(ov.toleranceHours) > 0 ? Number(ov.toleranceHours) : Math.max(defTol, Math.round(gap * 0.1 * 100) / 100);\n  const saveNone = (wf.settings || {}).saveDataSuccessExecution === 'none';\n  if (saveNone) { skipped.push(wf.name + ' (saveDataSuccessExecution = none, successful runs are not stored)'); continue; }\n  if (gap + tol > retentionH) { skipped.push(wf.name + ' (expected gap ' + gap + 'h + ' + tol + 'h is longer than the execution retention of ' + retentionH + 'h)'); continue; }\n  watch.push({ id: wf.id, name: wf.name, maxGapHours: gap, toleranceHours: tol, source, createdAt: wf.createdAt || null });\n}\nconst sd = $getWorkflowStaticData('global');\nsd.skipped = skipped; // read by the check node; avoids carrying it through the fetch\nreturn watch.map(w => ({ json: Object.assign({}, w, { skippedCount: skipped.length }) }));\n",
+        "language": "javaScript"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "fb97e4a6-d23d-4460-9163-81729a72e43c",
+      "name": "Fetch Last 50 Executions",
+      "type": "n8n-nodes-base.n8n",
+      "position": [
+        896,
+        96
+      ],
+      "parameters": {
+        "limit": 50,
+        "filters": {
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "={{ $json.id }}"
+          }
+        },
+        "resource": "execution",
+        "operation": "getAll",
+        "returnAll": false
+      },
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "0dd393f0-fd99-4b81-b96a-d491c7f0bfd0",
+      "name": "Check Liveness and Build Report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1120,
+        96
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Evaluates the executions per watched workflow. Manual test runs never count.\n// Findings: OVERDUE (no productive success within expected gap + tolerance),\n// NO_SUCCESS (none in the retention window), ERROR_RATE (last 7 days), SLOW\n// (latest successful run > 3x median and > minSlowSeconds).\nconst cfg = $('Set Configuration Values').first().json;\nconst rateLimit = Number(cfg.errorRateThreshold) || 0.2;\nconst minSlow = Number(cfg.minSlowSeconds) || 60;\nconst H = 3600 * 1000;\nconst now = Date.now();\nconst watch = $('Build Watch List from Schedules').all().map(i => i.json);\nconst byWf = {};\nfor (const it of $input.all()) {\n  const e = it.json;\n  if (!e || !e.workflowId) continue; // empty placeholder item when nothing was found\n  (byWf[e.workflowId] = byWf[e.workflowId] || []).push(e);\n}\nconst fmt = (t) => new Date(t).toISOString().replace('T', ' ').substring(0, 16) + ' UTC';\nconst findings = [];\nfor (const w of watch) {\n  const execs = (byWf[w.id] || []).filter(e => e.mode !== 'manual').sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));\n  const ok = execs.filter(e => e.status === 'success');\n  const limitH = w.maxGapHours + w.toleranceHours;\n  if (!ok.length) {\n    const age = w.createdAt ? (now - new Date(w.createdAt)) / H : Infinity;\n    if (age > Math.max(3 * w.maxGapHours, 48)) findings.push({ sev: 'ERROR', name: w.name, id: w.id, type: 'NO_SUCCESS', msg: 'No productive successful run in the stored executions. Expected at least every ' + w.maxGapHours + 'h.' });\n  } else {\n    const last = new Date(ok[0].startedAt).getTime();\n    const ageH = (now - last) / H;\n    if (ageH > limitH) findings.push({ sev: 'ERROR', name: w.name, id: w.id, type: 'OVERDUE', msg: 'Last successful run ' + fmt(last) + ' (' + Math.round(ageH) + 'h ago). Expected at least every ' + w.maxGapHours + 'h + ' + w.toleranceHours + 'h tolerance.' });\n  }\n  const recent = execs.filter(e => now - new Date(e.startedAt) < 7 * 24 * H);\n  if (recent.length >= 5) {\n    const errs = recent.filter(e => e.status === 'error' || e.status === 'crashed');\n    const fresh = errs.some(e => now - new Date(e.startedAt) < 24 * H);\n    const rate = errs.length / recent.length;\n    if (rate > rateLimit && fresh) findings.push({ sev: 'ERROR', name: w.name, id: w.id, type: 'ERROR_RATE', msg: errs.length + ' of ' + recent.length + ' runs failed in the last 7 days (' + Math.round(rate * 100) + '%), at least one in the last 24h.' + (execs.length >= 50 ? ' (Only the last 50 runs were loaded.)' : '') });\n  }\n  const dur = ok.slice(0, 10).map(e => (new Date(e.stoppedAt) - new Date(e.startedAt)) / 1000).filter(d => d > 0 && isFinite(d));\n  if (dur.length >= 5 && now - new Date(ok[0].startedAt) < 24 * H) {\n    const med = dur.slice().sort((a, b) => a - b)[Math.floor(dur.length / 2)];\n    if (dur[0] > 3 * med && dur[0] > minSlow) findings.push({ sev: 'WARN', name: w.name, id: w.id, type: 'SLOW', msg: 'Latest run took ' + dur[0].toFixed(0) + 's, median of the last runs is ' + med.toFixed(0) + 's.' });\n  }\n}\nfindings.sort((a, b) => (a.sev === b.sev ? 0 : a.sev === 'ERROR' ? -1 : 1));\nconst skipped = $getWorkflowStaticData('global').skipped || [];\nconst esc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst rows = findings.map(f => '<tr><td>' + esc(f.sev) + '</td><td>' + esc(f.name) + '<br><small>' + esc(f.id) + '</small></td><td>' + esc(f.type) + '</td><td>' + esc(f.msg) + '</td></tr>').join('');\nconst errCount = findings.filter(f => f.sev === 'ERROR').length;\nconst subject = '[n8n] Liveness: ' + errCount + ' error(s), ' + (findings.length - errCount) + ' warning(s)';\nconst html = '<p><b>' + findings.length + ' finding(s)</b> across ' + watch.length + ' watched workflows.</p>'\n  + '<table border=\"1\" cellpadding=\"6\" cellspacing=\"0\" style=\"border-collapse:collapse;font-family:sans-serif;font-size:13px\">'\n  + '<tr><th>Level</th><th>Workflow</th><th>Check</th><th>Detail</th></tr>' + rows + '</table>'\n  + (skipped.length ? '<p style=\"font-size:12px;color:#666\"><b>Not assessed (' + skipped.length + '):</b><br>' + skipped.map(esc).join('<br>') + '</p>' : '');\nreturn [{ json: { hasFindings: findings.length > 0, count: findings.length, errors: errCount, watched: watch.length, findings, skipped, subject, html, ts: new Date(now).toISOString() } }];\n",
+        "language": "javaScript"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ebde344e-f37b-4658-8e05-3a60db7725ca",
+      "name": "Check for Findings",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1344,
+        96
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.hasFindings }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "21955867-92a3-4745-9f78-469ea79c64c8",
+      "name": "Dispatch Report Email",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        1568,
+        96
+      ],
+      "parameters": {
+        "html": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        },
+        "subject": "={{ $json.subject }}",
+        "toEmail": "={{ $('Set Configuration Values').first().json.notifyTo }}",
+        "fromEmail": "={{ $('Set Configuration Values').first().json.notifyFrom }}",
+        "operation": "send",
+        "emailFormat": "html"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "cefe813a-7863-4e84-8970-0457a41b10ef",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -800,
+        -240
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 720,
+        "height": 820,
+        "content": "## Monitor scheduled n8n workflows and email missed or failing runs\nDaily check that your scheduled workflows actually ran. A failing workflow triggers your error workflow. A workflow that silently stops running triggers nothing - this one catches it.\n\n### How it works\n1. Loads all active workflows and reads the rhythm from each Schedule Trigger (interval, weekdays or cron). The largest gap between two runs becomes the threshold, so Mon-Fri schedules don't alarm on weekends.\n2. Loads the last 50 executions of each watched workflow. Manual runs never count.\n3. Reports OVERDUE, NO_SUCCESS, ERROR_RATE (more than 20% of at least 5 runs failed in 7 days, one of them in the last 24h) and SLOW (latest run more than 3x the median and over 60s).\n4. Sends one email, only when there is something to report. Workflows that could not be assessed are listed in that email.\n\n### Setup\n1. Create an n8n API key (Settings > n8n API) and add it as an n8n API credential in *Fetch Active Workflows* and *Fetch Last 50 Executions*.\n2. Add an SMTP credential to *Dispatch Report Email*.\n3. Fill in notifyTo and notifyFrom in *Set Configuration Values*.\n4. Set your error workflow in the workflow settings.\n5. Run once manually, then activate.\n\n### Customization\n- overrides (JSON): watch webhook or sub-workflows too, or tune one workflow, for example {\"Order webhook\": {\"maxGapHours\": 48}}.\n- ignoreNamePattern: skip workflows by name.\n- executionRetentionDays: set it to your instance value. Longer rhythms are listed as not assessed.\n\nLimits: workflows that don't save successful executions can't be assessed, and the watchdog can't report its own absence."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "013c591f-492a-45d3-9e3d-6bdae1580534",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        -160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 420,
+        "height": 520,
+        "content": "## Trigger and configuration\nRuns daily or manually. All settings live in one node."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "db0753c9-47c9-4bc7-8fb9-62be1155a8c1",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        400,
+        -160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 440,
+        "height": 440,
+        "content": "## Watch list\nReads active workflows and derives the expected gap from each Schedule Trigger."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e15e71e2-7d65-4367-9909-a0a57a17f16d",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        860,
+        -160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 440,
+        "height": 440,
+        "content": "## Check executions\nOne API call per watched workflow, then OVERDUE, NO_SUCCESS, ERROR_RATE and SLOW are evaluated."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5aa774e9-956c-4f68-889c-2c620e6e08f0",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1320,
+        -160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 440,
+        "height": 440,
+        "content": "## Report\nEmail only when there is a finding. Workflows that could not be assessed are listed at the bottom."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Check for Findings": {
+      "main": [
+        [
+          {
+            "node": "Dispatch Report Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Trigger 09:30": {
+      "main": [
+        [
+          {
+            "node": "Set Configuration Values",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Start Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Configuration Values",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Active Workflows": {
+      "main": [
+        [
+          {
+            "node": "Build Watch List from Schedules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Last 50 Executions": {
+      "main": [
+        [
+          {
+            "node": "Check Liveness and Build Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Configuration Values": {
+      "main": [
+        [
+          {
+            "node": "Fetch Active Workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Watch List from Schedules": {
+      "main": [
+        [
+          {
+            "node": "Fetch Last 50 Executions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Liveness and Build Report": {
+      "main": [
+        [
+          {
+            "node": "Check for Findings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

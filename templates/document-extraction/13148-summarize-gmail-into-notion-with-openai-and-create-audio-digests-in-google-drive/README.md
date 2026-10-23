@@ -1,6 +1,6 @@
 # 🔬 Summarize Gmail into Notion with OpenAI and create audio digests in Google Drive
 
-> ⚡ **149 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **390 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

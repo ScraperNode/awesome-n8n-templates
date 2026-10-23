@@ -1,6 +1,6 @@
 # 🎣 Enrich new Hubspot contacts with contact and company data from ExactBuyer
 
-> ⚡ **1,814 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,849 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

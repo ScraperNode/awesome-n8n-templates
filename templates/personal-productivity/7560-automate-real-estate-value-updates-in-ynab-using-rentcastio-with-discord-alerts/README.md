@@ -1,6 +1,6 @@
 # ⚡ Automate real estate value updates in YNAB using Rentcast.io with Discord alerts
 
-> ⚡ **302 views** · ⚡ [Personal Productivity](../)
+> ⚡ **346 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

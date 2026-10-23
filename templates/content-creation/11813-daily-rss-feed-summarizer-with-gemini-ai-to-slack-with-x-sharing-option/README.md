@@ -1,6 +1,6 @@
 # 🎬 Daily RSS feed summarizer with Gemini AI to Slack with X sharing option
 
-> ⚡ **298 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **382 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

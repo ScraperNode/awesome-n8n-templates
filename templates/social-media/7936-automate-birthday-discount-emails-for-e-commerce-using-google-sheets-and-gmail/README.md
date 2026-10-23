@@ -1,6 +1,6 @@
 # 📱 Automate birthday discount emails for e-commerce using Google Sheets and Gmail
 
-> ⚡ **372 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **496 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

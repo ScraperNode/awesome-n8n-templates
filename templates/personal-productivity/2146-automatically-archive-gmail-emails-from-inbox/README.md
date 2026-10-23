@@ -1,6 +1,6 @@
 # ⚡ Automatically archive Gmail emails from Inbox
 
-> ⚡ **3,498 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,600 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

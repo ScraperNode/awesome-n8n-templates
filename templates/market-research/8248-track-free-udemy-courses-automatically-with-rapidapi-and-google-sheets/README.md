@@ -1,6 +1,6 @@
 # 📊 Track free Udemy courses automatically with RapidAPI and Google Sheets
 
-> ⚡ **420 views** · 📊 [Market Research & Insights](../)
+> ⚡ **574 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

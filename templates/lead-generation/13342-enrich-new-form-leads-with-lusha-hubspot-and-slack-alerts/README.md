@@ -1,6 +1,6 @@
 # 🎣 Enrich new form leads with Lusha, HubSpot, and Slack alerts
 
-> ⚡ **1 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **29 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

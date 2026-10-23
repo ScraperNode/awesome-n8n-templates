@@ -1,6 +1,6 @@
 # 👥 Automate Odoo-triggered Redmine & GitLab account creation with Slack notifications
 
-> ⚡ **42 views** · 👥 [HR & Recruitment](../)
+> ⚡ **59 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

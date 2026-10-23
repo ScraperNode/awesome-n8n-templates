@@ -1,6 +1,6 @@
 # 🔧 Record payout from Stripe in Wave Accounting
 
-> ⚡ **400 views** · 🔧 [Miscellaneous](../)
+> ⚡ **475 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

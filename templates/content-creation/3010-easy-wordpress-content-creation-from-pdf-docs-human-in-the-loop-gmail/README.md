@@ -1,6 +1,6 @@
 # 🎬 📄✨ Easy WordPress content creation from PDF docs + human in the loop Gmail
 
-> ⚡ **6,350 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **6,451 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

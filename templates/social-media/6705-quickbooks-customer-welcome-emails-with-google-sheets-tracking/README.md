@@ -1,6 +1,6 @@
 # 📱 QuickBooks customer welcome emails with Google Sheets tracking
 
-> ⚡ **181 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **221 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

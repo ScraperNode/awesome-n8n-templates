@@ -1,6 +1,6 @@
 # 🎬 Convert Notion page to WordPress (Gutenberg) HTML
 
-> ⚡ **235 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **286 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

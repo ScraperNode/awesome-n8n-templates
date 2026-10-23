@@ -1,6 +1,6 @@
 # 🎣 Generate leads with Google Maps
 
-> ⚡ **175,274 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **256,274 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

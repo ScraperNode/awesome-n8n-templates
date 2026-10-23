@@ -1,6 +1,6 @@
 # 📋 Time logging on Clockify using Slack
 
-> ⚡ **4,942 views** · 📋 [Project Management](../)
+> ⚡ **4,924 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Automated daily briefing with Todoist, Google Calendar & GPT-4o via Gmail
 
-> ⚡ **2,204 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,456 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

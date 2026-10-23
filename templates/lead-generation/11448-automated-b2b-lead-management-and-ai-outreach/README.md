@@ -1,6 +1,6 @@
 # 🎣 Automated B2B lead management and AI outreach
 
-> ⚡ **450 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,220 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

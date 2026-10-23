@@ -1,6 +1,6 @@
 # 📱 Auto-generate platform-optimized social media posts from WordPress with Claude & Postiz
 
-> ⚡ **1,655 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,952 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

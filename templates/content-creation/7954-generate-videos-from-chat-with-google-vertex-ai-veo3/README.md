@@ -1,6 +1,6 @@
 # 🎬 Generate videos from chat with Google Vertex AI (Veo3)
 
-> ⚡ **1,192 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,350 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

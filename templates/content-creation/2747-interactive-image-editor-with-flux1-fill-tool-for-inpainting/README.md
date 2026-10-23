@@ -1,6 +1,6 @@
 # 🎬 🎨 Interactive image editor with FLUX.1 fill tool for inpainting
 
-> ⚡ **17,618 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **17,103 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

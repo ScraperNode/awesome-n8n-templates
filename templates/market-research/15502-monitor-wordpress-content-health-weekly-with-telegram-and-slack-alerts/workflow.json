@@ -1,0 +1,358 @@
+{
+  "name": "WordPress Content Health Monitor with Smart Alerts",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "node-trigger",
+      "name": "Every Monday 7 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        240,
+        560
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "node-config",
+      "name": "Site Configuration",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        460,
+        560
+      ],
+      "parameters": {
+        "jsCode": "// ============================================\n// SITE CONFIGURATION\n// Edit these values for your WordPress site\n// ============================================\nconst CONFIG = {\n  site_url: 'https://yoursite.com',  // WordPress site URL (no trailing slash)\n  stale_days: 180,                    // Flag posts not updated in this many days\n  min_word_count: 300,                // Flag posts with fewer words than this\n  max_posts: 100                      // Number of recent posts to analyze\n};\n\nreturn [{ json: CONFIG }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-fetch-posts",
+      "name": "Fetch Published Posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        680,
+        560
+      ],
+      "parameters": {
+        "url": "={{ $json.site_url }}/wp-json/wp/v2/posts?per_page={{ $json.max_posts }}&orderby=date&order=desc&status=publish&_fields=id,title,link,date,modified,content,featured_media",
+        "method": "GET",
+        "options": {
+          "timeout": 30000
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth"
+      },
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CONFIGURE_ME",
+          "name": "WordPress Application Password"
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-analyze",
+      "name": "Analyze Content Health",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        900,
+        560
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst now = new Date();\nconst STALE_DAYS = 180;\nconst MIN_WORDS = 300;\n\nconst results = {\n  total_posts: items.length,\n  stale_posts: [],\n  thin_content: [],\n  missing_images: []\n};\n\nfor (const item of items) {\n  const post = item.json;\n  const title = post.title?.rendered || post.title || 'Untitled';\n  const modified = new Date(post.modified || post.date);\n  const daysSinceUpdate = Math.floor((now - modified) / 86400000);\n\n  // Strip HTML and count words\n  const content = (post.content?.rendered || '').replace(/<[^>]*>/g, ' ');\n  const wordCount = content.split(/\\s+/).filter(w => w.length > 0).length;\n\n  // Check for stale content\n  if (daysSinceUpdate > STALE_DAYS) {\n    results.stale_posts.push({\n      title,\n      link: post.link,\n      days_since_update: daysSinceUpdate,\n      last_modified: modified.toISOString().split('T')[0]\n    });\n  }\n\n  // Check for thin content\n  if (wordCount < MIN_WORDS && wordCount > 0) {\n    results.thin_content.push({\n      title,\n      link: post.link,\n      word_count: wordCount\n    });\n  }\n\n  // Check for posts without images in opening content\n  const firstChunk = (post.content?.rendered || '').substring(0, 1000);\n  const hasFeatured = Number(post.featured_media || 0) > 0;\n  const hasInline = (post.content?.rendered || '').includes('<img');\n  if (!hasFeatured && !hasInline) {\n    results.missing_images.push({ title, link: post.link });\n  }\n}\n\n// Sort stale by most outdated first\nresults.stale_posts.sort((a, b) => b.days_since_update - a.days_since_update);\n\nreturn [{ json: results }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-if",
+      "name": "Has Content Issues?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1120,
+        560
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond1",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $json.stale_posts.length + $json.thin_content.length + $json.missing_images.length }}",
+              "rightValue": "0"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-format",
+      "name": "Format Health Report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1340,
+        460
+      ],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nlet report = '\\ud83d\\udcca Content Health Report\\n';\nreport += '\\u2501'.repeat(24) + '\\n';\nreport += `Posts scanned: ${data.total_posts}\\n\\n`;\n\nif (data.stale_posts.length > 0) {\n  report += `\\ud83d\\udd34 Stale Content (${data.stale_posts.length} posts not updated in 180+ days):\\n`;\n  for (const post of data.stale_posts.slice(0, 5)) {\n    report += `  \\u2022 ${post.title} \\u2014 ${post.days_since_update} days\\n`;\n  }\n  if (data.stale_posts.length > 5) {\n    report += `  ... and ${data.stale_posts.length - 5} more\\n`;\n  }\n  report += '\\n';\n}\n\nif (data.thin_content.length > 0) {\n  report += `\\ud83d\\udfe1 Thin Content (${data.thin_content.length} posts under 300 words):\\n`;\n  for (const post of data.thin_content.slice(0, 5)) {\n    report += `  \\u2022 ${post.title} \\u2014 ${post.word_count} words\\n`;\n  }\n  if (data.thin_content.length > 5) {\n    report += `  ... and ${data.thin_content.length - 5} more\\n`;\n  }\n  report += '\\n';\n}\n\nif (data.missing_images.length > 0) {\n  report += `\\ud83d\\udfe0 Missing Lead Image (${data.missing_images.length} posts):\\n`;\n  for (const post of data.missing_images.slice(0, 5)) {\n    report += `  \\u2022 ${post.title}\\n`;\n  }\n  if (data.missing_images.length > 5) {\n    report += `  ... and ${data.missing_images.length - 5} more\\n`;\n  }\n  report += '\\n';\n}\n\nconst score = Math.round(((data.total_posts - data.stale_posts.length - data.thin_content.length) / Math.max(data.total_posts, 1)) * 100);\nreport += `\\n\\u2b50 Health Score: ${score}%`;\n\nreturn [{ json: { report, health_score: score, ...data } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-telegram",
+      "name": "Send Report via Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1560,
+        360
+      ],
+      "parameters": {
+        "text": "={{ $json.report }}",
+        "chatId": "YOUR_CHAT_ID",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Telegram Bot"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "node-slack",
+      "name": "Send Report via Slack Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1560,
+        560
+      ],
+      "parameters": {
+        "url": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{ JSON.stringify({ text: $json.report }) }}",
+        "sendBody": true,
+        "specifyBody": "json"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-log",
+      "name": "Log Health Score",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1560,
+        760
+      ],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst timestamp = new Date().toISOString().split('T')[0];\n\nconst summary = {\n  date: timestamp,\n  total_posts: data.total_posts,\n  stale_count: data.stale_posts?.length || 0,\n  thin_count: data.thin_content?.length || 0,\n  missing_images_count: data.missing_images?.length || 0,\n  health_score: data.health_score\n};\n\nreturn [{ json: { message: `Report complete. Health score: ${summary.health_score}%`, summary } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-healthy",
+      "name": "All Content Healthy",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1340,
+        680
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-overview",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -300,
+        -200
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 500,
+        "height": 1080,
+        "content": "## WordPress Content Health Monitor\n\nWordPress site owners, bloggers, and SEO professionals who want automated weekly content quality monitoring.\n\n### How it works\n1. Fetches your published posts via the WordPress REST API\n2. Identifies stale content (not updated in 180+ days)\n3. Finds thin content (posts under 300 words)\n4. Detects posts missing images in the opening section\n5. Calculates an overall content health percentage score\n6. Sends a prioritized action report via Telegram or Slack\n\n### Setup\n1. Open the \"Site Configuration\" node and enter your WordPress site URL\n2. Create an HTTP Basic Auth credential with your WordPress username and an Application Password (Users \u2192 Your Profile \u2192 Application Passwords). If your REST API is public, the workflow still works \u2014 the credential will simply pass through\n3. Connect your preferred alert channel (Telegram bot or Slack webhook) \u2014 delete the one you don't use\n4. Activate the workflow \u2014 it runs every Monday at 7 AM UTC"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-fetch",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        420,
+        -200
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 460,
+        "height": 170,
+        "content": "### Data Collection\nFetches up to 100 published posts from the WordPress REST API. Returns title, content, publication date, last modified date, and permalink for each post."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-analyze",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        920,
+        -200
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 280,
+        "height": 290,
+        "content": "### Analysis Engine\nEach post is scored on three health criteria:\n- Freshness: flagged if not updated in 180+ days\n- Depth: flagged if under 300 words\n- Visual: flagged if no image in first 1000 characters"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-alerts",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1680,
+        -200
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 280,
+        "height": 520,
+        "content": "### Alert Channels\nChoose one or both notification methods:\n- Telegram: requires a bot token and chat ID\n- Slack: requires an incoming webhook URL\n\nDelete whichever channel you don't use."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-tip",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1240,
+        -200
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 400,
+        "height": 270,
+        "content": "### Customization\nEdit thresholds in the \"Analyze Content Health\" node:\n- STALE_DAYS: days before flagging (default: 180)\n- MIN_WORDS: minimum word count (default: 300)\n\nEdit max_posts in \"Site Configuration\" to scan more or fewer posts."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "settings": {
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "connections": {
+    "Every Monday 7 AM": {
+      "main": [
+        [
+          {
+            "node": "Site Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Site Configuration": {
+      "main": [
+        [
+          {
+            "node": "Fetch Published Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Content Issues?": {
+      "main": [
+        [
+          {
+            "node": "Format Health Report",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "All Content Healthy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Health Report": {
+      "main": [
+        [
+          {
+            "node": "Send Report via Telegram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Report via Slack Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Health Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Published Posts": {
+      "main": [
+        [
+          {
+            "node": "Analyze Content Health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Content Health": {
+      "main": [
+        [
+          {
+            "node": "Has Content Issues?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

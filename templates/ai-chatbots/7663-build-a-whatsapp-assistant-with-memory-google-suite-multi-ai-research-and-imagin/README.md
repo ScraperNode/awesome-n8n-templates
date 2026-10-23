@@ -1,6 +1,6 @@
 # 🤖 Build a WhatsApp assistant with memory, Google Suite & multi-AI research and imaging
 
-> ⚡ **4,076 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **5,481 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

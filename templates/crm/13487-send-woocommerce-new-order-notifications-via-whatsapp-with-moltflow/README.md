@@ -1,6 +1,6 @@
 # 🤝 Send WooCommerce new order notifications via WhatsApp with MoltFlow
 
-> ⚡ **33 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **156 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Build a customer support RAG agent with GPT-5, Telegram & Pinecone
 
-> ⚡ **2,091 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,361 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

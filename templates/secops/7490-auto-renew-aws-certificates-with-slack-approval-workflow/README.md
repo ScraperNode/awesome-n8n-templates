@@ -1,6 +1,6 @@
 # 🔒 Auto-renew AWS certificates with Slack approval workflow
 
-> ⚡ **317 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **350 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

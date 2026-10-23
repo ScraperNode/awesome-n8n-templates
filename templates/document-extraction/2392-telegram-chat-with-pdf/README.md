@@ -1,6 +1,6 @@
 # 🔬 Telegram chat with PDF
 
-> ⚡ **18,563 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **18,746 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

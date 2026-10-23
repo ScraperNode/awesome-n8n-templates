@@ -1,6 +1,6 @@
 # 🔒 Analyze CrowdStrike detections - Search for IOCs in VirusTotal - Create a ticket in Jira, and post a message in Slack
 
-> ⚡ **5,804 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **6,194 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

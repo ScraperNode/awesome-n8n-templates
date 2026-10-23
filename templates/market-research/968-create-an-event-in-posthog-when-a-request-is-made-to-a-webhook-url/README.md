@@ -1,6 +1,6 @@
 # 📊 Create an event in PostHog when a request is made to a webhook URL
 
-> ⚡ **1,389 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,415 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

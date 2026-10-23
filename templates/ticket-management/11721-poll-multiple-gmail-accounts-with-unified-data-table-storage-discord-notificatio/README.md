@@ -1,6 +1,6 @@
 # 🎫 Poll multiple Gmail accounts with unified data table storage & Discord notifications
 
-> ⚡ **52 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **138 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

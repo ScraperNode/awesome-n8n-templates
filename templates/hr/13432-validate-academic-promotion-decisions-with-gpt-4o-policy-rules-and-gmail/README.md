@@ -1,6 +1,6 @@
 # 👥 Validate academic promotion decisions with GPT-4o, policy rules, and Gmail
 
-> ⚡ **16 views** · 👥 [HR & Recruitment](../)
+> ⚡ **39 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

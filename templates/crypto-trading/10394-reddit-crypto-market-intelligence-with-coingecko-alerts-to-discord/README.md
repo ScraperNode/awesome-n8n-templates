@@ -1,6 +1,6 @@
 # 📈 Reddit crypto market intelligence with CoinGecko alerts to Discord
 
-> ⚡ **616 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **870 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

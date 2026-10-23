@@ -1,6 +1,6 @@
 # ⚒️ 🛠️ Hacker News tool MCP server
 
-> ⚡ **717 views** · ⚒️ [Engineering](../)
+> ⚡ **883 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Query Google Sheets/CSV data through an AI agent using PostgreSQL
 
-> ⚡ **10,174 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **10,500 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

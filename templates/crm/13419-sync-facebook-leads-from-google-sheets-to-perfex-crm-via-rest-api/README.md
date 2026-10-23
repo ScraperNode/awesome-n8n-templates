@@ -1,6 +1,6 @@
 # 🤝 Sync Facebook leads from Google Sheets to Perfex CRM via REST API
 
-> ⚡ **64 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **244 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Generate and email PDF invoices from Tally Forms with Google Docs
 
-> ⚡ **107 views** · 🧾 [Invoice Processing](../)
+> ⚡ **137 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

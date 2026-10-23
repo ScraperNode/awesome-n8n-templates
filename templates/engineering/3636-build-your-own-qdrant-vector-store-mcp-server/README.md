@@ -1,6 +1,6 @@
 # ⚒️ Build your own Qdrant vector store MCP server
 
-> ⚡ **3,061 views** · ⚒️ [Engineering](../)
+> ⚡ **3,226 views** · ⚒️ [Engineering](../)
 
 ## Description
 

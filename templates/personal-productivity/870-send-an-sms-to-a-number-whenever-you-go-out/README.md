@@ -1,6 +1,6 @@
 # ⚡ Send an SMS to a number whenever you go out
 
-> ⚡ **1,583 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,598 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

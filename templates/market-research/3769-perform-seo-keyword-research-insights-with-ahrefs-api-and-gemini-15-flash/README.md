@@ -1,6 +1,6 @@
 # 📊 Perform SEO keyword research & insights with Ahrefs API and Gemini 1.5 Flash
 
-> ⚡ **7,057 views** · 📊 [Market Research & Insights](../)
+> ⚡ **7,463 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

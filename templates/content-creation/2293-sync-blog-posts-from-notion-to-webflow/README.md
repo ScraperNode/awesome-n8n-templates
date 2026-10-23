@@ -1,6 +1,6 @@
 # 🎬 Sync blog posts from Notion to Webflow
 
-> ⚡ **3,232 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,267 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

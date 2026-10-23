@@ -1,6 +1,6 @@
 # 🔬 Analyze Google Sheets data with OpenAI-powered data agent
 
-> ⚡ **2,898 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **3,081 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

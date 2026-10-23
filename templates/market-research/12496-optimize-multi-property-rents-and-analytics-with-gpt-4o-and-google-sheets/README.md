@@ -1,6 +1,6 @@
 # 📊 Optimize multi-property rents and analytics with GPT-4o and Google Sheets
 
-> ⚡ **80 views** · 📊 [Market Research & Insights](../)
+> ⚡ **100 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

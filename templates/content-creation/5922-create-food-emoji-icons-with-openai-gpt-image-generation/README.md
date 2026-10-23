@@ -1,6 +1,6 @@
 # 🎬 Create food emoji icons with OpenAI GPT & image generation
 
-> ⚡ **2,819 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,351 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Send Stripe expired charge recovery reminders with OpenAI
 
-> ⚡ **54 views** · 🧾 [Invoice Processing](../)
+> ⚡ **65 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

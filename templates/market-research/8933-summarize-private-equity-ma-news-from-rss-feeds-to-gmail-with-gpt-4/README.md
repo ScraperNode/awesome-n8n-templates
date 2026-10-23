@@ -1,6 +1,6 @@
 # 📊 Summarize private equity & M&A news from RSS feeds to Gmail with GPT-4
 
-> ⚡ **532 views** · 📊 [Market Research & Insights](../)
+> ⚡ **739 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

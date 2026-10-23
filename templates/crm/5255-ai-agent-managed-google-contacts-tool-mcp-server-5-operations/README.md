@@ -1,6 +1,6 @@
 # 🤝 AI agent managed 🛠️ Google Contacts tool MCP server 💪 5 operations
 
-> ⚡ **149 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **162 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

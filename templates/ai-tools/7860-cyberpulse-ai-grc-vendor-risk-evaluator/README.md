@@ -1,6 +1,6 @@
 # 🎯 CYBERPULSE AI GRC: Vendor risk evaluator
 
-> ⚡ **115 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **143 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

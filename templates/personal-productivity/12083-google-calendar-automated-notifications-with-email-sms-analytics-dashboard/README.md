@@ -1,6 +1,6 @@
 # ⚡ Google Calendar automated notifications with email, SMS & analytics dashboard
 
-> ⚡ **187 views** · ⚡ [Personal Productivity](../)
+> ⚡ **382 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

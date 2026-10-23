@@ -1,6 +1,6 @@
 # 🤖 Subscription tracker & reminders with GPT-4 nano, Telegram & Google Sheets
 
-> ⚡ **637 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **692 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Voice-to-Ideas: Transcribe Telegram Voice Notes with OpenAI Whisper to Google Sheets
 
-> ⚡ **214 views** · ⚡ [Personal Productivity](../)
+> ⚡ **301 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

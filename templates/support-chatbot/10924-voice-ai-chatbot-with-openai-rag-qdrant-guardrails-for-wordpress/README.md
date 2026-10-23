@@ -1,6 +1,6 @@
 # 💬 Voice AI chatbot with OpenAI, RAG (Qdrant) & Guardrails for WordPress
 
-> ⚡ **905 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,520 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

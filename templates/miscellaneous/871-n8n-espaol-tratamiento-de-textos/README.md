@@ -1,6 +1,6 @@
 # 🔧 N8N español - Tratamiento de textos
 
-> ⚡ **5,564 views** · 🔧 [Miscellaneous](../)
+> ⚡ **8,216 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

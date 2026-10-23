@@ -1,6 +1,6 @@
 # 📱 Send a welcome private message to your new BlueSky followers
 
-> ⚡ **1,764 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,640 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Notify on Discord about new Epic Games free game releases
 
-> ⚡ **3,401 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,823 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

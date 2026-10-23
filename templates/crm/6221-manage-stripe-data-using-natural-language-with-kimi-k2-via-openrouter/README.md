@@ -1,6 +1,6 @@
 # 🤝 Manage Stripe data using natural language with Kimi K2 via OpenRouter
 
-> ⚡ **606 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **697 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

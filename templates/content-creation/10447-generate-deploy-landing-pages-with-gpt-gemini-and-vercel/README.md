@@ -1,6 +1,6 @@
 # 🎬 Generate & deploy landing pages with GPT, Gemini and Vercel
 
-> ⚡ **796 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,286 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
 >
@@ -79,7 +79,7 @@ It preserves the two most recent deployments and deletes the rest.
 
 ## 🔗 Nodes Used
 
-Function, HTTP Request, OpenAI, Extract from File, Chat Trigger, Google Gemini
+Function, HTTP Request, OpenAI, Extract from File, Chat Trigger, OpenAI
 
 ## 📥 Import
 

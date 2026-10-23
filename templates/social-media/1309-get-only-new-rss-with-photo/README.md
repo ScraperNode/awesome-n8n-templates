@@ -1,6 +1,6 @@
 # 📱 Get only new RSS with photo
 
-> ⚡ **4,951 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **4,959 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

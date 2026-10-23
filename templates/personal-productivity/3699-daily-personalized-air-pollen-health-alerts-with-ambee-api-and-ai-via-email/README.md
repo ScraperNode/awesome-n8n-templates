@@ -1,6 +1,6 @@
 # ⚡ Daily personalized air & pollen health alerts with Ambee API and AI via email
 
-> ⚡ **427 views** · ⚡ [Personal Productivity](../)
+> ⚡ **449 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

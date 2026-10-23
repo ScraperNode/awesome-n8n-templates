@@ -1,6 +1,6 @@
 # 📈 Detect stock price anomalies & send news alerts with Marketstack, HackerNews & DeepL
 
-> ⚡ **759 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,246 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

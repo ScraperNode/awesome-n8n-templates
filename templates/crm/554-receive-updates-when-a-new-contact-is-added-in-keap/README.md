@@ -1,6 +1,6 @@
 # 🤝 Receive updates when a new contact is added in Keap
 
-> ⚡ **475 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **503 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

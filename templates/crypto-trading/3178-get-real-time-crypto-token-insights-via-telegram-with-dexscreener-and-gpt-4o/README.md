@@ -1,6 +1,6 @@
 # 📈 Get real-time crypto token insights via Telegram with DexScreener and GPT-4o
 
-> ⚡ **14,756 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **15,114 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

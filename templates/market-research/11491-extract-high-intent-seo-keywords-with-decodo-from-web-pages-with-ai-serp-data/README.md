@@ -1,6 +1,6 @@
 # 📊 Extract high-intent SEO keywords with Decodo from web pages with AI + SERP data
 
-> ⚡ **93 views** · 📊 [Market Research & Insights](../)
+> ⚡ **179 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -14,7 +14,7 @@ This template extracts high-intent SEO keywords from any web page and turns them
 
 It runs in 3 phases:
 
-***1. Scrape the target URL*** with Decodo [Decodo – Web Scraper for n8n](https://visit.decodo.com/raqXGD)
+***1. Scrape the target URL*** with Decodo [Decodo – Web Scraper for n8n](https://visit.decodo.com/VOmXO6)
 
 ***2. Use AI to extract seed keywords*** and understand the page topic
 
@@ -97,7 +97,7 @@ Tip: Clear the output sheet before each run if you want a clean export.
 Add your Decodo credentials
 
 The URL is taken automatically from Google Sheets
-[Decodo – Web Scraper for n8n](https://visit.decodo.com/raqXGD)
+[Decodo – Web Scraper for n8n](https://visit.decodo.com/VOmXO6)
 
 **4) SerpApi**
 

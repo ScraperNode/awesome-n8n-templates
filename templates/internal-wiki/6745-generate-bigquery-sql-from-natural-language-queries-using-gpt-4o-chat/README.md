@@ -1,6 +1,6 @@
 # 📖 Generate BigQuery SQL from natural language queries using GPT-4o chat
 
-> ⚡ **2,320 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **2,521 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

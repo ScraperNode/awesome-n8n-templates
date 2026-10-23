@@ -1,6 +1,6 @@
 # 📁 Create screenshots with uProc, save to Dropbox and send by email
 
-> ⚡ **2,469 views** · 📁 [File Management](../)
+> ⚡ **2,478 views** · 📁 [File Management](../)
 
 ## Description
 

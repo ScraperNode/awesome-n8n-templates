@@ -1,6 +1,6 @@
 # 🎬 Sync Notion content to Webflow CMS as draft items with status tracking
 
-> ⚡ **157 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **173 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

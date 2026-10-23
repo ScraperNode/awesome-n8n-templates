@@ -1,6 +1,6 @@
 # 🔧 Create Dynamic Seating & Venue Layout Plans with Google Sheets
 
-> ⚡ **514 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,066 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

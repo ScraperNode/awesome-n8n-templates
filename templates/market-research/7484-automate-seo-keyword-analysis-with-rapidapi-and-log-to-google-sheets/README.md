@@ -1,6 +1,6 @@
 # 📊 Automate SEO keyword analysis with RapidAPI and log to Google Sheets
 
-> ⚡ **617 views** · 📊 [Market Research & Insights](../)
+> ⚡ **674 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

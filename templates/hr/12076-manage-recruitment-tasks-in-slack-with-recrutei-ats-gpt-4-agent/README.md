@@ -1,6 +1,6 @@
 # 👥 Manage recruitment tasks in Slack with Recrutei ATS & GPT-4 Agent
 
-> ⚡ **102 views** · 👥 [HR & Recruitment](../)
+> ⚡ **205 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

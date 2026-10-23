@@ -1,6 +1,6 @@
 # 👥 Screen job applicants with Gemini AI: Jotform to Notion hiring pipeline
 
-> ⚡ **172 views** · 👥 [HR & Recruitment](../)
+> ⚡ **233 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

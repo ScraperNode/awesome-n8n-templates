@@ -1,6 +1,6 @@
 # 💬 Automate outbound voice calls from Go High Level opportunities with Vapi
 
-> ⚡ **1,736 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,054 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

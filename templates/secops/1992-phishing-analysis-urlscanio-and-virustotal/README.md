@@ -1,6 +1,6 @@
 # 🔒 Phishing analysis - URLScan.io and VirusTotal
 
-> ⚡ **67,029 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **81,390 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Track expenses by parsing Telegram transaction messages to Google Sheets
 
-> ⚡ **1,960 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,053 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

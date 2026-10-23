@@ -1,6 +1,6 @@
 # 🤝 Automate Shopify inventory reordering with predictive analytics and Google Sheets
 
-> ⚡ **394 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **521 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

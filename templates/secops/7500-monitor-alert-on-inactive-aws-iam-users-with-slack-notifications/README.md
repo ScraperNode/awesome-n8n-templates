@@ -1,6 +1,6 @@
 # 🔒 Monitor & alert on inactive AWS IAM users with Slack notifications
 
-> ⚡ **278 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **314 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

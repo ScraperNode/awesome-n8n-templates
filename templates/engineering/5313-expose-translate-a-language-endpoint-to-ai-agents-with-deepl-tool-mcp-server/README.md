@@ -1,6 +1,6 @@
 # ⚒️ Expose translate a language endpoint to AI agents with DeepL tool MCP Server
 
-> ⚡ **303 views** · ⚒️ [Engineering](../)
+> ⚡ **326 views** · ⚒️ [Engineering](../)
 
 ## Description
 

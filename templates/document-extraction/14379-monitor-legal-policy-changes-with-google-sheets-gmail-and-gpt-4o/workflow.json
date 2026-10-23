@@ -1,0 +1,684 @@
+{
+  "id": "97fJO1imnmJICW28",
+  "meta": {
+    "instanceId": "d39e63d8d47083831155098ec99e729de23429bd015d4c35004b165314dfb83d",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Terms of Service Change Watcher with AI Summaries",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "d1a1b1c1-0001-4000-8000-000000000001",
+      "name": "Daily Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        112,
+        480
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "d1a1b1c1-0002-4000-8000-000000000002",
+      "name": "Get Pages to Monitor",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        336,
+        480
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Pages"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "d1a1b1c1-0003-4000-8000-000000000003",
+      "name": "Fetch Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        544,
+        480
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; TOSWatcher/1.0)"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "d1a1b1c1-0004-4000-8000-000000000004",
+      "name": "Extract & Compare",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        768,
+        480
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Get HTTP response\nconst resp = $input.item.json;\nconst pageData = $('Get Pages to Monitor').item.json;\nconst checkedAt = new Date().toISOString().split('T')[0];\n\n// Detect HTTP errors\nif (resp.error || resp.statusCode >= 400 || resp.status >= 400) {\n  return {\n    url: pageData.url,\n    page_name: pageData.page_name,\n    new_content: '', old_content: '',\n    old_content_for_ai: '', new_content_for_ai: '',\n    changed: false, is_first_run: false,\n    error: 'HTTP error: ' + (resp.error?.message || resp.statusCode || resp.status || 'unknown'),\n    checked_at: checkedAt\n  };\n}\n\n// Get response body\nlet html = '';\nif (typeof resp.data === 'string') html = resp.data;\nelse if (typeof resp.body === 'string') html = resp.body;\nelse if (typeof resp === 'string') html = resp;\nelse html = JSON.stringify(resp);\n\n// Check for Cloudflare/bot challenges\nif (html.includes('Enable JavaScript and cookies') || html.includes('cf-challenge') || html.includes('_cf_chl')) {\n  return {\n    url: pageData.url,\n    page_name: pageData.page_name,\n    new_content: '', old_content: '',\n    old_content_for_ai: '', new_content_for_ai: '',\n    changed: false, is_first_run: false,\n    error: 'Page is behind Cloudflare bot protection - use a different URL',\n    checked_at: checkedAt\n  };\n}\n\n// Check for empty/tiny responses\nif (!html || html.length < 200) {\n  return {\n    url: pageData.url,\n    page_name: pageData.page_name,\n    new_content: '', old_content: '',\n    old_content_for_ai: '', new_content_for_ai: '',\n    changed: false, is_first_run: false,\n    error: 'Page returned empty or very short content',\n    checked_at: checkedAt\n  };\n}\n\n// Strip HTML tags to get plain text\nlet text = html\n  .replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '')\n  .replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '')\n  .replace(/<[^>]+>/g, ' ')\n  .replace(/&nbsp;/gi, ' ')\n  .replace(/&amp;/gi, '&')\n  .replace(/&lt;/gi, '<')\n  .replace(/&gt;/gi, '>')\n  .replace(/&#\\d+;/gi, '')\n  .replace(/\\s+/g, ' ')\n  .trim()\n  .substring(0, 40000);\n\n// Compare with previously stored content\nconst oldContent = (pageData.last_content || '').trim();\nconst isFirstRun = oldContent === '';\nconst changed = !isFirstRun && oldContent !== text;\n\n// Build smart AI context: find WHERE the texts differ\nlet oldForAi = oldContent.substring(0, 10000);\nlet newForAi = text.substring(0, 10000);\n\nif (changed && oldContent.length > 0) {\n  // Find first point of difference\n  let diffStart = 0;\n  const minLen = Math.min(oldContent.length, text.length);\n  for (let i = 0; i < minLen; i++) {\n    if (oldContent[i] !== text[i]) {\n      diffStart = i;\n      break;\n    }\n    if (i === minLen - 1) diffStart = minLen;\n  }\n\n  // Take context: 500 chars before diff, then 4500 chars after\n  const contextBefore = Math.max(0, diffStart - 500);\n  const prefix = contextBefore > 0 ? '...[IDENTICAL CONTENT SKIPPED]... ' : '';\n\n  const oldDiffSection = prefix + oldContent.substring(contextBefore, contextBefore + 5000);\n  const newDiffSection = prefix + text.substring(contextBefore, contextBefore + 5000);\n\n  // Also grab the tail end of both texts (last 3000 chars)\n  const oldTail = oldContent.length > 5000 ? '\\n\\n...[SKIPPING TO END]...\\n' + oldContent.substring(oldContent.length - 3000) : '';\n  const newTail = text.length > 5000 ? '\\n\\n...[SKIPPING TO END]...\\n' + text.substring(text.length - 3000) : '';\n\n  oldForAi = (oldDiffSection + oldTail).substring(0, 12000);\n  newForAi = (newDiffSection + newTail).substring(0, 12000);\n\n  // Add length comparison as context\n  oldForAi = '[Total length: ' + oldContent.length + ' chars]\\n' + oldForAi;\n  newForAi = '[Total length: ' + text.length + ' chars]\\n' + newForAi;\n}\n\nreturn {\n  url: pageData.url,\n  page_name: pageData.page_name,\n  new_content: text,\n  old_content: oldContent,\n  old_content_for_ai: oldForAi,\n  new_content_for_ai: newForAi,\n  changed: changed,\n  is_first_run: isFirstRun,\n  checked_at: checkedAt\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "d1a1b1c1-0005-4000-8000-000000000005",
+      "name": "Content Changed?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        992,
+        480
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-changed",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.changed }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "d1a1b1c1-0006-4000-8000-000000000006",
+      "name": "Summarize Changes",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        1216,
+        272
+      ],
+      "parameters": {
+        "text": "=You are a legal document analyst. You MUST compare the two text versions below word-by-word and identify ONLY real, verifiable differences. Do NOT guess or generalize. Every change you list must quote the actual text that was added, removed, or modified.\n\nPage: {{ $json.page_name }} ({{ $json.url }})\n\n--- OLD VERSION ---\n{{ $json.old_content_for_ai }}\n\n--- NEW VERSION ---\n{{ $json.new_content_for_ai }}\n\nRules:\n- ONLY report changes you can verify by comparing the two texts above\n- Quote the specific text that changed (use \"was: ...\" and \"now: ...\" format)\n- If large sections were added or removed, summarize what was added/removed with a brief quote\n- If you cannot find concrete differences, say so honestly\n- NEVER fabricate or assume changes that are not visible in the text\n\nRespond in this format:\n\n**Overview:** One sentence on what changed.\n\n**Changes:**\n- [Quote the specific old text \u2192 new text for each change]\n\n**Impact Level:** LOW (cosmetic/formatting), MEDIUM (policy clarification), or HIGH (new restrictions, rights changes, data handling changes)\n\n**What This Means For Users:** Brief practical impact in 1-2 sentences.",
+        "batching": {},
+        "promptType": "define"
+      },
+      "typeVersion": 1.9
+    },
+    {
+      "id": "d1a1b1c1-0007-4000-8000-000000000007",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1328,
+        480
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {},
+        "builtInTools": {}
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "credential-id",
+          "name": "OpenAi account"
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "d1a1b1c1-0008-4000-8000-000000000008",
+      "name": "Build Email Body",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1520,
+        272
+      ],
+      "parameters": {
+        "jsCode": "// Get AI summaries and build email bodies\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const summary = item.json.text || item.json.output || 'No summary available';\n  const p = $('Extract & Compare').item.json;\n\n  const body = '<h2>TOS Change Detected</h2>' +\n    '<p><strong>Page:</strong> ' + p.page_name + '</p>' +\n    '<p><strong>URL:</strong> <a href=\"' + p.url + '\">' + p.url + '</a></p>' +\n    '<p><strong>Detected:</strong> ' + p.checked_at + '</p>' +\n    '<hr><h3>AI Summary of Changes</h3>' +\n    '<div>' + summary.replace(/\\n/g, '<br>') + '</div>' +\n    '<hr><p style=\"color:#666;font-size:12px;\">Generated by your TOS Change Watcher workflow in n8n.</p>';\n\n  results.push({\n    json: {\n      email_subject: 'TOS Change Alert: ' + p.page_name,\n      email_body: body,\n      url: p.url,\n      page_name: p.page_name,\n      summary: summary,\n      checked_at: p.checked_at,\n      new_content: p.new_content\n    }\n  });\n}\n\nreturn results;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "d1a1b1c1-0009-4000-8000-000000000009",
+      "name": "Send Change Alert",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1744,
+        272
+      ],
+      "webhookId": "5bbca9d6-7cb0-48f1-9d65-9b168ff286f5",
+      "parameters": {
+        "sendTo": "user@example.com",
+        "message": "={{ $json.email_body }}",
+        "options": {
+          "appendAttribution": false
+        },
+        "subject": "={{ $json.email_subject }}"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail account 2"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "d1a1b1c1-0010-4000-8000-000000000010",
+      "name": "Log Change",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1968,
+        272
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "url": "={{ $('Build Email Body').item.json.url }}",
+            "date": "={{ $('Build Email Body').item.json.checked_at }}",
+            "summary": "={{ $('Build Email Body').item.json.summary }}",
+            "page_name": "={{ $('Build Email Body').item.json.page_name }}"
+          },
+          "schema": [
+            {
+              "id": "date",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "page_name",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "page_name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "url",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "summary",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Change Log"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "d1a1b1c1-0011-4000-8000-000000000011",
+      "name": "Update Page Record",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2192,
+        272
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "url": "={{ $('Build Email Body').item.json.url }}",
+            "last_checked": "={{ $('Build Email Body').item.json.checked_at }}",
+            "last_content": "={{ $('Build Email Body').item.json.new_content }}"
+          },
+          "schema": [
+            {
+              "id": "url",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "url",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "page_name",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "page_name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_content",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "last_content",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "last_checked",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "last_checked",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "url"
+          ]
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Pages"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "d1a1b1c1-0012-4000-8000-000000000012",
+      "name": "Update Last Checked",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1312,
+        704
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "url": "={{ $json.url }}",
+            "last_checked": "={{ $json.checked_at }}",
+            "last_content": "={{ $json.new_content }}"
+          },
+          "schema": [
+            {
+              "id": "url",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "url",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "page_name",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "page_name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_content",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "last_content",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "last_checked",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "last_checked",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "url"
+          ]
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Pages"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "ff8245b2-e93e-4e59-a788-cdbd45168947",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -496,
+        112
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 576,
+        "content": "## Terms of Service Change Watcher with AI Summaries\n\n### How it works\n\n1. Schedules a daily check using Daily Check. 2. Retrieves URLs from a Google Sheets workbook. 3. Fetches the specified pages and compares content. 4. Uses an AI model to summarize changes if detected. 5. Sends a change alert email and logs the change.\n\n### Setup steps\n\n- [ ] Set up Google Sheets credentials for retrieving and storing page data\n- [ ] Configure the OpenAI Chat Model for generating AI summaries\n- [ ] Set up Gmail credentials to send email alerts\n\n### Customization\n\nTo monitor different URLs, update the Google Sheets file with new entries."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "569e6c4b-1e32-4115-bba9-a44c2b617e55",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        16,
+        112
+      ],
+      "parameters": {
+        "color": 7,
+        "height": 320,
+        "content": "## Daily scheduling\n\nInitiates the workflow on a daily schedule to start the monitoring process."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "df09ebc6-6e09-485f-9e52-de324eb3ad6e",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        304,
+        112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 400,
+        "height": 304,
+        "content": "## Fetch pages for monitoring\n\nRetrieves list of pages to monitor from Google Sheets and fetches each page's content."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b41ea4ec-843a-45e2-8cee-1dd752b63b83",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        720,
+        64
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 416,
+        "height": 304,
+        "content": "## Content comparison\n\nCompares the fetched content with the stored version to detect changes."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e8a861fa-fe1a-4cd2-9bda-3cd662a48707",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1216,
+        -176
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 352,
+        "height": 512,
+        "content": "## AI-driven change summarization\n\nIf changes are detected, uses AI to summarize the differences between the current and previous content."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2d1c015b-5155-4bc6-abb1-8cd12acec10d",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1696,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 864,
+        "height": 272,
+        "content": "## Email alert and logging\n\nBuilds the email content, sends alerts via Gmail, and logs the change in Google Sheets."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2ab6260a-1077-4802-af7e-da93e445bde5",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        688,
+        784
+      ],
+      "parameters": {
+        "color": 7,
+        "height": 384,
+        "content": "## Update monitoring records\n\nUpdates the Google Sheets record to reflect the latest check time, whether changes were detected or not."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "12c7e745-a7ce-4547-8c9a-0bcb3a4eb7a7",
+  "connections": {
+    "Fetch Page": {
+      "main": [
+        [
+          {
+            "node": "Extract & Compare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Change": {
+      "main": [
+        [
+          {
+            "node": "Update Page Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Check": {
+      "main": [
+        [
+          {
+            "node": "Get Pages to Monitor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Email Body": {
+      "main": [
+        [
+          {
+            "node": "Send Change Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Changed?": {
+      "main": [
+        [
+          {
+            "node": "Summarize Changes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Last Checked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract & Compare": {
+      "main": [
+        [
+          {
+            "node": "Content Changed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summarize Changes",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Change Alert": {
+      "main": [
+        [
+          {
+            "node": "Log Change",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Changes": {
+      "main": [
+        [
+          {
+            "node": "Build Email Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Pages to Monitor": {
+      "main": [
+        [
+          {
+            "node": "Fetch Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

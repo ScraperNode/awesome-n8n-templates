@@ -1,6 +1,6 @@
 # 🎬 Create videos with AI-generated backgrounds using Gemini and VideoBGRemover
 
-> ⚡ **215 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **458 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

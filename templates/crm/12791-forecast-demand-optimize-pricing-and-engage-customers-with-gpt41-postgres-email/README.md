@@ -1,6 +1,6 @@
 # 🤝 Forecast demand, optimize pricing, and engage customers with GPT‑4.1, Postgres, email, and Slack
 
-> ⚡ **57 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **163 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

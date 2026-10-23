@@ -1,6 +1,6 @@
 # 💬 Create multilingual voice calling bot with GPT-4o, ElevenLabs & Twilio
 
-> ⚡ **7,402 views** · 💬 [Support Chatbots](../)
+> ⚡ **8,476 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

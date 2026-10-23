@@ -1,6 +1,6 @@
 # 🧾 Automatic Gmail invoice PDF upload to Google Drive with spreadsheet logging
 
-> ⚡ **825 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,072 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate AI videos with OpenAI Sora 2 & Google Veo 3.1 via parallel processing
 
-> ⚡ **8,735 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **8,907 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

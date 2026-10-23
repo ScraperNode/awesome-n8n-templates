@@ -1,6 +1,6 @@
 # 💬 Create AI support assistant for any device with GPT-4-mini & Pinecone
 
-> ⚡ **1,572 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,652 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

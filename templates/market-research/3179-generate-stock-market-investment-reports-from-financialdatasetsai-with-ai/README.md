@@ -1,6 +1,6 @@
 # 📊 Generate stock market investment reports from FinancialDatasets.ai with AI
 
-> ⚡ **359 views** · 📊 [Market Research & Insights](../)
+> ⚡ **425 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

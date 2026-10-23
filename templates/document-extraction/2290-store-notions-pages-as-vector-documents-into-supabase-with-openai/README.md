@@ -1,6 +1,6 @@
 # 🔬 Store Notion's Pages as Vector Documents into Supabase with OpenAI
 
-> ⚡ **7,043 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **7,037 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

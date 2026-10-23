@@ -1,6 +1,6 @@
 # ⚡ Automatically create Google Tasks from Gmail labeled emails
 
-> ⚡ **1,281 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,429 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

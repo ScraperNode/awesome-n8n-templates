@@ -1,6 +1,6 @@
 # 🎣 Qualify & auto-reply to leads with OpenAI, Airtable, and Gmail
 
-> ⚡ **199 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **384 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

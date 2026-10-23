@@ -1,6 +1,6 @@
 # 📱 Weekly AI News Digest with Perplexity AI and Gmail Newsletter
 
-> ⚡ **5,970 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **6,306 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

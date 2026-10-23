@@ -1,6 +1,6 @@
 # 🔬 Analyze legislative policies and route compliance actions with GPT-4o, Google Sheets, and Slack
 
-> ⚡ **17 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **74 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

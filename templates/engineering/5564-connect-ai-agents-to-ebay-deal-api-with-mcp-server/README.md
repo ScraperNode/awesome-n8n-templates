@@ -1,6 +1,6 @@
 # ⚒️ Connect AI agents to eBay deal API with MCP server
 
-> ⚡ **132 views** · ⚒️ [Engineering](../)
+> ⚡ **147 views** · ⚒️ [Engineering](../)
 
 ## Description
 

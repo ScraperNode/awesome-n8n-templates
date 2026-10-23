@@ -1,6 +1,6 @@
 # 🔒 🛠️ Bitwarden tool MCP server 💪 all 19 operations
 
-> ⚡ **131 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **148 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

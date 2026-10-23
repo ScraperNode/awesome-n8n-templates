@@ -1,6 +1,6 @@
 # 📖 ✨📊Multi-AI agent chatbot for Postgres/Supabase DB and QuickCharts + tool router
 
-> ⚡ **13,110 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **13,427 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

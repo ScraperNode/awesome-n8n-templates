@@ -1,6 +1,6 @@
 # 🎬 Create social media content from Telegram with AI
 
-> ⚡ **13,070 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **13,787 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

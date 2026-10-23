@@ -1,6 +1,6 @@
 # 🎣 Batch verify emails in Google Sheet with Icypeas
 
-> ⚡ **933 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **935 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

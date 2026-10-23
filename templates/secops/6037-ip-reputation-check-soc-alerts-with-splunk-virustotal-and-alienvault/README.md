@@ -1,6 +1,6 @@
 # 🔒 IP reputation check & SOC alerts with Splunk, VirusTotal and AlienVault
 
-> ⚡ **1,877 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,512 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

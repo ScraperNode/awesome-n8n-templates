@@ -1,6 +1,6 @@
 # ⚡ Send AI-prioritized follow-up reminders with GPT-4.1-mini, Gmail and Slack
 
-> ⚡ **6 views** · ⚡ [Personal Productivity](../)
+> ⚡ **24 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ AI-powered language and coding tutor with GPT-4 and timed Telegram messages
 
-> ⚡ **614 views** · ⚡ [Personal Productivity](../)
+> ⚡ **692 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

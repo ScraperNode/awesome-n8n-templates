@@ -1,6 +1,6 @@
 # 💬 Chat with your event schedule from Google Sheets in Telegram
 
-> ⚡ **4,634 views** · 💬 [Support Chatbots](../)
+> ⚡ **4,390 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

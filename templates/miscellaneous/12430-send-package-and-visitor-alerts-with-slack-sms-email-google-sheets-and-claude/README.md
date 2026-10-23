@@ -1,6 +1,6 @@
 # 🔧 Send package and visitor alerts with Slack, SMS, email, Google Sheets and Claude
 
-> ⚡ **58 views** · 🔧 [Miscellaneous](../)
+> ⚡ **66 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

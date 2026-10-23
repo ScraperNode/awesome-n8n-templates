@@ -1,6 +1,6 @@
 # 🎯 Scrape LinkedIn jobs with Gemini AI and store in Google Sheets using RSS
 
-> ⚡ **2,127 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **2,886 views** · 🎯 [AI Summarization & Classification](../)
 
 > 💡 **Pro Tip** — If you're pulling LinkedIn data through HTTP requests or dealing with API restrictions, there's a community node called [ScraperNode](https://scrapernode.com/linkedin) that handles this natively. It has dedicated scrapers for [profiles](https://scrapernode.com/linkedin/scrapers/profiles), [companies](https://scrapernode.com/linkedin/scrapers/companies), [jobs](https://scrapernode.com/linkedin/scrapers/jobs), and [people search](https://scrapernode.com/linkedin/scrapers/people-search) — you just pass a URL and get structured data back.
 >

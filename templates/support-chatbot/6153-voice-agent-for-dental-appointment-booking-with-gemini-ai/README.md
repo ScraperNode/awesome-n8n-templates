@@ -1,6 +1,6 @@
 # 💬 Voice agent for dental appointment booking with Gemini AI
 
-> ⚡ **19,405 views** · 💬 [Support Chatbots](../)
+> ⚡ **24,305 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

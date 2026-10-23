@@ -1,6 +1,6 @@
 # 📊 Automatically collect & process Google News articles to Google Sheets
 
-> ⚡ **1,792 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,506 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

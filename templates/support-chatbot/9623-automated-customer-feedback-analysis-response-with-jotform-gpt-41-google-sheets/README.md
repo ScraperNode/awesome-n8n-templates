@@ -1,6 +1,6 @@
 # 💬 Automated customer feedback analysis & response with Jotform, GPT-4.1 & Google Sheets
 
-> ⚡ **83 views** · 💬 [Support Chatbots](../)
+> ⚡ **140 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

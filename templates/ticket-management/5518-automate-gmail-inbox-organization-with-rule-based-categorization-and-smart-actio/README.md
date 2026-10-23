@@ -1,6 +1,6 @@
 # 🎫 Automate Gmail inbox organization with rule-based categorization and smart actions
 
-> ⚡ **16,000 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **42,106 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

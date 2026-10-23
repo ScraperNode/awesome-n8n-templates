@@ -1,6 +1,6 @@
 # ⚒️ Predict housing prices with a simple neural network
 
-> ⚡ **402 views** · ⚒️ [Engineering](../)
+> ⚡ **492 views** · ⚒️ [Engineering](../)
 
 ## Description
 

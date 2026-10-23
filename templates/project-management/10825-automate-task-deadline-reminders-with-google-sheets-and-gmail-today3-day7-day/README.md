@@ -1,6 +1,6 @@
 # 📋 Automate task deadline reminders with Google Sheets and Gmail (Today/3-Day/7-Day)
 
-> ⚡ **250 views** · 📋 [Project Management](../)
+> ⚡ **342 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Telegram research assistant for academic papers using Gemini AI and Decodo
 
-> ⚡ **550 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **750 views** · 🔬 [Document Extraction & Analysis](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >

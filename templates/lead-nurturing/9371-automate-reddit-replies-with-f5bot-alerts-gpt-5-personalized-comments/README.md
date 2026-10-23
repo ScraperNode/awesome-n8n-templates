@@ -1,6 +1,6 @@
 # 💬 Automate Reddit replies with F5Bot alerts & GPT-5 personalized comments
 
-> ⚡ **528 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **834 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

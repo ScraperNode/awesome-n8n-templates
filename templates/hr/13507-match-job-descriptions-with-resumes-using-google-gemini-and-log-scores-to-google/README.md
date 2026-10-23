@@ -1,6 +1,6 @@
 # 👥 Match job descriptions with resumes using Google Gemini and log scores to Google Sheets
 
-> ⚡ **41 views** · 👥 [HR & Recruitment](../)
+> ⚡ **253 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

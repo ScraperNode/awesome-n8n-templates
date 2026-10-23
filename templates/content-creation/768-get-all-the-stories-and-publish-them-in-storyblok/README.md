@@ -1,6 +1,6 @@
 # 🎬 Get all the stories and publish them in Storyblok
 
-> ⚡ **925 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **986 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

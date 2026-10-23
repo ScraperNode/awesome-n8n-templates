@@ -1,6 +1,6 @@
 # 🔧 Automate LINE & Google account linking with OAuth2 authentication
 
-> ⚡ **93 views** · 🔧 [Miscellaneous](../)
+> ⚡ **139 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

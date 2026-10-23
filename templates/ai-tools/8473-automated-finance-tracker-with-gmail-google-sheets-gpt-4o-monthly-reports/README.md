@@ -1,6 +1,6 @@
 # 🎯 Automated finance tracker with Gmail, Google Sheets & GPT-4o monthly reports
 
-> ⚡ **304 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **388 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

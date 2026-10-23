@@ -1,6 +1,6 @@
 # 📁 Organize email attachments into Google Drive folders by company with Gmail & Sheets
 
-> ⚡ **4,311 views** · 📁 [File Management](../)
+> ⚡ **4,491 views** · 📁 [File Management](../)
 
 ## Description
 

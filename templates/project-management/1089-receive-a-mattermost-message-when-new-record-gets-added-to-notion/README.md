@@ -1,6 +1,6 @@
 # 📋 Receive a Mattermost message when new record gets added to Notion
 
-> ⚡ **1,146 views** · 📋 [Project Management](../)
+> ⚡ **1,172 views** · 📋 [Project Management](../)
 
 ## Description
 

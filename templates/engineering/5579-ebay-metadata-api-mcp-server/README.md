@@ -1,6 +1,6 @@
 # ⚒️ [eBay] metadata API MCP server
 
-> ⚡ **138 views** · ⚒️ [Engineering](../)
+> ⚡ **149 views** · ⚒️ [Engineering](../)
 
 ## Description
 

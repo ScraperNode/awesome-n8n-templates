@@ -1,6 +1,6 @@
 # 🔬 Generate monthly financial reports with Gemini AI, SQL, and Outlook
 
-> ⚡ **21,617 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **23,368 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

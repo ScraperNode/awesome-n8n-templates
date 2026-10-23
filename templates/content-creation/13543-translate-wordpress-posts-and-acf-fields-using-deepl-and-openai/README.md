@@ -1,6 +1,6 @@
 # 🎬 Translate WordPress posts and ACF fields using DeepL and OpenAI
 
-> ⚡ **39 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **121 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

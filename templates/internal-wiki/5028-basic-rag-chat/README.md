@@ -1,6 +1,6 @@
 # 📖 Basic RAG chat
 
-> ⚡ **5,481 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **6,832 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

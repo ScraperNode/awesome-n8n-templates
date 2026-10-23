@@ -1,6 +1,6 @@
 # 👥 Automated employee onboarding document generator with Google Drive, Gmail & Slack integration
 
-> ⚡ **264 views** · 👥 [HR & Recruitment](../)
+> ⚡ **396 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

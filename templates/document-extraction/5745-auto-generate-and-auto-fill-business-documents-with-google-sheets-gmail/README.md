@@ -1,6 +1,6 @@
 # 🔬 Auto-generate and auto-fill business documents with Google Sheets & Gmail
 
-> ⚡ **2,620 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **3,166 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

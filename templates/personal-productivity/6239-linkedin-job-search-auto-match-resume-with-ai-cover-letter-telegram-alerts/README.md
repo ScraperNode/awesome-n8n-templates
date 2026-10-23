@@ -1,6 +1,6 @@
 # ⚡ LinkedIn job search: auto-match resume with AI + cover letter & Telegram alerts
 
-> ⚡ **45,843 views** · ⚡ [Personal Productivity](../)
+> ⚡ **60,295 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

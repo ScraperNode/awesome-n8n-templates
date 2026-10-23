@@ -1,6 +1,6 @@
 # 👥 AI-powered Candidate Screening & Interview Scheduling with OpenAI GPT & Google Suite
 
-> ⚡ **267 views** · 👥 [HR & Recruitment](../)
+> ⚡ **307 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

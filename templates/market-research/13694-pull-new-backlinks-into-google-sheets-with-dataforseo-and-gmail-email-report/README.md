@@ -1,6 +1,6 @@
 # 📊 Pull new backlinks into Google Sheets with DataForSEO and Gmail email report
 
-> ⚡ **25 views** · 📊 [Market Research & Insights](../)
+> ⚡ **121 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

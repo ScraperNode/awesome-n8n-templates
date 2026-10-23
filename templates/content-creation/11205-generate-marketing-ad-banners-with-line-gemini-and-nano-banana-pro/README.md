@@ -1,6 +1,6 @@
 # 🎬 Generate marketing ad banners with LINE, Gemini, and Nano Banana Pro
 
-> ⚡ **7,617 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **8,758 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

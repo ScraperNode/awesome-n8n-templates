@@ -1,6 +1,6 @@
 # 💬 Track shipments with DHL/Delhivery APIs & send Google Sheets updates to customers via WhatsApp/Email
 
-> ⚡ **607 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,002 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

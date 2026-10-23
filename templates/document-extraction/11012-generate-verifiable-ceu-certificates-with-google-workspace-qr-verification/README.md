@@ -1,6 +1,6 @@
 # 🔬 Generate verifiable CEU certificates with Google Workspace & QR verification
 
-> ⚡ **17 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **36 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

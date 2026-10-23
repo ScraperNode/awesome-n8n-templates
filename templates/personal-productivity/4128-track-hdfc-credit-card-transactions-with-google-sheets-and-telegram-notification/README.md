@@ -1,6 +1,6 @@
 # ⚡ Track HDFC credit card transactions with Google Sheets and Telegram notifications
 
-> ⚡ **575 views** · ⚡ [Personal Productivity](../)
+> ⚡ **670 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

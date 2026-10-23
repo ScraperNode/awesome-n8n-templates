@@ -1,6 +1,6 @@
 # ⚒️ Complete Lyft API integration for AI agents with 16 operations using MCP
 
-> ⚡ **129 views** · ⚒️ [Engineering](../)
+> ⚡ **154 views** · ⚒️ [Engineering](../)
 
 ## Description
 

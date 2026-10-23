@@ -1,6 +1,6 @@
 # 🤝 Get list of completed sale orders with Unleashed Software
 
-> ⚡ **666 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **723 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

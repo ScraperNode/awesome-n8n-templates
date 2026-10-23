@@ -1,6 +1,6 @@
 # 🎬 AI podcast generator with RSS feed & ElevenLabs voice
 
-> ⚡ **564 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **621 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎯 Automate lead intent classification from Google Sheets to ClickUp with Azure GPT-4
 
-> ⚡ **133 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **162 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

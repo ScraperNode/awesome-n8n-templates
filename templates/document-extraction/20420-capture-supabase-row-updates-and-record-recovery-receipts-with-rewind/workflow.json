@@ -1,0 +1,387 @@
+{
+  "name": "Capture Supabase row updates and record recovery receipts with HTTP Request",
+  "nodes": [
+    {
+      "id": "run-once",
+      "name": "Run once",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "configure-endpoints",
+      "name": "Configure endpoints",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "rewind-url",
+              "name": "rewindBaseUrl",
+              "type": "string",
+              "value": "https://rewind.kanishq.dev"
+            },
+            {
+              "id": "resource-url",
+              "name": "supabaseBaseUrl",
+              "type": "string",
+              "value": "https://example-project.supabase.co"
+            },
+            {
+              "id": "alias",
+              "name": "alias",
+              "type": "string",
+              "value": "demo_customers"
+            },
+            {
+              "id": "row-id",
+              "name": "rowId",
+              "type": "string",
+              "value": "d81098bd-8f67-4674-a1ba-007019b9dcc0"
+            },
+            {
+              "id": "patch",
+              "name": "patch",
+              "type": "string",
+              "value": "{\"status\":\"inactive\",\"seats\":3}"
+            },
+            {
+              "id": "connection",
+              "name": "connection",
+              "type": "string",
+              "value": "campaign_demo"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "validate-endpoints",
+      "name": "Validate endpoints",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const config = $input.first().json;\nfunction checkedBase(value) {\n  if (typeof value !== 'string' || /[\\s\\\\]/.test(value)) throw new Error('Configure a plain trusted base URL.');\n  const match = /^(https?):\\/\\/([^\\/?#]+)(\\/[^?#]*)?$/.exec(value);\n  if (!match || !/^(\\[[0-9a-fA-F:]+\\]|[a-zA-Z0-9.-]+)(:\\d{1,5})?$/.test(match[2])) throw new Error('URL credentials, queries, fragments and invalid hosts are not permitted.');\n  if (match[1] !== 'https' && !/^(localhost|127\\.0\\.0\\.1|host\\.docker\\.internal)(:\\d{1,5})?$/i.test(match[2])) throw new Error('Remote endpoints require HTTPS before sending credentials.');\n  return value.replace(/\\/$/, '');\n}\n\nconst supabaseBaseUrl = checkedBase(config.supabaseBaseUrl);\nif (!/^https?:\\/\\/[^/]+$/.test(supabaseBaseUrl)) throw new Error('Supabase must be a project origin.');\nif (!/^[a-z][a-z0-9_]{0,30}$/.test(config.alias) || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(config.rowId)) throw new Error('Configure a registered alias and UUID row ID.');\nconst patch = JSON.parse(config.patch);\nif (!patch || Array.isArray(patch) || typeof patch !== 'object' || !Object.keys(patch).length || Object.keys(patch).length>20 || Object.entries(patch).some(([k,v])=>!k || !['string','number','boolean'].includes(typeof v) || (typeof v==='number'&&!Number.isFinite(v)) || String(v).length>2000)) throw new Error('Configure 1\u201320 supported non-null scalar fields.');\nconst connection=config.connection||'default';\nif(typeof connection!=='string'||!/^[a-z][a-z0-9_-]{0,62}$/.test(connection)) throw new Error('Configure a connection name matching the recorded operation.');\nreturn [{json:{connection,rewindBaseUrl:checkedBase(config.rewindBaseUrl),supabaseBaseUrl,alias:config.alias,rowId:config.rowId,patch}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "read-row",
+      "name": "Read row",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Header Auth: apikey = a server-side Supabase sb_secret key. Keep this credential only in n8n. Secret keys bypass RLS; use the dedicated test project first.",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $('Validate endpoints').first().json.supabaseBaseUrl + '/rest/v1/rpc/rewind_read_row' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": false,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify({p_alias:$('Validate endpoints').first().json.alias,p_id:$('Validate endpoints').first().json.rowId}) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "notesInFlow": true,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "validate-read",
+      "name": "Validate read",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const response=$input.first().json;\nif (response.statusCode!==200 || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(response.body?.version)) throw new Error('No valid row revision returned. No update attempted.');\nreturn [{json:{version:response.body.version}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "capture-update",
+      "name": "Capture update",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Changes the configured row and returns actual snapshots atomically. Never retry this node or rerun the whole execution just because recording failed. Retry only the recording node with its saved payload.",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $('Validate endpoints').first().json.supabaseBaseUrl + '/rest/v1/rpc/rewind_capture_update' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": false,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify({p_alias:$('Validate endpoints').first().json.alias,p_id:$('Validate endpoints').first().json.rowId,p_expected_version:$json.version,p_patch:$('Validate endpoints').first().json.patch}) }}",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "notesInFlow": true,
+      "retryOnFail": false,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "build-recording",
+      "name": "Build recording",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const response=$input.first().json, result=response.body, config=$('Validate endpoints').first().json;\nif (response.statusCode!==200 || !result || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(result.version) || result.version===$('Validate read').first().json.version || !result.before || !result.after) throw new Error('Update response could not be verified. Inspect the row; do not repeat the write.');\nreturn [{json:{rewindBaseUrl:config.rewindBaseUrl,connection:config.connection,beforeVersion:'\"'+$('Validate read').first().json.version+'\"',idempotencyKey:'supabase-'+$execution.id+'-'+config.alias+'-'+config.rowId,title:'Update '+config.alias,resource:config.alias+':'+config.rowId,kind:'supabase_row',before:result.before,after:result.after,afterVersion:'\"'+result.version+'\"'}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "validate",
+      "name": "Validate captured change",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "jsCode": "function checkedBase(value) {\n  if (typeof value !== 'string' || /[\\s\\\\]/.test(value)) throw new Error('Configure a plain trusted base URL.');\n  const match = /^(https?):\\/\\/([^\\/?#]+)(\\/[^?#]*)?$/.exec(value);\n  if (!match || !/^(\\[[0-9a-fA-F:]+\\]|[a-zA-Z0-9.-]+)(:\\d{1,5})?$/.test(match[2])) throw new Error('URL credentials, queries, fragments and invalid hosts are not permitted.');\n  if (match[1] !== 'https' && !/^(localhost|127\\.0\\.0\\.1|host\\.docker\\.internal)(:\\d{1,5})?$/i.test(match[2])) throw new Error('Remote endpoints require HTTPS before sending credentials.');\n  return value.replace(/\\/$/, '');\n}\n\nreturn $input.all().map((item,index) => {\n  const data=item.json;\n  const rewindBaseUrl=checkedBase(data.rewindBaseUrl);\n  const problem=message=>{throw new Error('Input '+(index+1)+': '+message);};\n  if (!/^[A-Za-z0-9_-]{8,100}$/.test(data.idempotencyKey||'')) problem('Supply a stable idempotencyKey for this action.');\n  if (typeof data.title!=='string'||!data.title.trim()||data.title.length>100) problem('Supply a title up to 100 characters.');\n  if (typeof data.resource!=='string'||!data.resource.trim()||data.resource.length>200) problem('Supply a resource reference.');\n  if (!['conditional_http','supabase_row','irreversible'].includes(data.kind)) problem('Choose conditional_http, supabase_row or irreversible.');\n  if (data.kind==='conditional_http' && !/^[A-Za-z0-9_-]{1,160}$/.test(data.resource)) problem('Use a simple resource ID, not a URL.');\n  if(data.kind==='supabase_row' && (!/^[a-z][a-z0-9_]{0,30}:[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(data.resource)||!/^\"[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\"$/.test(data.afterVersion||''))) problem('Use alias:uuid and a quoted UUID revision for Supabase rows.');\n  for(const name of ['before','after']){\n    const value=data[name];\n    if(!value||typeof value!=='object'||Array.isArray(value)) problem('Pass captured before and after objects from your successful action.');\n    const entries=Object.entries(value);\n    if(!entries.length||entries.length>20) problem('Record 1\u201320 top-level fields.');\n    for(const [key,v] of entries){\n      if(!/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(key)||['__proto__','constructor','prototype'].includes(key)) problem('Unsupported field name.');\n      if(!(v===null||typeof v==='boolean'||(typeof v==='number'&&Number.isFinite(v))||(typeof v==='string'&&v.length<=2000))) problem('Only scalar snapshots are supported.');\n      if(data.kind!=='irreversible'&&v===null) problem('Conditional recovery supports existing non-null fields only.');\n    }\n  }\n  if(Object.keys(data.before).sort().join(',')!==Object.keys(data.after).sort().join(',')) problem('Before and after must cover the same fields.');\n  if(data.kind!=='irreversible' && !(typeof data.afterVersion==='string'&&/^\"[\\x21\\x23-\\x7e]{1,180}\"$/.test(data.afterVersion))) problem('Use the strong ETag returned by your successful write.');\n  const payload={idempotencyKey:data.idempotencyKey,title:data.title,resource:data.resource,kind:data.kind,before:data.before,after:data.after};\n  if(data.kind!=='irreversible') payload.afterVersion=data.afterVersion;\n  const connection=data.connection??data.defaultConnection??'default';\n  if(typeof connection!=='string'||!/^[a-z][a-z0-9_-]{0,62}$/.test(connection)) problem('Use a valid connection name matching your recovery worker.');\n  if(connection!=='default')payload.connection=connection;\n  if(data.beforeVersion!==undefined){\n    if(typeof data.beforeVersion!=='string'||!/^\"[\\x21\\x23-\\x7e]{1,180}\"$/.test(data.beforeVersion)) problem('beforeVersion must be the strong version read before the write.');\n    payload.beforeVersion=data.beforeVersion;\n  }\n  if(data.run!==undefined){\n    const r=data.run;\n    if(!r||typeof r!=='object'||Array.isArray(r)||typeof r.id!=='string'||!/^[A-Za-z0-9_-]{8,100}$/.test(r.id)||typeof r.name!=='string'||!r.name.trim()||r.name.length>100||!Number.isSafeInteger(r.step)||r.step<1||r.step>100) problem('Supply a stable run id, name and consecutive step from 1 to 100.');\n    payload.run={id:r.id,name:r.name.trim(),step:r.step};\n  }\n  return {json:{rewindBaseUrl,payload},pairedItem:{item:index}};\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "record",
+      "name": "Record operation",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select Header Auth: Authorization = Bearer YOUR_RECORDING_KEY. Retries reuse the captured payload. Do not rerun your original provider action to retry recording.",
+      "maxTries": 3,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $json.rewindBaseUrl + '/api/v1/operations' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify($json.payload) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "notesInFlow": true,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "overview-capture",
+      "name": "Workflow overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        -1100
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 900,
+        "height": 740,
+        "content": "### How it works\nThis example is for n8n builders who update Supabase rows and want to rehearse recovery on disposable data. A manual trigger reads one registered row, validates its revision, and calls the capture RPC. That transaction saves the original values before updating status and seats. HTTP Request nodes then deliver the confirmed before/after receipt to Rewind.\n\nRecovery is a separate workflow. A person reviews and approves the recorded change in Rewind; the matching worker checks the current revision before restoring. Approval queues work. Verify the actual row in Supabase after the worker runs. A later edit must be preserved, not overwritten.\n\n### Setup\nUse a development Supabase project, n8n, and a Rewind account. From https://rewind.kanishq.dev/#connect download and run the connector SQL, then the disposable demo-table SQL. Set your project URL and matching connection name in Configure endpoints. Select Supabase apikey Header Auth on Read row and Capture update, and a Rewind recording credential on Record operation. No credentials are included.\n\nRun once, approve in Rewind, then run its separate Supabase recovery template. Check active/5 becomes inactive/3 and returns to active/5. Repeat with a later edit to confirm conflict protection. Leave schedules inactive until tested.\n\n### Customization\nOnly adapt registered tables and existing scalar fields after testing. Updates only: no inserts, deletes, messages or pre-install recovery. If receipt delivery fails, retry only Record operation with saved input; never repeat the provider update."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "section-capture-0",
+      "name": "Prepare the test",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        -250
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 640,
+        "height": 560,
+        "content": "### Prepare the test\nSet the development project origin and connection name. The manual trigger starts one disposable update. Keep credentials in n8n Header Auth, never in Set fields."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "section-capture-1",
+      "name": "Capture the real write",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        630,
+        -250
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 650,
+        "height": 560,
+        "content": "### Capture the real write\nRead and validate the row revision, then call the capture transaction. The original values are captured before the update. A lost update response needs manual inspection."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "section-capture-2",
+      "name": "Deliver the saved receipt",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1290,
+        -250
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 680,
+        "height": 560,
+        "content": "### Deliver the saved receipt\nValidate and record confirmed snapshots. If delivery fails, retry only Record operation with its saved input. Do not rerun capture to retry recording."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Read row": {
+      "main": [
+        [
+          {
+            "node": "Validate read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run once": {
+      "main": [
+        [
+          {
+            "node": "Configure endpoints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate read": {
+      "main": [
+        [
+          {
+            "node": "Capture update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Capture update": {
+      "main": [
+        [
+          {
+            "node": "Build recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build recording": {
+      "main": [
+        [
+          {
+            "node": "Validate captured change",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate endpoints": {
+      "main": [
+        [
+          {
+            "node": "Read row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure endpoints": {
+      "main": [
+        [
+          {
+            "node": "Validate endpoints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate captured change": {
+      "main": [
+        [
+          {
+            "node": "Record operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

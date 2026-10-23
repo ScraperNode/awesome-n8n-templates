@@ -1,6 +1,6 @@
 # ⚡ 💰 Financial AI agent Telegram and WhatsApp
 
-> ⚡ **1,160 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,468 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

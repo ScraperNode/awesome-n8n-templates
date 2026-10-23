@@ -1,6 +1,6 @@
 # 🎬 Generate visual diagrams and content assets from ideas with Claude and NapkinAI
 
-> ⚡ **6 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **152 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

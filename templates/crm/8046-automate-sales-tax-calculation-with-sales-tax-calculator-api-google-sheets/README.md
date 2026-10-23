@@ -1,6 +1,6 @@
 # 🤝 Automate sales tax calculation with Sales Tax Calculator API & Google Sheets
 
-> ⚡ **254 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **278 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

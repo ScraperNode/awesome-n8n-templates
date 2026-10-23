@@ -1,6 +1,6 @@
 # 🔬 Track tenant document compliance with GPT-4,  Drive, Sheets, email and Slack
 
-> ⚡ **6 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **20 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

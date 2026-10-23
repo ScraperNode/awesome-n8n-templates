@@ -1,6 +1,6 @@
 # 🎫 Automate support ticket triage and resolution with JIRA and AI
 
-> ⚡ **8,627 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **9,855 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

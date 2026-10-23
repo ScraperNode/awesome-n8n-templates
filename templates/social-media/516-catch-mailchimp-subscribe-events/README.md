@@ -1,6 +1,6 @@
 # 📱 Catch MailChimp subscribe events
 
-> ⚡ **757 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **766 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

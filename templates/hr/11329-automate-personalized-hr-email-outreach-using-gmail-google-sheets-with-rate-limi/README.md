@@ -1,6 +1,6 @@
 # 👥 Automate personalized HR email outreach using Gmail, Google Sheets with rate limiting
 
-> ⚡ **93 views** · 👥 [HR & Recruitment](../)
+> ⚡ **210 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

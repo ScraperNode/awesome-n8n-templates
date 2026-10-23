@@ -1,6 +1,6 @@
 # 📈 Weekly stock/ETF analysis with Claude & Gmail — monthly index fund review
 
-> ⚡ **213 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **391 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

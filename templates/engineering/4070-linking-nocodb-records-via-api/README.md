@@ -1,6 +1,6 @@
 # ⚒️ Linking NocoDB records via API 🔗
 
-> ⚡ **1,064 views** · ⚒️ [Engineering](../)
+> ⚡ **1,182 views** · ⚒️ [Engineering](../)
 
 ## Description
 

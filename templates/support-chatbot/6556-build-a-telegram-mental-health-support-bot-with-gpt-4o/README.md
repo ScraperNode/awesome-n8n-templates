@@ -1,6 +1,6 @@
 # 💬 Build a Telegram mental health support bot with GPT-4o
 
-> ⚡ **1,444 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,542 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

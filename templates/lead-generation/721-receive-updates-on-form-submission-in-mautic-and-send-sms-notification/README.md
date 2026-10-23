@@ -1,6 +1,6 @@
 # 🎣 Receive updates on form submission in Mautic and send SMS notification
 
-> ⚡ **1,113 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,185 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 🧠 Empower your AI chatbot with long-term memory and dynamic tool routing
 
-> ⚡ **36,277 views** · 💬 [Support Chatbots](../)
+> ⚡ **37,663 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

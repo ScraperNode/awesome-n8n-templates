@@ -1,6 +1,6 @@
 # 🎬 Convert blog posts to audio content with Eleven Labs & GPT-4
 
-> ⚡ **107 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **120 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

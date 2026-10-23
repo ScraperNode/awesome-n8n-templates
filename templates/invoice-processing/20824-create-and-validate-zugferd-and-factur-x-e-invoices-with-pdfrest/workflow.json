@@ -1,0 +1,1213 @@
+{
+  "name": "Create and validate ZUGFeRD and Factur-X e-invoices with pdfRest",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "2b7cd39b-a264-4a8d-a623-0849d3c18bcd",
+      "name": "Submit invoice",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        -1776,
+        752
+      ],
+      "webhookId": "800567d9-57e7-44ee-adc5-8f7a96ab4671",
+      "parameters": {
+        "options": {},
+        "formTitle": "Create or validate an e-invoice",
+        "formFields": {
+          "values": [
+            {
+              "fieldType": "dropdown",
+              "fieldLabel": "Task",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Create from XML"
+                  },
+                  {
+                    "option": "Pair XML with existing PDF"
+                  },
+                  {
+                    "option": "Validate existing hybrid PDF"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Invoice reference",
+              "requiredField": true
+            },
+            {
+              "fieldType": "file",
+              "fieldLabel": "Invoice XML",
+              "multipleFiles": false,
+              "acceptFileTypes": ".xml"
+            },
+            {
+              "fieldType": "file",
+              "fieldLabel": "Invoice PDF",
+              "multipleFiles": false,
+              "acceptFileTypes": ".pdf"
+            },
+            {
+              "fieldType": "dropdown",
+              "fieldLabel": "PDF replacement permission",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Preserve existing PDF"
+                  },
+                  {
+                    "option": "Allow replacement from XML if needed"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "formDescription": "Create a hybrid invoice from CII XML, pair XML with an existing PDF, or validate a completed hybrid invoice. Pairing with Preserve selected can be rejected if pdfRest detects a mismatch. Allow replacement only if you agree to a new visual PDF generated from the XML. Upload one invoice per run and keep this tab open. Files are processed by pdfRest."
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "37055b2f-8740-44f7-b4fa-f73986a0987e",
+      "name": "Check invoice submission",
+      "type": "n8n-nodes-base.code",
+      "onError": "continueErrorOutput",
+      "position": [
+        -1536,
+        752
+      ],
+      "parameters": {
+        "jsCode": "const i=$input.first(), j=i.json, b=i.binary||{};\nconst errors=[], mode=j.Task, ref=String(j['Invoice reference']||'').trim();\nconst allowed=['Create from XML','Pair XML with existing PDF','Validate existing hybrid PDF'];\nif(!allowed.includes(mode)) errors.push('Choose a supported task.');\nif(!ref || ref.length>100) errors.push('Enter an invoice reference of 1 to 100 characters.');\nconst permission=j['PDF replacement permission'];\nif(!['Preserve existing PDF','Allow replacement from XML if needed'].includes(permission)) errors.push('Choose a PDF replacement permission.');\nconst binary={};\nfor (const [k,v] of Object.entries(b)) {\n const label=k.replace(/[^a-z]/gi,'').toLowerCase();\n const target=label==='invoicexml'?'xml':label==='invoicepdf'?'sourcePdf':null;\n if(!target || binary[target]) {errors.push('Upload at most one XML and one PDF using the labelled fields.');continue;}\n const data=await this.helpers.getBinaryDataBuffer(0,k);\n if(!data.length || data.length>20*1024*1024) errors.push('Each file must be nonempty and at most 20 MB.');\n if(target==='sourcePdf' && !data.subarray(0,1024).toString('latin1').includes('%PDF-')) errors.push('The PDF upload does not appear to be a PDF.');\n if(target==='xml') {\n  const s=data.toString('utf8').replace(/^\\uFEFF/,'');\n  if(!s.trim().startsWith('<') || !s.includes('CrossIndustryInvoice')) errors.push('Upload UTF-8 CII CrossIndustryInvoice XML exported by your invoicing system. UBL XML is not supported by this template.');\n  if(/<!DOCTYPE|<!ENTITY/i.test(s)) errors.push('Use XML without DTD or entity declarations.');\n }\n binary[target]={...v,fileName:target==='xml'?'source-invoice.xml':'source-invoice.pdf'};\n}\nif(mode!=='Validate existing hybrid PDF' && !binary.xml) errors.push('This task needs an Invoice XML file.');\nif(mode!=='Create from XML' && !binary.sourcePdf) errors.push('This task needs an Invoice PDF file.');\nif(mode==='Create from XML' && binary.sourcePdf) errors.push('Choose Pair XML with existing PDF to use both files, or remove the PDF.');\nif(mode==='Validate existing hybrid PDF' && binary.xml) errors.push('Remove the separate XML: validation checks the XML already embedded in the PDF.');\nreturn [{json:{mode,reference:ref,slug:ref.replace(/[^a-z0-9_-]/gi,'_').slice(0,80)||'invoice',regenerate:mode==='Pair XML with existing PDF'&&permission==='Allow replacement from XML if needed',valid:errors.length===0,errors,startedAt:new Date().toISOString()},binary}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "28bda1fd-150f-4123-8857-86dacd19ec07",
+      "name": "Explain service failure",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -96,
+        1360
+      ],
+      "parameters": {
+        "jsCode": "const j=$input.first().json, p=j.errorPayload||{}, step=j.failedStep||'Workflow processing';\nconst e=p.error&&typeof p.error==='object'?p.error:p;\nconst d=e.errorDetails?.errorData||p.errorDetails?.errorData||e.errorData||p.errorData||{};\nconst raw=[typeof p.error==='string'?p.error:'',e.message,e.errorMessage,e.errorDescription,d.error,d.message].filter(Boolean).join(' ');\nconst findings=Array.isArray(d.findings)?d.findings:[];\nconst redacted=/free account|DEMO_REDACTED|watermarked or redacted/i.test(raw)||findings.some(f=>f.comparisonReason==='DEMO_REDACTED');\nlet why='This step could not complete.',next='The workflow owner should inspect this step in the execution, correct the problem, then start a new submission.';\nif(/credential.*does not exist|credential.*not found/i.test(raw)){why='The saved credential could not be found by n8n.';next='Reselect an existing pdfRest credential on all four pdfRest nodes, save, and start a fresh submission.';}\nelse if(redacted){why='pdfRest reported a free-account or redacted response for this request.';next='Check that the selected key, API base URL and account entitlement belong to the same environment. If your account is paid, have your pdfRest administrator investigate the entitlement. This does not prove your subscription is inactive.';}\nelse if(findings.some(f=>f.status==='MISMATCH')){why='pdfRest reported a PDF/XML mismatch and rejected preservation.';next='Compare the named field in the PDF and XML. If the values agree, the visual matcher may have interpreted a different value; ask the workflow owner to investigate the source files and provider findings. Start a new submission with Allow replacement from XML only if a regenerated visual invoice is acceptable. The workflow will not enable replacement automatically.';}\nelse if(/no binary field|binary.*not found/i.test(raw)){why='A required file field is missing.';next='Check XML input xml, source PDF input sourcePdf, and generated PDF output invoice. Restart from the upload form.';}\nelse if(/401|403|unauthorized|forbidden/i.test(raw)){why='The service rejected access.';next='Check the selected credential, processing environment and access to this operation.';}\nelse if(/400|bad request/i.test(raw)){why='pdfRest rejected the request. The node may have retained only a short error message.';next=step==='Pair XML and visual PDF'?'Check that the XML and PDF describe the same invoice. The cause could be a content mismatch or another request issue; the full provider response is needed to distinguish them.':'Check the source file and operation settings. Inspect the full provider response before changing invoice values.';}\nelse if(/429|rate limit/i.test(raw)){why='The service request limit was reached.';next='Wait before starting a new submission.';}\nconst esc=x=>String(x).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));\n// Never render raw provider errors, keys, URLs, headers or stack traces in the public form.\nconst labels={payableAmount:'Amount due for payment',netTotal:'Net total',grandTotal:'Grand total',invoiceDate:'Invoice date'};\nconst mismatchFields=[...new Set(findings.filter(f=>f.status==='MISMATCH').map(f=>labels[f.field]||'Another invoice field'))];\nconst codes=findings.map(f=>f.code).filter(c=>typeof c==='string'&&/^[A-Z][A-Z0-9_]{1,63}$/.test(c)).slice(0,10);\nlet reference='Unknown reference';\ntry {reference=String($('Check invoice submission').first().json.reference||reference).replace(/[\\r\\n\\t]+/g,' ').slice(0,200);}catch{}\nreturn [{json:{reference,failedStep:step,message:'<p><strong>Invoice: '+esc(reference)+'</strong></p><p><strong>Step: '+esc(step)+'</strong></p><p>'+esc(why)+'</p><p>'+esc(next)+'</p>'+(mismatchFields.length?'<p>Reported mismatch: '+mismatchFields.map(esc).join(', ')+'</p>':'')+(codes.length?'<p>Finding codes: '+codes.map(esc).join(', ')+'</p>':'')+'<p>Nothing was approved or released. This execution will be marked failed.</p>',failureSummary:'Invoice '+reference+' NOT RELEASED \u2014 processing failed at '+step+': '+why+(codes.length?' Finding codes: '+codes.join(', '):'')}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "700816cb-ec04-477d-8de7-9b126cf77615",
+      "name": "Processing could not finish",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        144,
+        1360
+      ],
+      "webhookId": "4d5f851c-d09f-49e2-bdb1-2e6aa32e78e2",
+      "parameters": {
+        "options": {},
+        "operation": "completion",
+        "completionTitle": "Invoice not released",
+        "completionMessage": "={{ $json.message }}"
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "761be6cd-9bbe-4ee2-b6ef-b9abc04023a2",
+      "name": "Submission valid?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -1296,
+        752
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "1b39ee60-e040-420d-95ad-3a73a0291298",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "9a60a4ad-c887-4b41-9102-29a42dc500af",
+      "name": "Validate existing invoice?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -1056,
+        752
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "28b7edc1-6eba-4b66-a1ce-56ba882c6fdc",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.mode === 'Validate existing hybrid PDF' }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "7c50ebd5-274f-49f2-805b-3f59ed3ba74f",
+      "name": "Validate uploaded invoice",
+      "type": "@pdfrest/n8n-nodes-pdfrest.pdfRest",
+      "onError": "continueErrorOutput",
+      "position": [
+        -496,
+        464
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "validateZugferd",
+        "requestOptions": {},
+        "inputFileDataFieldName": "sourcePdf"
+      },
+      "retryOnFail": false,
+      "typeVersion": 1
+    },
+    {
+      "id": "2b86b168-1a24-48d5-8e86-a81dfc10823d",
+      "name": "Interpret validation",
+      "type": "n8n-nodes-base.code",
+      "onError": "continueErrorOutput",
+      "position": [
+        144,
+        704
+      ],
+      "parameters": {
+        "jsCode": "const r=$input.first().json, s=$('Check invoice submission').first().json;\nconst findings=Array.isArray(r.findings)?r.findings:[];\nconst known=['NOT_APPLICABLE','CONFIRMED','UNVERIFIED','FAILED','ERROR','DEMO_REDACTED'];\nconst complete=['VALID','INVALID'].includes(r.status)&&typeof r.pdfa==='boolean'&&known.includes(r.contentMatchStatus)&&typeof r.inputId==='string'&&typeof r.inputUrl==='string'&&(r.findings===undefined||Array.isArray(r.findings))&&findings.every(f=>f&&typeof f.code==='string'&&typeof f.message==='string'&&['INFO','WARNING','BLOCKING','ERROR'].includes(f.severity));\nconst blocking=findings.some(f=>['BLOCKING','ERROR'].includes(f.severity));\nconst eligible=complete&&r.status==='VALID'&&r.pdfa===true&&!blocking&&['CONFIRMED','UNVERIFIED','NOT_APPLICABLE'].includes(r.contentMatchStatus);\nconst needsComparison=r.contentMatchStatus!=='CONFIRMED';\nconst explanations={CONFIRMED:'The validator confirmed the PDF and XML content match.',UNVERIFIED:'Technical checks passed, but the validator could not confirm every visual value. Compare the PDF with the invoice data in your source system before approving.',NOT_APPLICABLE:'The validator did not perform a PDF/XML visual comparison. Compare the PDF with your source invoice before approving.',FAILED:'The PDF and XML have a detected mismatch. Correct the source invoice and submit it again.',ERROR:'The content comparison could not complete. Investigate and rerun validation.',DEMO_REDACTED:'Your API plan hides the content-match details. Use a plan that exposes the results and rerun before release.'};\nconst esc=x=>String(x??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));\n// Avoid the URL global, which may be unavailable in a Code sandbox.\nconst reviewPdfUrl=typeof r.inputUrl==='string'?r.inputUrl.trim():'';\nconst safeReviewUrl=/^https:\\/\\/[a-z0-9.-]+(?::\\d+)?\\/[^\\s<>\"'\\\\]*$/i.test(reviewPdfUrl);\nconst link=safeReviewUrl?'<p><strong><a href=\"'+esc(reviewPdfUrl)+'\" target=\"_blank\" rel=\"noopener noreferrer\">Open invoice PDF for review</a></strong></p><p>If the link does not open, copy this address into a new tab: '+esc(reviewPdfUrl)+'</p>':'<p><strong>The PDF review link is unavailable. Choose Hold for correction and ask the workflow owner for the generated PDF. Do not approve an invoice you cannot inspect.</strong></p>';\nconst summary=!complete?'The service returned an incomplete or unexpected validation result. This invoice is blocked.':!eligible?'This invoice is blocked from release. Correct the reported issues and submit it again.':'Technical validation passed. Human approval is still required.';\nconst html='<h2>'+esc(s.reference)+'</h2><p>'+esc(summary)+'</p><p>Validation: '+esc(r.status||'UNKNOWN')+' \u00b7 PDF/A-3: '+(r.pdfa===true?'Passed':'Not confirmed')+'</p><p>'+esc(explanations[r.contentMatchStatus]||'No reliable content-match result was returned.')+'</p>'+link+(findings.length?'<ul>'+findings.slice(0,40).map(f=>'<li>'+esc(f.severity)+' \u2014 '+esc(f.code)+': '+esc(f.message)+(f.field?' (field: '+esc(f.field)+')':'')+'</li>').join('')+'</ul>':'')+'<p>Compare seller, buyer, invoice number, dates, currency, line items, tax, totals and payment details. Approval records your decision; it does not change the validator result.</p>';\nreturn [{json:{...s,validation:r,eligible,needsComparison,reviewHtml:html,summary}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "6a58dd7b-74d1-406a-9bbf-e2b6b8c78730",
+      "name": "Eligible for review?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        384,
+        704
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "b9429d10-8117-4318-957e-d8d49e310958",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.eligible }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "045a23d3-3fc3-4fa5-b547-191873c36b86",
+      "name": "Review invoice",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        624,
+        560
+      ],
+      "webhookId": "00428943-78c7-41bc-9585-163a7361b553",
+      "parameters": {
+        "options": {
+          "formTitle": "Review invoice",
+          "formDescription": "={{ $json.reviewHtml }}"
+        },
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Reviewer name",
+              "requiredField": true
+            },
+            {
+              "fieldType": "dropdown",
+              "fieldLabel": "Decision",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Hold for correction"
+                  },
+                  {
+                    "option": "Approve after comparing PDF with source invoice"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldType": "textarea",
+              "fieldLabel": "Review notes"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "fdfff7d6-bfa1-4884-8ea2-682a5fc5d678",
+      "name": "Record review decision",
+      "type": "n8n-nodes-base.code",
+      "onError": "continueErrorOutput",
+      "position": [
+        864,
+        560
+      ],
+      "parameters": {
+        "jsCode": "const s=$('Interpret validation').first().json, j=$input.first().json;\nconst reviewer=String(j['Reviewer name']||'').trim();\nconst approved=s.eligible && reviewer.length>0 && j.Decision==='Approve after comparing PDF with source invoice';\nreturn [{json:{...s,disposition:approved?'APPROVED':'HELD',reviewer:reviewer.slice(0,200),reviewNotes:String(j['Review notes']||'').slice(0,4000),reviewedAt:new Date().toISOString(),humanComparisonAttested:approved}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c3306365-9d1e-41fc-aaf6-b7b156a5e0ca",
+      "name": "Build invoice audit bundle",
+      "type": "n8n-nodes-base.code",
+      "onError": "continueErrorOutput",
+      "position": [
+        1104,
+        704
+      ],
+      "parameters": {
+        "jsCode": "const j=$input.first().json, source=$('Check invoice submission').first();\nconst binary={};\nif(j.mode==='Validate existing hybrid PDF') binary.invoice={...source.binary.sourcePdf,fileName:(j.disposition==='APPROVED'?'':'NOT_RELEASED_')+j.slug+'.pdf'};\nelse {\n const g=$('Keep generated invoice').first();\n binary.invoice={...g.binary.invoice,fileName:(j.disposition==='APPROVED'?'':'NOT_RELEASED_')+j.slug+'.pdf'};\n binary.xml=source.binary.xml;\n if(source.binary.sourcePdf)binary.original=source.binary.sourcePdf;\n}\n// Resource URLs are temporary; keep findings but omit download URLs from the saved report.\nconst {inputUrl,...validation}=j.validation;\nconst report={workflow:'Create and validate ZUGFeRD and Factur-X e-invoices with pdfRest',reference:j.reference,task:j.mode,disposition:j.disposition,startedAt:j.startedAt,completedAt:new Date().toISOString(),replacementAllowed:j.regenerate,reviewer:j.reviewer,reviewedAt:j.reviewedAt||null,humanComparisonAttested:j.humanComparisonAttested,reviewNotes:j.reviewNotes,validation};\nbinary.report=await this.helpers.prepareBinaryData(Buffer.from(JSON.stringify(report,null,2)),'validation-and-review.json','application/json');\nconst findings=Array.isArray(validation.findings)?validation.findings:[];\nconst decisionSummary=j.disposition==='APPROVED'?'Technical validation passed and human approval was recorded.':j.disposition==='HELD'?'The reviewer held this invoice. It was not approved for release.':'The validation policy blocked this invoice. It was not approved for release.';\nconst text=['INVOICE '+j.reference,'Disposition: '+j.disposition,decisionSummary,'Validation status: '+(validation.status||'UNKNOWN'),'PDF/XML match: '+(validation.contentMatchStatus||'UNKNOWN'),'Reviewer: '+(j.reviewer||'Not approved'),'Review notes: '+(j.reviewNotes||''),'',...(findings.map(f=>f.severity+' | '+f.code+' | '+f.message)),'','APPROVED means the technical release policy passed and the named reviewer attested to comparison. This record does not authenticate the reviewer. No invoice was emailed, paid or submitted to a tax authority.','HELD or BLOCKED files are for investigation only. Correct the source system and resubmit.','The original XML is retained unchanged. PDF replacement permission does not prove that regeneration occurred.'];\nbinary.readme=await this.helpers.prepareBinaryData(Buffer.from(text.join('\\n')),'READ-ME.txt','text/plain');\nconst clean=x=>String(x??'').replace(/[\\r\\n\\t]+/g,' ').slice(0,1200);\nconst blockingReasons=findings.filter(f=>['BLOCKING','ERROR'].includes(f.severity)).map(f=>clean(f.code)+': '+clean(f.message));\nif(!blockingReasons.length && j.disposition==='BLOCKED') blockingReasons.push(clean(j.summary||('Validation '+(validation.status||'UNKNOWN')+'; PDF/A-3 '+(validation.pdfa===true?'passed':'not confirmed')+'; content comparison '+(validation.contentMatchStatus||'UNKNOWN'))));\nconst completionTitle=j.disposition==='APPROVED'?'Invoice APPROVED \u2014 download invoice and audit record':j.disposition==='HELD'?'Invoice HELD \u2014 not released; download review record':'Invoice BLOCKED \u2014 not released; download validation report';\nconst failureSummary='Invoice '+clean(j.reference)+' NOT RELEASED \u2014 validation BLOCKED. '+blockingReasons.join(' | ')+' See validation-and-review.json for the full report. The API returned a validation result; this is not an API request failure.';\nreturn [{json:{reference:j.reference,disposition:j.disposition,completionTitle,failureSummary,zipName:j.slug+'_'+j.disposition+'.zip'},binary}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "13c5ce13-84f7-4153-b49c-dd3a886cd664",
+      "name": "ZIP invoice and audit files",
+      "type": "n8n-nodes-base.compression",
+      "onError": "continueErrorOutput",
+      "position": [
+        1344,
+        704
+      ],
+      "parameters": {
+        "fileName": "={{ $json.zipName }}",
+        "operation": "compress",
+        "binaryPropertyName": "={{ Object.keys($binary).join(\",\") }}",
+        "binaryPropertyOutput": "bundle"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "5822bea6-ccd8-4f3f-ab3c-6c7f2a0b7ec9",
+      "name": "Download result",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        1584,
+        704
+      ],
+      "webhookId": "1b0ad652-0501-49f1-857e-4ed945d14dc6",
+      "parameters": {
+        "options": {},
+        "operation": "completion",
+        "respondWith": "returnBinary",
+        "completionTitle": "={{ $('Build invoice audit bundle').first().json.completionTitle }}",
+        "inputDataFieldName": "bundle"
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "631ff609-1c77-423e-9ea4-b92635353674",
+      "name": "Record blocked result",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        624,
+        912
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{...$json,disposition:'BLOCKED',reviewer:null,reviewNotes:'Release prevented by validation policy.',humanComparisonAttested:false}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "210e7194-7587-40b0-b661-d9d4330ce99d",
+      "name": "Existing visual PDF?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -816,
+        912
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "45c82e39-8ed9-48ef-b823-fee30db36baa",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.mode === 'Pair XML with existing PDF' }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "c66041a7-5d7a-4b8c-be2f-612cad2814d3",
+      "name": "Pair XML and visual PDF",
+      "type": "@pdfrest/n8n-nodes-pdfrest.pdfRest",
+      "onError": "continueErrorOutput",
+      "position": [
+        -496,
+        672
+      ],
+      "parameters": {
+        "options": {
+          "output": "={{ $json.slug }}",
+          "regeneratePdf": "={{ $json.regenerate }}"
+        },
+        "operation": "createZugferd",
+        "pdfInputType": "inputFile",
+        "requestOptions": {},
+        "downloadOutputFiles": true,
+        "pdfFileDataFieldName": "sourcePdf",
+        "inputFileDataFieldName": "xml",
+        "outputFileDataFieldName": "invoice"
+      },
+      "retryOnFail": false,
+      "typeVersion": 1
+    },
+    {
+      "id": "0c2a1ae0-d360-4499-b5d1-54ab8682ecf8",
+      "name": "Keep generated invoice",
+      "type": "n8n-nodes-base.code",
+      "onError": "continueErrorOutput",
+      "position": [
+        -336,
+        912
+      ],
+      "parameters": {
+        "jsCode": "const i=$input.first(), s=$('Check invoice submission').first();\nif(typeof i.json.outputId!=='string'||!i.json.outputId||!i.binary?.invoice) throw new Error('The service did not return a completed PDF and resource ID. Check the pdfRest response.');\nreturn [{json:{...s.json,resourceId:i.json.outputId},binary:{...s.binary,invoice:{...i.binary.invoice,fileName:s.json.slug+'.pdf'}}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "840cbe2b-41db-4444-b0e4-aca508cd85f6",
+      "name": "Validate generated invoice",
+      "type": "@pdfrest/n8n-nodes-pdfrest.pdfRest",
+      "onError": "continueErrorOutput",
+      "position": [
+        -96,
+        912
+      ],
+      "parameters": {
+        "options": {},
+        "inputType": "resourceId",
+        "operation": "validateZugferd",
+        "resourceId": "={{ $json.resourceId }}",
+        "requestOptions": {}
+      },
+      "retryOnFail": false,
+      "typeVersion": 1
+    },
+    {
+      "id": "1c3232ad-327d-407a-96c8-6df58019efff",
+      "name": "Generate invoice from XML",
+      "type": "@pdfrest/n8n-nodes-pdfrest.pdfRest",
+      "onError": "continueErrorOutput",
+      "position": [
+        -576,
+        1056
+      ],
+      "parameters": {
+        "options": {
+          "output": "={{ $json.slug }}"
+        },
+        "operation": "createZugferd",
+        "requestOptions": {},
+        "downloadOutputFiles": true,
+        "inputFileDataFieldName": "xml",
+        "outputFileDataFieldName": "invoice"
+      },
+      "retryOnFail": false,
+      "typeVersion": 1
+    },
+    {
+      "id": "c04e4632-43fb-45f8-ac73-30a5c4fdee6a",
+      "name": "Explain upload correction",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1072,
+        1200
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{message:$json.errors.join(' ')+' Start a new submission with the corrected files. Nothing was created or released.'}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cab8bb28-5a4e-4313-8867-1ed355c2d8f1",
+      "name": "Upload needs correction",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        -832,
+        1200
+      ],
+      "webhookId": "b0883490-79c6-4e48-bf95-0ed12a699adc",
+      "parameters": {
+        "options": {},
+        "operation": "completion",
+        "completionTitle": "Check your upload",
+        "completionMessage": "={{ $json.message }}"
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "6bdd4c64-4dab-4150-8c2b-17ed6d25e1b4",
+      "name": "Start here",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1776,
+        112
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 650,
+        "height": 470,
+        "content": "## Start here\n1. Install **@pdfrest/n8n-nodes-pdfrest 0.2.0 or newer**.\n2. Connect your pdfRest API credential to all four pdfRest nodes. Choose the appropriate API region in the credential.\n3. Run the upload form and select a task. Create needs CII XML; Pair needs XML + PDF; Validate needs only the completed hybrid PDF.\n4. Review validation results and open the invoice PDF. Compare it with your source invoice before approving. Hold it if anything is unclear.\n5. Download the ZIP. Its filename and READ-ME identify APPROVED, HELD or BLOCKED.\n\nRequires an API plan with creation/validation access and visible validation details. No OpenAI, database or Drive account is needed.\n\nUse the same credential in all four pdfRest nodes. For public Cloud, use https://api.pdfrest.com or https://eu-api.pdfrest.com. Internal testing keys require the matching environment. Verify unredacted validation access; a connection test alone does not confirm it.\n\nBefore production, configure background error notifications as described in Important notes. APPROVED, HELD, and BLOCKED are shown explicitly on the download screen. Inspect the ZIP report for full validation findings."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "66a2c220-541d-44f2-a47a-15f1c17bf796",
+      "name": "How it works",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -928,
+        0
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 690,
+        "height": 434,
+        "content": "## How it works\n**Check inputs \u2192 Create or validate \u2192 Independent validation \u2192 Human review \u2192 Audit ZIP**\n\n**Create from XML:** pdfRest generates the visual PDF and packages the invoice XML.\n\n**Pair XML with existing PDF:** Preserve requests keep the visual PDF only when the API accepts the comparison. A reported mismatch stops creation. Choosing Allow replacement explicitly permits regeneration from the canonical XML when needed; it does not guarantee the original design is retained.\n\n**Validate existing hybrid PDF:** checks the uploaded completed invoice without modifying it.\n\nPer the API contract, incomplete reverse comparison alone is non-blocking. A VALID, PDF/A-3 result with UNVERIFIED or NOT_APPLICABLE matching goes to human comparison; mismatches, errors, redacted and unknown results cannot be approved.\n\nThe audit ZIP records API validation and human disposition separately. Source files are retained when supplied. HELD and BLOCKED PDFs are marked NOT_RELEASED."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c6ef4937-53d2-487c-b5a7-10b957ba3ffb",
+      "name": "Important notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        64,
+        -80
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 720,
+        "height": 600,
+        "content": "## Important notes\nUse authoritative **CII XML** from your invoicing system; this workflow does not invent invoice values or convert UBL. Supported API profiles: MINIMUM, BASIC WL, BASIC and EN16931. EXTENDED and XRECHNUNG are unsupported in the supplied API spec.\n\nTechnical validation and human approval are separate. Approval never changes the API result. Self-entered reviewer names are an audit note, not authenticated identity. Protect the form through your deployment access controls.\n\nFiles go to pdfRest and may remain in n8n execution history; configure your retention policy. Review links may expire\u2014rerun if needed.\n\nThis workflow does not send invoices, make payments, provide duplicate protection across runs or submit to tax authorities. Each file is limited to 20 MB. Correct XML in the source system and resubmit; no raw JSON editing is required.\n\nService failures show a step-specific explanation and then Stop And Error marks the execution failed. The original node uses a handled error branch; the final Stop And Error node is red. Full API findings cannot be recovered if the node discarded them. BLOCKED validation results retain a diagnostic ZIP and end as failed; a reviewer choosing HELD is not a technical failure.\n\n**Background monitoring:** A failed execution does not send an alert by itself. Before production, create a separate Error Trigger workflow with your email or Slack notification node and select it in this workflow\u2019s Settings \u2192 Error workflow. Include execution.error.message (invoice reference and reason), execution.lastNodeExecuted, and execution.url when available. Configure credentials and recipients there. Error Trigger notifications must be tested with a production execution; manual editor runs do not trigger them. HELD is an intentional reviewer decision and does not trigger failure alerts. No notification destination is configured in this template."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c7a45e90-5fce-4114-a1a1-c10903ca6599",
+      "name": "Identify failure - Check invoice submission",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1536,
+        976
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{failedStep:\"Check invoice submission\",errorPayload:$input.first().json}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "58821b3d-dc7c-4f98-bf7c-3f2a39d86f57",
+      "name": "Identify failure - Validate uploaded invoice",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -272,
+        640
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{failedStep:\"Validate uploaded invoice\",errorPayload:$input.first().json}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "5c8abb7e-ab04-4ba6-b649-96789e19af2a",
+      "name": "Identify failure - Interpret validation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        144,
+        928
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{failedStep:\"Interpret validation\",errorPayload:$input.first().json}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "40fcf30f-1ca3-440c-ad39-b5b54e6de605",
+      "name": "Identify failure - Record review decision",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        864,
+        784
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{failedStep:\"Record review decision\",errorPayload:$input.first().json}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "349806e9-f838-42ad-9602-282c417b1bf5",
+      "name": "Identify failure - Build invoice audit bundle",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1104,
+        928
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{failedStep:\"Build invoice audit bundle\",errorPayload:$input.first().json}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "89576313-ed8d-4926-942f-3ec37b3018ac",
+      "name": "Identify failure - ZIP invoice and audit files",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1344,
+        928
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{failedStep:\"ZIP invoice and audit files\",errorPayload:$input.first().json}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "d2089786-9852-4098-aebc-de30b04af158",
+      "name": "Identify failure - Pair XML and visual PDF",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -528,
+        896
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{failedStep:\"Pair XML and visual PDF\",errorPayload:$input.first().json}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b1a3c561-ee84-476f-bf1b-5d52d8738544",
+      "name": "Identify failure - Keep generated invoice",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -240,
+        1120
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{failedStep:\"Keep generated invoice\",errorPayload:$input.first().json}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c50e6db6-a842-4bd2-a81f-1204d5605535",
+      "name": "Identify failure - Validate generated invoice",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        48,
+        1152
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{failedStep:\"Validate generated invoice\",errorPayload:$input.first().json}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f0fe98fe-bcbe-4196-9602-05b9805fd63a",
+      "name": "Identify failure - Generate invoice from XML",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -592,
+        1360
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{failedStep:\"Generate invoice from XML\",errorPayload:$input.first().json}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "35fd8e4f-d47d-4418-b87e-788a0a3d1501",
+      "name": "Mark processing failure",
+      "type": "n8n-nodes-base.stopAndError",
+      "position": [
+        384,
+        1360
+      ],
+      "parameters": {
+        "errorMessage": "={{ $('Explain service failure').first().json.failureSummary }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6410409c-6af3-45a1-9549-8a1b50a2808e",
+      "name": "Blocked validation result?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1824,
+        704
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "31b27123-ae54-4784-a623-b5c5919c72ce",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Build invoice audit bundle').first().json.disposition === 'BLOCKED' }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "866f07d4-cf40-4971-b840-02f43d332c90",
+      "name": "Mark validation blocked",
+      "type": "n8n-nodes-base.stopAndError",
+      "position": [
+        2064,
+        704
+      ],
+      "parameters": {
+        "errorMessage": "={{ $('Build invoice audit bundle').first().json.failureSummary }}"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "nodeGroups": [],
+  "connections": {
+    "Review invoice": {
+      "main": [
+        [
+          {
+            "node": "Record review decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit invoice": {
+      "main": [
+        [
+          {
+            "node": "Check invoice submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download result": {
+      "main": [
+        [
+          {
+            "node": "Blocked validation result?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submission valid?": {
+      "main": [
+        [
+          {
+            "node": "Validate existing invoice?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Explain upload correction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eligible for review?": {
+      "main": [
+        [
+          {
+            "node": "Review invoice",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record blocked result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existing visual PDF?": {
+      "main": [
+        [
+          {
+            "node": "Pair XML and visual PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate invoice from XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Interpret validation": {
+      "main": [
+        [
+          {
+            "node": "Eligible for review?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Identify failure - Interpret validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record blocked result": {
+      "main": [
+        [
+          {
+            "node": "Build invoice audit bundle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep generated invoice": {
+      "main": [
+        [
+          {
+            "node": "Validate generated invoice",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Identify failure - Keep generated invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record review decision": {
+      "main": [
+        [
+          {
+            "node": "Build invoice audit bundle",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Identify failure - Record review decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Explain service failure": {
+      "main": [
+        [
+          {
+            "node": "Processing could not finish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pair XML and visual PDF": {
+      "main": [
+        [
+          {
+            "node": "Keep generated invoice",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Identify failure - Pair XML and visual PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check invoice submission": {
+      "main": [
+        [
+          {
+            "node": "Submission valid?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Identify failure - Check invoice submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Explain upload correction": {
+      "main": [
+        [
+          {
+            "node": "Upload needs correction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate invoice from XML": {
+      "main": [
+        [
+          {
+            "node": "Keep generated invoice",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Identify failure - Generate invoice from XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate uploaded invoice": {
+      "main": [
+        [
+          {
+            "node": "Interpret validation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Identify failure - Validate uploaded invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Blocked validation result?": {
+      "main": [
+        [
+          {
+            "node": "Mark validation blocked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build invoice audit bundle": {
+      "main": [
+        [
+          {
+            "node": "ZIP invoice and audit files",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Identify failure - Build invoice audit bundle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate existing invoice?": {
+      "main": [
+        [
+          {
+            "node": "Validate uploaded invoice",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Existing visual PDF?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate generated invoice": {
+      "main": [
+        [
+          {
+            "node": "Interpret validation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Identify failure - Validate generated invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processing could not finish": {
+      "main": [
+        [
+          {
+            "node": "Mark processing failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ZIP invoice and audit files": {
+      "main": [
+        [
+          {
+            "node": "Download result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Identify failure - ZIP invoice and audit files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identify failure - Interpret validation": {
+      "main": [
+        [
+          {
+            "node": "Explain service failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identify failure - Keep generated invoice": {
+      "main": [
+        [
+          {
+            "node": "Explain service failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identify failure - Record review decision": {
+      "main": [
+        [
+          {
+            "node": "Explain service failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identify failure - Pair XML and visual PDF": {
+      "main": [
+        [
+          {
+            "node": "Explain service failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identify failure - Check invoice submission": {
+      "main": [
+        [
+          {
+            "node": "Explain service failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identify failure - Generate invoice from XML": {
+      "main": [
+        [
+          {
+            "node": "Explain service failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identify failure - Validate uploaded invoice": {
+      "main": [
+        [
+          {
+            "node": "Explain service failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identify failure - Build invoice audit bundle": {
+      "main": [
+        [
+          {
+            "node": "Explain service failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identify failure - Validate generated invoice": {
+      "main": [
+        [
+          {
+            "node": "Explain service failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identify failure - ZIP invoice and audit files": {
+      "main": [
+        [
+          {
+            "node": "Explain service failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

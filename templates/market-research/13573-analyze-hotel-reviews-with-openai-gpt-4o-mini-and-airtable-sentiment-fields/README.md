@@ -1,6 +1,6 @@
 # 📊 Analyze hotel reviews with OpenAI GPT-4o-mini and Airtable sentiment fields
 
-> ⚡ **4 views** · 📊 [Market Research & Insights](../)
+> ⚡ **33 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

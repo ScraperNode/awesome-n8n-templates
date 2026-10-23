@@ -1,6 +1,6 @@
 # ⚡ Create a collection and create, update, and get a bookmark in Raindrop
 
-> ⚡ **1,423 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,469 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

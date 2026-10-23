@@ -1,6 +1,6 @@
 # 📱 Add a check condition for a loop in n8n
 
-> ⚡ **11,893 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **12,531 views** · 📱 [Social Media & Email Marketing](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >

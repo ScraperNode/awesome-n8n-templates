@@ -1,6 +1,6 @@
 # 📋 Automate client onboarding with Google Forms, GPT‑4o, ClickUp and Gmail
 
-> ⚡ **21 views** · 📋 [Project Management](../)
+> ⚡ **168 views** · 📋 [Project Management](../)
 
 ## Description
 

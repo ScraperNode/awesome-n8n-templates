@@ -1,6 +1,6 @@
 # 🤝 CallForge - 04 - AI workflow for Gong.io sales calls
 
-> ⚡ **2,799 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,921 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

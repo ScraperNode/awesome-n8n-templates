@@ -1,6 +1,6 @@
 # 🔬 Generate post-event reports with GPT-4, email delivery & database storage
 
-> ⚡ **216 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **296 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

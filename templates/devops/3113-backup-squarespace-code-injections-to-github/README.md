@@ -1,6 +1,6 @@
 # ⚙️ Backup Squarespace code injections to Github
 
-> ⚡ **384 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **406 views** · ⚙️ [DevOps & CI/CD](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

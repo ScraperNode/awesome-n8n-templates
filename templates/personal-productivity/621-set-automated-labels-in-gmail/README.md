@@ -1,6 +1,6 @@
 # ⚡ Set automated labels in Gmail
 
-> ⚡ **4,421 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,470 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

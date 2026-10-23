@@ -1,6 +1,6 @@
 # 📖 Build a GLPI knowledge base RAG pipeline with Google Gemini and PostgreSQL
 
-> ⚡ **318 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **428 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

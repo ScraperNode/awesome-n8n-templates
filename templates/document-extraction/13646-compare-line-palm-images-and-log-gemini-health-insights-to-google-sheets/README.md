@@ -1,6 +1,6 @@
 # 🔬 Compare LINE palm images and log Gemini health insights to Google Sheets
 
-> ⚡ **8 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **31 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Automatic re-engagement for inactive Shopify customers via Beex
 
-> ⚡ **179 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **196 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

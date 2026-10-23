@@ -1,6 +1,6 @@
 # ⚡ Homey Pro - smarthouse integration with LLM
 
-> ⚡ **1,247 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,323 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

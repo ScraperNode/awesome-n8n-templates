@@ -1,6 +1,6 @@
 # 📁 Sync new files from Google Drive with Airtable
 
-> ⚡ **1,262 views** · 📁 [File Management](../)
+> ⚡ **1,295 views** · 📁 [File Management](../)
 
 ## Description
 

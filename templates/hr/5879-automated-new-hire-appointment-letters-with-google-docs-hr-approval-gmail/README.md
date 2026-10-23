@@ -1,6 +1,6 @@
 # 👥 Automated new hire appointment letters with Google Docs, HR approval & Gmail
 
-> ⚡ **2,423 views** · 👥 [HR & Recruitment](../)
+> ⚡ **3,190 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

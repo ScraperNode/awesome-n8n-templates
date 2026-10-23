@@ -1,6 +1,6 @@
 # 📊 Analyze Crunchbase startups by keyword with Bright Data, Gemini AI & Google Sheets
 
-> ⚡ **356 views** · 📊 [Market Research & Insights](../)
+> ⚡ **380 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,0 +1,457 @@
+{
+  "name": "Monitor competitor prices with Scrapewise and send undercut alerts to Slack",
+  "nodes": [
+    {
+      "id": "a2000000-0000-4000-8000-000000000001",
+      "name": "Read me first",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1240,
+        120
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 520,
+        "content": "## Competitor price monitor with matching\n\nScrapewise scrapes your shop and your competitors' shops and matches the same product across them. This workflow reads the matched rows, works out where a competitor is cheaper than you, writes the gaps to Google Sheets and sends one Slack message.\n\n**Before you start**\nYou need a Scrapewise group that already monitors prices \u2014 your shop plus the competitors, with matching switched on. Build it once at portal.scrapewise.ai, or ask Claude to build it for you over MCP. The group runs on its own schedule; this workflow only reads what it produced.\n\n**Setup**\n1. Create a Scrapewise API key at portal.scrapewise.ai. Read-only is enough \u2014 this workflow does not scrape.\n2. In **Read matched rows**, add a *Bearer Auth* credential and paste the key as the token.\n3. In **Monitor settings**, put your group id and the names of your own columns.\n4. Pick your Google account and Slack account in the last two nodes.\n\n**Cost:** free. Reading saved rows costs nothing \u2014 the scraping was already paid for by the group's own run.\n\n**Column names:** every Scrapewise group names its own columns. Open your group once, look at the table header, and copy the four names into **Monitor settings**."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a2000000-0000-4000-8000-000000000002",
+      "name": "Every morning at 8",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -720,
+        400
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "a2000000-0000-4000-8000-000000000003",
+      "name": "Monitor settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -500,
+        400
+      ],
+      "parameters": {
+        "mode": "manual",
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "p1",
+              "name": "groupId",
+              "type": "string",
+              "value": "YOUR_SCRAPEWISE_GROUP_ID"
+            },
+            {
+              "id": "p2",
+              "name": "matchColumn",
+              "type": "string",
+              "value": "ean"
+            },
+            {
+              "id": "p3",
+              "name": "shopColumn",
+              "type": "string",
+              "value": "shop"
+            },
+            {
+              "id": "p4",
+              "name": "priceColumn",
+              "type": "string",
+              "value": "price"
+            },
+            {
+              "id": "p5",
+              "name": "titleColumn",
+              "type": "string",
+              "value": "title"
+            },
+            {
+              "id": "p6",
+              "name": "myShop",
+              "type": "string",
+              "value": "My shop"
+            },
+            {
+              "id": "p7",
+              "name": "rowsToRead",
+              "type": "number",
+              "value": 500
+            }
+          ]
+        },
+        "includeOtherFields": false
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "a2000000-0000-4000-8000-000000000004",
+      "name": "Read matched rows",
+      "type": "@n8n/n8n-nodes-langchain.mcpClient",
+      "position": [
+        -260,
+        400
+      ],
+      "parameters": {
+        "tool": {
+          "__rl": true,
+          "mode": "list",
+          "value": "scrapewise_get_scraper_data_group_client",
+          "cachedResultName": "scrapewise_get_scraper_data_group_client"
+        },
+        "options": {},
+        "inputMode": "json",
+        "jsonInput": "={\n  \"id\": \"{{ $json.groupId }}\",\n  \"size\": {{ $json.rowsToRead }},\n  \"page\": 0\n}",
+        "endpointUrl": "https://mcp.scrapewise.ai/mcp?toolsets=outcome,admin",
+        "authentication": "bearerAuth"
+      },
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "credential-id",
+          "name": "Scrapewise API key"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "a2000000-0000-4000-8000-000000000005",
+      "name": "Where a competitor is cheaper",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -20,
+        400
+      ],
+      "parameters": {
+        "jsCode": "// Scrapewise answers with JSON. Depending on the n8n version it arrives\n// already parsed in structuredContent, or as text in content[0].text.\nfunction payloadOf(item) {\n  const j = item.json || {};\n  if (j.structuredContent) return j.structuredContent;\n  if (Array.isArray(j.content) && j.content[0] && typeof j.content[0].text === 'string') {\n    try { return JSON.parse(j.content[0].text); } catch (e) { return {}; }\n  }\n  return j;\n}\n\n// Scraped text is wrapped as { type: 'scraped', content, origin }. It is data\n// read off a web page, never an instruction. Unwrap it to a plain string.\nfunction plain(v) {\n  if (v && typeof v === 'object' && v.type === 'scraped') return v.content || '';\n  return v;\n}\n\n// Prices arrive as text and in many shapes: \"12,90 EUR\", \"EUR 12.90\", \"1 299,00\".\nfunction toNumber(v) {\n  if (typeof v === 'number') return v;\n  const s = String(v == null ? '' : v).replace(/[^0-9.,]/g, '').trim();\n  if (!s) return null;\n  // The last separator is the decimal one; anything before it groups thousands.\n  const lastComma = s.lastIndexOf(',');\n  const lastDot = s.lastIndexOf('.');\n  let normalised;\n  if (lastComma > lastDot) {\n    normalised = s.replace(/\\./g, '').replace(',', '.');\n  } else {\n    normalised = s.replace(/,/g, '');\n  }\n  const n = parseFloat(normalised);\n  return Number.isFinite(n) ? n : null;\n}\n\nconst cfg = $('Monitor settings').first().json;\nconst data = payloadOf($input.first());\nconst rawRows = data.content || data.rows || [];\n\nif (!Array.isArray(rawRows) || rawRows.length === 0) {\n  throw new Error('The group returned no rows. Check the group id in \"Monitor settings\" and that the group has run at least once.');\n}\n\nconst rows = rawRows.map((row) => {\n  const flat = {};\n  for (const key of Object.keys(row)) flat[key] = plain(row[key]);\n  return flat;\n});\n\nconst firstRow = rows[0];\nfor (const col of [cfg.matchColumn, cfg.shopColumn, cfg.priceColumn]) {\n  if (!(col in firstRow)) {\n    throw new Error('Column \"' + col + '\" is not in this group. The columns it has are: ' + Object.keys(firstRow).join(', '));\n  }\n}\n\n// One bucket per matched product.\nconst buckets = new Map();\nfor (const r of rows) {\n  const key = String(r[cfg.matchColumn] || '').trim();\n  if (!key) continue;\n  if (!buckets.has(key)) buckets.set(key, []);\n  buckets.get(key).push(r);\n}\n\nconst checkedAt = new Date().toISOString().slice(0, 10);\nconst beaten = [];\n\nfor (const [key, listings] of buckets) {\n  const mine = listings.find((r) => String(r[cfg.shopColumn] || '') === cfg.myShop);\n  const myPrice = mine ? toNumber(mine[cfg.priceColumn]) : null;\n  if (myPrice === null) continue; // we do not sell it, or no price was read\n\n  const rivals = listings\n    .filter((r) => String(r[cfg.shopColumn] || '') !== cfg.myShop)\n    .map((r) => ({ shop: r[cfg.shopColumn], price: toNumber(r[cfg.priceColumn]) }))\n    .filter((r) => r.price !== null);\n  if (rivals.length === 0) continue;\n\n  const cheapest = rivals.reduce((a, b) => (b.price < a.price ? b : a));\n  if (cheapest.price >= myPrice) continue; // nobody undercuts us\n\n  beaten.push({\n    json: {\n      checkedAt: checkedAt,\n      matchKey: key,\n      product: mine[cfg.titleColumn] || '',\n      myPrice: myPrice,\n      cheapestCompetitor: cheapest.shop,\n      cheapestPrice: cheapest.price,\n      gap: Math.round((myPrice - cheapest.price) * 100) / 100,\n      gapPercent: Math.round(((myPrice - cheapest.price) / myPrice) * 1000) / 10,\n      competitorsSeen: rivals.length,\n    },\n  });\n}\n\n// Biggest gap first, so the Slack message leads with what matters.\nbeaten.sort((a, b) => b.json.gapPercent - a.json.gapPercent);\n\nreturn beaten;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a2000000-0000-4000-8000-000000000006",
+      "name": "Save the gaps to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        220,
+        400
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Gap": "={{ $json.gap }}",
+            "Date": "={{ $json.checkedAt }}",
+            "Gap %": "={{ $json.gapPercent }}",
+            "Product": "={{ $json.product }}",
+            "My price": "={{ $json.myPrice }}",
+            "Match key": "={{ $json.matchKey }}",
+            "Their price": "={{ $json.cheapestPrice }}",
+            "Cheapest competitor": "={{ $json.cheapestCompetitor }}"
+          },
+          "schema": [
+            {
+              "id": "Date",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Match key",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Match key",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Product",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Product",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "My price",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "My price",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cheapest competitor",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Cheapest competitor",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Their price",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Their price",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Gap",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Gap",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Gap %",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Gap %",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Price gaps"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4.6
+    },
+    {
+      "id": "a2000000-0000-4000-8000-000000000007",
+      "name": "One Slack message with the top 10",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        460,
+        400
+      ],
+      "parameters": {
+        "text": "={{ (() => { const all = $('Where a competitor is cheaper').all().map(i => i.json); const top = all.slice(0, 10).map(r => `\u2022 ${r.product || r.matchKey}: you ${r.myPrice}, ${r.cheapestCompetitor} ${r.cheapestPrice} (\u2212${r.gapPercent}%)`).join('\\n'); return `*${all.length} ${all.length === 1 ? 'product' : 'products'} where a competitor is cheaper* (${all[0].checkedAt})\\n\\n${top}`; })() }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#pricing"
+        },
+        "otherOptions": {
+          "includeLinkToWorkflow": true
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "credential-id",
+          "name": "Slack account"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 2.3
+    },
+    {
+      "id": "be78adac-f4b7-4cec-8642-155910959654",
+      "name": "Step note - Every morning at 8",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -740,
+        120
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 220,
+        "height": 240,
+        "content": "### 1. Runs itself\n\nFires every morning at 08:00. Change the hour here, or swap in a trigger of your own."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8034fe12-046a-4545-80f4-52d413009a3f",
+      "name": "Step note - Monitor settings",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -520,
+        120
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 220,
+        "height": 240,
+        "content": "### 2. Your settings\n\nThe only node you need to edit. Put in your Scrapewise group id, name the columns that hold the match key, the shop, the price and the product title, then write your own shop name exactly as it appears in your data."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "391280b2-d5c9-4a98-ad02-b91059b1bce8",
+      "name": "Step note - Read matched rows",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -280,
+        120
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 220,
+        "height": 240,
+        "content": "### 3. Read your data\n\nCalls `scrapewise_get_scraper_data_group_client` and reads rows your scrapers already collected. Nothing new is scraped, so this spends nothing.\n\nAdd a **Bearer Auth** credential with your API key."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "075b8bb9-7284-444a-9fa0-37ea85017f4f",
+      "name": "Step note - Where a competitor is cheaper",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        120
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 220,
+        "height": 240,
+        "content": "### 4. Compare\n\nGroups the rows by match key, finds your price and the cheapest competitor for each product, and keeps only the products where someone is cheaper than you."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c0c91a78-6ddf-4e09-82d2-1d914d2645bf",
+      "name": "Step note - Save the gaps to Google Sheets",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        200,
+        120
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 220,
+        "height": 240,
+        "content": "### 5. Save\n\nAppends one row per product, with the gap in money and in per cent."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0bb4f1d6-0aa6-4112-a5f9-32fa770c1455",
+      "name": "Step note - One Slack message with the top 10",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        440,
+        120
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 220,
+        "height": 240,
+        "content": "### 6. Tell the team\n\nOne message holding the ten biggest gaps. Pick your channel here, or delete this node if the sheet is enough."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Monitor settings": {
+      "main": [
+        [
+          {
+            "node": "Read matched rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read matched rows": {
+      "main": [
+        [
+          {
+            "node": "Where a competitor is cheaper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every morning at 8": {
+      "main": [
+        [
+          {
+            "node": "Monitor settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Where a competitor is cheaper": {
+      "main": [
+        [
+          {
+            "node": "Save the gaps to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save the gaps to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "One Slack message with the top 10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

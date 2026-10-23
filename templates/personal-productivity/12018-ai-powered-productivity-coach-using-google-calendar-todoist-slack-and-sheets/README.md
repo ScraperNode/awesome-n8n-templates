@@ -1,6 +1,6 @@
 # ⚡ AI-powered productivity coach using Google Calendar, Todoist, Slack and Sheets
 
-> ⚡ **116 views** · ⚡ [Personal Productivity](../)
+> ⚡ **235 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📁 Get multiple attachments from Gmail and upload them to GDrive
 
-> ⚡ **11,147 views** · 📁 [File Management](../)
+> ⚡ **11,621 views** · 📁 [File Management](../)
 
 ## Description
 

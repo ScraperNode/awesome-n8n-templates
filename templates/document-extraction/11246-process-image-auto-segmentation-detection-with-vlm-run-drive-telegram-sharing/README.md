@@ -1,6 +1,6 @@
 # 🔬 Process Image Auto segmentation & Detection with VLM Run, Drive-Telegram Sharing
 
-> ⚡ **36 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **69 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

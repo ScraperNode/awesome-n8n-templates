@@ -1,24 +1,26 @@
 # 🔧 Domain availability monitor with Porkbun, Google Sheets & multi-channel alerts
 
-> ⚡ **68 views** · 🔧 [Miscellaneous](../)
+> ⚡ **117 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 
-This workflow automatically checks a list of desired domain names for availability every 30 minutes. Using the Porkbun API and Google Sheets, it instantly sends detailed notifications via Gmail and Discord the moment a domain becomes available, so you can secure it before anyone else.
+Never lose a domain to slow checking again. This workflow watches your domain wishlist every 30 minutes with the Porkbun API and Google Sheets. The second a domain becomes available, Gmail and Discord alerts fire with pricing and a direct registration link. You move before anyone else.
+
+*Last updated: September 2026.*
 
 ## Why Use This Workflow?
 
-**Time Savings:** Eliminates hours of manual domain checking each week. Set your list once and let the automation monitor your targets 24/7.
+**Time Savings:** Weekly hours of manual domain checking disappear. Set your list once, monitoring runs 24/7.
 
-**Competitive Edge:** Gain a critical speed advantage in acquiring high-value or expiring domains the second they become available.
+**Competitive Edge:** A critical speed advantage on high-value or expiring domains, the second they drop.
 
-**Scalability:** Effortlessly monitor hundreds of domains simultaneously without any extra effort or performance degradation.
+**Scalability:** Hundreds of domains monitored simultaneously with no extra effort or slowdown.
 
 ## Ideal For
 
-- **Domain Investors:** Automatically track and snipe valuable expiring domains for their portfolio without constant manual checks.
-- **Marketing Agencies & SEO Specialists:** Secure brandable domains for new clients or build out private blog networks by catching domains as soon as they drop.
-- **Startups & Entrepreneurs:** Monitor desired brand names without the daily hassle, ensuring they get the perfect domain the moment it's available.
+- **Domain Investors:** Track and snipe valuable expiring domains for a portfolio without constant manual checks.
+- **Marketing Agencies & SEO Specialists:** Secure brandable domains for new clients or build private blog networks by catching drops fast.
+- **Startups & Entrepreneurs:** Watch desired brand names without daily hassle, grabbing the perfect domain the moment it frees up.
 
 ## How It Works
 
@@ -35,14 +37,14 @@ This workflow automatically checks a list of desired domain names for availabili
 
 | Requirement | Type | Purpose |
 |-------------|------|---------|
-| [n8n instance](https://n8n.partnerlinks.io/khmuhtadin) | Essential | Workflow execution platform |
+| [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin) | Essential | Workflow execution platform |
 | [Porkbun Account](https://porkbun.com/) | Essential | API Access for domain checks |
 | Google Cloud Platform | Essential | Storing domain list (Sheets) & sending alerts (Gmail) |
 | Discord Server | Optional | Real-time channel notifications |
 
 ### Installation Steps
 
-1. Import the JSON file to your [n8n instance](https://n8n.partnerlinks.io/khmuhtadin).
+1. Import the JSON file to your [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin).
 2. **Create a Google Sheet** with two columns: `Domain` (e.g., example.com) and `isAvailable` (e.g., no).
 3. **Configure credentials:**
    - **Porkbun**: Log in to Porkbun, go to API Access, create a new key, and copy the API Key and Secret Key into the HTTP Request nodes. A "Validate API KEY" node is included for testing your credentials.
@@ -100,21 +102,31 @@ A `Wait` node is crucial for respecting API rate limits, ensuring the workflow r
 |---------|-------|----------|
 | Workflow fails at HTTP Request node | Invalid Porkbun API credentials. | Use the separate "Validate API KEY" node to test your keys directly. Regenerate them if needed. |
 | No domains are processed | Google Sheets node configuration error or the sheet is empty. | Verify the Sheet ID is correct and that the `isAvailable` column contains "no" for the domains you want to check. |
-| Authentication errors | Google or Discord credentials have expired or lack permissions. | Re-authenticate the respective nodes in the n8n credentials panel. |
-
+| Authentication errors | Google or Discord credentials have expired or lack permissions. | Re-authenticate the respective nodes in the [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) credentials panel. |
 
 ---
 
-**Created by:** [Khaisa Studio](https://khaisa.studio)
+### Quick Answers
+**How often does it check?**  
+Every 30 minutes by default. Adjust the Schedule Trigger freely.  
+**How do alerts stop repeating?**  
+The sheet flips to "available" after the first alert, so re-runs stay quiet.  
+**What protects the API quota?**  
+A 10-second Wait between domains plus sequential batch processing.  
+
+**Made by:** [khmuhtadin](https://khmuhtadin.com)
 
 **Category:** Monitoring
 **Tags:** Porkbun, Domain, Automation, Google Sheets, Notifications
 
-**Need custom workflows?** [Contact us](https://khaisa.studio/pages/contact)
+**Need custom workflows?** [Contact me](https://khmuhtadin.com/contact)
 
 **Connect with the creator:**
 
 [Portfolio](https://khmuhtadin.com) • [Workflows](https://khaisa.studio/products/) • [LinkedIn](https://www.linkedin.com/in/khmuhtadin/) • [Medium](https://medium.com/@khaisastudio) • [Threads](https://www.threads.com/@khmuhtadin)
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

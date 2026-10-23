@@ -1,6 +1,6 @@
 # 🤝 Sync contacts two-way between Zoho CRM and KlickTipp
 
-> ⚡ **8 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **76 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

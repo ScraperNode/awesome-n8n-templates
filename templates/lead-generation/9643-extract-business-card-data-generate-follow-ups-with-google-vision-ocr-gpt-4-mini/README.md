@@ -1,6 +1,6 @@
 # 🎣 Extract business card data & generate follow-ups with Google Vision OCR & GPT-4 Mini
 
-> ⚡ **553 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **648 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

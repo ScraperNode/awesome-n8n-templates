@@ -1,0 +1,827 @@
+{
+  "id": "4G7MkPs7lI5OwX64",
+  "meta": {
+    "instanceId": "bc8ca75c203589705ae2e446cad7181d6f2a7cc1766f958ef9f34810e53b8cb2"
+  },
+  "name": "Cap daily AI spend per workflow and alert in Slack",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "2e9357f1-ccf7-4cfd-9e4e-30415b94d8ad",
+      "name": "Sticky Note Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -784,
+        1168
+      ],
+      "parameters": {
+        "width": 640,
+        "height": 1391,
+        "content": "## Cap daily AI spend per workflow and alert in Slack\n\nn8n counts executions, not dollars. A looping agent, an unexpectedly busy day\nor a prompt that pulls in far more context than you planned can run up a large\nmodel bill overnight, and nothing in the platform stops it or tells you. This\nis a sub-workflow that gives every AI workflow its own daily ceiling.\n\n### How it works\n\nAn AI workflow calls this twice. Before the model, with action check, it gets\nback whether the call fits inside today's remaining budget, so a runaway is\nstopped at the next call rather than found on the invoice. After the model,\nwith action record, it passes the usage object straight through and the call\nis priced and added to the day's total. Prices sit in a sheet rather than in\nthe code, because they change every few weeks, and a model missing from that\nsheet is charged at a deliberately pessimistic fallback rate rather than\ncounted as free, which is how budgets quietly stop working. Each workflow gets\nits own cap and its own Slack channel from a Budgets tab, with one row named\ndefault catching everything else. The day boundary follows the offset you set,\nnot UTC midnight. Slack is told once when the warning line is crossed and once\nwhen the cap is reached, never on every call after. The next morning, one\nmessage reports what each workflow cost and which ones ran into their ceiling.\n\n### Setup\n\nConnect Sheets and Slack, create the data table with the columns on the ledger\nnode, and fill the Budgets and Model Prices tabs.\n\n### Note\n\nThis caps workflows that call it. It cannot police one that does not, so wire\nit into the expensive ones first."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "4438dd10-f615-437e-910d-12fff1402be8",
+      "name": "Sticky Note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        1344
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1668,
+        "height": 320,
+        "content": "## Read the request, find the budget\nOne entry point for both jobs. The caller is matched to a budget row, with a default row catching the rest, and the day boundary follows your offset rather than UTC midnight."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "17f7a1bd-6fef-4001-acca-ad6ca5f8f8fe",
+      "name": "Sticky Note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1632,
+        832
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 568,
+        "height": 367,
+        "content": "## Answer before the money is spent\nThe pre-flight check. The caller branches on allowed and skips the model call when today's ceiling would be passed, so a loop is stopped at the next call."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b9b6cf92-3783-48ed-9126-0922da18a61b",
+      "name": "Sticky Note 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1728,
+        1456
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1228,
+        "height": 444,
+        "content": "## Price what was spent, warn once\nTokens are priced from the sheet, an unpriced model is charged at the fallback rate rather than treated as free, and Slack hears about the crossing once rather than on every call after it."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ced9214e-29b9-4339-a91c-a55ceb6b1f4c",
+      "name": "Sticky Note 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -16,
+        2144
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1228,
+        "height": 320,
+        "content": "## The morning after\nOne message says what each workflow cost yesterday and which ones ran into their ceiling. Nothing is posted on a quiet day."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e2c08ce2-ec89-4a8e-bb36-0ca8429edccc",
+      "name": "Called By Your AI Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "notes": "Call this twice from an AI workflow. Before the model: action=check, workflow, estimatedUsd or estimatedTokens. After it: action=record, workflow, model, and the usage object from the model node.",
+      "position": [
+        80,
+        1472
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "3769b649-ba91-4287-859e-fdb783c0b301",
+      "name": "Read The Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        304,
+        1472
+      ],
+      "parameters": {
+        "jsCode": "\n// One entry point, two jobs. A workflow asks \"may I spend?\" before a model\n// call and reports \"I spent this\" after it. Both arrive here, so the caller\n// only ever wires one sub-workflow in.\nconst j = $json || {};\n\nfunction pick(keys, fallback) {\n  for (const k of keys) {\n    const v = j[k];\n    if (v !== undefined && v !== null && String(v).trim() !== '') return v;\n  }\n  return fallback;\n}\n\nconst action = String(pick(['action'], 'record')).trim().toLowerCase();\nif (['check', 'record'].indexOf(action) === -1) {\n  throw new Error('action must be check or record. Received: ' + action);\n}\n\nconst workflow = String(pick(['workflow', 'workflowName', 'caller'], '')).trim();\nif (!workflow) {\n  throw new Error('workflow is required so spend can be attributed to something.');\n}\n\n// Accept the shapes the different providers and the n8n AI nodes return, so\n// the caller can pass the usage object straight through.\nconst usage = j.usage || j.tokenUsage || {};\nfunction tok(keys) {\n  for (const k of keys) {\n    if (usage[k] !== undefined && usage[k] !== null) return Number(usage[k]) || 0;\n    if (j[k] !== undefined && j[k] !== null) return Number(j[k]) || 0;\n  }\n  return 0;\n}\n\nreturn [{\n  json: {\n    action: action,\n    workflow: workflow,\n    model: String(pick(['model', 'modelName'], 'unknown')).trim(),\n    promptTokens: tok(['promptTokens', 'prompt_tokens', 'input_tokens', 'inputTokens']),\n    completionTokens: tok(['completionTokens', 'completion_tokens', 'output_tokens', 'outputTokens']),\n    estimatedUsd: Number(pick(['estimatedUsd'], 0)) || 0,\n    estimatedTokens: Number(pick(['estimatedTokens'], 0)) || 0,\n    receivedAt: new Date().toISOString(),\n  },\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "76394207-7500-40ee-873f-b65401da28b8",
+      "name": "Load Budgets",
+      "type": "n8n-nodes-base.googleSheets",
+      "notes": "Budgets tab columns: Workflow, Daily Cap USD, Warn At Percent, Slack Channel, UTC Offset, Unknown Model USD Per Million. Keep one row named default as the catch-all.",
+      "position": [
+        528,
+        1472
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Budgets"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.6,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "d75adc39-cb84-42ab-bb2a-ebbd168ddf85",
+      "name": "Load Model Prices",
+      "type": "n8n-nodes-base.googleSheets",
+      "notes": "Model Prices tab columns: Model, Input USD Per Million, Output USD Per Million. Prices live here rather than in code because they change every few weeks.",
+      "position": [
+        736,
+        1472
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Model Prices"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.6,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "bdbddf96-3c42-4264-a15f-e67a87ad1d2b",
+      "name": "Resolve Budget And Day",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        960,
+        1472
+      ],
+      "parameters": {
+        "jsCode": "\n// Work out which budget this caller sits under and what day it is for them,\n// then look the ledger up under one stable key.\nconst req = $('Read The Request').first().json;\nconst budgets = $('Load Budgets').all().map(function (i) { return i.json; });\n\nif (!budgets.length) {\n  throw new Error('The Budgets tab is empty. Add at least a row named default before using this.');\n}\n\nconst exact = budgets.find(function (b) {\n  return String(b['Workflow'] || '').trim().toLowerCase() === req.workflow.toLowerCase();\n});\nconst fallback = budgets.find(function (b) {\n  return String(b['Workflow'] || '').trim().toLowerCase() === 'default';\n});\nconst budget = exact || fallback;\n\nif (!budget) {\n  throw new Error('No budget row for \"' + req.workflow + '\" and no default row to fall back on.');\n}\n\n// A daily cap needs a day boundary the team recognises, not UTC midnight.\nconst offset = String(budget['UTC Offset'] || '+00:00').trim();\nconst m = offset.match(/^([+-])(\\d{2}):(\\d{2})$/);\nconst mins = m ? (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3])) : 0;\nconst local = new Date(Date.now() + mins * 60000);\nconst day = local.toISOString().slice(0, 10);\n\nreturn [{\n  json: Object.assign({}, req, {\n    budgetFor: String(budget['Workflow'] || 'default'),\n    capUsd: Number(budget['Daily Cap USD'] || 0) || 0,\n    warnAtPercent: Math.max(1, Math.min(99, Number(budget['Warn At Percent'] || 80) || 80)),\n    slackChannel: String(budget['Slack Channel'] || '').trim(),\n    unknownModelUsdPerMillion: Number(budget['Unknown Model USD Per Million'] || 10) || 10,\n    day: day,\n    dayKey: req.workflow + '|' + day,\n  }),\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "887d038a-fd9d-4863-abe0-c42964f0aad6",
+      "name": "Read Today's Ledger Row",
+      "type": "n8n-nodes-base.dataTable",
+      "notes": "Data table columns: dayKey (string), date (string), workflow (string), usd (number), calls (number), warned (string), blocked (string)",
+      "onError": "continueRegularOutput",
+      "position": [
+        1184,
+        1472
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "dayKey",
+              "keyValue": "={{ $json.dayKey }}"
+            }
+          ]
+        },
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPEND_LEDGER_TABLE_ID"
+        }
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "a7767b51-e6c7-4d43-85e6-a826ae34fee2",
+      "name": "Check Or Record?",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1408,
+        1472
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "Check",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": false,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "c",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $('Resolve Budget And Day').first().json.action }}",
+                    "rightValue": "check"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Record",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": false,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "r",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $('Resolve Budget And Day').first().json.action }}",
+                    "rightValue": "record"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "4e9a7a9e-fa74-4e81-b5d8-677d8d82f9d0",
+      "name": "Decide Allow Or Block",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1696,
+        1008
+      ],
+      "parameters": {
+        "jsCode": "\n// The pre-flight answer. A caller asks before it spends, so a runaway loop is\n// stopped at the next call rather than discovered on the monthly invoice.\nconst r = $('Resolve Budget And Day').first().json;\nconst row = $json || {};\n\nconst spent = Number(row.usd || 0) || 0;\nconst cap = r.capUsd;\n\n// An estimate in dollars wins; otherwise price the estimated tokens at the\n// unknown-model rate, which is deliberately pessimistic.\nconst estimate = r.estimatedUsd > 0\n  ? r.estimatedUsd\n  : (r.estimatedTokens / 1000000) * r.unknownModelUsdPerMillion;\n\nconst projected = spent + estimate;\nconst allowed = cap <= 0 ? true : projected <= cap;\nconst remaining = cap <= 0 ? null : Math.max(0, cap - spent);\n\nlet reason = 'Within budget.';\nif (cap <= 0) reason = 'No cap set for this workflow, so nothing is blocked.';\nelse if (!allowed && spent >= cap) reason = 'The daily cap of ' + cap + ' USD is already spent.';\nelse if (!allowed) reason = 'This call would take the day past its ' + cap + ' USD cap.';\n\nreturn [{\n  json: {\n    action: 'check',\n    workflow: r.workflow,\n    day: r.day,\n    allowed: allowed,\n    spentTodayUsd: Math.round(spent * 10000) / 10000,\n    capUsd: cap,\n    remainingUsd: remaining === null ? null : Math.round(remaining * 10000) / 10000,\n    estimatedUsd: Math.round(estimate * 10000) / 10000,\n    reason: reason,\n  },\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c14d6d34-0a38-4b85-99e3-18728398d232",
+      "name": "Return The Decision",
+      "type": "n8n-nodes-base.set",
+      "notes": "Branch on allowed in the calling workflow. False means skip the model call and take whatever fallback you have.",
+      "position": [
+        1920,
+        1008
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a",
+              "name": "allowed",
+              "type": "boolean",
+              "value": "={{ $json.allowed }}"
+            },
+            {
+              "id": "s",
+              "name": "spentTodayUsd",
+              "type": "number",
+              "value": "={{ $json.spentTodayUsd }}"
+            },
+            {
+              "id": "c",
+              "name": "capUsd",
+              "type": "number",
+              "value": "={{ $json.capUsd }}"
+            },
+            {
+              "id": "r",
+              "name": "remainingUsd",
+              "type": "number",
+              "value": "={{ $json.remainingUsd }}"
+            },
+            {
+              "id": "w",
+              "name": "reason",
+              "type": "string",
+              "value": "={{ $json.reason }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "0d917440-57ed-4002-835a-5840a0291f9d",
+      "name": "Price The Call",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1808,
+        1712
+      ],
+      "parameters": {
+        "jsCode": "\n// Price the call that just happened. Prices live in a sheet rather than in\n// this code, because they change every few weeks and a hardcoded rate quietly\n// stops being true.\nconst r = $('Resolve Budget And Day').first().json;\nconst row = $json || {};\nconst prices = $('Load Model Prices').all().map(function (i) { return i.json; });\n\nconst want = r.model.toLowerCase();\n\n// Exact name first, then the longest prefix match, so a dated model id like\n// gpt-4.1-mini-2026-03 still prices against gpt-4.1-mini.\nlet hit = prices.find(function (p) { return String(p['Model'] || '').trim().toLowerCase() === want; });\nif (!hit) {\n  const candidates = prices\n    .filter(function (p) { return want.indexOf(String(p['Model'] || '').trim().toLowerCase()) === 0; })\n    .sort(function (a, b) { return String(b['Model']).length - String(a['Model']).length; });\n  hit = candidates[0];\n}\n\nconst priced = !!hit;\nconst inRate = priced ? Number(hit['Input USD Per Million'] || 0) || 0 : r.unknownModelUsdPerMillion;\nconst outRate = priced ? Number(hit['Output USD Per Million'] || 0) || 0 : r.unknownModelUsdPerMillion;\n\n// An unpriced model must never count as free. Counting it as zero is how a\n// budget silently stops working the week a new model ships.\nconst usd = (r.promptTokens / 1000000) * inRate + (r.completionTokens / 1000000) * outRate;\n\nconst spentBefore = Number(row.usd || 0) || 0;\nconst calls = Number(row.calls || 0) || 0;\nconst warned = String(row.warned || 'no') === 'yes';\nconst blocked = String(row.blocked || 'no') === 'yes';\n\nconst total = spentBefore + usd;\nconst cap = r.capUsd;\nconst percent = cap > 0 ? Math.round(total / cap * 100) : 0;\n\nlet state = 'ok';\nif (cap > 0 && total >= cap) state = 'over';\nelse if (cap > 0 && percent >= r.warnAtPercent) state = 'warning';\n\n// Alert on the crossing, not on every call after it.\nconst alertKind = (state === 'over' && !blocked) ? 'over'\n  : (state === 'warning' && !warned) ? 'warning' : '';\n\nreturn [{\n  json: {\n    action: 'record',\n    workflow: r.workflow,\n    day: r.day,\n    dayKey: r.dayKey,\n    model: r.model,\n    priced: priced,\n    promptTokens: r.promptTokens,\n    completionTokens: r.completionTokens,\n    callUsd: Math.round(usd * 10000) / 10000,\n    spentTodayUsd: Math.round(total * 10000) / 10000,\n    capUsd: cap,\n    percentOfCap: percent,\n    remainingUsd: cap > 0 ? Math.round(Math.max(0, cap - total) * 10000) / 10000 : null,\n    calls: calls + 1,\n    state: state,\n    alertKind: alertKind,\n    shouldAlert: alertKind !== '',\n    warnedAlready: warned || alertKind === 'warning',\n    blockedAlready: blocked || alertKind === 'over',\n    slackChannel: r.slackChannel,\n    alertText: alertKind === 'over'\n      ? '*AI budget spent: ' + r.workflow + '*\\n' + Math.round(total * 100) / 100 + ' USD of a ' + cap +\n        ' USD daily cap. Further calls from this workflow will be refused until ' + r.day + ' ends.' +\n        (priced ? '' : '\\nThe last model, ' + r.model + ', is not in the price sheet and was charged at the fallback rate.')\n      : alertKind === 'warning'\n        ? '*AI budget at ' + percent + ' percent: ' + r.workflow + '*\\n' + Math.round(total * 100) / 100 +\n          ' USD of a ' + cap + ' USD daily cap, with ' + Math.round((cap - total) * 100) / 100 + ' USD left today.'\n        : '',\n  },\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "fea5a72e-11fa-41fe-bd99-460089660197",
+      "name": "Update The Ledger",
+      "type": "n8n-nodes-base.dataTable",
+      "onError": "continueRegularOutput",
+      "position": [
+        2032,
+        1712
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "usd": "={{ $json.spentTodayUsd }}",
+            "date": "={{ $json.day }}",
+            "calls": "={{ $json.calls }}",
+            "dayKey": "={{ $json.dayKey }}",
+            "warned": "={{ $json.warnedAlready ? 'yes' : 'no' }}",
+            "blocked": "={{ $json.blockedAlready ? 'yes' : 'no' }}",
+            "workflow": "={{ $json.workflow }}"
+          },
+          "mappingMode": "defineBelow"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "dayKey",
+              "keyValue": "={{ $json.dayKey }}"
+            }
+          ]
+        },
+        "options": {},
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPEND_LEDGER_TABLE_ID"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "08b4647e-8ecb-4277-8aa2-e8c6d3e09fce",
+      "name": "Crossed A Threshold?",
+      "type": "n8n-nodes-base.if",
+      "notes": "Only the crossing is announced. Without this check every call after eighty percent would post to Slack again.",
+      "position": [
+        2240,
+        1712
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "al",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Price The Call').item.json.shouldAlert }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "a16c4444-aafa-49b8-a5c0-5690ee97054e",
+      "name": "Send The Budget Alert",
+      "type": "n8n-nodes-base.slack",
+      "onError": "continueRegularOutput",
+      "position": [
+        2464,
+        1616
+      ],
+      "webhookId": "4d025e8c-4fa0-4565-b590-de6d3c38fed0",
+      "parameters": {
+        "text": "={{ $('Price The Call').item.json.alertText }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Price The Call').item.json.slackChannel || 'YOUR_SLACK_CHANNEL_NAME' }}"
+        },
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "bac2161c-a7c1-4cd8-8e2b-78b2e60a790c",
+      "name": "Return The New Total",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2688,
+        1712
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "u",
+              "name": "callUsd",
+              "type": "number",
+              "value": "={{ $('Price The Call').item.json.callUsd }}"
+            },
+            {
+              "id": "s",
+              "name": "spentTodayUsd",
+              "type": "number",
+              "value": "={{ $('Price The Call').item.json.spentTodayUsd }}"
+            },
+            {
+              "id": "c",
+              "name": "capUsd",
+              "type": "number",
+              "value": "={{ $('Price The Call').item.json.capUsd }}"
+            },
+            {
+              "id": "p",
+              "name": "percentOfCap",
+              "type": "number",
+              "value": "={{ $('Price The Call').item.json.percentOfCap }}"
+            },
+            {
+              "id": "r",
+              "name": "remainingUsd",
+              "type": "number",
+              "value": "={{ $('Price The Call').item.json.remainingUsd }}"
+            },
+            {
+              "id": "st",
+              "name": "state",
+              "type": "string",
+              "value": "={{ $('Price The Call').item.json.state }}"
+            },
+            {
+              "id": "pr",
+              "name": "modelWasPriced",
+              "type": "boolean",
+              "value": "={{ $('Price The Call').item.json.priced }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "f7966e4d-ea7f-4a15-9154-ce975e48a26e",
+      "name": "Daily Spend Report",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        64,
+        2272
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "dd98f4aa-3bee-4e0c-b5db-9504cb0f6c93",
+      "name": "Read Yesterday's Ledger",
+      "type": "n8n-nodes-base.dataTable",
+      "onError": "continueRegularOutput",
+      "position": [
+        288,
+        2272
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "date",
+              "keyValue": "={{ $now.minus(1, 'days').format('yyyy-MM-dd') }}"
+            }
+          ]
+        },
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPEND_LEDGER_TABLE_ID"
+        }
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "717a9305-bd0a-4ad4-8d7e-70a571f16b56",
+      "name": "Build The Spend Summary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        512,
+        2272
+      ],
+      "parameters": {
+        "jsCode": "\n// Yesterday in one message: what each workflow cost, which ones hit their cap,\n// and anything that was charged at the fallback rate because its model is\n// missing from the price sheet.\nconst rows = $input.all().map(function (i) { return i.json; }).filter(function (r) { return r && r.workflow; });\n\nif (!rows.length) {\n  return [{ json: { skip: true, slackText: '' } }];\n}\n\nconst day = rows[0].date || '';\nconst total = rows.reduce(function (s, r) { return s + (Number(r.usd) || 0); }, 0);\nconst calls = rows.reduce(function (s, r) { return s + (Number(r.calls) || 0); }, 0);\n\nconst sorted = rows.slice().sort(function (a, b) { return (Number(b.usd) || 0) - (Number(a.usd) || 0); });\nconst capped = sorted.filter(function (r) { return String(r.blocked || 'no') === 'yes'; });\n\nconst lines = ['*AI spend for ' + day + '*'];\nlines.push(Math.round(total * 100) / 100 + ' USD across ' + calls + ' model calls and ' + rows.length + ' workflows.');\nlines.push('');\nsorted.slice(0, 10).forEach(function (r) {\n  lines.push('- ' + r.workflow + ': ' + (Math.round((Number(r.usd) || 0) * 100) / 100) + ' USD over ' + (r.calls || 0) + ' calls' +\n    (String(r.blocked || 'no') === 'yes' ? ' (hit its cap)' : ''));\n});\nif (sorted.length > 10) lines.push('- and ' + (sorted.length - 10) + ' more');\nif (capped.length) {\n  lines.push('');\n  lines.push(capped.length + ' workflow' + (capped.length > 1 ? 's' : '') + ' stopped on the cap yesterday. Raise the cap or find out why they ran hot.');\n}\n\nreturn [{ json: { skip: false, day: day, totalUsd: Math.round(total * 100) / 100, workflows: rows.length, slackText: lines.join('\\n') } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7e39cc69-f749-4111-8058-9f691ffa29f1",
+      "name": "Anything To Report?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        720,
+        2272
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "sk",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "10507b6a-cb13-4cb4-a468-f2b650e064c2",
+      "name": "Post The Summary To Slack",
+      "type": "n8n-nodes-base.slack",
+      "onError": "continueRegularOutput",
+      "position": [
+        944,
+        2272
+      ],
+      "webhookId": "06735bf9-799e-409d-8b1c-098bfbffdfc0",
+      "parameters": {
+        "text": "={{ $json.slackText }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "YOUR_SLACK_CHANNEL_NAME"
+        },
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "typeVersion": 2.3
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "versionId": "9106193a-0f59-4512-8c78-27f976c5d94e",
+  "nodeGroups": [],
+  "connections": {
+    "Load Budgets": {
+      "main": [
+        [
+          {
+            "node": "Load Model Prices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Price The Call": {
+      "main": [
+        [
+          {
+            "node": "Update The Ledger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Or Record?": {
+      "main": [
+        [
+          {
+            "node": "Decide Allow Or Block",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Price The Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read The Request": {
+      "main": [
+        [
+          {
+            "node": "Load Budgets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Model Prices": {
+      "main": [
+        [
+          {
+            "node": "Resolve Budget And Day",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update The Ledger": {
+      "main": [
+        [
+          {
+            "node": "Crossed A Threshold?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Spend Report": {
+      "main": [
+        [
+          {
+            "node": "Read Yesterday's Ledger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything To Report?": {
+      "main": [
+        [
+          {
+            "node": "Post The Summary To Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crossed A Threshold?": {
+      "main": [
+        [
+          {
+            "node": "Send The Budget Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return The New Total",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide Allow Or Block": {
+      "main": [
+        [
+          {
+            "node": "Return The Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send The Budget Alert": {
+      "main": [
+        [
+          {
+            "node": "Return The New Total",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Budget And Day": {
+      "main": [
+        [
+          {
+            "node": "Read Today's Ledger Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build The Spend Summary": {
+      "main": [
+        [
+          {
+            "node": "Anything To Report?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Today's Ledger Row": {
+      "main": [
+        [
+          {
+            "node": "Check Or Record?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Yesterday's Ledger": {
+      "main": [
+        [
+          {
+            "node": "Build The Spend Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Called By Your AI Workflow": {
+      "main": [
+        [
+          {
+            "node": "Read The Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

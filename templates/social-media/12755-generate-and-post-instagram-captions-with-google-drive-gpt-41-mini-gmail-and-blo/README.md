@@ -1,6 +1,6 @@
 # 📱 Generate and post Instagram captions with Google Drive, GPT-4.1-mini, Gmail and Blotato
 
-> ⚡ **321 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **851 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

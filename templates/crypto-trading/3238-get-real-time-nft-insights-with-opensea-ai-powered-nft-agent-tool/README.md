@@ -1,6 +1,6 @@
 # 📈 Get real-time NFT insights with OpenSea AI-powered NFT agent tool
 
-> ⚡ **699 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **738 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

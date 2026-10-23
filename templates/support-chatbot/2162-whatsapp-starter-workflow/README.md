@@ -1,6 +1,6 @@
 # 💬 WhatsApp Starter Workflow
 
-> ⚡ **29,773 views** · 💬 [Support Chatbots](../)
+> ⚡ **32,167 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

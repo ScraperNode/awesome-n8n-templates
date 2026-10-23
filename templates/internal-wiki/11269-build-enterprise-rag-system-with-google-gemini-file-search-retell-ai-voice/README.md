@@ -1,6 +1,6 @@
 # 📖 Build enterprise RAG system with Google Gemini file search & retell AI voice
 
-> ⚡ **247 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **345 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

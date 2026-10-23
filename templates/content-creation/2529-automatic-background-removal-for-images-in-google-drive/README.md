@@ -1,6 +1,6 @@
 # 🎬 Automatic background removal for images in Google Drive
 
-> ⚡ **14,839 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **15,862 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

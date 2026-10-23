@@ -1,6 +1,6 @@
 # 🎬 Transform text into AI videos with Google Veo3, Leonardo.ai and Claude 4
 
-> ⚡ **3,194 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,497 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Transform event notes to LinkedIn posts with Telegram, Google Calendar & Claude AI
 
-> ⚡ **651 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **716 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

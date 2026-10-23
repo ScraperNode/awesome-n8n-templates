@@ -1,6 +1,6 @@
 # 📖 Build a tax code assistant with Qdrant, Mistral.ai and OpenAI
 
-> ⚡ **10,533 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **10,653 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

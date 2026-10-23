@@ -1,6 +1,6 @@
 # 🎬 Overlay or watermark images by merging with another image
 
-> ⚡ **6,865 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **7,211 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Automate weekly timesheet reporting with Salesforce, OpenAI and Gmail
 
-> ⚡ **99 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **152 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

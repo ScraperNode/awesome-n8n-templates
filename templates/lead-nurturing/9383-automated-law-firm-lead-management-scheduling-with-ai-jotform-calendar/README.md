@@ -1,6 +1,6 @@
 # 💬 Automated law firm lead management & scheduling with AI, Jotform & Calendar
 
-> ⚡ **8,559 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **13,935 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

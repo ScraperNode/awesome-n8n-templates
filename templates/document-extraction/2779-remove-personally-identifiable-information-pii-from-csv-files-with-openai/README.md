@@ -1,6 +1,6 @@
 # 🔬 Remove personally identifiable information (PII) from CSV files with OpenAI
 
-> ⚡ **1,762 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,809 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

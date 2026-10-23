@@ -1,6 +1,6 @@
 # 🔬 Google Sheets MCP - AI-powered spreadsheet management
 
-> ⚡ **5,614 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **6,949 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

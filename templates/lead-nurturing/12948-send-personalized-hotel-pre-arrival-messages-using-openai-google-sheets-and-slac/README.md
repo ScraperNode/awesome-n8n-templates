@@ -1,6 +1,6 @@
 # 💬 Send personalized hotel pre-arrival messages using OpenAI, Google Sheets and Slack
 
-> ⚡ **83 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **166 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Auto-translate blog articles with Google Translate and Airtable storage
 
-> ⚡ **720 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **869 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

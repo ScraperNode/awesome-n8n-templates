@@ -1,6 +1,6 @@
 # ⚒️ Generate data pipeline blueprints with Claude 3.5, Slack, and Tavily Search
 
-> ⚡ **312 views** · ⚒️ [Engineering](../)
+> ⚡ **389 views** · ⚒️ [Engineering](../)
 
 ## Description
 

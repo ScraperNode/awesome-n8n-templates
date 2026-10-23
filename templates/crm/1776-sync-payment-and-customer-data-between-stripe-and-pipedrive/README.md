@@ -1,6 +1,6 @@
 # 🤝 Sync payment and customer data between Stripe and Pipedrive
 
-> ⚡ **1,921 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,981 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

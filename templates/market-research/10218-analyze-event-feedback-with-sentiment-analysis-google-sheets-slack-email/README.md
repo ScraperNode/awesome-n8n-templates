@@ -1,6 +1,6 @@
 # 📊 Analyze event feedback with sentiment analysis, Google Sheets, Slack & Email
 
-> ⚡ **132 views** · 📊 [Market Research & Insights](../)
+> ⚡ **156 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

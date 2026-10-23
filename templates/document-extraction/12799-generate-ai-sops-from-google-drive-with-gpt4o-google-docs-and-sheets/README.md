@@ -1,6 +1,6 @@
 # 🔬 Generate AI SOPs from Google Drive with GPT‑4o, Google Docs and Sheets
 
-> ⚡ **9 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **113 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

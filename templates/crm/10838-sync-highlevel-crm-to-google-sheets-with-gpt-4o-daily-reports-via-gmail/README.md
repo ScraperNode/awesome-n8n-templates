@@ -1,6 +1,6 @@
 # 🤝 Sync HighLevel CRM to Google Sheets with GPT-4o daily reports via Gmail
 
-> ⚡ **120 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **160 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

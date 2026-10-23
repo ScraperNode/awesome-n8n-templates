@@ -1,6 +1,6 @@
 # 📱 Personalize marketing emails using customer data and AI
 
-> ⚡ **93,505 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **118,645 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

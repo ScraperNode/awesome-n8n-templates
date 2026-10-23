@@ -1,6 +1,6 @@
 # 🎫 Auto-sort support emails with OpenAI and route to Teams with Jira integration
 
-> ⚡ **604 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **647 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

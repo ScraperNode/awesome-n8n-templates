@@ -1,6 +1,6 @@
 # 🎣 AI-driven lead classification & routing with HighLevel and Azure GPT-4o-mini
 
-> ⚡ **511 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **905 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

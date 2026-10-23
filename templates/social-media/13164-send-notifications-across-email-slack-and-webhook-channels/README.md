@@ -1,6 +1,6 @@
 # 📱 Send notifications across email, Slack, and webhook channels
 
-> ⚡ **25 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **87 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

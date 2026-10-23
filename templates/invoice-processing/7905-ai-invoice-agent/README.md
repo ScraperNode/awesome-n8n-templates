@@ -1,6 +1,6 @@
 # 🧾 AI invoice agent
 
-> ⚡ **1,578 views** · 🧾 [Invoice Processing](../)
+> ⚡ **2,056 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

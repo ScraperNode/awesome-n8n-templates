@@ -1,6 +1,6 @@
 # 🔍 Index legal documents for hybrid search with Qdrant, OpenAI & BM25
 
-> ⚡ **2,511 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **3,252 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
-# 🎬 YouTube video transcription & summary to Telegram with GPT-4o
+# 🎬 YouTube video transcription & summary to Telegram with gpt-5.6-terra
 
-> ⚡ **1,231 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,278 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — YouTube's API quotas can be a bottleneck when you're pulling data at scale. [ScraperNode](https://scrapernode.com/youtube) is a community node with dedicated scrapers for [channels](https://scrapernode.com/youtube/scrapers/channels), [videos](https://scrapernode.com/youtube/scrapers/videos), and [comments](https://scrapernode.com/youtube/scrapers/comments) — no quota limits, just structured data.
 >
@@ -8,78 +8,68 @@
 
 ## Description
 
-⚠️ **Disclaimer** This workflow uses a **community node**:
+**Disclaimer:** This workflow uses a **community node** and needs self-hosted n8n:
 - `npm install n8n-nodes-supadata`
-- Please make sure to install this before running the workflow.
+- Please install this before running the workflow.
 
 ![Screenshot 20250616 at 17.30.24.png](fileId:1516)
 
-## 🔎 Who is this for?
+Skip the video, keep the insight. Send any YouTube link to your Telegram bot and get back a structured summary in seconds: theme, audience, key insights, problems and solutions, plus notable quotes. No need to watch the whole thing.
 
-This workflow is for **anyone who wants quick summaries of YouTube videos**, such as researchers, students, analysts, or busy professionals. Just send a video link via Telegram and receive a structured summary in seconds—no need to watch the entire video.
+*Last updated: September 2026.*
 
-## 🧠 What problem is this workflow solving?
+## Who is this for?
 
-Watching long videos to extract key information is time-consuming. This automation solves that by instantly:
+**Anyone who wants quick summaries of YouTube videos**: researchers, students, analysts, or busy professionals catching up on the go.
 
-* Fetching the full transcript of the video
-* Summarizing the content with AI
-* Sending a clean summary directly to Telegram for quick reading
+## What problem is this workflow solving?
 
-It’s a fast and reliable way to stay informed without the overwhelm.
+Long videos hide their best points behind timestamps. This automation fetches the full transcript, summarizes it with AI, and sends a clean recap to Telegram. Stay informed without the overwhelm.
 
+## What this workflow does
 
-## ⚙️ What this workflow does
+* **Telegram Trigger:** Start by sending a YouTube link to your Telegram bot.
+* **Get Transcript (Supadata):** Uses the **Supadata** API to retrieve the full video transcript.
+* **Summarize with OpenAI gpt-5.6-terra:** Processes the transcript with a structured prompt to extract the main theme, target audience, key insights and tips, problems discussed with solutions, and notable quotes or highlights.
+* **Send to Telegram:** The final summary is formatted and sent back to your Telegram chat, ready for reading or saving.
 
-### 💬 Telegram Trigger
-
-Start by sending a YouTube link to your Telegram bot.
-
-### 🎙️ Get Transcript (Supadata)
-
-Uses **Supadata** API to retrieve the full video transcript.
-
-### 🧠 Summarize with OpenAI GPT-4o
-
-Processes the transcript using a structured prompt to extract:
-
-* Main theme of the video
-* Target audience
-* Key insights and tips
-* Problems discussed and solutions mentioned
-* Notable quotes or highlights
-
-### 📨 Send to Telegram
-
-The final summary is formatted and sent back to your Telegram chat, ready for reading or saving.
-
-
-## 🛠️ Requirements
-* **[n8n instance](https://n8n.partnerlinks.io/khaisastudio) (Cloud or self-hosted)**
+## Requirements
+* **Self-hosted [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin)**
 * Supadata API Key
 * OpenAI API Key
-* Telegram Bot Token
+* Telegram Bot Token ([Bot API docs](https://core.telegram.org/bots))
 
-## ✅ Output Example
+## Output Example
 
 The Telegram summary includes:
 
-* 🎯 Title and topic
-* 💡 Key learnings
-* 🛠️ Tips or insights
-* 🚨 Issues raised and solutions
-* 📝 Quotes or highlights
+* Title and topic
+* Key learnings
+* Tips or insights
+* Issues raised and solutions
+* Quotes or highlights
 
 
 
-Just send a link, and get the core message—fast. Perfect for learning on the go. 🧠📲
+Just send a link, and get the core message fast. Perfect for learning on the go.
+
+### Quick Answers
+**Does this run on n8n Cloud?**  
+No. The Supadata community node needs a self-hosted n8n instance.  
+**What do I send the bot?**  
+Any YouTube video link. The transcript fetching and summarizing run automatically.  
+**What comes back?**  
+A structured summary: theme, audience, insights, problems with solutions, and quotes.  
 
 ---
 
-*Made by: [Khaisa Studio](https://khaisa.studio)*  
+*Made by: [khmuhtadin](https://khmuhtadin.com)*  
 *Tag: youtube, summarizer, telegram, openai*  
 *Category: AI Automation, Video Tools*
-**Need a custom?** contact me on **[LinkedIn](https://www.linkedin.com/in/khmuhtadin/)** or **[Web](khmuhtadin.com)**
+**Need a custom?** contact me on **[LinkedIn](https://www.linkedin.com/in/khmuhtadin/)** or **[Web](https://khmuhtadin.com)**
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

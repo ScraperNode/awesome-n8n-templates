@@ -1,6 +1,6 @@
 # 💬 Build an AI-powered SMS support system with Twilio, GPT-4 and PostgreSQL
 
-> ⚡ **186 views** · 💬 [Support Chatbots](../)
+> ⚡ **262 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

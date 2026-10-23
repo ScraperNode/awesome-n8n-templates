@@ -1,6 +1,6 @@
 # 🔬 Document analysis & chatbot creation with Llama Parser, Gemini LLM & Pinecone DB
 
-> ⚡ **4,318 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,640 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

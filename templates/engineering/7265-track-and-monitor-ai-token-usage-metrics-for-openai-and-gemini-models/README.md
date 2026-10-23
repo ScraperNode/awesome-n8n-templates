@@ -1,6 +1,6 @@
 # ⚒️ Track and monitor AI token usage metrics for OpenAI and Gemini models
 
-> ⚡ **1,270 views** · ⚒️ [Engineering](../)
+> ⚡ **1,613 views** · ⚒️ [Engineering](../)
 
 ## Description
 

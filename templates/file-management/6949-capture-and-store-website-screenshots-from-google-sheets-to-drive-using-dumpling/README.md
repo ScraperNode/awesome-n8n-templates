@@ -1,6 +1,6 @@
 # 📁 Capture and store website screenshots from Google Sheets to Drive using Dumpling AI
 
-> ⚡ **343 views** · 📁 [File Management](../)
+> ⚡ **376 views** · 📁 [File Management](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

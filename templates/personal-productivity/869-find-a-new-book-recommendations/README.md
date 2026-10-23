@@ -1,6 +1,6 @@
 # ⚡ Find a new book recommendations
 
-> ⚡ **2,013 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,065 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

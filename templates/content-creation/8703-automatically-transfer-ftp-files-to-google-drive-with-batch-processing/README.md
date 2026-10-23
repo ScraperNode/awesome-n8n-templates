@@ -1,6 +1,6 @@
 # 🎬 Automatically transfer FTP files to Google Drive with batch processing
 
-> ⚡ **280 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **323 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

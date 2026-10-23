@@ -1,6 +1,6 @@
 # 📖 Process Voice Notes to AI Responses with Claude Sonnet, Nuclino & Slack
 
-> ⚡ **450 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **534 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

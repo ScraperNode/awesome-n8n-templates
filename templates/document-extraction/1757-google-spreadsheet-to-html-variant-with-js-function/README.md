@@ -1,6 +1,6 @@
 # 🔬 Google spreadsheet to HTML - variant with JS function
 
-> ⚡ **2,536 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,600 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

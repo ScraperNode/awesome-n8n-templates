@@ -1,6 +1,6 @@
 # 💬 AI-powered web form responder with GPT-4o-mini, Outlook email & Twilio SMS
 
-> ⚡ **852 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,018 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

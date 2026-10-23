@@ -1,6 +1,6 @@
 # ⚒️ AI agent integration for Bubble apps with MCP protocol data access
 
-> ⚡ **707 views** · ⚒️ [Engineering](../)
+> ⚡ **745 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Transform text to UGC videos with OpenAI SORA-2 on Replicate
 
-> ⚡ **2,147 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,341 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔒 Detect and isolate ransomware with Claude (Anthropic), EDR, SIEM and Slack
 
-> ⚡ **22 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **306 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

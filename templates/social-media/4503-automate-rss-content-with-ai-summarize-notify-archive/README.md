@@ -1,6 +1,6 @@
 # 📱 Automate RSS content with AI: summarize, notify & archive
 
-> ⚡ **671 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **801 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

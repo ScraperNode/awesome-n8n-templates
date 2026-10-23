@@ -1,6 +1,6 @@
 # ⚒️ Query MySQL database with natural language using GPT AI
 
-> ⚡ **3,098 views** · ⚒️ [Engineering](../)
+> ⚡ **3,549 views** · ⚒️ [Engineering](../)
 
 ## Description
 

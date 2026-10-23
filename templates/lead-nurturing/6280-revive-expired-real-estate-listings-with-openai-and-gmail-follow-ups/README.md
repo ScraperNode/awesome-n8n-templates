@@ -1,6 +1,6 @@
 # 💬 Revive expired real estate listings with OpenAI and Gmail follow-ups
 
-> ⚡ **732 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **835 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

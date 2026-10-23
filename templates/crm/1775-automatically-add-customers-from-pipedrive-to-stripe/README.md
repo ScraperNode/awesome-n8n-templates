@@ -1,6 +1,6 @@
 # 🤝 Automatically add customers from Pipedrive to Stripe
 
-> ⚡ **1,086 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,272 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

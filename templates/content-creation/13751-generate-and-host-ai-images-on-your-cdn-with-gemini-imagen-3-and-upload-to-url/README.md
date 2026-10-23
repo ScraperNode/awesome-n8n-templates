@@ -1,6 +1,6 @@
 # 🎬 Generate and host AI images on your CDN with Gemini Imagen 3 and Upload to URL
 
-> ⚡ **2 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **52 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

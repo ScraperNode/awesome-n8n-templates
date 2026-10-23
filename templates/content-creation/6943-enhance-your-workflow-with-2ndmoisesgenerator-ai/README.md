@@ -1,6 +1,6 @@
 # 🎬 Enhance your workflow with 2Ndmoises_Generator AI
 
-> ⚡ **371 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **385 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

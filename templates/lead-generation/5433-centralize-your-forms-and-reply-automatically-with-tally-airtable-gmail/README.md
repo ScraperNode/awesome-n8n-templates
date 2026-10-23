@@ -1,6 +1,6 @@
 # 🎣 Centralize your forms and reply automatically with Tally + Airtable + Gmail
 
-> ⚡ **374 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **435 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

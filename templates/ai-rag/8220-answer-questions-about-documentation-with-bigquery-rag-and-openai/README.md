@@ -1,6 +1,6 @@
 # 🔍 Answer questions about documentation with BigQuery RAG and OpenAI
 
-> ⚡ **428 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **468 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

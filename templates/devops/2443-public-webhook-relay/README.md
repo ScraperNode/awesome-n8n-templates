@@ -1,6 +1,6 @@
 # ⚙️ Public webhook relay
 
-> ⚡ **1,545 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,573 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

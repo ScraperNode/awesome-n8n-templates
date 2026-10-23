@@ -1,6 +1,6 @@
 # 🎬 AI blog generator for Shopify product listings:  Using GPT-4o and Google Sheets
 
-> ⚡ **10,197 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **11,801 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

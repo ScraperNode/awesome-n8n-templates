@@ -1,6 +1,6 @@
 # ⚒️ Evaluate AI agent response correctness with OpenAI and RAGAS methodology
 
-> ⚡ **1,460 views** · ⚒️ [Engineering](../)
+> ⚡ **1,653 views** · ⚒️ [Engineering](../)
 
 ## Description
 

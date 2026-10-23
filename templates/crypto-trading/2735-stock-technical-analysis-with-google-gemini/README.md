@@ -1,6 +1,6 @@
 # 📈 Stock technical analysis with Google Gemini
 
-> ⚡ **5,087 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **4,889 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

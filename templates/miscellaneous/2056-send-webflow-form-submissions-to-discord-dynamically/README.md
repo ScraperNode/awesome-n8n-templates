@@ -1,6 +1,6 @@
 # 🔧 Send Webflow form submissions to Discord dynamically
 
-> ⚡ **1,220 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,218 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

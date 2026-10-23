@@ -1,6 +1,6 @@
 # 📱 Scheduled auto-replies to targeted tweets using X (Twitter) API
 
-> ⚡ **259 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **512 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

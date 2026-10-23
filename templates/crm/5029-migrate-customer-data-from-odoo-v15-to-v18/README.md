@@ -1,6 +1,6 @@
 # 🤝 Migrate customer data from Odoo v15 to v18
 
-> ⚡ **389 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **452 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

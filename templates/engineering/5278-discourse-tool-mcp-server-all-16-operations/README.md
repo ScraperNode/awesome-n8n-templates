@@ -1,6 +1,6 @@
 # ⚒️ 🛠️ Discourse tool MCP server 💪 all 16 operations
 
-> ⚡ **130 views** · ⚒️ [Engineering](../)
+> ⚡ **148 views** · ⚒️ [Engineering](../)
 
 ## Description
 

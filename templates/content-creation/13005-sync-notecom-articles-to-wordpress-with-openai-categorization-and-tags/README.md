@@ -1,6 +1,6 @@
 # 🎬 Sync Note.com articles to WordPress with OpenAI categorization and tags
 
-> ⚡ **6 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **36 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

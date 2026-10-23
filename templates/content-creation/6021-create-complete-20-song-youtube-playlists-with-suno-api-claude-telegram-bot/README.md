@@ -1,11 +1,13 @@
 # 🎬 Create complete 20-song YouTube playlists with Suno API, Claude & Telegram bot
 
-> ⚡ **409 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **502 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 
 ![AUTOMATE 2.png](fileId:1750)
 **Transform your music creation process with this comprehensive automated system that generates complete playlists from simple text descriptions!**
+
+I made a saas for this workflow, you can check it out here: [Playlist craft](https://playlistcraft.com)
 
 ## 🚀 What You Get
 

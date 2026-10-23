@@ -1,6 +1,6 @@
 # 📈 Automated SEC Form D filings tracker with Google Sheets integration
 
-> ⚡ **842 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **951 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

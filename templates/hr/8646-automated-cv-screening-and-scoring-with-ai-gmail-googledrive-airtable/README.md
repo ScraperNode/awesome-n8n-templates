@@ -1,6 +1,6 @@
 # 👥 Automated CV screening and scoring with AI, Gmail, GoogleDrive & Airtable
 
-> ⚡ **572 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,106 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

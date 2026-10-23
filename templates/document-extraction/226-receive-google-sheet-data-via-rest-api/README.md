@@ -1,6 +1,6 @@
 # 🔬 Receive Google Sheet data via REST API
 
-> ⚡ **7,769 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **7,878 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

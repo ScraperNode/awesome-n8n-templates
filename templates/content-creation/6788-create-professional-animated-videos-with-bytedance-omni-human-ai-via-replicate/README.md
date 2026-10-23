@@ -1,6 +1,6 @@
 # 🎬 Create professional animated videos with Bytedance Omni-Human AI via Replicate
 
-> ⚡ **1,618 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,785 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

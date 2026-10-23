@@ -1,6 +1,6 @@
 # 🎣 Vet new Typeform leads with ZeroBounce and sync qualified contacts to Mautic
 
-> ⚡ **6 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **34 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

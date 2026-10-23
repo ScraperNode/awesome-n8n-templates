@@ -1,6 +1,6 @@
 # ⚒️ Split in batches node noItemsLeft example
 
-> ⚡ **6,651 views** · ⚒️ [Engineering](../)
+> ⚡ **6,670 views** · ⚒️ [Engineering](../)
 
 ## Description
 

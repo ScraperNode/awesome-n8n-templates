@@ -1,6 +1,6 @@
 # 📊 Analyze Google Forms feedback with Gemini AI and send weekly reports
 
-> ⚡ **37 views** · 📊 [Market Research & Insights](../)
+> ⚡ **225 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

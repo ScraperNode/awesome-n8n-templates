@@ -1,6 +1,6 @@
 # ⚒️ Manage users automatically in reqres.in
 
-> ⚡ **487 views** · ⚒️ [Engineering](../)
+> ⚡ **503 views** · ⚒️ [Engineering](../)
 
 ## Description
 

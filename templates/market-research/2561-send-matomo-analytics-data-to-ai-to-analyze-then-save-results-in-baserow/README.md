@@ -1,6 +1,6 @@
 # 📊 Send Matomo analytics data to A.I. to analyze then save results in Baserow
 
-> ⚡ **1,255 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,361 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

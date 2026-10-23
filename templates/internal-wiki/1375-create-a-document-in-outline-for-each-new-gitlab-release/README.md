@@ -1,6 +1,6 @@
 # 📖 Create a document in outline for each new GitLab release
 
-> ⚡ **2,975 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **3,038 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

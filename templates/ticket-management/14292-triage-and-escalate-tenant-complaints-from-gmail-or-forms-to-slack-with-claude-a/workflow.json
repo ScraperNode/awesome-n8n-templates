@@ -1,0 +1,1226 @@
+{
+  "meta": {
+    "instanceId": "9f01dd50b017d28f0948c1eeaced30d9cdf3b675046575bfe1926560a403c1d4",
+    "templateCredsSetupCompleted": true
+  },
+  "nodes": [
+    {
+      "id": "c7c2c558-de10-4644-8bb2-89573e22c3f6",
+      "name": "Normalise email inputs",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1456,
+        496
+      ],
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "source",
+              "stringValue": "Email"
+            },
+            {
+              "name": "raw_complaint",
+              "stringValue": "={{ $json.text }}"
+            },
+            {
+              "name": "tenant_email",
+              "stringValue": "={{ $json.from.value[0].address }}"
+            },
+            {
+              "name": "tenant_name",
+              "stringValue": "={{ $json.from.value[0].name }}"
+            },
+            {
+              "name": "received_at",
+              "stringValue": "={{ $json.date }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "52e4c530-55fe-4648-bf6f-c65f842d530b",
+      "name": "Normalise form inputs",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1456,
+        688
+      ],
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "source",
+              "stringValue": "Form"
+            },
+            {
+              "name": "raw_complaint",
+              "stringValue": "={{ $json.body.data.fields[2].value }}"
+            },
+            {
+              "name": "tenant_email",
+              "stringValue": "={{ $json.body.data.fields[1].value }}"
+            },
+            {
+              "name": "tenant_name",
+              "stringValue": "={{ $json.body.data.fields[0].value }}"
+            },
+            {
+              "name": "received_at",
+              "stringValue": "={{ $json.body.createdAt }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "0b0fe996-34e3-4f79-80f1-532e516753c7",
+      "name": "Merge inputs",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1680,
+        592
+      ],
+      "parameters": {},
+      "typeVersion": 2
+    },
+    {
+      "id": "2c69b3f7-731e-4f9d-8a78-d6a9e149baf2",
+      "name": "LLM extract & classify",
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "position": [
+        1904,
+        592
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-6",
+          "cachedResultName": "claude-sonnet-4-6"
+        },
+        "options": {
+          "temperature": 0.1
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "assistant",
+              "content": "You are an FM operations assistant for a Singapore commercial building. Extract structured data from tenant complaint text. Tenant base is multilingual (English, Mandarin, Singlish) \u2014 always output English.\n\nReturn ONLY valid JSON with these exact fields:\n{\n  \"unit\": \"unit number e.g. #05-12, or 'unknown' if not mentioned\",\n  \"fault_category\": \"one of: ACMV | Plumbing | Electrical | Cleanliness | Access | Noise\",\n  \"urgency_indicators\": \"brief string of urgency signals found in text\",\n  \"tenant_tone\": \"one of: Frustrated | Neutral | Urgent | Abusive\",\n  \"recurrence_signal\": Yes or No,\n  \"priority_tier\": \"one of: P1 | P2 | P3\",\n  \"summary\": \"one sentence plain English summary\",\n  \"ack_email_body\": \"professional acknowledgement, salutation then empty line then body, max 120 words, tone-matched to tenant, no sign-off\"\n}\n\nPriority rules:\n- P1 (2hr SLA): safety hazard, flooding, fire risk, lift entrapment, total power failure multi-unit\n- P2 (4hr SLA): single-unit failure significantly impacting operations\n- P3 (24hr SLA): minor inconvenience, cosmetic, low urgency\n\nFault category rules:\n- ACMV: aircon, ventilation, airflow, cooling, fan coil, freezing, not cold\n- Plumbing: water leak, tap, toilet, drainage, flooding from pipes\n- Electrical: power trip, lights, sockets, circuit breaker, no power\n- Cleanliness: rubbish, pest, cockroach, smell, dirty, bin overflow\n- Access: door, lift, gate, key card, security, intercom, barrier\n- Noise: noise, banging, drilling, music, vibration, loud neighbour"
+            },
+            {
+              "content": "={{ $json.raw_complaint }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3e84cdbc-5701-4ee9-a1b3-a20ac30501d1",
+      "name": "Parse LLM output",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2256,
+        592
+      ],
+      "parameters": {
+        "jsCode": "// Get LLM response content (handles Anthropic langchain node output formats)\nconst llmRaw = $input.first().json;\nconst content = llmRaw.output\n  || llmRaw.text\n  || llmRaw.message?.content\n  || llmRaw.content?.[0]?.text\n  || '';\n\n// Parse LLM JSON output\nlet parsed;\ntry {\n  const cleaned = content.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  parsed = JSON.parse(cleaned);\n} catch (e) {\n  throw new Error('LLM output is not valid JSON: ' + content.substring(0, 300));\n}\n\n// Pull normalised complaint fields from Merge node (pre-LLM)\nconst norm = $('Merge inputs').first().json;\n\n// SLA deadline calculation\nconst slaHours = { P1: 2, P2: 4, P3: 24 };\nconst hours = slaHours[parsed.priority_tier] || 24;\nconst slaDeadline = new Date(Date.now() + hours * 3600000).toISOString();\n\n// Short ticket ID\nconst ticketId = 'FM-' + Math.random().toString(36).substring(2, 8).toUpperCase();\n\nreturn [{\n  json: {\n    source: norm.source,\n    raw_complaint: norm.raw_complaint,\n    tenant_email: norm.tenant_email,\n    tenant_name: norm.tenant_name,\n    received_at: norm.received_at,\n    ...parsed,\n    ticket_id: ticketId,\n    sla_deadline: slaDeadline,\n    sla_hours: hours\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "fa06f5b6-22f3-41a3-8857-9b6fb97cd2b8",
+      "name": "SLA breached?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1904,
+        1136
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "f278200b-ee85-4b22-8234-b47e77ae92cb",
+              "operator": {
+                "type": "dateTime",
+                "operation": "after"
+              },
+              "leftValue": "={{ $now }}",
+              "rightValue": "={{ $json['SLA Deadline'] }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "ac4ef243-53fc-4d24-9f71-c757de462ed2",
+      "name": "Loop over tickets",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        1680,
+        1136
+      ],
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "25b76e0c-502f-4661-b0f0-ccab3fd8b840",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        1232,
+        1136
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "501e8b4b-4240-48b7-8123-d6560f9443a2",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        1232,
+        688
+      ],
+      "webhookId": "640466a8-aa16-49ac-b4b2-79cf05a537f3",
+      "parameters": {
+        "path": "640466a8-aa16-49ac-b4b2-79cf05a537f3",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "5ee20e19-0fe9-4fff-b794-4b99511f35ac",
+      "name": "Search technician",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        2480,
+        592
+      ],
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {
+          "fields": [
+            "Technician Name",
+            "Technician Email"
+          ]
+        },
+        "operation": "search",
+        "returnAll": false,
+        "filterByFormula": "={Fault Category} = '{{ $json.fault_category }}'"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "25e1c3bd-8608-44ec-9013-48354fd0728d",
+      "name": "Create work order",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        2704,
+        592
+      ],
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "value": {
+            "Unit": "={{ $('Parse LLM output').item.json.unit }}",
+            "Source": "={{ $('Merge inputs').item.json.source }}",
+            "Status": "Open",
+            "Priority": "={{ $('Parse LLM output').item.json.priority_tier }}",
+            "Complaint": "={{ $('Parse LLM output').item.json.raw_complaint }}",
+            "Recurrence": "={{ $('Parse LLM output').item.json.recurrence_signal }}",
+            "CreatedDate": "={{ $now }}",
+            "Tenant Name": "={{ $('Parse LLM output').item.json.tenant_name }}",
+            "Tenant Tone": "={{ $('Parse LLM output').item.json.tenant_tone }}",
+            "SLA Deadline": "={{ $('Parse LLM output').item.json.sla_deadline }}",
+            "Tenant Email": "={{ $('Parse LLM output').item.json.tenant_email }}",
+            "\ufeffTicket ID": "={{ $('Parse LLM output').item.json.ticket_id }}",
+            "Fault Category": "={{ $('Parse LLM output').item.json.fault_category }}",
+            "Acknowledgement Sent": false,
+            "Assigned Technician Name": "={{ $json['Technician Name'] }}",
+            "Assigned Technician Email": "={{ $json['Technician Email'] }}"
+          },
+          "schema": [
+            {
+              "id": "\ufeffTicket ID",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "\ufeffTicket ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tenant Name",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Tenant Name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tenant Email",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Tenant Email",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Unit",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Unit",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Source",
+              "type": "options",
+              "display": true,
+              "options": [
+                {
+                  "name": "Email",
+                  "value": "Email"
+                },
+                {
+                  "name": "Form",
+                  "value": "Form"
+                }
+              ],
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Source",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Fault Category",
+              "type": "options",
+              "display": true,
+              "options": [
+                {
+                  "name": "Access",
+                  "value": "Access"
+                },
+                {
+                  "name": "ACMV",
+                  "value": "ACMV"
+                },
+                {
+                  "name": "Cleanliness",
+                  "value": "Cleanliness"
+                },
+                {
+                  "name": "Electrical",
+                  "value": "Electrical"
+                },
+                {
+                  "name": "Noise",
+                  "value": "Noise"
+                },
+                {
+                  "name": "Plumbing",
+                  "value": "Plumbing"
+                }
+              ],
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Fault Category",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Complaint",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Complaint",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Priority",
+              "type": "options",
+              "display": true,
+              "options": [
+                {
+                  "name": "P1",
+                  "value": "P1"
+                },
+                {
+                  "name": "P2",
+                  "value": "P2"
+                },
+                {
+                  "name": "P3",
+                  "value": "P3"
+                }
+              ],
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Priority",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tenant Tone",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Tenant Tone",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "SLA Deadline",
+              "type": "dateTime",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "SLA Deadline",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "options",
+              "display": true,
+              "options": [
+                {
+                  "name": "Open",
+                  "value": "Open"
+                },
+                {
+                  "name": "Closed",
+                  "value": "Closed"
+                }
+              ],
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Assigned Technician Name",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Assigned Technician Name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Assigned Technician Email",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Assigned Technician Email",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Acknowledgement Sent",
+              "type": "boolean",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Acknowledgement Sent",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Closed Date",
+              "type": "dateTime",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Closed Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CreatedDate",
+              "type": "dateTime",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "CreatedDate",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recurrence",
+              "type": "options",
+              "display": true,
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Recurrence",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "create"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "14b352b8-34ed-4487-9992-4d86fe29bd24",
+      "name": "Send ACK email",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        2928,
+        592
+      ],
+      "webhookId": "5e33535f-c5e1-4443-b208-d960f923c741",
+      "parameters": {
+        "sendTo": "={{ $('Merge inputs').item.json.tenant_email }}",
+        "message": "={{ $('Parse LLM output').item.json.ack_email_body + '\\n\\nTicket reference: ' + $('Parse LLM output').item.json.ticket_id + '\\nExpected response: within ' + $('Parse LLM output').item.json.sla_hours + ' hour(s) \u2014 by ' + new Date($('Parse LLM output').item.json.sla_deadline).toLocaleString('en-SG', { timeZone: 'Asia/Singapore', dateStyle: 'short', timeStyle: 'short' }) + ' SGT.\\n\\nFM Management Team' }}",
+        "options": {},
+        "subject": "={{ '[' + $('Parse LLM output').item.json.ticket_id + '] Complaint received \u2014 ' + $('Parse LLM output').item.json.fault_category }}",
+        "emailType": "text"
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "3498e956-210a-481d-b248-88f91cff55f3",
+      "name": "Update ACK status",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        3152,
+        592
+      ],
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "value": {
+            "id": "={{ $('Create work order').item.json.id }}",
+            "Acknowledgement Sent": true
+          },
+          "schema": [
+            {
+              "id": "id",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": true,
+              "required": false,
+              "displayName": "id",
+              "defaultMatch": true
+            },
+            {
+              "id": "\ufeffTicket ID",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "\ufeffTicket ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tenant Name",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Tenant Name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tenant Email",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Tenant Email",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Unit",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Unit",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Source",
+              "type": "options",
+              "display": true,
+              "options": [
+                {
+                  "name": "Email",
+                  "value": "Email"
+                }
+              ],
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Source",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Fault Category",
+              "type": "options",
+              "display": true,
+              "options": [
+                {
+                  "name": "ACMV",
+                  "value": "ACMV"
+                }
+              ],
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Fault Category",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Complaint",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Complaint",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Priority",
+              "type": "options",
+              "display": true,
+              "options": [
+                {
+                  "name": "P2",
+                  "value": "P2"
+                }
+              ],
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Priority",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tenant Tone",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Tenant Tone",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "SLA Deadline",
+              "type": "dateTime",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "SLA Deadline",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "options",
+              "display": true,
+              "options": [
+                {
+                  "name": "Open",
+                  "value": "Open"
+                },
+                {
+                  "name": "Closed",
+                  "value": "Closed"
+                }
+              ],
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Assigned Technician Name",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Assigned Technician Name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Assigned Technician Email",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Assigned Technician Email",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Acknowledgement Sent",
+              "type": "boolean",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Acknowledgement Sent",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Closed Date",
+              "type": "dateTime",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Closed Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CreatedDate",
+              "type": "dateTime",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "CreatedDate",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recurrence",
+              "type": "options",
+              "display": true,
+              "options": [
+                {
+                  "name": "Yes",
+                  "value": "Yes"
+                },
+                {
+                  "name": "No",
+                  "value": "No"
+                }
+              ],
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "Recurrence",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "id"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "update"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "5b5fe4e9-7df8-4f86-b3e7-13133e782ab7",
+      "name": "Gmail trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        1232,
+        496
+      ],
+      "parameters": {
+        "simple": false,
+        "filters": {
+          "labelIds": [
+            "UNREAD",
+            "INBOX"
+          ]
+        },
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "e56b4307-8dba-4ba2-86f1-697cecb9b95b",
+      "name": "Send a message",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        3376,
+        592
+      ],
+      "webhookId": "cda4a086-1b4f-44a5-8b73-04740c243a03",
+      "parameters": {
+        "text": "=[{{ $('Create work order').item.json.fields['\ufeffTicket ID'] }}] {{ $('Create work order').item.json.fields.Priority }} \u2014 {{ $('Create work order').item.json.fields['Fault Category'] }}\n\nUnit: {{ $('Create work order').item.json.fields.Unit }}\nTenant: {{ $('Create work order').item.json.fields['Tenant Name'] }}\nSummary: {{ $('Parse LLM output').item.json.summary }}\nPriority: {{ $('Parse LLM output').item.json.priority_tier }}\nRecurring: {{ $('Create work order').item.json.fields.RecurrenceFlag = 1 ? \"Yes\" : \"No\" }}\n\nAssigned to: {{ $('Create work order').item.json.fields['Assigned Technician Name'] }}\nSLA deadline: {{ new Date($('Parse LLM output').item.json.sla_deadline).toLocaleString('en-SG', { timeZone: 'Asia/Singapore', dateStyle: 'short', timeStyle: 'short' }) }} SGT \n\nUpdate ticket status in AirTable when work begins and when resolved.",
+        "select": "channel",
+        "blocksUi": "={\n\t\"blocks\": [\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*[{{ $('Create work order').item.json.fields['\ufeffTicket ID'] }}] {{ $('Create work order').item.json.fields.Priority }} \u2014 {{ $('Create work order').item.json.fields['Fault Category'] }}*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Unit: * {{ $('Create work order').item.json.fields.Unit }}\\n *Tenant: * {{ $('Create work order').item.json.fields['Tenant Name'] }}\\n *Summary: * {{ $('Parse LLM output').item.json.summary }}\\n *Priority: * {{ $('Parse LLM output').item.json.priority_tier }} \\n *Recurring: * {{ $('Create work order').item.json.fields.Recurrence }}\\n\\n *Assigned to: * {{ $('Create work order').item.json.fields['Assigned Technician Name'] }} \\n *SLA deadline: * {{ new Date($('Parse LLM output').item.json.sla_deadline).toLocaleString('en-SG', { timeZone: 'Asia/Singapore', dateStyle: 'short', timeStyle: 'short' }) }} SGT \\n\\n Update ticket status in AirTable when work begins and when resolved.\"\n\t\t\t}\n\t\t}\n\t]\n}",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "messageType": "block",
+        "otherOptions": {},
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 2.4
+    },
+    {
+      "id": "775997fe-0156-4fa0-9a92-4d0b9b3bb37b",
+      "name": "Search records",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        1456,
+        1136
+      ],
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultUrl": "",
+          "cachedResultName": ""
+        },
+        "options": {},
+        "operation": "search",
+        "returnAll": false,
+        "filterByFormula": "NOT({Status} = 'Closed')"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "134fc5e1-a484-4e1e-99f0-920a451ed841",
+      "name": "Escalate to FM Management",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        2128,
+        1136
+      ],
+      "webhookId": "0fb85ffa-2079-4156-ba24-9eeccb177e22",
+      "parameters": {
+        "text": "=SLA BREACH \u2014 Immediate Action Required\n\nTicket: {{ $('Loop over tickets').item.json['\ufeffTicket ID'] }}\nPriority: {{ $('Loop over tickets').item.json.Priority }}\nCategory: {{ $('Loop over tickets').item.json['Fault Category'] }}\nUnit: {{ $('Loop over tickets').item.json.Unit }}\nTenant: {{ $('Loop over tickets').item.json['Tenant Name'] }}\n\nAssigned to: {{ $('Loop over tickets').item.json['Assigned Technician Name'] }}\nStatus at deadline: {{ $('Loop over tickets').item.json.Status }}\n\nUpdate the ticket in SharePoint and advise the tenant of the delay.",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "otherOptions": {},
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 2.4
+    },
+    {
+      "id": "2952f473-8193-461b-9295-dd733465246b",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        544,
+        224
+      ],
+      "parameters": {
+        "width": 576,
+        "height": 1136,
+        "content": "## FM Complaint Triage & SLA Escalation                                                                                                                                                                             \nFacility management teams waste hours manually reading tenant emails, deciding urgency, and chasing overdue tickets. This workflow automates the entire intake-to-dispatch loop from complaint received to technician notified.\n\n               \n### Who's it for                                                                                                                                            \nFM managers and operations teams in commercial buildings who receive tenant complaints by email or web form.\n\n\n### How it works\n1. Complaints arrive via Gmail or a web form webhook\n2. Claude AI classifies each complaint: fault category, priority (P1/P2/P3), tenant tone, and drafts an acknowledgement email\n3. The right technician is looked up in Airtable by fault category\n4. A work order is created and the tenant receives an ACK email with their ticket reference and SLA commitment\n5. The FM team is notified in Slack with ticket summary\n6. An hourly schedule checks open tickets \u2014 any past their SLA deadline trigger an urgent escalation to FM management\n\n\n### How to set up\n1. Connect Gmail to the **Gmail Trigger** and **Send ACK email** nodes\n2. Create your Airtable base with a **Complaints** table and a **Technician** table (one row per fault category)\n3. Connect Airtable, Anthropic, and Slack in their respective nodes\n4. If using a web form, point it to the Webhook URL\n\n\n### Requirements\n- Gmail account\n- Airtable account\n- Anthropic API key\n- Slack workspace.\n\n\n### How to customize the workflow\n- Edit the LLM system prompt and the **Parse LLM output** node to change fault categories or SLA hours.\n- Point the escalation node to a separate management-only Slack channel if needed. \n- Remove the Webhook trigger and **Normalise form inputs** node if you only use email."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "92cd41f1-a1a5-42f2-bd50-9cceab22455f",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1152,
+        224
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 672,
+        "height": 672,
+        "content": "**1. Complaint ingestion**\n\nAccepts complaints from two sources:\n- **Gmail Trigger** polls your shared FM inbox every minute for new INBOX messages\n- **Webhook** receives POST requests from a web form (Tally, Typeform, Power Automate, etc.)\n\nBoth paths are normalised into identical fields (source, raw_complaint, tenant_email, tenant_name, received_at) and merged into a single item before classification."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "7072c2ea-62db-4c4b-9a03-a0d3e59f04f6",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1856,
+        224
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 528,
+        "height": 672,
+        "content": "**2. AI triage (Claude Sonnet)**\n\nClaude classifies the complaint and returns structured JSON:\n- Fault category: ACMV | Plumbing | Electrical | Cleanliness | Access | Noise\n- Priority: P1 (2hr SLA) | P2 (4hr SLA) | P3 (24hr SLA)\n- Tenant tone: Frustrated | Neutral | Urgent | Abusive\n- Recurrence signal, urgency indicators, plain-English summary\n- Draft acknowledgement email (tone-matched, max 120 words)\n\nThe Parse LLM output node strips markdown fences, parses JSON, generates a ticket ID (FM-XXXXXX), and calculates the SLA deadline timestamp."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "29a0f377-d27b-4f68-bbeb-ed6216b219a1",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2416,
+        224
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 416,
+        "height": 672,
+        "content": "**3. Technician assignment & work order**\n\nLooks up the on-call technician for the fault category from your Airtable Technician table, then creates a full work order in the Complaints table.\n\nThe Technician table must have at least one row per fault category (ACMV, Plumbing, Electrical, Cleanliness, Access, Noise) with Technician Name and Technician Email columns."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5e21da6b-77e3-41e9-938b-7fb2aeb4991f",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2864,
+        224
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 720,
+        "height": 672,
+        "content": "**4. Tenant acknowledgement and dispatch**\n\nSends the AI-drafted acknowledgement email to the tenant with:\n- Ticket reference (FM-XXXXXX)\n- SLA commitment (e.g. \"within 4 hours \u2014 by 3:45 PM SGT\")\n\nAcknowledgement Sent is then updated to true in Airtable so the SLA monitor knows not to double-escalate on a fresh ticket.\n\nOn-call technician is dispatched via an AI-drafted Slack message."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "24c5cbb6-03d2-4053-94c8-1f84aa27c3f4",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1152,
+        928
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1232,
+        "height": 432,
+        "content": "**5. Hourly SLA monitoring**\n\nRuns independently on a 1-hour schedule. Fetches all open tickets from Airtable, loops through each one, and checks whether the SLA Deadline has passed.\n\nAny breached ticket triggers an urgent Slack message to the FM management channel with ticket details, assigned technician, and current status.\n\nTickets are only removed from the escalation loop once their Status is set to \"Closed\" in Airtable."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalise form inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge inputs": {
+      "main": [
+        [
+          {
+            "node": "LLM extract & classify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalise email inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SLA breached?": {
+      "main": [
+        [
+          {
+            "node": "Escalate to FM Management",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search records": {
+      "main": [
+        [
+          {
+            "node": "Loop over tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send ACK email": {
+      "main": [
+        [
+          {
+            "node": "Update ACK status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse LLM output": {
+      "main": [
+        [
+          {
+            "node": "Search technician",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create work order": {
+      "main": [
+        [
+          {
+            "node": "Send ACK email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop over tickets": {
+      "main": [
+        [],
+        [
+          {
+            "node": "SLA breached?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search technician": {
+      "main": [
+        [
+          {
+            "node": "Create work order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update ACK status": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise form inputs": {
+      "main": [
+        [
+          {
+            "node": "Merge inputs",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "LLM extract & classify": {
+      "main": [
+        [
+          {
+            "node": "Parse LLM output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise email inputs": {
+      "main": [
+        [
+          {
+            "node": "Merge inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escalate to FM Management": {
+      "main": [
+        [
+          {
+            "node": "Loop over tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

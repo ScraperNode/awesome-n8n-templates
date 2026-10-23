@@ -1,6 +1,6 @@
 # 👥 Automated resume screening & interview scheduling with Gmail, GPT & Airtable
 
-> ⚡ **118 views** · 👥 [HR & Recruitment](../)
+> ⚡ **224 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Client review collection & sentiment analysis with HighLevel, GPT-4o, Gmail & Slack
 
-> ⚡ **267 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **450 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

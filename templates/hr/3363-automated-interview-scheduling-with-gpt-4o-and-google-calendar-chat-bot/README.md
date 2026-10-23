@@ -1,6 +1,6 @@
 # 👥 Automated interview scheduling with GPT-4o and Google Calendar chat bot
 
-> ⚡ **12,598 views** · 👥 [HR & Recruitment](../)
+> ⚡ **13,323 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

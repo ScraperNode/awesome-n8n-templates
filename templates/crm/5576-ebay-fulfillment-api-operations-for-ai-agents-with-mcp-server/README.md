@@ -1,6 +1,6 @@
 # 🤝 eBay fulfillment API operations for AI agents with MCP server
 
-> ⚡ **133 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **152 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

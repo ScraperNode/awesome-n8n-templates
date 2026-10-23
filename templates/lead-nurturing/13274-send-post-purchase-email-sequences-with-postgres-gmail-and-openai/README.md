@@ -1,6 +1,6 @@
 # 💬 Send post-purchase email sequences with Postgres, Gmail and OpenAI
 
-> ⚡ **8 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **48 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Automated Gmail reply drafts with OpenAI assistant for labeled emails
 
-> ⚡ **1,959 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **2,231 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

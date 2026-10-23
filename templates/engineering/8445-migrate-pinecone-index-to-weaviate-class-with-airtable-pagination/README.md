@@ -1,6 +1,6 @@
 # ⚒️ Migrate Pinecone index to Weaviate class with Airtable pagination
 
-> ⚡ **102 views** · ⚒️ [Engineering](../)
+> ⚡ **113 views** · ⚒️ [Engineering](../)
 
 ## Description
 

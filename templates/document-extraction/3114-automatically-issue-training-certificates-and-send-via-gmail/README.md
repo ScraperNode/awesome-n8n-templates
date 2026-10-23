@@ -1,6 +1,6 @@
 # 🔬 Automatically issue training certificates and send via Gmail
 
-> ⚡ **1,011 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,054 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

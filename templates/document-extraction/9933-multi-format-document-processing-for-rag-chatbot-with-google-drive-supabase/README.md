@@ -1,6 +1,6 @@
 # 🔬 Multi-format document processing for RAG chatbot with Google Drive & Supabase
 
-> ⚡ **635 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **854 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

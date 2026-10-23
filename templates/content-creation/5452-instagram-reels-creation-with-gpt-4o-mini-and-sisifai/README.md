@@ -1,6 +1,6 @@
 # 🎬 Instagram reels creation with GPT-4o-mini and Sisif.ai
 
-> ⚡ **2,084 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,221 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

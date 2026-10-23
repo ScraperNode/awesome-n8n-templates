@@ -1,6 +1,6 @@
 # 🧾 QuickBooks automated invoicing - sync Google Sheets with QBO
 
-> ⚡ **387 views** · 🧾 [Invoice Processing](../)
+> ⚡ **604 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

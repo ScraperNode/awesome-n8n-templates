@@ -1,6 +1,6 @@
 # 🔬 Run multi-model research analysis and email reports with GPT-4, Claude and NVIDIA NIM
 
-> ⚡ **147 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **306 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

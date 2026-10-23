@@ -1,6 +1,6 @@
 # 🎬 Summarize YouTube videos and generate thumbnails using AI Agent and deAPI
 
-> ⚡ **1 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **151 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — YouTube's API quotas can be a bottleneck when you're pulling data at scale. [ScraperNode](https://scrapernode.com/youtube) is a community node with dedicated scrapers for [channels](https://scrapernode.com/youtube/scrapers/channels), [videos](https://scrapernode.com/youtube/scrapers/videos), and [comments](https://scrapernode.com/youtube/scrapers/comments) — no quota limits, just structured data.
 >
@@ -31,15 +31,15 @@ Watching a full video to write a summary and then designing a matching thumbnail
 
 ### Requirements
 
-- **Self-hosted n8n instance** (deAPI node is not yet available on n8n Cloud)
+- **n8n instance** (self-hosted or n8n Cloud)
 - [deAPI](https://deapi.ai) account for video transcription, prompt boosting, and image generation
 - Anthropic account for the AI Agent
 - Google Drive API access for file uploads
 
 ### Installing the deAPI Node
 
-1. Go to **Settings** → **Community Nodes**
-2. Install `n8n-nodes-deapi`
+- **n8n Cloud**: Go to **Settings** → **Community Nodes** and toggle the "Verified Community Nodes" option
+- **Self-hosted**: Go to **Settings** → **Community Nodes** and install `n8n-nodes-deapi`
 
 ### Configuration
 

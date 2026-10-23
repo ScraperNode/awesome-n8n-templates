@@ -1,6 +1,6 @@
 # 🔬 Automatically update Amazon transaction memos in YNAB with AI & Gmail
 
-> ⚡ **150 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **307 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

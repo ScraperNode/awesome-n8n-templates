@@ -1,6 +1,6 @@
 # 🔒 Create, update and get a case in TheHive
 
-> ⚡ **2,051 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,082 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

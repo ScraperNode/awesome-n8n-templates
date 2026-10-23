@@ -1,6 +1,6 @@
 # 🎣 Send a notification to Slack when a new high-quality lead is added to Hubspot
 
-> ⚡ **2,231 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **2,251 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

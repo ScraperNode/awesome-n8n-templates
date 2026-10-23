@@ -1,6 +1,6 @@
 # 📋 Sync Notion to Clockify including clients projects and tasks
 
-> ⚡ **1,245 views** · 📋 [Project Management](../)
+> ⚡ **1,326 views** · 📋 [Project Management](../)
 
 ## Description
 

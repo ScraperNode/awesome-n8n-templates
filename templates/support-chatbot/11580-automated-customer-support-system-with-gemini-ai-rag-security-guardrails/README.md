@@ -1,6 +1,6 @@
 # 💬 Automated customer support system with Gemini AI, RAG & security guardrails
 
-> ⚡ **492 views** · 💬 [Support Chatbots](../)
+> ⚡ **856 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

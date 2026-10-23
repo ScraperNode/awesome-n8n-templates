@@ -1,6 +1,6 @@
 # 🎬 Create a Business Model Canvas and infographic image with Gemini
 
-> ⚡ **92 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **272 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

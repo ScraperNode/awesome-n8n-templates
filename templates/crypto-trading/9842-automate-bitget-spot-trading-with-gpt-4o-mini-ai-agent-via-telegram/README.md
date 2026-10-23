@@ -1,6 +1,6 @@
 # 📈 Automate Bitget spot trading with GPT-4o-mini AI agent via Telegram
 
-> ⚡ **263 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **331 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

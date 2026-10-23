@@ -1,6 +1,6 @@
 # 🎬 Generate graphic wallpaper with Midjourney, GPT-4o-mini and Canvas APIs
 
-> ⚡ **4,778 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,996 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

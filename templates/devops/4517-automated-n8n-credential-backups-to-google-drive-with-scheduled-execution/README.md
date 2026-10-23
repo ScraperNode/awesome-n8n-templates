@@ -1,6 +1,6 @@
 # ⚙️ Automated n8n credential backups to Google Drive with scheduled execution
 
-> ⚡ **2,277 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,517 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

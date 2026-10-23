@@ -1,6 +1,6 @@
 # 📈 Get exchange & sentiment insights with CoinMarketCap AI agent
 
-> ⚡ **4,504 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **4,616 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

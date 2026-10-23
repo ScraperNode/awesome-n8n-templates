@@ -1,6 +1,6 @@
 # ⚡ Sync Outlook calendar events to Notion
 
-> ⚡ **3,787 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,887 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

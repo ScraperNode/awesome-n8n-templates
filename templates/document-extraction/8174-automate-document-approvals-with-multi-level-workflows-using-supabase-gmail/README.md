@@ -1,6 +1,6 @@
 # 🔬 Automate document approvals with multi-level workflows using Supabase & Gmail
 
-> ⚡ **662 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,004 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

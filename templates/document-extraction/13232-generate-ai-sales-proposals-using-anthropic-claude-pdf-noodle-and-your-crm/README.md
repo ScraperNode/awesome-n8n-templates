@@ -1,6 +1,6 @@
 # 🔬 Generate AI sales proposals using Anthropic Claude, PDF Noodle and your CRM
 
-> ⚡ **19 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **83 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

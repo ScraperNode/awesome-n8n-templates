@@ -1,6 +1,6 @@
 # 🧾 Send WhatsApp payment reminders automatically with MoltFlow
 
-> ⚡ **8 views** · 🧾 [Invoice Processing](../)
+> ⚡ **78 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

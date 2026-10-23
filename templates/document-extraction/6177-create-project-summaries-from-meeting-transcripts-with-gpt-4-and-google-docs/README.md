@@ -1,6 +1,6 @@
 # 🔬 Create project summaries from meeting transcripts with GPT-4 and Google Docs
 
-> ⚡ **703 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **774 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

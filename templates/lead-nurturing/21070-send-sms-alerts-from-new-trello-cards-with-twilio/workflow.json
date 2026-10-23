@@ -1,0 +1,505 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Send SMS alerts from new Trello cards with Twilio",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "trello-webhook",
+      "name": "When a card arrives",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        0,
+        190
+      ],
+      "webhookId": "trello-card",
+      "parameters": {
+        "path": "trello-card",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "onReceived"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "demo-trigger",
+      "name": "Run the demo",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "demo-card",
+      "name": "load a demo card",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// The \"Run the demo\" trigger lands here. Two invented cards \u2014 one with a phone number\n// and one without \u2014 so pressing Execute shows both paths through the workflow without\n// a Trello webhook, a Twilio account or a single credential. The shapes are exactly\n// what Trello posts on a real card update, which is the point: the reader below never\n// knows the difference.\n\nconst now = new Date().toISOString();\n\nreturn [\n  {\n    json: {\n      action: 'createCard',\n      'idAction': '680a+1234567890',\n      data: {\n        card: {\n          id:           '680a+1234567890',\n          name:         'Jane Smith \u2014 Quote request',\n          desc:         'Customer: Jane Smith\\nPhone: +1234567890\\nEmail: user@example.com\\nCompany: Acme Co\\nBudget: $5,000\\nTimeline: ASAP\\n\\nNeed a quote for marketing automation.',\n          shortLink:    'abc123',\n          idList:       '680a+1234567890',\n          idLabels:     [],\n          labels:       [{ name: 'lead', color: 'green' }, { name: 'quote', color: 'purple' }],\n          pos:          16384,\n          idMembers:    [],\n          creation:     now\n        },\n        list:  { id: '680a+1234567890', name: 'New Leads' },\n        board: { id: '680a+1234567890', name: 'Workfluxa Leads' }\n      },\n      memberCreator: { id: '680a+1234567890ff', username: 'board-member', fullName: 'Sam' },\n      'date': now\n    }\n  },\n  {\n    json: {\n      action: 'createCard',\n      'idAction': '680a+1234567890',\n      data: {\n        card: {\n          id:       '680a+1234567890',\n          name:     'Enquiry \u2014 no phone on card',\n          desc:     'Customer: Robert Chen\\nEmail: user@example.com\\nCompany: Beta Ltd\\n\\nGeneral enquiry about services.',\n          shortLink: 'def456',\n          idList:   '680a+1234567890',\n          idLabels: [],\n          labels:   [{ name: 'lead', color: 'green' }],\n          pos:      32768,\n          idMembers: [],\n          creation: now\n        },\n        list:  { id: '680a+1234567890', name: 'New Leads' },\n        board: { id: '680a+1234567890', name: 'Workfluxa Leads' }\n      },\n      memberCreator: { id: '680a+1234567890ff', username: 'board-member', fullName: 'Sam' },\n      'date': now\n    }\n  }\n];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cfg",
+      "name": "config",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// TRELLO-SMS \u2014 CONFIG\n// Everything you might want to change lives in this one node. Nothing else in the\n// workflow needs editing.\n//\n// A blank key means that step is SKIPPED, never that the run fails. That is what lets\n// this be demonstrated on a screen-share before a single Trello or Twilio credential\n// exists \u2014 the SMS is built in full and shown, never sent.\n//\n// The same config node ships in every n8n workflow in this project. It is the document\n// a non-developer edits, and the reason these templates run on n8n Cloud with zero\n// host environment variables.\n\n// -------------------------------------------------------- Trello\n// The board and list to watch. The ids live in the Trello URL:\n//   trello.com/b/<board-id>/<board-name>\n//   trello.com/b/<board-id>/<board-name>/<list-name>-<list-id>\nconst TRELLO_KEY    = '';\nconst TRELLO_TOKEN  = '';\nconst TRELLO_BOARD_ID = '';\nconst TRELLO_LIST_ID  = '';\n\n// -------------------------------------------------------- Twilio\n// Account sid, auth token and the Twilio phone number that sends. Get them from\n// twilio.com/console. Both blank -> the SMS is built and shown, never sent.\nconst TWILIO_ACCOUNT_SID = '';\nconst TWILIO_AUTH_TOKEN  = '';\nconst TWILIO_FROM_NUMBER = '+1234567890';\n\n// Where test SMS lands when DRY_RUN is true and you want to see a real message.\nconst TRENCH_PHONE = '';\n\n// -------------------------------------------------------- SMS content\n// Template for the outbound SMS. {{field}} placeholders: contact_name, card_name,\n// company, budget, timeline, url.\nconst SMS_TEMPLATE = (\n  \"Hi {{contact_name}}, we received your request \\\"{{card_name}}\\\" \" +\n  \"and a member of the team will follow up within 1 business hour. \u2014 {{company}}\"\n);\n\n// -------------------------------------------------------- Safety switch\n//   DRY_RUN true  (how it ships) -> nothing is sent. The SMS is built and shown in\n//                                   STOP: preview \u2014 SMS not sent.\n//   DRY_RUN false                -> Twilio sends for real. Needs TWILIO_ACCOUNT_SID\n//                                   + TWILIO_AUTH_TOKEN, and a real phone number on the card.\nconst DRY_RUN = true;\n\nconst MODE = DRY_RUN !== true ? 'live' : 'preview';\n\n// -------------------------------------------------------- What counts as routable\n// A card must carry at least one of these custom-field names for a phone number. Trello\n// custom fields arrive on action.data.card.customFieldItems; this is the list of field\n// ids (long hex strings) to look for. Leave empty to scan the card description text.\nconst PHONE_FIELD_IDS = [];\n\n// A prefix that marks a card as a lead. Leave empty to match all cards on the watched\n// list. (This is the rule-table concept from ghl-lead-intake-router \u2014 one setting, no code.)\nconst LEAD_LABEL_PREFIX = 'lead';\n\nconst SETTINGS = {\n  trello_key:           TRELLO_KEY.trim(),\n  trello_token:         TRELLO_TOKEN.trim(),\n  trello_board_id:      TRELLO_BOARD_ID.trim(),\n  trello_list_id:       TRELLO_LIST_ID.trim(),\n\n  twilio_account_sid:   TWILIO_ACCOUNT_SID.trim(),\n  twilio_auth_token:    TWILIO_AUTH_TOKEN.trim(),\n  twilio_from_number:   TWILIO_FROM_NUMBER.trim(),\n  trench_phone:         TRENCH_PHONE.trim(),\n\n  sms_template:         SMS_TEMPLATE,\n\n  phone_field_ids:   PHONE_FIELD_IDS,\n  lead_label_prefix: LEAD_LABEL_PREFIX.trim(),\n\n  mode:        MODE,\n  dry_run:     MODE !== 'live',\n  twilio_enabled: MODE === 'live'\n    && TWILIO_ACCOUNT_SID.trim() !== ''\n    && TWILIO_AUTH_TOKEN.trim() !== ''\n};\n\n// config passes the incoming payload through untouched under `lead`, so whichever trigger\n// fired the next node reads the payload from the same place. It runs once per incoming item.\nconst incoming = $input.all().length ? $input.all().map((i) => i.json || {}) : [{}];\nreturn incoming.map((card) => ({ json: Object.assign({}, SETTINGS, { lead: card }) }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "read",
+      "name": "read the card",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        840,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// One card out of whatever Trello posted. The payload may arrive as a raw Trello\n// webhook, a form POST forwarded into n8n, or the demo cards above \u2014 this reader\n// handles all three shapes and pulls the same facts out of each.\n//\n// Output per card: the extracted lead fields, `_ok` and `_problems`.\n\nconst cfg = $('config').first().json;\nconst T = (v) => String(v == null ? '' : v).trim();\nconst NAME_RE  = /^([A-Z][a-z]+(?:\\s[A-Z][a-z]+)+)$/;\nconst PHONE_RE = /^\\+?[0-9][0-9\\s().-]{6,15}$/;\nconst EMAIL_RE = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/;\n\n// Flatten a Trello webhook payload (action.data.card etc.) or a bare card object\n// into something we can scan with simple string lookups.\nfunction flatten(obj, depth, out) {\n  out = out || {};\n  if (!obj || typeof obj !== 'object' || depth > 4) return out;\n  for (const k of Object.keys(obj)) {\n    const v = obj[k];\n    if (v && typeof v === 'object' && !Array.isArray(v)) flatten(v, depth + 1, out);\n    else out[String(k).toLowerCase()] = Array.isArray(v) ? v.join(', ') : v;\n  }\n  return out;\n}\n\nfunction extractCard(json) {\n  const j = json;\n  if (j.action && j.data && j.data.card) return { raw: j.data.card, action: j.action, wrapper: j };\n  if (j.data && j.data.card) return { raw: j.data.card, action: j.action || { type: 'unknown' }, wrapper: j };\n  if (j.card) return { raw: j.card, action: { type: 'direct' }, wrapper: j };\n  if (j.name) return { raw: j, action: { type: 'direct' }, wrapper: j };\n  return { raw: {}, action: { type: 'unknown' }, wrapper: j };\n}\n\nfunction readOne(json) {\n  const { raw, action } = extractCard(json);\n  const f = flatten(raw, 0);\n\n  // The human-entered text on the card \u2014 desc and name only. The flat fields contain\n  // Trello system ids (long digit strings) that would look like phone numbers.\n  const descText = T(raw.desc || f.desc || f.description || '') + ' ' + T(raw.name || f.name || '');\n\n  // Pull phone: custom fields first, then named fields, then the description text only\n  let phone = '';\n  if (raw.customFieldItems && cfg.phone_field_ids && cfg.phone_field_ids.length) {\n    for (const item of raw.customFieldItems) {\n      if (cfg.phone_field_ids.indexOf(item.id) >= 0 && item.value && item.value.text) {\n        phone = T(item.value.text);\n        break;\n      }\n    }\n  }\n  if (!phone) {\n    phone = T(f.phone || f.phonenumber || f.phonecontact || f['phone-number']);\n  }\n  if (!phone) {\n    // Scan only the description and card name \u2014 not the entire payload, which\n    // contains Trello system ids (long digit strings) that look like phone numbers.\n    const descText = T(raw.desc || f.desc || f.description || '') + ' ' + T(raw.name || f.name || '');\n    const phoneMatch = descText.match(/\\+?\\d{1,4}[\\s.()\\-]?\\d{2,4}[\\s.()\\-]?\\d{3,4}([\\s.()\\-]?\\d{3,4})?/g);\n    phone = phoneMatch ? phoneMatch[0].trim() : '';\n  }\n\n  // Name: try labels, desc, or field names\n  let name = '';\n  if (raw.labels && raw.labels.length) {\n    for (const label of raw.labels) {\n      if (label.name && NAME_RE.test(label.name)) { name = T(label.name); break; }\n    }\n  }\n  if (!name) {\n    name = T(f.name || f.customer || f.contactname || f.contact);\n    const m = descText.match(/Customer:\\s*([A-Z][a-z]+(?:\\s[A-Z][a-z]+)+)/i);\n    if (m) name = T(m[1]);\n  }\n\n  // Email, company, budget, timeline from the description text\n  const email = T(f.email || (function() {\n    const m = descText.match(/Email:\\s*([^\\s@]+@[^\\s@]+\\.[^\\s@]{2,})/i);\n    return m ? m[1] : '';\n  })());\n\n  const company = T(f.company || (function() {\n    const m = descText.match(/Company:\\s*([^\\n]+)/i);\n    return m ? m[1] : '';\n  })());\n\n  const budget = T((function() {\n    const m = descText.match(/Budget:\\s*([^\\n]+)/i);\n    return m ? m[1] : '';\n  })());\n\n  const timeline = T((function() {\n    const m = descText.match(/Timeline:\\s*([^\\n]+)/i);\n    return m ? m[1] : '';\n  })());\n\n  const cardName = T(raw.name || f.title || f.summary || f.subject || '');\n  const cardUrl  = 'https://trello.com/c/' + (raw.shortLink || 'x') + '/' + (raw.idShort || '');\n\n  const labels = (raw.labels || []).map((l) => T(l.name || l)).filter(Boolean);\n  const isLead = !cfg.lead_label_prefix || labels.some((l) => l.toLowerCase().startsWith(cfg.lead_label_prefix.toLowerCase()));\n\n  const problems = [];\n  if (!phone)            problems.push('no phone number \u2014 cannot send SMS');\n  if (!name && !company) problems.push('no name or company to personalise the message with');\n  if (!isLead)           problems.push('card does not carry a lead label (' + (cfg.lead_label_prefix || 'lead') + ')');\n\n  const summary = [\n    'Card on \"' + (f.boardname || (raw.board && raw.board.name) || 'Trello') + '\"',\n    'list \"' + (f.listname || (raw.list && raw.list.name) || 'unknown') + '\"',\n    name ? 'for ' + name : '',\n    phone ? '\u2014 has a number' : '\u2014 NO number to SMS'\n  ].filter(Boolean).join(' ');\n\n  return {\n    _ok:         problems.length === 0,\n    _problems:   problems,\n    _card_id:    T(raw.id || f.id || ''),\n    card_name:   cardName,\n    card_url:    cardUrl,\n    action_type: T(action.type || ''),\n    contact_name: name,\n    company:     company,\n    phone:       phone,\n    email:       email,\n    budget:      budget,\n    timeline:    timeline,\n    labels:      labels,\n    summary:     summary,\n    received:    new Date().toISOString()\n  };\n}\n\nreturn $input.all().map((item) => ({ json: readOne(item.json) }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "has-phone",
+      "name": "has a phone number?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "has-phone-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.phone }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "stop-nophone",
+      "name": "STOP: no phone number",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1400,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// A card this workflow cannot use \u2014 no phone number to SMS, or no lead label, etc.\n// It is dropped here rather than sent into a Twilio call that would fail, but the\n// reason is kept so the execution list says why the card was not texted.\nreturn $input.all().map((i) => ({\n  json: {\n    _outcome: 'rejected',\n    _reason:  (i.json._problems || []).join('; ') || 'card could not be read',\n    card_url: i.json.card_url,\n    summary:  i.json.summary\n  }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "build",
+      "name": "build the SMS",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Build the SMS body from the template in config and the card fields. This node runs\n// whether or not Twilio is configured \u2014 the message is constructed the same way either\n// way, so the preview shows exactly what would be sent.\n\nconst cfg = $('config').first().json;\nconst lead = $json;\n\n// Simple {{key}} substitution. Unknown keys are left as-is so the gap is visible.\nfunction render(tpl, fields) {\n  return tpl.replace(/\\{\\{(\\w+)\\}\\}/g, (m, key) => {\n    const v = fields[key];\n    return (v !== undefined && v !== null && v !== '') ? String(v) : m;\n  });\n}\n\nconst fields = {\n  contact_name:  lead.contact_name || 'there',\n  card_name:     lead.card_name || '',\n  company:       lead.company || '',\n  budget:        lead.budget || '',\n  timeline:      lead.timeline || '',\n  url:           lead.card_url || '',\n  phone:         lead.phone || ''\n};\n\nconst body = render(cfg.sms_template, fields);\n\n// In DRY_RUN mode and a trench phone is set, that is WHERE the SMS would go \u2014 so the\n// operator can see a real message land on their own device. Otherwise the body is shown\n// on the STOP node.\nconst to = (cfg.dry_run && cfg.trench_phone) ? cfg.trench_phone : (lead.phone || '');\n\nreturn [{\n  json: {\n    _sms_to: to,\n    _sms_body: body,\n    _sms_from: cfg.twilio_from_number,\n    contact_name: lead.contact_name,\n    card_name: lead.card_name,\n    phone: lead.phone,\n    company: lead.company,\n    summary: lead.summary\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "twilio-ok",
+      "name": "SMS configured?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1680,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "twilio-ok-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.twilio_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "stop-preview",
+      "name": "STOP: preview \u2014 SMS not sent",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1960,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// DRY_RUN is still true, or the Twilio credentials are blank. Nothing was sent \u2014 and\n// this node's output IS the result: the exact SMS body that would have gone out, and\n// to which number. Open it to read what Twilio would receive.\nreturn $input.all().map((i) => ({\n  json: {\n    _outcome: 'preview \u2014 nothing sent',\n    _reason:  'Twilio not written: DRY_RUN is true or the account sid / auth token is blank',\n    card_url: i.json.card_url || i.json.card_url,\n    to:       i.json._sms_to,\n    from:     i.json._sms_from,\n    body:     i.json._sms_body,\n    summary:  i.json.summary\n  }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "twilio-send",
+      "name": "[cred] Twilio - send SMS",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "position": [
+        1960,
+        0
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.twilio.com/2010-04-01/Accounts/' + $('config').first().json.twilio_account_sid + '/Messages.json' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 20000
+        },
+        "jsonBody": "={\n  \"To\": \"{{ $json._sms_to }}\",\n  \"From\": \"{{ $('config').first().json.twilio_from_number }}\",\n  \"Body\": \"{{ $json._sms_body }}\"\n}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Basic ' + Buffer.from($('config').first().json.twilio_account_sid + ':' + $('config').first().json.twilio_auth_token).toString('base64') }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "stop-sent",
+      "name": "STOP: SMS sent",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// The SMS was accepted by Twilio. This node's output is the record: the card, the\n// number it went to, and the Twilio message id.\nreturn $input.all().map((i) => ({\n  json: {\n    _outcome: 'sent',\n    card_url: i.json.card_url || i.json.card_url,\n    to:       i.json.to || i.json._sms_to,\n    sid:      i.json.sid || '(no sid returned)',\n    body:     i.json.body || i.json._sms_body,\n    cost_usd: (i.json.price && i.json.price.hasOwnProperty('amount')) ? i.json.price.amount : null,\n    summary:  i.json.summary\n  }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "stop-rejected",
+      "name": "STOP: SMS rejected",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2240,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// Twilio refused the send (invalid number, auth failure, etc.). The response body is\n// on this node so the operator can see why, not just that it failed.\nreturn $input.all().map((i) => ({\n  json: {\n    _outcome: 'failed',\n    _reason:  i.json.error || 'Twilio rejected the send',\n    card_url: i.json.card_url || i.json.card_url,\n    to:       i.json.to || i.json._sms_to,\n    body:     i.json._sms_body,\n    summary:  i.json.summary\n  }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "end",
+      "name": "End",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        2520,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-00",
+      "name": "Template overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -1334
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 620,
+        "height": 994,
+        "content": "## Send SMS alerts from new Trello cards with Twilio\n\n**Who's it for**\nSmall sales and service teams who triage new work on a Trello board and want the person named on\nthe card texted the moment it lands \u2014 without anyone watching the board.\n\n**How it works**\nA Trello webhook fires when a card appears on the watched list, or you press **Run the demo** to\nwalk two invented cards through the whole thing. The card is read field by field \u2014 name, company,\nphone, budget, timeline \u2014 from any field or label, so a board that keeps the phone number in the\ndescription works the same as one that uses a custom field. A card with no phone number is routed\nto a named STOP node rather than failing the run. The SMS is built from a template in `config`,\nthen sent through Twilio. Both the accepted and rejected Twilio responses end at their own named\nnode, so a delivery failure is visible rather than silent.\n\n**How to set up**\n1. Open **`config`** and add `TRELLO_KEY`, `TRELLO_TOKEN`, `TRELLO_BOARD_ID` and `TRELLO_LIST_ID`,\n   then `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and `TWILIO_FROM_NUMBER`.\n2. Point your Trello webhook at the production URL of the **`When a card arrives`** node.\n3. Leave **`DRY_RUN = true`** for the first run \u2014 it builds the message and shows it to you\n   without sending.\n\n**Requirements**\nA Trello account with API access and a Twilio account with an SMS-capable number.\n\n**How to customize**\nThe message template and the field mapping are both in `config`. To text a different person, change\nwhich field **`read the card`** treats as the phone number."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-01",
+      "name": "1. Take the card",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -264
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1040,
+        "height": 224,
+        "content": "### 1. Take the card, however it arrives\n\nTwo ways in: the Trello webhook in production, and **`Run the demo`** which loads two invented cards \u2014 one routable, one not \u2014 so you can run the whole workflow before you have an account.\n\n**`read the card`** pulls name, company, phone, budget and timeline from any field or label, so it does not care how your board is laid out."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-02",
+      "name": "2. No phone, no send",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1120,
+        330
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 480,
+        "height": 268,
+        "content": "### 2. No phone number, no send\n\nA card without a number is not an error \u2014 it is a normal thing for a board to contain. It stops at **`STOP: no phone number`** with the card attached, so somebody can fix the card.\n\n**`build the SMS`** renders the template from `config` against the card's fields."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-03",
+      "name": "3. Nothing is sent until you say so",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1680,
+        -308
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 480,
+        "height": 268,
+        "content": "### 3. Nothing is sent until you say so\n\n`DRY_RUN = true` (how it ships) builds the SMS and stops in **`STOP: preview - SMS not sent`**, where you can read the exact body and the number it would go to.\n\nFill in the Twilio credentials and set `DRY_RUN = false` to send for real."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-04",
+      "name": "4. Both outcomes are named",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2240,
+        330
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 480,
+        "height": 268,
+        "content": "### 4. Both outcomes are named\n\nTwilio accepting the message and Twilio rejecting it end at **two different nodes**, not one.\n\nA rejected send \u2014 a bad number, an unverified sender, a carrier block \u2014 is the failure worth seeing, and a workflow that ends green on both is how it stays hidden."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "config": {
+      "main": [
+        [
+          {
+            "node": "read the card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run the demo": {
+      "main": [
+        [
+          {
+            "node": "load a demo card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "build the SMS": {
+      "main": [
+        [
+          {
+            "node": "SMS configured?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read the card": {
+      "main": [
+        [
+          {
+            "node": "has a phone number?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: SMS sent": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SMS configured?": {
+      "main": [
+        [
+          {
+            "node": "[cred] Twilio - send SMS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: preview \u2014 SMS not sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "load a demo card": {
+      "main": [
+        [
+          {
+            "node": "config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: SMS rejected": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When a card arrives": {
+      "main": [
+        [
+          {
+            "node": "config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "has a phone number?": {
+      "main": [
+        [
+          {
+            "node": "build the SMS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: no phone number",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: no phone number": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Twilio - send SMS": {
+      "main": [
+        [
+          {
+            "node": "STOP: SMS sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: SMS rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: preview \u2014 SMS not sent": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

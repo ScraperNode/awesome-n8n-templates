@@ -1,6 +1,6 @@
 # 💬 Create a voice-enabled AI assistant with Groq, SerpAPI and TTS
 
-> ⚡ **272 views** · 💬 [Support Chatbots](../)
+> ⚡ **380 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

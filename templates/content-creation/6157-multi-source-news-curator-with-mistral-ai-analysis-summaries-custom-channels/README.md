@@ -1,6 +1,6 @@
 # 🎬 Multi-source news curator with Mistral AI analysis, summaries & custom channels
 
-> ⚡ **299 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **390 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

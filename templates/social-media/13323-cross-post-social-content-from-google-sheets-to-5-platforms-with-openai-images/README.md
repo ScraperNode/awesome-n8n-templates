@@ -1,6 +1,6 @@
 # 📱 Cross-post social content from Google Sheets to 5 platforms with OpenAI images
 
-> ⚡ **237 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **549 views** · 📱 [Social Media & Email Marketing](../)
 
 > 💡 **Pro Tip** — If you're pulling LinkedIn data through HTTP requests or dealing with API restrictions, there's a community node called [ScraperNode](https://scrapernode.com/linkedin) that handles this natively. It has dedicated scrapers for [profiles](https://scrapernode.com/linkedin/scrapers/profiles), [companies](https://scrapernode.com/linkedin/scrapers/companies), [jobs](https://scrapernode.com/linkedin/scrapers/jobs), and [people search](https://scrapernode.com/linkedin/scrapers/people-search) — you just pass a URL and get structured data back.
 >

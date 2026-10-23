@@ -1,6 +1,6 @@
 # 📊 Export Google Search Console data to Airtable automatically
 
-> ⚡ **183 views** · 📊 [Market Research & Insights](../)
+> ⚡ **213 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

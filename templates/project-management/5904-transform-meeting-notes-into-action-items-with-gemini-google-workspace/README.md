@@ -1,6 +1,6 @@
 # 📋 Transform meeting notes into action items with Gemini & Google Workspace
 
-> ⚡ **2,366 views** · 📋 [Project Management](../)
+> ⚡ **2,707 views** · 📋 [Project Management](../)
 
 ## Description
 

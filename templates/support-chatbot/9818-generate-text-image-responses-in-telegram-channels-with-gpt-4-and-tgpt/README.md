@@ -1,6 +1,6 @@
 # 💬 Generate text & image responses in Telegram channels with GPT-4 and TGPT
 
-> ⚡ **417 views** · 💬 [Support Chatbots](../)
+> ⚡ **532 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

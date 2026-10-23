@@ -1,6 +1,6 @@
 # 🧾 Automate invoice processing from Gmail with Azure GPT-4.1 and human verification
 
-> ⚡ **782 views** · 🧾 [Invoice Processing](../)
+> ⚡ **870 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

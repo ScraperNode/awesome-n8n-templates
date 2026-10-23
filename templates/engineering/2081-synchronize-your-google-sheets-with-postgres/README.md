@@ -1,6 +1,6 @@
 # ⚒️ Synchronize your Google Sheets with Postgres
 
-> ⚡ **6,839 views** · ⚒️ [Engineering](../)
+> ⚡ **6,886 views** · ⚒️ [Engineering](../)
 
 ## Description
 

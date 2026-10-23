@@ -1,6 +1,6 @@
 # 📱 Automate cross-posting from Telegram to Facebook with Airtop Browser Automation
 
-> ⚡ **355 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **610 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

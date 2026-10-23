@@ -1,6 +1,6 @@
 # ⚙️ Backs up n8n workflows to NextCloud
 
-> ⚡ **4,200 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **4,261 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

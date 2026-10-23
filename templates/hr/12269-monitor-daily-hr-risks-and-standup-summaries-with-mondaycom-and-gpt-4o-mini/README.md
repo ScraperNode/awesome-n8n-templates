@@ -1,6 +1,6 @@
 # 👥 Monitor daily HR risks and standup summaries with Monday.com and GPT-4o-mini
 
-> ⚡ **118 views** · 👥 [HR & Recruitment](../)
+> ⚡ **184 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

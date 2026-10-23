@@ -1,6 +1,6 @@
 # 🤝 Automatically import Square sales summary reports into Google Sheets
 
-> ⚡ **192 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **294 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

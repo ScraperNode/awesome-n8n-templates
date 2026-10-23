@@ -1,0 +1,443 @@
+{
+  "id": "zhcfjF9ZabQ4JSib",
+  "meta": {
+    "instanceId": "8b1375c83e3330eaee6c4835419780a9e9d1d49324602a233c244d8f19395715",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Sync Shopify customers with Cegid Y2 on create or update",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "bb410974-ff50-4fc8-9c23-5ea80836957d",
+      "name": "Update customer in CEGID",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3408,
+        192
+      ],
+      "parameters": {
+        "url": "={{ $('Set CEGID Config').first().json.cegid_api_url }}/Y2/{{ $('Set CEGID Config').first().json.cegid_folder_id }}/api/customers/v2/{{ $json.identifier.id }}",
+        "method": "PATCH",
+        "options": {},
+        "jsonBody": "={\n  \"id\": \"{{ $('Check if customer already exists').item.json.identifier.id }}\",\n  \"properties\": {{ JSON.stringify($('Build CEGID payload').item.json) }}\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth"
+      },
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "yIxkHpzyidzPTiNP",
+          "name": "CEGID 90489376_003_TEST"
+        }
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "ad64d7d7-d022-4c66-87c7-82bc0904c730",
+      "name": "On Shopify customer created/updated",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        1392,
+        432
+      ],
+      "webhookId": "43cf5e9e-5958-49fc-998e-b2a1904c308e",
+      "parameters": {
+        "path": "43cf5e9e-5958-49fc-998e-b2a1904c308e",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "e77d2302-6c2d-424f-a7a2-2d613ff00ea6",
+      "name": "Build CEGID payload",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2400,
+        416
+      ],
+      "parameters": {
+        "jsCode": "// ============================================================\n// Build CEGID customer payload from a Shopify customer webhook\n// ------------------------------------------------------------\n// Maps the incoming Shopify customer (individual OR company)\n// to the JSON structure expected by the CEGID Y2 customers API.\n// ============================================================\n\n// --- Inputs ---\nconst cegidConfig      = $('Set CEGID Config').first().json; // CEGID config (store, tax system, etc.)\nconst shopifyCustomer  = $json.body;                          // Shopify customer payload\nconst shopifyAddress   = shopifyCustomer.default_address || {}; // Default address (may be missing)\n\n// A customer is treated as a company if the address carries a company name,\n// otherwise as an individual.\nconst isCompany = !!shopifyAddress.company;\n\n// --- Address block (REQUIRED by the CEGID API) ---\n// The API rejects the payload without an address block containing at least one line.\n// Collect every non-empty address line, numbering them sequentially ('1', '2', ...).\nconst addressLines = [shopifyAddress.address1, shopifyAddress.address2]\n  .filter(Boolean)\n  .map((value, i) => ({ id: String(i + 1), value }));\n\n// Fallback: if Shopify sent no address line at all, insert a placeholder\n// so the required line '1' is always present and passes the API's non-empty check.\n// (A blank space is rejected \u2014 the API trims and treats it as empty \u2014 so we use a visible dash.)\nif (addressLines.length === 0) {\n  addressLines.push({ id: '1', value: '-' });\n}\n\nconst cegidAddress = {\n  countryId: cegidConfig.default_country,\n  notAtThisAddress: false,\n  optinPostal: 'AskCustomer',\n  city: shopifyAddress.city,\n  zipCode: shopifyAddress.zip,\n  lines: addressLines\n};\n\n// --- Customer identity block (individual OR company) ---\n// CEGID expects either an \"individual\" or a \"company\" key at the top level,\n// never both. We build the matching one based on whether a company name is present.\nconst customerIdentity = isCompany\n  ? {\n      company: {\n        name: shopifyAddress.company,\n        communication: {\n          mailing: false,\n          emailing: false,\n          // Company uses a single email OBJECT (only included when an email exists,\n          // to stay consistent with the API's coherence checks)\n          ...(shopifyCustomer.email ? { email: { value: shopifyCustomer.email, validity: shopifyCustomer.verified_email ? 'Valid' : 'NotValid', optin: 'AskCustomer' } } : {}),\n          ...(shopifyCustomer.phone ? { phones: [{ type: 'Phone1', value: shopifyCustomer.phone, validity: 'Valid', optin: 'AskCustomer' }] } : {})\n        }\n      }\n    }\n  : {\n      individual: {\n        firstName: shopifyCustomer.first_name,\n        lastName: shopifyCustomer.last_name,\n        communication: {\n          mailing: false,\n          emailing: false,\n          // emailRecovery must stay consistent with the presence of an email:\n          // the API rejects emailRecovery: true when no email is provided.\n          emailRecovery: !!shopifyCustomer.email,\n          // Individual uses an emails ARRAY\n          ...(shopifyCustomer.email ? { emails: [{ id: '1', value: shopifyCustomer.email, validity: shopifyCustomer.verified_email ? 'Valid' : 'NotValid', optin: 'AskCustomer' }] } : {}),\n          ...(shopifyCustomer.phone ? { phones: [{ type: 'Cellular', value: shopifyCustomer.phone, validity: 'Valid', optin: 'AskCustomer' }] } : {})\n        }\n      }\n    };\n\n// --- Assemble final payload ---\nconst payload = {\n  identifier: { externalReference: String(shopifyCustomer.id) },\n  closed: false,\n  creationStoreIdentifier: { id: cegidConfig.default_store },\n  usualStoreIdentifier: { id: cegidConfig.default_store },\n  taxExcluded: shopifyCustomer.tax_exempt,\n  fictitious: false,\n  prospect: false,\n  identification: { shortName: String(shopifyCustomer.id) },\n  informations: {\n    currencyId: cegidConfig.default_currency,\n    taxSystemId: cegidConfig.tax_system_id,\n    ...(shopifyCustomer.note ? { description: shopifyCustomer.note } : {})\n  },\n  address: cegidAddress, // always included \u2014 required by the API\n  ...customerIdentity    // spreads either \"individual\" or \"company\" at the top level\n};\n\nreturn { json: payload };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e197b2b1-2b8a-443c-8f2a-7c8af9faac18",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1984,
+        416
+      ],
+      "parameters": {
+        "mode": "chooseBranch",
+        "useDataOfInput": 2
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "265a4c3f-92b2-4e05-81c7-28286f8a5fac",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        48,
+        112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 400,
+        "height": 304,
+        "content": "## About the author\n\n\n**COD4IS** is a recognized consulting firm specializing in Retail Information Systems. From CRM and POS to ERP, e-commerce, and supply chain, COD4IS helps specialty retailers design, implement, and run the systems that power their business; combining business consulting, technical integration, and worldwide support for store and head-office teams.\n\n\ud83c\udf10 [Our website](https://cod4is.com)  \n\u2709\ufe0f [Contact us](mailto:contact@cod4is.com)"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5aba0ae6-d7b0-4771-a5e9-7098721774be",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        48,
+        -80
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 166,
+        "height": 176,
+        "content": "![COD4IS](https://cod4is.com/wp-content/uploads/2022/01/cropped-favicon.jpg)"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "edcf1b92-956c-4d48-9dcf-2e2f6dd3ab42",
+      "name": "Create customer in CEGID",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3408,
+        384
+      ],
+      "parameters": {
+        "url": "={{ $('Set CEGID Config').first().json.cegid_api_url }}/Y2/{{ $('Set CEGID Config').first().json.cegid_folder_id }}/api/customers/v2",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{ $('Build CEGID payload').item.json }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth"
+      },
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "yIxkHpzyidzPTiNP",
+          "name": "CEGID 90489376_003_TEST"
+        }
+      },
+      "typeVersion": 4.2,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "5ec84860-80b6-4aa8-b874-9958c0ca8b25",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2256,
+        112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 400,
+        "height": 672,
+        "content": "## Step 2 - Mapping\n\nThe mapping is made in accordance with CEGID's API Customers (V2)\n\nhttps://12345678-test-retail-ondemand.cegid.cloud/Y2/swaggerui/?urls.primaryName=Customer%20API\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "44dd9683-cceb-4e20-b95a-81ac40615c9d",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2688,
+        112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1024,
+        "height": 672,
+        "content": "## Step 3 - Create or update customer in CEGID Y2\n\n\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "501146b8-3b25-4076-a99a-7ee442ab7e6b",
+      "name": "Check if customer already exists",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "position": [
+        2784,
+        416
+      ],
+      "parameters": {
+        "url": "={{ $('Set CEGID Config').first().json.cegid_api_url }}/Y2/{{ $('Set CEGID Config').first().json.cegid_folder_id }}/api/customers/v2",
+        "options": {
+          "response": {
+            "response": {}
+          },
+          "queryParameterArrays": "brackets"
+        },
+        "sendQuery": true,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "folderId",
+              "value": "={{ $('Set CEGID Config').first().json.cegid_workspace }}"
+            },
+            {
+              "name": "externalReferences",
+              "value": "={{ $json.identifier.externalReference }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "yIxkHpzyidzPTiNP",
+          "name": "CEGID 90489376_003_TEST"
+        }
+      },
+      "typeVersion": 4.2,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "72ef217b-1e51-468e-9104-81f46cbd54a3",
+      "name": "If customer not found",
+      "type": "n8n-nodes-base.if",
+      "notes": "Error 404",
+      "position": [
+        3104,
+        512
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c27f980d-8140-45e8-a4a3-4807b0152959",
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.error.status }}",
+              "rightValue": 404
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 2.3
+    },
+    {
+      "id": "0809e7a8-0104-4bf0-92a4-046803165946",
+      "name": "Stop and Error",
+      "type": "n8n-nodes-base.stopAndError",
+      "position": [
+        3408,
+        592
+      ],
+      "parameters": {
+        "errorMessage": "={{ $json.error.message }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e8c205f5-cd31-4995-a39e-0923ba47492f",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        496,
+        112
+      ],
+      "parameters": {
+        "width": 700,
+        "height": 720,
+        "content": "## Sync Shopify customers with Cegid Y2 on create or update\n**This workflow syncs customers created or updated in Shopify to CEGID Y2, in real time via webhook.**\n\n### \u2699\ufe0f How it works\n1. A Shopify webhook fires whenever a customer is created or updated.\n2. The customer data is mapped to the CEGID format (**API Customers V2**).\n3. The customer is created in CEGID \u2014 or updated if it already exists.\n\n### \ud83d\udee0\ufe0f Setup\n**1. Create a webhook in Shopify** pointing to this workflow's webhook URL, for both events:\n- Customer creation\n- Customer update\n\n**2. Fill out the \"Set CEGID Config\" node** with your values:\n- `cegid_api_url` \u2014 your CEGID API base URL (e.g. `https://12345678-test-retail-ondemand.cegid.cloud`)\n- `cegid_folder_id` \u2014 the CEGID folder ID (e.g. `12345678_002_TEST`)\n- `default_store` \u2014 the CEGID store code (e.g. `WEB01`)\n- `default_country` \u2014 the default country in ISO 3166-1 alpha-3 format (e.g. `FRA`)\n- `default_currency` \u2014 the default currency (e.g. `EUR`)\n- `tax_system_id` \u2014 the CEGID tax system ID (e.g. `FR1`)\n\n**3. Add your credentials** \u2014 set the same HTTP Basic Auth credential on both the *Create* and *Update* nodes:\n- **User**: `cegid_folder_id\\cegid_user` (e.g. `12345678_002_TEST\\ABC`)\n- **Password**: your CEGID account password\n\n### \ud83d\udcdd Good to know\nThis workflow only syncs the data available in the Shopify webhook payload. Any customer fields not included in the webhook (or not sent by Shopify for a given event) will not be synced to CEGID.\n\nThat's it \u2014 you're ready to go! \ud83d\ude80"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "20b979cb-6bef-4a5a-b2ac-0ff83dd4877d",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1328,
+        112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 896,
+        "height": 672,
+        "content": "## Step 1 - Receive Webhook & init\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "06c1f7c2-09ab-4657-9950-a595d5585325",
+      "name": "Set CEGID Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1696,
+        256
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "71ec4eb6-45f6-41e4-b117-00a95fc7746d",
+              "name": "cegid_folder_id",
+              "type": "string",
+              "value": "12345678_002_TEST"
+            },
+            {
+              "id": "d0368782-8bb6-4917-8500-c91565589c5f",
+              "name": "cegid_api_url",
+              "type": "string",
+              "value": "https://12345678-partner-retail-ondemand.cegid.cloud"
+            },
+            {
+              "id": "6a518fec-a664-44f9-837f-6d0c0f045a65",
+              "name": "default_store",
+              "type": "string",
+              "value": "WEB01"
+            },
+            {
+              "id": "af79a408-588b-4526-bfa4-f21be564631f",
+              "name": "default_country",
+              "type": "string",
+              "value": "FRA"
+            },
+            {
+              "id": "09833da3-9ef5-4f54-8719-2a1ac4218f1c",
+              "name": "default_currency",
+              "type": "string",
+              "value": "EUR"
+            },
+            {
+              "id": "384bfe4a-3fae-47b9-91d2-47785bc29dfa",
+              "name": "tax_system_id",
+              "type": "string",
+              "value": "FR1"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    }
+  ],
+  "active": true,
+  "pinData": {},
+  "settings": {
+    "timezone": "Europe/Paris",
+    "binaryMode": "separate",
+    "callerPolicy": "workflowsFromSameOwner",
+    "timeSavedMode": "fixed",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "d6566a8b-1d07-4481-b3b6-9ed2c9cd9d62",
+  "connections": {
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Build CEGID payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set CEGID Config": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build CEGID payload": {
+      "main": [
+        [
+          {
+            "node": "Check if customer already exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If customer not found": {
+      "main": [
+        [
+          {
+            "node": "Create customer in CEGID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if customer already exists": {
+      "main": [
+        [
+          {
+            "node": "Update customer in CEGID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If customer not found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On Shopify customer created/updated": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Set CEGID Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

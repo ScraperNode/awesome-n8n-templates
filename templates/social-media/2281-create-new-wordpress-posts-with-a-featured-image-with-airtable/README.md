@@ -1,6 +1,6 @@
 # 📱 Create new WordPress posts with a featured image with Airtable
 
-> ⚡ **12,949 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **13,059 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 🛠️ Gong tool MCP server
 
-> ⚡ **309 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **514 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

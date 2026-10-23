@@ -1,6 +1,6 @@
 # 📱 Tiny tiny RSS (aka tt-rss) feed to Mastodon
 
-> ⚡ **1,601 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,612 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

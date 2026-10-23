@@ -1,6 +1,6 @@
 # 📖 AI agent to chat with files in Supabase Storage
 
-> ⚡ **79,886 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **80,814 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

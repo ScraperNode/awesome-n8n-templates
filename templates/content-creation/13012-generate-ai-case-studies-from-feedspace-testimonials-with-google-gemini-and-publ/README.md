@@ -1,6 +1,6 @@
 # 🎬 Generate AI case studies from Feedspace testimonials with Google Gemini and publish to WordPress
 
-> ⚡ **31 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **63 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Automate Stripe payment to QuickBooks sales receipt sync
 
-> ⚡ **30 views** · 🧾 [Invoice Processing](../)
+> ⚡ **54 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

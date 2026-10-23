@@ -1,6 +1,6 @@
 # 🔬 Process OCR documents from Google Drive into searchable knowledge base with OpenAI & Pinecone
 
-> ⚡ **258 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **304 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

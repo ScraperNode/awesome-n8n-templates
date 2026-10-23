@@ -1,6 +1,6 @@
 # ⚡ Send labeled email to a Notion database
 
-> ⚡ **7,639 views** · ⚡ [Personal Productivity](../)
+> ⚡ **7,843 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

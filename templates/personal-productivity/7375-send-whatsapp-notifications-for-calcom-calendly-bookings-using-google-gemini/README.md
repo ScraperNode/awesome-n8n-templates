@@ -1,6 +1,6 @@
 # ⚡ Send WhatsApp notifications for Cal.com & Calendly bookings using Google Gemini
 
-> ⚡ **1,441 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,726 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

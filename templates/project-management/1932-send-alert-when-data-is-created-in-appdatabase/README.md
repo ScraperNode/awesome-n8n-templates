@@ -1,6 +1,6 @@
 # 📋 Send alert when data is created in app/database
 
-> ⚡ **2,994 views** · 📋 [Project Management](../)
+> ⚡ **3,072 views** · 📋 [Project Management](../)
 
 ## Description
 

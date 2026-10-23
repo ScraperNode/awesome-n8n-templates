@@ -1,6 +1,6 @@
 # 🧾 Generate PDF invoices with CustomJS API
 
-> ⚡ **7,889 views** · 🧾 [Invoice Processing](../)
+> ⚡ **8,541 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

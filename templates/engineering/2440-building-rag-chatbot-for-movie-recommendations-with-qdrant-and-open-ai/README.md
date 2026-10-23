@@ -1,6 +1,6 @@
 # ⚒️ Building RAG chatbot for movie recommendations with Qdrant and Open AI
 
-> ⚡ **35,862 views** · ⚒️ [Engineering](../)
+> ⚡ **36,802 views** · ⚒️ [Engineering](../)
 
 ## Description
 

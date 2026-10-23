@@ -1,6 +1,6 @@
 # 🔬 Send financial metrics monthly to Mattermos
 
-> ⚡ **1,064 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,062 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Automated document translation with Straker, Google Drive & Slack
 
-> ⚡ **531 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **618 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

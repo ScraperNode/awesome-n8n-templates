@@ -1,6 +1,6 @@
 # 🎣 Qualify leads from Gemini chat to Google Sheets and Slack with self-optimization
 
-> ⚡ **18 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **75 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

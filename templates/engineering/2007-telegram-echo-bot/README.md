@@ -1,6 +1,6 @@
 # ⚒️ Telegram echo-bot
 
-> ⚡ **7,331 views** · ⚒️ [Engineering](../)
+> ⚡ **7,816 views** · ⚒️ [Engineering](../)
 
 ## Description
 

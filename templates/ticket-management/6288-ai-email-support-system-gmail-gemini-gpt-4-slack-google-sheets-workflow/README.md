@@ -1,6 +1,6 @@
 # 🎫 AI email support system: Gmail, Gemini, GPT-4, Slack & Google Sheets workflow
 
-> ⚡ **232 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **306 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

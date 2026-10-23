@@ -1,6 +1,6 @@
 # 🎬 Remove image backgrounds with APImage AI: Airtable to Google Drive
 
-> ⚡ **497 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **608 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

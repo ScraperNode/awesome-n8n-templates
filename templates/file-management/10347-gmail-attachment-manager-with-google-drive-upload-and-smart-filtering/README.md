@@ -1,6 +1,6 @@
 # 📁 Gmail attachment manager with Google Drive upload and smart filtering
 
-> ⚡ **650 views** · 📁 [File Management](../)
+> ⚡ **971 views** · 📁 [File Management](../)
 
 ## Description
 

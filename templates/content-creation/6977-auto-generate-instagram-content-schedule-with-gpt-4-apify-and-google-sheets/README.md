@@ -1,6 +1,6 @@
 # 🎬 Auto-generate Instagram content schedule with GPT-4, Apify, and Google Sheets
 
-> ⚡ **14,745 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **37,992 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >

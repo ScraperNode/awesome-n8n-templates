@@ -1,6 +1,6 @@
 # 🎬 Generate Images with OpenAI new GPT-Image-1 Model via User-Friendly Form
 
-> ⚡ **1,500 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,602 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

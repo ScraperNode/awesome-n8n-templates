@@ -1,6 +1,6 @@
 # ⚙️ Automate workflow & credentials backup to S3 with retention management
 
-> ⚡ **657 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **828 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

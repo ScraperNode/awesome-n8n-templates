@@ -1,6 +1,6 @@
 # 🔬 Assess technical documentation compliance with GPT‑4o and send Slack alerts
 
-> ⚡ **5 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **59 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

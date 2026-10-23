@@ -1,6 +1,6 @@
 # 🔬 Generate & email custom NDA documents from web form submissions
 
-> ⚡ **168 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **212 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

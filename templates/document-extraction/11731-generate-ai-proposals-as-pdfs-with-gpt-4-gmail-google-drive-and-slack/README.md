@@ -1,6 +1,6 @@
 # 🔬 Generate AI proposals as PDFs with GPT-4, Gmail, Google Drive and Slack
 
-> ⚡ **52 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **105 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

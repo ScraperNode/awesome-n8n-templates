@@ -1,6 +1,6 @@
 # 📈 FinnHub API and Slack template
 
-> ⚡ **539 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **560 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

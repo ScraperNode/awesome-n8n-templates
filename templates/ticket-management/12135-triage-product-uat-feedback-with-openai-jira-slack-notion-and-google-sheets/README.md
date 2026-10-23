@@ -1,6 +1,6 @@
 # 🎫 Triage product UAT feedback with OpenAI, Jira, Slack, Notion and Google Sheets
 
-> ⚡ **65 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **132 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

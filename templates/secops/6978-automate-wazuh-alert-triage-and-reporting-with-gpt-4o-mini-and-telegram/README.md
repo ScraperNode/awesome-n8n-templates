@@ -1,6 +1,6 @@
 # 🔒 Automate Wazuh alert triage and reporting with GPT-4o-mini and Telegram
 
-> ⚡ **1,941 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,817 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

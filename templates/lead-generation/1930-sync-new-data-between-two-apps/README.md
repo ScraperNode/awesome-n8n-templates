@@ -1,6 +1,6 @@
 # 🎣 Sync new data between two apps
 
-> ⚡ **9,826 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **9,824 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

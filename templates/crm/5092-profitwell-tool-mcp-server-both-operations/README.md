@@ -1,6 +1,6 @@
 # 🤝 🛠️ ProfitWell tool MCP server 💪 both operations
 
-> ⚡ **131 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **148 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

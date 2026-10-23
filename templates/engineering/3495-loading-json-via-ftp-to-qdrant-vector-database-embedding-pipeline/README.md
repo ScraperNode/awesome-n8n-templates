@@ -1,6 +1,6 @@
 # ⚒️ Loading JSON via FTP to Qdrant vector database embedding pipeline
 
-> ⚡ **1,785 views** · ⚒️ [Engineering](../)
+> ⚡ **1,920 views** · ⚒️ [Engineering](../)
 
 ## Description
 

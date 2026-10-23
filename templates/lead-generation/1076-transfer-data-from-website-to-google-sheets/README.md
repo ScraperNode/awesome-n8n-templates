@@ -1,6 +1,6 @@
 # 🎣 Transfer data from website to Google Sheets
 
-> ⚡ **5,408 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **5,520 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

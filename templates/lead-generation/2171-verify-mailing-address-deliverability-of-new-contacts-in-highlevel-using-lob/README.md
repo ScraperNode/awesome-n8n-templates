@@ -1,6 +1,6 @@
 # 🎣 Verify mailing address deliverability of new contacts in HighLevel Using Lob
 
-> ⚡ **2,951 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **2,949 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

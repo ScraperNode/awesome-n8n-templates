@@ -1,6 +1,6 @@
 # 🔬 Extract text from PDF and image using Vertex AI (Gemini) into CSV
 
-> ⚡ **32,473 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **33,347 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

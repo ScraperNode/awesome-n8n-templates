@@ -1,6 +1,6 @@
 # 🔬 Pdf document filling and generation server for AI agents with doqs.dev API
 
-> ⚡ **990 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,051 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

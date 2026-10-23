@@ -1,6 +1,6 @@
 # 📖 Simple scheduling and internal document query bot with Telegram
 
-> ⚡ **207 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **312 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

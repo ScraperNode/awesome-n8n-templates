@@ -1,6 +1,6 @@
 # 🔧 Real-time registration form tracking with Google Sheets and Gmail notifications
 
-> ⚡ **206 views** · 🔧 [Miscellaneous](../)
+> ⚡ **357 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

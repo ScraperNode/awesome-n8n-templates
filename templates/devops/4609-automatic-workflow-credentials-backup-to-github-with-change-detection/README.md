@@ -1,6 +1,6 @@
 # ⚙️ Automatic workflow & credentials backup to GitHub with change detection
 
-> ⚡ **5,979 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **6,577 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

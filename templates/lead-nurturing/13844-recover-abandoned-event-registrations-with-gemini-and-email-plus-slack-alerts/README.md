@@ -1,6 +1,6 @@
 # 💬 Recover abandoned event registrations with Gemini and email plus Slack alerts
 
-> ⚡ **1 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **12 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

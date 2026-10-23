@@ -1,6 +1,6 @@
 # 📱 Automate welcome emails with discount codes via Mailchimp and Gmail
 
-> ⚡ **353 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **420 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

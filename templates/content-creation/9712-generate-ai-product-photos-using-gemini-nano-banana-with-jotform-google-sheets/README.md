@@ -1,6 +1,6 @@
 # 🎬 Generate AI product photos using Gemini Nano Banana with Jotform & Google Sheets
 
-> ⚡ **1,885 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,310 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

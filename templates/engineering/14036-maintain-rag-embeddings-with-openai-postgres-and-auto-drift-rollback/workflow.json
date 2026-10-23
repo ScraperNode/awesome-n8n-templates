@@ -1,0 +1,1126 @@
+{
+  "meta": {
+    "instanceId": "48aac30adfc5487a33ef16e0e958096f27cef40df3ed0febcbe1ca199e789786"
+  },
+  "nodes": [
+    {
+      "id": "e5d849d1-ca42-457f-8bf6-9afce5e203cd",
+      "name": "Daily RAG Maintenance Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -2592,
+        544
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 2
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "46c10059-edfb-410f-afd0-c5841f9eb0db",
+      "name": "Source Change Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -2592,
+        720
+      ],
+      "webhookId": "fdb7663c-2a3a-42bc-993a-cbb7ed1c7fd6",
+      "parameters": {
+        "path": "rag-update",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "ebd11e90-ec01-4770-9050-df2590234763",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -2176,
+        624
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "documentSourceUrl",
+              "type": "string",
+              "value": "<__PLACEHOLDER_VALUE__Document source URL (GitHub, Drive, Confluence)__>"
+            },
+            {
+              "id": "id-2",
+              "name": "chunkSize",
+              "type": "number",
+              "value": 1000
+            },
+            {
+              "id": "id-3",
+              "name": "chunkOverlap",
+              "type": "number",
+              "value": 200
+            },
+            {
+              "id": "id-4",
+              "name": "qualityThreshold",
+              "type": "number",
+              "value": 0.85
+            },
+            {
+              "id": "id-5",
+              "name": "driftThreshold",
+              "type": "number",
+              "value": 0.15
+            },
+            {
+              "id": "id-6",
+              "name": "notificationWebhook",
+              "type": "string",
+              "value": "<__PLACEHOLDER_VALUE__Slack/Teams webhook URL for notifications__>"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "9a9337b0-f69e-4a48-b6b2-41671d4ce27f",
+      "name": "Fetch Documents from Source",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1888,
+        544
+      ],
+      "parameters": {
+        "url": "={{ $('Workflow Configuration').first().json.documentSourceUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.3
+    },
+    {
+      "id": "75dcd272-6cde-4182-a737-5878dfb6ef6a",
+      "name": "Chunk Documents & Compute Hash",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1712,
+        544
+      ],
+      "parameters": {
+        "jsCode": "// Get configuration from Workflow Configuration node\nconst config = $('Workflow Configuration').first().json;\nconst chunkSize = config.chunkSize || 1000;\nconst chunkOverlap = config.chunkOverlap || 200;\nconst sourceRevision = config.sourceRevision || 'v1';\n\n// Get documents from previous node\nconst documents = $input.all();\n\n// Function to calculate SHA-256 hash\nconst crypto = require('crypto');\nfunction calculateHash(text) {\n  return crypto.createHash('sha256').update(text).digest('hex');\n}\n\n// Function to chunk text with deterministic splitting\nfunction chunkText(text, size, overlap) {\n  const chunks = [];\n  let start = 0;\n  \n  while (start < text.length) {\n    const end = Math.min(start + size, text.length);\n    const chunk = text.substring(start, end);\n    chunks.push(chunk);\n    \n    if (end >= text.length) break;\n    start += size - overlap;\n  }\n  \n  return chunks;\n}\n\n// Process all documents and create chunks\nconst results = [];\nconst timestamp = new Date().toISOString();\n\nfor (const doc of documents) {\n  const content = doc.json.content || doc.json.text || JSON.stringify(doc.json);\n  const chunks = chunkText(content, chunkSize, chunkOverlap);\n  \n  chunks.forEach((chunk, index) => {\n    const hash = calculateHash(chunk);\n    const chunkId = `${doc.json.id || 'doc'}_chunk_${index}`;\n    \n    results.push({\n      chunkId: chunkId,\n      content: chunk,\n      hash: hash,\n      chunkSize: chunkSize,\n      chunkOverlap: chunkOverlap,\n      sourceRevision: sourceRevision,\n      timestamp: timestamp\n    });\n  });\n}\n\nreturn results.map(item => ({ json: item }));",
+        "notice": "Splits documents into small pieces and creates a fingerprint (hash) for each piece"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e2465a66-7ebc-4397-821b-1e3db90bb3e1",
+      "name": "Fetch Previous Chunk Hashes",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        -1808,
+        784
+      ],
+      "parameters": {
+        "query": "SELECT chunk_id, content_hash, embedding_version FROM document_chunks WHERE is_active = true",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.6
+    },
+    {
+      "id": "f3c313cc-22bd-43d5-8e2d-711dcb51ca45",
+      "name": "Detect Changed Chunks",
+      "type": "n8n-nodes-base.compareDatasets",
+      "position": [
+        -1440,
+        608
+      ],
+      "parameters": {
+        "options": {},
+        "fuzzyCompare": true,
+        "mergeByFields": {
+          "values": [
+            {
+              "field1": "hash",
+              "field2": "content_hash"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "cc6d43e4-ce35-46dc-89e0-3535da38f600",
+      "name": "OpenAI Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "position": [
+        -528,
+        1136
+      ],
+      "parameters": {
+        "notice": "Converts text into numbers (embeddings) that AI can understand",
+        "options": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "7b6b95f5-6b60-4f06-86fd-866759f00ae5",
+      "name": "Recursive Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "position": [
+        -1088,
+        960
+      ],
+      "parameters": {
+        "notice": "Splits text into chunks for the AI to process",
+        "options": {},
+        "chunkSize": "={{ $('Workflow Configuration').first().json.chunkSize }}",
+        "chunkOverlap": "={{ $('Workflow Configuration').first().json.chunkOverlap }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a8c7e05c-fe84-4de9-bdaa-f33edd20c288",
+      "name": "Document Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        -1120,
+        768
+      ],
+      "parameters": {
+        "notice": "Loads documents and prepares them for embedding",
+        "options": {},
+        "textSplittingMode": "custom"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "a6d72254-9a77-401c-b86d-1b4c58030403",
+      "name": "New Vector Store (Candidate)",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "position": [
+        -1104,
+        576
+      ],
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "2959fcfd-5b93-4468-b295-4a87fcf55a4c",
+      "name": "Store Embedding Metadata",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -800,
+        576
+      ],
+      "parameters": {
+        "jsCode": "// Extract embedding metadata including model name, version, timestamp, and source revision\n\nconst items = $input.all();\n\n// Get configuration from Workflow Configuration node\nconst config = $('Workflow Configuration').first().json;\n\n// Extract metadata\nconst embeddingModel = config.embeddingModel || 'text-embedding-ada-002';\nconst modelVersion = config.modelVersion || 'v2';\nconst embeddingTimestamp = new Date().toISOString();\nconst sourceRevision = config.sourceRevision || $('Fetch Documents from Source').first().json.revision || 'latest';\nconst chunkCount = items.length;\n\n// Return metadata object\nreturn [{\n  json: {\n    embeddingModel: embeddingModel,\n    modelVersion: modelVersion,\n    embeddingTimestamp: embeddingTimestamp,\n    sourceRevision: sourceRevision,\n    chunkCount: chunkCount\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "d221d657-735f-458b-89d6-b9bee5203678",
+      "name": "Save Embedding Version Metadata",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        -608,
+        608
+      ],
+      "parameters": {
+        "table": {
+          "__rl": true,
+          "mode": "name",
+          "value": "embedding_versions"
+        },
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "columns": {
+          "value": {
+            "chunk_count": "={{ $json.chunk_count }}",
+            "is_candidate": true,
+            "model_version": "={{ $json.model_version }}",
+            "embedding_model": "={{ $json.embedding_model }}",
+            "source_revision": "={{ $json.source_revision }}",
+            "embedding_timestamp": "={{ $json.embedding_timestamp }}"
+          },
+          "mappingMode": "defineBelow"
+        },
+        "options": {}
+      },
+      "typeVersion": 2.6
+    },
+    {
+      "id": "3f59580c-fd71-4d0f-a207-3e2abe4f931c",
+      "name": "Fetch Golden Questions",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        -272,
+        560
+      ],
+      "parameters": {
+        "query": "SELECT question_id, question_text, expected_passages, expected_answer_keywords FROM golden_questions WHERE is_active = true",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.6
+    },
+    {
+      "id": "80ea7d22-0593-4381-9ed5-ce11efd2be2f",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        -64,
+        336
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {},
+        "builtInTools": {}
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "65567321-858a-46fa-a1b8-e59ce5e7304f",
+      "name": "Fetch Previous Embeddings",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        -272,
+        736
+      ],
+      "parameters": {
+        "query": "SELECT embedding_vector, chunk_id FROM embeddings WHERE version_id = (SELECT id FROM embedding_versions WHERE is_active = true LIMIT 1)",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.6
+    },
+    {
+      "id": "b3acc41b-0d1c-4d01-8408-314a53ffc44c",
+      "name": "Calculate Quality Metrics",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        464,
+        560
+      ],
+      "parameters": {
+        "jsCode": "// Calculate quality metrics comparing new vs old answers\nconst items = $input.all();\n\n// Separate new and old answers\nconst newAnswers = items.filter(item => item.json.answerType === 'new');\nconst oldAnswers = items.filter(item => item.json.answerType === 'old');\n\n// Initialize metrics\nlet totalRecallAtK = 0;\nlet totalSimilarityScore = 0;\nlet totalAnswerLengthVariance = 0;\nconst k = 5; // Top-k passages to consider\n\n// Process each question\nfor (let i = 0; i < newAnswers.length; i++) {\n  const newAnswer = newAnswers[i].json;\n  const oldAnswer = oldAnswers[i].json;\n  \n  // Calculate Recall@K - check if expected passages were retrieved\n  const expectedPassages = newAnswer.expectedPassages || [];\n  const retrievedPassages = newAnswer.retrievedPassages || [];\n  const topKRetrieved = retrievedPassages.slice(0, k);\n  \n  let retrievedCount = 0;\n  for (const expected of expectedPassages) {\n    if (topKRetrieved.some(retrieved => retrieved.includes(expected))) {\n      retrievedCount++;\n    }\n  }\n  \n  const recallAtK = expectedPassages.length > 0 ? retrievedCount / expectedPassages.length : 0;\n  totalRecallAtK += recallAtK;\n  \n  // Calculate similarity score between answer and expected keywords\n  const expectedKeywords = newAnswer.expectedKeywords || [];\n  const answerText = (newAnswer.answer || '').toLowerCase();\n  \n  let keywordMatches = 0;\n  for (const keyword of expectedKeywords) {\n    if (answerText.includes(keyword.toLowerCase())) {\n      keywordMatches++;\n    }\n  }\n  \n  const similarityScore = expectedKeywords.length > 0 ? keywordMatches / expectedKeywords.length : 0;\n  totalSimilarityScore += similarityScore;\n  \n  // Calculate answer length variance\n  const newLength = (newAnswer.answer || '').length;\n  const oldLength = (oldAnswer.answer || '').length;\n  const avgLength = (newLength + oldLength) / 2;\n  const lengthVariance = avgLength > 0 ? Math.abs(newLength - oldLength) / avgLength : 0;\n  totalAnswerLengthVariance += lengthVariance;\n}\n\nconst numQuestions = newAnswers.length || 1;\n\n// Calculate average metrics\nconst avgRecallAtK = totalRecallAtK / numQuestions;\nconst avgSimilarityScore = totalSimilarityScore / numQuestions;\nconst avgAnswerLengthVariance = totalAnswerLengthVariance / numQuestions;\n\n// Calculate weighted quality score\n// Higher recall and similarity = better, lower variance = better\nconst qualityScore = (\n  (avgRecallAtK * 0.4) + \n  (avgSimilarityScore * 0.4) + \n  ((1 - avgAnswerLengthVariance) * 0.2)\n);\n\nreturn [\n  {\n    json: {\n      recallAtK: avgRecallAtK,\n      similarityScore: avgSimilarityScore,\n      answerLengthVariance: avgAnswerLengthVariance,\n      qualityScore: qualityScore,\n      numQuestionsEvaluated: numQuestions,\n      timestamp: new Date().toISOString()\n    }\n  }\n];",
+        "notice": "Compares new vs old answers to see which is better (recall, similarity, length)"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "5c3f669c-f827-4d1d-ab6c-0683eb23d368",
+      "name": "Calculate Embedding Drift",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        688,
+        560
+      ],
+      "parameters": {
+        "jsCode": "// Calculate Embedding Drift between old and new embeddings\n// This compares embedding vectors to detect semantic drift\n\nconst items = $input.all();\n\n// Helper function to calculate cosine distance between two vectors\nfunction cosineDistance(vecA, vecB) {\n  if (!vecA || !vecB || vecA.length !== vecB.length) {\n    return null;\n  }\n  \n  let dotProduct = 0;\n  let normA = 0;\n  let normB = 0;\n  \n  for (let i = 0; i < vecA.length; i++) {\n    dotProduct += vecA[i] * vecB[i];\n    normA += vecA[i] * vecA[i];\n    normB += vecB[i] * vecB[i];\n  }\n  \n  normA = Math.sqrt(normA);\n  normB = Math.sqrt(normB);\n  \n  if (normA === 0 || normB === 0) {\n    return null;\n  }\n  \n  const cosineSimilarity = dotProduct / (normA * normB);\n  return 1 - cosineSimilarity; // Convert similarity to distance\n}\n\n// Fetch embedding vectors from both versions\nconst oldEmbeddings = items.filter(item => item.json.version === 'old').map(item => item.json.embedding);\nconst newEmbeddings = items.filter(item => item.json.version === 'new').map(item => item.json.embedding);\n\n// Calculate drift scores\nconst driftScores = [];\n\nfor (let i = 0; i < Math.min(oldEmbeddings.length, newEmbeddings.length); i++) {\n  const distance = cosineDistance(oldEmbeddings[i], newEmbeddings[i]);\n  if (distance !== null) {\n    driftScores.push(distance);\n  }\n}\n\n// Calculate statistics\nconst avgDrift = driftScores.length > 0 \n  ? driftScores.reduce((sum, score) => sum + score, 0) / driftScores.length \n  : 0;\n\nconst maxDrift = driftScores.length > 0 \n  ? Math.max(...driftScores) \n  : 0;\n\n// Get drift threshold from workflow configuration\nconst config = $('Workflow Configuration').first().json;\nconst driftThreshold = config.driftThreshold || 0.15; // Default threshold\n\n// Return drift analysis\nreturn [{\n  json: {\n    driftScore: avgDrift,\n    maxDrift: maxDrift,\n    avgDrift: avgDrift,\n    driftThreshold: driftThreshold,\n    driftDetected: avgDrift > driftThreshold,\n    numComparisons: driftScores.length,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8b968fe4-643a-456e-9203-b8ed6b55fa72",
+      "name": "Quality Improved?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        912,
+        560
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "id-1",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $json.qualityScore }}",
+              "rightValue": "={{ $('Workflow Configuration').first().json.qualityThreshold }}"
+            },
+            {
+              "id": "id-2",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              },
+              "leftValue": "={{ $json.driftScore }}",
+              "rightValue": "={{ $('Workflow Configuration').first().json.driftThreshold }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "59d710fc-e69a-4579-8481-99820b6f7906",
+      "name": "Promote New Embeddings",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1264,
+        336
+      ],
+      "parameters": {
+        "query": "UPDATE embedding_versions SET is_active = true, is_candidate = false WHERE id = (SELECT id FROM embedding_versions WHERE is_candidate = true ORDER BY embedding_timestamp DESC LIMIT 1); UPDATE embedding_versions SET is_active = false WHERE is_candidate = false AND is_active = true;",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.6
+    },
+    {
+      "id": "5bd21c63-c692-46ba-85c9-375d058d44df",
+      "name": "Rollback to Previous Embeddings",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1264,
+        528
+      ],
+      "parameters": {
+        "query": "DELETE FROM embedding_versions WHERE is_candidate = true; UPDATE embedding_versions SET is_active = true WHERE id = (SELECT id FROM embedding_versions WHERE is_active = false ORDER BY embedding_timestamp DESC LIMIT 1);",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.6
+    },
+    {
+      "id": "fe56b7a7-9b48-4027-b2be-671e7a5c8087",
+      "name": "Flag for Human Review",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1264,
+        704
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "status",
+              "type": "string",
+              "value": "NEEDS_REVIEW"
+            },
+            {
+              "id": "id-2",
+              "name": "reason",
+              "type": "string",
+              "value": "Quality metrics ambiguous - manual review required"
+            },
+            {
+              "id": "id-3",
+              "name": "qualityScore",
+              "type": "number",
+              "value": "={{ $json.qualityScore }}"
+            },
+            {
+              "id": "id-4",
+              "name": "driftScore",
+              "type": "number",
+              "value": "={{ $json.driftScore }}"
+            },
+            {
+              "id": "id-5",
+              "name": "stickyNote",
+              "type": "string",
+              "value": "Results unclear - needs human to decide"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "2f1c22b3-3b65-49f5-8589-07cb9f1275aa",
+      "name": "Send Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1616,
+        496
+      ],
+      "parameters": {
+        "url": "={{ $('Workflow Configuration').first().json.notificationWebhook }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "={{ $('Quality Improved?').item.json.status || 'unknown' }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $('Promote New Embeddings').item ? 'Embeddings promoted' : ($('Rollback to Previous Embeddings').item ? 'Embeddings rolled back' : 'Manual review required') }}"
+            },
+            {
+              "name": "qualityScore",
+              "value": "={{ $('Calculate Quality Metrics').first().json.qualityScore }}"
+            },
+            {
+              "name": "driftScore",
+              "value": "={{ $('Calculate Embedding Drift').first().json.driftScore }}"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.3
+    },
+    {
+      "id": "926483cd-5885-4965-8041-52249e122a34",
+      "name": "Generate Answers (New)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        32,
+        -96
+      ],
+      "parameters": {
+        "text": "={{ $json.question_text }}",
+        "options": {
+          "systemMessage": "You are a RAG quality testing assistant. Answer the question using the vector store retrieval tool. Provide a detailed answer based on the retrieved context."
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "8ccd53ea-448c-4ac8-83cb-f3b1569886d0",
+      "name": "Generate Answers (Old)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        32,
+        720
+      ],
+      "parameters": {
+        "text": "={{ $json.question_text }}",
+        "options": {
+          "systemMessage": "You are a RAG quality testing assistant. Answer the question using the vector store retrieval tool. Provide a detailed answer based on the retrieved context."
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "ea0fdd00-42ef-4cf1-8717-31878250a696",
+      "name": "Query New Vector Store (Tool)",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "position": [
+        112,
+        272
+      ],
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        },
+        "toolDescription": "Searches the NEW embeddings to find relevant info"
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "10b00af5-e40b-434b-9f8a-12423c457ec9",
+      "name": "Query Old Vector Store (Tool)",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "position": [
+        32,
+        944
+      ],
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        },
+        "toolDescription": "Searches the OLD embeddings to find relevant info"
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "4fff807d-8058-4315-bf37-57fc21e0b51d",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        416,
+        272
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 400,
+        "height": 464,
+        "content": "## Retrieval Quality Evaluation\n\nThis step evaluates answers generated from the new and old embeddings.\n\nMetrics calculated include:\n\u2022 Recall@K for retrieved passages\n\u2022 Keyword similarity in answers\n\u2022 Answer length variance\n\nThese metrics are combined into a weighted quality score used to determine if the new embeddings improve RAG performance."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "22c2e5d7-ba09-4287-87ec-692f038b063b",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -656,
+        1024
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 368,
+        "height": 256,
+        "content": "## OpenAI Embeddings"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "65a88fe4-9094-4166-b1c0-05facfaddbdf",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        48,
+        112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 336,
+        "height": 256,
+        "content": "## Vector Store Retrieval Tools\n\nThese vector store tools allow AI agents to retrieve relevant context from embeddings.\nQuery New Vector Store searches candidate embeddings."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8346cd65-581b-43ac-aa4d-8359584c625d",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -80,
+        -256
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 384,
+        "height": 352,
+        "content": "## RAG Answer Generation\n\nThis agents answer the same questions using different vector stores.\nOne agent queries the new candidate embeddings."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f925fc28-3bc9-4a90-96dc-7b0f52368a8d",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1536,
+        384
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 288,
+        "height": 272,
+        "content": "A notification is then sent through the configured webhook to inform the team about the update status."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ccc28ddf-cd78-4160-8e3b-dd853bfc5f50",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1120,
+        192
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 384,
+        "height": 672,
+        "content": " ## Deployment Outcome\n\nBased on evaluation results, the workflow either promotes the new embeddings, rolls back to the previous version, or flags the update for manual review."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8321cb20-23f8-409e-bc20-9e4e5f0a8060",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -688,
+        464
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 656,
+        "height": 496,
+        "content": "## Golden Question Evaluation\n\nThe system runs predefined golden questions against both the new and old vector stores.\nAI agents generate answers using retrieved context so the workflow can evaluate retrieval and answer quality."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "af796be8-4449-47d5-9ffb-882b1278bc37",
+      "name": "Sticky Note9",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1136,
+        448
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 304,
+        "height": 736,
+        "content": "## Embedding Creation\n\nChanged document chunks are embedded using OpenAI embeddings."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "84cbef0e-1d93-440e-9bc9-e5e310df8389",
+      "name": "Sticky Note10",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1520,
+        368
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 320,
+        "height": 576,
+        "content": "##Chunk Change Detection\n\nNew document chunk hashes are compared with hashes stored in Postgres."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "049e6eb0-c276-49fb-b188-6ed8a568249d",
+      "name": "Sticky Note11",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        16,
+        560
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 368,
+        "height": 528,
+        "content": "## RAG Answer Generation\n\nThis agents answer the same questions using existing vector stores.\nOne agent queries the old candidate embeddings"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "18631d03-add9-43d2-ba34-47e86af6cc79",
+      "name": "Sticky Note12",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1968,
+        336
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 384,
+        "height": 576,
+        "content": "## Document Retrieval & Chunking\n\nDocuments are fetched from the configured source and split into deterministic chunks.\nEach chunk receives a SHA-256 hash to detect content changes and ensure only modified chunks are reprocessed."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f178914d-4ac1-4941-a6df-fab448ea6c68",
+      "name": "Sticky Note14",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2688,
+        384
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 672,
+        "height": 528,
+        "content": "## Workflow Trigger & Config\n\nThis section starts the workflow via schedule or webhook trigger.\nIt defines key parameters such as document source URL, chunk size, overlap, quality threshold, drift threshold, and notification webhook used throughout the workflow."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ac724435-1642-4bc8-a66c-47f95dcc45ba",
+      "name": "Sticky Note13",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        848,
+        464
+      ],
+      "parameters": {
+        "color": 7,
+        "height": 240,
+        "content": "## compare scores"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ec692a1c-7ff4-46bf-8798-29752574ac24",
+      "name": "Sticky Note15",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3392,
+        464
+      ],
+      "parameters": {
+        "width": 576,
+        "height": 544,
+        "content": " This workflow maintains a self-healing Retrieval-Augmented Generation (RAG) system by automatically updating document embeddings, evaluating quality, detecting embedding drift, and safely promoting or rolling back model updates.\n\nHow it works\n\nThe workflow runs on a daily schedule or webhook trigger when source documents change.\nDocuments are fetched from a configured source, chunked deterministically, and hashed to detect modified content.\n\nOnly changed chunks are embedded using OpenAI embeddings and stored as a candidate embedding version.\n\nThe system then evaluates the candidate embeddings by asking a set of golden test questions. Answers generated using the new embeddings are compared against answers from the current active embeddings.\n\nQuality metrics such as Recall@K, keyword similarity, and answer variance are calculated. The workflow also measures embedding drift using cosine distance between embedding vectors.\n\nIf quality improves and drift is acceptable, the candidate embeddings are promoted. Otherwise, the system rolls back to the previous embeddings or flags the update for manual review.\n\n"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Document Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "New Vector Store (Candidate)",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Answers (New)",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Generate Answers (Old)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "New Vector Store (Candidate)",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Query New Vector Store (Tool)",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Query Old Vector Store (Tool)",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality Improved?": {
+      "main": [
+        [
+          {
+            "node": "Promote New Embeddings",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rollback to Previous Embeddings",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Flag for Human Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Changed Chunks": {
+      "main": [
+        [
+          {
+            "node": "New Vector Store (Candidate)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flag for Human Review": {
+      "main": [
+        [
+          {
+            "node": "Send Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Source Change Webhook": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Golden Questions": {
+      "main": [
+        [
+          {
+            "node": "Generate Answers (New)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Answers (Old)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Answers (New)": {
+      "main": [
+        [
+          {
+            "node": "Calculate Quality Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Answers (Old)": {
+      "main": [
+        [
+          {
+            "node": "Calculate Quality Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Promote New Embeddings": {
+      "main": [
+        [
+          {
+            "node": "Send Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "Fetch Documents from Source",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Previous Chunk Hashes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Document Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Embedding Metadata": {
+      "main": [
+        [
+          {
+            "node": "Save Embedding Version Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Embedding Drift": {
+      "main": [
+        [
+          {
+            "node": "Quality Improved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Quality Metrics": {
+      "main": [
+        [
+          {
+            "node": "Calculate Embedding Drift",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Documents from Source": {
+      "main": [
+        [
+          {
+            "node": "Chunk Documents & Compute Hash",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Previous Chunk Hashes": {
+      "main": [
+        [
+          {
+            "node": "Detect Changed Chunks",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "New Vector Store (Candidate)": {
+      "main": [
+        [
+          {
+            "node": "Store Embedding Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query New Vector Store (Tool)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Generate Answers (New)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Old Vector Store (Tool)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Generate Answers (Old)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunk Documents & Compute Hash": {
+      "main": [
+        [
+          {
+            "node": "Detect Changed Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily RAG Maintenance Schedule": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rollback to Previous Embeddings": {
+      "main": [
+        [
+          {
+            "node": "Send Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Embedding Version Metadata": {
+      "main": [
+        [
+          {
+            "node": "Fetch Golden Questions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Previous Embeddings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

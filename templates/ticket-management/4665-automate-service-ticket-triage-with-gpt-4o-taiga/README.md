@@ -1,6 +1,6 @@
 # 🎫 Automate Service Ticket Triage with GPT-4o & Taiga
 
-> ⚡ **785 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **855 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

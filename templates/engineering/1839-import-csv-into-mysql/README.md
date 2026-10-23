@@ -1,6 +1,6 @@
 # ⚒️ Import CSV into MySQL
 
-> ⚡ **15,624 views** · ⚒️ [Engineering](../)
+> ⚡ **15,847 views** · ⚒️ [Engineering](../)
 
 ## Description
 

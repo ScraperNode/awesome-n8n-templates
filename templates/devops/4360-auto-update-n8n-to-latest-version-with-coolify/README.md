@@ -1,6 +1,6 @@
 # ⚙️ Auto Update n8n to Latest Version with Coolify
 
-> ⚡ **1,694 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,074 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

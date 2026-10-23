@@ -1,6 +1,6 @@
 # 📊 Summarize Apple App Store reviews with Pinecone, GPT-4 Mini & Slack
 
-> ⚡ **323 views** · 📊 [Market Research & Insights](../)
+> ⚡ **441 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

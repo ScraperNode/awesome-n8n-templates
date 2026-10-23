@@ -1,6 +1,6 @@
 # 🤝 🛠️ Monica CRM tool MCP server 💪 all 52 operations
 
-> ⚡ **131 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **152 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Google Sheets and QuickBooks expenses automation template
 
-> ⚡ **506 views** · 🧾 [Invoice Processing](../)
+> ⚡ **685 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

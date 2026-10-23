@@ -1,6 +1,6 @@
 # ⚡ Dynamically send out-of-office / vacation message using Gmail & Google Calendar
 
-> ⚡ **117 views** · ⚡ [Personal Productivity](../)
+> ⚡ **151 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

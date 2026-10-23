@@ -1,6 +1,6 @@
 # 💬 Automated WhatsApp messaging & lead nurturing with Gallabox & Supabase
 
-> ⚡ **206 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **334 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

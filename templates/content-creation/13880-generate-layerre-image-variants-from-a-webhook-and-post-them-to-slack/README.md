@@ -1,6 +1,6 @@
 # 🎬 Generate Layerre image variants from a webhook and post them to Slack
 
-> ⚡ **16 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **50 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

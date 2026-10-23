@@ -1,6 +1,6 @@
 # 🤝 Automatically sync Beex leads to HubSpot (Create & Update)
 
-> ⚡ **92 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **128 views** · 🤝 [CRM & Sales Operations](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

@@ -1,6 +1,6 @@
 # 🤝 Predict customer churn with AI analysis of HubSpot and Google Sheets data
 
-> ⚡ **1,294 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,867 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

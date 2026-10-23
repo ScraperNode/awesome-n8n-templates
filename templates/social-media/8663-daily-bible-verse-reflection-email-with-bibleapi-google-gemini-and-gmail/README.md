@@ -1,6 +1,6 @@
 # 📱 Daily Bible verse & reflection email with bible.api, Google Gemini, and Gmail
 
-> ⚡ **281 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **379 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

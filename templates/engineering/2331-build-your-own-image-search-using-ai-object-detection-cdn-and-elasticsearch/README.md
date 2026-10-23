@@ -1,6 +1,6 @@
 # ⚒️ Build your own image search using AI object detection, CDN and ElasticSearch
 
-> ⚡ **8,595 views** · ⚒️ [Engineering](../)
+> ⚡ **8,949 views** · ⚒️ [Engineering](../)
 
 ## Description
 

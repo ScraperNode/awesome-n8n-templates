@@ -1,6 +1,6 @@
 # 📱 Automate Google Business Profile posts with GPT-4 & Google Sheets
 
-> ⚡ **517 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **818 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

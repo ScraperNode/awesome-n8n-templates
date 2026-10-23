@@ -1,6 +1,6 @@
 # 🤝 Manage GoHighLevel CRM with conversational AI assistant and GPT-4o
 
-> ⚡ **1,013 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,225 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

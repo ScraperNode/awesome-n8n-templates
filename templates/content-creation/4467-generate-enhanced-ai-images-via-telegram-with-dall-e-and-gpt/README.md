@@ -1,6 +1,6 @@
 # 🎬 Generate enhanced AI images via Telegram with DALL-E and GPT
 
-> ⚡ **2,261 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,799 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Multimodal chat assistant with GPT-4o for text, images, and PDFs
 
-> ⚡ **11,041 views** · 💬 [Support Chatbots](../)
+> ⚡ **12,876 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

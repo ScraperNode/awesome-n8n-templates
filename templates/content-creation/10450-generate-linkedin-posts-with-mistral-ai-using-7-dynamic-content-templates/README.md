@@ -1,6 +1,6 @@
 # 🎬 Generate LinkedIn posts with Mistral AI using 7 dynamic content templates
 
-> ⚡ **232 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **285 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

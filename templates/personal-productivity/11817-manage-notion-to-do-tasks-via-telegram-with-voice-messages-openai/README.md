@@ -1,6 +1,6 @@
 # ⚡ Manage Notion to-do tasks via Telegram with voice messages & OpenAI
 
-> ⚡ **246 views** · ⚡ [Personal Productivity](../)
+> ⚡ **462 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

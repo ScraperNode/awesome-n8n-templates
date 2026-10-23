@@ -1,6 +1,6 @@
 # 📊 AI-powered feedback triage: Jotform to Trello, Airtable & Slack with Gemini
 
-> ⚡ **501 views** · 📊 [Market Research & Insights](../)
+> ⚡ **712 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

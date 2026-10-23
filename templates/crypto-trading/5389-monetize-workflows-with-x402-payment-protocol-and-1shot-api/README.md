@@ -1,6 +1,6 @@
 # 📈 Monetize workflows with x402 Payment Protocol and 1Shot API
 
-> ⚡ **431 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **520 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Expense Logging with Telegram to Google Sheets using AI Voice & Text Parsing
 
-> ⚡ **531 views** · ⚡ [Personal Productivity](../)
+> ⚡ **701 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

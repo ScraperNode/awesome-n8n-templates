@@ -1,6 +1,6 @@
 # 🎫 Receive updates for support in Zendesk
 
-> ⚡ **1,367 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,374 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

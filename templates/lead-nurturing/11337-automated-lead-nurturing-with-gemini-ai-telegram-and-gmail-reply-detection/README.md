@@ -1,6 +1,6 @@
 # 💬 Automated lead nurturing with Gemini AI, Telegram, and Gmail reply detection
 
-> ⚡ **72 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **112 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

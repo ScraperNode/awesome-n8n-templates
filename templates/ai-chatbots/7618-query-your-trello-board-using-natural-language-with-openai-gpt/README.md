@@ -1,6 +1,6 @@
 # 🤖 Query your Trello board using natural language with OpenAI GPT
 
-> ⚡ **619 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **660 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

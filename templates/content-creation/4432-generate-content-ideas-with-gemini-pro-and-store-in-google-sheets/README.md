@@ -1,6 +1,6 @@
 # 🎬 Generate content ideas with Gemini Pro and store in Google Sheets
 
-> ⚡ **3,853 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,224 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

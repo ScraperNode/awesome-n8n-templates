@@ -1,6 +1,6 @@
 # 💬 Slack chatbot powered by AI
 
-> ⚡ **44,173 views** · 💬 [Support Chatbots](../)
+> ⚡ **45,258 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

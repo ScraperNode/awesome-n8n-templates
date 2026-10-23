@@ -1,6 +1,6 @@
 # 💬 Create a customer support voice agent with GPT-5, ElevenLabs & calendar booking
 
-> ⚡ **7,256 views** · 💬 [Support Chatbots](../)
+> ⚡ **8,493 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

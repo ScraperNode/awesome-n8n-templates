@@ -1,6 +1,6 @@
 # 📊 🛠️ PostHog tool MCP server 💪 5 operations
 
-> ⚡ **145 views** · 📊 [Market Research & Insights](../)
+> ⚡ **152 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

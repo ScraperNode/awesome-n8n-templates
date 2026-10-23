@@ -1,6 +1,6 @@
 # 🎫 Classify and auto-reply to Gmail with OpenAI, Google Sheets RAG and Telegram
 
-> ⚡ **17 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **29 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

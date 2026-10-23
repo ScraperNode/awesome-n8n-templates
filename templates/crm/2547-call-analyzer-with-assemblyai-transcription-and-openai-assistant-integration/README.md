@@ -1,6 +1,6 @@
 # 🤝 Call analyzer with AssemblyAI transcription and OpenAI assistant integration
 
-> ⚡ **7,820 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **7,876 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

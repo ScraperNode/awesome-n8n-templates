@@ -1,6 +1,6 @@
 # 🎬 Build an AI marketing team with OpenAI O3 and GPT-4.1-mini for automated content creation
 
-> ⚡ **3,671 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,439 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

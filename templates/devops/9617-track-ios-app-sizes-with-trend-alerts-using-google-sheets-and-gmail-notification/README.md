@@ -1,6 +1,6 @@
 # ⚙️ Track iOS app sizes with trend alerts using Google Sheets and Gmail notifications
 
-> ⚡ **38 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **44 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Automate QuickBooks customer & estimate creation from Google Sheets
 
-> ⚡ **643 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **713 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

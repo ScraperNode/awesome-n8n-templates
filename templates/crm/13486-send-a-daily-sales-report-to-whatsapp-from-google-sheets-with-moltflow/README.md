@@ -1,6 +1,6 @@
 # 🤝 Send a daily sales report to WhatsApp from Google Sheets with MoltFlow
 
-> ⚡ **37 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **254 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate SEO/AEO-optimized Shopify blog articles with GPT-4 and Google Sheets
 
-> ⚡ **964 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,154 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 👥 Fast-track CV screening with AI analysis from Gmail to Slack and Google Sheets
 
-> ⚡ **847 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,322 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

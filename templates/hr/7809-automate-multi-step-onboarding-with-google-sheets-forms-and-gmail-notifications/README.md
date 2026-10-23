@@ -1,6 +1,6 @@
 # 👥 Automate multi-step onboarding with Google Sheets, Forms and Gmail notifications
 
-> ⚡ **775 views** · 👥 [HR & Recruitment](../)
+> ⚡ **984 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Auto-rename workflow nodes with AI (Gemini/Claude) for better readability (beta)
 
-> ⚡ **102 views** · ⚒️ [Engineering](../)
+> ⚡ **147 views** · ⚒️ [Engineering](../)
 
 ## Description
 

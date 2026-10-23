@@ -1,6 +1,6 @@
 # 📱 Personalized email automation using Google Docs, Pinecone, GPT-4o and Gmail
 
-> ⚡ **1,535 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,997 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 Chat with PDF / MD / text files using GraphRAG (no vector store needed)
 
-> ⚡ **5,249 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **5,709 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

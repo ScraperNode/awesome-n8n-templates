@@ -1,6 +1,6 @@
 # ⚡ Send Weekly Meeting Schedule Preview from Google Calendar to Gmail
 
-> ⚡ **342 views** · ⚡ [Personal Productivity](../)
+> ⚡ **370 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

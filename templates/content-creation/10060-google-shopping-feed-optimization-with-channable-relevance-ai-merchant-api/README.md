@@ -1,6 +1,6 @@
 # 🎬 🛍️ Google Shopping feed optimization with Channable, Relevance AI & Merchant API
 
-> ⚡ **430 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **570 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

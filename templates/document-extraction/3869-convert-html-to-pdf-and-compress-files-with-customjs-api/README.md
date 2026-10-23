@@ -1,6 +1,6 @@
 # 🔬 Convert HTML to PDF and compress files with CustomJS API
 
-> ⚡ **2,026 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,209 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

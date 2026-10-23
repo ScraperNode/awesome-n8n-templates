@@ -1,6 +1,6 @@
 # ⚡ Post new articles from feeds to Slack channel
 
-> ⚡ **476 views** · ⚡ [Personal Productivity](../)
+> ⚡ **511 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

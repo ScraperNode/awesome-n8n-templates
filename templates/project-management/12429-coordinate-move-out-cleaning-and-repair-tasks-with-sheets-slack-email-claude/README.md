@@ -1,6 +1,6 @@
 # 📋 Coordinate move-out cleaning and repair tasks with Sheets, Slack, email & Claude
 
-> ⚡ **37 views** · 📋 [Project Management](../)
+> ⚡ **51 views** · 📋 [Project Management](../)
 
 ## Description
 

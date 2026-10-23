@@ -1,6 +1,6 @@
 # 📈 Create a daily market brief from Google Sheets, Alpha Vantage, Reddit, OpenAI, and Slack
 
-> ⚡ **130 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **274 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

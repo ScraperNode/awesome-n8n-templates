@@ -1,6 +1,6 @@
 # 💬 AI-powered reservation reminder calls for restaurant with Twilio & Grok-4
 
-> ⚡ **2,013 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,239 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

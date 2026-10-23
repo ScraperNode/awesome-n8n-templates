@@ -1,6 +1,6 @@
 # 🤝 Sync products between Airtable and Shopify with inventory management
 
-> ⚡ **532 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **592 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

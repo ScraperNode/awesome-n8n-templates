@@ -1,6 +1,6 @@
 # 🎬 Generate product videos automatically with Gemini, FAL and Google Workspace
 
-> ⚡ **792 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **998 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📁 Publish Zoom class recordings to Google Classroom automatically
 
-> ⚡ **47 views** · 📁 [File Management](../)
+> ⚡ **101 views** · 📁 [File Management](../)
 
 ## Description
 

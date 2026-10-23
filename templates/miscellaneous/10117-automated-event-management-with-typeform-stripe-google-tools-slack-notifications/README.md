@@ -1,6 +1,6 @@
 # 🔧 Automated event management with Typeform, Stripe, Google tools & Slack notifications
 
-> ⚡ **148 views** · 🔧 [Miscellaneous](../)
+> ⚡ **252 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

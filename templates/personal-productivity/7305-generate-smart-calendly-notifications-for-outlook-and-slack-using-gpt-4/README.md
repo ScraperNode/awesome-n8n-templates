@@ -1,6 +1,6 @@
 # ⚡ Generate smart Calendly notifications for Outlook and Slack using GPT-4
 
-> ⚡ **469 views** · ⚡ [Personal Productivity](../)
+> ⚡ **502 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

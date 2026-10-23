@@ -1,6 +1,6 @@
 # 📈 Automated BTC & ETH market analysis alerts for Discord & Telegram with Gemini AI
 
-> ⚡ **266 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **288 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

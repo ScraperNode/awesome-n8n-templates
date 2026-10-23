@@ -1,6 +1,6 @@
 # 🔧 🛠️ Plivo tool MCP server 💪 all 3 operations
 
-> ⚡ **130 views** · 🔧 [Miscellaneous](../)
+> ⚡ **148 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

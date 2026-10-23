@@ -1,6 +1,6 @@
 # 📈 Daily AI stock briefing right to your email: OpenAI + Tavily + Gmail
 
-> ⚡ **1,336 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,526 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

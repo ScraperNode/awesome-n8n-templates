@@ -1,6 +1,6 @@
 # ⚒️ Retrieve NASA space weather & asteroid data with GPT-4o-mini and Telegram
 
-> ⚡ **308 views** · ⚒️ [Engineering](../)
+> ⚡ **317 views** · ⚒️ [Engineering](../)
 
 ## Description
 

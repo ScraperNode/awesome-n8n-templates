@@ -1,6 +1,6 @@
 # 🔬 Summarize Google Docs & PDFs with GPT-4 and send to Slack or email
 
-> ⚡ **580 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **714 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

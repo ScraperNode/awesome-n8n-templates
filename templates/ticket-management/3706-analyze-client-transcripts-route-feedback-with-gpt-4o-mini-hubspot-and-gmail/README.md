@@ -1,6 +1,6 @@
 # 🎫 Analyze client transcripts & route feedback with GPT-4o Mini, HubSpot, and Gmail
 
-> ⚡ **1,530 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,570 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

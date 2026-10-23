@@ -1,6 +1,6 @@
 # 🎬 Repurpose one idea into a week of social content with Notion and GPT-4o
 
-> ⚡ **122 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **144 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

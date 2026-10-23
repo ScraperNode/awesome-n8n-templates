@@ -1,6 +1,6 @@
 # 🎯 Automatically triage & improve Todoist tasks with GPT-4.1-mini
 
-> ⚡ **644 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **777 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

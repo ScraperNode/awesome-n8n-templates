@@ -1,6 +1,6 @@
 # 🎫 Automatic email categorization and organization with Outlook and GPT-4o
 
-> ⚡ **2,304 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **3,071 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

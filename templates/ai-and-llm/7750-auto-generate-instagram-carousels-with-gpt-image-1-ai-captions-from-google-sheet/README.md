@@ -1,6 +1,6 @@
 # ✨ Auto-generate Instagram carousels with GPT-Image-1 & AI captions from Google Sheets
 
-> ⚡ **66 views** · ✨ [AI & LLMs](../)
+> ⚡ **81 views** · ✨ [AI & LLMs](../)
 
 ## Description
 

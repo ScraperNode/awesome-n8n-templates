@@ -1,6 +1,6 @@
 # 🤝 Transcribe & summarize GoHighLevel call recordings
 
-> ⚡ **507 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **729 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

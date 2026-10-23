@@ -1,6 +1,6 @@
 # 📊 Collect & process trip feedback with Google Sheets and email notifications
 
-> ⚡ **164 views** · 📊 [Market Research & Insights](../)
+> ⚡ **186 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

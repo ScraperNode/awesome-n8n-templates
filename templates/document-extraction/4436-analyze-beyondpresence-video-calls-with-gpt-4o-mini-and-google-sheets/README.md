@@ -1,6 +1,6 @@
 # 🔬 Analyze BeyondPresence video calls with GPT-4o-mini and Google Sheets
 
-> ⚡ **393 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **430 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

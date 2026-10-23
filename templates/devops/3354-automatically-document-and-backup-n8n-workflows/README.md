@@ -1,6 +1,6 @@
 # ⚙️ Automatically document and backup N8N workflows
 
-> ⚡ **1,883 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,147 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

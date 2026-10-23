@@ -1,6 +1,6 @@
 # 🎯 Analyze workflow errors with OpenAI, FreshDesk tickets & Slack alerts
 
-> ⚡ **164 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **186 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

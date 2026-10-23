@@ -1,6 +1,6 @@
 # ⚡ Automatically classify and label Gmail emails with Google Gemini AI
 
-> ⚡ **8,749 views** · ⚡ [Personal Productivity](../)
+> ⚡ **9,581 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

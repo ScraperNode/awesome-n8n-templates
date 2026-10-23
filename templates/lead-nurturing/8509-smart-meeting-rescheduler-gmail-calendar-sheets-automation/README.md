@@ -1,6 +1,6 @@
 # 💬 Smart meeting rescheduler: Gmail + Calendar + Sheets automation
 
-> ⚡ **81 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **107 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

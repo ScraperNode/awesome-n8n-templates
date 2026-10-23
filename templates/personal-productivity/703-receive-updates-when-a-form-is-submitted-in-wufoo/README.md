@@ -1,6 +1,6 @@
 # ⚡ Receive updates when a form is submitted in Wufoo
 
-> ⚡ **606 views** · ⚡ [Personal Productivity](../)
+> ⚡ **632 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

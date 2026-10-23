@@ -1,6 +1,6 @@
 # 🤝 Automated export of Quickbooks Online data with n8n - with tutorial
 
-> ⚡ **274 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **377 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

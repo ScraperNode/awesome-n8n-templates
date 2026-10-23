@@ -1,6 +1,6 @@
 # 🎣 Real estate property matching & lead management with Airtable, Gmail and Slack
 
-> ⚡ **267 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **538 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

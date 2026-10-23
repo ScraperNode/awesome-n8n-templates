@@ -1,6 +1,6 @@
 # 🎯 Automate Gmail lead follow-up with OpenAI GPT-4O, HubSpot, Slack & Google Sheets
 
-> ⚡ **167 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **195 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

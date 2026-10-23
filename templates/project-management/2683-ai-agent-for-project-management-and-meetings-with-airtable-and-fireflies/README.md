@@ -1,6 +1,6 @@
 # 📋 AI agent for project management and meetings with Airtable and Fireflies
 
-> ⚡ **11,738 views** · 📋 [Project Management](../)
+> ⚡ **12,021 views** · 📋 [Project Management](../)
 
 ## Description
 

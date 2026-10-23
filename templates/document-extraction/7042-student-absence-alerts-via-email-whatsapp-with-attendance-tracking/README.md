@@ -1,6 +1,6 @@
 # 🔬 Student absence alerts via email & WhatsApp with attendance tracking
 
-> ⚡ **982 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,441 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

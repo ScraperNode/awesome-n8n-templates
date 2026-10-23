@@ -1,6 +1,6 @@
 # 💬 Send daily mortgage rate updates from Mortgage News Daily to messaging platforms
 
-> ⚡ **273 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **338 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

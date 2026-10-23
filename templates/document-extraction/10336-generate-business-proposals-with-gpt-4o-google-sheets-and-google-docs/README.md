@@ -1,6 +1,6 @@
 # 🔬 Generate business proposals with GPT-4o, Google Sheets and Google Docs
 
-> ⚡ **304 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **407 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

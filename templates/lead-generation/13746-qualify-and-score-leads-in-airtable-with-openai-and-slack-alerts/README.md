@@ -1,6 +1,6 @@
 # 🎣 Qualify and score leads in Airtable with OpenAI and Slack alerts
 
-> ⚡ **5 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **21 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Read in an Excel spreadsheet file
 
-> ⚡ **50,859 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **60,494 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

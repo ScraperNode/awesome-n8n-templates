@@ -1,6 +1,6 @@
 # 📱 #️⃣Nostr #damus AI powered reporting + Gmail + Telegram
 
-> ⚡ **2,641 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,636 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

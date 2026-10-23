@@ -1,6 +1,6 @@
 # ⚙️ AI-powered workflow error analysis & fix suggestions with Gemini 2.5 Pro
 
-> ⚡ **1,485 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,904 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

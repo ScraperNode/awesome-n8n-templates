@@ -1,6 +1,6 @@
 # 📈 Real-time stock monitor with smart alerts for Indian & US markets
 
-> ⚡ **6,198 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **10,807 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

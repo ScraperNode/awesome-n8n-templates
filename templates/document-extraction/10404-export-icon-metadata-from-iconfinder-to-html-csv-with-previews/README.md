@@ -1,6 +1,6 @@
 # 🔬 Export icon metadata from Iconfinder to HTML & CSV with previews
 
-> ⚡ **8 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **11 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

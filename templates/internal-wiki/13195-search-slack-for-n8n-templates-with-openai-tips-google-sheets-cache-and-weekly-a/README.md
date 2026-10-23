@@ -1,6 +1,6 @@
 # 📖 Search Slack for n8n templates with OpenAI tips, Google Sheets cache and weekly analytics
 
-> ⚡ **6 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **59 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

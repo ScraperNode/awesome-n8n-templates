@@ -1,6 +1,6 @@
 # ⚒️ ChatGPT Automatic Code Review in Gitlab MR
 
-> ⚡ **32,826 views** · ⚒️ [Engineering](../)
+> ⚡ **33,551 views** · ⚒️ [Engineering](../)
 
 ## Description
 

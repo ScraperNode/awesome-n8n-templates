@@ -1,6 +1,6 @@
 # 🎬 Automate weekly tutorials from trending GitHub repos with Gemini AI to WordPress
 
-> ⚡ **800 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **864 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

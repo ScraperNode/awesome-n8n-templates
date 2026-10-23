@@ -1,6 +1,6 @@
 # ⚒️ Expose eBay browse API for AI agents with MCP server
 
-> ⚡ **139 views** · ⚒️ [Engineering](../)
+> ⚡ **170 views** · ⚒️ [Engineering](../)
 
 ## Description
 

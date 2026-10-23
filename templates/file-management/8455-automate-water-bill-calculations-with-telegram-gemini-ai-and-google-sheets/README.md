@@ -1,6 +1,6 @@
 # 📁 Automate water bill calculations with Telegram, Gemini AI, and Google Sheets
 
-> ⚡ **277 views** · 📁 [File Management](../)
+> ⚡ **417 views** · 📁 [File Management](../)
 
 ## Description
 

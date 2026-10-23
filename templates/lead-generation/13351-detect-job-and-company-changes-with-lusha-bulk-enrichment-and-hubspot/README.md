@@ -1,6 +1,6 @@
 # 🎣 Detect job and company changes with Lusha bulk enrichment and HubSpot
 
-> ⚡ **2 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **81 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ LinkedIn job monitor: smart filtering + Google Sheets + Telegram/WhatsApp alerts
 
-> ⚡ **331 views** · ⚡ [Personal Productivity](../)
+> ⚡ **369 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

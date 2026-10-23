@@ -1,6 +1,6 @@
 # 🎣 Sync and enrich HubSpot leads from Google Sheets and Telegram with Gemini and Lusha
 
-> ⚡ **283 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **300 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

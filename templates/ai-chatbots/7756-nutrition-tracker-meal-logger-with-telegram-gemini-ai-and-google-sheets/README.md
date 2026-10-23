@@ -1,6 +1,6 @@
 # 🤖 Nutrition tracker & meal logger with Telegram, Gemini AI and Google Sheets
 
-> ⚡ **38,132 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **47,647 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

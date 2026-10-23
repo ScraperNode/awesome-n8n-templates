@@ -1,6 +1,6 @@
 # 📈 Automate cryptocurrency funding fee tracking with Binance API and Airtable
 
-> ⚡ **2,107 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **2,236 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

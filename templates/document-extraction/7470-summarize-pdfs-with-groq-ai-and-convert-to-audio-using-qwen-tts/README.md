@@ -1,6 +1,6 @@
 # 🔬 Summarize PDFs with Groq AI and convert to audio using Qwen TTS
 
-> ⚡ **1,817 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,176 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

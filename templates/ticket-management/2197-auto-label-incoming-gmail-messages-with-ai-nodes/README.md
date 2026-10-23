@@ -1,6 +1,6 @@
 # 🎫 Auto-label incoming Gmail messages with AI nodes
 
-> ⚡ **30,447 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **30,666 views** · 🎫 [Ticket Management & Triage](../)
 
 > 💡 **Pro Tip** — YouTube's API quotas can be a bottleneck when you're pulling data at scale. [ScraperNode](https://scrapernode.com/youtube) is a community node with dedicated scrapers for [channels](https://scrapernode.com/youtube/scrapers/channels), [videos](https://scrapernode.com/youtube/scrapers/videos), and [comments](https://scrapernode.com/youtube/scrapers/comments) — no quota limits, just structured data.
 >

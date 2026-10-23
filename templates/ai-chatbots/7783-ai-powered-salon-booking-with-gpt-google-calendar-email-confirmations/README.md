@@ -1,6 +1,6 @@
 # 🤖 AI-powered salon booking with GPT, Google Calendar & email confirmations
 
-> ⚡ **3,404 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **4,085 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

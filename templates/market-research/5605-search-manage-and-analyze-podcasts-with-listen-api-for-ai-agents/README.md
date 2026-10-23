@@ -1,6 +1,6 @@
 # 📊 Search, manage, and analyze podcasts with Listen API for AI Agents
 
-> ⚡ **130 views** · 📊 [Market Research & Insights](../)
+> ⚡ **148 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

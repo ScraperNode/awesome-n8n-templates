@@ -1,6 +1,6 @@
 # 📋 Standup bot (3/4): override config
 
-> ⚡ **1,164 views** · 📋 [Project Management](../)
+> ⚡ **1,257 views** · 📋 [Project Management](../)
 
 ## Description
 

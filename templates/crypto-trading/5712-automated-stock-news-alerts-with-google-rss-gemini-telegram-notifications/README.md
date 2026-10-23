@@ -1,6 +1,6 @@
 # 📈 Automated stock news alerts with Google RSS, Gemini & Telegram notifications
 
-> ⚡ **2,219 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **2,744 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

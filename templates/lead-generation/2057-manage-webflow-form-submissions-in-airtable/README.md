@@ -1,6 +1,6 @@
 # 🎣 Manage Webflow form submissions in Airtable
 
-> ⚡ **1,064 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,083 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

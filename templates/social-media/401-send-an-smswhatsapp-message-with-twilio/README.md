@@ -1,6 +1,6 @@
 # 📱 Send an SMS/Whatsapp message with Twilio
 
-> ⚡ **8,399 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **8,630 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

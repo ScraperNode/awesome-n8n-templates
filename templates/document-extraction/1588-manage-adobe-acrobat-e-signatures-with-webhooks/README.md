@@ -1,6 +1,6 @@
 # 🔬 Manage Adobe Acrobat e-signatures with webhooks
 
-> ⚡ **1,062 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,118 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

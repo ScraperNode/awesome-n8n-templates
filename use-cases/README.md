@@ -6,14 +6,14 @@
 
 | Use Case | Templates |
 |----------|:---------:|
-| 🧠 [AI-Powered Workflows](ai-powered-workflows/) | **5,942** |
-| 🔔 [Notifications & Alerts](notifications-alerts/) | **5,548** |
-| 🕷️ [Web Scraping & Data Extraction](web-scraping/) | **4,659** |
-| 📣 [Marketing Automation](marketing-automation/) | **4,104** |
-| 📱 [Social Media Growth](social-media-growth/) | **3,076** |
-| ⚙️ [SaaS & Product Operations](saas-operations/) | **1,761** |
-| 💼 [Freelancer & Agency Toolkit](freelancer-toolkit/) | **1,717** |
-| 🔄 [Data Pipelines & ETL](data-pipeline/) | **1,572** |
-| 🤝 [Customer Success & Retention](customer-success/) | **1,449** |
-| 🛒 [E-commerce & Shopify](ecommerce/) | **1,031** |
-| 🏠 [Real Estate Automation](real-estate/) | **573** |
+| 🧠 [AI-Powered Workflows](ai-powered-workflows/) | **9,159** |
+| 🔔 [Notifications & Alerts](notifications-alerts/) | **8,792** |
+| 🕷️ [Web Scraping & Data Extraction](web-scraping/) | **7,575** |
+| 📣 [Marketing Automation](marketing-automation/) | **6,369** |
+| 📱 [Social Media Growth](social-media-growth/) | **4,120** |
+| 💼 [Freelancer & Agency Toolkit](freelancer-toolkit/) | **2,704** |
+| ⚙️ [SaaS & Product Operations](saas-operations/) | **2,399** |
+| 🤝 [Customer Success & Retention](customer-success/) | **2,258** |
+| 🔄 [Data Pipelines & ETL](data-pipeline/) | **2,239** |
+| 🛒 [E-commerce & Shopify](ecommerce/) | **1,641** |
+| 🏠 [Real Estate Automation](real-estate/) | **1,106** |

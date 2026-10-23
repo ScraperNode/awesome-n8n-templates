@@ -1,6 +1,6 @@
 # 📱 Automatically send a direct message (DM) to new followers on Bluesky using Baserow
 
-> ⚡ **795 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **796 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

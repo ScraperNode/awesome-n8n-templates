@@ -1,6 +1,6 @@
 # 🎫 Automate internal complaint resolution with Jotform, Gemini AI & Google Sheets
 
-> ⚡ **216 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **280 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

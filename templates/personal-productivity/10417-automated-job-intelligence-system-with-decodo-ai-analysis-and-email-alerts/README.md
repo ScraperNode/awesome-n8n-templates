@@ -1,6 +1,6 @@
 # ⚡ Automated job intelligence system with Decodo, AI analysis, and email alerts
 
-> ⚡ **235 views** · ⚡ [Personal Productivity](../)
+> ⚡ **332 views** · ⚡ [Personal Productivity](../)
 
 > 💡 **Pro Tip** — Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.
 >

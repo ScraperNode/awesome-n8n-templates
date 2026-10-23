@@ -1,6 +1,6 @@
 # 📁 Automate screenshot upload to Postimages.org with Airtop browser automation
 
-> ⚡ **982 views** · 📁 [File Management](../)
+> ⚡ **1,065 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 AI-powered travel assistant for WhatsApp using Llama 3.2
 
-> ⚡ **1,775 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,103 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

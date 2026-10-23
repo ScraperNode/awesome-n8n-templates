@@ -1,6 +1,6 @@
 # 💬 Send Typeforms leads via Whatsapp (Twilio)
 
-> ⚡ **2,276 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,334 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎯 Generate marketing campaign ROI reports with Google Sheets, GPT-4o and Email
 
-> ⚡ **958 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **1,042 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

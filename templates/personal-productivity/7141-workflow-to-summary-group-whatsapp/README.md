@@ -1,6 +1,6 @@
 # ⚡ Workflow to summary group Whatsapp
 
-> ⚡ **1,618 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,261 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

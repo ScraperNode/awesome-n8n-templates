@@ -1,6 +1,6 @@
 # 📊 Track new ranked keywords in Google Sheets with DataForSEO and Slack alerts
 
-> ⚡ **7 views** · 📊 [Market Research & Insights](../)
+> ⚡ **30 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

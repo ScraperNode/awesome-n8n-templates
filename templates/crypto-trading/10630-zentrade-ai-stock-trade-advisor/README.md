@@ -1,39 +1,34 @@
-# 📈 ZenTrade -  AI Stock Trade Advisor
+# 📈 Generate AI stock trade recommendations from TwelveData, NewsAPI and Gemini via Telegram
 
-> ⚡ **311 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **551 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 
-### This n8n template automates intraday trading insights by combining candlestick pattern analysis and news sentiment aggregation to suggest actionable Buy / Sell / Hold decisions across international stock markets.
+## Quick overview
+ZenTrade is an AI-powered trading assistant that combines multi-timeframe analysis, volume confirmation, and news sentiment to generate Buy, Sell, and Hold recommendations with market bias, risk assessment, and trade setups delivered directly to Telegram.
 
-  **Use cases**
+## How it works
+1. ZenTrade analyzes live market data across multiple timeframes (1-minute, 15-minute, and 1-hour) using TwelveData. The workflow evaluates trend direction, volume activity, and news sentiment, then processes this information through a proprietary market scoring engine. Based on the calculated market bias, Gemini AI generates a concise trade analysis with a recommendation, risk assessment, and trade setup including entry, stop loss, and target levels. Results are automatically delivered to Telegram in real time.
 
-- Automatically analyze stock trends using live candlestick data.
-- Aggregate real-time news sentiment to strengthen trading confidence.
-- Generate AI-backed Buy / Sell / Hold recommendations for traders.
-- Build an automated Telegram trading assistant or analytics bot.
-- Create a backend for AI-powered portfolio advisors or trading dashboards.
 
-**Good to know**
+## Setup
+1. Import the workflow into n8n and configure your API credentials for TwelveData, NewsAPI, Gemini (or OpenAI), and Telegram. Create a Telegram bot using BotFather and add the bot token to the workflow credentials. Once configured, users can submit stock tickers directly through Telegram. The workflow will fetch market data, analyze sentiment, calculate market bias, and return a complete trading report within seconds.
 
-This workflow integrates both market and news APIs, processes data intelligently, and leverages an Gemini AI for trading recommendations.
-It runs smoothly on both n8n Cloud and self-hosted instances, and setup typically takes 10–15 minutes.
 
-### Requirements
+## Requirements
+- n8n Cloud or self-hosted n8n instance
+- TwelveData API key (market data)
+- NewsAPI key (news sentiment)
+- Google Gemini API key or OpenAI API key
+- Telegram Bot Token (via @BotFather)
 
-- n8n Cloud or self-hosted instance
-- TwelveData API key (for fetching OHLC & candlestick data) → twelvedata.com
-- NewsAPI.org key (for aggregating relevant stock news) → newsapi.org
-- AI model API key (Google Gemini or OpenAI) for sentiment reasoning
-- Telegram Bot Token (via @BotFather) for command input & output
-
-### Customising this workflow
-
-- Replace Telegram with Slack, Discord, or Notion for alternate alerts.
-- Integrate TradingView or Alpaca API for executing mock trades.
-- Modify the candlestick intervals (1m, 15m, 1h) or patterns as per strategy.
-- Add portfolio tracking or alert thresholds for advanced users.
-- Expand to cover crypto, forex, or commodities with minimal edits.
+## Customization
+- Replace Telegram with Slack, Discord, Email, or Notion
+- Connect TradingView, Alpaca, or brokerage APIs
+- Modify scoring weights and trading logic
+- Add portfolio tracking and performance monitoring
+- Extend support to crypto, forex, ETFs, or commodities
+- Create custom trading strategies using the built-in scoring engine
 
 ## 🔗 Nodes Used
 

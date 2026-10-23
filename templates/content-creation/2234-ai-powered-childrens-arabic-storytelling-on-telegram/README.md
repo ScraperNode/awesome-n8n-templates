@@ -1,6 +1,6 @@
 # 🎬 AI-Powered Children's Arabic Storytelling on Telegram
 
-> ⚡ **2,455 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,544 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

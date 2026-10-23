@@ -1,6 +1,6 @@
 # ⚙️ Send real-time Kubernetes(EKS/GKE/AKS) CPU spike alerts from Prometheus to Slack
 
-> ⚡ **1,323 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,544 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

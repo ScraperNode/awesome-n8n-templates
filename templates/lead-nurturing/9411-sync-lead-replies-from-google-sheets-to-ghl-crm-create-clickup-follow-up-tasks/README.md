@@ -1,6 +1,6 @@
 # 💬 Sync lead replies from Google Sheets to GHL CRM & create ClickUp follow-up tasks
 
-> ⚡ **321 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **461 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

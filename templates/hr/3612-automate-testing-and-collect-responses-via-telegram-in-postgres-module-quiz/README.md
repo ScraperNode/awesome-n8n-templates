@@ -1,6 +1,6 @@
 # 👥 Automate testing and collect responses via Telegram in Postgres (module "Quiz")
 
-> ⚡ **547 views** · 👥 [HR & Recruitment](../)
+> ⚡ **571 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

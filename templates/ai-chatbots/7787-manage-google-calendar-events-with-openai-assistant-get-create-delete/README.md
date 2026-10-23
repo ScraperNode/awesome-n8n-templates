@@ -1,6 +1,6 @@
 # 🤖 Manage Google Calendar events with OpenAI Assistant (Get, create, delete)
 
-> ⚡ **538 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **600 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

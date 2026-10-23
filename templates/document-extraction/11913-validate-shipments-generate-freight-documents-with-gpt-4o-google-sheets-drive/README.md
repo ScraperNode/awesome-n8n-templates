@@ -1,6 +1,6 @@
 # 🔬 Validate shipments & generate freight documents with GPT-4o, Google Sheets & Drive
 
-> ⚡ **112 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **221 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

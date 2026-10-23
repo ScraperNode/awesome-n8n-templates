@@ -1,6 +1,6 @@
 # 🎬 OpenAI ImageGen1 via HTTP request (edit image)
 
-> ⚡ **2,264 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,544 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

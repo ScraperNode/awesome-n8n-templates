@@ -1,6 +1,6 @@
 # 🎬 Create dual-source expert articles with internal knowledge and web research using Lookio, Linkup, and GPT-5
 
-> ⚡ **290 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **367 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

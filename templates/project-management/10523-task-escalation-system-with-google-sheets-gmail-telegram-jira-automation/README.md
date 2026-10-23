@@ -1,6 +1,6 @@
 # 📋 Task escalation system with Google Sheets, Gmail, Telegram & Jira automation
 
-> ⚡ **258 views** · 📋 [Project Management](../)
+> ⚡ **548 views** · 📋 [Project Management](../)
 
 ## Description
 

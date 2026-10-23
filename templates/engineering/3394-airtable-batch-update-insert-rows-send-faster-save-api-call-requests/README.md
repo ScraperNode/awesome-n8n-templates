@@ -1,6 +1,6 @@
 # ⚒️ Airtable batch update / insert rows (send faster + save API call requests)
 
-> ⚡ **504 views** · ⚒️ [Engineering](../)
+> ⚡ **552 views** · ⚒️ [Engineering](../)
 
 ## Description
 

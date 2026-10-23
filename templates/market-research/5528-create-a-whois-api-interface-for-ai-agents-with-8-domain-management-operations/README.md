@@ -1,6 +1,6 @@
 # 📊 Create a WHOIS API interface for AI agents with 8 domain management operations
 
-> ⚡ **514 views** · 📊 [Market Research & Insights](../)
+> ⚡ **566 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

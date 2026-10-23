@@ -1,6 +1,6 @@
 # 🎬 Text-to-image generation with Flux AI, Google Drive storage & sheets logging
 
-> ⚡ **1,279 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,473 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

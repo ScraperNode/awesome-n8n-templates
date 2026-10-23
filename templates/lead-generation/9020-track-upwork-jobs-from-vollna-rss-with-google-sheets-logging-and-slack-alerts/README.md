@@ -1,6 +1,6 @@
 # 🎣 Track Upwork jobs from Vollna RSS with Google Sheets logging and Slack alerts
 
-> ⚡ **270 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **370 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

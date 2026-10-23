@@ -1,6 +1,6 @@
 # ⚒️ Create a CRUD REST API with Google Sheets database
 
-> ⚡ **592 views** · ⚒️ [Engineering](../)
+> ⚡ **773 views** · ⚒️ [Engineering](../)
 
 ## Description
 

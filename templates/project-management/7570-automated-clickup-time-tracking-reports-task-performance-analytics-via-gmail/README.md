@@ -1,6 +1,6 @@
 # 📋 Automated ClickUp time tracking reports & task performance analytics via Gmail
 
-> ⚡ **78 views** · 📋 [Project Management](../)
+> ⚡ **102 views** · 📋 [Project Management](../)
 
 ## Description
 

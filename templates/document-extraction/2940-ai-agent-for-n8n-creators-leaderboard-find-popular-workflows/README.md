@@ -1,6 +1,6 @@
 # 🔬 🔥📈🤖 AI agent for n8n creators leaderboard - find popular workflows
 
-> ⚡ **7,339 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **7,039 views** · 🔬 [Document Extraction & Analysis](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

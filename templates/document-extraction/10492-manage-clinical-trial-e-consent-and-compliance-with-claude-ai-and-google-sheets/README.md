@@ -1,6 +1,6 @@
 # 🔬 Manage clinical trial e-consent and compliance with Claude AI and Google Sheets
 
-> ⚡ **5 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **88 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

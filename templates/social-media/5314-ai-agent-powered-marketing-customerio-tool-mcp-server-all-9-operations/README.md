@@ -1,6 +1,6 @@
 # 📱 AI agent powered marketing 🛠️ Customer.io tool MCP server 💪 all 9 operations
 
-> ⚡ **289 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **318 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

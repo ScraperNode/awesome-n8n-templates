@@ -1,6 +1,6 @@
 # 📖 🌐 Confluence page AI chatbot workflow
 
-> ⚡ **16,515 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **16,860 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

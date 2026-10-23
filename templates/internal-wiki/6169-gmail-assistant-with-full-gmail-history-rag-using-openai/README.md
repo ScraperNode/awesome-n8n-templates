@@ -1,6 +1,6 @@
 # 📖 Gmail assistant with full Gmail history RAG using OpenAI
 
-> ⚡ **1,777 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **2,006 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

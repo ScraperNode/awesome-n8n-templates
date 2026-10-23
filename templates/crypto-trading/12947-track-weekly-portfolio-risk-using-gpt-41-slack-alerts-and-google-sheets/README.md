@@ -1,6 +1,6 @@
 # 📈 Track weekly portfolio risk using GPT-4.1, Slack alerts, and Google Sheets
 
-> ⚡ **105 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **161 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

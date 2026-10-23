@@ -1,0 +1,1101 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "name": "Summarize daily tech news with local Ollama models and send a briefing to Gmail and Discord",
+  "nodes": [
+    {
+      "id": "42b7fa2e-913a-4a44-81e7-ebe3ec2226f5",
+      "name": "When 6:30 AM Daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        288
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 6 * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "b17c763d-1b74-4f67-92b8-84028925120b",
+      "name": "Split Feed List Into Items",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        512,
+        192
+      ],
+      "parameters": {
+        "jsCode": "return $input.first().json.feeds.map(function (f) { return { json: { feedUrl: f.url, sourceName: f.name } }; });"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "0f580d59-4632-430c-b109-9fcef79cfc19",
+      "name": "Read Each RSS Feed",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "onError": "continueRegularOutput",
+      "position": [
+        736,
+        192
+      ],
+      "parameters": {
+        "url": "={{ $json.feedUrl }}",
+        "options": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "65e4909b-7ca0-4c46-a3ce-37ce289dc73e",
+      "name": "Merge Feeds and CISA Data",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        960,
+        288
+      ],
+      "parameters": {},
+      "typeVersion": 3.2
+    },
+    {
+      "id": "9d1f110c-c6b1-4e7c-942d-1c3f5dbd60a4",
+      "name": "Fetch CISA Exploited Vulnerabilities",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        624,
+        384
+      ],
+      "parameters": {
+        "url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "553c7d56-ac89-429d-9386-e7b13ce41ad1",
+      "name": "Normalize Stories",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1184,
+        288
+      ],
+      "parameters": {
+        "jsCode": "const cfg = $('Build Config').first().json;\nfunction h(s) { let x = 5381; for (let i = 0; i < s.length; i++) { x = ((x << 5) + x + s.charCodeAt(i)) | 0; } return (x >>> 0).toString(36); }\nfunction canon(u) {\n  const s = String(u || '').split('#')[0];\n  const parts = s.split('?');\n  const base = parts[0].replace(/\\/$/, '');\n  let query = '';\n  if (parts[1]) {\n    const kept = parts[1].split('&').filter(function (p) { const k = p.split('=')[0].toLowerCase(); return k.indexOf('utm_') !== 0 && k !== 'ref' && k !== 'source'; });\n    if (kept.length) { query = '?' + kept.join('&'); }\n  }\n  return (base + query).toLowerCase();\n}\nfunction host(u) {\n  const m = String(u || '').match(/^https?:\\/\\/([^\\/]+)/i);\n  return m ? m[1].replace(/^www\\./, '').toLowerCase() : 'unknown';\n}\nconst now = Date.now();\nconst out = [];\nfor (const item of $input.all()) {\n  const j = item.json || {};\n  if (j.vulnerabilities && Array.isArray(j.vulnerabilities)) {\n    for (const v of j.vulnerabilities) {\n      const added = Date.parse(v.dateAdded || '');\n      if (!added) continue;\n      const hours = (now - added) / 3600000;\n      if (hours > cfg.maxHours) continue;\n      const url = 'https://www.cisa.gov/known-exploited-vulnerabilities-catalog';\n      out.push({ title: 'CISA KEV: ' + (v.cveID || '') + ' ' + (v.vendorProject || '') + ' ' + (v.product || '') + ' - ' + (v.vulnerabilityName || ''), url: url + '#' + (v.cveID || ''), source: 'CISA KEV', summary: v.shortDescription || '', published_at: new Date(added).toISOString(), hours_ago: Math.round(hours), category_hint: 'cybersecurity' });\n    }\n    continue;\n  }\n  if (j.error) continue;\n  const title = (j.title || '').trim();\n  const link = j.link || j.url || '';\n  if (!title || !link) continue;\n  const ts = Date.parse(j.isoDate || j.pubDate || '');\n  if (!ts) continue;\n  const hours = (now - ts) / 3600000;\n  if (hours > cfg.maxHours) continue;\n  let t = title;\n  let src = host(link);\n  let hint = '';\n  const gh = link.match(/^https?:\\/\\/github\\.com\\/([^\\/]+)\\/([^\\/]+)\\/releases\\/tag\\//i);\n  if (gh) {\n    src = gh[2] + ' releases';\n    hint = 'homelab_selfhosting';\n    if (t.toLowerCase().indexOf(gh[2].toLowerCase()) === -1) { t = gh[2] + ' release ' + t; }\n  }\n  const rd = link.match(/reddit\\.com\\/r\\/([^\\/]+)/i);\n  if (rd) { src = 'r/' + rd[1]; }\n  out.push({ title: t, url: link, source: src, summary: (j.contentSnippet || j.content || '').toString().slice(0, 400), published_at: new Date(ts).toISOString(), hours_ago: Math.round(hours), category_hint: hint });\n}\nout.sort(function (a, b) { return a.hours_ago - b.hours_ago; });\nconst seen = out.slice(0, cfg.maxStories).map(function (s) {\n  s.freshness = s.hours_ago <= cfg.freshHours ? 'fresh' : '72h';\n  s.dedupe_key = h(canon(s.url)) + '-' + h(s.title.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\\s+/g, ' ').trim());\n  return { json: s };\n});\nreturn seen;"
+      },
+      "executeOnce": false,
+      "typeVersion": 2
+    },
+    {
+      "id": "e0326531-14ea-4da0-bbe9-f678f0dea955",
+      "name": "Get History",
+      "type": "n8n-nodes-base.dataTable",
+      "onError": "continueRegularOutput",
+      "position": [
+        1472,
+        288
+      ],
+      "parameters": {
+        "operation": "get",
+        "returnAll": true,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "tech_briefing_history"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "e25c0cb8-0533-4d05-bb58-0d71e32c81c1",
+      "name": "Dedup Against History",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1696,
+        288
+      ],
+      "parameters": {
+        "jsCode": "const historyKeys = new Set();\nfor (const item of $input.all()) {\n  const j = item.json || {};\n  if (j.dedupe_key) historyKeys.add(j.dedupe_key);\n}\nconst seenNow = new Set();\nconst out = [];\nfor (const item of $('Normalize Stories').all()) {\n  const s = item.json;\n  if (historyKeys.has(s.dedupe_key)) continue;\n  if (seenNow.has(s.dedupe_key)) continue;\n  seenNow.add(s.dedupe_key);\n  out.push({ json: s });\n}\nreturn out;"
+      },
+      "executeOnce": false,
+      "typeVersion": 2
+    },
+    {
+      "id": "f0ffde35-fff3-48ef-a581-b42ea5d4732e",
+      "name": "Embed Titles with Ollama",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        2208,
+        288
+      ],
+      "parameters": {
+        "url": "={{ $('Build Config').first().json.ollama + '/api/embed' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000
+        },
+        "jsonBody": "={{ JSON.stringify({ model: $('Build Config').first().json.models.embed, input: $json.titles }) }}",
+        "sendBody": true,
+        "specifyBody": "json"
+      },
+      "executeOnce": false,
+      "typeVersion": 4.4
+    },
+    {
+      "id": "ace40356-1d8f-409a-81dd-0f277971e1cc",
+      "name": "Semantic Dedup",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2432,
+        288
+      ],
+      "parameters": {
+        "jsCode": "const cfg = $('Build Config').first().json;\nconst stories = $('Dedup Against History').all().map(function (i) { return i.json; });\nlet emb = null;\ntry { emb = $input.first().json.embeddings; } catch (e) { emb = null; }\nif (!emb || !Array.isArray(emb) || emb.length !== stories.length) {\n  return stories.map(function (s) { return { json: s }; });\n}\nfunction cos(a, b) {\n  let d = 0, na = 0, nb = 0;\n  for (let i = 0; i < a.length; i++) { d += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }\n  return d / (Math.sqrt(na) * Math.sqrt(nb) || 1);\n}\nconst keep = [];\nconst keptIdx = [];\nfor (let i = 0; i < stories.length; i++) {\n  let dup = false;\n  for (const k of keptIdx) {\n    if (cos(emb[i], emb[k]) >= cfg.simThreshold) { dup = true; break; }\n  }\n  if (!dup) { keep.push(stories[i]); keptIdx.push(i); }\n}\nreturn keep.map(function (s) { return { json: s }; });"
+      },
+      "executeOnce": false,
+      "typeVersion": 2
+    },
+    {
+      "id": "8c6aea26-bf35-4d76-8670-150983f116a6",
+      "name": "Build Classify Requests",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2720,
+        288
+      ],
+      "parameters": {
+        "jsCode": "const cfg = $('Build Config').first().json;\nconst CATS = ['ai_llm', 'banking_fintech', 'homelab_selfhosting', 'cybersecurity', 'tech_industry', 'excluded'];\nconst SYS = 'You are a news classifier for a personal tech briefing. Classify the headline into exactly one of these categories: ' +\n  'ai_llm (AI models, LLMs, AI tools, AI research and companies); ' +\n  'banking_fintech (banking, payments, fintech, treasury, banking AI); ' +\n  'homelab_selfhosting (self-hosted apps, home servers, NAS, Proxmox, Docker, Home Assistant, Tailscale, and self-hosted software releases such as n8n, Gitea, Portainer, Uptime Kuma, Beszel, Plex, Navidrome, homelab hardware); ' +\n  'cybersecurity (vulnerabilities, exploits, advisories, breaches, patches); ' +\n  'tech_industry (general technology business news, hardware, layoffs, products); ' +\n  'excluded (politics and legislation, celebrity and entertainment, sports, ordinary crime). ' +\n  'Also assign priority 1-5 where 5 = highly relevant to the reader: Anthropic, Claude, MCP, OpenAI, local LLMs, Ollama, n8n, banking AI, payments, Home Assistant, Proxmox, Synology, Docker, Portainer, Gitea, Uptime Kuma, Beszel, Tailscale, Raspberry Pi, and critical actively-exploited security advisories. 1 = generic news. Respond only with JSON.';\nconst FORMAT = { type: 'object', properties: { category: { type: 'string', enum: CATS }, priority: { type: 'integer', minimum: 1, maximum: 5 }, reason: { type: 'string' } }, required: ['category', 'priority', 'reason'] };\nreturn $input.all().map(function (i) {\n  const s = i.json;\n  return { json: { story: s, body: { model: cfg.models.classify, stream: false, think: false, format: FORMAT, options: { temperature: 0 }, messages: [{ role: 'system', content: SYS }, { role: 'user', content: 'Headline: ' + s.title + '\\nSource: ' + s.source + '\\nSummary: ' + (s.summary || '') }] } } };\n});"
+      },
+      "executeOnce": false,
+      "typeVersion": 2
+    },
+    {
+      "id": "fc1617e1-4fc5-4190-9139-9e9a5a6ff40c",
+      "name": "Classify Stories with Ollama",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        2944,
+        288
+      ],
+      "parameters": {
+        "url": "={{ $('Build Config').first().json.ollama + '/api/chat' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 90000
+        },
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "sendBody": true,
+        "specifyBody": "json"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.4,
+      "waitBetweenTries": 1500
+    },
+    {
+      "id": "d830a40d-cb87-43e2-b33a-dcba4adf61a7",
+      "name": "Select And Bucket",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3168,
+        288
+      ],
+      "parameters": {
+        "jsCode": "const cfg = $('Build Config').first().json;\nconst reqs = $('Build Classify Requests').all();\nconst resps = $input.all();\nconst EXCLUDE = /(senator|congress|election|parliament|celebrity|pop star|world tour|box office|nfl|nba|mlb|premier league|arrested|indicted|court sentenc)/i;\nconst BOOST = /(anthropic|claude|mcp|openai|chatgpt|gemini|ollama|local llm|n8n|home assistant|proxmox|synology|docker|portainer|tailscale|raspberry pi|minisforum|beelink|cisa|kev|zero.day|actively exploited)/i;\nconst all = [];\nlet classifyFail = 0;\nfor (let i = 0; i < reqs.length; i++) {\n  const s = reqs[i].json.story;\n  let parsed = null;\n  try { parsed = JSON.parse(resps[i].json.message.content); } catch (e) { parsed = null; }\n  if (!parsed || !parsed.category) { classifyFail++; continue; }\n  s.category = parsed.category;\n  s.priority = Number(parsed.priority) || 1;\n  s.reason = parsed.reason || '';\n  if (s.category === 'excluded' || EXCLUDE.test(s.title)) continue;\n  if (s.category_hint === 'cybersecurity') s.category = 'cybersecurity';\n  s.score = s.priority + (BOOST.test(s.title) ? 2 : 0) + (s.freshness === 'fresh' ? 1 : 0);\n  all.push(s);\n}\nall.sort(function (a, b) { return b.score - a.score || a.hours_ago - b.hours_ago; });\nconst top = all.slice(0, cfg.topCount).map(function (s) { const c = Object.assign({}, s); c.is_top = true; return c; });\nconst topKeys = new Set(top.map(function (s) { return s.dedupe_key; }));\nconst rest = all.filter(function (s) { return !topKeys.has(s.dedupe_key); });\nfunction take(cat) { return rest.filter(function (s) { return s.category === cat; }).slice(0, cfg.sectionCap); }\nconst sections = {\n  radar: take('homelab_selfhosting'),\n  security: take('cybersecurity'),\n  banking: take('banking_fintech'),\n  worth: rest.filter(function (s) { return s.category === 'ai_llm' || s.category === 'tech_industry'; }).slice(0, cfg.sectionCap)\n};\nconst dateStr = new Date().toISOString().slice(0, 10);\nreturn [{ json: { date: dateStr, top: top, sections: sections, all: all, stats: { seen: $('Normalize Stories').all().length, new_after_dedup: reqs.length, classify_failures: classifyFail, selected_top: top.length } } }];"
+      },
+      "executeOnce": false,
+      "typeVersion": 2
+    },
+    {
+      "id": "d0be9ba4-1a61-4088-b02c-da7c9fa16dc4",
+      "name": "Split Top Stories",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3456,
+        288
+      ],
+      "parameters": {
+        "jsCode": "return $input.first().json.top.map(function (s) { return { json: s }; });"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "2e076916-3338-4094-80ac-1fb3fb16ec66",
+      "name": "Build Write Requests",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3680,
+        288
+      ],
+      "parameters": {
+        "jsCode": "const cfg = $('Build Config').first().json;\nconst SYS = 'You write brief items for a personal daily tech briefing. Use ONLY the facts provided in the input. Do not invent numbers, dates, versions, CVE IDs, or names that are not in the input. The reader is a technology professional who runs a homelab (NAS, Proxmox, Docker, Ollama, n8n, Home Assistant, Tailscale). EDIT THIS READER PROFILE to match your own interests. Write 2-3 sentences per field. Respond only with JSON.';\nconst FORMAT = { type: 'object', properties: { what_happened: { type: 'string' }, why_it_matters: { type: 'string' }, personal_relevance: { type: 'string' } }, required: ['what_happened', 'why_it_matters', 'personal_relevance'] };\nreturn $input.all().map(function (i) {\n  const s = i.json;\n  return { json: { story: s, body: { model: cfg.models.write, stream: false, think: false, format: FORMAT, options: { temperature: 0 }, messages: [{ role: 'system', content: SYS }, { role: 'user', content: 'Title: ' + s.title + '\\nSource: ' + s.source + '\\nPublished: ' + s.published_at + '\\nSummary: ' + (s.summary || '(no summary provided)') }] } } };\n});"
+      },
+      "executeOnce": false,
+      "typeVersion": 2
+    },
+    {
+      "id": "afdb0407-9132-4d83-aa1f-ef4a448b8f5d",
+      "name": "Write Summaries with Ollama",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        3904,
+        288
+      ],
+      "parameters": {
+        "url": "={{ $('Build Config').first().json.ollama + '/api/chat' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 180000
+        },
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "sendBody": true,
+        "specifyBody": "json"
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "24920028-87f2-4b54-8a8b-644b4daa7b35",
+      "name": "Validate And Format",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4128,
+        288
+      ],
+      "parameters": {
+        "jsCode": "const cfg = $('Build Config').first().json;\nconst sel = $('Select And Bucket').first().json;\nconst reqs = $('Build Write Requests').all();\nconst resps = $input.all();\nconst CATLABEL = { ai_llm: 'AI & LLMs', banking_fintech: 'Banking & Fintech', homelab_selfhosting: 'Homelab', cybersecurity: 'Security', tech_industry: 'Tech Industry' };\nfunction esc(t) { return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }\nfunction okUrl(u) { return /^https?:\\/\\//i.test(u || ''); }\nconst tops = [];\nfor (let i = 0; i < reqs.length; i++) {\n  const s = reqs[i].json.story;\n  if (!okUrl(s.url)) continue;\n  let w = null;\n  try { w = JSON.parse(resps[i].json.message.content); } catch (e) { w = null; }\n  if (!w) w = { what_happened: s.summary || s.title, why_it_matters: '', personal_relevance: '' };\n  tops.push({ story: s, w: w });\n}\nconst dateNice = new Date().toDateString();\nconst subject = 'Daily Tech Briefing - ' + sel.date;\nconst mdL = [];\nmdL.push('# Daily Tech Briefing - ' + sel.date);\nmdL.push('');\nmdL.push('## Top Stories');\nfor (const t of tops) {\n  mdL.push('');\n  mdL.push('### ' + t.story.title);\n  mdL.push('- Category: ' + (CATLABEL[t.story.category] || t.story.category) + ' | Source: ' + t.story.source + ' | Published: ' + t.story.published_at + ' | Freshness: ' + t.story.freshness);\n  mdL.push('- Link: ' + t.story.url);\n  mdL.push('- What happened: ' + t.w.what_happened);\n  mdL.push('- Why it matters: ' + t.w.why_it_matters);\n  mdL.push('- Personal relevance: ' + t.w.personal_relevance);\n}\nfunction mdSection(name, arr) {\n  mdL.push('');\n  mdL.push('## ' + name);\n  if (!arr.length) { mdL.push('- Nothing notable today.'); return; }\n  for (const s of arr) { mdL.push('- [' + s.title + '](' + s.url + ') - ' + s.source + (s.freshness === '72h' ? ' (72h)' : '')); }\n}\nmdSection('Homelab Radar', sel.sections.radar);\nmdSection('Security Watch', sel.sections.security);\nmdSection('Banking & AI Corner', sel.sections.banking);\nmdSection('Worth Your Time', sel.sections.worth);\nmdL.push('');\nmdL.push('---');\nmdL.push('Run stats: seen ' + sel.stats.seen + ', new ' + sel.stats.new_after_dedup + ', classify failures ' + sel.stats.classify_failures + '.');\nconst archiveMd = mdL.join('\\n');\nlet html = '<div style=\"max-width:640px;margin:0 auto;font-family:Segoe UI,Arial,sans-serif;color:#222;\">';\nhtml += '<h1 style=\"font-size:22px;border-bottom:2px solid #444;padding-bottom:6px;\">Daily Tech Briefing</h1>';\nhtml += '<p style=\"color:#666;margin-top:0;\">' + esc(dateNice) + '</p>';\nhtml += '<h2 style=\"font-size:18px;\">Top Stories</h2>';\nfor (const t of tops) {\n  html += '<div style=\"margin:0 0 18px 0;padding:12px;border:1px solid #ddd;border-radius:8px;\">';\n  html += '<div style=\"font-size:11px;text-transform:uppercase;color:#888;\">' + esc(CATLABEL[t.story.category] || t.story.category) + ' | ' + esc(t.story.source) + ' | ' + esc(t.story.freshness === 'fresh' ? 'last 24h' : 'last 72h') + '</div>';\n  html += '<div style=\"font-size:16px;font-weight:bold;margin:4px 0;\"><a href=\"' + esc(t.story.url) + '\" style=\"color:#1a4d8f;text-decoration:none;\">' + esc(t.story.title) + '</a></div>';\n  html += '<p style=\"margin:6px 0;\"><b>What happened:</b> ' + esc(t.w.what_happened) + '</p>';\n  html += '<p style=\"margin:6px 0;\"><b>Why it matters:</b> ' + esc(t.w.why_it_matters) + '</p>';\n  html += '<p style=\"margin:6px 0;\"><b>For you:</b> ' + esc(t.w.personal_relevance) + '</p>';\n  html += '</div>';\n}\nfunction htmlSection(name, arr) {\n  html += '<h2 style=\"font-size:18px;\">' + esc(name) + '</h2>';\n  if (!arr.length) { html += '<p style=\"color:#888;\">Nothing notable today.</p>'; return; }\n  html += '<ul style=\"padding-left:18px;\">';\n  for (const s of arr) { html += '<li style=\"margin:4px 0;\"><a href=\"' + esc(s.url) + '\" style=\"color:#1a4d8f;\">' + esc(s.title) + '</a> <span style=\"color:#888;font-size:12px;\">' + esc(s.source) + (s.freshness === '72h' ? ' (72h)' : '') + '</span></li>'; }\n  html += '</ul>';\n}\nhtmlSection('Homelab Radar', sel.sections.radar);\nhtmlSection('Security Watch', sel.sections.security);\nhtmlSection('Banking & AI Corner', sel.sections.banking);\nhtmlSection('Worth Your Time', sel.sections.worth);\nhtml += '<p style=\"color:#aaa;font-size:11px;\">Generated by n8n. Stats: ' + sel.stats.seen + ' seen, ' + sel.stats.new_after_dedup + ' new.</p></div>';\nconst chunks = [];\nlet cur = '**Daily Tech Briefing - ' + sel.date + '**\\n';\nfunction push(line) { if ((cur + line).length > 1900) { chunks.push(cur); cur = ''; } cur += line + '\\n'; }\nfor (const t of tops) { push('**' + t.story.title + '**'); push('<' + t.story.url + '> | ' + (CATLABEL[t.story.category] || t.story.category)); push(t.w.what_happened); push(''); }\nfunction dSection(name, arr) { if (!arr.length) return; push('__' + name + '__'); for (const s of arr) { push('- ' + s.title + ' <' + s.url + '>'); } push(''); }\ndSection('Homelab Radar', sel.sections.radar);\ndSection('Security Watch', sel.sections.security);\ndSection('Banking & AI Corner', sel.sections.banking);\ndSection('Worth Your Time', sel.sections.worth);\nif (cur.trim()) chunks.push(cur);\nconst nowIso = new Date().toISOString();\nconst rows = sel.all.map(function (s) { return { dedupe_key: s.dedupe_key, url: s.url, title: s.title.slice(0, 250), source: s.source, category: s.category, published_at: s.published_at, first_seen: nowIso }; });\nreturn [{ json: { subject: subject, email_html: html, email_text: archiveMd, chunks: chunks, archive_md: archiveMd, archive_json: JSON.stringify({ date: sel.date, top: tops, sections: sel.sections, stats: sel.stats }, null, 2), md_path: cfg.vaultBase + sel.date + '.md', json_path: cfg.vaultBase + sel.date + '.json', rows: rows } }];"
+      },
+      "executeOnce": false,
+      "typeVersion": 2
+    },
+    {
+      "id": "9ae2eb68-ed41-4b04-be40-085ab478225a",
+      "name": "Send Email Briefing",
+      "type": "n8n-nodes-base.emailSend",
+      "onError": "continueRegularOutput",
+      "position": [
+        4416,
+        0
+      ],
+      "parameters": {
+        "html": "={{ $json.email_html }}",
+        "text": "={{ $json.email_text }}",
+        "options": {
+          "appendAttribution": false
+        },
+        "subject": "={{ $json.subject }}",
+        "toEmail": "={{ $('Build Config').first().json.emailTo }}",
+        "fromEmail": "={{ $('Build Config').first().json.emailFrom }}",
+        "emailFormat": "both"
+      },
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": "Gmail SMTP (Tech Briefing)"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 2.1
+    },
+    {
+      "id": "a0b65b60-88d1-4e6f-a603-dfceef31b619",
+      "name": "Split Discord Messages",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4416,
+        192
+      ],
+      "parameters": {
+        "jsCode": "return $input.first().json.chunks.map(function (c) { return { json: { content: c } }; });"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "022f9460-eda6-49c8-b099-f14d7a77c065",
+      "name": "Post Briefing to Discord",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        4640,
+        192
+      ],
+      "parameters": {
+        "url": "={{ $('Build Config').first().json.discordWebhookUrl }}",
+        "method": "POST",
+        "options": {
+          "timeout": 30000
+        },
+        "jsonBody": "={{ JSON.stringify({ content: $json.content }) }}",
+        "sendBody": true,
+        "specifyBody": "json"
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "08631d8e-0389-4db7-bc45-06ce7afef580",
+      "name": "Archive Markdown To Vault",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "disabled": true,
+      "position": [
+        4416,
+        560
+      ],
+      "parameters": {
+        "url": "={{ 'http://host.docker.internal:27123/vault/' + $json.md_path }}",
+        "body": "={{ $json.archive_md }}",
+        "method": "PUT",
+        "options": {
+          "timeout": 30000
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "sendHeaders": true,
+        "rawContentType": "text/markdown",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OBSIDIAN_TOKEN }}"
+            }
+          ]
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.4
+    },
+    {
+      "id": "4633ddd6-bfd3-406e-9d5b-cfcf9fb5f6c6",
+      "name": "Archive JSON To Vault",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "disabled": true,
+      "position": [
+        4640,
+        560
+      ],
+      "parameters": {
+        "url": "={{ 'http://host.docker.internal:27123/vault/' + $('Validate And Format').first().json.json_path }}",
+        "body": "={{ $('Validate And Format').first().json.archive_json }}",
+        "method": "PUT",
+        "options": {
+          "timeout": 30000
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "sendHeaders": true,
+        "rawContentType": "application/json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OBSIDIAN_TOKEN }}"
+            }
+          ]
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.4
+    },
+    {
+      "id": "bcd21b10-e41c-4435-98e0-0478d7b4e1ed",
+      "name": "Split History Rows",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4416,
+        912
+      ],
+      "parameters": {
+        "jsCode": "return $input.first().json.rows.map(function (r) { return { json: r }; });"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "0e000bae-02fd-4c77-85f9-5b9591c6994b",
+      "name": "Save Stories to History",
+      "type": "n8n-nodes-base.dataTable",
+      "onError": "continueRegularOutput",
+      "disabled": false,
+      "position": [
+        4640,
+        912
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "url": "={{ $json.url }}",
+            "title": "={{ $json.title }}",
+            "source": "={{ $json.source }}",
+            "category": "={{ $json.category }}",
+            "dedupe_key": "={{ $json.dedupe_key }}",
+            "first_seen": "={{ $json.first_seen }}",
+            "published_at": "={{ $json.published_at }}"
+          },
+          "schema": [
+            {
+              "id": "dedupe_key",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "dedupe_key",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "url",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "title",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "source",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "category",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "published_at",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "published_at",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "first_seen",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "first_seen",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "options": {
+          "optimizeBulk": true
+        },
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "tech_briefing_history"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "90b747d6-fc66-402f-829c-35e11d9d9d6a",
+      "name": "Collect Titles for Embedding",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1984,
+        288
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { titles: $input.all().map(function (i) { return i.json.title; }) } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "tpl-setup-note",
+      "name": "Template overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -848,
+        -300
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 680,
+        "height": 1480,
+        "content": "## Summarize daily tech news with local Ollama models\n\nA private, zero-API-cost morning briefing: 18 tech, security and self-hosting feeds plus the CISA Known Exploited Vulnerabilities catalog, deduplicated, ranked and summarized by local Ollama models, delivered to email and Discord.\n\n### Who's it for\nHomelab and self-hosting fans, IT and security teams who want a daily tech and vulnerability digest without paying for a cloud LLM or sending their reading list to a third party.\n\n### How it works\n1. **Collect:** fetches every feed and the CISA list in parallel and keeps the last 72 hours.\n2. **Dedup:** skips stories seen in the last 14 days (data table), then removes near-duplicates using embeddings (cosine 0.9 or higher).\n3. **Judge:** a fast model classifies each headline and scores priority 1-5 with a JSON schema. Code adds keyword and freshness boosts and picks the top 5.\n4. **Write:** a stronger model writes *What happened / Why it matters / For you* for each top story, using only fetched text.\n5. **Deliver:** HTML email, Discord (split under 2,000 chars), optional Obsidian archive.\n\n**Design rule:** LLMs only classify and write. Collection, scoring and delivery are plain code, so output stays grounded.\n\n### Setup steps\n1. Install Ollama and pull `qwen3:8b`, `gemma4:12b-it-qat`, `nomic-embed-text` (or your own models).\n2. Create a data table `tech_briefing_history` with text columns `dedupe_key, url, title, source, category, published_at, first_seen`. Select it in **Get History** and **Save Stories to History**.\n3. Fill in **Build Config**: Ollama URL, models, email, Discord webhook URL, feeds.\n4. Add an SMTP credential to **Send Email Briefing** (or delete it).\n5. Edit the reader profile in **Build Write Requests**.\n6. Run **Manual Test Trigger**, check your inbox and Discord, then activate.\n\n### Requirements\nSelf-hosted n8n with network access to Ollama; about 16 GB RAM for the default models; SMTP and/or a Discord webhook.\n\n### Customization\nAdd or remove feeds, swap models or change thresholds in **Build Config**. Edit boost keywords in **Select And Bucket**. Enable the two archive nodes if you use Obsidian's Local REST API plugin.\n\n**Important:** Code nodes reference **Build Config**, **Normalize Stories**, **Dedup Against History**, **Build Classify Requests**, **Select And Bucket**, **Build Write Requests** and **Validate And Format** by name. If you rename them, update the `$('...')` references too."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c874b47e-f0cf-40eb-910e-769c4583e81e",
+      "name": "Build Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        224,
+        288
+      ],
+      "parameters": {
+        "mode": "manual",
+        "options": {
+          "dotNotation": true
+        },
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-ollama",
+              "name": "ollama",
+              "type": "string",
+              "value": "http://localhost:11434"
+            },
+            {
+              "id": "cfg-m1",
+              "name": "models.classify",
+              "type": "string",
+              "value": "qwen3:8b"
+            },
+            {
+              "id": "cfg-m2",
+              "name": "models.write",
+              "type": "string",
+              "value": "gemma4:12b-it-qat"
+            },
+            {
+              "id": "cfg-m3",
+              "name": "models.embed",
+              "type": "string",
+              "value": "nomic-embed-text"
+            },
+            {
+              "id": "cfg-to",
+              "name": "emailTo",
+              "type": "string",
+              "value": "you@example.com"
+            },
+            {
+              "id": "cfg-from",
+              "name": "emailFrom",
+              "type": "string",
+              "value": "Daily Tech Briefing <you@example.com>"
+            },
+            {
+              "id": "cfg-dc",
+              "name": "discordWebhookUrl",
+              "type": "string",
+              "value": "PASTE_YOUR_DISCORD_WEBHOOK_URL"
+            },
+            {
+              "id": "cfg-vault",
+              "name": "vaultBase",
+              "type": "string",
+              "value": "daily-tech-briefing/"
+            },
+            {
+              "id": "cfg-fh",
+              "name": "freshHours",
+              "type": "number",
+              "value": 24
+            },
+            {
+              "id": "cfg-mh",
+              "name": "maxHours",
+              "type": "number",
+              "value": 72
+            },
+            {
+              "id": "cfg-sim",
+              "name": "simThreshold",
+              "type": "number",
+              "value": 0.9
+            },
+            {
+              "id": "cfg-top",
+              "name": "topCount",
+              "type": "number",
+              "value": 5
+            },
+            {
+              "id": "cfg-cap",
+              "name": "sectionCap",
+              "type": "number",
+              "value": 5
+            },
+            {
+              "id": "cfg-max",
+              "name": "maxStories",
+              "type": "number",
+              "value": 120
+            },
+            {
+              "id": "cfg-feeds",
+              "name": "feeds",
+              "type": "array",
+              "value": "={{ [\n  { url: 'https://hnrss.org/frontpage', name: 'Hacker News' },\n  { url: 'https://openai.com/blog/rss.xml', name: 'OpenAI Blog' },\n  { url: 'https://simonwillison.net/atom/everything/', name: 'Simon Willison' },\n  { url: 'https://github.com/ollama/ollama/releases.atom', name: 'Ollama Releases' },\n  { url: 'https://github.com/n8n-io/n8n/releases.atom', name: 'n8n Releases' },\n  { url: 'https://www.home-assistant.io/atom.xml', name: 'Home Assistant Blog' },\n  { url: 'https://tailscale.com/blog/index.xml', name: 'Tailscale Blog' },\n  { url: 'https://selfh.st/rss/', name: 'selfh.st' },\n  { url: 'https://feeds.arstechnica.com/arstechnica/index', name: 'Ars Technica' },\n  { url: 'https://www.bleepingcomputer.com/feed/', name: 'BleepingComputer' },\n  { url: 'https://www.finextra.com/rss/headlines.aspx', name: 'Finextra' },\n  { url: 'https://www.federalreserve.gov/feeds/press_all.xml', name: 'Federal Reserve' },\n  { url: 'https://www.servethehome.com/feed/', name: 'ServeTheHome' },\n  { url: 'https://www.reddit.com/r/selfhosted/top/.rss?t=day', name: 'r/selfhosted' },\n  { url: 'https://github.com/portainer/portainer/releases.atom', name: 'Portainer Releases' },\n  { url: 'https://github.com/go-gitea/gitea/releases.atom', name: 'Gitea Releases' },\n  { url: 'https://github.com/louislam/uptime-kuma/releases.atom', name: 'Uptime Kuma Releases' },\n  { url: 'https://github.com/henrygd/beszel/releases.atom', name: 'Beszel Releases' }\n] }}"
+            }
+          ]
+        },
+        "includeOtherFields": false
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "ba2541fd-264a-41aa-b1ac-f43ade9859f2",
+      "name": "Manual Test Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        480
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "d7b0c3a1-0000-4000-8000-100000000000",
+      "name": "Sticky: Triggers and configuration",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -48,
+        128
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 416,
+        "height": 512,
+        "content": "## Triggers and configuration\n\nRuns daily at 6:30 AM or on demand. **Build Config** holds every setting: Ollama URL and models, feeds, email, Discord webhook and thresholds."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d7b0c3a1-0000-4000-8000-100000000001",
+      "name": "Sticky: Collect feeds and CISA KEV",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        464,
+        32
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 864,
+        "height": 512,
+        "content": "## Collect feeds and CISA KEV\n\nReads each RSS/Atom feed and the CISA Known Exploited Vulnerabilities catalog in parallel, merges them, and normalizes titles, links and dates, keeping the last 72 hours."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d7b0c3a1-0000-4000-8000-100000000002",
+      "name": "Sticky: Skip stories already sent",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1424,
+        128
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 416,
+        "height": 320,
+        "content": "## Skip stories already sent\n\nLoads the 14-day `tech_briefing_history` data table and drops exact repeats."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d7b0c3a1-0000-4000-8000-100000000003",
+      "name": "Sticky: Remove near-duplicates",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1936,
+        128
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 640,
+        "height": 320,
+        "content": "## Remove near-duplicates\n\nEmbeds each title with Ollama and drops stories that are 0.9 or more similar (cosine) to one already kept."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d7b0c3a1-0000-4000-8000-100000000004",
+      "name": "Sticky: Classify and rank",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2672,
+        128
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 640,
+        "height": 320,
+        "content": "## Classify and rank\n\nA fast Ollama model labels each story's category and priority 1-5 using a JSON schema. Code adds keyword and freshness boosts and picks the top stories."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d7b0c3a1-0000-4000-8000-100000000005",
+      "name": "Sticky: Write the briefing",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3408,
+        128
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 864,
+        "height": 320,
+        "content": "## Write the briefing\n\nA stronger Ollama model writes *What happened / Why it matters / For you* for each top story from fetched text only. The result is validated and formatted for email and Discord."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d7b0c3a1-0000-4000-8000-100000000006",
+      "name": "Sticky: Deliver",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4368,
+        -160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 416,
+        "height": 496,
+        "content": "## Deliver\n\nSends the HTML email and posts the briefing to Discord in chunks under 2,000 characters."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d7b0c3a1-0000-4000-8000-100000000007",
+      "name": "Sticky: Optional: archive to Obsidian",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4368,
+        400
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 416,
+        "height": 320,
+        "content": "## Optional: archive to Obsidian\n\nDisabled by default. Enable both nodes to save Markdown and JSON copies through Obsidian's Local REST API plugin."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d7b0c3a1-0000-4000-8000-100000000008",
+      "name": "Sticky: Remember what was sent",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4368,
+        752
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 416,
+        "height": 320,
+        "content": "## Remember what was sent\n\nSaves each story's dedupe key to the history table so tomorrow's run skips it."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Get History": {
+      "main": [
+        [
+          {
+            "node": "Dedup Against History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Config": {
+      "main": [
+        [
+          {
+            "node": "Split Feed List Into Items",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch CISA Exploited Vulnerabilities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Semantic Dedup": {
+      "main": [
+        [
+          {
+            "node": "Build Classify Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Stories": {
+      "main": [
+        [
+          {
+            "node": "Get History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select And Bucket": {
+      "main": [
+        [
+          {
+            "node": "Split Top Stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Top Stories": {
+      "main": [
+        [
+          {
+            "node": "Build Write Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Each RSS Feed": {
+      "main": [
+        [
+          {
+            "node": "Merge Feeds and CISA Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split History Rows": {
+      "main": [
+        [
+          {
+            "node": "Save Stories to History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When 6:30 AM Daily": {
+      "main": [
+        [
+          {
+            "node": "Build Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Test Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate And Format": {
+      "main": [
+        [
+          {
+            "node": "Send Email Briefing",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Split Discord Messages",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Archive Markdown To Vault",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Split History Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Write Requests": {
+      "main": [
+        [
+          {
+            "node": "Write Summaries with Ollama",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dedup Against History": {
+      "main": [
+        [
+          {
+            "node": "Collect Titles for Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Discord Messages": {
+      "main": [
+        [
+          {
+            "node": "Post Briefing to Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Classify Requests": {
+      "main": [
+        [
+          {
+            "node": "Classify Stories with Ollama",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embed Titles with Ollama": {
+      "main": [
+        [
+          {
+            "node": "Semantic Dedup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Archive Markdown To Vault": {
+      "main": [
+        [
+          {
+            "node": "Archive JSON To Vault",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Feeds and CISA Data": {
+      "main": [
+        [
+          {
+            "node": "Normalize Stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Feed List Into Items": {
+      "main": [
+        [
+          {
+            "node": "Read Each RSS Feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Summaries with Ollama": {
+      "main": [
+        [
+          {
+            "node": "Validate And Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Stories with Ollama": {
+      "main": [
+        [
+          {
+            "node": "Select And Bucket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Titles for Embedding": {
+      "main": [
+        [
+          {
+            "node": "Embed Titles with Ollama",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch CISA Exploited Vulnerabilities": {
+      "main": [
+        [
+          {
+            "node": "Merge Feeds and CISA Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  }
+}

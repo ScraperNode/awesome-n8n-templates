@@ -1,6 +1,6 @@
 # ⚙️ Securely call private Google Cloud Run APIs with JWT authentication (simplified)
 
-> ⚡ **257 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **316 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

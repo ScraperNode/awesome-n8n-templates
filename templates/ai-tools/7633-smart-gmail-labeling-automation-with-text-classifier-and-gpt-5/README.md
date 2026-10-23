@@ -1,6 +1,6 @@
 # 🎯 Smart Gmail Labeling Automation with Text Classifier and GPT-5
 
-> ⚡ **2,206 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **2,762 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

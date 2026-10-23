@@ -1,6 +1,6 @@
 # 🎬 AI-generated summary block for WordPress posts
 
-> ⚡ **2,855 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,849 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

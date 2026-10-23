@@ -1,6 +1,6 @@
 # 📊 Archive trending TikTok hashtags using TikTok, Airtable, and Apify
 
-> ⚡ **468 views** · 📊 [Market Research & Insights](../)
+> ⚡ **516 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — Since TikTok doesn't have a public API, getting data usually means fragile HTTP scraping. [ScraperNode](https://scrapernode.com/tiktok) is a community node that gives you clean JSON for [TikTok profiles](https://scrapernode.com/tiktok/scrapers/profiles), [videos](https://scrapernode.com/tiktok/scrapers/posts), and [comments](https://scrapernode.com/tiktok/scrapers/comments) — drop it into your workflow and skip the parsing.
 >
@@ -8,70 +8,38 @@
 
 ## Description
 
-## Archive Trending TikTok Hashtags to Airtable with Apify
-This template uses a community node (`@apify/n8n-nodes-apify`). It will not work without the required node installed.
+## Quick overview
+This template uses a community node (@apify/n8n-nodes-apify). It will not work without the required node installed.
 
-### Who it's for
-**Social Media Managers & Content Creators**
-Discover relevant hashtags and build content calendars based on real trends.
-**Marketing & Brand Strategists**
-Track cultural shifts and find opportunities by understanding regional audience interests.
-**Data Analysts**
-Create a dataset for analyzing hashtag trends, virality, and performance over time.
+## How it works
+1. A monthly schedule trigger runs the workflow automatically without any manual intervention required.
+2. An Apify Actor scrapes TikTok's top 100 trending hashtags for a specified country, defaulting to the United States.
+3. Once scraping completes, the workflow fetches the full dataset containing hashtag metrics from Apify's result storage.
+4. The dataset is split into individual items, and each hashtag is saved as a new record in Airtable with all relevant details.
 
-### What it does
-This workflow automates trend discovery and data collection from TikTok into Airtable.
-* **Schedule**: Triggers automatically once a month.
-* **Scrape**: Runs an Apify Actor to scrape TikTok’s top 100 trending hashtags for a specified country (default is US).
-* **Retrieve**: Fetches the dataset with hashtag metrics after scraping completes.
-* **Process & Load**: Splits the dataset and saves each hashtag as a new record in Airtable with relevant details.
+## Setup
+1. Go to Settings → Community Nodes on your n8n instance and install the @apify/n8n-nodes-apify community node before proceeding.
+2. Create an Airtable base with a table named Trending Hashtags containing these columns: ID, Name, Country, Industry, Date Added, Publish Count, Video Views, Rank, and Status.
+3. Add your Apify and Airtable credentials in the n8n Credential Manager before configuring any nodes.
+4. Open the Run TikTok Hashtag Scraper node and optionally adjust country_code (e.g., "US" to "GB") and top100_period (e.g., "30" to "7") in the Custom Body to match your target market and timeframe.
+5. Open the Save Hashtag to Airtable node, select your correct Airtable base, and confirm the Trending Hashtags table is selected as the target.
+6. Save and activate the workflow — it will now run automatically every month and sync the latest trending hashtag data to Airtable.
 
-### How to set it up
-**1. Install the Community Node**
-Go to `Settings; Community Nodes` on your n8n instance and install `@apify/n8n-nodes-apify`.
+## Requirements
+- Installed community node: @apify/n8n-nodes-apify
+- Apify account
+- Airtable account with a structured base
 
-**2. Prepare Airtable**
-Create a base with a table named `Trending Hashtags`:
-* ID
-* Name
-* Country
-* Industry
-* Date Added
-* Publish Count
-* Video Views
-* Rank
-* Status
+## Customization
+- Change Schedule : Modify the Start: Monthly Schedule node to run weekly or on another interval.
+- Add Notifications : Attach a Slack or Discord node after the 4. Save Hashtag to Airtable node to alert your team when new data is added.
+- Filter Hashtags : Use a Filter node after 3. Split Hashtags into Items to only save hashtags that meet specific conditions (e.g., over 1M video views).
 
-
-**3. Add Credentials**
-Add your Apify and Airtable credentials in n8n.
-
-**4. Configure Scraper (Optional)**
-Open the `1. Run TikTok Hashtag Scraper` node.
-In the **Custom Body**, you can adjust:
-  * `country_code` (e.g., `"US"` to `"GB"`)
-  * `top100_period` (e.g., `"30"` to `"7"`)
-
-
-**5. Configure Airtable Node**
-Open the `4. Save Hashtag to Airtable` node.
-Select the correct Airtable Base and the `Trending Hashtags` table.
-
-**6. Activate Workflow**
-Save and activate the workflow. It will now run automatically every month.
-
-### Requirements
-* Installed community node: `@apify/n8n-nodes-apify`
-* Apify account
-* Airtable account with a structured base
-
-### How to customize the workflow
-**Change Schedule**
-Modify the `Start: Monthly Schedule` node to run weekly or on another interval.
-**Add Notifications**
-Attach a Slack or Discord node after the `4. Save Hashtag to Airtable` node to alert your team when new data is added.
-**Filter Hashtags**
-Use a `Filter` node after `3. Split Hashtags into Items` to only save hashtags that meet specific conditions (e.g., over 1M video views).
+## Additional info
+Published by Fahmi Fahreza, Indonesia’s first official n8n Brand Ambassador and founder of WithMi Automation, built from real client implementations, not tutorials.
+→ Let us build it for you: [withmiautomation.com](withmiautomation.com)
+→ Learn to build it yourself: [academy.withmiautomation.com](academy.withmiautomation.com)
+→ Bring Fahmi to your team (training, workshop, talkshow): [fahmiiireza.com](fahmiiireza.com)
 
 ## 🔗 Nodes Used
 

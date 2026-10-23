@@ -1,6 +1,6 @@
 # 🎣 Upload leads with custom fields from Typeform to Pipedrive
 
-> ⚡ **1,304 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,332 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 Get AI crypto price analysis via Telegram using GPT-4o-mini and TwelveData
 
-> ⚡ **63 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **83 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

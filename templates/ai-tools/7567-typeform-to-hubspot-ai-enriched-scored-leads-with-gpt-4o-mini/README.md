@@ -1,6 +1,6 @@
 # 🎯 Typeform to HubSpot: AI-enriched & scored leads with GPT-4o-mini
 
-> ⚡ **271 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **290 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

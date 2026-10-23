@@ -1,6 +1,6 @@
 # ⚡ Turn Monoprix delivery emails into calendar events using ChatGPT and Google Calendar
 
-> ⚡ **379 views** · ⚡ [Personal Productivity](../)
+> ⚡ **409 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Transparent tracking pixel for email open detection
 
-> ⚡ **1,033 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,201 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

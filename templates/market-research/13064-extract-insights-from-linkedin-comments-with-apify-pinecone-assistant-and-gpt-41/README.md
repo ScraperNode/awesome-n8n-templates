@@ -1,6 +1,6 @@
-# 📊 Extract insights from LinkedIn comments with Apify, Pinecone Assistant, and GPT-4.1
+# 📊 Extract insights from LinkedIn with Apify, Pinecone Assistant, and GPT-4.1
 
-> ⚡ **23 views** · 📊 [Market Research & Insights](../)
+> ⚡ **67 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — If you're pulling LinkedIn data through HTTP requests or dealing with API restrictions, there's a community node called [ScraperNode](https://scrapernode.com/linkedin) that handles this natively. It has dedicated scrapers for [profiles](https://scrapernode.com/linkedin/scrapers/profiles), [companies](https://scrapernode.com/linkedin/scrapers/companies), [jobs](https://scrapernode.com/linkedin/scrapers/jobs), and [people search](https://scrapernode.com/linkedin/scrapers/people-search) — you just pass a URL and get structured data back.
 >
@@ -20,7 +20,7 @@ This n8n workflow template lets you extract insights from comments on your Linke
 
 ### Prerequisites
 
-* A [Pinecone account](https://app.pinecone.io/) and [API key](https://app.pinecone.io/organizations/-/projects/-/keys)
+* A [Pinecone account](https://app.pinecone.io/)
 * An [Open AI account](https://auth.openai.com/create-account) and [API key](https://platform.openai.com/settings/organization/api-keys)
 * An [Apify account](https://apify.com/) and [API token](https://console.apify.com/settings/integrations)
 
@@ -29,11 +29,12 @@ This n8n workflow template lets you extract insights from comments on your Linke
 1. Create a Pinecone Assistant in the Pinecone Console [here](https://app.pinecone.io/organizations/-/projects/-/assistant) 
 	1. Name your Assistant `n8n-assistant`
 	2. No need to configure a Chat model or Assistant instructions
-2. Setup Pinecone API key, OpenAI API key, and Apify API token as credentials in n8n
-3. In the Set LinkedIn url node, enter your LinkedIn profile url, for a personal or company profile
-4. Select your Assistant Name in each of the Pinecone Assistant nodes, if it's not already
-5. Schedule or manually execute Step 1 and 2 to extract the LinkedIn comment data and upload to Pinecone Assistant
-6. Once the data is uploaded, ask a question in the chat: `Summarize the comments related to [SOME TOPIC YOU TALK ABOUT] and categorize into positive, neutral, and negative.`
+2. Use the Connect to Pinecone button to authenticate to Pinecone or if you self-host n8n, create a Pinecone credential and add your [Pinecone API key](https://app.pinecone.io/organizations/-/projects/-/keys) directly
+3. Setup the Open AI and Apify credentials in n8n
+4. In the Set LinkedIn url node, enter your LinkedIn profile url, for a personal or company profile
+5. Select your Assistant Name in each of the Pinecone Assistant nodes, if it's not already
+6. Schedule or manually execute Step 1 and 2 to extract the LinkedIn comment data and upload to Pinecone Assistant
+7. Once the data is uploaded, ask a question in the chat: `Summarize the comments related to [SOME TOPIC YOU TALK ABOUT] and categorize into positive, neutral, and negative.`
 
 ### Ideas for customizing this workflow
 

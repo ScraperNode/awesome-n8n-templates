@@ -1,6 +1,6 @@
 # 🔧 Monitor construction stock & send low inventory alerts with Google Sheets
 
-> ⚡ **585 views** · 🔧 [Miscellaneous](../)
+> ⚡ **757 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Human in the loop email response system (AI + IMAP)
 
-> ⚡ **2,016 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,554 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

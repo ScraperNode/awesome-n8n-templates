@@ -1,6 +1,6 @@
 # 🤝 Get all orders in Squarespace to Google Sheets
 
-> ⚡ **1,264 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,295 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

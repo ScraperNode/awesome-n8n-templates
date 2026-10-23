@@ -1,6 +1,6 @@
 # 🤝 Two-way sync between Pipedrive and HubSpot
 
-> ⚡ **1,452 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,477 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

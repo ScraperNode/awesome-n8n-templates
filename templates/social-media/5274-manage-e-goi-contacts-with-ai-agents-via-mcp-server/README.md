@@ -1,6 +1,6 @@
 # 📱 Manage E-goi contacts with AI agents via MCP server
 
-> ⚡ **131 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **150 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

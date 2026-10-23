@@ -1,6 +1,6 @@
 # ⚙️ GitLab merge request review & risk analysis with Claude/GPT AI
 
-> ⚡ **12,155 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **13,741 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

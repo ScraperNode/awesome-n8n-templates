@@ -1,6 +1,6 @@
 # 🤝 Get all contacts from Keap
 
-> ⚡ **483 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **527 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

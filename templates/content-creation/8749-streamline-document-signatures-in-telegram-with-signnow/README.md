@@ -1,6 +1,6 @@
 # 🎬 Streamline document signatures in Telegram with SignNow
 
-> ⚡ **65 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **73 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

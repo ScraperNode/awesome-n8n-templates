@@ -1,6 +1,6 @@
 # 📖 Process documents with recursive chunking using Google Drive, OpenAI & Gemini RAG
 
-> ⚡ **3,048 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **3,431 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Generate meeting minutes from videos with Whisper, Ollama LLM and Notion
 
-> ⚡ **452 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **741 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

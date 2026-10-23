@@ -1,6 +1,6 @@
 # 🔬 Identify new Google Sheets rows
 
-> ⚡ **4,838 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,930 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

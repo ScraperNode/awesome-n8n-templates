@@ -1,6 +1,6 @@
 # 🔧 Automate event registration and QR check-ins with Google Sheets, Gmail, and Slack
 
-> ⚡ **165 views** · 🔧 [Miscellaneous](../)
+> ⚡ **320 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

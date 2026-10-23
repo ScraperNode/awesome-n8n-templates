@@ -1,6 +1,6 @@
 # 🤝 Automate Calendly to HubSpot: contact updates & meeting logging
 
-> ⚡ **181 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **224 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

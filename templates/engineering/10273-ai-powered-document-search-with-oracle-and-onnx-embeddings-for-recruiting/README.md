@@ -1,6 +1,6 @@
 # ⚒️ AI-powered document search with Oracle and ONNX embeddings for recruiting
 
-> ⚡ **343 views** · ⚒️ [Engineering](../)
+> ⚡ **491 views** · ⚒️ [Engineering](../)
 
 ## Description
 

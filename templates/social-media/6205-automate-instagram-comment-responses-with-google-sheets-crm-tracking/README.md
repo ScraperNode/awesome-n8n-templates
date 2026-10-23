@@ -1,6 +1,6 @@
 # 📱 Automate Instagram comment responses with Google Sheets & CRM tracking
 
-> ⚡ **1,565 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,944 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

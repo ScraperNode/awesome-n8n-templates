@@ -1,6 +1,6 @@
 # 👥 Automate payroll processing with GPT-4, Google Sheets, PDF payslips & Slack alerts
 
-> ⚡ **616 views** · 👥 [HR & Recruitment](../)
+> ⚡ **952 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

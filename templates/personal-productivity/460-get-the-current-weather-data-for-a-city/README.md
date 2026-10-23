@@ -1,6 +1,6 @@
 # ⚡ Get the current weather data for a city
 
-> ⚡ **1,618 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,652 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Send AI-powered post-purchase emails and WhatsApp messages from PostgreSQL to Google Sheets with Groq
 
-> ⚡ **21 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **214 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

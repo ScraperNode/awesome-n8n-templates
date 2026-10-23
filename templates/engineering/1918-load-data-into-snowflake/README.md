@@ -1,6 +1,6 @@
 # ⚒️ Load data into Snowflake
 
-> ⚡ **2,811 views** · ⚒️ [Engineering](../)
+> ⚡ **2,946 views** · ⚒️ [Engineering](../)
 
 ## Description
 

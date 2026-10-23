@@ -1,6 +1,6 @@
 # 📊 Send a daily media briefing email with GPT-4.1-mini, NewsAPI, Gmail and Google Sheets
 
-> ⚡ **36 views** · 📊 [Market Research & Insights](../)
+> ⚡ **134 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

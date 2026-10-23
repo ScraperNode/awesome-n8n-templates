@@ -1,6 +1,6 @@
 # ⚡ Location-based triggered reminder via Telegram Bot (iOS)
 
-> ⚡ **650 views** · ⚡ [Personal Productivity](../)
+> ⚡ **818 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Read, analyze, and auto-reply to Gmail emails with OpenAI, Slack, and Sheets
 
-> ⚡ **79 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **644 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎯 Automatic issue routing in Linear with GPT-4-mini classification
 
-> ⚡ **244 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **325 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

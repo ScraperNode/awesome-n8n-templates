@@ -1,6 +1,6 @@
 # 🎬 Automate podcast creation with GPT, Claude & Eleven Labs text-to-speech
 
-> ⚡ **1,379 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,781 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Automate medical claims processing with GPT-4 multi-agent orchestration
 
-> ⚡ **58 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **369 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

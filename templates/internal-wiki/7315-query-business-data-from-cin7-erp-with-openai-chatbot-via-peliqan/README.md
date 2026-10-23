@@ -1,6 +1,6 @@
 # 📖 Query business data from Cin7 ERP with OpenAI chatbot via Peliqan
 
-> ⚡ **345 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **399 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

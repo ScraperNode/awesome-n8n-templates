@@ -1,6 +1,6 @@
 # ⚙️ 🛠️ Grafana tool MCP server 💪 all 16 operations
 
-> ⚡ **615 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **695 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

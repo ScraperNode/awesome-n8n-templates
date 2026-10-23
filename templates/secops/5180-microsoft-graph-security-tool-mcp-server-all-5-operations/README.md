@@ -1,6 +1,6 @@
 # 🔒 🛠️ Microsoft Graph Security Tool MCP server 💪 all 5 operations
 
-> ⚡ **177 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **202 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

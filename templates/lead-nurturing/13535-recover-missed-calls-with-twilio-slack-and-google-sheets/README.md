@@ -1,6 +1,6 @@
 # 💬 Recover missed calls with Twilio, Slack and Google Sheets
 
-> ⚡ **157 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **982 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

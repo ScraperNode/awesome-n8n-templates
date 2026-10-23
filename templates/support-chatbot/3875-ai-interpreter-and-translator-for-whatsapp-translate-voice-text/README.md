@@ -1,6 +1,6 @@
 # 💬 🌍 AI interpreter and translator for WhatsApp – translate voice & text
 
-> ⚡ **1,053 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,120 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

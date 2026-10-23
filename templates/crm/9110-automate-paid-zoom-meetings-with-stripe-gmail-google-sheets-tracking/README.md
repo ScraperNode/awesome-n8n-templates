@@ -1,6 +1,6 @@
 # 🤝 Automate paid Zoom meetings with Stripe, Gmail & Google Sheets tracking
 
-> ⚡ **150 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **169 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

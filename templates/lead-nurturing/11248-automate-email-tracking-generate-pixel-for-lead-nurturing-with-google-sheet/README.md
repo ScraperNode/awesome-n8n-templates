@@ -1,6 +1,6 @@
 # 💬 Automate email tracking & generate pixel for lead nurturing with Google Sheet
 
-> ⚡ **1,176 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,578 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

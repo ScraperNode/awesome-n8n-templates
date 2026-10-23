@@ -1,6 +1,6 @@
 # 💬 Send predefined personalized emails to leads from Google Sheets using SendGrid
 
-> ⚡ **597 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **669 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

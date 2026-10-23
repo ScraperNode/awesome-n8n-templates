@@ -1,6 +1,6 @@
 # 📱 Abandoned cart recovery functionality using Gmail and Google Sheets for analytics
 
-> ⚡ **379 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **544 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

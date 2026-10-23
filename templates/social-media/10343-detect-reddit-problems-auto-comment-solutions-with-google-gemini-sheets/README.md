@@ -1,6 +1,6 @@
 # 📱 Detect Reddit problems & auto-comment solutions with Google Gemini & Sheets
 
-> ⚡ **228 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **345 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

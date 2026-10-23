@@ -1,6 +1,6 @@
 # 🔬 Generate AI meeting summaries and tasks from Fathom recordings to Dart
 
-> ⚡ **394 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **496 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

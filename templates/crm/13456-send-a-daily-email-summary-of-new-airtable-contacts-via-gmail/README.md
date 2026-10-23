@@ -1,10 +1,10 @@
 # 🤝 Send a daily email summary of new Airtable contacts via Gmail
 
-> ⚡ **4 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **77 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 
-## Video Introduction
+"## Video Introduction
 [![Video Walkthrough](https://vasarmilan-public.s3.us-east-1.amazonaws.com/blog_thumbnails/thumbnail_recidrbznaXlmqFUI.jpg)](https://youtu.be/lQh1fuIrBN8)
 
 #### Want to automate your inbox or need a custom workflow? [📞 Book a Call](https://smoothwork.ai/book-a-call/) | [💬 DM me on Linkedin](https://www.linkedin.com/in/mil%C3%A1n-v%C3%A1s%C3%A1rhelyi-3a9985123/)
@@ -32,7 +32,7 @@ This workflow is perfect for sales teams, recruiters, community managers, or any
 - **Schedule**: The trigger is set to run daily at 11 PM. Adjust the time in the Schedule Trigger node to match your preference
 - **Airtable Base & Table**: Update the Search records node to point to your own Airtable base and contacts table
 - **Email Recipient**: Change the recipient email address in the Gmail node to your own
-- **Data Fields**: Customize which contact fields appear in the report by modifying the Output Fields in the Airtable node
+- **Data Fields**: Customize which contact fields appear in the report by modifying the Output Fields in the Airtable node"
 
 ## 🔗 Nodes Used
 

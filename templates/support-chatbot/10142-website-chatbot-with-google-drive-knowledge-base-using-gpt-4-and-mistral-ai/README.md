@@ -1,6 +1,6 @@
 # 💬 Website chatbot with Google Drive knowledge base using GPT-4 and Mistral AI
 
-> ⚡ **1,577 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,061 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

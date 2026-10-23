@@ -1,6 +1,6 @@
 # 📊 Daily AI news digest with Perplexity Pro, GPT format & Gmail delivery
 
-> ⚡ **6,356 views** · 📊 [Market Research & Insights](../)
+> ⚡ **7,173 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

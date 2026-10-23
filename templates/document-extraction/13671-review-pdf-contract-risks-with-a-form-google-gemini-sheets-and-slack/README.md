@@ -1,6 +1,6 @@
 # 🔬 Review PDF contract risks with a form, Google Gemini, Sheets, and Slack
 
-> ⚡ **47 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **184 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Validate email format from a Wordpress form and save a contact in Mautic
 
-> ⚡ **1,489 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,537 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

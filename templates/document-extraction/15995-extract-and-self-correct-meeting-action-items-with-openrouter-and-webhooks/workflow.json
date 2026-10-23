@@ -1,0 +1,318 @@
+{
+  "id": "I5f0YEPsKA1ywtt9",
+  "meta": {
+    "instanceId": "da13b80f35ed9d16adbf337111fadd798f3c80e989940f27089cab3947e57699",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Template 3: Self-Correcting Extraction Agent (with Memory)",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "20b0b682-c7d9-47a4-93ae-4a67c5b9aa88",
+      "name": "Webhook - Meeting Notes",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        112,
+        304
+      ],
+      "webhookId": "258c4e33-e973-462e-bc89-4fd057e4ce34",
+      "parameters": {
+        "path": "self-correcting-agent",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "28b5a85a-02ff-4cc4-8d76-9b594d444b89",
+      "name": "Normalize Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        320,
+        304
+      ],
+      "parameters": {
+        "jsCode": "// Normalize incoming extraction request and initialize loop state\nconst raw = $input.first().json;\nconst src = (raw && typeof raw.body === 'object' && raw.body !== null) ? raw.body : raw;\nreturn {\n  json: {\n    requestId: src.requestId || 'REQ-' + Date.now(),\n    sessionId: String(src.sessionId || 'session-default').trim(),\n    meetingNotes: String(src.meetingNotes || '').trim(),\n    maxAttempts: typeof src.maxAttempts === 'number' ? src.maxAttempts : 3,\n    attemptCount: 0,\n    previousExtraction: null,\n    feedbackNotes: null,\n    extraction: null,\n    validationPassed: false,\n    validationErrors: [],\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "91b05188-e638-4aeb-946c-0cbed9268823",
+      "name": "Extraction Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        528,
+        304
+      ],
+      "parameters": {
+        "text": "=Meeting notes:\n{{ $json.meetingNotes }}\n\nSession ID: {{ $json.sessionId }}\nAttempt: {{ $json.attemptCount + 1 }} of {{ $json.maxAttempts }}\n\n{{ $json.feedbackNotes ? ('Previous extraction (JSON):\\n' + JSON.stringify($json.previousExtraction) + '\\n\\nValidation errors to fix in this revision:\\n' + $json.feedbackNotes) : 'This is a fresh extraction (no prior attempt this round).' }}",
+        "options": {
+          "systemMessage": "You are an action item extraction agent. Given a block of meeting notes, extract every actionable task into a strictly structured JSON array.\n\nFor each action item, return:\n- id: a string identifier (AI-001, AI-002, ...)\n- title: a short imperative phrase describing the task (e.g. \"Send updated pricing deck to Acme\")\n- assignee: the person responsible (use the name as it appears in the notes; \"unassigned\" if no owner)\n- deadline: ISO date YYYY-MM-DD (best-effort if relative; the literal string \"TBD\" only if no date can be inferred)\n- priority: one of \"high\", \"medium\", \"low\" (infer from urgency cues)\n- context: one short sentence of context from the notes (max 200 chars)\n\nIf reviewer feedback is provided under \"Validation errors to fix\", you are revising your previous extraction. Address every issue listed; do not introduce new ones. Your prior extraction is shown for reference.\n\nUse memory to stay consistent: if you have extracted action items in earlier sessions for the same sessionId, reuse the same id numbering scheme so ids never collide across runs.\n\nReturn ONLY valid JSON in this exact shape (no prose, no code fences):\n{\n  \"actionItems\": [\n    {\n      \"id\": \"AI-001\",\n      \"title\": \"...\",\n      \"assignee\": \"...\",\n      \"deadline\": \"YYYY-MM-DD\",\n      \"priority\": \"high|medium|low\",\n      \"context\": \"...\"\n    }\n  ]\n}"
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "b5ab5c32-eb04-42c9-a7c8-593c9511ba41",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        624,
+        528
+      ],
+      "parameters": {
+        "sessionKey": "={{ $('Normalize Request').first().json.sessionId }}",
+        "sessionIdType": "customKey",
+        "contextWindowLength": 10
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "02af1a03-dcb9-4fd1-a79f-d00e4e7f989d",
+      "name": "Parse + Validate",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        816,
+        304
+      ],
+      "parameters": {
+        "jsCode": "// Parse extraction output and validate against the strict action-item schema\nconst raw = $input.first().json;\n// Read latest state - prefer Increment + Feedback (loop iteration), fall back to Normalize Request (first iteration)\nlet state;\ntry { state = $('Increment + Feedback').last().json; }\ncatch (e) { state = $('Normalize Request').first().json; }\nif (!state || state.attemptCount === undefined) state = $('Normalize Request').first().json;\n\nlet parsed = null;\nlet parseError = null;\nconst errors = [];\n\ntry {\n  const text = typeof raw.output === 'string' ? raw.output : JSON.stringify(raw.output);\n  const m = text.match(/\\{[\\s\\S]*\\}/);\n  parsed = JSON.parse(m ? m[0] : text);\n} catch (e) {\n  parseError = e.message;\n  errors.push('Output is not valid JSON: ' + e.message);\n}\n\nif (parsed) {\n  const items = parsed.actionItems;\n  if (!Array.isArray(items)) {\n    errors.push('actionItems must be an array');\n  } else if (items.length === 0) {\n    errors.push('actionItems is empty - extract at least one action item from the notes');\n  } else {\n    const allowedPriorities = ['high', 'medium', 'low'];\n    items.forEach((item, idx) => {\n      const tag = `Item ${idx} (id=${item?.id || 'missing'})`;\n      if (!item || typeof item !== 'object') { errors.push(`${tag}: not an object`); return; }\n      if (!item.id || typeof item.id !== 'string') errors.push(`${tag}: missing or invalid id`);\n      if (!item.title || typeof item.title !== 'string' || item.title.trim().length < 3) errors.push(`${tag}: title must be a non-empty string of at least 3 chars`);\n      if (!item.assignee || typeof item.assignee !== 'string') errors.push(`${tag}: missing or invalid assignee`);\n      if (!item.deadline) { errors.push(`${tag}: missing deadline`); }\n      else if (item.deadline !== 'TBD' && !/^\\d{4}-\\d{2}-\\d{2}$/.test(item.deadline)) errors.push(`${tag}: deadline must be YYYY-MM-DD or the literal string \"TBD\", got \"${item.deadline}\"`);\n      if (!allowedPriorities.includes(item.priority)) errors.push(`${tag}: priority must be one of \"high\",\"medium\",\"low\", got \"${item.priority}\"`);\n      if (!item.context || typeof item.context !== 'string') errors.push(`${tag}: missing context`);\n      else if (item.context.length > 200) errors.push(`${tag}: context must be at most 200 chars (got ${item.context.length})`);\n    });\n  }\n}\n\nconst validationPassed = errors.length === 0;\nconst feedbackNotes = validationPassed ? null : errors.map((e, i) => `${i + 1}. ${e}`).join('\\n');\n\nreturn {\n  json: {\n    ...state,\n    extraction: parsed,\n    validationPassed: validationPassed,\n    validationErrors: errors,\n    feedbackNotes: feedbackNotes,\n    parseError: parseError\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "6bf0c722-24da-4dc1-8226-4ece327b8028",
+      "name": "Validated or Max Attempts?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1008,
+        304
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "id": "cond-passed",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.validationPassed }}",
+              "rightValue": true
+            },
+            {
+              "id": "cond-max-hit",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "leftValue": "={{ $json.attemptCount + 1 }}",
+              "rightValue": "={{ $json.maxAttempts }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "8d42881d-912a-4447-aac4-3ca0a970d69a",
+      "name": "Finalize Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1232,
+        208
+      ],
+      "parameters": {
+        "jsCode": "// Build the final response envelope\nconst s = $input.first().json;\nconst attemptsUsed = (s.attemptCount || 0) + 1;\nconst hitMaxAttempts = attemptsUsed >= s.maxAttempts && !s.validationPassed;\n\nreturn {\n  json: {\n    requestId: s.requestId,\n    sessionId: s.sessionId,\n    success: s.validationPassed === true,\n    extraction: s.validationPassed ? s.extraction : null,\n    actionItems: s.validationPassed ? (s.extraction?.actionItems || []) : [],\n    itemCount: s.validationPassed ? (s.extraction?.actionItems?.length || 0) : 0,\n    attemptsUsed: attemptsUsed,\n    maxAttempts: s.maxAttempts,\n    hitMaxAttempts: hitMaxAttempts,\n    routedTo: s.validationPassed ? 'downstream' : 'human_review',\n    validationErrors: s.validationErrors || [],\n    feedbackNotes: s.feedbackNotes,\n    lastRawExtraction: s.validationPassed ? null : s.extraction,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e8cd5b71-2386-427e-83a4-d488e4421704",
+      "name": "Respond to Client",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1440,
+        208
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "ae899ffc-5483-40f9-8736-a131fa63b2e2",
+      "name": "Increment + Feedback",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1232,
+        432
+      ],
+      "parameters": {
+        "jsCode": "// Increment attempt counter and stage the prior (failed) extraction + validation feedback for the next iteration\nconst s = $input.first().json;\nreturn {\n  json: {\n    ...s,\n    attemptCount: (s.attemptCount || 0) + 1,\n    previousExtraction: s.extraction,\n    extraction: null,\n    validationPassed: false\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "2d1cfd1d-be5e-40eb-aad1-3e0f6a322a7d",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "position": [
+        416,
+        512
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "credentials": {
+        "openRouterApi": {
+          "id": "m9IRh1pT1eHIdKoX",
+          "name": "OpenRouter account 2"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "902ab12a-1f0b-4519-8ca0-1090ab6e9d1a",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -544,
+        0
+      ],
+      "parameters": {
+        "width": 620,
+        "height": 820,
+        "content": "## Self-Correcting Extraction Agent (with Memory)\n\n### How it works\nAn extraction agent produces strict structured JSON and self-corrects on validation failure, with memory for cross-run consistency:\n1. **Intake** (Deterministic): Webhook receives meeting notes and a `sessionId`. Code node normalizes the payload and initializes loop state (`attemptCount`, `maxAttempts`).\n2. **Extraction Agent + Window Buffer Memory** (AI): Parses notes into action items (id, title, assignee, deadline, priority, context). Memory is keyed on `sessionId` so id numbering and tone stay consistent across runs in the same session.\n3. **Parse + Validate** (Deterministic): Code node validates every item against the strict schema (required fields, deadline format, priority enum, context length).\n4. **Decision**: IF exits when validation passes OR `attemptCount` reaches `maxAttempts`.\n5. **On failure**: Validation errors are fed back to the agent as numbered feedback for the next attempt. On max-attempts exit, the last raw extraction routes to human review.\n\n### Setup\n- Attach your **LLM credential** to the Chat Model sub-node\n- The Window Buffer Memory is already keyed on `sessionId` from the normalized request\n- Copy the Webhook test URL and POST with `meetingNotes`, `sessionId`, `maxAttempts`\n\n### Customization\n- Tighten the validation rules in Parse + Validate (e.g. require all deadlines to be non-TBD)\n- Swap Window Buffer Memory for a database-backed memory for persistent sessions\n- Use a stronger model if schema failures are frequent\n\nThis template is a learning companion to the Production AI Playbook, a series that explores strategies, shares best practices, and provides practical examples for building reliable AI systems in n8n."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": true,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "versionId": "1e6b4203-b767-468c-86f9-358994237b61",
+  "connections": {
+    "Extraction Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse + Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse + Validate": {
+      "main": [
+        [
+          {
+            "node": "Validated or Max Attempts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Request": {
+      "main": [
+        [
+          {
+            "node": "Extraction Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Increment + Feedback": {
+      "main": [
+        [
+          {
+            "node": "Extraction Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Extraction Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extraction Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Meeting Notes": {
+      "main": [
+        [
+          {
+            "node": "Normalize Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validated or Max Attempts?": {
+      "main": [
+        [
+          {
+            "node": "Finalize Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Increment + Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

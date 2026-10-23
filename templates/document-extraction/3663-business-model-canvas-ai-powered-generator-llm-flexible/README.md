@@ -1,6 +1,6 @@
 # 🔬 Business model canvas AI-powered generator (LLM flexible)
 
-> ⚡ **2,165 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,389 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

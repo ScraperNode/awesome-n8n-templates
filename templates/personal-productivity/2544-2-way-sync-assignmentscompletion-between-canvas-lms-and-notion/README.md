@@ -1,6 +1,6 @@
 # ⚡ 2-way-sync assignments/completion between Canvas LMS and Notion
 
-> ⚡ **531 views** · ⚡ [Personal Productivity](../)
+> ⚡ **650 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

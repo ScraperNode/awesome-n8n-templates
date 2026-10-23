@@ -1,6 +1,6 @@
 # ⚙️ Get details of a GitLab repository
 
-> ⚡ **4,761 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **4,823 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Automated email marketing campaign workflow
 
-> ⚡ **6,555 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **6,887 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

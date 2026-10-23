@@ -1,6 +1,6 @@
 # ⚒️ MCP employee performance & productivity insights engine with automated manager
 
-> ⚡ **119 views** · ⚒️ [Engineering](../)
+> ⚡ **203 views** · ⚒️ [Engineering](../)
 
 ## Description
 

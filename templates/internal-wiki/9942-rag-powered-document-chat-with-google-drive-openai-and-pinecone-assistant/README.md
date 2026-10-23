@@ -1,6 +1,6 @@
 # 📖 RAG-powered document chat with Google Drive, OpenAI, and Pinecone Assistant
 
-> ⚡ **1,980 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **2,406 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 
@@ -14,24 +14,19 @@ This n8n workflow template lets you chat with your Google Drive documents (.docx
 
 ### Prerequisites
 
-* A [Pinecone account](https://app.pinecone.io/) and [API key](https://app.pinecone.io/organizations/-/projects/-/keys)
+* A [Pinecone account](https://app.pinecone.io/)
 * A GCP project with [Google Drive API enabled and configured](https://docs.n8n.io/integrations/builtin/credentials/google/oauth-single-service/)
-  * Note: When setting up the OAuth consent screen, skip steps 8-10 if running on localhost
 * An [Open AI account](https://auth.openai.com/create-account) and [API key](https://platform.openai.com/settings/organization/api-keys)
 
 ### Setup
 
-1. Create a Pinecone Assistant in the Pinecone Console [here](https://app.pinecone.io/organizations/-/projects/-/assistant) 
-	1. Name your Assistant `n8n-assistant`
-	2. No need to configure a Chat model or Assistant instructions
+1. Create a Pinecone Assistant named `n8n-assistant` in the Pinecone Console [here](https://app.pinecone.io/organizations/-/projects/-/assistant) 
 2. Setup your Google Drive OAuth2 API credential in n8n
 	1. In the File added node -&gt; Credential to connect with, select Create new credential
 	2. Set the Client ID and Client Secret from the values generated in the prerequisites
 	3. Set the OAuth Redirect URL from the n8n credential in the Google Cloud Console ([instructions](https://docs.n8n.io/integrations/builtin/credentials/google/oauth-single-service/#create-your-google-oauth-client-credentials))
 	4. Name this credential `Google Drive account` so that other nodes reference it
-3. Setup Pinecone API key credential in n8n
-	1. In the Upload file to Assistant node -&gt; PineconeApi section, select Create new credential
-	2. Paste in your Pinecone API key in the API Key field
+3. Use the Connect to Pinecone button to authenticate to Pinecone or if you self-host n8n, create a Pinecone credential and add your [Pinecone API key](https://app.pinecone.io/organizations/-/projects/-/keys) directly
 4. Select your Assistant Name in each of the Pinecone Assistant nodes
 5. Setup the Open AI credential in n8n
 	1. In the OpenAI Chat Model node -&gt; Credential to connect with, select Create new credential

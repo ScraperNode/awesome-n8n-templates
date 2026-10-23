@@ -1,6 +1,6 @@
 # 🔬 Automate vendor contract renewals & reminders with GPT-4.1 mini, Slack & Gmail
 
-> ⚡ **759 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **832 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

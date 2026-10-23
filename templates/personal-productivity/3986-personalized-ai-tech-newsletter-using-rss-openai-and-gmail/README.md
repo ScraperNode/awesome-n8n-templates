@@ -1,6 +1,6 @@
 # ⚡ Personalized AI tech newsletter using RSS, OpenAI and Gmail
 
-> ⚡ **68,504 views** · ⚡ [Personal Productivity](../)
+> ⚡ **72,434 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

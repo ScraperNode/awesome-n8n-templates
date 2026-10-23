@@ -1,6 +1,6 @@
 # 🎣 Automatically add Gmail sender contacts to MySQL database
 
-> ⚡ **549 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **703 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Automate JotForm submissions via HTTP without API keys
 
-> ⚡ **393 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **473 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 Validate concert ticket bookings and orchestrate fan experience with GPT-4o, Gmail, Slack and Google Sheets
 
-> ⚡ **51 views** · 📋 [Project Management](../)
+> ⚡ **470 views** · 📋 [Project Management](../)
 
 ## Description
 

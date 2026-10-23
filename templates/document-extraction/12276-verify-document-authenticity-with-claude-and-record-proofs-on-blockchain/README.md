@@ -1,6 +1,6 @@
 # 🔬 Verify document authenticity with Claude and record proofs on blockchain
 
-> ⚡ **42 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **87 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

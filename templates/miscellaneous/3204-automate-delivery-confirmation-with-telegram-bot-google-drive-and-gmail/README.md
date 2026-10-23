@@ -1,6 +1,6 @@
 # 🔧 🚚 Automate delivery confirmation with Telegram Bot, Google Drive and Gmail
 
-> ⚡ **2,987 views** · 🔧 [Miscellaneous](../)
+> ⚡ **3,132 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

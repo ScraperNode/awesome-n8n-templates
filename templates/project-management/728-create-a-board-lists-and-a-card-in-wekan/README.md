@@ -1,6 +1,6 @@
 # 📋 Create a board, lists, and a card in Wekan
 
-> ⚡ **1,036 views** · 📋 [Project Management](../)
+> ⚡ **1,068 views** · 📋 [Project Management](../)
 
 ## Description
 

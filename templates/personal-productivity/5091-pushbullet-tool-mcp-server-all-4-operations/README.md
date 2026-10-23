@@ -1,6 +1,6 @@
 # ⚡ 🛠️ Pushbullet tool MCP server 💪 all 4 operations
 
-> ⚡ **130 views** · ⚡ [Personal Productivity](../)
+> ⚡ **151 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

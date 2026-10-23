@@ -1,6 +1,6 @@
 # 🔬 Generate professional email signatures in HTML & PDF with Gmail delivery
 
-> ⚡ **177 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **258 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

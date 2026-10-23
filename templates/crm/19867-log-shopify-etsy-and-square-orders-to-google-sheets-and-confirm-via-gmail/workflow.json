@@ -1,0 +1,942 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "name": "Log Shopify, Etsy and Square orders to a Google Sheet and confirm by email",
+  "tags": [
+    "orders",
+    "ecommerce"
+  ],
+  "nodes": [
+    {
+      "id": "hook",
+      "name": "An order arrives",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "order-in",
+      "parameters": {
+        "path": "order-in",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cfg1",
+      "name": "config",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// ORDER TO SHIP ENGINE \u2014 CONFIG\n// Everything you might want to change lives in this one node. Nothing else in either\n// workflow needs editing.\n//\n// The same config node ships in BOTH workflows (\"01 capture and confirm\" and\n// \"02 progress and ship\"). If you change it in one, paste it into the other \u2014 build.py\n// regenerates both from this one file, so normally you never have to.\n//\n// A blank key or a false flag means that step is SKIPPED, never that the run fails.\n// That is what lets this be demonstrated on a screen-share before a single credential\n// exists.\n\n// ---------------------------------------------------------------- The production board\n// The Google Sheet the team already runs as their production board. The id is the long\n// code in the sheet's web address:\n// docs.google.com/spreadsheets/d/<THIS BIT>/edit\nconst BOARD_SHEET_ID = '';\nconst BOARD_TAB      = 'Orders';\n\n// Set to true only when ALL of these are in place:\n//   1. the sheet exists with the headings below (see sheet/Orders.csv)\n//   2. BOARD_SHEET_ID above is filled in\n//   3. the [cred] Sheets nodes in both workflows have Google credentials attached\n// Until then the workflows run against a built-in demo board: rows are shown in\n// STOP nodes instead of being written, and fabricated customers can never be emailed.\nconst BOARD_READY = false;\n\n// The column headings, exactly as they appear in row 1 of the Orders tab.\n// 'Items (json)' holds the line items as JSON so the board stays one row per order.\nconst COLUMNS = {\n  order_key:         'Order key',\n  source:            'Source',\n  order_id:          'Order no.',\n  placed:            'Placed',\n  customer:          'Customer',\n  email:             'Email',\n  items:             'Items (json)',\n  spec:              'Spec',\n  window_start:      'Ship window start',\n  window_end:        'Ship window end',\n  stage:             'Stage',\n  confirmation_sent: 'Confirmation sent',\n  carrier:           'Carrier',\n  tracking:          'Tracking no.',\n  ship_date:         'Shipped date',\n  ship_email_sent:   'Ship email sent',\n  notes:             'Notes'\n};\n\n// The stages the team moves a row through. The workflow writes 'New order' when the row\n// lands and 'Confirmed' once the confirmation email is away; the OFFICE moves rows to\n// 'In production' and finally 'Shipped' (when a label exists). That last flip is what\n// triggers the shipping email. Nothing ships before a confirmation was recorded.\nconst STAGE_ON_ARRIVAL = 'New order';\nconst STAGE_CONFIRMED  = 'Confirmed';\nconst STAGE_SHIPPED    = 'Shipped';\nconst STAGES = ['New order', 'Confirmed', 'In production', 'Shipped', 'Delivered',\n  'On hold', 'Cancelled'];\n\n// ---------------------------------------------------------------- The stores\n// Which store webhooks feed this. Square is in DEPOSIT_SOURCES: for designer/custom\n// goods the post says the workflow may begin when the deposit is received, so a Square\n// order whose payment has not landed is held until it has. Shopify and Etsy orders only\n// arrive here once the store marks them confirmed/paid, so they are not gated.\nconst SOURCE_LABELS = { shopify: 'Shopify', etsy: 'Etsy', square: 'Square' };\nconst DEPOSIT_SOURCES = ['square'];\n\n// ---------------------------------------------------------------- Product rules\n// The rules/formulas the client provides, in one table so every number an email quotes\n// can be traced back to a rule. Each order line is looked up by sku.\n//\n//   lead_days  how many working days this piece takes to build. The confirmation email's\n//              ship window = order date + the LONGEST lead in the order + the buffers\n//              below. Nothing ships before its promise, so the window is the honest one.\n//   anchors    the wall hardware the customer needs for installation:\n//                { mode: 'none' }        free-standing piece \u2014 no wall anchors\n//                { mode: 'fixed', qty }  per unit (e.g. a bracket kit = 8 anchors)\n//                { mode: 'per_metre' }   qty per metre of the line's length, rounded up\n//   manual     the installation manual URL for that product\nconst PRODUCT_RULES = [\n  { sku: 'DIN-TBL-WALNUT-6', name: 'Walnut dining table, 6-seat', lead_days: 14,\n    anchors: { mode: 'none' }, manual: '', note: 'Free-standing piece \u2014 no wall anchors.' },\n  { sku: 'CON-OAK-160', name: 'Oak console, 160 cm', lead_days: 10,\n    anchors: { mode: 'none' }, manual: '', note: 'Free-standing piece \u2014 no wall anchors.' },\n  { sku: 'SHLF-OAK-120', name: 'Oak wall shelf, 120 cm', lead_days: 6,\n    anchors: { mode: 'per_metre', qty: 2 }, manual: 'https://example.com/manuals/oak-shelf-120.pdf',\n    note: 'Two brackets supplied; fixings sized for the wall type.' },\n  { sku: 'BRK-STEEL-L', name: 'Steel L-bracket set (pair)', lead_days: 3,\n    anchors: { mode: 'fixed', qty: 8 }, manual: '',\n    note: 'Four anchors per bracket; use the template supplied.' }\n];\n\n// A line item whose sku is NOT in the table above cannot be given an honest ship window\n// or an honest anchor count. true = hold the order and show it in a STOP node instead of\n// promising something the rules cannot support. Add the missing sku to PRODUCT_RULES and\n// re-run.\nconst HOLD_UNRULED_ITEMS = true;\n\n// The shipping promise, in working days (Mon-Fri):\n//   earliest = order date + longest lead in the order + START buffer\n//   latest   = order date + longest lead in the order + END buffer\n// The email quotes the window, never a single date.\nconst WINDOW_BUFFER_START_DAYS = 3;\nconst WINDOW_BUFFER_END_DAYS   = 8;\n\n// ---------------------------------------------------------------- Sending\nconst COMPANY_NAME = 'Example Furniture Co';\nconst FROM_NAME    = 'Example Furniture Co';\nconst REPLY_TO     = '';          // where customer replies should land\nconst PHONE        = '';\nconst WEBSITE      = '';\n\n// The personalised emails. The braces are filled in code from the order and the rules \u2014\n// the model is never asked to invent a date, an anchor count or a manual link.\nconst CONFIRM_SUBJECT = 'Your {company} order {order} \u2014 thank you';\nconst SHIP_SUBJECT    = 'Your {company} order {order} has shipped';\n\n// ---------------------------------------------------------------- ShipStation\n// Optional. When the office creates a label in ShipStation they flip the board row to\n// 'Shipped'; this workflow then tries to pull carrier, tracking number and ship date\n// from ShipStation instead of asking anyone to type them.\n//\n// Set true only when: the [cred] ShipStation node has credentials attached AND the\n// fetch path has been checked against your ShipStation account (see README \u2014 the\n// endpoint is the one integration point to confirm on a live account).\nconst SHIPSTATION_READY = false;\nconst SHIPSTATION_BASE  = 'https://api.shipstation.com';\n\n// ---------------------------------------------------------------- Safety switch\n//   TEST_RUN true,  TEST_EMAIL blank -> PREVIEW. Rows are written to the sheet (when\n//                                      BOARD_READY) but no email is sent. Ships this way.\n//   TEST_RUN true,  TEST_EMAIL set   -> TEST. Emails really send, but every one goes to\n//                                      TEST_EMAIL instead of the customer.\n//   TEST_RUN false                   -> LIVE. Customers get the real thing.\nconst TEST_RUN   = true;\nconst TEST_EMAIL = '';\n\n// While the demo board is in use (no sheet configured) the run is FORCED into preview:\n// a fabricated customer can never be emailed, whatever TEST_RUN says.\nconst DEMO_MODE = BOARD_READY !== true;\n\nlet MODE = TEST_RUN !== true ? 'live'\n  : (TEST_EMAIL.trim() !== '' ? 'test' : 'preview');\nif (DEMO_MODE && MODE !== 'preview') MODE = 'preview';\n\n// ---------------------------------------------------------------- Demo board\n// The rows the workflows run against until BOARD_READY is set. Every customer, order and\n// product here is fabricated. The mix is deliberate \u2014 it has to be able to show every\n// gate doing its job:\n//   * a 'Shipped' row that was confirmed and has tracking pasted   -> shipping email\n//   * a 'Shipped' row with NO tracking and no ShipStation          -> STOP: tracking missing\n//   * a 'Shipped' row that was never confirmed                     -> STOP: never shipped unconfirmed\n//   * a finished row already emailed                               -> left alone (idempotent)\n//   * open rows in production / new                                -> left alone\nconst DEMO_ORDERS = [\n  {\n    order_key: 'shopify|5102', source: 'shopify', order_id: '5102', placed: '2026-09-02 09:41',\n    customer: 'Dana Whitfield', email: 'user@example.com',\n    items: '[{\"sku\":\"DIN-TBL-WALNUT-6\",\"name\":\"Walnut dining table, 6-seat\",\"qty\":1,\"dim_m\":\"\",\"spec\":\"2200 x 1000 x 750 mm, matte oil finish\"},{\"sku\":\"BRK-STEEL-L\",\"name\":\"Steel L-bracket set (pair)\",\"qty\":2,\"dim_m\":\"\",\"spec\":\"\"}]',\n    spec: '', window_start: '2026-09-23', window_end: '2026-09-30', stage: 'In production',\n    confirmation_sent: '2026-09-02 09:41', carrier: '', tracking: '', ship_date: '',\n    ship_email_sent: '', notes: ''\n  },\n  {\n    order_key: 'etsy|2218', source: 'etsy', order_id: '2218', placed: '2026-09-04 14:02',\n    customer: 'Marlon Reyes', email: 'user@example.com',\n    items: '[{\"sku\":\"SHLF-OAK-120\",\"name\":\"Oak wall shelf, 120 cm\",\"qty\":1,\"dim_m\":\"1.2\",\"spec\":\"120 x 22 x 4 cm\"},{\"sku\":\"BRK-STEEL-L\",\"name\":\"Steel L-bracket set (pair)\",\"qty\":1,\"dim_m\":\"\",\"spec\":\"\"}]',\n    spec: '', window_start: '2026-09-18', window_end: '2026-09-25', stage: 'Shipped',\n    confirmation_sent: '2026-09-04 14:02', carrier: 'UPS', tracking: '1Z999AA10123456784',\n    ship_date: '2026-09-16', ship_email_sent: '', notes: ''\n  },\n  {\n    order_key: 'shopify|5117', source: 'shopify', order_id: '5117', placed: '2026-09-05 16:30',\n    customer: 'Priya Nair', email: 'user@example.com',\n    items: '[{\"sku\":\"CON-OAK-160\",\"name\":\"Oak console, 160 cm\",\"qty\":1,\"dim_m\":\"\",\"spec\":\"160 x 40 x 75 cm, no back panel\"}]',\n    spec: '', window_start: '2026-09-22', window_end: '2026-09-29', stage: 'Shipped',\n    confirmation_sent: '2026-09-05 16:30', carrier: '', tracking: '', ship_date: '',\n    ship_email_sent: '', notes: ''\n  },\n  {\n    order_key: 'square|ORD-9081', source: 'square', order_id: 'ORD-9081', placed: '2026-09-08 11:12',\n    customer: 'Tom Okafor', email: 'user@example.com',\n    items: '[{\"sku\":\"DIN-TBL-WALNUT-6\",\"name\":\"Walnut dining table, 6-seat\",\"qty\":1,\"dim_m\":\"\",\"spec\":\"custom width 2400 mm\"}]',\n    spec: 'Custom width 2400 mm', window_start: '2026-09-28', window_end: '2026-10-05',\n    stage: 'Shipped', confirmation_sent: '', carrier: '', tracking: '', ship_date: '',\n    ship_email_sent: '', notes: ''\n  },\n  {\n    order_key: 'shopify|5123', source: 'shopify', order_id: '5123', placed: '2026-09-09 08:05',\n    customer: 'Elena Rossi', email: 'user@example.com',\n    items: '[{\"sku\":\"SHLF-OAK-120\",\"name\":\"Oak wall shelf, 120 cm\",\"qty\":2,\"dim_m\":\"1.2\",\"spec\":\"\"}]',\n    spec: '', window_start: '2026-09-22', window_end: '2026-09-29', stage: 'New order',\n    confirmation_sent: '', carrier: '', tracking: '', ship_date: '', ship_email_sent: '',\n    notes: ''\n  },\n  {\n    order_key: 'etsy|2190', source: 'etsy', order_id: '2190', placed: '2026-08-28 10:15',\n    customer: 'June Park', email: 'user@example.com',\n    items: '[{\"sku\":\"CON-OAK-160\",\"name\":\"Oak console, 160 cm\",\"qty\":1,\"dim_m\":\"\",\"spec\":\"\"}]',\n    spec: '', window_start: '2026-09-14', window_end: '2026-09-21', stage: 'Delivered',\n    confirmation_sent: '2026-08-28 10:15', carrier: 'FedEx', tracking: '778899001122',\n    ship_date: '2026-09-15', ship_email_sent: '2026-09-15 09:30', notes: ''\n  }\n];\n\nreturn [{\n  json: {\n    company_name: COMPANY_NAME,\n    from_name:    FROM_NAME,\n    reply_to:     REPLY_TO.trim(),\n    phone:        PHONE.trim(),\n    website:      WEBSITE.trim(),\n\n    board_sheet_id: BOARD_SHEET_ID.trim(),\n    board_tab:      BOARD_TAB,\n    columns:        COLUMNS,\n    board_ready:    BOARD_READY === true,\n\n    source_labels:  SOURCE_LABELS,\n    deposit_sources: DEPOSIT_SOURCES,\n\n    product_rules:    PRODUCT_RULES,\n    hold_unruly:      HOLD_UNRULED_ITEMS === true,\n    window_start_days: Number(WINDOW_BUFFER_START_DAYS) || 0,\n    window_end_days:   Number(WINDOW_BUFFER_END_DAYS) || 0,\n\n    stage_on_arrival: STAGE_ON_ARRIVAL,\n    stage_confirmed:  STAGE_CONFIRMED,\n    stage_shipped:    STAGE_SHIPPED,\n    stages:           STAGES,\n\n    confirm_subject: CONFIRM_SUBJECT,\n    ship_subject:    SHIP_SUBJECT,\n\n    shipstation_ready: SHIPSTATION_READY === true,\n    shipstation_base:  SHIPSTATION_BASE,\n\n    demo_orders: DEMO_ORDERS,\n    demo_mode:   DEMO_MODE,\n\n    // derived flags \u2014 the gates read these, never the raw constants\n    mode:          MODE,\n    preview_only:  MODE === 'preview',\n    test_send:     MODE === 'test',\n    live_send:     MODE === 'live',\n    send_enabled:  MODE !== 'preview',\n    test_email:    TEST_EMAIL.trim()\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "read-order",
+      "name": "read the order",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Turns whatever the store posted into ONE common order object, whatever the store is.\n// Shopify, Etsy and Square all name their fields differently, so the parser detects the\n// source and digs the same facts out of each shape. An unknown shape is rejected with a\n// reason, never half-read.\n//\n// Output: one item carrying `order` (the common shape) and `_ok` / `_problems`.\nconst CFG = () => $('config').first().json;\n\nfunction esc(v) {\n  return String(v == null ? '' : v).replace(/[<>&\"]/g, function (c) {\n    return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '\"': '&quot;' }[c];\n  });\n}\nfunction text(v) {\n  return String(v == null ? '' : v).trim();\n}\n\nfunction cleanLines(lines, get) {\n  const out = [];\n  for (const li of (lines || [])) {\n    const g = get(li);\n    if (!g) continue;\n    const qty = Math.max(1, Math.round(Number(g.qty) || 1));\n    out.push({ sku: text(g.sku), name: text(g.name), qty: qty,\n               dim_m: text(g.dim_m), spec: text(g.spec) });\n  }\n  return out;\n}\n\nfunction parse(raw, cfg) {\n  const problems = [];\n  const src = detect(raw);\n  if (!src) {\n    problems.push('did not match a Shopify, Etsy or Square order shape');\n    return { _ok: false, _problems: problems, order: null };\n  }\n\n  let order = null;\n  if (src === 'shopify') order = shopifyOrder(raw, cfg);\n  if (src === 'etsy')    order = etsyOrder(raw, cfg);\n  if (src === 'square')  order = squareOrder(raw, cfg);\n  if (!order) {\n    problems.push('could not read the order fields from the payload');\n    return { _ok: false, _problems: problems, order: null };\n  }\n\n  // The rules for what a usable order is, in one place.\n  if (!order.email || order.email.indexOf('@') < 0) problems.push('no usable customer email');\n  if (!order.order_id) problems.push('no order number');\n  if (!order.line_items || order.line_items.length === 0) problems.push('no line items');\n  for (const li of order.line_items || []) {\n    if (!li.sku) problems.push('a line item has no sku (map it in PRODUCT_RULES)');\n  }\n  const deposits = cfg.deposit_sources || [];\n  if (deposits.indexOf(order.source) >= 0 && order.deposit_paid !== true) {\n    problems.push('deposit not yet received (Square custom order waits for it)');\n  }\n\n  order.source_label = (cfg.source_labels || {})[order.source] || order.source;\n  return { _ok: problems.length === 0, _problems: problems, order: order };\n}\n\nfunction detect(raw) {\n  if (!raw || typeof raw !== 'object') return '';\n  if (raw.line_items && (raw.email || (raw.customer && raw.customer.email))) return 'shopify';\n  if (raw.receipt && raw.receipt.transactions) return 'etsy';\n  if (raw.transactions && raw.buyer_email) return 'etsy';\n  if (raw.payment || (raw.data && raw.data.object && raw.data.object.payment)) return 'square';\n  if (raw.data && raw.data.object && raw.data.object.order) return 'square';\n  if (raw.fulfillments || raw.tenders || raw.location_id) return 'square';\n  return '';\n}\n\nfunction shopifyOrder(r, cfg) {\n  const c = (r.customer || {});\n  const name = text(c.first_name || c.name) + (text(c.last_name) ? ' ' + text(c.last_name) : '');\n  return {\n    source: 'shopify',\n    order_id: text(r.id || r.name),\n    placed: (text(r.created_at) || '').slice(0, 16).replace('T', ' '),\n    customer_name: name || 'Shopify customer',\n    email: text(r.email || c.email),\n    line_items: cleanLines(r.line_items, (li) => ({\n      sku: li.sku || li.variant_sku || li.product_id,\n      name: li.title || li.name, qty: li.quantity, dim_m: '', spec: ''\n    })),\n    spec_summary: text(r.note),\n    deposit_paid: true,\n    raw_order_id: r.id\n  };\n}\n\nfunction etsyOrder(r, cfg) {\n  const receipt = r.receipt || {};\n  const tx = receipt.transactions || r.transactions || [];\n  const placed = Number(receipt.create_timestamp || r.create_timestamp);\n  return {\n    source: 'etsy',\n    order_id: text(receipt.receipt_id || r.receipt_id),\n    placed: placed ? new Date(placed * 1000).toISOString().slice(0, 16).replace('T', ' ')\n                   : '',\n    customer_name: text(receipt.name || r.name || 'Etsy customer'),\n    email: text(receipt.buyer_email || r.buyer_email),\n    line_items: cleanLines(tx, (li) => {\n      const pd = (li.product_data && typeof li.product_data === 'object') ? li.product_data : {};\n      return { sku: pd.sku || li.sku || li.product_id || li.listing_id,\n               name: li.title || li.name, qty: li.quantity, dim_m: '', spec: '' };\n    }),\n    spec_summary: '',\n    deposit_paid: true,\n    raw_order_id: receipt.receipt_id\n  };\n}\n\nfunction squareOrder(r, cfg) {\n  // A Square 'payment.updated' webhook carries the payment; an 'order.created' webhook\n  // (before the deposit lands) carries only the order. Both must read as square \u2014 the\n  // deposit gate then holds the order.created one until the payment arrives.\n  const pay = (r.payment) || (r.data && r.data.object && r.data.object.payment) || {};\n  const ord = (r.data && r.data.object && r.data.object.order) || r.order || {};\n  const items = ((pay.line_items && pay.line_items.length) ? pay.line_items\n                                                          : (ord.line_items || []));\n  const hasPay = Object.keys(pay).length > 0;\n  return {\n    source: 'square',\n    order_id: text(pay.order_id || ord.id),\n    placed: (text(pay.created_at || ord.created_at || '')).slice(0, 16).replace('T', ' '),\n    customer_name: text(pay.buyer_name || ord.customer_name || 'Square customer'),\n    email: text(pay.receipt_email || pay.buyer_email_address || ord.buyer_email_address),\n    line_items: cleanLines(items, (li) => ({\n      sku: li.sku || li.catalog_object_id || li.uid,\n      name: li.name, qty: li.quantity, dim_m: '', spec: ''\n    })),\n    spec_summary: text(pay.note || ord.note || ''),\n    deposit_paid: hasPay && ['COMPLETED', 'APPROVED', 'CAPTURED']\n      .indexOf(text(pay.status).toUpperCase()) >= 0,\n    raw_order_id: pay.id || ord.id\n  };\n}\n\n// What n8n hands the Code node depends on how the webhook received the POST: sometimes\n// the parsed body sits at the top of $json, sometimes under 'body', and occasionally as\n// a JSON *string*. Try every candidate until one reads as an order, so the store's\n// webhook is not at the mercy of n8n's wrapping. If nothing reads, the reason says which\n// keys were actually seen \u2014 that is the debugging breadcrumb.\nfunction toObject(x) {\n  if (!x) return null;\n  if (typeof x === 'string') {\n    try { return JSON.parse(x); } catch (e) { return null; }\n  }\n  return (typeof x === 'object') ? x : null;\n}\n\nconst cfg = CFG();\nconst incoming = toObject($input.first().json) || {};\nconst candidates = [incoming];\nconst body = toObject(incoming.body);\nif (body) {\n  candidates.push(body);\n  const inner = toObject(body.body);\n  if (inner) candidates.push(inner);\n}\n\nlet parsed = null;\nfor (const c of candidates) {\n  const p = parse(c, cfg);\n  if (p.order && p.order.source) { parsed = p; break; }\n  parsed = parsed || p;\n}\nif (!parsed) parsed = parse({}, cfg);\n\nconst order = parsed.order || {};\nconst seenKeys = Object.keys(incoming).join(',');\nreturn [{\n  json: Object.assign({\n    order:     order,\n    order_key: order.source ? (order.source + '|' + order.order_id) : '',\n    _ok:       parsed._ok,\n    _problems: parsed._problems.concat(\n      order.source ? [] : ['webhook body keys seen: ' + (seenKeys || '(empty)')])\n  }, order ? { _email: esc(order.email || '') } : {})\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "usable",
+      "name": "a usable order?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "usable-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json._ok }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "stop-unusable",
+      "name": "STOP: not a usable order",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        880,
+        400
+      ],
+      "parameters": {
+        "jsCode": "// Not a usable order. Dropped here rather than reaching the board, with the reasons kept\n// so the execution list says why. An awaiting-deposit Square order lands here too \u2014 it is\n// not lost, it just waits until Square posts the payment webhook.\nreturn $input.all().map((i) => ({\n  json: Object.assign({}, i.json, {\n    _outcome: 'rejected',\n    _reason: (i.json._problems || []).join('; ') || 'did not read as an order'\n  })\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "have-board1",
+      "name": "board connected?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "have-board1-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.board_ready }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "board-read1",
+      "name": "[cred] Sheets - read the board",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('config').first().json.board_tab }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('config').first().json.board_sheet_id }}"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "demo-board1",
+      "name": "use the demo board",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1100,
+        180
+      ],
+      "parameters": {
+        "jsCode": "// No sheet configured yet: emit the built-in demo board rows instead. Rows come out keyed\n// by the same HEADINGS a Google Sheets read would produce, so everything downstream is\n// identical whether the data is real or fabricated. Every customer here is invented.\nconst cfg = $('config').first().json;\nconst cols = cfg.columns || {};\nconst rows = (cfg.demo_orders || []).map(function (o) {\n  const row = {};\n  for (const k of Object.keys(cols)) row[cols[k]] = (o[k] != null ? String(o[k]) : '');\n  row._demo = true;\n  return row;\n});\nreturn rows.map((r) => ({ json: r }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "seen-before",
+      "name": "seen this order before?",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Dedupe: has this store order already landed on the board? The board rows come in as\n// items (from the sheet or the demo board \u2014 same shape either way) and are folded into\n// one answer. Order keys are 'source|order-no', so the same number on a different store\n// is a different order and is never mistaken for one.\nconst incoming = $('read the order').first().json;\nconst key = incoming.order_key;\nconst rows = $input.all().map((i) => i.json);\nconst found = rows.filter((r) => r['Order key'] === key)[0] || null;\nreturn [{\n  json: Object.assign({}, incoming, {\n    _known: !!found,\n    known_row: found,\n    board_rows_read: rows.length\n  })\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "dup",
+      "name": "already logged?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "dup-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json._known }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "stop-dup",
+      "name": "STOP: duplicate delivery",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1760,
+        400
+      ],
+      "parameters": {
+        "jsCode": "// The store redelivered an order we already hold (webhooks retry; Shopify and Etsy both\n// do). The row already exists, so nothing is written twice \u2014 \"never typed twice\". The\n// store still gets a friendly ok so its webhook stops retrying.\nreturn $input.all().map((i) => ({\n  json: Object.assign({}, i.json, {\n    _outcome: 'duplicate',\n    _reason: 'order ' + i.json.order_key + ' is already on the board'\n  })\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "plan",
+      "name": "plan the build",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Plans the build for one new order: checks every line item against PRODUCT_RULES,\n// works out the shipping window (working days only \u2014 never a promise on a weekend), and\n// builds the board row. A sku with no rule is a GAP, not a guess: the email must not\n// promise a date the rules cannot support.\nfunction parseDate(s) {\n  // '2026-09-02 09:41' or an ISO string.\n  const t = String(s || '').trim();\n  if (!t) return null;\n  const d = new Date(t.indexOf('T') >= 0 ? t : t.replace(' ', 'T'));\n  return isNaN(d.getTime()) ? null : d;\n}\nfunction addWorkdays(d, n) {\n  let x = new Date(d.getTime());\n  let left = n;\n  while (left > 0) {\n    x.setDate(x.getDate() + 1);\n    const dow = x.getDay();\n    if (dow !== 0 && dow !== 6) left--;\n  }\n  return x;\n}\nfunction fmt(d) {\n  const p = (n) => (n < 10 ? '0' : '') + n;\n  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());\n}\nfunction esc(v) {\n  return String(v == null ? '' : v).replace(/[<>&\"]/g, function (c) {\n    return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '\"': '&quot;' }[c];\n  });\n}\n\nconst cfg = $('config').first().json;\nconst incoming = $input.first().json;\nconst order = incoming.order || {};\nconst rules = (cfg.product_rules || []).reduce(function (m, r) {\n  m[String(r.sku).trim().toLowerCase()] = r;\n  return m;\n}, {});\n\nconst gaps = [];\nconst linePlan = (order.line_items || []).map(function (li) {\n  const rule = rules[String(li.sku).trim().toLowerCase()];\n  const base = { sku: li.sku, name: li.name || li.sku, qty: li.qty || 1,\n                 dim_m: li.dim_m || '' };\n  if (!rule) {\n    gaps.push(li.sku || li.name || 'an unnamed item');\n    return Object.assign(base, { lead_days: 0, known: false });\n  }\n  return Object.assign(base, {\n    lead_days: Number(rule.lead_days) || 0,\n    anchors: rule.anchors || { mode: 'none' },\n    manual: rule.manual || '',\n    note: rule.note || '',\n    known: true\n  });\n});\n\nlet windowStart = null, windowEnd = null, maxLead = 0;\nconst placed = parseDate(order.placed) || new Date();\nif (gaps.length === 0) {\n  maxLead = linePlan.reduce(function (m, lp) { return Math.max(m, lp.lead_days); }, 0);\n  const b0 = Number(cfg.window_start_days) || 0;\n  const b1 = Number(cfg.window_end_days) || 0;\n  windowStart = addWorkdays(placed, maxLead + b0);\n  windowEnd = addWorkdays(placed, maxLead + Math.max(b1, b0));\n}\n\nconst cols = cfg.columns || {};\nconst h = (k) => cols[k] || k;\nconst itemsJson = JSON.stringify((order.line_items || []).map(function (li) {\n  return { sku: li.sku, name: li.name, qty: li.qty, dim_m: li.dim_m, spec: li.spec };\n}));\n\nconst row = {};\nconst placedTime = String(order.placed || '').slice(11, 16);\nrow[h('order_key')] = incoming.order_key;\nrow[h('source')] = order.source_label || order.source || '';\nrow[h('order_id')] = order.order_id || '';\nrow[h('placed')] = fmt(placed) + (placedTime ? ' ' + placedTime : '');\nrow[h('customer')] = order.customer_name || '';\nrow[h('email')] = order.email || '';\nrow[h('items')] = itemsJson;\nrow[h('spec')] = order.spec_summary || '';\nrow[h('window_start')] = windowStart ? fmt(windowStart) : '';\nrow[h('window_end')] = windowEnd ? fmt(windowEnd) : '';\nrow[h('stage')] = cfg.stage_on_arrival || 'New order';\nrow[h('confirmation_sent')] = '';\nrow[h('carrier')] = '';\nrow[h('tracking')] = '';\nrow[h('ship_date')] = '';\nrow[h('ship_email_sent')] = '';\nrow[h('notes')] = '';\n\nreturn [{\n  json: Object.assign({}, incoming, {\n    row: row,\n    plan: {\n      can_promise: gaps.length === 0,\n      gaps: gaps,\n      max_lead_days: maxLead,\n      window_start: windowStart ? fmt(windowStart) : '',\n      window_end: windowEnd ? fmt(windowEnd) : '',\n      line_plan: linePlan\n    },\n    _can_promise: gaps.length === 0,\n    _gate_pass: !(cfg.hold_unruly === true && gaps.length > 0)\n  })\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ruled",
+      "name": "every product known?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ruled-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json._gate_pass }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "stop-unruled",
+      "name": "STOP: needs a product rule",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2200,
+        400
+      ],
+      "parameters": {
+        "jsCode": "// A sku in the order has no rule in PRODUCT_RULES, and HOLD_UNRULED_ITEMS is true, so\n// neither an honest shipping window nor an honest installation email can be produced.\n// Held here rather than promised. Add the sku(s) to PRODUCT_RULES and re-run the order.\nreturn $input.all().map((i) => ({\n  json: Object.assign({}, i.json, {\n    _outcome: 'held',\n    _reason: 'no product rule for: ' + ((i.json.plan && i.json.plan.gaps) || []).join(', ')\n  })\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "confirm-mail",
+      "name": "compose the confirmation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Composes the personalised order-confirmation email. Every number in it is traceable:\n// the shipping window comes from plan-the-build (order date + product lead rules), never\n// invented here. If the rules cannot support a window, the email says the window is\n// coming rather than quoting one.\nfunction esc(v) {\n  return String(v == null ? '' : v).replace(/[<>&\"]/g, function (c) {\n    return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '\"': '&quot;' }[c];\n  });\n}\nfunction prettyDate(d) {\n  const months = ['January','February','March','April','May','June','July','August',\n    'September','October','November','December'];\n  const p = d.split('-');\n  if (p.length !== 3) return d;\n  const m = Number(p[1]) - 1;\n  return (months[m] || p[1]) + ' ' + Number(p[2]) + ', ' + p[0];\n}\n\nconst cfg = $('config').first().json;\nconst item = $input.first().json;\nconst order = item.order || {};\nconst plan = item.plan || {};\n\nconst lines = (plan.line_plan || []).map(function (lp) {\n  const spec = (lp.spec ? ' \u2014 ' + esc(lp.spec) : '');\n  return '<tr><td style=\"padding:6px 0\">' + esc(lp.name) + spec + '</td>' +\n         '<td style=\"padding:6px 0;text-align:right\">x' + lp.qty + '</td></tr>';\n}).join('');\n\nconst hasWindow = plan.can_promise && plan.window_start && plan.window_end;\nconst windowLine = hasWindow\n  ? '<p>Your order is in the build queue. Based on current production lead times, it is ' +\n    'due to ship <strong>between ' + prettyDate(plan.window_start) + ' and ' +\n    prettyDate(plan.window_end) + '</strong>. We will email you the tracking the moment ' +\n    'it leaves the workshop.</p>'\n  : '<p>Your order is in the build queue. We will confirm your shipping window by email ' +\n    'shortly, and send tracking the moment your piece leaves the workshop.</p>';\n\nconst subject = (cfg.confirm_subject || 'Your {company} order {order} \u2014 thank you')\n  .replace('{company}', cfg.company_name)\n  .replace('{order}', order.order_id || '');\n\nconst html =\n  '<p>Hi ' + esc(order.customer_name || 'there') + ',</p>' +\n  '<p>Thank you for your order with ' + esc(cfg.company_name) + '. Here is what we are ' +\n  'making for you:</p>' +\n  '<table>' + lines + '</table>' +\n  windowLine +\n  '<p>One of our makers will email you if anything about the spec needs a decision ' +\n  'before we start.</p>' +\n  '<p>\u2014 ' + esc(cfg.from_name || cfg.company_name) + '</p>';\n\nconst textLines = (plan.line_plan || []).map(function (lp) {\n  return '  - ' + lp.qty + 'x ' + lp.name + (lp.spec ? ' (' + lp.spec + ')' : '');\n}).join('\\n');\nconst text =\n  'Hi ' + (order.customer_name || 'there') + ',\\n\\n' +\n  'Thank you for your order with ' + cfg.company_name + '. Here is what we are making ' +\n  'for you:\\n' + textLines + '\\n' +\n  (hasWindow\n    ? 'It is due to ship between ' + prettyDate(plan.window_start) + ' and ' +\n      prettyDate(plan.window_end) + '. We will email the tracking the moment it leaves ' +\n      'the workshop.\\n'\n    : 'We will confirm your shipping window by email shortly.\\n') +\n  '\\n\u2014 ' + (cfg.from_name || cfg.company_name);\n\nreturn [{\n  json: Object.assign({}, item, {\n    customer_email: order.email || '',\n    customer_subject: subject,\n    customer_html: html,\n    customer_text: text\n  })\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "write-gate",
+      "name": "board ready to write?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "write-gate-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.board_ready }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "stop-demo1",
+      "name": "STOP: demo - nothing written or sent",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2640,
+        400
+      ],
+      "parameters": {
+        "jsCode": "// DEMO mode (no sheet configured): the whole run happened in memory. Nothing was written\n// and nothing was sent \u2014 this node's output IS the result: the row that would land on the\n// board and the email the customer would get. Open it to read both.\nconst plan = $('plan the build').first().json;\nconst mail = $('compose the confirmation').first().json;\nreturn [{\n  json: {\n    _outcome: 'demo',\n    _reason: 'BOARD_READY is false \u2014 row shown, not written; nothing emailed',\n    order_key: plan.order_key,\n    row: plan.row,\n    email: {\n      to: mail.customer_email,\n      subject: mail.customer_subject,\n      html: mail.customer_html,\n      text: mail.customer_text\n    }\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "row-w1",
+      "name": "row for the board",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2640,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// The row that lands on the board: heading columns only, nothing the sheet does not\n// understand, no machinery fields.\nconst item = $input.first().json;\nreturn [{ json: item.row }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "board-append",
+      "name": "[cred] Sheets - log the order (row first)",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2860,
+        0
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": []
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('config').first().json.board_tab }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('config').first().json.board_sheet_id }}"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "sending1",
+      "name": "sending the confirmation?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "sending1-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.send_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "stop-prev1",
+      "name": "STOP: preview - row written, email not sent",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3300,
+        400
+      ],
+      "parameters": {
+        "jsCode": "// PREVIEW mode (TEST_RUN true, TEST_EMAIL blank): the row is on the board but no email\n// went out, so the board honestly still says 'New order' with no confirmation recorded.\n// Open this node to read exactly what the customer would have received.\nconst mail = $('compose the confirmation').first().json;\nreturn [{\n  json: {\n    _outcome: 'preview',\n    _reason: 'preview mode \u2014 row written, confirmation email not sent',\n    order_key: mail.order_key,\n    email: {\n      to: mail.customer_email,\n      subject: mail.customer_subject,\n      html: mail.customer_html,\n      text: mail.customer_text\n    }\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "mail-confirm",
+      "name": "[cred] Gmail - send the confirmation",
+      "type": "n8n-nodes-base.gmail",
+      "notes": "Plain-text alternative is on the item as customer_text",
+      "onError": "continueRegularOutput",
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "sendTo": "={{ $('config').first().json.test_send ? $('config').first().json.test_email : $('compose the confirmation').first().json.customer_email }}",
+        "message": "={{ $('compose the confirmation').first().json.customer_html }}",
+        "options": {
+          "replyTo": "={{ $('config').first().json.reply_to }}",
+          "senderName": "={{ $('config').first().json.from_name }}",
+          "appendAttribution": false
+        },
+        "subject": "={{ $('config').first().json.test_send ? ('[TEST -> ' + $('compose the confirmation').first().json.customer_email + '] ' + $('compose the confirmation').first().json.customer_subject) : $('compose the confirmation').first().json.customer_subject }}",
+        "emailType": "html"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "mark-confirmed",
+      "name": "row: mark confirmed",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3520,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Builds the sheet-update object AFTER the confirmation email really went out (test or\n// live mode): the confirmation timestamp and the Confirmed stage. Reads the plan node\n// rather than the mail node's output, because a send node does not guarantee it passes\n// the order through. Only heading columns are emitted; matching is on 'Order key'.\nfunction nowText() {\n  const d = new Date();\n  const p = (n) => (n < 10 ? '0' : '') + n;\n  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' +\n         p(d.getHours()) + ':' + p(d.getMinutes());\n}\nconst cfg = $('config').first().json;\nconst cols = cfg.columns || {};\nconst h = (k) => cols[k] || k;\nconst plan = $('plan the build').first().json;\nconst out = {};\nout[h('order_key')] = plan.row[h('order_key')] != null ? plan.row[h('order_key')] : plan.order_key;\nout[h('confirmation_sent')] = nowText();\nout[h('stage')] = cfg.stage_confirmed || 'Confirmed';\nreturn [{ json: out }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "board-confirm",
+      "name": "[cred] Sheets - mark confirmed",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3740,
+        0
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [
+            "Order key"
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('config').first().json.board_tab }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('config').first().json.board_sheet_id }}"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "respond",
+      "name": "Reply to the store",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        4180,
+        400
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, order: $('read the order').first().json.order_key }) }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-1",
+      "name": "Sticky Note - Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        -1120
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 900,
+        "height": 640,
+        "content": "## Log Shopify, Etsy and Square orders to a Google Sheet and confirm by email\n\n**Who's it for**\nSmall makers and studios taking orders from more than one storefront, who still retype each one into a spreadsheet and write the confirmation email by hand.\n\n**How it works**\nA store webhook posts an order. `read the order` works out whether the payload is Shopify, Etsy or Square and pulls the same facts out of each shape; a Square order whose deposit has not landed is held. The order is matched against the board so a retried webhook is never written twice, every line item is checked against the product rules, and the ship window is worked out in working days from the longest lead time. The row is written to the sheet **before** the confirmation email goes out, then stamped confirmed.\n\n**How to set up**\n1. Open `config`, set `BOARD_SHEET_ID` and `BOARD_TAB`, then set `BOARD_READY = true`.\n2. Attach Google Sheets and Gmail credentials to the four `[cred]` nodes.\n3. Point the store webhook at this workflow's production URL.\n4. Leave `TEST_RUN = true` for the first run, read the preview, then set it to `false`.\n\n**Requirements**\nA Google Sheets credential, a Gmail credential, and an `Orders` tab with the headings listed in `config`. A blank setting skips a step rather than failing the run.\n\n**How to customize**\n`PRODUCT_RULES` holds the lead time and wall-anchor rule per sku; the two buffers set how wide the promised window is. Email wording lives in `compose the confirmation`."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-2",
+      "name": "Sticky Note - Read the order",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        -400
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 900,
+        "height": 260,
+        "content": "### 1. Take the order in and read it\n\n`An order arrives` receives the POST from Shopify, Etsy or Square. `config` holds every setting in one place - sheet id, product rules, email wording and the test switch - and is the only node you edit.\n\n`read the order` detects the store from the shape of the payload and turns it into one common order object. `a usable order?` checks there is a customer email, an order number and at least one line item, and holds a Square order until its deposit is received."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-3",
+      "name": "Sticky Note - Match the board",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        880,
+        -400
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 880,
+        "height": 260,
+        "content": "### 2. Match it against the board\n\n`board connected?` reads `BOARD_READY`. With a sheet configured, `[cred] Sheets - read the board` pulls the whole `Orders` tab; without one, `use the demo board` emits the same shape from built-in demo rows, so the workflow can be run end to end before a single credential exists.\n\n`seen this order before?` folds those rows into one answer and `already logged?` drops a redelivered webhook, so the same store order is never written to the board twice."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-4",
+      "name": "Sticky Note - Plan the build",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1780,
+        -400
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 640,
+        "height": 260,
+        "content": "### 3. Plan the build, promise an honest window\n\n`plan the build` looks up every line item in `PRODUCT_RULES`, takes the longest lead time in the order and adds the two buffers in working days only, so no promise lands on a weekend.\n\n`every product known?` holds any order containing a sku the rules do not cover - a missing rule is a gap, never a guess. `compose the confirmation` then writes the email, quoting only numbers the plan produced."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-5",
+      "name": "Sticky Note - Write then send",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2440,
+        -400
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1500,
+        "height": 260,
+        "content": "### 4. Write the row first, then send\n\n`board ready to write?` and `row for the board` hand a clean headings-only row to `[cred] Sheets - log the order (row first)`, so the order is on the board before anything is emailed.\n\n`sending the confirmation?` is the safety gate: `[cred] Gmail - send the confirmation` runs only in test or live mode. `row: mark confirmed` and `[cred] Sheets - mark confirmed` stamp the timestamp and the `Confirmed` stage afterwards, so the board never claims an email that did not go."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-6",
+      "name": "Sticky Note - Stops and reply",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        840,
+        560
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 3540,
+        "height": 200,
+        "content": "### 5. Every path ends with an answer to the store\n\nEach `STOP:` node closes one path and keeps the reason on the item, so the execution list says exactly why: not a usable order, a duplicate delivery, a sku with no product rule, demo mode (nothing written or sent) or preview mode (row written, email withheld). Open a STOP node's output to read the row and the email that would have been produced.\n\n`Reply to the store` answers the webhook on every path, so the storefront stops retrying whichever way the order went."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "config": {
+      "main": [
+        [
+          {
+            "node": "read the order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "plan the build": {
+      "main": [
+        [
+          {
+            "node": "every product known?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read the order": {
+      "main": [
+        [
+          {
+            "node": "a usable order?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "a usable order?": {
+      "main": [
+        [
+          {
+            "node": "board connected?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: not a usable order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "already logged?": {
+      "main": [
+        [
+          {
+            "node": "plan the build",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: duplicate delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "An order arrives": {
+      "main": [
+        [
+          {
+            "node": "config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "board connected?": {
+      "main": [
+        [
+          {
+            "node": "[cred] Sheets - read the board",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "use the demo board",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "row for the board": {
+      "main": [
+        [
+          {
+            "node": "[cred] Sheets - log the order (row first)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "use the demo board": {
+      "main": [
+        [
+          {
+            "node": "seen this order before?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "row: mark confirmed": {
+      "main": [
+        [
+          {
+            "node": "[cred] Sheets - mark confirmed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "every product known?": {
+      "main": [
+        [
+          {
+            "node": "compose the confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: needs a product rule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "board ready to write?": {
+      "main": [
+        [
+          {
+            "node": "row for the board",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: demo - nothing written or sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "seen this order before?": {
+      "main": [
+        [
+          {
+            "node": "already logged?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: duplicate delivery": {
+      "main": [
+        [
+          {
+            "node": "Reply to the store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: not a usable order": {
+      "main": [
+        [
+          {
+            "node": "Reply to the store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "compose the confirmation": {
+      "main": [
+        [
+          {
+            "node": "board ready to write?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sending the confirmation?": {
+      "main": [
+        [
+          {
+            "node": "[cred] Gmail - send the confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: preview - row written, email not sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: needs a product rule": {
+      "main": [
+        [
+          {
+            "node": "Reply to the store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Sheets - mark confirmed": {
+      "main": [
+        [
+          {
+            "node": "Reply to the store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Sheets - read the board": {
+      "main": [
+        [
+          {
+            "node": "seen this order before?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: demo - nothing written or sent": {
+      "main": [
+        [
+          {
+            "node": "Reply to the store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Gmail - send the confirmation": {
+      "main": [
+        [
+          {
+            "node": "row: mark confirmed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Sheets - log the order (row first)": {
+      "main": [
+        [
+          {
+            "node": "sending the confirmation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: preview - row written, email not sent": {
+      "main": [
+        [
+          {
+            "node": "Reply to the store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

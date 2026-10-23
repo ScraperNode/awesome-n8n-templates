@@ -1,6 +1,6 @@
 # 🎣 Route and qualify email leads with Gmail, Gemini, Slack, Sheets and Salesforce
 
-> ⚡ **197 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **225 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

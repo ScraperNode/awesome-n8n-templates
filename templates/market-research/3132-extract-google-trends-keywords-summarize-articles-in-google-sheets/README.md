@@ -1,6 +1,6 @@
 # 📊 Extract Google Trends keywords & summarize articles in Google Sheets
 
-> ⚡ **18,762 views** · 📊 [Market Research & Insights](../)
+> ⚡ **19,680 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

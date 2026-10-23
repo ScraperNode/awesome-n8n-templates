@@ -1,6 +1,6 @@
 # 📋 Create a new task in Asana
 
-> ⚡ **2,123 views** · 📋 [Project Management](../)
+> ⚡ **2,172 views** · 📋 [Project Management](../)
 
 ## Description
 

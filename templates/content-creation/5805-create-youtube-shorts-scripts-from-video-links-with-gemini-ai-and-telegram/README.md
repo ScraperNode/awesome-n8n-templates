@@ -1,6 +1,6 @@
 # 🎬 Create YouTube shorts scripts from video links with Gemini AI and Telegram
 
-> ⚡ **4,331 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,888 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — YouTube's API quotas can be a bottleneck when you're pulling data at scale. [ScraperNode](https://scrapernode.com/youtube) is a community node with dedicated scrapers for [channels](https://scrapernode.com/youtube/scrapers/channels), [videos](https://scrapernode.com/youtube/scrapers/videos), and [comments](https://scrapernode.com/youtube/scrapers/comments) — no quota limits, just structured data.
 >

@@ -1,6 +1,6 @@
 # 🎬 Convert PDF articles to audio podcasts with Google TTS & Cloudflare R2
 
-> ⚡ **1,228 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,565 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

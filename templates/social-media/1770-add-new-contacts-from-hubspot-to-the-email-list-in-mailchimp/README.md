@@ -1,6 +1,6 @@
 # 📱 Add new contacts from HubSpot to the email list in Mailchimp
 
-> ⚡ **1,644 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,689 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

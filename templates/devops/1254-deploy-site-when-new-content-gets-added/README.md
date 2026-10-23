@@ -1,6 +1,6 @@
 # ⚙️ Deploy site when new content gets added
 
-> ⚡ **2,000 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,636 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

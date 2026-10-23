@@ -1,6 +1,6 @@
 # 🤖 Create a privacy-focused AI assistant with Telegram, Ollama, and Whisper
 
-> ⚡ **2,020 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **2,685 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

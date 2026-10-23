@@ -1,6 +1,6 @@
 # ⚙️ Monitor n8n workflow errors with Telegram alerts (multi-language setup)
 
-> ⚡ **2,909 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **3,033 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

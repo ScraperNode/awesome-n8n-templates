@@ -1,6 +1,6 @@
 # ⚒️ Check email via AI agent with Mailcheck Tool MCP Server
 
-> ⚡ **424 views** · ⚒️ [Engineering](../)
+> ⚡ **537 views** · ⚒️ [Engineering](../)
 
 ## Description
 

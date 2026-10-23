@@ -1,6 +1,6 @@
 # 🤝 Create a Pipedrive activity on Calendly event scheduled
 
-> ⚡ **1,939 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,037 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

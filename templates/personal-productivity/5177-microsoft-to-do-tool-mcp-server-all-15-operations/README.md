@@ -1,6 +1,6 @@
 # ⚡ 🛠️ Microsoft To Do tool MCP server 💪 all 15 operations
 
-> ⚡ **134 views** · ⚡ [Personal Productivity](../)
+> ⚡ **155 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

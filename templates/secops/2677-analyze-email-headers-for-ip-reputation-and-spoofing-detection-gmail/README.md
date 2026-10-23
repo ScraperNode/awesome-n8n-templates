@@ -1,6 +1,6 @@
 # 🔒 Analyze email headers for IP reputation and spoofing detection - Gmail
 
-> ⚡ **18,735 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **27,911 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

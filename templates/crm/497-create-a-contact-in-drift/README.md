@@ -1,6 +1,6 @@
 # 🤝 Create a contact in Drift
 
-> ⚡ **374 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **390 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

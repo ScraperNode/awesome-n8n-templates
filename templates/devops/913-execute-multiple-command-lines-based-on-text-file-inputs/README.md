@@ -1,6 +1,6 @@
 # ⚙️ Execute multiple command lines based on text file inputs
 
-> ⚡ **3,865 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **4,108 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

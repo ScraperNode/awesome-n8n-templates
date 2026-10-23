@@ -1,6 +1,6 @@
 # ⚡ Get synonyms of a German word
 
-> ⚡ **632 views** · ⚡ [Personal Productivity](../)
+> ⚡ **644 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Sync Shopify customers to your HubSpot contacts
 
-> ⚡ **1,198 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,225 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

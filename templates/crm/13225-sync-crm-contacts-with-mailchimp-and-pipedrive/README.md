@@ -1,6 +1,6 @@
 # 🤝 Sync CRM contacts with Mailchimp and Pipedrive
 
-> ⚡ **75 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **108 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Real estate lead qualification chatbot with GPT-4o-mini
 
-> ⚡ **1,925 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,314 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

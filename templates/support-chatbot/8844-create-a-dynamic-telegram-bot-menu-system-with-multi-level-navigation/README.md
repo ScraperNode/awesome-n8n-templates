@@ -1,6 +1,6 @@
 # 💬 Create a dynamic Telegram bot menu system with multi-level navigation
 
-> ⚡ **2,423 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,205 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

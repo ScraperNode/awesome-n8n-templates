@@ -1,6 +1,6 @@
 # ⚒️ BIN code lookup with apilayer API
 
-> ⚡ **71 views** · ⚒️ [Engineering](../)
+> ⚡ **109 views** · ⚒️ [Engineering](../)
 
 ## Description
 

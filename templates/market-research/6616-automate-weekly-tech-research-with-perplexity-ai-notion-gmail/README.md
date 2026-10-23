@@ -1,6 +1,6 @@
 # 📊 Automate weekly tech research with Perplexity AI, Notion & Gmail
 
-> ⚡ **1,394 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,465 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

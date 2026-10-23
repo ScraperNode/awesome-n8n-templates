@@ -1,6 +1,6 @@
 # 🎣 Score website leads with GPT-4o, respond via Gmail, and notify via Telegram
 
-> ⚡ **220 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **273 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

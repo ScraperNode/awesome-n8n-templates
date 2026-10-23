@@ -1,6 +1,6 @@
 # 🔬 Extracts and organizes academic publications using GPT-4 Mini, Google Sheets, Gmail
 
-> ⚡ **204 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **237 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

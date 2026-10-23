@@ -1,6 +1,6 @@
 # ⚡ Automate menstrual cycle tracking with GPT-4, Google Sheets and Telegram notifications
 
-> ⚡ **89 views** · ⚡ [Personal Productivity](../)
+> ⚡ **168 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

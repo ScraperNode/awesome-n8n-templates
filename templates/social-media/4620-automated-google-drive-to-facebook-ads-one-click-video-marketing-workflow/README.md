@@ -1,6 +1,6 @@
 # 📱 Automated Google Drive to Facebook Ads: one-click video marketing workflow
 
-> ⚡ **2,019 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,304 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

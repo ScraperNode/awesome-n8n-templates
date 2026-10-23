@@ -1,6 +1,6 @@
 # 🔬 Process receipt images with GPT-4o-mini, WhatsApp & Google Sheets automation
 
-> ⚡ **2,365 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **3,848 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

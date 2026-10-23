@@ -1,6 +1,6 @@
 # 💬 Chat assistant (OpenAI assistant) with Postgres memory and API calling capabalities
 
-> ⚡ **6,440 views** · 💬 [Support Chatbots](../)
+> ⚡ **6,543 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

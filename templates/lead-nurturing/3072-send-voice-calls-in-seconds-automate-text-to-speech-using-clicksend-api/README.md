@@ -1,6 +1,6 @@
 # 💬 Send voice calls in seconds: Automate Text-To-Speech using ClickSend API
 
-> ⚡ **2,828 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,959 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

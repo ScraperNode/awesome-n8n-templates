@@ -1,6 +1,6 @@
 # 📖 Dynamic MongoDB knowledge base chatbot with OpenAI GPT
 
-> ⚡ **112 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **132 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

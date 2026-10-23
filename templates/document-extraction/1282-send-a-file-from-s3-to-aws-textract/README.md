@@ -1,6 +1,6 @@
 # 🔬 Send a file from S3 to AWS Textract
 
-> ⚡ **2,759 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,748 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

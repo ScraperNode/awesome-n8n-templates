@@ -1,6 +1,6 @@
 # ⚒️ Process multiple requests in FIFO using OpenAI Batch API and Supabase/Postgres
 
-> ⚡ **19 views** · ⚒️ [Engineering](../)
+> ⚡ **121 views** · ⚒️ [Engineering](../)
 
 ## Description
 

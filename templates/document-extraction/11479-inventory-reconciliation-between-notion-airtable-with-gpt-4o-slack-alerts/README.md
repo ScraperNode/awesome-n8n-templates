@@ -1,6 +1,6 @@
 # 🔬 Inventory reconciliation between Notion & Airtable with GPT-4o Slack alerts
 
-> ⚡ **104 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **205 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Automate user onboarding from database to Saleshandy with Google Sheets tracking
 
-> ⚡ **228 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **241 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

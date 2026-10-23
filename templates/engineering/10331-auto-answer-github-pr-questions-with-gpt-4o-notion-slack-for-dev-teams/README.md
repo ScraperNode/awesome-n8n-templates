@@ -1,6 +1,6 @@
 # ⚒️ Auto-answer GitHub PR questions with GPT-4o, Notion & Slack for dev teams
 
-> ⚡ **71 views** · ⚒️ [Engineering](../)
+> ⚡ **118 views** · ⚒️ [Engineering](../)
 
 ## Description
 

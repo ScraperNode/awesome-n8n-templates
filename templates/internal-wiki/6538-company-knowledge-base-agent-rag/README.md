@@ -1,6 +1,6 @@
 # 📖 Company knowledge base agent (RAG)
 
-> ⚡ **16,319 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **20,688 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

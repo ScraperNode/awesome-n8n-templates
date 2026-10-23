@@ -1,6 +1,6 @@
 # 📱 WordPress article summarization with GPT-4 and email broadcasting via Google Sheets
 
-> ⚡ **349 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **389 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

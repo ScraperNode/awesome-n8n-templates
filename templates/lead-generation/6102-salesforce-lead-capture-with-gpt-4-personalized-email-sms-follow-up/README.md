@@ -1,6 +1,6 @@
 # 🎣 Salesforce lead capture with GPT-4 personalized email & SMS follow-up
 
-> ⚡ **2,143 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **2,705 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate AI images from text with Fire Flux model on Replicate API
 
-> ⚡ **1,268 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,357 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

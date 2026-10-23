@@ -1,6 +1,6 @@
 # 🎬 Generate AI images & videos with KIE.AI Midjourney API
 
-> ⚡ **3,735 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **14,321 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

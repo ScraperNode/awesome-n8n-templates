@@ -1,6 +1,6 @@
 # 🎫 Automate email management with OpenAI classification, Gmail drafts & Slack alerts
 
-> ⚡ **1,662 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,766 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

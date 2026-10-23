@@ -1,6 +1,6 @@
 # 🔬 Screen DPDP consent manager registrations with GPT-4o, Google Sheets and Gmail
 
-> ⚡ **47 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **84 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

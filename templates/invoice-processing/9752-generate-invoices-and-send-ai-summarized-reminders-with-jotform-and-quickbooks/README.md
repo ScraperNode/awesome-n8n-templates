@@ -1,6 +1,6 @@
 # 🧾 Generate invoices and send AI-summarized reminders with Jotform and QuickBooks
 
-> ⚡ **46 views** · 🧾 [Invoice Processing](../)
+> ⚡ **64 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

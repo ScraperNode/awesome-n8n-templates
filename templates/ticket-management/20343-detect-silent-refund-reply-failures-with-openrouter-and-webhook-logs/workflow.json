@@ -1,0 +1,206 @@
+{
+  "name": "Detect silent AI refund reply failures with OpenRouter and execution logs",
+  "nodes": [
+    {
+      "name": "Webhook - Support Request",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -120,
+        300
+      ],
+      "parameters": {
+        "path": "audit-silent-failure",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "name": "Order Lookup",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        120,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Simulated order database. In production this would be a Postgres or\n// HTTP Request node querying your order service.\nconst ORDERS = {\n  \"ORD-1001\": { orderId: \"ORD-1001\", customer: \"A. Rivera\", chargedOn: \"2026-04-15\", amount: 49.99, currency: \"USD\", duplicateOf: \"ORD-1000\", status: \"settled\" },\n  \"ORD-1002\": { orderId: \"ORD-1002\", customer: \"M. Chen\", chargedOn: \"2026-04-02\", amount: 129.00, currency: \"USD\", duplicateOf: null, status: \"settled\" },\n  \"ORD-1003\": { orderId: \"ORD-1003\", customer: \"S. Okafor\", chargedOn: \"2026-03-27\", amount: 18.50, currency: \"USD\", duplicateOf: null, status: \"refunded\" },\n  // ORD-1004 comes back from the index but the billing join failed, so the\n  // amount and currency are missing. The record is present and incomplete.\n  \"ORD-1004\": { orderId: \"ORD-1004\", customer: \"L. Duarte\", chargedOn: \"2026-04-11\", amount: null, currency: null, duplicateOf: \"ORD-1003\", status: \"settled\" }\n};\n\nconst body = $json.body || $json;\nconst orderId = body.orderId || \"\";\nconst message = body.message || \"\";\n\n// The lookup returns an ARRAY. An unknown id returns an empty array, not an\n// error. This lets the exercise demonstrate a successful execution with\n// missing business data.\nconst orders = ORDERS[orderId] ? [ORDERS[orderId]] : [];\n\nreturn [{\n  json: {\n    orderId,\n    message,\n    orders,\n    orderCount: orders.length,\n    // A lookup is only usable if a record came back AND the fields the agent\n    // is about to reason over are actually populated.\n    lookupComplete: orders.length > 0 && Number.isFinite(orders[0].amount) && orders[0].amount > 0 && typeof orders[0].currency === \"string\" && orders[0].currency.length === 3,\n    orderBlock: orders.length ? JSON.stringify(orders[0], null, 2) : \"\"\n  }\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "name": "Validate Lookup",
+      "type": "n8n-nodes-base.if",
+      "disabled": true,
+      "position": [
+        360,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "lookup-complete",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.lookupComplete }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "name": "Refund Support Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        600,
+        220
+      ],
+      "parameters": {
+        "text": "=Customer message:\n{{ $json.message }}\n\nORDER RECORD:\n{{ $json.orderBlock }}",
+        "options": {
+          "systemMessage": "You are a refund support agent for an e-commerce store.\n\nYou are given a customer message and an ORDER RECORD block retrieved from the order database. The order database is authoritative and the customer's identity has already been verified upstream, so never ask the customer for information you were not given.\n\nDecide whether the customer should receive a refund and reply to them directly in two or three sentences. Always state the order id, the refund amount, and your decision.\n\nReturn plain text, not JSON."
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "name": "OpenRouter - Support",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "position": [
+        600,
+        440
+      ],
+      "parameters": {
+        "model": "openai/gpt-4.1-mini",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Respond to Customer",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        900,
+        220
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ orderId: $('Order Lookup').item.json.orderId, answeredBy: 'agent', reply: $json.output }) }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "name": "Respond Needs Human",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        600,
+        640
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ orderId: $json.orderId, answeredBy: 'human-review', reply: 'We could not retrieve a complete record for that order. A support specialist will follow up.' }) }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "name": "Template Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -740,
+        20
+      ],
+      "parameters": {
+        "width": 560,
+        "height": 720,
+        "content": "## Detect silent AI refund reply failures with OpenRouter and execution logs\n\n### Quick overview\nThis workflow shows how a support agent can send a confident refund reply even when the order data behind it is missing or incomplete, and how to catch that with saved executions and a validation step. It is the Exercise 1 template from the n8n Production AI Playbook post on Audit & Trace. All order records are synthetic and no payment is processed.\n\n### How it works\n1. Receives a POST webhook request with an orderId and a customer message.\n2. Order Lookup returns a simulated order record and flags whether the lookup is complete.\n3. Validate Lookup (disabled by default) routes incomplete lookups to human review.\n4. Refund Support Agent drafts a reply from the lookup result using an OpenRouter chat model.\n5. Respond to Customer returns the reply, or Respond Needs Human returns a human-review status.\n\n### Setup\n1. Add an OpenRouter API credential to OpenRouter - Support. The template uses openai/gpt-4.1-mini, and any supported chat model works.\n2. In the workflow Settings, set Save manual executions to Save.\n3. Select Execute workflow and POST `{\"orderId\":\"ORD-1001\",\"message\":\"Charged twice, refund the duplicate.\"}` to the Webhook Test URL. Repeat with ORD-9999 and ORD-1004.\n4. Compare each reply with the Order Lookup output in the saved execution, then enable Validate Lookup and rerun all three requests."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "connections": {
+    "Order Lookup": {
+      "main": [
+        [
+          {
+            "node": "Validate Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Lookup": {
+      "main": [
+        [
+          {
+            "node": "Refund Support Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Needs Human",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter - Support": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Refund Support Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refund Support Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Support Request": {
+      "main": [
+        [
+          {
+            "node": "Order Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

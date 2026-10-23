@@ -1,6 +1,6 @@
 # 🎫 Automate Marker.io issues to ServiceNow incidents with full technical context
 
-> ⚡ **198 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **256 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

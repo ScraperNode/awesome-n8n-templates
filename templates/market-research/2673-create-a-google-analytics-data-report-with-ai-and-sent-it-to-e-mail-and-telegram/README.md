@@ -1,6 +1,6 @@
 # 📊 Create a Google Analytics data report with AI and sent it to e-mail and Telegram
 
-> ⚡ **12,524 views** · 📊 [Market Research & Insights](../)
+> ⚡ **13,098 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

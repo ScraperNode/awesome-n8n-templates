@@ -1,6 +1,6 @@
 # 📊 Daily business idea insights aggregator from IdeaBrowser to Google Docs
 
-> ⚡ **2,173 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,488 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

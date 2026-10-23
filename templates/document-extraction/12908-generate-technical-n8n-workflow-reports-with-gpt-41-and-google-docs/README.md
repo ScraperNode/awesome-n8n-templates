@@ -1,6 +1,6 @@
 # 🔬 Generate technical n8n workflow reports with GPT-4.1 and Google Docs
 
-> ⚡ **14 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **24 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎯 Automate support ticket classification & routing from HubSpot to Jira with GPT
 
-> ⚡ **325 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **440 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

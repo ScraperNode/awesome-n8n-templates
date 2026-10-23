@@ -1,6 +1,6 @@
 # ⚡ Automatically delete spam emails in Gmail on schedule
 
-> ⚡ **4,973 views** · ⚡ [Personal Productivity](../)
+> ⚡ **5,778 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

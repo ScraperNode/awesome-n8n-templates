@@ -1,6 +1,6 @@
 # 💬 Auto-personalized first touch for new leads using GPT-4o-mini & Google Sheets
 
-> ⚡ **56 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **79 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

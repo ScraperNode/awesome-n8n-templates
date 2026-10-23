@@ -1,6 +1,6 @@
 # 🎬 Generate academic assignments with Google Gemini & deliver via Telegram/PDF
 
-> ⚡ **802 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **909 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

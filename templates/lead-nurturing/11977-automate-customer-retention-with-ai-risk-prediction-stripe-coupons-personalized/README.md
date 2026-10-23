@@ -1,6 +1,6 @@
 # 💬 Automate customer retention with AI risk prediction, Stripe coupons & personalized Gmail
 
-> ⚡ **68 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **170 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

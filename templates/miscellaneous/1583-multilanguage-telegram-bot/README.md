@@ -1,6 +1,6 @@
 # 🔧 Multilanguage telegram bot
 
-> ⚡ **9,473 views** · 🔧 [Miscellaneous](../)
+> ⚡ **9,581 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

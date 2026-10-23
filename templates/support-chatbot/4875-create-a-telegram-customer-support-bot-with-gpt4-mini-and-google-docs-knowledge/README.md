@@ -1,6 +1,6 @@
 # 💬 Create a Telegram customer support bot with GPT4-mini and Google Docs knowledge
 
-> ⚡ **8,637 views** · 💬 [Support Chatbots](../)
+> ⚡ **10,167 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

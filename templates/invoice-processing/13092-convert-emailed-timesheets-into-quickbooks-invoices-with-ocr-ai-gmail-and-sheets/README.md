@@ -1,6 +1,6 @@
 # 🧾 Convert emailed timesheets into QuickBooks invoices with OCR, AI, Gmail and Sheets
 
-> ⚡ **43 views** · 🧾 [Invoice Processing](../)
+> ⚡ **127 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

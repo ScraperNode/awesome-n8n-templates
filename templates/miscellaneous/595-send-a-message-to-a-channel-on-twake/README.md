@@ -1,6 +1,6 @@
 # 🔧 Send a message to a channel on Twake
 
-> ⚡ **607 views** · 🔧 [Miscellaneous](../)
+> ⚡ **630 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

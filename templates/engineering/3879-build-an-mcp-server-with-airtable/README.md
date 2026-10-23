@@ -1,6 +1,6 @@
 # ⚒️ Build an MCP server with Airtable
 
-> ⚡ **8,260 views** · ⚒️ [Engineering](../)
+> ⚡ **8,349 views** · ⚒️ [Engineering](../)
 
 ## Description
 

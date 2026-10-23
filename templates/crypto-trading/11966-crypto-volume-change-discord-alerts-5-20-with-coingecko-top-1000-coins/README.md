@@ -1,6 +1,6 @@
 # 📈 Crypto volume change Discord alerts (5-20%) with CoinGecko (Top 1000 coins)
 
-> ⚡ **57 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **78 views** · 📈 [Crypto Trading & Stock Market](../)
 
 > 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
 >

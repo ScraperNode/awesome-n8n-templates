@@ -1,6 +1,6 @@
 # 🔒 Automated AWS IAM key compromise response with Slack & Claude AI
 
-> ⚡ **817 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,024 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

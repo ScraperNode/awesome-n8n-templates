@@ -1,6 +1,6 @@
 # 👥 Build your own CUSTOM API MCP server
 
-> ⚡ **18,500 views** · 👥 [HR & Recruitment](../)
+> ⚡ **19,144 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 Jira project management automation with Google Gemini & MCP server
 
-> ⚡ **1,133 views** · 📋 [Project Management](../)
+> ⚡ **1,558 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 AI-powered auto-generate exam questions and answers from Google Docs with Gemini
 
-> ⚡ **3,432 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **3,970 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

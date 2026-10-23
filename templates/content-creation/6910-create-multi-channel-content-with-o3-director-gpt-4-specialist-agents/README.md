@@ -1,6 +1,6 @@
 # 🎬 Create multi-channel content with O3 Director & GPT-4 specialist agents
 
-> ⚡ **1,322 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,511 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

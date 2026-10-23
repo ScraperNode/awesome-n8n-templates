@@ -1,6 +1,6 @@
 # 🧾 Extract information from an image of a receipt
 
-> ⚡ **2,582 views** · 🧾 [Invoice Processing](../)
+> ⚡ **2,679 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

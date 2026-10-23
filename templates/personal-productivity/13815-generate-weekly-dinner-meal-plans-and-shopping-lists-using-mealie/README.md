@@ -1,6 +1,6 @@
 # ⚡ Generate weekly dinner meal plans and shopping lists using Mealie
 
-> ⚡ **20 views** · ⚡ [Personal Productivity](../)
+> ⚡ **161 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

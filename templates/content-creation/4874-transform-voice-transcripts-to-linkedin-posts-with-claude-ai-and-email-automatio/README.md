@@ -1,6 +1,6 @@
 # 🎬 Transform voice transcripts to LinkedIn posts with Claude AI and email automation
 
-> ⚡ **414 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **502 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

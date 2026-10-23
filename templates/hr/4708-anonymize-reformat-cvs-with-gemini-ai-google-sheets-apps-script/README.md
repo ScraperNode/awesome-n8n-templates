@@ -1,6 +1,6 @@
 # 👥 📑 Anonymize & reformat CVs with Gemini AI, Google Sheets & Apps Script
 
-> ⚡ **323 views** · 👥 [HR & Recruitment](../)
+> ⚡ **347 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Automate sales call research and follow-ups with GPT-4, Tavily, Google Sheets
 
-> ⚡ **795 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **872 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 👥 Automate employee onboarding with Slack, Jira, and Google Workspace integration
 
-> ⚡ **2,620 views** · 👥 [HR & Recruitment](../)
+> ⚡ **2,805 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

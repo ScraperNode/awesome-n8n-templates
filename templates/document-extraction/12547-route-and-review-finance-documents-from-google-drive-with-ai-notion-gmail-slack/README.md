@@ -1,6 +1,6 @@
 # 🔬 Route and review finance documents from Google Drive with AI, Notion, Gmail, Slack, and Google Sheets
 
-> ⚡ **70 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **301 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Automate marketing campaigns with Airtable CRM & Brevo email tracking
 
-> ⚡ **901 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,119 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

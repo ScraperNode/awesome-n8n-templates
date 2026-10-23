@@ -1,6 +1,6 @@
 # 📈 Automated economic calendar PDF reports to Telegram via RapidAPI
 
-> ⚡ **65 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **87 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

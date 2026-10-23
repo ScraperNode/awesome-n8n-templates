@@ -1,6 +1,6 @@
 # 🤝 Automatic Shopify order fulfillment process
 
-> ⚡ **5,429 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **6,053 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

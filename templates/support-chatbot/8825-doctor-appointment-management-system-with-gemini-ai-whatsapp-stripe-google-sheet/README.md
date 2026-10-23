@@ -1,6 +1,6 @@
 # 💬 Doctor appointment management system with Gemini AI, WhatsApp, Stripe & Google Sheets
 
-> ⚡ **6,432 views** · 💬 [Support Chatbots](../)
+> ⚡ **11,278 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

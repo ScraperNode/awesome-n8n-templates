@@ -1,6 +1,6 @@
 # ⚙️ Receive updates for GitLab events
 
-> ⚡ **3,894 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **3,935 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

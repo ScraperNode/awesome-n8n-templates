@@ -1,6 +1,6 @@
 # ⚡ Personal finance tracker with Telegram Bot, Google Gemini Vision, and Sheets
 
-> ⚡ **1,971 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,195 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

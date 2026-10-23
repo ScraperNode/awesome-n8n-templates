@@ -1,6 +1,6 @@
 # ⚙️ Transfer workflows with credentials & sub-workflow management between n8n instances
 
-> ⚡ **421 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **700 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

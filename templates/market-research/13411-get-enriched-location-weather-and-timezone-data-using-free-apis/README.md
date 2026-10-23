@@ -1,6 +1,6 @@
 # 📊 Get enriched location, weather, and timezone data using free APIs
 
-> ⚡ **89 views** · 📊 [Market Research & Insights](../)
+> ⚡ **670 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

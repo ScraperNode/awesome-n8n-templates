@@ -1,6 +1,6 @@
 # 📊 AI-powered news monitoring with Linkup, Airtable, and Slack notifications
 
-> ⚡ **1,098 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,309 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
 >
@@ -8,51 +8,39 @@
 
 ## Description
 
-This template provides a fully automated system for monitoring news on any topic you choose. It leverages Linkup's AI-powered web search to find recent, relevant articles, extracts key information like the title, date, and summary, and then neatly organizes everything in an Airtable base.
+## Quick overview
+Automatically searches the web for recent news on any topic using Linkup's AI search, extracts title, summary, date, and URL for each article, saves them as records in Airtable, and sends a Slack notification once the digest is ready for review.
 
-Stop manually searching for updates and let this workflow deliver a curated news digest directly to your own database, complete with a Slack notification to let you know when it's done. This is the perfect solution for staying informed without the repetitive work.
+## How it works
+1. The **Schedule Trigger** node runs the workflow automatically on a recurring schedule, weekly by default.
+2. The **Set news parameters** node defines the topic(s) to monitor (`News topic(s)`) and the freshness window in days (`News from last x days`).
+3. The **Query Linkup for news** node sends a POST request to the Linkup API (`https://api.linkup.so/v1/search`) with the topic, a `fromDate` calculated from the freshness window, and a structured output schema requesting title, URL, content summary, and publication date for each article.
+4. The **Split out news** node splits the returned `news` array into individual items, one per article.
+5. The **Loop Over Items** node processes each article one at a time to stay within API rate limits.
+6. For each article, the **Store one news** node creates a new record in an Airtable table with the fields Title, Date, Summary, URL, and a Status of "new".
+7. The **Wait** node pauses 2 seconds between each Airtable write to avoid hitting rate limits.
+8. Once all articles are processed, the **Aggregate in 1 item** node combines all items into a single item, and the **Notify in Slack** node posts a message to a Slack channel stating how many news articles were found.
 
+## Setup
+1. Configure the **Schedule Trigger** node to set the frequency and time you want the workflow to run (default: every 7 days at 17:30).
+2. In the **Set news parameters** node, replace the example value of `News topic(s)` with your own keywords (e.g. "decarbonisation, net-zero and corporate sustainability"), and set `News from last x days` to match your schedule frequency.
+3. In the **Query Linkup for news** node, add your Linkup API key as an HTTP Bearer Auth credential. Get a free API key at https://www.linkup.so/ (the free plan includes €5 of monthly credits, enough for about 1,000 runs of this workflow).
+4. In the **Store one news** node, connect your Airtable account, then select the Base and Table where news should be saved. The table must contain the fields: Title (string), Date (date/time), Summary (string), URL (string), and Status (single select with options "new" and "reviewed").
+5. In the **Notify in Slack** node, connect your Slack account and select the channel where you want to receive the completion notification.
+6. Activate the workflow to start the automated news monitoring.
 
-## **Who is this for?**
+## Requirements
+- A Linkup account and API key (free tier available at https://www.linkup.so/)
+- An Airtable account with a base/table containing the fields Title, Date, Summary, URL, and Status
+- A Slack account with access to the channel used for notifications
 
-* **Marketing & PR professionals:** Keep a close eye on industry trends, competitor mentions, and brand sentiment.
-* **Analysts & researchers:** Effortlessly gather source material and data points on specific research topics.
-* **Business owners & entrepreneurs:** Stay updated on market shifts, new technologies, and potential opportunities without dedicating hours to reading.
-* **Anyone with a passion project:** Easily follow developments in your favorite hobby, field of study, or area of interest.
+## Customization
+- Swap the Airtable node for a Notion, Google Sheets, or other database node to store news elsewhere
+- Replace the Slack node with a Discord, Telegram, or Email node for alerts on a different platform
+- Insert an AI node after the Linkup search to perform sentiment analysis, categorize articles, or generate a high-level overview before saving them
 
-
-## **What problem does this solve?**
-
-* **Eliminates manual searching:** Frees you from the daily or weekly grind of searching multiple news sites for relevant articles.
-* **Centralizes information:** Consolidates all relevant news into a single, organized, and easily accessible Airtable database.
-* **Provides structured data:** Instead of just a list of links, it extracts and formats key information (title, summary, URL, date) for each article, ready for review or analysis.
-* **Keeps you proactively informed:** The automated Slack notification ensures you know exactly when new information is ready, closing the loop on your monitoring process.
-
-## **How it works**
-
-1.  **Schedule:** The workflow runs automatically based on a schedule you set (the default is weekly).
-2.  **Define topics:** In the **Set news parameters** node, you specify the topics you want to monitor and the time frame (e.g., news from the last 7 days).
-3.  **AI web search:** The **Query Linkup for news** node sends your topics to Linkup's API. Linkup's AI searches the web for relevant news articles and returns a structured list containing each article's title, URL, summary, and publication date.
-4.  **Store in Airtable:** The workflow loops through each article found and creates a new record for it in your Airtable base.
-5.  **Notify on Slack:** Once all the news has been stored, a final notification is sent to a Slack channel of your choice, letting you know the process is complete and how many articles were found.
-
-
-## **Setup**
-
-1.  **Configure the trigger:** Adjust the **Schedule Trigger** node to set the frequency and time you want the workflow to run.
-2.  **Set your topics:** In the **Set news parameters** node, replace the example topics with your own keywords and define the news freshness that you'd like to set.
-3.  **Connect your accounts:**
-    * **Linkup:** Add your Linkup API key in the **Query Linkup for news** node. Linkup's free plan includes €5 of credits monthly, enough for about 1,000 runs of this workflow.
-    * **Airtable:** In the **Store one news** node, select your Airtable account, then choose the Base and Table where you want to save the news.
-    * **Slack:** In the **Notify in Slack** node, select your Slack account and the channel where you want to receive notifications.
-4.  **Activate the workflow:** Toggle the workflow to "Active", and your automated news monitoring system is live!
-
-
-## **Taking it further**
-
-* **Change your database:** Don't use Airtable? Easily swap the **Airtable** node for a **Notion**, **Google Sheets**, or any other database node to store your news.
-* **Customize notifications:** Replace the **Slack** node with a **Discord**, **Telegram**, or **Email** node to get alerts on your preferred platform.
-* **Add AI analysis:** Insert an AI node after the Linkup search to perform sentiment analysis on the news summaries, categorize articles, or generate a high-level overview before saving them.
+## Additional info
+Linkup's free plan includes €5 of monthly credits, enough for roughly 1,000 runs of this workflow. Get an API key at https://www.linkup.so/.
 
 ## 🔗 Nodes Used
 

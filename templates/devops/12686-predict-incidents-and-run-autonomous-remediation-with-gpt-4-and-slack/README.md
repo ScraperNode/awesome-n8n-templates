@@ -1,6 +1,6 @@
 # ⚙️ Predict incidents and run autonomous remediation with GPT-4 and Slack
 
-> ⚡ **23 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **80 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

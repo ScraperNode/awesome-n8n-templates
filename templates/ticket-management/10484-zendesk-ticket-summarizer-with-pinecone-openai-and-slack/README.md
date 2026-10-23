@@ -1,6 +1,6 @@
 # 🎫 Zendesk ticket summarizer with Pinecone, OpenAI, and Slack
 
-> ⚡ **283 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **339 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

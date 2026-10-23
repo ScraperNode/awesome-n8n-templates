@@ -1,6 +1,6 @@
 # 🔬 Automate restaurant sales & inventory forecasting with Gemini AI & Google Sheets
 
-> ⚡ **2,344 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,588 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

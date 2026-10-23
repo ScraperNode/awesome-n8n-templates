@@ -1,6 +1,6 @@
 # 💬 Email-based book recommendations with Ollama LLM and OpenLibrary API
 
-> ⚡ **538 views** · 💬 [Support Chatbots](../)
+> ⚡ **591 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

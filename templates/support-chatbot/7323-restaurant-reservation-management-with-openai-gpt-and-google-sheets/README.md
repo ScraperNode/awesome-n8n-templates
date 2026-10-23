@@ -1,6 +1,6 @@
 # 💬 Restaurant reservation management with OpenAI GPT and Google Sheets
 
-> ⚡ **3,279 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,782 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

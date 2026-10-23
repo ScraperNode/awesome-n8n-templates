@@ -1,6 +1,6 @@
 # 💬 Automated post-purchase product delivery & upsell with Jotform,  GDrive, Gemini
 
-> ⚡ **223 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **251 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

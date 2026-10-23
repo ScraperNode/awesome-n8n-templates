@@ -1,6 +1,6 @@
 # ⚡ Build a personal assistant with Google Gemini, Gmail and Calendar using MCP
 
-> ⚡ **36,602 views** · ⚡ [Personal Productivity](../)
+> ⚡ **38,779 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

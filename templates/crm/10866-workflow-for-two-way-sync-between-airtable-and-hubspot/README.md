@@ -1,6 +1,6 @@
 # 🤝 Workflow for two-way sync between Airtable and HubSpot
 
-> ⚡ **42 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **81 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

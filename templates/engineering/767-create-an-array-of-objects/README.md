@@ -1,6 +1,6 @@
 # ⚒️ Create an array of objects
 
-> ⚡ **2,628 views** · ⚒️ [Engineering](../)
+> ⚡ **2,655 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Transform long content into bite-sized learning modules with GPT-4 & Google Docs
 
-> ⚡ **395 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **470 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

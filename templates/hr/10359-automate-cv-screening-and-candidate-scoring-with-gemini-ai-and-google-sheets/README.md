@@ -1,6 +1,6 @@
 # 👥 Automate CV screening and candidate scoring with Gemini AI and Google Sheets
 
-> ⚡ **523 views** · 👥 [HR & Recruitment](../)
+> ⚡ **786 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

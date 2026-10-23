@@ -1,6 +1,6 @@
 # ⚙️ Handle errors from a different workflow
 
-> ⚡ **2,027 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,081 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

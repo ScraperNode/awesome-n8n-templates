@@ -1,6 +1,6 @@
 # 🤖 Manage Asana projects with natural language AI assistant via chat & webhook
 
-> ⚡ **154 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **172 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

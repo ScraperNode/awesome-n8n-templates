@@ -1,6 +1,6 @@
 # 📱 Send Shopify order confirmations via WhatsApp using MoltFlow
 
-> ⚡ **28 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **210 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

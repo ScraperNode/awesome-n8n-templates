@@ -1,6 +1,6 @@
 # 🔬 Automate API FAQ quality testing with GPT-4o-mini, Google Sheets & Slack alerts
 
-> ⚡ **226 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **412 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

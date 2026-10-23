@@ -1,6 +1,6 @@
 # 📊 Analyze customer feedback with Azure GPT-4, Jira tasks & Outlook reports from Monday.com
 
-> ⚡ **127 views** · 📊 [Market Research & Insights](../)
+> ⚡ **158 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

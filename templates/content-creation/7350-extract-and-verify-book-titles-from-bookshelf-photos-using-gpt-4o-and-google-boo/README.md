@@ -1,6 +1,6 @@
 # 🎬 Extract and verify book titles from bookshelf photos using GPT-4o and Google Books
 
-> ⚡ **553 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **595 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

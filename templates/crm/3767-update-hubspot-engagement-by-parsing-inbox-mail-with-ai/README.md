@@ -1,6 +1,6 @@
 # 🤝 Update Hubspot engagement by parsing inbox mail with AI
 
-> ⚡ **1,240 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,345 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

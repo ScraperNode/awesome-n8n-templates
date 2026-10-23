@@ -1,6 +1,6 @@
 # 🎯 AI-powered meeting research & daily agenda with Google Calendar, Attio CRM, and Slack
 
-> ⚡ **706 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **983 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

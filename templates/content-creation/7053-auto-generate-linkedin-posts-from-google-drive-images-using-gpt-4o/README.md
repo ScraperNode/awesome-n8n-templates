@@ -1,6 +1,6 @@
 # 🎬 Auto-generate LinkedIn posts from Google Drive images using GPT-4o
 
-> ⚡ **69 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **88 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

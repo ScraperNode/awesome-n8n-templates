@@ -1,6 +1,6 @@
 # 🔧 Automate inventory management with Google Sheets & Gmail
 
-> ⚡ **364 views** · 🔧 [Miscellaneous](../)
+> ⚡ **762 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

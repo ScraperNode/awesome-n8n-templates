@@ -1,6 +1,6 @@
 # 🎬 Upload podcast episodes to Spotify via RSS & Google Drive
 
-> ⚡ **875 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,061 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

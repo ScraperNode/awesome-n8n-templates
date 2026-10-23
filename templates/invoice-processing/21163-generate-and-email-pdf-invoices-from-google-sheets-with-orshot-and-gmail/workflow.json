@@ -1,0 +1,888 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "name": "Generate and email PDF invoices from Google Sheets with Orshot, Gmail and Google Drive",
+  "nodes": [
+    {
+      "id": "444c4bbf-3bc7-4a1e-9ec9-0acecc028066",
+      "name": "Every 15 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        320
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "b850f614-d6c0-4c72-b72c-54897d150fde",
+      "name": "Get invoices marked Ready",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        220,
+        320
+      ],
+      "parameters": {
+        "options": {},
+        "filtersUI": {
+          "values": [
+            {
+              "lookupValue": "Ready",
+              "lookupColumn": "Status"
+            }
+          ]
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "03660652-069f-440e-9ed5-9751373d5d44",
+      "name": "Get line items",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        440,
+        320
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "3d752c1a-a321-4702-9131-9c07df9d555f",
+      "name": "Build invoice data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        640,
+        320
+      ],
+      "parameters": {
+        "jsCode": "// Edit these once.\nconst COMPANY_NAME = 'Your Company';\nconst COMPANY_DETAILS = '123 Main Street, City, Country\\user@example.com';\nconst PAYMENT_DETAILS = 'Bank: Your Bank\\nAccount: +1234567890\\nPay online: yourcompany.com/pay';\nconst FOOTER = 'Your Company \u00b7 yourcompany.com';\nconst PAYMENT_DAYS = 14; // used when Due date is empty\nconst MAX_LINES = 8; // rows in the Orshot invoice template\n\nconst blank = v => v === undefined || v === null || String(v).trim() === '';\n// Accepts 1800, '1,800.00' or '$1,800'; anything without a number is NaN.\nconst num = v => {\n  if (typeof v === 'number') return v;\n  const s = String(v ?? '').replace(/[^0-9.\\-]/g, '');\n  return /\\d/.test(s) ? Number(s) : NaN;\n};\nconst qtyOf = l => (blank(l['Quantity']) ? 1 : num(l['Quantity']));\nconst lines = $('Get line items').all().map(i => i.json).filter(l => !blank(l['Invoice number']));\n\nreturn $('Get invoices marked Ready').all().map(({ json: inv }) => {\n  const number = String(inv['Invoice number'] ?? '').trim();\n  const currency = String(inv['Currency'] || 'USD').trim().toUpperCase();\n  const money = n => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(n);\n  const row = { row_number: inv.row_number, invoice_number: number, client_name: inv['Client name'], email: String(inv['Client email'] ?? '').trim(), company: COMPANY_NAME };\n\n  const items = lines.filter(l => String(l['Invoice number']).trim() === number);\n  const problems = [];\n  if (!number) problems.push('Invoice number is empty');\n  if (!/^\\S+@\\S+\\.\\S+$/.test(row.email)) problems.push('Client email is missing or invalid');\n  if (!items.length) problems.push('No line items found for this invoice number');\n  if (items.length > MAX_LINES) problems.push(`${items.length} line items, the template fits ${MAX_LINES}`);\n  const bad = items.filter(l => isNaN(qtyOf(l)) || isNaN(num(l['Unit price'])));\n  if (bad.length) problems.push('Quantity or Unit price is not a number on ' + bad.map(l => `\"${l['Description']}\"`).join(', '));\n  if (problems.length) return { json: { ...row, ok: false, status: 'Error', error: problems.join('. ') } };\n\n  const subtotal = items.reduce((t, l) => t + qtyOf(l) * num(l['Unit price']), 0);\n  const taxRate = blank(inv['Tax rate %']) ? 0 : num(inv['Tax rate %']);\n  const tax = Math.round(subtotal * taxRate) / 100;\n  const total = subtotal + tax;\n  const today = $now.toFormat('MMM d, yyyy');\n  const due = blank(inv['Due date']) ? $now.plus({ days: PAYMENT_DAYS }).toFormat('MMM d, yyyy') : String(inv['Due date']);\n\n  const mods = {\n    company_name: COMPANY_NAME,\n    company_details: COMPANY_DETAILS,\n    payment_details: PAYMENT_DETAILS,\n    footer_text: FOOTER,\n    invoice_number: number,\n    issue_date: blank(inv['Issue date']) ? today : String(inv['Issue date']),\n    due_date: due,\n    amount_due: money(total),\n    bill_to_name: String(inv['Client name'] || ' '),\n    bill_to_details: [inv['Client address'], row.email].filter(v => !blank(v)).join('\\n') || ' ',\n    subtotal: money(subtotal),\n    tax_label: taxRate ? `Tax (${taxRate}%)` : 'Tax',\n    tax: money(tax),\n    total: money(total),\n    notes: blank(inv['Notes']) ? `Payment is due by ${due}. Please include ${number} with your payment.` : String(inv['Notes']),\n  };\n  // Empty rows get a space so the sample rows in the template are cleared.\n  for (let i = 1; i <= MAX_LINES; i++) {\n    const l = items[i - 1];\n    const qty = l ? qtyOf(l) : 0;\n    mods[`item_${i}_desc`] = l ? String(l['Description'] || ' ') : ' ';\n    mods[`item_${i}_qty`] = l ? String(qty) : ' ';\n    mods[`item_${i}_price`] = l ? money(num(l['Unit price'])) : ' ';\n    mods[`item_${i}_amount`] = l ? money(qty * num(l['Unit price'])) : ' ';\n  }\n\n  return { json: { ...row, ok: true, status: 'Ready', error: '', total: money(total), due_date: due, file_name: `${number}-${String(inv['Client name'] || '')}`.replace(/[^a-z0-9]+/gi, '-').toLowerCase(), mods } };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a71b0962-e6b8-4e0c-939b-8765dc72cfea",
+      "name": "Invoice data valid?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        840,
+        320
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "2544d448-5b3e-46a2-b688-536b4e2596b6",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "00810dd8-8d14-492b-81b9-dabe54b3aeda",
+      "name": "Not valid",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1000,
+        800
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "2d32e3c4-7f4d-4048-90b4-c17ef3dbb051",
+      "name": "Render invoice PDF",
+      "type": "@thelifeofrishi/n8n-nodes-orshot.orshot",
+      "onError": "continueRegularOutput",
+      "position": [
+        1200,
+        320
+      ],
+      "parameters": {
+        "options": {
+          "customFileName": "={{ $json.file_name }}"
+        },
+        "operation": "https://api.orshot.com/v1/studio/render",
+        "responseType": "url",
+        "responseFormat": "pdf",
+        "studioTemplateId": "",
+        "studioModifications": {
+          "modification": [
+            {
+              "key": "company_name",
+              "value": "={{ $json.mods['company_name'] }}"
+            },
+            {
+              "key": "company_details",
+              "value": "={{ $json.mods['company_details'] }}"
+            },
+            {
+              "key": "payment_details",
+              "value": "={{ $json.mods['payment_details'] }}"
+            },
+            {
+              "key": "footer_text",
+              "value": "={{ $json.mods['footer_text'] }}"
+            },
+            {
+              "key": "invoice_number",
+              "value": "={{ $json.mods['invoice_number'] }}"
+            },
+            {
+              "key": "issue_date",
+              "value": "={{ $json.mods['issue_date'] }}"
+            },
+            {
+              "key": "due_date",
+              "value": "={{ $json.mods['due_date'] }}"
+            },
+            {
+              "key": "amount_due",
+              "value": "={{ $json.mods['amount_due'] }}"
+            },
+            {
+              "key": "bill_to_name",
+              "value": "={{ $json.mods['bill_to_name'] }}"
+            },
+            {
+              "key": "bill_to_details",
+              "value": "={{ $json.mods['bill_to_details'] }}"
+            },
+            {
+              "key": "item_1_desc",
+              "value": "={{ $json.mods['item_1_desc'] }}"
+            },
+            {
+              "key": "item_1_qty",
+              "value": "={{ $json.mods['item_1_qty'] }}"
+            },
+            {
+              "key": "item_1_price",
+              "value": "={{ $json.mods['item_1_price'] }}"
+            },
+            {
+              "key": "item_1_amount",
+              "value": "={{ $json.mods['item_1_amount'] }}"
+            },
+            {
+              "key": "item_2_desc",
+              "value": "={{ $json.mods['item_2_desc'] }}"
+            },
+            {
+              "key": "item_2_qty",
+              "value": "={{ $json.mods['item_2_qty'] }}"
+            },
+            {
+              "key": "item_2_price",
+              "value": "={{ $json.mods['item_2_price'] }}"
+            },
+            {
+              "key": "item_2_amount",
+              "value": "={{ $json.mods['item_2_amount'] }}"
+            },
+            {
+              "key": "item_3_desc",
+              "value": "={{ $json.mods['item_3_desc'] }}"
+            },
+            {
+              "key": "item_3_qty",
+              "value": "={{ $json.mods['item_3_qty'] }}"
+            },
+            {
+              "key": "item_3_price",
+              "value": "={{ $json.mods['item_3_price'] }}"
+            },
+            {
+              "key": "item_3_amount",
+              "value": "={{ $json.mods['item_3_amount'] }}"
+            },
+            {
+              "key": "item_4_desc",
+              "value": "={{ $json.mods['item_4_desc'] }}"
+            },
+            {
+              "key": "item_4_qty",
+              "value": "={{ $json.mods['item_4_qty'] }}"
+            },
+            {
+              "key": "item_4_price",
+              "value": "={{ $json.mods['item_4_price'] }}"
+            },
+            {
+              "key": "item_4_amount",
+              "value": "={{ $json.mods['item_4_amount'] }}"
+            },
+            {
+              "key": "item_5_desc",
+              "value": "={{ $json.mods['item_5_desc'] }}"
+            },
+            {
+              "key": "item_5_qty",
+              "value": "={{ $json.mods['item_5_qty'] }}"
+            },
+            {
+              "key": "item_5_price",
+              "value": "={{ $json.mods['item_5_price'] }}"
+            },
+            {
+              "key": "item_5_amount",
+              "value": "={{ $json.mods['item_5_amount'] }}"
+            },
+            {
+              "key": "item_6_desc",
+              "value": "={{ $json.mods['item_6_desc'] }}"
+            },
+            {
+              "key": "item_6_qty",
+              "value": "={{ $json.mods['item_6_qty'] }}"
+            },
+            {
+              "key": "item_6_price",
+              "value": "={{ $json.mods['item_6_price'] }}"
+            },
+            {
+              "key": "item_6_amount",
+              "value": "={{ $json.mods['item_6_amount'] }}"
+            },
+            {
+              "key": "item_7_desc",
+              "value": "={{ $json.mods['item_7_desc'] }}"
+            },
+            {
+              "key": "item_7_qty",
+              "value": "={{ $json.mods['item_7_qty'] }}"
+            },
+            {
+              "key": "item_7_price",
+              "value": "={{ $json.mods['item_7_price'] }}"
+            },
+            {
+              "key": "item_7_amount",
+              "value": "={{ $json.mods['item_7_amount'] }}"
+            },
+            {
+              "key": "item_8_desc",
+              "value": "={{ $json.mods['item_8_desc'] }}"
+            },
+            {
+              "key": "item_8_qty",
+              "value": "={{ $json.mods['item_8_qty'] }}"
+            },
+            {
+              "key": "item_8_price",
+              "value": "={{ $json.mods['item_8_price'] }}"
+            },
+            {
+              "key": "item_8_amount",
+              "value": "={{ $json.mods['item_8_amount'] }}"
+            },
+            {
+              "key": "subtotal",
+              "value": "={{ $json.mods['subtotal'] }}"
+            },
+            {
+              "key": "tax_label",
+              "value": "={{ $json.mods['tax_label'] }}"
+            },
+            {
+              "key": "tax",
+              "value": "={{ $json.mods['tax'] }}"
+            },
+            {
+              "key": "total",
+              "value": "={{ $json.mods['total'] }}"
+            },
+            {
+              "key": "notes",
+              "value": "={{ $json.mods['notes'] }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "orshotApi": {
+          "id": "credential-id",
+          "name": "Orshot account"
+        }
+      },
+      "typeVersion": 4
+    },
+    {
+      "id": "f062991f-a7c7-42c4-b611-ee2eb0fc7e75",
+      "name": "Get PDF link",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1420,
+        320
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// The Orshot node returns the API response under data, and the API wraps the render in data again.\n// A failed render comes back as { error } because the step continues on error.\nconst res = $json.data?.data ?? $json.data;\nconst page = Array.isArray(res) ? res[0] : res;\nconst pdf = page?.content || '';\nconst { mods, ...row } = $('Build invoice data').item.json;\nreturn { json: { ...row, pdf, status: pdf ? 'Rendered' : 'Error', error: pdf ? '' : `Render: ${$json.error || 'Orshot returned no PDF link'}` } };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f2210981-cef5-45f3-94ca-96cc0e2c10a7",
+      "name": "PDF rendered?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1640,
+        320
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "e4665595-072a-4bda-b514-9f11473f0f74",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.pdf }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "567dd6b7-6021-4863-82b1-432d27726a54",
+      "name": "Render failed",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1760,
+        620
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "fc74fb94-7a22-41bc-bc77-fb6ea42d24b4",
+      "name": "Download PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        1960,
+        320
+      ],
+      "parameters": {
+        "url": "={{ $json.pdf }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "499bcf6e-1eeb-4456-bb52-749922d9208c",
+      "name": "Email invoice",
+      "type": "n8n-nodes-base.gmail",
+      "onError": "continueRegularOutput",
+      "position": [
+        2180,
+        200
+      ],
+      "parameters": {
+        "sendTo": "={{ $('Get PDF link').item.json.email }}",
+        "message": "=<p>Hi {{ $('Get PDF link').item.json.client_name }},</p><p>Please find invoice {{ $('Get PDF link').item.json.invoice_number }} attached.</p><p>Amount due: <b>{{ $('Get PDF link').item.json.total }}</b><br>Due date: {{ $('Get PDF link').item.json.due_date }}</p><p>Thank you,<br>{{ $('Get PDF link').item.json.company }}</p>",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "data"
+              }
+            ]
+          },
+          "appendAttribution": false
+        },
+        "subject": "=Invoice {{ $('Get PDF link').item.json.invoice_number }} from {{ $('Get PDF link').item.json.company }}",
+        "emailType": "html"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "334fbb3c-394a-451c-8956-5a0340efb84d",
+      "name": "Save PDF to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "onError": "continueRegularOutput",
+      "position": [
+        2180,
+        440
+      ],
+      "parameters": {
+        "name": "={{ $('Get PDF link').item.json.file_name }}.pdf",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive",
+          "cachedResultName": "My Drive"
+        },
+        "options": {},
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        }
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "0d429e0d-9c0b-4e2d-a836-f8b3ee9f2837",
+      "name": "Wait for both",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        2400,
+        320
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "combineBy": "combineByPosition"
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "70ecd567-6eb6-4522-8438-72251966955e",
+      "name": "Mark as sent",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2620,
+        320
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Email and Drive failures come back as { error } because both steps continue on error.\nconst row = $('Get PDF link').item.json;\nconst err = j => (j?.error ? String(j.error.message || j.error) : '');\nconst mailError = err($('Email invoice').item.json) || err($('Download PDF').item.json);\nconst file = $('Save PDF to Google Drive').item.json;\nconst driveError = err(file);\nreturn {\n  json: {\n    ...row,\n    status: mailError ? 'Error' : 'Sent',\n    drive: file?.id && !driveError ? `https://drive.google.com/file/d/${file.id}/view` : '',\n    sent_at: mailError ? '' : $now.toISO(),\n    error: [mailError && `Email: ${mailError}`, driveError && `Drive: ${driveError}`].filter(Boolean).join('. '),\n  },\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "3d4d8650-88c4-45a6-9584-4b475a8295fd",
+      "name": "Update invoice row",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2840,
+        800
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Error": "={{ $json.error || '' }}",
+            "Status": "={{ $json.status }}",
+            "Sent at": "={{ $json.sent_at || '' }}",
+            "PDF link": "={{ $json.pdf || '' }}",
+            "Drive link": "={{ $json.drive || '' }}",
+            "row_number": "={{ $json.row_number }}"
+          },
+          "schema": [
+            {
+              "id": "row_number",
+              "type": "number",
+              "display": true,
+              "readOnly": true,
+              "required": false,
+              "displayName": "row_number",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PDF link",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "PDF link",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Drive link",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Drive link",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent at",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Sent at",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Error",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "row_number"
+          ]
+        },
+        "options": {},
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "c098badd-2630-4b19-8b37-4b0a02e46128",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -520,
+        -120
+      ],
+      "parameters": {
+        "width": 460,
+        "height": 1080,
+        "content": "## Generate and email PDF invoices from Google Sheets\n\nFor freelancers, agencies and small businesses who track invoices in a spreadsheet and want each one turned into a designed PDF and sent without copy and paste.\n\n### How it works\n1. Every 15 minutes the sheet is checked for invoices with Status set to Ready.\n2. Line items are matched to each invoice by invoice number, then subtotal, tax and total are worked out.\n3. Invoices with missing data are marked Error with the reason, so nothing half-filled goes out.\n4. Orshot renders the invoice PDF from a template.\n5. Gmail emails the PDF to the client and Google Drive keeps a copy.\n6. The row is updated to Sent with the PDF and Drive links.\n\n### Setup\n1. Get an Orshot API key at https://orshot.com (the free plan includes 100 credits a month).\n2. Add the invoice template (https://orshot.com/templates/2470) to your workspace and pick it in **Render invoice PDF**.\n3. Make a sheet with an Invoices tab and a Line items tab (columns in the description) and pick them in the three Sheets steps.\n4. Put your company name, address and payment details in **Build invoice data**.\n5. Add Google Sheets, Gmail and Google Drive credentials, then set a row to Ready."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cc3fc45e-edc2-4034-9361-c90839e6228f",
+      "name": "Read",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        -120
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 600,
+        "height": 1080,
+        "content": "## 1. Read the sheet\nRuns every 15 minutes. Only invoices with Status set to Ready are picked up, with all their line items."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "70806d06-f03b-466a-9aab-2cbd9c6250be",
+      "name": "Check",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        580,
+        -120
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 580,
+        "height": 1080,
+        "content": "## 2. Check and total\nMatches line items to each invoice and works out subtotal, tax and total. Problems are written back as Error."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "95ca37a9-5367-4d69-a075-adf095e84062",
+      "name": "Render",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1180,
+        -120
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 700,
+        "height": 1080,
+        "content": "## 3. Render the PDF\nOrshot fills the invoice template and returns a PDF link. A failed render is written back with the reason."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6d9afa97-0683-4da9-b743-29bb0efd6e75",
+      "name": "Deliver",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1900,
+        -120
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1060,
+        "height": 1080,
+        "content": "## 4. Send, save and update\nThe PDF is emailed to the client and saved to Google Drive, then the row is set to Sent with both links."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Not valid": {
+      "main": [
+        [
+          {
+            "node": "Update invoice row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download PDF": {
+      "main": [
+        [
+          {
+            "node": "Email invoice",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Save PDF to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get PDF link": {
+      "main": [
+        [
+          {
+            "node": "PDF rendered?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as sent": {
+      "main": [
+        [
+          {
+            "node": "Update invoice row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email invoice": {
+      "main": [
+        [
+          {
+            "node": "Wait for both",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF rendered?": {
+      "main": [
+        [
+          {
+            "node": "Download PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Render failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render failed": {
+      "main": [
+        [
+          {
+            "node": "Update invoice row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for both": {
+      "main": [
+        [
+          {
+            "node": "Mark as sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get line items": {
+      "main": [
+        [
+          {
+            "node": "Build invoice data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 15 minutes": {
+      "main": [
+        [
+          {
+            "node": "Get invoices marked Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build invoice data": {
+      "main": [
+        [
+          {
+            "node": "Invoice data valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render invoice PDF": {
+      "main": [
+        [
+          {
+            "node": "Get PDF link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice data valid?": {
+      "main": [
+        [
+          {
+            "node": "Render invoice PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save PDF to Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Wait for both",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get invoices marked Ready": {
+      "main": [
+        [
+          {
+            "node": "Get line items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

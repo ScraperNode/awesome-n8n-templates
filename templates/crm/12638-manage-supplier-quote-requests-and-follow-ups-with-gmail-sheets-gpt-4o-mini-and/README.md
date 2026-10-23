@@ -1,6 +1,6 @@
 # 🤝 Manage supplier quote requests and follow-ups with Gmail, Sheets, GPT-4o-mini and WhatsApp
 
-> ⚡ **67 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **261 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Generate social media posts with GPT-4 for LinkedIn, X, and Facebook
 
-> ⚡ **137 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **623 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

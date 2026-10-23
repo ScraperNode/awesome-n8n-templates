@@ -1,6 +1,6 @@
 # ⚡ Send personalized occasion wishes with AI, Google Sheets and Gmail
 
-> ⚡ **140 views** · ⚡ [Personal Productivity](../)
+> ⚡ **295 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

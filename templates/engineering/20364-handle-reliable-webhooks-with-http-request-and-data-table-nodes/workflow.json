@@ -1,0 +1,2749 @@
+{
+  "name": "Webhook Reliability Pipeline",
+  "nodes": [
+    {
+      "id": "cb1d9cf0-970b-4cd7-8fa6-2f322cc12410",
+      "name": "Template Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -880,
+        -160
+      ],
+      "parameters": {
+        "width": 640,
+        "height": 960,
+        "content": "## Webhook Reliability Pipeline\n\n### How it works\n\n1. Receives an incoming POST request through an n8n Webhook endpoint.\n2. Normalizes the request body, validates eventId, eventType, customerId, amount, and an ISO-8601 timestamp, and returns HTTP 400 before any state change when the payload is invalid.\n3. Checks the `Webhook Reliability State` Data Table by eventId and uses the persisted status to return duplicate, terminal no-op, in-flight, retry-resume, exhausted, or unknown-state responses.\n4. For a new event, persists `received` and `processing` state before calling the simulated downstream API on httpbin.org.\n5. Classifies each downstream result as success, retryable failure, or terminal failure, updates durable state, and returns a deterministic webhook response.\n6. Retryable failures use bounded backoff of 2 seconds and then 4 seconds, with a maximum of three attempts.\n\n### Setup steps\n\n- [ ] Create a Data Table named `Webhook Reliability State` with: eventId (string, matchable), eventType (string), customerId (string), amount (number), timestamp (string), status (string), attemptCount (number), lastError (string), createdTimestamp (string), and updatedTimestamp (string).\n- [ ] Confirm every Data Table node in the workflow points to `Webhook Reliability State`.\n- [ ] Copy the Webhook URL for the `webhook-reliability` path and send POST requests containing the expected JSON fields.\n- [ ] For production use, replace httpbin.org with the real downstream API and configure credentials in n8n instead of hardcoding secrets.\n\n### Customization\n\nAdjust retryable HTTP status codes, retry limits, backoff timing, persisted lifecycle states, and downstream request/response handling to match the production integration."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3d963e30-fb9a-4de7-9f7a-72a1f89e66af",
+      "name": "Sticky Note 1 - Ingress and validation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -280,
+        -160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1120,
+        "height": 560,
+        "content": "## 1. Ingress and validation\n\nReceives the POST webhook, normalizes the expected event contract, and rejects invalid payloads before any durable state change."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "983ef82c-a77f-4f17-9b59-3e89f9913c7f",
+      "name": "Sticky Note 2 - Durable state routing",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        800,
+        -160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 860,
+        "height": 1840,
+        "content": "## 2. Durable idempotency and state routing\n\nLooks up eventId in the Data Table and routes persisted states to safe duplicate, no-op, retry-resume, exhausted, or unknown-state responses without repeating side effects."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "dbd8a5e9-d37c-4cd7-8983-8a5cc9a3c7d6",
+      "name": "Sticky Note 3 - First attempt",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1400,
+        80
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 980,
+        "height": 760,
+        "content": "## 3. First processing attempt\n\nPersists received and processing state for new events, calls the simulated downstream API, and classifies the result as success, retryable failure, or terminal failure."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "27ed208b-84bc-47b2-8c3b-dbe8cefd653c",
+      "name": "Sticky Note 4 - Retry attempt 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2160,
+        80
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1540,
+        "height": 760,
+        "content": "## 4. Bounded retry - attempt 2\n\nWaits two seconds after a retryable failure, records attempt 2, retries the downstream call, and persists either success or a terminal failure."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "67301220-155b-4398-98f5-7ad48e40c621",
+      "name": "Sticky Note 5 - Final retry and outcome",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3500,
+        80
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 2380,
+        "height": 800,
+        "content": "## 5. Final retry and outcome\n\nWaits four seconds before attempt 3, records the final result, and returns a deterministic success or failure response when the bounded retry budget is complete."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b46afb92-0210-4182-860f-1582c03bb9bf",
+      "name": "When Webhook Received",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -192,
+        64
+      ],
+      "parameters": {
+        "path": "webhook-reliability",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "ef7e05a6-91a1-411d-9e72-6667ff33e090",
+      "name": "Validate and Normalize Event",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        16,
+        192
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body = $json.body || $json;\nconst errors = [];\nconst iso8601 = /^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{1,9}))?(Z|[+-]\\d{2}:\\d{2})$/;\nconst timestampMatch = typeof body.timestamp === 'string' ? body.timestamp.match(iso8601) : null;\nlet timestampValid = false;\n\nif (timestampMatch) {\n  const year = Number(timestampMatch[1]);\n  const month = Number(timestampMatch[2]);\n  const day = Number(timestampMatch[3]);\n  const hour = Number(timestampMatch[4]);\n  const minute = Number(timestampMatch[5]);\n  const second = Number(timestampMatch[6]);\n  const zone = timestampMatch[8];\n  const offsetHours = zone === 'Z' ? 0 : Number(zone.slice(1, 3));\n  const offsetMinutes = zone === 'Z' ? 0 : Number(zone.slice(4, 6));\n  const milliseconds = Number((timestampMatch[7] || '').padEnd(3, '0') || 0);\n  const daysInMonth = month >= 1 && month <= 12 ? new Date(Date.UTC(year, month, 0)).getUTCDate() : 0;\n  const zoneValid = zone === 'Z' || (zone[0] === '+' || zone[0] === '-') && offsetHours <= 23 && offsetMinutes <= 59;\n  timestampValid = month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth &&\n    hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 && second >= 0 && second <= 59 &&\n    milliseconds >= 0 && milliseconds <= 999 && zoneValid && Number.isFinite(Date.parse(body.timestamp));\n}\nif (typeof body.eventId !== 'string' || body.eventId.trim() === '') errors.push('eventId must be a non-empty string');\nif (typeof body.eventType !== 'string' || body.eventType.trim() === '') errors.push('eventType must be a non-empty string');\nif (typeof body.customerId !== 'string' || body.customerId.trim() === '') errors.push('customerId must be a non-empty string');\nif (typeof body.amount !== 'number' || !Number.isFinite(body.amount)) errors.push('amount must be a finite number');\nif (!timestampValid) errors.push('timestamp must be a valid ISO-8601 timestamp with timezone');\n\nreturn {\n  json: {\n    eventId: body.eventId || '',\n    eventType: body.eventType || '',\n    customerId: body.customerId || '',\n    amount: body.amount,\n    timestamp: body.timestamp || '',\n    valid: errors.length === 0,\n    validationErrors: errors,\n    receivedTimestamp: new Date().toISOString()\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "94dffab1-a916-41de-86b2-dbc8b2ed9c76",
+      "name": "If Payload Is Valid",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        480,
+        64
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "1f26c424-2984-453f-a45a-450afff2d407",
+      "name": "Send 400 Invalid Payload",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        656,
+        272
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 400
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { status: \"invalid\", error: $json.validationErrors.join(\"; \") } }}"
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "9053b071-e282-4634-acd1-379970faace3",
+      "name": "Send 200 Duplicate Event",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1296,
+        -80
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { status: \"duplicate\", eventId: $json.eventId } }}"
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "148c86ae-244f-4832-a239-2ae141735d5d",
+      "name": "Verify Event Row Absence",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        1024,
+        416
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "eventId",
+              "keyValue": "={{ $json.eventId }}"
+            }
+          ]
+        },
+        "matchType": "allConditions",
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Webhook Reliability State"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "3b2031ea-f76a-442d-b6f3-35a3b2098d03",
+      "name": "Log Received State",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        1248,
+        416
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "amount": "={{ $json.amount }}",
+            "status": "received",
+            "eventId": "={{ $json.eventId }}",
+            "eventType": "={{ $json.eventType }}",
+            "lastError": "",
+            "timestamp": "={{ $json.timestamp }}",
+            "customerId": "={{ $json.customerId }}",
+            "attemptCount": 0,
+            "createdTimestamp": "={{ $json.receivedTimestamp }}",
+            "updatedTimestamp": "={{ $now.toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "eventId",
+              "type": "string",
+              "displayName": "eventId",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "eventType",
+              "type": "string",
+              "displayName": "eventType"
+            },
+            {
+              "id": "customerId",
+              "type": "string",
+              "displayName": "customerId"
+            },
+            {
+              "id": "amount",
+              "type": "number",
+              "displayName": "amount"
+            },
+            {
+              "id": "timestamp",
+              "type": "string",
+              "displayName": "timestamp"
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "displayName": "status"
+            },
+            {
+              "id": "attemptCount",
+              "type": "number",
+              "displayName": "attemptCount"
+            },
+            {
+              "id": "lastError",
+              "type": "string",
+              "displayName": "lastError"
+            },
+            {
+              "id": "createdTimestamp",
+              "type": "string",
+              "displayName": "createdTimestamp"
+            },
+            {
+              "id": "updatedTimestamp",
+              "type": "string",
+              "displayName": "updatedTimestamp"
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "eventId"
+          ]
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "eventId",
+              "keyValue": "={{ $json.eventId }}"
+            }
+          ]
+        },
+        "options": {},
+        "matchType": "allConditions",
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Webhook Reliability State"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "eb28b0ad-af27-49ee-a251-15b018af1bf7",
+      "name": "Log Processing State Attempt 1",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        1472,
+        416
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "amount": "={{ $('Validate and Normalize Event').item.json.amount }}",
+            "status": "processing",
+            "eventId": "={{ $('Validate and Normalize Event').item.json.eventId }}",
+            "eventType": "={{ $('Validate and Normalize Event').item.json.eventType }}",
+            "lastError": "",
+            "timestamp": "={{ $('Validate and Normalize Event').item.json.timestamp }}",
+            "customerId": "={{ $('Validate and Normalize Event').item.json.customerId }}",
+            "attemptCount": 1,
+            "createdTimestamp": "={{ $('Validate and Normalize Event').item.json.receivedTimestamp }}",
+            "updatedTimestamp": "={{ $now.toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "eventId",
+              "type": "string",
+              "displayName": "eventId",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "eventType",
+              "type": "string",
+              "displayName": "eventType"
+            },
+            {
+              "id": "customerId",
+              "type": "string",
+              "displayName": "customerId"
+            },
+            {
+              "id": "amount",
+              "type": "number",
+              "displayName": "amount"
+            },
+            {
+              "id": "timestamp",
+              "type": "string",
+              "displayName": "timestamp"
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "displayName": "status"
+            },
+            {
+              "id": "attemptCount",
+              "type": "number",
+              "displayName": "attemptCount"
+            },
+            {
+              "id": "lastError",
+              "type": "string",
+              "displayName": "lastError"
+            },
+            {
+              "id": "createdTimestamp",
+              "type": "string",
+              "displayName": "createdTimestamp"
+            },
+            {
+              "id": "updatedTimestamp",
+              "type": "string",
+              "displayName": "updatedTimestamp"
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "eventId"
+          ]
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "eventId",
+              "keyValue": "={{ $('Validate and Normalize Event').item.json.eventId }}"
+            }
+          ]
+        },
+        "options": {},
+        "matchType": "allConditions",
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Webhook Reliability State"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "6de7348a-9fa4-4a94-97eb-b6d8db6a795f",
+      "name": "Call API Attempt 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        1696,
+        416
+      ],
+      "parameters": {
+        "url": "={{ 'https://httpbin.org/status/' + ($('Validate and Normalize Event').item.json.eventType === 'retryable' ? '503' : ($('Validate and Normalize Event').item.json.eventType === 'terminal' ? '400' : '200')) }}",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "2154421c-3d9e-4f3e-90c1-19d421ae91b0",
+      "name": "Evaluate Attempt 1 Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1920,
+        416
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const statusCode = Number($json.statusCode || $json.status || 0);\nconst original = $('Validate and Normalize Event').item.json;\nconst transportError = $json.error?.message || $json.message || '';\nconst success = statusCode >= 200 && statusCode < 300;\nconst retryable = statusCode === 429 || statusCode >= 500 || statusCode === 0;\nreturn { json: { ...original, attemptCount: 1, downstreamStatus: statusCode, success, retryable, terminal: !success && !retryable, errorMessage: success ? '' : (transportError || 'Downstream API returned HTTP ' + statusCode) } };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "623ad7c2-83b3-4fef-8f45-54338a296788",
+      "name": "If Attempt 1 Succeeded",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1792,
+        384
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "7b0e0845-5cfe-463a-9d69-ce31d8dec535",
+      "name": "Log Success State Attempt 1",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        2016,
+        192
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "status": "succeeded",
+            "lastError": "",
+            "attemptCount": "={{ $json.attemptCount }}",
+            "updatedTimestamp": "={{ $now.toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "eventId",
+              "type": "string",
+              "displayName": "eventId",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "eventType",
+              "type": "string",
+              "displayName": "eventType"
+            },
+            {
+              "id": "customerId",
+              "type": "string",
+              "displayName": "customerId"
+            },
+            {
+              "id": "amount",
+              "type": "number",
+              "displayName": "amount"
+            },
+            {
+              "id": "timestamp",
+              "type": "string",
+              "displayName": "timestamp"
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "displayName": "status"
+            },
+            {
+              "id": "attemptCount",
+              "type": "number",
+              "displayName": "attemptCount"
+            },
+            {
+              "id": "lastError",
+              "type": "string",
+              "displayName": "lastError"
+            },
+            {
+              "id": "createdTimestamp",
+              "type": "string",
+              "displayName": "createdTimestamp"
+            },
+            {
+              "id": "updatedTimestamp",
+              "type": "string",
+              "displayName": "updatedTimestamp"
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "eventId",
+              "keyValue": "={{ $json.eventId }}"
+            }
+          ]
+        },
+        "options": {},
+        "matchType": "allConditions",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Webhook Reliability State"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "728d5ebf-3844-49e1-9900-77477da6f6b6",
+      "name": "Send 200 Success Attempt 1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        2240,
+        192
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { status: \"processed\", eventId: $('Evaluate Attempt 1 Response').item.json.eventId } }}"
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "c89386a1-a8fd-4014-857a-495f258abaed",
+      "name": "If Attempt 1 Retryable",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2016,
+        480
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.retryable }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "6f005f73-c534-4488-ba49-0054473381a3",
+      "name": "Wait 2 Seconds Before Attempt 2",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        2240,
+        384
+      ],
+      "parameters": {
+        "amount": 2
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "73693ec3-0d85-4f8e-8393-0d19067885cd",
+      "name": "Log Processing State Attempt 2",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        2464,
+        384
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "amount": "={{ $json.amount }}",
+            "status": "processing",
+            "eventId": "={{ $json.eventId }}",
+            "eventType": "={{ $json.eventType }}",
+            "lastError": "={{ $json.errorMessage || $json.lastError || \"\" }}",
+            "timestamp": "={{ $json.timestamp }}",
+            "customerId": "={{ $json.customerId }}",
+            "attemptCount": 2,
+            "createdTimestamp": "={{ $json.createdTimestamp || $json.receivedTimestamp }}",
+            "updatedTimestamp": "={{ $now.toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "eventId",
+              "type": "string",
+              "displayName": "eventId",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "eventType",
+              "type": "string",
+              "displayName": "eventType"
+            },
+            {
+              "id": "customerId",
+              "type": "string",
+              "displayName": "customerId"
+            },
+            {
+              "id": "amount",
+              "type": "number",
+              "displayName": "amount"
+            },
+            {
+              "id": "timestamp",
+              "type": "string",
+              "displayName": "timestamp"
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "displayName": "status"
+            },
+            {
+              "id": "attemptCount",
+              "type": "number",
+              "displayName": "attemptCount"
+            },
+            {
+              "id": "lastError",
+              "type": "string",
+              "displayName": "lastError"
+            },
+            {
+              "id": "createdTimestamp",
+              "type": "string",
+              "displayName": "createdTimestamp"
+            },
+            {
+              "id": "updatedTimestamp",
+              "type": "string",
+              "displayName": "updatedTimestamp"
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "eventId"
+          ]
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "eventId",
+              "keyValue": "={{ $json.eventId }}"
+            }
+          ]
+        },
+        "options": {},
+        "matchType": "allConditions",
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Webhook Reliability State"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "49b1db1d-2ca3-4f69-ba5b-4f6a878b8e70",
+      "name": "Call API Attempt 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        2688,
+        384
+      ],
+      "parameters": {
+        "url": "={{ 'https://httpbin.org/status/' + (($('Retrieve Persisted Event State').isExecuted ? $('Retrieve Persisted Event State').item.json.eventType : $('Evaluate Attempt 1 Response').item.json.eventType) === 'retryable' ? '503' : (($('Retrieve Persisted Event State').isExecuted ? $('Retrieve Persisted Event State').item.json.eventType : $('Evaluate Attempt 1 Response').item.json.eventType) === 'terminal' ? '400' : '200')) }}",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "f5adbff7-6b0a-4d11-a077-6044e5c98092",
+      "name": "Evaluate Attempt 2 Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2912,
+        384
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const statusCode = Number($json.statusCode || $json.status || 0);\nconst persisted = $('Retrieve Persisted Event State').isExecuted ? $('Retrieve Persisted Event State').item.json : null;\nconst original = persisted || $('Validate and Normalize Event').item.json;\nconst transportError = $json.error?.message || $json.message || '';\nconst success = statusCode >= 200 && statusCode < 300;\nconst retryable = statusCode === 429 || statusCode >= 500 || statusCode === 0;\nreturn { json: { ...original, attemptCount: 2, downstreamStatus: statusCode, success, retryable, terminal: !success && !retryable, errorMessage: success ? '' : (transportError || 'Downstream API returned HTTP ' + statusCode) } };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "3871bc65-8186-4e21-a1b2-65834021e5ea",
+      "name": "If Attempt 2 Succeeded",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3136,
+        384
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "77c79b37-d04a-44b6-8e9e-698f1452fd7b",
+      "name": "Log Success State Attempt 2",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        3360,
+        192
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "status": "succeeded",
+            "lastError": "",
+            "attemptCount": "={{ $json.attemptCount }}",
+            "updatedTimestamp": "={{ $now.toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "eventId",
+              "type": "string",
+              "displayName": "eventId",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "eventType",
+              "type": "string",
+              "displayName": "eventType"
+            },
+            {
+              "id": "customerId",
+              "type": "string",
+              "displayName": "customerId"
+            },
+            {
+              "id": "amount",
+              "type": "number",
+              "displayName": "amount"
+            },
+            {
+              "id": "timestamp",
+              "type": "string",
+              "displayName": "timestamp"
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "displayName": "status"
+            },
+            {
+              "id": "attemptCount",
+              "type": "number",
+              "displayName": "attemptCount"
+            },
+            {
+              "id": "lastError",
+              "type": "string",
+              "displayName": "lastError"
+            },
+            {
+              "id": "createdTimestamp",
+              "type": "string",
+              "displayName": "createdTimestamp"
+            },
+            {
+              "id": "updatedTimestamp",
+              "type": "string",
+              "displayName": "updatedTimestamp"
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "eventId",
+              "keyValue": "={{ $json.eventId }}"
+            }
+          ]
+        },
+        "options": {},
+        "matchType": "allConditions",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Webhook Reliability State"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "98a6bc4e-0125-4975-948b-ff31f140064b",
+      "name": "Send 200 Success Attempt 2",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        3584,
+        192
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { status: \"processed\", eventId: $('Evaluate Attempt 2 Response').item.json.eventId } }}"
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "9133efa3-db34-498e-8c4a-221ab6039edf",
+      "name": "If Attempt 2 Retryable",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3360,
+        480
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.retryable }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "f09198cb-801e-4b4f-8e9d-71a0549fa626",
+      "name": "Wait 4 Seconds Before Attempt 3",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        3584,
+        384
+      ],
+      "parameters": {
+        "amount": 4
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "6aa9dca1-b913-4b64-af3d-17487194dddd",
+      "name": "Log Processing State Attempt 3",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        3808,
+        384
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "amount": "={{ $json.amount }}",
+            "status": "processing",
+            "eventId": "={{ $json.eventId }}",
+            "eventType": "={{ $json.eventType }}",
+            "lastError": "={{ $json.errorMessage || $json.lastError || \"\" }}",
+            "timestamp": "={{ $json.timestamp }}",
+            "customerId": "={{ $json.customerId }}",
+            "attemptCount": 3,
+            "createdTimestamp": "={{ $json.createdTimestamp || $json.receivedTimestamp }}",
+            "updatedTimestamp": "={{ $now.toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "eventId",
+              "type": "string",
+              "displayName": "eventId",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "eventType",
+              "type": "string",
+              "displayName": "eventType"
+            },
+            {
+              "id": "customerId",
+              "type": "string",
+              "displayName": "customerId"
+            },
+            {
+              "id": "amount",
+              "type": "number",
+              "displayName": "amount"
+            },
+            {
+              "id": "timestamp",
+              "type": "string",
+              "displayName": "timestamp"
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "displayName": "status"
+            },
+            {
+              "id": "attemptCount",
+              "type": "number",
+              "displayName": "attemptCount"
+            },
+            {
+              "id": "lastError",
+              "type": "string",
+              "displayName": "lastError"
+            },
+            {
+              "id": "createdTimestamp",
+              "type": "string",
+              "displayName": "createdTimestamp"
+            },
+            {
+              "id": "updatedTimestamp",
+              "type": "string",
+              "displayName": "updatedTimestamp"
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "eventId"
+          ]
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "eventId",
+              "keyValue": "={{ $json.eventId }}"
+            }
+          ]
+        },
+        "options": {},
+        "matchType": "allConditions",
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Webhook Reliability State"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "32ef46b2-21e1-4733-9d27-1a59619465e4",
+      "name": "Call API Attempt 3",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        4032,
+        384
+      ],
+      "parameters": {
+        "url": "={{ 'https://httpbin.org/status/' + (($('Retrieve Persisted Event State').isExecuted ? $('Retrieve Persisted Event State').item.json.eventType : $('Evaluate Attempt 2 Response').item.json.eventType) === 'retryable' ? '503' : (($('Retrieve Persisted Event State').isExecuted ? $('Retrieve Persisted Event State').item.json.eventType : $('Evaluate Attempt 2 Response').item.json.eventType) === 'terminal' ? '400' : '200')) }}",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "cdb7aaad-0eb0-42c6-90cf-64c88de26e6e",
+      "name": "Evaluate Attempt 3 Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4256,
+        384
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const statusCode = Number($json.statusCode || $json.status || 0);\nconst persisted = $('Retrieve Persisted Event State').isExecuted ? $('Retrieve Persisted Event State').item.json : null;\nconst original = persisted || $('Validate and Normalize Event').item.json;\nconst transportError = $json.error?.message || $json.message || '';\nconst success = statusCode >= 200 && statusCode < 300;\nconst retryable = statusCode === 429 || statusCode >= 500 || statusCode === 0;\nreturn { json: { ...original, attemptCount: 3, downstreamStatus: statusCode, success, retryable, terminal: !success && !retryable, errorMessage: success ? '' : (transportError || 'Downstream API returned HTTP ' + statusCode) } };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9198a2bb-3f44-4794-aeb8-93c1b020aa0f",
+      "name": "If Attempt 3 Succeeded",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4480,
+        384
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "a584b615-0a14-47e0-851a-502d2c62f7c8",
+      "name": "Log Success State Attempt 3",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        4704,
+        192
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "status": "succeeded",
+            "lastError": "",
+            "attemptCount": "={{ $json.attemptCount }}",
+            "updatedTimestamp": "={{ $now.toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "eventId",
+              "type": "string",
+              "displayName": "eventId",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "eventType",
+              "type": "string",
+              "displayName": "eventType"
+            },
+            {
+              "id": "customerId",
+              "type": "string",
+              "displayName": "customerId"
+            },
+            {
+              "id": "amount",
+              "type": "number",
+              "displayName": "amount"
+            },
+            {
+              "id": "timestamp",
+              "type": "string",
+              "displayName": "timestamp"
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "displayName": "status"
+            },
+            {
+              "id": "attemptCount",
+              "type": "number",
+              "displayName": "attemptCount"
+            },
+            {
+              "id": "lastError",
+              "type": "string",
+              "displayName": "lastError"
+            },
+            {
+              "id": "createdTimestamp",
+              "type": "string",
+              "displayName": "createdTimestamp"
+            },
+            {
+              "id": "updatedTimestamp",
+              "type": "string",
+              "displayName": "updatedTimestamp"
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "eventId",
+              "keyValue": "={{ $json.eventId }}"
+            }
+          ]
+        },
+        "options": {},
+        "matchType": "allConditions",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Webhook Reliability State"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "ffd8b273-2077-452f-b0b7-471b7b83da8f",
+      "name": "Send 200 Success Attempt 3",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        4928,
+        192
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { status: \"processed\", eventId: $('Evaluate Attempt 3 Response').item.json.eventId } }}"
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "50b99929-51f8-44af-b8bd-a866f8d49d22",
+      "name": "If Attempt 3 Retryable",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4704,
+        480
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.retryable }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "d23134a2-cf6e-4478-a119-6995e5e4d740",
+      "name": "Log Retryable Failure Attempt 3",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        4928,
+        256
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "status": "failed_retryable",
+            "lastError": "={{ $json.errorMessage }}",
+            "attemptCount": "={{ $json.attemptCount }}",
+            "updatedTimestamp": "={{ $now.toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "eventId",
+              "type": "string",
+              "displayName": "eventId",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "eventType",
+              "type": "string",
+              "displayName": "eventType"
+            },
+            {
+              "id": "customerId",
+              "type": "string",
+              "displayName": "customerId"
+            },
+            {
+              "id": "amount",
+              "type": "number",
+              "displayName": "amount"
+            },
+            {
+              "id": "timestamp",
+              "type": "string",
+              "displayName": "timestamp"
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "displayName": "status"
+            },
+            {
+              "id": "attemptCount",
+              "type": "number",
+              "displayName": "attemptCount"
+            },
+            {
+              "id": "lastError",
+              "type": "string",
+              "displayName": "lastError"
+            },
+            {
+              "id": "createdTimestamp",
+              "type": "string",
+              "displayName": "createdTimestamp"
+            },
+            {
+              "id": "updatedTimestamp",
+              "type": "string",
+              "displayName": "updatedTimestamp"
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "eventId",
+              "keyValue": "={{ $json.eventId }}"
+            }
+          ]
+        },
+        "options": {},
+        "matchType": "allConditions",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Webhook Reliability State"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "0fea41f0-c050-4e46-8459-5c1e062467fe",
+      "name": "Prepare Failure Alert Attempt 3",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        5424,
+        368
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "eventId",
+              "name": "eventId",
+              "type": "string",
+              "value": "={{ $('Evaluate Attempt 3 Response').item.json.eventId }}"
+            },
+            {
+              "id": "customerId",
+              "name": "customerId",
+              "type": "string",
+              "value": "={{ $('Evaluate Attempt 3 Response').item.json.customerId }}"
+            },
+            {
+              "id": "status",
+              "name": "status",
+              "type": "string",
+              "value": "={{ $('Evaluate Attempt 3 Response').item.json.terminal ? \"failed_terminal\" : \"failed_retryable\" }}"
+            },
+            {
+              "id": "attemptCount",
+              "name": "attemptCount",
+              "type": "number",
+              "value": "={{ $('Evaluate Attempt 3 Response').item.json.attemptCount }}"
+            },
+            {
+              "id": "errorMessage",
+              "name": "errorMessage",
+              "type": "string",
+              "value": "={{ $('Evaluate Attempt 3 Response').item.json.errorMessage }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.5
+    },
+    {
+      "id": "b055d9c4-1967-4bb6-b80a-8ac9dd9d8c7c",
+      "name": "Send Failure Alert Attempt 3",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        5680,
+        368
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 500
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { status: $json.status, eventId: $json.eventId, attemptCount: $json.attemptCount, error: $json.errorMessage } }}"
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "888eb8db-0b16-4963-a300-6208d0462113",
+      "name": "Log Terminal Failure Attempt 3",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        4928,
+        624
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "status": "failed_terminal",
+            "lastError": "={{ $json.errorMessage }}",
+            "attemptCount": "={{ $json.attemptCount }}",
+            "updatedTimestamp": "={{ $now.toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "eventId",
+              "type": "string",
+              "displayName": "eventId",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "eventType",
+              "type": "string",
+              "displayName": "eventType"
+            },
+            {
+              "id": "customerId",
+              "type": "string",
+              "displayName": "customerId"
+            },
+            {
+              "id": "amount",
+              "type": "number",
+              "displayName": "amount"
+            },
+            {
+              "id": "timestamp",
+              "type": "string",
+              "displayName": "timestamp"
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "displayName": "status"
+            },
+            {
+              "id": "attemptCount",
+              "type": "number",
+              "displayName": "attemptCount"
+            },
+            {
+              "id": "lastError",
+              "type": "string",
+              "displayName": "lastError"
+            },
+            {
+              "id": "createdTimestamp",
+              "type": "string",
+              "displayName": "createdTimestamp"
+            },
+            {
+              "id": "updatedTimestamp",
+              "type": "string",
+              "displayName": "updatedTimestamp"
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "eventId",
+              "keyValue": "={{ $json.eventId }}"
+            }
+          ]
+        },
+        "options": {},
+        "matchType": "allConditions",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Webhook Reliability State"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "06ed41d7-8ff4-4a18-a695-3f2601908fec",
+      "name": "Log Terminal Failure Attempt 2",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        3584,
+        576
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "status": "failed_terminal",
+            "lastError": "={{ $json.errorMessage }}",
+            "attemptCount": "={{ $json.attemptCount }}",
+            "updatedTimestamp": "={{ $now.toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "eventId",
+              "type": "string",
+              "displayName": "eventId",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "eventType",
+              "type": "string",
+              "displayName": "eventType"
+            },
+            {
+              "id": "customerId",
+              "type": "string",
+              "displayName": "customerId"
+            },
+            {
+              "id": "amount",
+              "type": "number",
+              "displayName": "amount"
+            },
+            {
+              "id": "timestamp",
+              "type": "string",
+              "displayName": "timestamp"
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "displayName": "status"
+            },
+            {
+              "id": "attemptCount",
+              "type": "number",
+              "displayName": "attemptCount"
+            },
+            {
+              "id": "lastError",
+              "type": "string",
+              "displayName": "lastError"
+            },
+            {
+              "id": "createdTimestamp",
+              "type": "string",
+              "displayName": "createdTimestamp"
+            },
+            {
+              "id": "updatedTimestamp",
+              "type": "string",
+              "displayName": "updatedTimestamp"
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "eventId",
+              "keyValue": "={{ $json.eventId }}"
+            }
+          ]
+        },
+        "options": {},
+        "matchType": "allConditions",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Webhook Reliability State"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "5023de0a-34ac-4945-9384-db0e1d300682",
+      "name": "Prepare Failure Alert Attempt 2",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3808,
+        576
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "eventId",
+              "name": "eventId",
+              "type": "string",
+              "value": "={{ $('Evaluate Attempt 2 Response').item.json.eventId }}"
+            },
+            {
+              "id": "customerId",
+              "name": "customerId",
+              "type": "string",
+              "value": "={{ $('Evaluate Attempt 2 Response').item.json.customerId }}"
+            },
+            {
+              "id": "status",
+              "name": "status",
+              "type": "string",
+              "value": "={{ $('Evaluate Attempt 2 Response').item.json.terminal ? \"failed_terminal\" : \"failed_retryable\" }}"
+            },
+            {
+              "id": "attemptCount",
+              "name": "attemptCount",
+              "type": "number",
+              "value": "={{ $('Evaluate Attempt 2 Response').item.json.attemptCount }}"
+            },
+            {
+              "id": "errorMessage",
+              "name": "errorMessage",
+              "type": "string",
+              "value": "={{ $('Evaluate Attempt 2 Response').item.json.errorMessage }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.5
+    },
+    {
+      "id": "e59cec58-6e36-426b-85ab-a903d2813ff1",
+      "name": "Send Failure Alert Attempt 2",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        4032,
+        576
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 422
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { status: $json.status, eventId: $json.eventId, attemptCount: $json.attemptCount, error: $json.errorMessage } }}"
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "8d01e1d2-d3a1-4383-b1ac-1a0c486c876d",
+      "name": "Log Terminal Failure Attempt 1",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        2240,
+        576
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "status": "failed_terminal",
+            "lastError": "={{ $json.errorMessage }}",
+            "attemptCount": "={{ $json.attemptCount }}",
+            "updatedTimestamp": "={{ $now.toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "eventId",
+              "type": "string",
+              "displayName": "eventId",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "eventType",
+              "type": "string",
+              "displayName": "eventType"
+            },
+            {
+              "id": "customerId",
+              "type": "string",
+              "displayName": "customerId"
+            },
+            {
+              "id": "amount",
+              "type": "number",
+              "displayName": "amount"
+            },
+            {
+              "id": "timestamp",
+              "type": "string",
+              "displayName": "timestamp"
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "displayName": "status"
+            },
+            {
+              "id": "attemptCount",
+              "type": "number",
+              "displayName": "attemptCount"
+            },
+            {
+              "id": "lastError",
+              "type": "string",
+              "displayName": "lastError"
+            },
+            {
+              "id": "createdTimestamp",
+              "type": "string",
+              "displayName": "createdTimestamp"
+            },
+            {
+              "id": "updatedTimestamp",
+              "type": "string",
+              "displayName": "updatedTimestamp"
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "eventId",
+              "keyValue": "={{ $json.eventId }}"
+            }
+          ]
+        },
+        "options": {},
+        "matchType": "allConditions",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Webhook Reliability State"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "78f5832e-3b67-47a1-aad6-20553760ea2c",
+      "name": "Prepare Failure Alert Attempt 1",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2464,
+        576
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "eventId",
+              "name": "eventId",
+              "type": "string",
+              "value": "={{ $('Evaluate Attempt 1 Response').item.json.eventId }}"
+            },
+            {
+              "id": "customerId",
+              "name": "customerId",
+              "type": "string",
+              "value": "={{ $('Evaluate Attempt 1 Response').item.json.customerId }}"
+            },
+            {
+              "id": "status",
+              "name": "status",
+              "type": "string",
+              "value": "={{ $('Evaluate Attempt 1 Response').item.json.terminal ? \"failed_terminal\" : \"failed_retryable\" }}"
+            },
+            {
+              "id": "attemptCount",
+              "name": "attemptCount",
+              "type": "number",
+              "value": "={{ $('Evaluate Attempt 1 Response').item.json.attemptCount }}"
+            },
+            {
+              "id": "errorMessage",
+              "name": "errorMessage",
+              "type": "string",
+              "value": "={{ $('Evaluate Attempt 1 Response').item.json.errorMessage }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.5
+    },
+    {
+      "id": "03089977-3c27-4d25-803a-ddc18b0ee4a3",
+      "name": "Send Failure Alert Attempt 1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        2688,
+        576
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 422
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { status: $json.status, eventId: $json.eventId, attemptCount: $json.attemptCount, error: $json.errorMessage } }}"
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "4e8974f6-e7d3-4ba8-a4df-7f1af674c7ec",
+      "name": "Send 200 Terminal No-Op",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        896,
+        768
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { status: \"terminal_noop\", eventId: $json.eventId } }}"
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "5765d221-7541-4789-852e-e1e48635e76a",
+      "name": "Send 200 In-Flight No-Op",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1120,
+        1056
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { status: \"in_flight\", eventId: $json.eventId } }}"
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "e8ad3476-3d1c-49b8-be1c-67f45436c95d",
+      "name": "Send 200 Retry Exhausted",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        896,
+        1536
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { status: \"retryable_exhausted\", eventId: $json.eventId } }}"
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "539709d3-7481-4f26-b9f8-b83c665ceb10",
+      "name": "Verify Event Row Exists",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        864,
+        144
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "eventId",
+              "keyValue": "={{ $json.eventId }}"
+            }
+          ]
+        },
+        "matchType": "allConditions",
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Webhook Reliability State"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "cbe3d5ba-fb64-4d39-a1a9-dfd56cfb68e1",
+      "name": "Retrieve Persisted Event State",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        1088,
+        144
+      ],
+      "parameters": {
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "eventId",
+              "keyValue": "={{ $json.eventId }}"
+            }
+          ]
+        },
+        "matchType": "allConditions",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Webhook Reliability State"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "3cb0d24a-0667-45ee-86a9-1b7d2fb5a555",
+      "name": "Route by Event State",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1312,
+        144
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 1,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "succeeded"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 1,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "failed_terminal"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 1,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "received"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 1,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "processing"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 1,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "failed_retryable"
+                  },
+                  {
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.attemptCount }}",
+                    "rightValue": 1
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 1,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "failed_retryable"
+                  },
+                  {
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.attemptCount }}",
+                    "rightValue": 2
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 1,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "failed_retryable"
+                  },
+                  {
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    },
+                    "leftValue": "={{ $json.attemptCount }}",
+                    "rightValue": 3
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "unknown_state"
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "cce61bca-c088-4bf4-aa01-6bd9006d4b3d",
+      "name": "Send 500 Unknown State Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1280,
+        1536
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 500
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { status: \"state_unknown\", eventId: $json.eventId, error: \"Unknown persisted event state\" } }}"
+      },
+      "typeVersion": 1.5
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodeGroups": [
+    {
+      "id": "1c243c53-624f-4af7-b4a9-136a9246b00a",
+      "name": "Ingress Validation",
+      "nodeIds": [
+        "ef7e05a6-91a1-411d-9e72-6667ff33e090"
+      ],
+      "description": "Normalize and validate the webhook contract before state changes."
+    },
+    {
+      "id": "d5d2a283-7571-4f0c-9ce3-c12158dc4064",
+      "name": "Duplicate Protection",
+      "nodeIds": [
+        "9053b071-e282-4634-acd1-379970faace3"
+      ],
+      "description": "Check durable state and return a safe duplicate response for succeeded event IDs."
+    },
+    {
+      "id": "7e833474-ba9e-4f8d-b7ae-542e9c04784c",
+      "name": "State Intake and Attempt 1",
+      "nodeIds": [
+        "148c86ae-244f-4832-a239-2ae141735d5d",
+        "3b2031ea-f76a-442d-b6f3-35a3b2098d03",
+        "eb28b0ad-af27-49ee-a251-15b018af1bf7",
+        "6de7348a-9fa4-4a94-97eb-b6d8db6a795f",
+        "2154421c-3d9e-4f3e-90c1-19d421ae91b0"
+      ],
+      "description": "Persist received and processing state, then call the simulated downstream API."
+    },
+    {
+      "id": "32cdb13f-a5a5-422a-9dfb-0063617f456b",
+      "name": "Attempt 2 Retry Stage",
+      "nodeIds": [
+        "6f005f73-c534-4488-ba49-0054473381a3",
+        "73693ec3-0d85-4f8e-8393-0d19067885cd",
+        "49b1db1d-2ca3-4f69-ba5b-4f6a878b8e70",
+        "f5adbff7-6b0a-4d11-a077-6044e5c98092"
+      ],
+      "description": "Persist attempt 2 with bounded exponential backoff."
+    },
+    {
+      "id": "a6ff093e-1e05-4cf9-929b-92d0881c2b1f",
+      "name": "Attempt 3 Retry Stage",
+      "nodeIds": [
+        "f09198cb-801e-4b4f-8e9d-71a0549fa626",
+        "6aa9dca1-b913-4b64-af3d-17487194dddd",
+        "32ef46b2-21e1-4733-9d27-1a59619465e4",
+        "cdb7aaad-0eb0-42c6-90cf-64c88de26e6e"
+      ],
+      "description": "Persist attempt 3 with the final bounded backoff."
+    },
+    {
+      "id": "3172a913-9061-43be-99de-3d8bb15cceee",
+      "name": "Attempt 1 Success",
+      "nodeIds": [
+        "7b0e0845-5cfe-463a-9d69-ce31d8dec535",
+        "728d5ebf-3844-49e1-9900-77477da6f6b6"
+      ],
+      "description": "Persist succeeded state and return the processed response."
+    },
+    {
+      "id": "c6c6378b-b5cb-460c-a92e-c9a93c6e6b1a",
+      "name": "Attempt 2 Success",
+      "nodeIds": [
+        "77c79b37-d04a-44b6-8e9e-698f1452fd7b",
+        "98a6bc4e-0125-4975-948b-ff31f140064b"
+      ],
+      "description": "Persist succeeded state and return the processed response."
+    },
+    {
+      "id": "e590410b-ab3e-4bf8-862e-b1032746e5b0",
+      "name": "Attempt 3 Success",
+      "nodeIds": [
+        "a584b615-0a14-47e0-851a-502d2c62f7c8",
+        "ffd8b273-2077-452f-b0b7-471b7b83da8f"
+      ],
+      "description": "Persist succeeded state and return the processed response."
+    },
+    {
+      "id": "8e582df8-7b62-496a-84c2-e408f707d789",
+      "name": "Attempt 1 Terminal Failure",
+      "nodeIds": [
+        "8d01e1d2-d3a1-4383-b1ac-1a0c486c876d",
+        "78f5832e-3b67-47a1-aad6-20553760ea2c",
+        "03089977-3c27-4d25-803a-ddc18b0ee4a3"
+      ],
+      "description": "Persist terminal failure, emit a structured alert, and respond."
+    },
+    {
+      "id": "885b018a-132d-406c-a4af-a16d4968c1c7",
+      "name": "Attempt 2 Terminal Failure",
+      "nodeIds": [
+        "06ed41d7-8ff4-4a18-a695-3f2601908fec",
+        "5023de0a-34ac-4945-9384-db0e1d300682",
+        "e59cec58-6e36-426b-85ab-a903d2813ff1"
+      ],
+      "description": "Persist terminal failure, emit a structured alert, and respond."
+    },
+    {
+      "id": "6a51c0d6-e624-48f4-ae3e-354f92e93541",
+      "name": "Attempt 3 Terminal State",
+      "nodeIds": [
+        "888eb8db-0b16-4963-a300-6208d0462113"
+      ],
+      "description": "Persist terminal failure before the shared final alert path."
+    },
+    {
+      "id": "b5f8b475-264a-4858-8347-dfd12260df25",
+      "name": "Persisted State Routing",
+      "nodeIds": [
+        "539709d3-7481-4f26-b9f8-b83c665ceb10",
+        "cbe3d5ba-fb64-4d39-a1a9-dfd56cfb68e1",
+        "3cb0d24a-0667-45ee-86a9-1b7d2fb5a555"
+      ],
+      "description": "Loads the actual Data Table row before routing by status and persisted attempt count."
+    }
+  ],
+  "connections": {
+    "Call API Attempt 1": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Attempt 1 Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call API Attempt 2": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Attempt 2 Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call API Attempt 3": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Attempt 3 Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Received State": {
+      "main": [
+        [
+          {
+            "node": "Log Processing State Attempt 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Payload Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Verify Event Row Absence",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Verify Event Row Exists",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send 400 Invalid Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Event State": {
+      "main": [
+        [
+          {
+            "node": "Send 200 Duplicate Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send 200 Terminal No-Op",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send 200 In-Flight No-Op",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send 200 In-Flight No-Op",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 2 Seconds Before Attempt 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 4 Seconds Before Attempt 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send 200 Retry Exhausted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send 500 Unknown State Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Webhook Received": {
+      "main": [
+        [
+          {
+            "node": "Validate and Normalize Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Attempt 1 Retryable": {
+      "main": [
+        [
+          {
+            "node": "Wait 2 Seconds Before Attempt 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Terminal Failure Attempt 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Attempt 1 Succeeded": {
+      "main": [
+        [
+          {
+            "node": "Log Success State Attempt 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If Attempt 1 Retryable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Attempt 2 Retryable": {
+      "main": [
+        [
+          {
+            "node": "Wait 4 Seconds Before Attempt 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Terminal Failure Attempt 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Attempt 2 Succeeded": {
+      "main": [
+        [
+          {
+            "node": "Log Success State Attempt 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If Attempt 2 Retryable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Attempt 3 Retryable": {
+      "main": [
+        [
+          {
+            "node": "Log Retryable Failure Attempt 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Terminal Failure Attempt 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Attempt 3 Succeeded": {
+      "main": [
+        [
+          {
+            "node": "Log Success State Attempt 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If Attempt 3 Retryable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Event Row Exists": {
+      "main": [
+        [
+          {
+            "node": "Retrieve Persisted Event State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Event Row Absence": {
+      "main": [
+        [
+          {
+            "node": "Log Received State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Attempt 1 Response": {
+      "main": [
+        [
+          {
+            "node": "If Attempt 1 Succeeded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Attempt 2 Response": {
+      "main": [
+        [
+          {
+            "node": "If Attempt 2 Succeeded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Attempt 3 Response": {
+      "main": [
+        [
+          {
+            "node": "If Attempt 3 Succeeded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Success State Attempt 1": {
+      "main": [
+        [
+          {
+            "node": "Send 200 Success Attempt 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Success State Attempt 2": {
+      "main": [
+        [
+          {
+            "node": "Send 200 Success Attempt 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Success State Attempt 3": {
+      "main": [
+        [
+          {
+            "node": "Send 200 Success Attempt 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and Normalize Event": {
+      "main": [
+        [
+          {
+            "node": "If Payload Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Processing State Attempt 1": {
+      "main": [
+        [
+          {
+            "node": "Call API Attempt 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Processing State Attempt 2": {
+      "main": [
+        [
+          {
+            "node": "Call API Attempt 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Processing State Attempt 3": {
+      "main": [
+        [
+          {
+            "node": "Call API Attempt 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Terminal Failure Attempt 1": {
+      "main": [
+        [
+          {
+            "node": "Prepare Failure Alert Attempt 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Terminal Failure Attempt 2": {
+      "main": [
+        [
+          {
+            "node": "Prepare Failure Alert Attempt 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Terminal Failure Attempt 3": {
+      "main": [
+        [
+          {
+            "node": "Prepare Failure Alert Attempt 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Persisted Event State": {
+      "main": [
+        [
+          {
+            "node": "Route by Event State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Retryable Failure Attempt 3": {
+      "main": [
+        [
+          {
+            "node": "Prepare Failure Alert Attempt 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Failure Alert Attempt 1": {
+      "main": [
+        [
+          {
+            "node": "Send Failure Alert Attempt 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Failure Alert Attempt 2": {
+      "main": [
+        [
+          {
+            "node": "Send Failure Alert Attempt 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Failure Alert Attempt 3": {
+      "main": [
+        [
+          {
+            "node": "Send Failure Alert Attempt 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 2 Seconds Before Attempt 2": {
+      "main": [
+        [
+          {
+            "node": "Log Processing State Attempt 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 4 Seconds Before Attempt 3": {
+      "main": [
+        [
+          {
+            "node": "Log Processing State Attempt 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "description": "Production-style webhook demo with validation, Data Table idempotency, durable state tracking, bounded retries, backoff, structured failure alerts, and HTTP responses."
+}

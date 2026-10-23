@@ -1,6 +1,6 @@
 # 🔬 Automate screenshots with URLbox & analyze them with AI
 
-> ⚡ **4,360 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,408 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

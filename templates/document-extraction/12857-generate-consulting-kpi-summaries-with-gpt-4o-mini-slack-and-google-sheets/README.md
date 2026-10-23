@@ -1,6 +1,6 @@
 # 🔬 Generate consulting KPI summaries with GPT-4o-mini, Slack and Google Sheets
 
-> ⚡ **14 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **35 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

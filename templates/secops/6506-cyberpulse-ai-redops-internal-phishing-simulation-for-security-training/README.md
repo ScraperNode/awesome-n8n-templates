@@ -1,6 +1,6 @@
 # 🔒 CYBERPULSE AI RedOps: internal phishing simulation for security training
 
-> ⚡ **123 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **147 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

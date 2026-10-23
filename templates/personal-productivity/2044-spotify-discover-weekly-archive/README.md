@@ -1,6 +1,6 @@
 # ⚡ Spotify: discover weekly archive
 
-> ⚡ **2,019 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,085 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

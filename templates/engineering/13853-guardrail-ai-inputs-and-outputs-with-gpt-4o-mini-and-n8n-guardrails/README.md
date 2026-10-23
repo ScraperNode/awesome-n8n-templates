@@ -1,6 +1,6 @@
-# ⚒️ Guardrail AI inputs and outputs with GPT-4o-mini and n8n Guardrails
+# ⚒️ Production AI Playbook: Deterministic Steps & AI Steps (4 of 5)
 
-> ⚡ **0 views** · ⚒️ [Engineering](../)
+> ⚡ **272 views** · ⚒️ [Engineering](../)
 
 ## Description
 
@@ -20,6 +20,10 @@ Protect your workflows with n8n's native Guardrails node, placed before and afte
 
 **Why it matters**
 Guardrails are the seatbelts of your AI workflow. You hope you don't need them, but when a user sends a prompt injection attempt or the AI leaks sensitive data, you'll be glad they're there. This template uses n8n's dedicated Guardrails node to make safety checks a first-class part of your workflow without writing custom validation code.
+
+This template is a learning companion to the Production AI Playbook, a series that explores strategies, shares best practices, and provides practical examples for building reliable AI systems in n8n.  
+
+[https://go.n8n.io/PAP-D&A-Blog](https://go.n8n.io/PAP-D&A-Blog)
 
 ## 🔗 Nodes Used
 

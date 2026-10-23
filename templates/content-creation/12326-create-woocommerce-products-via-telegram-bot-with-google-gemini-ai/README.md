@@ -1,6 +1,6 @@
 # 🎬 Create WooCommerce products via Telegram bot with Google Gemini AI
 
-> ⚡ **230 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **298 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

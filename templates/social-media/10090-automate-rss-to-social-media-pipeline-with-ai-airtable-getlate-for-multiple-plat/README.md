@@ -1,6 +1,6 @@
 # 📱 Automate RSS to social media pipeline with AI, Airtable & GetLate for multiple platforms
 
-> ⚡ **246 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **396 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Todoist weekly email of completed tasks
 
-> ⚡ **1,042 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,064 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

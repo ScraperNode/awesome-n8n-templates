@@ -1,6 +1,6 @@
 # 🧾 Automate PDF invoice generation & delivery with Gmail and Google Drive storage
 
-> ⚡ **510 views** · 🧾 [Invoice Processing](../)
+> ⚡ **636 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

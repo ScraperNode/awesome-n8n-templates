@@ -1,6 +1,6 @@
 # 🔒 Automate risk treatment tasks with Google Sheets for GRC compliance
 
-> ⚡ **62 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **84 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

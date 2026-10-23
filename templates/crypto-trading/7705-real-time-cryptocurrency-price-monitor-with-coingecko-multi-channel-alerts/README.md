@@ -1,6 +1,6 @@
 # 📈 Real-time cryptocurrency price monitor with CoinGecko & multi-channel alerts
 
-> ⚡ **725 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **868 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Build & deploy MVPs from text prompts with AI, GitHub & Vercel
 
-> ⚡ **190 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **252 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

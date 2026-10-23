@@ -1,6 +1,6 @@
 # 🤝 Analyze Zoom phone call recordings with Gemini and log results to Google Sheets
 
-> ⚡ **7 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **27 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

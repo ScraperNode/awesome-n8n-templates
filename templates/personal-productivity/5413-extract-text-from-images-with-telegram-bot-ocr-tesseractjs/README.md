@@ -1,6 +1,6 @@
 # ⚡ Extract text from images with Telegram Bot & OCR Tesseractjs
 
-> ⚡ **11,761 views** · ⚡ [Personal Productivity](../)
+> ⚡ **13,464 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 Discord Channel Creation from Google Sheets with Member Notifications
 
-> ⚡ **495 views** · 📋 [Project Management](../)
+> ⚡ **585 views** · 📋 [Project Management](../)
 
 ## Description
 

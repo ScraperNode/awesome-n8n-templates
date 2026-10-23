@@ -1,6 +1,6 @@
 # 🧾 Notify on new emails with invoices in Slack
 
-> ⚡ **2,734 views** · 🧾 [Invoice Processing](../)
+> ⚡ **2,747 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

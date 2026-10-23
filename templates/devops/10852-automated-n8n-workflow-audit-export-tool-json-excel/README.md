@@ -1,6 +1,6 @@
 # ⚙️ Automated n8n workflow audit & export tool (JSON + Excel)
 
-> ⚡ **75 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **143 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

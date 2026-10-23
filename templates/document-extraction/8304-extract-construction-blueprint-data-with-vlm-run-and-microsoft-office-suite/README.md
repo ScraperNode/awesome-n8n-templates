@@ -1,6 +1,6 @@
 # 🔬 Extract construction blueprint data with VLM run and Microsoft Office Suite
 
-> ⚡ **390 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **488 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

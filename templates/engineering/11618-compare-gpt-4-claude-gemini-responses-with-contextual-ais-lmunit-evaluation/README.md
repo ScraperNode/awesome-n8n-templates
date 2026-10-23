@@ -1,6 +1,6 @@
 # ⚒️ Compare GPT-4, Claude & Gemini Responses with Contextual AI's LMUnit Evaluation
 
-> ⚡ **2,833 views** · ⚒️ [Engineering](../)
+> ⚡ **9,328 views** · ⚒️ [Engineering](../)
 
 ## Description
 

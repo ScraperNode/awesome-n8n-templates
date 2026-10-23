@@ -1,6 +1,6 @@
 # 📊 News research and sentiment analysis AI agent with Gemini and SearXNG
 
-> ⚡ **10,471 views** · 📊 [Market Research & Insights](../)
+> ⚡ **13,026 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

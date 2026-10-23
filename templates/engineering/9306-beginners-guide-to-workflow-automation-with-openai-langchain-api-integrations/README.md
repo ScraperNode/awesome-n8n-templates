@@ -1,6 +1,6 @@
 # ⚒️ Beginner's Guide to Workflow Automation with OpenAI, LangChain & API Integrations
 
-> ⚡ **767 views** · ⚒️ [Engineering](../)
+> ⚡ **1,152 views** · ⚒️ [Engineering](../)
 
 ## Description
 

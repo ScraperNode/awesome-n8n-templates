@@ -1,6 +1,6 @@
 # 🤝 Analyze sales call objections with Fireflies transcripts, GPT-4o, and Slack feedback
 
-> ⚡ **135 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **172 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

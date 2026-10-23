@@ -1,6 +1,6 @@
 # 🎬 Generate lead magnet ideas from Google Sheets using RapidAPI AI
 
-> ⚡ **656 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **719 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

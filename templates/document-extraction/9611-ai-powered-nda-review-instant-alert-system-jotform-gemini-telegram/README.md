@@ -1,6 +1,6 @@
 # 🔬 AI-powered NDA review & instant alert system - Jotform, Gemini, Telegram
 
-> ⚡ **108 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **146 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

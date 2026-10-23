@@ -1,6 +1,6 @@
 # 🎬 Generate product and marketing images using Riverflow 2.0 on Replicate
 
-> ⚡ **29 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **58 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

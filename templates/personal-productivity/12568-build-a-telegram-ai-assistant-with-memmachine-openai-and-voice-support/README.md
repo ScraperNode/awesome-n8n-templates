@@ -1,6 +1,6 @@
 # ⚡ Build a Telegram AI assistant with MemMachine, OpenAI, and voice support
 
-> ⚡ **309 views** · ⚡ [Personal Productivity](../)
+> ⚡ **494 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Automate B2B SaaS renewal risk management with CRM, support & usage data
 
-> ⚡ **495 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,192 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

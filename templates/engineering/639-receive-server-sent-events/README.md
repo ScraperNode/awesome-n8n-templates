@@ -1,6 +1,6 @@
 # ⚒️ Receive server-sent events
 
-> ⚡ **2,776 views** · ⚒️ [Engineering](../)
+> ⚡ **2,882 views** · ⚒️ [Engineering](../)
 
 ## Description
 

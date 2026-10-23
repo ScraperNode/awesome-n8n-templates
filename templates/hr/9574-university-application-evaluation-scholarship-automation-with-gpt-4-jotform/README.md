@@ -1,6 +1,6 @@
 # 👥 University application evaluation & scholarship automation with GPT-4 & Jotform
 
-> ⚡ **276 views** · 👥 [HR & Recruitment](../)
+> ⚡ **476 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

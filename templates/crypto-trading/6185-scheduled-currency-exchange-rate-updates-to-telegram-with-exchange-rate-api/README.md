@@ -1,6 +1,6 @@
 # 📈 Scheduled currency exchange rate updates to Telegram with Exchange Rate API
 
-> ⚡ **268 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **323 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

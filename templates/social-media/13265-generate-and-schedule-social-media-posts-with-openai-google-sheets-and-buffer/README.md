@@ -1,6 +1,6 @@
 # 📱 Generate and schedule social media posts with OpenAI, Google Sheets and Buffer
 
-> ⚡ **99 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **485 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

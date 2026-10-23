@@ -1,0 +1,588 @@
+{
+  "name": "Qualify leads in Google Sheets by website domain age with RDAP",
+  "nodes": [
+    {
+      "id": "start",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "settings",
+      "name": "Settings",
+      "type": "n8n-nodes-base.set",
+      "notes": "The only node to edit. Replace the REPLACE_ME value. sheet_id: Google Sheet ID, the long part of its URL; sheet_tab: Tab with your leads; needs the 4 result columns in row 1; website_column: Header of the column that holds the website; rdap_pace_seconds: Pause before every RDAP call; rdap.org allows 10 per 10 s; max_retries: Retries on 429 or 5xx, waiting 1, 2, 4, 8, 16 s",
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "setting-sheet-id",
+              "name": "sheet_id",
+              "type": "string",
+              "value": "REPLACE_ME_SHEET_ID"
+            },
+            {
+              "id": "setting-sheet-tab",
+              "name": "sheet_tab",
+              "type": "string",
+              "value": "Leads"
+            },
+            {
+              "id": "setting-website-column",
+              "name": "website_column",
+              "type": "string",
+              "value": "website"
+            },
+            {
+              "id": "setting-rdap-pace-seconds",
+              "name": "rdap_pace_seconds",
+              "type": "number",
+              "value": 1.1
+            },
+            {
+              "id": "setting-max-retries",
+              "name": "max_retries",
+              "type": "number",
+              "value": 5
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 3.4
+    },
+    {
+      "id": "read-leads",
+      "name": "Read Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "notes": "Reads every row of the leads tab; each row carries its row_number.",
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "resource": "sheet",
+        "filtersUI": {},
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Settings').first().json.sheet_tab }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Settings').first().json.sheet_id }}"
+        },
+        "authentication": "oAuth2"
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "prepare-domains",
+      "name": "Prepare Domains",
+      "type": "n8n-nodes-base.code",
+      "notes": "Skips rows without a website; registrable domain; shared hosts and IPs get unknown without a lookup.",
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Prepare Domains: one item per sheet row that has a website. Rows without one are skipped and\n// never written back. The registrable domain is read from the URL by pattern (n8n's Code sandbox\n// has no URL class). A shared host (facebook.com, wixsite.com, ...) says nothing about the business\n// on it, and an IP address has no registration, so those rows get \"unknown\" without a lookup.\nconst cfg = $('Settings').first().json;\nfor (const k of ['rdap_pace_seconds', 'max_retries']) {\n  if (!(Number.isFinite(Number(cfg[k])) && Number(cfg[k]) >= 0)) throw new Error(`Settings: ${k} must be a number of 0 or more`);\n}\nconst column = String(cfg.website_column || 'website').trim();\n\nconst PLATFORMS = ['facebook.com', 'fb.com', 'instagram.com', 'linkedin.com', 'twitter.com', 'x.com', 'tiktok.com',\n  'youtube.com', 'linktr.ee', 'yelp.com', 'google.com', 'business.site', 'wixsite.com', 'wix.com',\n  'squarespace.com', 'square.site', 'weebly.com', 'wordpress.com', 'blogspot.com', 'godaddysites.com',\n  'myshopify.com', 'carrd.co', 'github.io', 'nextdoor.com', 'yellowpages.com', 'bbb.org', 'angi.com',\n  'homeadvisor.com', 'thumbtack.com', 'houzz.com', 'vagaro.com', 'booksy.com', 'square.com',\n  'toasttab.com', 'doordash.com', 'ubereats.com', 'grubhub.com', 'opentable.com', 'zocdoc.com',\n  'healthgrades.com'];\nconst SECOND_LEVEL = new Set(['co', 'com', 'net', 'org', 'gov', 'ac', 'edu']); // shop.example.co.uk -> example.co.uk\n\nconst registrableDomain = (site) => {\n  const authority = /^(?:[a-z][a-z0-9+.-]*:)?\\/\\/([^/?#]*)/i.exec(site.includes('//') ? site : `//${site}`);\n  let host = (authority ? authority[1] : '').replace(/^.*@/, '').replace(/:\\d*$/, '').toLowerCase().replace(/\\.+$/, '');\n  if (host.startsWith('www.')) host = host.slice(4);\n  if (!host.includes('.') || host.startsWith('[') || /^[0-9.]+$/.test(host)) return { domain: null, why: 'no domain in website' };\n  if (PLATFORMS.some((p) => host === p || host.endsWith(`.${p}`))) return { domain: null, why: 'shared host, not the business\u2019s own domain' };\n  const labels = host.split('.');\n  const keep = labels.length >= 3 && labels[labels.length - 1].length === 2 && SECOND_LEVEL.has(labels[labels.length - 2]) ? 3 : 2;\n  return { domain: labels.slice(-keep).join('.'), why: null };\n};\n\nconst today = new Date().toISOString().slice(0, 10);\nconst out = [];\nfor (const { json: row } of $input.all()) {\n  const website = String(row[column] ?? '').trim();\n  if (!website || row.row_number == null) continue; // no website: skipped, nothing written back\n  const { domain, why } = registrableDomain(website);\n  const base = { row_number: row.row_number, website, domain, attempt: 0, requests: 0, retries: 0, wait_s: Number(cfg.rdap_pace_seconds), checked_at: today };\n  out.push({ json: domain\n    ? { ...base, lookup: 'yes' }\n    : { ...base, lookup: 'no', domain_created: 'unknown', years_registered: 'unknown', age_source: why } });\n}\nreturn out;\n",
+        "language": "javaScript"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "loop-over-rows",
+      "name": "Loop Over Rows",
+      "type": "n8n-nodes-base.splitInBatches",
+      "notes": "One row at a time.",
+      "position": [
+        880,
+        480
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "notesInFlow": true,
+      "typeVersion": 3
+    },
+    {
+      "id": "collect-results",
+      "name": "Collect Results",
+      "type": "n8n-nodes-base.code",
+      "notes": "The five columns the sheet node updates, matched on row_number.",
+      "position": [
+        1100,
+        120
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Collect Results: every row that went through the loop, reduced to the five columns the sheet\n// node updates, matched on row_number. Nothing else on the row is touched.\nconst COLUMNS = ['row_number', 'domain_created', 'years_registered', 'age_source', 'checked_at'];\nconst rows = $input.all().map(({ json: s }) => ({ json: Object.fromEntries(COLUMNS.map((c) => [c, s[c]])) }));\nconst dated = rows.filter((r) => r.json.age_source === 'rdap').length;\nconsole.log(`domain-age ${rows[0]?.json.checked_at ?? ''}: rows=${rows.length} dated=${dated} unknown=${rows.length - dated}`);\nreturn rows;\n",
+        "language": "javaScript"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "write-back-ages",
+      "name": "Write Back Ages",
+      "type": "n8n-nodes-base.googleSheets",
+      "notes": "Updates domain_created, years_registered, age_source, checked_at on the same rows (row_number).",
+      "position": [
+        1320,
+        120
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [
+            {
+              "id": "row_number",
+              "type": "number",
+              "display": true,
+              "readOnly": true,
+              "required": false,
+              "displayName": "row_number",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "domain_created",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "domain_created",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "years_registered",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "years_registered",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "age_source",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "age_source",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "checked_at",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "checked_at",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [
+            "row_number"
+          ]
+        },
+        "options": {},
+        "resource": "sheet",
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Settings').first().json.sheet_tab }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Settings').first().json.sheet_id }}"
+        },
+        "authentication": "oAuth2"
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "needs-lookup",
+      "name": "Needs Lookup?",
+      "type": "n8n-nodes-base.if",
+      "notes": "false: no usable domain (shared host, IP, garbage); the row goes back with unknown.",
+      "position": [
+        1100,
+        480
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "needs-lookup-rule",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.lookup }}",
+              "rightValue": "yes"
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 2.2
+    },
+    {
+      "id": "wait-before-rdap",
+      "name": "Wait Before RDAP",
+      "type": "n8n-nodes-base.wait",
+      "notes": "rdap.org allows 10 requests per 10 seconds.",
+      "position": [
+        1320,
+        480
+      ],
+      "parameters": {
+        "unit": "seconds",
+        "amount": "={{ $json.wait_s }}",
+        "resume": "timeInterval"
+      },
+      "notesInFlow": true,
+      "typeVersion": 1.1
+    },
+    {
+      "id": "rdap-lookup",
+      "name": "RDAP Lookup",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "rdap.org redirects (302) to the registry that holds the domain; redirects are followed.",
+      "onError": "continueRegularOutput",
+      "position": [
+        1540,
+        480
+      ],
+      "parameters": {
+        "url": "=https://rdap.org/domain/{{ $json.domain }}",
+        "method": "GET",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/rdap+json"
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "check-rdap-response",
+      "name": "Check RDAP Response",
+      "type": "n8n-nodes-base.code",
+      "notes": "Registration date, retry, or unknown with the reason.",
+      "position": [
+        1760,
+        480
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Check RDAP Response: rdap.org answered for the current row's domain (RFC 9083 JSON), or did not answer.\n// 200 with a \"registration\" event: domain_created is that date, years_registered the full years since.\n// 429 or 5xx, or no response at all (timeout, DNS, connection refused: the HTTP node continues on\n// error and hands over an error item instead of a status): wait 1, 2, 4, 8, 16 s and ask again, up\n// to max_retries; then \"unknown\", never a guess.\n// 404 (not in RDAP) or a date that does not parse: \"unknown\", with the reason in age_source.\nconst cfg = $('Settings').first().json;\nconst state = $('Wait Before RDAP').first().json; // the row whose domain was just looked up\nconst res = $input.first().json;\nconst status = Number(res.statusCode);\nconst today = new Date().toISOString().slice(0, 10);\nconst base = { ...state, requests: state.requests + 1, checked_at: today };\nconst unknown = (why) => [{ json: { ...base, domain_created: 'unknown', years_registered: 'unknown', age_source: why, next: 'done' } }];\n\n// A short reason for the sheet cell: the error's code or name and the first line of its message, never the\n// stack, never braces or brackets (a JSON-shaped message stays out of the cell), never more than 120\n// characters in all. Cuts fall between characters (code points), so an emoji is never split in half.\nconst clean = (s) => String(s).split('\\n')[0].replace(/[{}[\\]]/g, '');\nconst cut = (s, n) => [...s].slice(0, n).join('');\nconst errorText = (e) => {\n  let out = 'unknown error';\n  if (typeof e === 'string') out = clean(e);\n  else if (e && typeof e === 'object') {\n    const head = cut(clean(e.code || e.name || 'error'), 40);\n    const msg = e.message ? clean(e.message) : '';\n    out = msg ? `${head}: ${msg}` : head;\n  }\n  return cut(out, 120);\n};\n\nconst retryable = [429, 500, 502, 503, 504].includes(status) || !Number.isFinite(status);\nif (retryable) {\n  const attempts = state.attempt + 1;\n  if (state.attempt >= Number(cfg.max_retries)) {\n    return unknown(Number.isFinite(status) ? `rdap answered HTTP ${status} ${attempts} times` : `rdap unreachable ${attempts} times (${errorText(res.error)})`);\n  }\n  return [{ json: { ...base, attempt: state.attempt + 1, retries: state.retries + 1, wait_s: 2 ** state.attempt, next: 'rdap' } }];\n}\nif (status === 404) return unknown('domain not found in RDAP');\nif (status !== 200) return unknown(`rdap answered HTTP ${status}`);\n\nconst event = (res.body?.events ?? []).find((e) => e.eventAction === 'registration' && e.eventDate);\nif (!event) return unknown('no registration event in the RDAP record');\nconst m = /^(\\d{4}-\\d{2}-\\d{2})/.exec(String(event.eventDate).trim()); // the date part, as written: no time-zone shift\nconst created = m && !Number.isNaN(Date.parse(m[1])) ? m[1] : null;\nif (!created) return unknown('registration date unreadable');\nconst years = Math.floor((Date.parse(today) - Date.parse(created)) / 86400000 / 365.25);\nif (years < 0) return unknown('registration date is in the future');\nreturn [{ json: { ...base, domain_created: created, years_registered: years, age_source: 'rdap', next: 'done' } }];\n",
+        "language": "javaScript"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "rdap-again",
+      "name": "RDAP Again?",
+      "type": "n8n-nodes-base.if",
+      "notes": "true: wait and look up again (a retry). false: back to the loop.",
+      "position": [
+        1980,
+        480
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "rdap-again-rule",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.next }}",
+              "rightValue": "rdap"
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 2.2
+    },
+    {
+      "id": "main-note",
+      "name": "Main Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        -780
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 1000,
+        "height": 840,
+        "content": "## Qualify leads in Google Sheets by website domain age with RDAP\n\n### Who's it for\nAnyone with leads in Google Sheets who wants to know how long each business has existed, using the website domain's registration date from **rdap.org**: free, no key.\n\n### How it works\n1. **Settings** names the sheet, tab and website column. **Read Leads** loads every row.\n2. **Prepare Domains** skips rows without a website and reads the registrable domain (`shop.example.co.uk` becomes `example.co.uk`). Shared hosts such as facebook.com get \"unknown\" without a lookup.\n3. **Loop Over Rows**, **Wait Before RDAP** and **RDAP Lookup** check one domain every 1.1 s (rdap.org allows 10 requests per 10 s).\n4. **Check RDAP Response** reads the registration date and retries a 429 or 5xx. A date it cannot get becomes \"unknown\" with the reason, never a guess.\n5. **Collect Results** and **Write Back Ages** fill four columns on the same rows.\n\n### How to set up\n1. Create a Google Sheets credential named `Google Sheets account`.\n2. Add four headers to your leads tab: `domain_created`, `years_registered`, `age_source`, `checked_at`.\n3. Fill **Settings** (`sheet_id` is the long part of the sheet URL) and click Execute workflow.\n\n### Requirements\nn8n, a Google account, and a leads tab with a website column. 100 rows take about two minutes.\n\n### How to customize the workflow\n- Raise `rdap_pace_seconds` if you see 429s.\n- The paid Local Lead List Builder finds local businesses and adds this domain-age check in one run: https://edgef4.gumroad.com/l/local-lead-list-builder"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "note-read",
+      "name": "Note Read",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        100
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 840,
+        "height": 360,
+        "content": "### 1. Read the sheet\n**Read Leads** loads every row. **Prepare Domains** keeps rows with a website and reads the registrable domain; shared hosts get unknown without a lookup."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "note-lookup",
+      "name": "Note Lookup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        840,
+        280
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1300,
+        "height": 380,
+        "content": "### 2. Look each domain up\nOne row at a time, 1.1 s apart. rdap.org redirects to the registry. 429 or 5xx: wait 1, 2, 4, 8, 16 s and retry, then unknown."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "note-write",
+      "name": "Note Write",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1060,
+        -60
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 460,
+        "height": 320,
+        "content": "### 3. Write back\nFour columns updated on the same rows, matched on row_number. Nothing else on the row changes."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Settings": {
+      "main": [
+        [
+          {
+            "node": "Read Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Leads": {
+      "main": [
+        [
+          {
+            "node": "Prepare Domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RDAP Again?": {
+      "main": [
+        [
+          {
+            "node": "Wait Before RDAP",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RDAP Lookup": {
+      "main": [
+        [
+          {
+            "node": "Check RDAP Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Lookup?": {
+      "main": [
+        [
+          {
+            "node": "Wait Before RDAP",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Rows": {
+      "main": [
+        [
+          {
+            "node": "Collect Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Needs Lookup?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Results": {
+      "main": [
+        [
+          {
+            "node": "Write Back Ages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Domains": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Before RDAP": {
+      "main": [
+        [
+          {
+            "node": "RDAP Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check RDAP Response": {
+      "main": [
+        [
+          {
+            "node": "RDAP Again?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

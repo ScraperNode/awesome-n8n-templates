@@ -1,6 +1,6 @@
 # ⚡ Gmail to Telegram: email summaries with OpenAI GPT-4o
 
-> ⚡ **2,690 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,026 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

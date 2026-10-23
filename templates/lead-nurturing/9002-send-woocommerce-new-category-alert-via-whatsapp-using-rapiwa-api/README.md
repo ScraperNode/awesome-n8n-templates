@@ -1,6 +1,6 @@
 # 💬 Send WooCommerce new category alert via WhatsApp using Rapiwa API
 
-> ⚡ **229 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **235 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 > 💡 **Pro Tip** — If you've run into Facebook's Graph API permission restrictions, [ScraperNode](https://scrapernode.com/facebook) is a community node that scrapes [pages](https://scrapernode.com/facebook/scrapers/profiles), [groups](https://scrapernode.com/facebook/scrapers/groups), [posts](https://scrapernode.com/facebook/scrapers/posts), and [comments](https://scrapernode.com/facebook/scrapers/comments) directly — no app review needed.
 >

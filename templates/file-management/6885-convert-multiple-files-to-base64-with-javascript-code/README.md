@@ -1,6 +1,6 @@
 # 📁 Convert multiple files to base64 with JavaScript code
 
-> ⚡ **700 views** · 📁 [File Management](../)
+> ⚡ **945 views** · 📁 [File Management](../)
 
 ## Description
 

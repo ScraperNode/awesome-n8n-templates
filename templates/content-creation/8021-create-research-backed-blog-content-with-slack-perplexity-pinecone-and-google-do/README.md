@@ -1,6 +1,6 @@
 # 🎬 Create research-backed blog content with Slack, Perplexity, Pinecone and Google Docs
 
-> ⚡ **359 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **506 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

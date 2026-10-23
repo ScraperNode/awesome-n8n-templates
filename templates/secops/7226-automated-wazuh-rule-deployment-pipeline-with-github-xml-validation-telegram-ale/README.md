@@ -1,6 +1,6 @@
 # 🔒 Automated Wazuh rule deployment pipeline with GitHub, XML validation & Telegram alerts
 
-> ⚡ **158 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **237 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

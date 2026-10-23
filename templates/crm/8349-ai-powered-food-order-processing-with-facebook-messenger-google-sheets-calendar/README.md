@@ -1,6 +1,6 @@
 # 🤝 AI-powered food order processing with Facebook Messenger, Google Sheets & Calendar
 
-> ⚡ **1,115 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,545 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

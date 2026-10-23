@@ -1,6 +1,6 @@
 # 🎬 Automate faceless shorts with OpenAI, RunwayML & ElevenLabs: script to social media
 
-> ⚡ **199 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **312 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

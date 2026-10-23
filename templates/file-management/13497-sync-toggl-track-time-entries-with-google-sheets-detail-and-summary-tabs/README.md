@@ -1,6 +1,6 @@
 # 📁 Sync Toggl Track time entries with Google Sheets detail and summary tabs
 
-> ⚡ **1 views** · 📁 [File Management](../)
+> ⚡ **19 views** · 📁 [File Management](../)
 
 ## Description
 

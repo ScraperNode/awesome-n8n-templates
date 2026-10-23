@@ -1,6 +1,6 @@
 # 💬 WhatsApp outbound messaging with Baserow & WasenderAPI
 
-> ⚡ **311 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **382 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 🐶 AI Petshop Assistant with GPT-4o, Google Calendar & WhatsApp/Instagram/FB
 
-> ⚡ **2,702 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,766 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

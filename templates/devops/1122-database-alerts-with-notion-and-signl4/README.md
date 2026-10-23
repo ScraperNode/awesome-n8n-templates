@@ -1,6 +1,6 @@
 # ⚙️ Database alerts with Notion and SIGNL4
 
-> ⚡ **975 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **983 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

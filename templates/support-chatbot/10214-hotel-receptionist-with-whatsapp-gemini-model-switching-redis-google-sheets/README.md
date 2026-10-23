@@ -1,6 +1,6 @@
 # 💬 Hotel receptionist with WhatsApp, Gemini model-switching, Redis & Google Sheets
 
-> ⚡ **3,155 views** · 💬 [Support Chatbots](../)
+> ⚡ **5,923 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

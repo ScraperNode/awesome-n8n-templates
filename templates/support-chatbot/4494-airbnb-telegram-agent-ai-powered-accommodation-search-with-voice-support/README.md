@@ -1,6 +1,6 @@
 # 💬 Airbnb Telegram agent - AI-powered accommodation search with voice support
 
-> ⚡ **6,643 views** · 💬 [Support Chatbots](../)
+> ⚡ **7,169 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

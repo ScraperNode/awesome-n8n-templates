@@ -1,6 +1,6 @@
 # 🎫 Automate Gmail responses with GPT and human-in-the-loop verification
 
-> ⚡ **173 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **291 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

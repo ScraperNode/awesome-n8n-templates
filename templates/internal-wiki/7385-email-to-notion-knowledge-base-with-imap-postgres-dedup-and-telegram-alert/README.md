@@ -1,6 +1,6 @@
 # 📖 Email to Notion knowledge base with IMAP, Postgres dedup and Telegram alert
 
-> ⚡ **496 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **621 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

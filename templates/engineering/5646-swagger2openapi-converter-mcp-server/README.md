@@ -1,6 +1,6 @@
 # ⚒️ Swagger2OpenAPI converter MCP server
 
-> ⚡ **153 views** · ⚒️ [Engineering](../)
+> ⚡ **177 views** · ⚒️ [Engineering](../)
 
 ## Description
 

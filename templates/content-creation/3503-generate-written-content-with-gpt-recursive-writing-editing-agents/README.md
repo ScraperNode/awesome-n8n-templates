@@ -1,6 +1,6 @@
 # 🎬 Generate written content with GPT Recursive Writing & Editing agents
 
-> ⚡ **1,487 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,605 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

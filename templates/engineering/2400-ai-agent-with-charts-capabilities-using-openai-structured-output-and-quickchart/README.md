@@ -1,6 +1,6 @@
 # ⚒️ AI agent with charts capabilities using OpenAI structured output and Quickchart
 
-> ⚡ **18,624 views** · ⚒️ [Engineering](../)
+> ⚡ **18,786 views** · ⚒️ [Engineering](../)
 
 ## Description
 

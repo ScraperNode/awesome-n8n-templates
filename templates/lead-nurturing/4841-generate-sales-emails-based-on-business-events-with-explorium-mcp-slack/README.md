@@ -1,6 +1,6 @@
 # 💬 Generate sales emails based on business events with Explorium MCP & Slack
 
-> ⚡ **1,418 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,449 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

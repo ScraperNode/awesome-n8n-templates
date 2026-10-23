@@ -1,6 +1,6 @@
 # ⚒️ Fetch reliable FX exchange rates with Frankfurter and open.er-api
 
-> ⚡ **6 views** · ⚒️ [Engineering](../)
+> ⚡ **57 views** · ⚒️ [Engineering](../)
 
 ## Description
 

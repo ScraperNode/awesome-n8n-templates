@@ -1,6 +1,6 @@
 # 💬 Automated email follow-up system with CentralStationCRM, Gmail and Slack alerts
 
-> ⚡ **81 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **104 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

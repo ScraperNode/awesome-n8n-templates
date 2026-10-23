@@ -1,6 +1,6 @@
 # 🔬 Generate AI-powered end-of-day reports from ClickUp & GoHighLevel to multi-channel
 
-> ⚡ **316 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **413 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

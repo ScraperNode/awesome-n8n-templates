@@ -1,6 +1,6 @@
 # 🎯 Send AI-summarized unread email alerts to Slack using GPT-4o and Gmail
 
-> ⚡ **356 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **486 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

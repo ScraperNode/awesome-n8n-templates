@@ -1,6 +1,6 @@
 # 📱 Generate personalized language learning news digests with LLaMA-3.1 & DeepSeek AI
 
-> ⚡ **151 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **177 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

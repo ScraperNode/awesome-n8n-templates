@@ -1,6 +1,6 @@
 # 🔍 Create, update posts 🛠️ Wordpress tool MCP server 💪 all 12 operations
 
-> ⚡ **1,647 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **1,711 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

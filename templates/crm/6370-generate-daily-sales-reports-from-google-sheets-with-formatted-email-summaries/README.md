@@ -1,6 +1,6 @@
 # 🤝 Generate daily sales reports from Google Sheets with formatted email summaries
 
-> ⚡ **168 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **225 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

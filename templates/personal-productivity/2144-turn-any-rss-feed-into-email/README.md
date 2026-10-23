@@ -1,6 +1,6 @@
 # ⚡ Turn any RSS feed into email
 
-> ⚡ **6,878 views** · ⚡ [Personal Productivity](../)
+> ⚡ **7,176 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

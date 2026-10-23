@@ -1,6 +1,6 @@
 # ⚡ View fantasy football roster details with Sleeper API and Telegram chatbot
 
-> ⚡ **228 views** · ⚡ [Personal Productivity](../)
+> ⚡ **261 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

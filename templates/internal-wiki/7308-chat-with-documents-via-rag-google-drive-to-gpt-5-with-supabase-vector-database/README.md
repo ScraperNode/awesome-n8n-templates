@@ -1,6 +1,6 @@
 # 📖 Chat with documents via RAG: Google Drive to GPT-5 with Supabase vector database
 
-> ⚡ **371 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **441 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

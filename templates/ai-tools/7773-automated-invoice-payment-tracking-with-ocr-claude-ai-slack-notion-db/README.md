@@ -1,6 +1,6 @@
 # 🎯 Automated invoice payment tracking with OCR, Claude AI, Slack & Notion DB
 
-> ⚡ **301 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **411 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

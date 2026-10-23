@@ -1,6 +1,6 @@
 # ⚡ Automate email classification & summary with Gmail, GPT-4o-mini & Notion
 
-> ⚡ **1,538 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,831 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

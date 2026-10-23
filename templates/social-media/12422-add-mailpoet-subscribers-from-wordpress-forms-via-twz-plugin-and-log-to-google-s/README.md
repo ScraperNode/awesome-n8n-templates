@@ -1,6 +1,6 @@
 # 📱 Add MailPoet subscribers from WordPress forms via TWZ plugin and log to Google Sheets
 
-> ⚡ **4 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **36 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

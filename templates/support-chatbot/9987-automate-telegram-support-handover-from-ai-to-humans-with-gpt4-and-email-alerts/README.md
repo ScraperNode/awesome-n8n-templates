@@ -1,6 +1,6 @@
 # 💬 Automate Telegram support handover from AI to humans with GPT4 and email alerts
 
-> ⚡ **269 views** · 💬 [Support Chatbots](../)
+> ⚡ **664 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

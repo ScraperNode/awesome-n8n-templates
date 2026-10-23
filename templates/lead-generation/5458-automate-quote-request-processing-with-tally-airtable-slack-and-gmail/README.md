@@ -1,6 +1,6 @@
 # 🎣 Automate quote request processing with Tally, Airtable, Slack, and Gmail
 
-> ⚡ **906 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,067 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

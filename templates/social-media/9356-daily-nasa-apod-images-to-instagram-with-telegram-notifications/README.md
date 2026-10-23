@@ -1,6 +1,6 @@
 # 📱 Daily NASA APOD Images to Instagram with Telegram Notifications
 
-> ⚡ **184 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **236 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

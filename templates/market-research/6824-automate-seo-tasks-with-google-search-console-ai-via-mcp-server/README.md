@@ -1,6 +1,6 @@
 # 📊 Automate SEO tasks with Google Search Console & AI via MCP Server
 
-> ⚡ **1,431 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,744 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

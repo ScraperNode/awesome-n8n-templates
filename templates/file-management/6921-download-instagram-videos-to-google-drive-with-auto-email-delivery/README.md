@@ -1,6 +1,6 @@
 # 📁 Download Instagram videos to Google Drive with auto-email delivery
 
-> ⚡ **1,633 views** · 📁 [File Management](../)
+> ⚡ **1,975 views** · 📁 [File Management](../)
 
 ## Description
 

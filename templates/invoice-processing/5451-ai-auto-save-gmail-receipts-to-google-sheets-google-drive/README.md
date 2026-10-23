@@ -1,6 +1,6 @@
 # 🧾 AI auto-save Gmail receipts to Google Sheets + Google Drive
 
-> ⚡ **1,960 views** · 🧾 [Invoice Processing](../)
+> ⚡ **2,150 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

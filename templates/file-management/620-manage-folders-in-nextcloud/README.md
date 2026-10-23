@@ -1,6 +1,6 @@
 # 📁 Manage folders in Nextcloud
 
-> ⚡ **2,960 views** · 📁 [File Management](../)
+> ⚡ **3,082 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Send daily CRM summary reports to Mattermost from HubSpot
 
-> ⚡ **21 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **91 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

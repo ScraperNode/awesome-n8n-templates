@@ -1,6 +1,6 @@
 # 📋 Get all the tasks in flow
 
-> ⚡ **562 views** · 📋 [Project Management](../)
+> ⚡ **605 views** · 📋 [Project Management](../)
 
 ## Description
 

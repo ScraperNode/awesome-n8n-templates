@@ -1,0 +1,924 @@
+{
+  "name": "Monitor signed crypto price quality with MCP, Data Tables and Slack",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "run-manually",
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        280
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "every-ten-minutes",
+      "name": "Every ten minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        460
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "monitor-settings",
+      "name": "Monitor settings",
+      "type": "n8n-nodes-base.set",
+      "notes": "Example consumer acceptance policy, not Verity engine thresholds. One symbol per monitor. Review API limits before activation.",
+      "onError": "stopWorkflow",
+      "position": [
+        220,
+        280
+      ],
+      "parameters": {
+        "mode": "manual",
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "symbol",
+              "name": "symbol",
+              "type": "string",
+              "value": "BTC"
+            },
+            {
+              "id": "maxAgeSeconds",
+              "name": "maxAgeSeconds",
+              "type": "number",
+              "value": 120
+            },
+            {
+              "id": "maxFutureSkewSeconds",
+              "name": "maxFutureSkewSeconds",
+              "type": "number",
+              "value": 5
+            },
+            {
+              "id": "minConfidence",
+              "name": "minConfidence",
+              "type": "number",
+              "value": 0.8
+            },
+            {
+              "id": "maxDispersionBps",
+              "name": "maxDispersionBps",
+              "type": "number",
+              "value": 50
+            },
+            {
+              "id": "minSources",
+              "name": "minSources",
+              "type": "number",
+              "value": 2
+            },
+            {
+              "id": "allowedGrades",
+              "name": "allowedGrades",
+              "type": "string",
+              "value": "consensus,blended"
+            }
+          ]
+        },
+        "includeOtherFields": false
+      },
+      "notesInFlow": true,
+      "typeVersion": 3.4
+    },
+    {
+      "id": "validate-monitor-settings",
+      "name": "Validate monitor settings",
+      "type": "n8n-nodes-base.code",
+      "onError": "stopWorkflow",
+      "position": [
+        440,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nif (items.length !== 1) throw new Error('CONFIG_INVALID: run one monitor at a time.');\nconst c = items[0].json;\nif (typeof c.symbol !== 'string' || !/^[A-Z0-9]{1,20}$/.test(c.symbol)) throw new Error('CONFIG_INVALID: symbol.');\nconst ranges = {maxAgeSeconds:[1,3600],maxFutureSkewSeconds:[0,60],minConfidence:[0,1],maxDispersionBps:[0,10000],minSources:[1,1000]};\nfor (const [key,[min,max]] of Object.entries(ranges)) {\n if (typeof c[key] !== 'number' || !Number.isFinite(c[key]) || c[key] < min || c[key] > max) throw new Error('CONFIG_INVALID: policy number.');\n}\nif (!Number.isInteger(c.minSources)) throw new Error('CONFIG_INVALID: minSources.');\nconst grades = typeof c.allowedGrades === 'string' ? c.allowedGrades.split(',').map(x => x.trim()) : [];\nif (!grades.length || new Set(grades).size !== grades.length || grades.some(x => !['consensus','blended','composite','single-source','indicative'].includes(x))) throw new Error('CONFIG_INVALID: allowedGrades.');\nconst policy = Object.fromEntries(Object.keys(ranges).map(k => [k,c[k]]));\npolicy.allowedGrades = grades.sort();\nconst monitorKey = String($workflow.id) + ':' + c.symbol;\nreturn [{json:{symbol:c.symbol, policy, monitorKey, policyKey:JSON.stringify(policy)},pairedItem:{item:0}}];",
+        "language": "javaScript"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "read",
+      "name": "Read signed price",
+      "type": "@n8n/n8n-nodes-langchain.mcpClient",
+      "notes": "Select your n8n Bearer Auth credential. The endpoint and tool are fixed; no AI model is needed.",
+      "onError": "continueErrorOutput",
+      "position": [
+        660,
+        280
+      ],
+      "parameters": {
+        "tool": {
+          "__rl": true,
+          "mode": "id",
+          "value": "get_index_price"
+        },
+        "options": {
+          "timeout": 20000,
+          "convertToBinary": false
+        },
+        "inputMode": "json",
+        "jsonInput": "={{ { symbol: $json.symbol } }}",
+        "endpointUrl": "https://mcp.thepulse.markets/api/index/mcp",
+        "authentication": "bearerAuth",
+        "serverTransport": "httpStreamable"
+      },
+      "notesInFlow": true,
+      "retryOnFail": false,
+      "typeVersion": 1.1
+    },
+    {
+      "id": "preserve",
+      "name": "Preserve signed print",
+      "type": "n8n-nodes-base.code",
+      "onError": "continueErrorOutput",
+      "position": [
+        880,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function toolBody(response) {\n  const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);\n  if (!object(response) || response.error !== undefined || response.isError === true) {\n    throw new Error('UNVERIFIED: the MCP call returned an error. No observation is approved.');\n  }\n  let body = response.structuredContent;\n  if (body === undefined) {\n    const content = response.content;\n    if (!Array.isArray(content) || content.length !== 1 || content[0].type !== 'text') {\n      throw new Error('UNVERIFIED: missing or ambiguous MCP result.');\n    }\n    body = content[0].text;\n    if (typeof body === 'string') {\n      if (body.length > 32768) throw new Error('UNVERIFIED: oversized MCP result.');\n      try { body = JSON.parse(body); }\n      catch { throw new Error('UNVERIFIED: the MCP result is not JSON.'); }\n    }\n  }\n  if (!object(body) || body.error !== undefined || body.success === false || JSON.stringify(body).length > 32768) {\n    throw new Error('UNVERIFIED: the MCP result is unavailable or malformed.');\n  }\n  return body;\n}\n\nconst items = $input.all();\nif (items.length !== 1) throw new Error('UNVERIFIED: expected one price result.');\nconst print = toolBody(items[0].json);\nconst requestedSymbol = $('Validate monitor settings').first().json.symbol;\nconst signature = /^[A-Za-z0-9+/]{86}==$/;\nif (print.symbol !== requestedSymbol || typeof print.price !== 'number' || !Number.isFinite(print.price)\n    || print.price <= 0 || typeof print.at !== 'string' || !Number.isFinite(Date.parse(print.at))\n    || !['consensus', 'blended', 'indicative', 'composite', 'single-source'].includes(print.grade)\n    || typeof print.signature !== 'string' || !signature.test(print.signature)\n    || !print.v2 || print.v2.sig !== 'pulse-index-v2'\n    || typeof print.v2.signature !== 'string' || !signature.test(print.v2.signature)\n    || typeof print.v2.canonical !== 'string' || print.v2.canonical.length > 8192\n    || typeof print.v2.kid !== 'string' || !/^[A-Za-z0-9._:-]{1,64}$/.test(print.v2.kid)) {\n  throw new Error('UNVERIFIED: a complete signed price record is required.');\n}\nif (print.priceText !== undefined && (typeof print.priceText !== 'string' || !print.priceText.length\n    || print.priceText.length > 100 || Number(print.priceText) !== print.price)) {\n  throw new Error('UNVERIFIED: price and exact price text disagree.');\n}\n// Keep every byte of priceText and v2.canonical unchanged. The verifier takes\n// the print fields at the top level, not an object nested under \"print\".\nreturn [{ json: { print }, pairedItem: { item: 0 } }];",
+        "language": "javaScript"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "verify",
+      "name": "Verify exact print",
+      "type": "@n8n/n8n-nodes-langchain.mcpClient",
+      "notes": "Select the same Bearer Auth credential. Pass the whole preserved print unchanged.",
+      "onError": "continueErrorOutput",
+      "position": [
+        1100,
+        280
+      ],
+      "parameters": {
+        "tool": {
+          "__rl": true,
+          "mode": "id",
+          "value": "verify_print"
+        },
+        "options": {
+          "timeout": 20000,
+          "convertToBinary": false
+        },
+        "inputMode": "json",
+        "jsonInput": "={{ $json.print }}",
+        "endpointUrl": "https://mcp.thepulse.markets/api/index/mcp",
+        "authentication": "bearerAuth",
+        "serverTransport": "httpStreamable"
+      },
+      "notesInFlow": true,
+      "retryOnFail": false,
+      "typeVersion": 1.1
+    },
+    {
+      "id": "gate",
+      "name": "Require verified record",
+      "type": "n8n-nodes-base.code",
+      "onError": "continueErrorOutput",
+      "position": [
+        1320,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function toolBody(response) {\n  const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);\n  if (!object(response) || response.error !== undefined || response.isError === true) {\n    throw new Error('UNVERIFIED: the MCP call returned an error. No observation is approved.');\n  }\n  let body = response.structuredContent;\n  if (body === undefined) {\n    const content = response.content;\n    if (!Array.isArray(content) || content.length !== 1 || content[0].type !== 'text') {\n      throw new Error('UNVERIFIED: missing or ambiguous MCP result.');\n    }\n    body = content[0].text;\n    if (typeof body === 'string') {\n      if (body.length > 32768) throw new Error('UNVERIFIED: oversized MCP result.');\n      try { body = JSON.parse(body); }\n      catch { throw new Error('UNVERIFIED: the MCP result is not JSON.'); }\n    }\n  }\n  if (!object(body) || body.error !== undefined || body.success === false || JSON.stringify(body).length > 32768) {\n    throw new Error('UNVERIFIED: the MCP result is unavailable or malformed.');\n  }\n  return body;\n}\n\nconst items = $input.all();\nif (items.length !== 1) throw new Error('UNVERIFIED: expected one verification result.');\nconst result = toolBody(items[0].json);\nconst print = $('Preserve signed print').first().json.print;\n// Strict booleans: a string \"true\", v1-only valid, or a missing field fails.\nif (result.recordValid !== true || result.valid !== true || result.metadataSigned !== true\n    || result.verificationScope !== 'full-record' || result.v2?.valid !== true\n    || result.v2?.signatureValid !== true || result.v2?.fieldsMatch !== true\n    || !Array.isArray(result.v2.mismatches) || result.v2.mismatches.length !== 0) {\n  throw new Error('UNVERIFIED: full-record signature verification did not pass.');\n}\nconst expectedCheck = ['pulse-index-v1', print.symbol, print.priceText ?? String(print.price), print.at, print.grade].join('\\n');\nif (result.checked !== expectedCheck || result.v2.verifiedWithKid !== print.v2.kid\n    || (print.kid !== undefined && result.verifiedWithKid !== print.kid)) {\n  throw new Error('UNVERIFIED: the verification does not match this price record.');\n}\nconst fields = ['symbol', 'price', 'priceText', 'at', 'grade', 'engine', 'sources', 'tier',\n  'confidence', 'dispersionBps', 'interval.lower', 'interval.upper', 'cadence.band',\n  'cadence.calculatedAgeMs', 'cadence.newestSourceAgeMs', 'cadence.oldestSourceAgeMs',\n  'cadence.p50UpdateMs', 'cadence.p95UpdateMs'];\nconst signed = result.v2.signedFields;\nif (!signed || typeof signed !== 'object' || Array.isArray(signed)\n    || Object.keys(signed).length !== fields.length) {\n  throw new Error('UNVERIFIED: expected the complete live-record field set.');\n}\nfor (const path of fields) {\n  const value = path.split('.').reduce((object, key) => object?.[key], print) ?? null;\n  if (!Object.prototype.hasOwnProperty.call(signed, path) || signed[path] !== value) {\n    throw new Error('UNVERIFIED: signed fields differ from this observation.');\n  }\n}\nreturn [{ json: {\n  status: 'VERIFIED',\n  source: 'Pulse Verity Index',\n  verificationMeaning: 'Signatures and covered record fields match. Freshness and suitability require separate checks.',\n  signedFields: signed,\n  signedPrint: print,\n  verification: {\n    recordValid: true, verificationScope: result.verificationScope,\n    verifiedWithKid: result.verifiedWithKid, v2VerifiedWithKid: result.v2.verifiedWithKid,\n    performedBy: 'Hosted Pulse Verity MCP verify_print'\n  }\n}, pairedItem: { item: 0 } }];",
+        "language": "javaScript"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "apply-consumer-policy",
+      "name": "Apply consumer policy",
+      "type": "n8n-nodes-base.code",
+      "onError": "continueErrorOutput",
+      "position": [
+        1540,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const v = $input.all();\nif (v.length !== 1 || v[0].json.status !== 'VERIFIED' || v[0].json.verification?.recordValid !== true) throw new Error('UNVERIFIED');\nconst {symbol,policy,monitorKey,policyKey} = $('Validate monitor settings').first().json;\nconst p = v[0].json.signedPrint;\nconst now = Date.now();\nconst ageSeconds = (now - Date.parse(p.at)) / 1000;\nlet reason = 'POLICY_PASS';\nif (!Number.isFinite(ageSeconds)) reason = 'TIMESTAMP_INVALID';\nelse if (ageSeconds < -policy.maxFutureSkewSeconds) reason = 'FUTURE_TIMESTAMP';\nelse if (ageSeconds > policy.maxAgeSeconds) reason = 'STALE';\nelse if (!policy.allowedGrades.includes(p.grade)) reason = 'GRADE_REJECTED';\nelse if (typeof p.confidence !== 'number' || !Number.isFinite(p.confidence) || p.confidence < 0 || p.confidence > 1\n || typeof p.dispersionBps !== 'number' || !Number.isFinite(p.dispersionBps) || p.dispersionBps < 0\n || !Number.isInteger(p.sources) || p.sources < 1) reason = 'QUALITY_MISSING';\nelse if (p.confidence < policy.minConfidence) reason = 'LOW_CONFIDENCE';\nelse if (p.dispersionBps > policy.maxDispersionBps) reason = 'WIDE_DISPERSION';\nelse if (p.sources < policy.minSources) reason = 'INSUFFICIENT_SOURCES';\nconst status = reason === 'POLICY_PASS' ? 'ACCEPTED' : 'REJECTED';\nreturn [{json:{monitorKey,policyKey,symbol,observedAt:new Date(now).toISOString(),status,reason,recordValid:true,\n priceText:p.priceText ?? String(p.price),recordAt:p.at,grade:p.grade,ageSeconds:Number.isFinite(ageSeconds)?ageSeconds:null,\n evidenceJson:JSON.stringify({recordAt:p.at,grade:p.grade,confidence:p.confidence,dispersionBps:p.dispersionBps,sources:p.sources,verification:v[0].json.verification})},pairedItem:{item:0}}];",
+        "language": "javaScript"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "record-unavailable-outcome",
+      "name": "Record unavailable outcome",
+      "type": "n8n-nodes-base.code",
+      "onError": "stopWorkflow",
+      "position": [
+        1540,
+        580
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Deliberately discard raw provider errors, headers, bodies and credentials.\nconst c = $('Validate monitor settings').first().json;\nreturn [{json:{monitorKey:c.monitorKey,policyKey:c.policyKey,symbol:c.symbol,observedAt:new Date().toISOString(),\n status:'UNAVAILABLE',reason:'READ_OR_VERIFICATION_FAILED',recordValid:false,priceText:'',recordAt:'',grade:'',ageSeconds:null,\n evidenceJson:JSON.stringify({recordValid:false,detail:'No usable fully verified record; inspect the failed stage in a controlled manual test.'})},pairedItem:{item:0}}];",
+        "language": "javaScript"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "prepare-audit-row",
+      "name": "Prepare audit row",
+      "type": "n8n-nodes-base.code",
+      "onError": "stopWorkflow",
+      "position": [
+        1760,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nif (items.length !== 1) throw new Error('AUDIT_INVALID');\nconst r = items[0].json;\nif (!['ACCEPTED','REJECTED','UNAVAILABLE'].includes(r.status) || typeof r.recordValid !== 'boolean') throw new Error('AUDIT_INVALID');\nreturn [{json:{...r,executionId:String($execution.id)},pairedItem:{item:0}}];",
+        "language": "javaScript"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "append-decision-audit",
+      "name": "Append decision audit",
+      "type": "n8n-nodes-base.dataTable",
+      "onError": "stopWorkflow",
+      "position": [
+        1980,
+        280
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "grade": "={{ $json.grade }}",
+            "reason": "={{ $json.reason }}",
+            "status": "={{ $json.status }}",
+            "symbol": "={{ $json.symbol }}",
+            "recordAt": "={{ $json.recordAt }}",
+            "policyKey": "={{ $json.policyKey }}",
+            "priceText": "={{ $json.priceText }}",
+            "ageSeconds": "={{ $json.ageSeconds }}",
+            "monitorKey": "={{ $json.monitorKey }}",
+            "observedAt": "={{ $json.observedAt }}",
+            "executionId": "={{ $json.executionId }}",
+            "recordValid": "={{ $json.recordValid }}",
+            "evidenceJson": "={{ $json.evidenceJson }}"
+          },
+          "schema": [
+            {
+              "id": "monitorKey",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "monitorKey",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "policyKey",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "policyKey",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "symbol",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "symbol",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observedAt",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "observedAt",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reason",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "reason",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recordValid",
+              "type": "boolean",
+              "display": true,
+              "required": false,
+              "displayName": "recordValid",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priceText",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "priceText",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recordAt",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "recordAt",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "grade",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "grade",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ageSeconds",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "displayName": "ageSeconds",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "evidenceJson",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "evidenceJson",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "executionId",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "executionId",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "options": {},
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "verity_monitor_audit"
+        }
+      },
+      "retryOnFail": false,
+      "typeVersion": 1.1
+    },
+    {
+      "id": "read-previous-state",
+      "name": "Read previous state",
+      "type": "n8n-nodes-base.dataTable",
+      "onError": "stopWorkflow",
+      "position": [
+        2200,
+        280
+      ],
+      "parameters": {
+        "limit": 2,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "monitorKey",
+              "keyValue": "={{ $('Validate monitor settings').first().json.monitorKey }}",
+              "condition": "eq"
+            }
+          ]
+        },
+        "resource": "row",
+        "matchType": "allConditions",
+        "operation": "get",
+        "returnAll": false,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "verity_monitor_state"
+        }
+      },
+      "retryOnFail": false,
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "decide-transition-alert",
+      "name": "Decide transition alert",
+      "type": "n8n-nodes-base.code",
+      "onError": "stopWorkflow",
+      "position": [
+        2420,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const r = $('Prepare audit row').first().json;\nconst rows = $input.all().map(x => x.json).filter(x => Object.keys(x).length);\nif (rows.length > 1) throw new Error('STATE_CONFLICT: duplicate monitor rows; resolve before continuing.');\nconst prior = rows[0];\nif (prior && (prior.monitorKey !== r.monitorKey || !['ACCEPTED','REJECTED','UNAVAILABLE'].includes(prior.status) || typeof prior.reason !== 'string' || typeof prior.policyKey !== 'string')) throw new Error('STATE_INVALID');\n// Repeated observations with the same status/reason/policy are quiet. The initial\n// healthy observation establishes a baseline. Initial failures and recoveries alert.\nconst changed = !prior || prior.status !== r.status || prior.reason !== r.reason || prior.policyKey !== r.policyKey;\nconst notify = changed && (Boolean(prior) || r.status !== 'ACCEPTED');\nconst label = r.status === 'ACCEPTED' ? 'RECOVERED / POLICY PASS' : r.status;\nconst message = ['Pulse Verity Index monitor: '+r.symbol, label+' \u2014 '+r.reason,\n 'Observed: '+r.observedAt, 'Previous state: '+(prior?.status ?? 'not established'),\n r.recordValid ? 'Full-record signature passed; consumer policy checked separately.' : 'No verified usable price. Do not substitute zero or a previous observation.',\n 'Audit execution: '+r.executionId, 'An integrity check does not establish price correctness or settlement suitability.'].join('\\n');\nreturn [{json:{...r,notify,alertText:message},pairedItem:{item:0}}];",
+        "language": "javaScript"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "state-changed",
+      "name": "State changed",
+      "type": "n8n-nodes-base.if",
+      "onError": "stopWorkflow",
+      "position": [
+        2640,
+        280
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "notify",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.notify }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "notify-operations",
+      "name": "Notify operations",
+      "type": "n8n-nodes-base.slack",
+      "notes": "Choose your Slack OAuth credential and operations channel. No raw provider error or signed payload is posted. Do not automatically retry an ambiguous Slack submission.",
+      "onError": "stopWorkflow",
+      "position": [
+        2860,
+        160
+      ],
+      "parameters": {
+        "text": "={{ $json.alertText }}",
+        "select": "channel",
+        "resource": "message",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "operation": "post",
+        "messageType": "text",
+        "otherOptions": {
+          "mrkdwn": false,
+          "includeLinkToWorkflow": false
+        },
+        "authentication": "oAuth2"
+      },
+      "notesInFlow": true,
+      "retryOnFail": false,
+      "typeVersion": 2.3
+    },
+    {
+      "id": "save-monitor-state",
+      "name": "Save monitor state",
+      "type": "n8n-nodes-base.dataTable",
+      "onError": "stopWorkflow",
+      "position": [
+        3100,
+        280
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "reason": "={{ $('Decide transition alert').first().json.reason }}",
+            "status": "={{ $('Decide transition alert').first().json.status }}",
+            "policyKey": "={{ $('Decide transition alert').first().json.policyKey }}",
+            "monitorKey": "={{ $('Decide transition alert').first().json.monitorKey }}",
+            "observedAt": "={{ $('Decide transition alert').first().json.observedAt }}",
+            "executionId": "={{ $('Decide transition alert').first().json.executionId }}"
+          },
+          "schema": [
+            {
+              "id": "monitorKey",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "monitorKey",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "policyKey",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "policyKey",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reason",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "reason",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observedAt",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "observedAt",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "executionId",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "executionId",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "monitorKey",
+              "keyValue": "={{ $('Decide transition alert').first().json.monitorKey }}",
+              "condition": "eq"
+            }
+          ]
+        },
+        "options": {},
+        "resource": "row",
+        "matchType": "allConditions",
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "verity_monitor_state"
+        }
+      },
+      "retryOnFail": false,
+      "typeVersion": 1.1
+    },
+    {
+      "id": "start-here",
+      "name": "Start here",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -80,
+        -470
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 750,
+        "height": 660,
+        "content": "# Monitor signed crypto prices, audit quality checks and alert Slack\n\nFor operations teams maintaining a crypto dashboard or integration. Every ten minutes this monitor reads one symbol, verifies its complete signed record, checks your freshness/quality policy, saves a decision audit and alerts Slack on failures, reason changes and recovery. Repeated unchanged states stay quiet.\n\n## Setup\n1. Create a Verity developer key at https://thepulse.markets/developers; select one n8n Bearer Auth credential in both MCP nodes.\n2. Create the two Data Tables described in the next note (exact names/columns).\n3. Select your Slack OAuth credential and operations channel.\n4. Review Monitor settings. Thresholds are illustrative consumer policy, NOT Verity pricing-engine rules.\n5. Run manually while inactive. Then publish only one monitor instance per symbol.\n\nUses native nodes, no LLM or community package. n8n hosting and Verity account limits apply. Default schedule: 144 checks/day, at most two tool calls per check, plus MCP protocol traffic. Change schedule to fit your plan. Do not overlap manual and scheduled runs."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "verify-then-assess",
+      "name": "Verify then assess",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        760,
+        -380
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 1040,
+        "height": 540,
+        "content": "## Two distinct checks\nRead signed price preserves the exact record for verify_print. Require verified record rejects partial verification, missing signed metadata, key mismatches or altered fields. This trusts the hosted verifier over HTTPS; it is not an independent price-accuracy test.\n\nApply consumer policy separately checks signed age, future skew, grade, confidence, dispersion and source count. Old signed data can be authentic AND unsuitable. No fallback to zero or a last-known price.\n\nTimeouts, authentication/quota errors and verification failures become UNAVAILABLE with a sanitized reason. No automatic MCP retries. Config errors stop before network calls.\n\nOne symbol per workflow makes item matching explicit; duplicate the workflow for another symbol after reviewing usage. Proprietary calculation code and thresholds are not included."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "create-audit-and-state-tables",
+      "name": "Create audit and state tables",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1850,
+        -550
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 940,
+        "height": 760,
+        "content": "## Create two Data Tables in this n8n project\nExact name **verity_monitor_audit**:\nstring columns: monitorKey, policyKey, symbol, observedAt, status, reason, priceText, recordAt, grade, evidenceJson, executionId\nboolean: recordValid\nnumber: ageSeconds\n\nExact name **verity_monitor_state**:\nstring columns: monitorKey, policyKey, status, reason, observedAt, executionId\n\nKeep the provided By Name selectors, or select your tables in all three Data Table nodes. Audit is a compact decision record, not a complete signed-print archive. No credentials or raw error payloads are stored. Restrict project access and set a retention policy; audit rows grow on each check and instance table capacity applies.\n\nThe audit is written BEFORE alert/state updates. A storage failure stops the run. State lookup is bounded to two rows so duplicate state causes an explicit conflict instead of guessing. Tables must exist before running. No runtime table/schema creation or deletion occurs."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "alert-delivery-and-operating-limits",
+      "name": "Alert delivery and operating limits",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2860,
+        -500
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 840,
+        "height": 660,
+        "content": "## Failure and recovery notifications\nInitial healthy check: audit + baseline, no Slack message.\nInitial failure: audit + Slack alert.\nUnchanged state/reason/policy: audit only.\nFailure/reason/policy change or recovery: audit + Slack, then save state.\n\nState is saved only after Slack returns success (or a quiet baseline). Slack errors stop the run. On an ambiguous timeout, check Slack before manual retry. A crash after Slack accepted a message but before state is saved can cause a duplicate next run. This is best-effort change suppression, NOT exactly-once delivery.\n\nDo not run overlapping executions. Ten-minute schedule and two-minute execution timeout reduce overlap; they are not a distributed lock. Configure instance concurrency appropriately and avoid manual runs while active. Configure n8n execution-failure monitoring for table/Slack failures, since this workflow cannot notify through a broken Slack connection.\n\nInactive on import. Saved executions are disabled; instance logging policies still apply. Monitoring only\u2014no trading, checkout, or settlement action."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 120,
+    "saveManualExecutions": false,
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none"
+  },
+  "connections": {
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Monitor settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "State changed": {
+      "main": [
+        [
+          {
+            "node": "Notify operations",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save monitor state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monitor settings": {
+      "main": [
+        [
+          {
+            "node": "Validate monitor settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every ten minutes": {
+      "main": [
+        [
+          {
+            "node": "Monitor settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify operations": {
+      "main": [
+        [
+          {
+            "node": "Save monitor state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare audit row": {
+      "main": [
+        [
+          {
+            "node": "Append decision audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read signed price": {
+      "main": [
+        [
+          {
+            "node": "Preserve signed print",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record unavailable outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify exact print": {
+      "main": [
+        [
+          {
+            "node": "Require verified record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record unavailable outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read previous state": {
+      "main": [
+        [
+          {
+            "node": "Decide transition alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append decision audit": {
+      "main": [
+        [
+          {
+            "node": "Read previous state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply consumer policy": {
+      "main": [
+        [
+          {
+            "node": "Prepare audit row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record unavailable outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preserve signed print": {
+      "main": [
+        [
+          {
+            "node": "Verify exact print",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record unavailable outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide transition alert": {
+      "main": [
+        [
+          {
+            "node": "State changed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Require verified record": {
+      "main": [
+        [
+          {
+            "node": "Apply consumer policy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record unavailable outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate monitor settings": {
+      "main": [
+        [
+          {
+            "node": "Read signed price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record unavailable outcome": {
+      "main": [
+        [
+          {
+            "node": "Prepare audit row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

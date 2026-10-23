@@ -1,6 +1,6 @@
 # 🧾 Generate professional invoices with Jotform, Xero, and GPT-powered emails
 
-> ⚡ **200 views** · 🧾 [Invoice Processing](../)
+> ⚡ **230 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Intelligent purchase order generator with AI supplier selection
 
-> ⚡ **202 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **539 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

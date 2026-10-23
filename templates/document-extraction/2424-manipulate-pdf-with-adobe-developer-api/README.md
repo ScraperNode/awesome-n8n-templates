@@ -1,6 +1,6 @@
 # 🔬 Manipulate PDF with Adobe developer API
 
-> ⚡ **4,662 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,741 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

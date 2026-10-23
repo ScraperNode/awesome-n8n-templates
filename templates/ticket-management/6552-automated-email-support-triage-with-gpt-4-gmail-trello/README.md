@@ -1,6 +1,6 @@
 # 🎫 Automated email support triage with GPT-4, Gmail & Trello
 
-> ⚡ **140 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **166 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Automated monthly & quarterly Stripe revenue reports to Slack with financial insights
 
-> ⚡ **207 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **264 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

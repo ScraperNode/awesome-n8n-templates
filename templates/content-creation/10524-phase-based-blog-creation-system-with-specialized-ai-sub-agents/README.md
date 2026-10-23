@@ -1,6 +1,6 @@
 # 🎬 Phase-based blog creation system with specialized AI sub-agents
 
-> ⚡ **77 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **101 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

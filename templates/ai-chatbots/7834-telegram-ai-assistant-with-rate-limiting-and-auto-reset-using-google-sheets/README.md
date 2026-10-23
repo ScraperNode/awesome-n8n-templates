@@ -1,6 +1,6 @@
 # 🤖 Telegram AI assistant with rate limiting and auto-reset using Google Sheets
 
-> ⚡ **255 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **304 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

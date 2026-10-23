@@ -1,6 +1,6 @@
 # 🔒 🛠️ MISP tool MCP server 💪 all 44 operations
 
-> ⚡ **168 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **197 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

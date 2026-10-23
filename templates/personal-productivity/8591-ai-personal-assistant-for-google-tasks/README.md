@@ -1,6 +1,6 @@
 # ⚡ AI personal assistant for Google Tasks
 
-> ⚡ **12,620 views** · ⚡ [Personal Productivity](../)
+> ⚡ **17,970 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Push your public IP to Namecheaps dynamic DNS
 
-> ⚡ **1,089 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,147 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

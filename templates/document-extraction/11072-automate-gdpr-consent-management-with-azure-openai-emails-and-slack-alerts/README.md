@@ -1,6 +1,6 @@
 # 🔬 Automate GDPR Consent Management with Azure OpenAI Emails and Slack Alerts
 
-> ⚡ **80 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **82 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

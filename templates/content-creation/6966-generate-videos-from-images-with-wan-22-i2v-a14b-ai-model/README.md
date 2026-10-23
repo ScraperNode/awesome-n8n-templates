@@ -1,6 +1,6 @@
 # 🎬 Generate videos from images with Wan 2.2 I2V A14B AI model
 
-> ⚡ **3,733 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **7,080 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

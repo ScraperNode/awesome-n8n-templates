@@ -1,6 +1,6 @@
 # 💬 GummyMail - Next Gen Gumroad AutoReply & CRM System
 
-> ⚡ **32 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **69 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

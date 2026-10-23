@@ -1,6 +1,6 @@
 # 🎬 Automate RSS to Medium publishing with Groq, Gemini & Slack approval system
 
-> ⚡ **683 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **798 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

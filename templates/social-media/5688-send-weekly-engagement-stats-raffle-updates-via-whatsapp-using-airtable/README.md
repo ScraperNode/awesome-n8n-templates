@@ -1,6 +1,6 @@
 # 📱 Send weekly engagement stats & raffle updates via WhatsApp using Airtable
 
-> ⚡ **241 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **302 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

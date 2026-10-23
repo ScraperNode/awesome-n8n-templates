@@ -1,6 +1,6 @@
 # ⚒️ Generate AI prompts with Google Gemini and store them in Airtable
 
-> ⚡ **2,974 views** · ⚒️ [Engineering](../)
+> ⚡ **3,076 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Seo keyword difficulty & SERP analysis with RapidAPI and Google Sheets
 
-> ⚡ **396 views** · 📊 [Market Research & Insights](../)
+> ⚡ **476 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

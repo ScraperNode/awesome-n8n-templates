@@ -1,6 +1,6 @@
 # ⚙️ Restore workflows and credentials from remote FTP backup storage
 
-> ⚡ **308 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **349 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

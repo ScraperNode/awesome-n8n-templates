@@ -1,6 +1,6 @@
 # ⚡ Generate weekly grocery lists in Notion with automated email notifications
 
-> ⚡ **171 views** · ⚡ [Personal Productivity](../)
+> ⚡ **190 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

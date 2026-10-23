@@ -1,6 +1,6 @@
 # 🎬 Auto-generate Shopify blog related articles with OpenAI text-embedding-3-small
 
-> ⚡ **160 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **198 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

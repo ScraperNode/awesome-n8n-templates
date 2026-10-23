@@ -1,6 +1,6 @@
 # 🎣 Automate Course Registration Leads from Facebook Ads to KlickTipp
 
-> ⚡ **3,313 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **3,760 views** · 🎣 [Lead Generation & Enrichment](../)
 
 > 💡 **Pro Tip** — If you've run into Facebook's Graph API permission restrictions, [ScraperNode](https://scrapernode.com/facebook) is a community node that scrapes [pages](https://scrapernode.com/facebook/scrapers/profiles), [groups](https://scrapernode.com/facebook/scrapers/groups), [posts](https://scrapernode.com/facebook/scrapers/posts), and [comments](https://scrapernode.com/facebook/scrapers/comments) directly — no app review needed.
 >

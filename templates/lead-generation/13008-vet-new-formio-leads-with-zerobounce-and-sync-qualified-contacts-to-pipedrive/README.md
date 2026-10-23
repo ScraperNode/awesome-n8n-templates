@@ -1,6 +1,6 @@
 # 🎣 Vet new Form.io leads with ZeroBounce and sync qualified contacts to Pipedrive
 
-> ⚡ **21 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **100 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

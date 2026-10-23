@@ -1,6 +1,6 @@
 # 📋 Multi-channel feedback to Jira pipeline with AI analysis & Notion reporting
 
-> ⚡ **109 views** · 📋 [Project Management](../)
+> ⚡ **177 views** · 📋 [Project Management](../)
 
 ## Description
 

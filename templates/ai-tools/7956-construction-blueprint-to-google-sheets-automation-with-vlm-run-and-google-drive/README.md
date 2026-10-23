@@ -1,6 +1,6 @@
 # 🎯 Construction blueprint to Google Sheets automation with VLM Run and Google Drive
 
-> ⚡ **162 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **217 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Narrating over a video using multimodal AI
 
-> ⚡ **9,818 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **9,790 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

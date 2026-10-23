@@ -1,6 +1,6 @@
 # ⚙️ Automate UniFi controller updates via SSH with Telegram notifications
 
-> ⚡ **489 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **619 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

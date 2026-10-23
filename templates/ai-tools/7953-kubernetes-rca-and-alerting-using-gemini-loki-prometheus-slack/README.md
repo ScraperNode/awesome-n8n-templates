@@ -1,6 +1,6 @@
 # 🎯 Kubernetes RCA and alerting using Gemini, Loki, Prometheus, Slack
 
-> ⚡ **140 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **178 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

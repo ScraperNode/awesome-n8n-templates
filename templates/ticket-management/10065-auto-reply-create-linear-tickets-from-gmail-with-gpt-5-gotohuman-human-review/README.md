@@ -1,6 +1,6 @@
 # 🎫 Auto-reply & create Linear tickets from Gmail with GPT-5, gotoHuman & human review
 
-> ⚡ **384 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **456 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

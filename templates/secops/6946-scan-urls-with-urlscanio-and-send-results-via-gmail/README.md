@@ -1,6 +1,6 @@
 # 🔒 Scan URLs with urlscan.io and send results via Gmail
 
-> ⚡ **245 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **262 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

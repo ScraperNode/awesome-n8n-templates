@@ -1,6 +1,6 @@
 # 💬 Automate FAQ responses with WhatsApp keyword detection bot
 
-> ⚡ **2,905 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,477 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

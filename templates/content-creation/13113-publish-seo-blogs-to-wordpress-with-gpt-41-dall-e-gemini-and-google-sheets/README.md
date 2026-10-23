@@ -1,6 +1,6 @@
 # 🎬 Publish SEO blogs to WordPress with GPT-4.1, DALL-E, Gemini, and Google Sheets
 
-> ⚡ **161 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **514 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

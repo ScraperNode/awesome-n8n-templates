@@ -1,6 +1,6 @@
 # 🎬 Automate blog content creation with Notion MCP, DeepSeek AI, and WordPress
 
-> ⚡ **16,984 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **17,616 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

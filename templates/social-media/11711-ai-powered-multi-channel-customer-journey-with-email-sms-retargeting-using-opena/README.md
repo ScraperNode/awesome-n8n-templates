@@ -1,6 +1,6 @@
 # 📱 AI-powered multi-channel customer journey with email, SMS & retargeting using OpenAI
 
-> ⚡ **335 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **568 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

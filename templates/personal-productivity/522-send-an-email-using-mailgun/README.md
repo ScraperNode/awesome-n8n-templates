@@ -1,6 +1,6 @@
 # ⚡ Send an email using Mailgun
 
-> ⚡ **1,189 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,220 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

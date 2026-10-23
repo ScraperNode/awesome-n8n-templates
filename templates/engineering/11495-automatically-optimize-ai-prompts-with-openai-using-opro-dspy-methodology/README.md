@@ -1,6 +1,6 @@
 # ⚒️ Automatically optimize AI prompts with OpenAI using OPRO & DSPy methodology
 
-> ⚡ **388 views** · ⚒️ [Engineering](../)
+> ⚡ **542 views** · ⚒️ [Engineering](../)
 
 ## Description
 

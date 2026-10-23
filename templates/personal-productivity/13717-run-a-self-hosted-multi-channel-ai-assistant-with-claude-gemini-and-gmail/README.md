@@ -1,6 +1,6 @@
 # ⚡ Run a self-hosted multi-channel AI assistant with Claude, Gemini and Gmail
 
-> ⚡ **645 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,539 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

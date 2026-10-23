@@ -1,6 +1,6 @@
 # 🎫 Auto-assign support tickets with JIRA, Supabase and AI
 
-> ⚡ **1,920 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **2,040 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

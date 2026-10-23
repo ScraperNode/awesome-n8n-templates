@@ -1,6 +1,6 @@
 # 💬 AI-powered restaurant order and menu management with WhatsApp and Google Gemini
 
-> ⚡ **2,000 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,569 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

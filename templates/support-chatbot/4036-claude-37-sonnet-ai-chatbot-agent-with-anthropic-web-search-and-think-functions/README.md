@@ -1,6 +1,6 @@
 # 💬 Claude 3.7 Sonnet AI chatbot agent with Anthropic web search and think functions
 
-> ⚡ **3,223 views** · 💬 [Support Chatbots](../)
+> ⚡ **43,905 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

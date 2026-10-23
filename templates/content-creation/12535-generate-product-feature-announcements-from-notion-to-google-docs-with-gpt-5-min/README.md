@@ -1,6 +1,6 @@
 # 🎬 Generate product feature announcements from Notion to Google Docs with GPT-5 Mini and Claude
 
-> ⚡ **63 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **122 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

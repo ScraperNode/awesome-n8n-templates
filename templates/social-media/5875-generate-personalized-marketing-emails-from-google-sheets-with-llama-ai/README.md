@@ -1,6 +1,6 @@
 # 📱 Generate personalized marketing emails from Google Sheets with Llama AI
 
-> ⚡ **1,718 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,838 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

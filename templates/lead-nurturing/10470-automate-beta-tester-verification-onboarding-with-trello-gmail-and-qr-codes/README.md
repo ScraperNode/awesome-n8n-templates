@@ -1,6 +1,6 @@
 # 💬 Automate beta tester verification & onboarding with Trello, Gmail and QR codes
 
-> ⚡ **27 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **58 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

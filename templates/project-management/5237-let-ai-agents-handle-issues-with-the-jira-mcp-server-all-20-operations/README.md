@@ -1,6 +1,6 @@
 # 📋 Let AI agents handle issues with the Jira MCP Server 💪 all 20 operations
 
-> ⚡ **300 views** · 📋 [Project Management](../)
+> ⚡ **344 views** · 📋 [Project Management](../)
 
 ## Description
 

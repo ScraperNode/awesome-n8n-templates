@@ -1,6 +1,6 @@
 # 📱 Sync new subscribers from Google Sheets to MailerLite without duplicates
 
-> ⚡ **169 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **205 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

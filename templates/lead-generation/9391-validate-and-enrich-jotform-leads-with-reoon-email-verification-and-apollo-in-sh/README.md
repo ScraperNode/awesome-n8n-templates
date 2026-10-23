@@ -1,6 +1,6 @@
 # 🎣 Validate and enrich JotForm leads with Reoon email verification and Apollo in sheets
 
-> ⚡ **233 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **267 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Gmail email auto-organizer with Google Sheets rules
 
-> ⚡ **361 views** · ⚡ [Personal Productivity](../)
+> ⚡ **544 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Record transactions & generate budget reports with Gemini AI, Telegram & Firefly III
 
-> ⚡ **284 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **522 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

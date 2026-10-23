@@ -1,6 +1,6 @@
 # 🤝 Create & send client session summaries from Zoom meetings via Gmail and Airtable
 
-> ⚡ **164 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **202 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

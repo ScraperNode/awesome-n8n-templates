@@ -1,6 +1,6 @@
 # 📊 AI Event Feedback Analyzer with Google Forms, GPT,  Slack & Docs
 
-> ⚡ **27 views** · 📊 [Market Research & Insights](../)
+> ⚡ **35 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

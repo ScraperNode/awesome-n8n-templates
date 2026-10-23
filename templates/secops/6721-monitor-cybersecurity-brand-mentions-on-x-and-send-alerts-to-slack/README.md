@@ -1,6 +1,6 @@
 # 🔒 Monitor cybersecurity brand mentions on X and send alerts to Slack
 
-> ⚡ **751 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **889 views** · 🔒 [SecOps & Security Automation](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >

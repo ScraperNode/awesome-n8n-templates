@@ -1,6 +1,6 @@
 # ⚙️ Export Cloudflare domains with DNS records and settings to Google Sheets
 
-> ⚡ **597 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **664 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

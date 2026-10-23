@@ -1,6 +1,6 @@
 # 📁 Import JSON data into Google Sheets and CSV file
 
-> ⚡ **8,413 views** · 📁 [File Management](../)
+> ⚡ **8,555 views** · 📁 [File Management](../)
 
 ## Description
 

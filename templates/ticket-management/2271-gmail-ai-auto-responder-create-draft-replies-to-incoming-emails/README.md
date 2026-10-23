@@ -1,6 +1,6 @@
 # 🎫 Gmail AI Auto-Responder: Create Draft Replies to incoming emails
 
-> ⚡ **72,331 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **76,094 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

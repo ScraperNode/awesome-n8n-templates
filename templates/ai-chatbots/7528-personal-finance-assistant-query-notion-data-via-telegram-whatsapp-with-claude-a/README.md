@@ -1,6 +1,6 @@
 # 🤖 Personal finance assistant: Query Notion data via Telegram & WhatsApp with Claude AI
 
-> ⚡ **1,701 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **2,031 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

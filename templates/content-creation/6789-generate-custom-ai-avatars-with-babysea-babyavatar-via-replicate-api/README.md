@@ -1,6 +1,6 @@
 # 🎬 Generate custom AI avatars with Babysea Babyavatar via Replicate API
 
-> ⚡ **614 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **662 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

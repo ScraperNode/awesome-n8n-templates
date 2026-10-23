@@ -1,6 +1,6 @@
 # 📊 Automated RSS monitoring with Gemini AI summaries and deduplication to Google Sheets
 
-> ⚡ **3,998 views** · 📊 [Market Research & Insights](../)
+> ⚡ **4,618 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

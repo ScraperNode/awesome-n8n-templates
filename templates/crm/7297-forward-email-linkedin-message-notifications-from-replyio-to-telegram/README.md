@@ -1,6 +1,6 @@
 # 🤝 Forward email & LinkedIn message notifications from Reply.io to Telegram
 
-> ⚡ **440 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **474 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

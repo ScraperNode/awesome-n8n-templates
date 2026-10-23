@@ -1,6 +1,6 @@
 # 💬 Automated restaurant call handling & table booking system with VAPI and PostgreSQL
 
-> ⚡ **7,166 views** · 💬 [Support Chatbots](../)
+> ⚡ **8,709 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

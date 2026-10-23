@@ -1,0 +1,708 @@
+{
+  "id": "onDjifhS5leLLM3y",
+  "meta": {
+    "instanceId": "95e637e4b92269ff44e8497e46a62dda8ed3277be2af35ea2333a14725a57e47",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Monitor security advisories from GitHub, NVD, JPCERT and JVN with Claude summaries in Slack",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "f3172a2a-aa91-48a1-ba72-a12d9f50b07b",
+      "name": "Run Every Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        640,
+        320
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "4ffbe177-2e60-4af5-b92f-78d0c2b4a077",
+      "name": "Fetch GitHub Advisories",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Public API, no auth needed. The package= query parameter is unreliable, so a strict package-name filter is applied later in the 'Filter New Advisories' Code node.",
+      "position": [
+        1104,
+        160
+      ],
+      "parameters": {
+        "url": "https://api.github.com/advisories",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "reviewed"
+            },
+            {
+              "name": "ecosystem",
+              "value": "npm"
+            },
+            {
+              "name": "package",
+              "value": "n8n"
+            },
+            {
+              "name": "per_page",
+              "value": "10"
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 4.2,
+      "continueOnFail": true
+    },
+    {
+      "id": "67f2d3a2-5b55-43a7-bf2e-2d975607d32c",
+      "name": "Fetch NVD CVEs",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Create a Header Auth credential with Name = apiKey and Value = your NVD API key (free: https://nvd.nist.gov/developers/request-an-api-key).",
+      "position": [
+        1104,
+        320
+      ],
+      "parameters": {
+        "url": "https://services.nvd.nist.gov/rest/json/cves/2.0",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "authentication": "predefinedCredentialType",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "keywordSearch",
+              "value": "n8n"
+            },
+            {
+              "name": "resultsPerPage",
+              "value": "10"
+            }
+          ]
+        },
+        "nodeCredentialType": "httpHeaderAuth"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "7UTXhchXdxFX8YeT",
+          "name": "NVD_API_Key"
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 4.2,
+      "continueOnFail": true
+    },
+    {
+      "id": "88f3e34c-7a2b-4fc9-b7b9-e60a9268670e",
+      "name": "Fetch n8n Releases",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1104,
+        480
+      ],
+      "parameters": {
+        "url": "https://github.com/n8n-io/n8n/releases.atom",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2,
+      "continueOnFail": true
+    },
+    {
+      "id": "a79e8568-337f-4a59-9efa-a5f43d04d61d",
+      "name": "Parse Releases XML",
+      "type": "n8n-nodes-base.xml",
+      "position": [
+        1312,
+        480
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1,
+      "continueOnFail": true
+    },
+    {
+      "id": "db15c640-4955-47d5-8f7c-c1c6cbdef42a",
+      "name": "Filter New Advisories",
+      "type": "n8n-nodes-base.code",
+      "notes": "Normalizes all 5 sources into one schema and drops items that were already notified. The Merge node upstream is only a synchronization barrier - this node reads each branch directly via $('Node Name').",
+      "position": [
+        1680,
+        368
+      ],
+      "parameters": {
+        "jsCode": "const seen = $getWorkflowStaticData('global').seenIds ?? [];\nconst ghRaw = $('Fetch GitHub Advisories').all().map(i => i.json);\nconst advisories = ghRaw;\nconst nvdRaw = $('Fetch NVD CVEs').first()?.json?.vulnerabilities ?? [];\nconst releaseEntries = $('Parse Releases XML').first()?.json?.feed?.entry ?? [];\nconst releases = Array.isArray(releaseEntries) ? releaseEntries : [releaseEntries];\nconst jpcertRaw = $('Parse JPCERT XML').first()?.json?.['rdf:RDF']?.item ?? [];\nconst jpcertItems = Array.isArray(jpcertRaw) ? jpcertRaw : [jpcertRaw];\nconst jvnRaw = $('Parse JVN XML').first()?.json?.['rdf:RDF']?.item ?? [];\nconst jvnItems = Array.isArray(jvnRaw) ? jvnRaw : [jvnRaw];\n\nconst normalizeGH = (items) => items\n  .filter(item => {\n    const pkgNames = (item.vulnerabilities ?? [])\n      .map(v => (v.package?.name ?? '').toLowerCase());\n    return pkgNames.some(name => name === 'n8n');\n  })\n  .map(item => ({\n    id:        item.ghsa_id,\n    title:     item.summary,\n    severity:  (item.severity ?? 'UNKNOWN').toUpperCase(),\n    url:       item.html_url,\n    published: item.published_at,\n  })).filter(i => i.id);\n\nconst normalizeNVD = (items) => items.map(item => ({\n  id:        item.cve?.id,\n  title:     item.cve?.descriptions?.find(d => d.lang === 'en')?.value ?? '',\n  severity:  item.cve?.metrics?.cvssMetricV31?.[0]?.cvssData?.baseSeverity ?? 'UNKNOWN',\n  url:       `https://nvd.nist.gov/vuln/detail/${item.cve?.id}`,\n  published: item.cve?.published,\n})).filter(i => i.id);\n\nconst normalizeReleases = (items) => items\n  .filter(i => /security/i.test(i.title?.[0] ?? ''))\n  .map(item => ({\n    id:        item.id?.[0],\n    title:     item.title?.[0],\n    severity:  'INFO',\n    url:       item.link?.[0]?.$.href ?? '',\n    published: item.updated?.[0],\n  })).filter(i => i.id);\n\nconst normalizeJPCERT = (items) => items.map(item => ({\n  id:        item['rdf:about'],\n  title:     item.title,\n  severity:  'INFO',\n  url:       item.link,\n  published: item['dc:date'],\n})).filter(i => i.id);\n\nconst normalizeJVN = (items) => items.map(item => ({\n  id:        item['rdf:about'],\n  title:     item.title,\n  severity:  'INFO',\n  url:       item.link,\n  published: item['dc:date'],\n})).filter(i => i.id);\n\nconst all = [\n  ...normalizeGH(advisories),\n  ...normalizeNVD(nvdRaw),\n  ...normalizeReleases(releases),\n  ...normalizeJPCERT(jpcertItems),\n  ...normalizeJVN(jvnItems),\n];\n\nconst newItems = all.filter(i => !seen.includes(i.id));\nreturn [{ json: { newItems, count: newItems.length } }];"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "5dfa7419-b5f3-4dc8-baf1-89dded1bde6b",
+      "name": "Any New Items?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1872,
+        368
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-01",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "5aa39e6a-9177-4171-bff8-6b96737a34af",
+      "name": "Format Slack Message",
+      "type": "n8n-nodes-base.code",
+      "notes": "n8n's Slack node expects the Blocks field as a '{blocks: [...]}' payload, not a bare array. Keep the JSON.stringify({blocks: blocksArray}) shape.",
+      "position": [
+        2384,
+        256
+      ],
+      "parameters": {
+        "jsCode": "const summaryText = $json.content?.[0]?.text ?? $json.text ?? 'Failed to generate summary';\n\nconst blocksArray = [\n  {\n    type: \"header\",\n    text: { type: \"plain_text\", text: \"\ud83d\udea8 New security advisories\", emoji: true }\n  },\n  {\n    type: \"section\",\n    text: {\n      type: \"mrkdwn\",\n      text: summaryText.length > 2900 ? summaryText.slice(0, 2900) + '\\n...(\u7701\u7565)' : summaryText\n    }\n  },\n  {\n    type: \"context\",\n    elements: [{ type: \"mrkdwn\", text: `Auto-detected by n8n | ${new Date().toISOString()}` }]\n  }\n];\n\nreturn [{ json: {\n  blocksString: JSON.stringify({ blocks: blocksArray }),\n  notification: `New security advisories detected`\n} }];"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "cd0ee24d-2ab8-4f6a-b966-71777c403b3a",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "notes": "Posts the summary as Block Kit. Set your channel in the Configuration node. Requires a Slack OAuth2 credential with chat:write scope.",
+      "position": [
+        2560,
+        256
+      ],
+      "webhookId": "4a79bea9-a9c8-4494-aecd-9f0f31785963",
+      "parameters": {
+        "text": "={{ $json.notification }}",
+        "select": "channel",
+        "blocksUi": "={{ $json.blocksString }}",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Configuration').first().json.slackChannel }}"
+        },
+        "messageType": "block",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "9SH848LX76mw913V",
+          "name": "Slack_OAuth2"
+        }
+      },
+      "executeOnce": false,
+      "notesInFlow": true,
+      "retryOnFail": false,
+      "typeVersion": 2.3,
+      "continueOnFail": true,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "56689433-73b0-4610-a069-4e710d75289c",
+      "name": "Save Notified IDs",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2736,
+        256
+      ],
+      "parameters": {
+        "jsCode": "const seen   = $getWorkflowStaticData('global').seenIds ?? [];\nconst newIds = $('Filter New Advisories').all()\n                 .flatMap(i => i.json.newItems.map(n => n.id));\nconst updated = [...new Set([...seen, ...newIds])].slice(-500);\n$getWorkflowStaticData('global').seenIds = updated;\nreturn [{ json: { saved: newIds.length, totalTracked: updated.length } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "094319c6-e073-41a5-bc8e-2748981fa099",
+      "name": "No New Items",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        2208,
+        480
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "3e3007f6-dd83-4569-b7ba-228f354157f6",
+      "name": "Fetch JPCERT RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1072,
+        640
+      ],
+      "parameters": {
+        "url": "https://www.jpcert.or.jp/rss/jpcert.rdf",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "621d8dcb-d32e-4dbb-894f-4a523c15d639",
+      "name": "Parse JPCERT XML",
+      "type": "n8n-nodes-base.xml",
+      "position": [
+        1312,
+        640
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "79a4a870-94ee-4313-883e-f39a2b1be135",
+      "name": "Fetch JVN RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1104,
+        816
+      ],
+      "parameters": {
+        "url": "https://jvn.jp/rss/jvn.rdf",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "eff8f404-c00d-471c-9909-749ae8bd8aa7",
+      "name": "Parse JVN XML",
+      "type": "n8n-nodes-base.xml",
+      "position": [
+        1312,
+        816
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "75fce5e2-0487-42c7-85dc-1a71cd3e0b21",
+      "name": "Summarize with Claude",
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "notes": "Requires an Anthropic API credential (Claude Haiku keeps costs low). The prompt asks for Japanese summaries aimed at SME IT admins - edit it to change language or tone, or swap in another chat model node.",
+      "position": [
+        2080,
+        256
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-haiku-4-5-20251001",
+          "cachedResultName": "claude-haiku-4-5-20251001"
+        },
+        "options": {
+          "maxTokens": 2000
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=\u4ee5\u4e0b\u306e\u30bb\u30ad\u30e5\u30ea\u30c6\u30a3\u60c5\u5831\u3092\u3001\u4e2d\u5c0f\u4f01\u696d\u306eIT\u62c5\u5f53\u8005\u5411\u3051\u306b\u65e5\u672c\u8a9e\u3067\u7c21\u6f54\u306b\u8981\u7d04\u3057\u3066\u304f\u3060\u3055\u3044\u3002\u5404\u9805\u76ee\u306b\u3064\u3044\u3066\u300c\u91cd\u8981\u5ea6\u300d\u300c\u5bfe\u8c61\u88fd\u54c1\u300d\u300c\u5bfe\u5fdc\u306e\u7dca\u6025\u6027\u300d\u30921\u301c2\u884c\u3067\u307e\u3068\u3081\u3066\u304f\u3060\u3055\u3044\u3002\n\n{{ JSON.stringify($json.newItems) }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "anthropicApi": {
+          "id": "7I2VyJUpWx3KDuXE",
+          "name": "Anthropic account"
+        }
+      },
+      "notesInFlow": true,
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "2a08ba05-cf78-4330-8435-203bb5f3e887",
+      "name": "Configuration",
+      "type": "n8n-nodes-base.set",
+      "notes": "Edit your settings here. slackChannel = the channel where alerts are posted.",
+      "position": [
+        880,
+        320
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-01",
+              "name": "slackChannel",
+              "type": "string",
+              "value": "#security-alerts"
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 3.4
+    },
+    {
+      "id": "b4222a80-3515-44f2-ac46-6f6343d5f6fc",
+      "name": "Wait for All Sources",
+      "type": "n8n-nodes-base.merge",
+      "notes": "Synchronization barrier: guarantees all five source branches finish before filtering starts.",
+      "position": [
+        1488,
+        464
+      ],
+      "parameters": {
+        "numberInputs": 5
+      },
+      "notesInFlow": true,
+      "typeVersion": 3.2
+    },
+    {
+      "id": "53836562-2044-4e0e-a77c-e9d5bac331c9",
+      "name": "Sticky Note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "width": 560,
+        "height": 1020,
+        "content": "## \ud83d\udd10 Monitor security advisories from GitHub, NVD, JPCERT and JVN with Claude summaries in Slack\n\n### Who's it for\nIT admins and MSPs \u2014 especially at small and mid-sized companies \u2014 who want one low-noise security feed instead of checking multiple advisory sites every day.\n\n### How it works\n1. Every hour, the workflow pulls **n8n-related advisories** from GitHub Security Advisories and NVD, **n8n release notes**, and **general advisories** from JPCERT/CC and JVN (Japanese CERT feeds).\n2. A Code node normalizes all sources into one schema and drops items that were already notified (tracked in workflow static data).\n3. **Claude (Anthropic)** summarizes the new items: severity, affected products, urgency.\n4. The summary is posted to **Slack** using Block Kit.\n\n### Requirements\n- Slack OAuth2 credential (chat:write)\n- Anthropic API credential\n- Free NVD API key (as a Header Auth credential)\n\n### How to set up\n1. Create the three credentials above.\n2. Set your Slack channel in the **Configuration** node.\n3. Activate the workflow \u2014 done.\n\n### How to customize\n- Track a different package: edit the GitHub/NVD queries and the package filter in **Filter New Advisories**.\n- Summaries are in **Japanese** by default \u2014 edit the prompt in **Summarize with Claude** to change the language.\n- Swap Claude for any other chat model node."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c5281701-92b8-4341-93e4-ab2c773c2410",
+      "name": "Sticky Note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        800,
+        -96
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 640,
+        "height": 1056,
+        "content": "## 1. Collect from 5 sources\nn8n advisories (GitHub, NVD), n8n release notes, and Japanese CERT feeds (JPCERT/CC, JVN).\n\nAll HTTP requests use 30s timeouts and *continue on fail*, so one source being down never blocks the whole run."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "fe5c75f9-0c65-4c08-87ac-31137dc86934",
+      "name": "Sticky Note 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1456,
+        -96
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 536,
+        "height": 1056,
+        "content": "## 2. Normalize & dedupe\nThe Merge node is only a **synchronization barrier** \u2014 *Filter New Advisories* reads each branch directly via `$('Node Name')`, maps every item to one schema, and keeps only IDs not seen before (stored in workflow static data, capped at 500)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6662e5c4-bca8-4b03-b1bb-607f0f5815e2",
+      "name": "Sticky Note 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2016,
+        -96
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 308,
+        "height": 1052,
+        "content": "## 3. Summarize with Claude\nNew items are summarized for SME IT admins (**Japanese** by default): severity, affected products, and urgency in 1\u20132 lines each."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ce5f8c84-41cc-43a4-887f-031b8d454b76",
+      "name": "Sticky Note 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2336,
+        -96
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 608,
+        "height": 1044,
+        "content": "## 4. Notify & remember\nThe summary is posted to Slack via Block Kit, then notified IDs are saved so the next run only alerts on genuinely new items.\n\n\u26a0\ufe0f Manual (test) runs don't persist static data \u2014 activate the workflow for dedupe to take effect."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "versionId": "79e2a405-4a76-4994-b20f-6a8d23c87aee",
+  "nodeGroups": [],
+  "connections": {
+    "Configuration": {
+      "main": [
+        [
+          {
+            "node": "Fetch GitHub Advisories",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch NVD CVEs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch n8n Releases",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch JPCERT RSS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch JVN RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch JVN RSS": {
+      "main": [
+        [
+          {
+            "node": "Parse JVN XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JVN XML": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Sources",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Any New Items?": {
+      "main": [
+        [
+          {
+            "node": "Summarize with Claude",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No New Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch NVD CVEs": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Sources",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Run Every Hour": {
+      "main": [
+        [
+          {
+            "node": "Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch JPCERT RSS": {
+      "main": [
+        [
+          {
+            "node": "Parse JPCERT XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JPCERT XML": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Sources",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Send Slack Alert": {
+      "main": [
+        [
+          {
+            "node": "Save Notified IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch n8n Releases": {
+      "main": [
+        [
+          {
+            "node": "Parse Releases XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Releases XML": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Sources",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Format Slack Message": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for All Sources": {
+      "main": [
+        [
+          {
+            "node": "Filter New Advisories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter New Advisories": {
+      "main": [
+        [
+          {
+            "node": "Any New Items?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize with Claude": {
+      "main": [
+        [
+          {
+            "node": "Format Slack Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch GitHub Advisories": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

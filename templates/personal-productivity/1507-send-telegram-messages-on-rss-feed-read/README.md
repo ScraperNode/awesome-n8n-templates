@@ -1,6 +1,6 @@
 # ⚡ Send Telegram messages on RSS feed read
 
-> ⚡ **7,987 views** · ⚡ [Personal Productivity](../)
+> ⚡ **8,118 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

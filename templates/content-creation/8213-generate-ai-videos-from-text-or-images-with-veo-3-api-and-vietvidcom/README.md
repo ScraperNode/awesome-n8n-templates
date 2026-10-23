@@ -1,6 +1,6 @@
 # 🎬 Generate AI videos from text or images with Veo 3 API and VietVid.com
 
-> ⚡ **1,694 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,143 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

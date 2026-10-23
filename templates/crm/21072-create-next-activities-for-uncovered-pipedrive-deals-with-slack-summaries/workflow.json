@@ -1,0 +1,1106 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Create next activities for uncovered open deals in Pipedrive",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "manual",
+      "name": "Run it now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        190
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "sched",
+      "name": "Every weekday, 07:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * 1-5"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "cfg",
+      "name": "config",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// PIPEDRIVE REFERRAL NETWORK \u2014 CONFIG\n// Everything you might want to change lives in this one node. Nothing else in either\n// workflow needs editing.\n//\n// The same config node ships in BOTH workflows and is generated from one file, so the\n// activity guard and the reporting run can never disagree about a stage name.\n//\n// Any key left blank means that step is SKIPPED, not that the run fails. That is what lets\n// this be demonstrated on a screen-share before a single credential exists.\n\n// ---------------------------------------------------------------- Your Pipedrive account\n// COMPANY_DOMAIN is the first part of your Pipedrive web address:\n//   https://<THIS BIT>.pipedrive.com\n// API_TOKEN is Settings -> Personal preferences -> API. Blank = nothing is read or written\n// and the run falls back to the built-in demo pipeline (see DEMO_PIPELINE).\nconst COMPANY_DOMAIN = '';\nconst API_TOKEN      = '';\n\n// The pipeline this runs against. Leave PIPELINE_ID blank to work every open deal in the\n// account; set it once you have more than one pipeline.\nconst PIPELINE_ID = '';\n\n// ---------------------------------------------------------------- The pipeline's stages\n// In order. `id` is Pipedrive's numeric stage id \u2014 read it off the URL when you open the\n// stage's settings. The rest is this workflow's rule for that stage.\n//\n//   next_type    the activity type key created when a deal in this stage has no next step\n//   due_in_days  how far ahead that activity is scheduled\n//   subject      what the activity is called, so a rep reads it and knows what to do\n//   stale_days   no activity of ANY kind for this long -> the deal is reported as stalling\n//\n// A stage with next_type '' is one where the guard deliberately does nothing.\nconst STAGES = [\n  { id: 1, name: 'Target Identified',      next_type: 'initial_call',\n    due_in_days: 1,  stale_days: 14,\n    subject: 'First outreach call \u2014 introduce your company and the referral network' },\n  { id: 2, name: 'Outreach Started',       next_type: 'follow_up_call',\n    due_in_days: 3,  stale_days: 10,\n    subject: 'Follow-up call \u2014 no answer yet on the first attempt' },\n  { id: 3, name: 'Contact Made',           next_type: 'follow_up_call',\n    due_in_days: 5,  stale_days: 14,\n    subject: 'Follow up \u2014 find the decision maker for referrals' },\n  { id: 4, name: 'Decision Maker Engaged', next_type: 'physician_meeting',\n    due_in_days: 7,  stale_days: 14,\n    subject: 'Book the physician meeting' },\n  { id: 5, name: 'Meeting Scheduled',      next_type: 'materials_drop_off',\n    due_in_days: 2,  stale_days: 21,\n    subject: 'Confirm the meeting and drop off study materials' },\n  { id: 6, name: 'Interested / Follow-Up', next_type: 'referral_follow_up',\n    due_in_days: 7,  stale_days: 21,\n    subject: 'Follow up with an interested practice \u2014 do not let this go quiet' },\n  { id: 7, name: 'Referral Partner',       next_type: 'thank_you_call',\n    due_in_days: 3,  stale_days: 30,\n    subject: 'Thank-you call \u2014 confirm the referral process is working for them' },\n  { id: 8, name: 'Actively Referring',     next_type: 'referral_follow_up',\n    due_in_days: 30, stale_days: 45,\n    subject: 'Monthly referral partner check-in' }\n];\n\n// A referral partner with no activity of any kind for this long gets a re-engagement\n// activity instead of the routine check-in. This is the \"inactive referral partner\"\n// automation.\n//\n// It is measured on activity, not on referrals, because referral counts only exist once\n// RESULT_FIELDS are wired up and this has to work on day one. Once they are wired, the\n// weekly report's \"Last referral\" column is the sharper signal \u2014 read both.\nconst REENGAGE_AFTER_DAYS = 60;\nconst REENGAGE_TYPE       = 're_engagement';\nconst REENGAGE_SUBJECT    = 'Re-engagement \u2014 no referrals from this practice recently';\n\n// Activity type keys, exactly as they appear in Pipedrive (Settings -> Activity types ->\n// each type has a key, not the label). The guard creates activities of these types only.\nconst ACTIVITY_TYPES = {\n  initial_call:       'initial_call',\n  follow_up_call:     'follow_up_call',\n  email:              'email',\n  office_visit:       'office_visit',\n  materials_drop_off: 'materials_drop_off',\n  physician_meeting:  'physician_meeting',\n  practice_manager:   'practice_manager_meeting',\n  lunch_meeting:      'lunch_meeting',\n  referral_follow_up: 'referral_follow_up',\n  thank_you_call:     'thank_you_call',\n  re_engagement:      're_engagement'\n};\n\n// ---------------------------------------------------------------- The rule\n// NO OPEN OPPORTUNITY SHOULD EXIST WITHOUT A NEXT ACTIVITY.\n//\n// A deal counts as covered when it has at least one activity that is not done and is due\n// no later than HORIZON_DAYS from now. An activity scheduled eleven months out is not a\n// next step, it is a way of passing the check.\nconst HORIZON_DAYS = 45;\n\n// A deal created in the last GRACE_HOURS is left alone \u2014 the rep is probably still typing.\nconst GRACE_HOURS = 4;\n\n// Hard ceiling on activities created per run. A misconfigured stage list should cost you\n// forty stray activities, not two thousand.\nconst DAILY_CAP = 40;\n\n// An activity already overdue by this many days is escalated in the summary rather than\n// having another one stacked on top of it. Stacking is how a rep ends up with 60 open\n// tasks and stops reading any of them.\nconst OVERDUE_DAYS = 3;\n\n// Deals worth more than this that have gone stale are called out separately, which is the\n// \"management notification for high-priority opportunities\" automation.\nconst HIGH_PRIORITY_VALUE = 25000;\n\n// ---------------------------------------------------------------- The PHI boundary\n// Pipedrive is your company's physician/practice business-development CRM. It is NOT the\n// patient clinical database. Patient screening and clinical information live elsewhere.\n//\n// This workflow refuses to read or write any field whose name contains one of these words.\n// It is a hard stop, not a warning: the run fails loudly rather than quietly moving a\n// diagnosis into a CRM that was never scoped to hold one.\nconst FORBIDDEN_FIELD_WORDS = [\n  'diagnosis', 'diagnoses', 'medication', 'prescription', 'symptom', 'medical record',\n  'mrn', 'chart number', 'date of birth', 'dob', 'ssn', 'social security', 'insurance id',\n  'member id', 'screening response', 'screening answer', 'eligibility answer', 'lab result',\n  'patient name', 'patient email', 'patient phone', 'patient address', 'phi'\n];\n\n// Aggregate recruitment results ARE in scope \u2014 counts, never people. These are Pipedrive\n// deal custom-field keys (Settings -> Data fields -> the 40-character key).\n// Blank means that number is not tracked yet and is reported as \"not captured\" rather than\n// silently as a zero.\nconst RESULT_FIELDS = {\n  referrals_sent:      '',   // patient referrals from this practice\n  prescreen_qualified: '',   // referrals that passed pre-screen\n  sent_to_site:        '',   // patients sent on to a research site\n  screened:            '',   // patients screened at the site\n  randomized:          ''    // patients randomised / enrolled\n};\n\n// Deal custom fields the guard is allowed to read for context. Same key format.\nconst CONTEXT_FIELDS = {\n  specialty:     '',\n  territory:     '',\n  study_code:    '',\n  practice_size: ''\n};\n\n// ---------------------------------------------------------------- Reporting (workflow 02)\n// The management dashboard. Pipedrive Insights covers the single-object counts; this covers\n// the funnel that spans deals, activities and aggregate results, which Insights cannot.\n// Blank sheet id = the numbers are computed and posted to chat, but nothing is written down.\nconst SHEET_ID        = '';\nconst DASHBOARD_TAB   = 'Dashboard';    // one row per run, so the trend is the sheet history\nconst GAPS_TAB        = 'Gaps';         // active deals with no future activity, one row each\nconst BY_REP_TAB      = 'By rep';       // results by marketing representative\nconst BY_PRACTICE_TAB = 'By practice';  // results by physician / practice\n\nconst DASHBOARD_COLUMNS = {\n  run_at:              'Run at',\n  open_deals:          'Open deals',\n  covered:             'With a next activity',\n  gaps:                'Without a next activity',\n  coverage_pct:        'Coverage %',\n  overdue:             'Overdue activities',\n  outreach_attempts:   'Outreach attempts',\n  conversations:       'Meaningful conversations',\n  meetings:            'Meetings',\n  new_partners:        'New referral partners',\n  active_partners:     'Actively referring practices',\n  referrals_sent:      'Patient referrals',\n  prescreen_qualified: 'Pre-screen qualified',\n  sent_to_site:        'Sent to site',\n  screened:            'Screened',\n  randomized:          'Randomised / enrolled',\n  referral_to_screen:  'Referral to screen %',\n  screen_to_random:    'Screen to randomised %',\n  stalled:             'Stalled deals',\n  high_priority:       'High-priority stalled'\n};\n\nconst GAP_COLUMNS = {\n  deal_id:       'Deal id',\n  deal:          'Deal',\n  organisation:  'Practice',\n  person:        'Physician / contact',\n  stage:         'Stage',\n  owner:         'Rep',\n  value:         'Value',\n  last_activity: 'Last activity',\n  days_quiet:    'Days quiet',\n  action:        'What the guard did',\n  run_at:        'Run at'\n};\n\nconst BY_REP_COLUMNS = {\n  rep:               'Rep',\n  open_deals:        'Open deals',\n  gaps:              'Without a next activity',\n  overdue:           'Overdue activities',\n  outreach_attempts: 'Outreach attempts',\n  conversations:     'Meaningful conversations',\n  meetings:          'Meetings',\n  new_partners:      'New referral partners',\n  referrals_sent:    'Patient referrals',\n  run_at:            'Run at'\n};\n\nconst BY_PRACTICE_COLUMNS = {\n  organisation:        'Practice',\n  stage:               'Stage',\n  owner:               'Rep',\n  referrals_sent:      'Patient referrals',\n  prescreen_qualified: 'Pre-screen qualified',\n  sent_to_site:        'Sent to site',\n  screened:            'Screened',\n  randomized:          'Randomised / enrolled',\n  last_referral:       'Last referral',\n  run_at:              'Run at'\n};\n\n// Which activity types count as which KPI. An \"outreach attempt\" is any attempt; a\n// \"meaningful conversation\" is one that was marked done with an outcome that was not a\n// no-answer. The distinction is the whole point of the dashboard \u2014 attempts are effort,\n// conversations are progress.\nconst OUTREACH_TYPES     = ['initial_call', 'follow_up_call', 'email', 'office_visit',\n                            'materials_drop_off', 're_engagement'];\nconst CONVERSATION_TYPES = ['initial_call', 'follow_up_call', 'referral_follow_up',\n                            'thank_you_call', 'practice_manager_meeting'];\nconst MEETING_TYPES      = ['physician_meeting', 'practice_manager_meeting', 'lunch_meeting',\n                            'office_visit'];\n\n// Activity notes that mean \"nobody was reached\", so the attempt is not counted as a\n// conversation. Matched case-insensitively against the note and the subject.\nconst NO_ANSWER_WORDS = ['no answer', 'voicemail', 'left message', 'left a message',\n                         'gatekeeper', 'not available', 'call back later', 'busy signal'];\n\n// Stages that mean the practice is a partner, for the \"new referral partners\" count.\nconst PARTNER_STAGES = ['Referral Partner', 'Actively Referring'];\n\nconst REPORT_WINDOW_DAYS = 7;   // the reporting period. 7 = the weekly management report.\n\n// ---------------------------------------------------------------- Notifications\nconst ALERT_WEBHOOK_URL   = '';   // Slack incoming webhook, the rep-facing run summary.\nconst MANAGER_WEBHOOK_URL = '';   // Optional second webhook for management escalations.\n                                  // Blank = escalations go to ALERT_WEBHOOK_URL instead.\n\n// ---------------------------------------------------------------- Demo mode\n// With no API token set, builds a deterministic fake pipeline \u2014 eight stages, twenty-odd\n// deals, a realistic spread of covered, uncovered, overdue and stalled \u2014 so the whole rule\n// can be watched end to end before an account exists. While this is on the run is FORCED\n// into preview: a fabricated deal can never produce a real Pipedrive write.\nconst DEMO_PIPELINE = true;\n\n// ---------------------------------------------------------------- Safety switch\n//   TEST_RUN true,  TEST_OWNER_ID blank -> PREVIEW. Every activity the guard would create\n//                                          is listed with its deal, stage and due date, and\n//                                          nothing is written to Pipedrive. Ships this way.\n//   TEST_RUN true,  TEST_OWNER_ID set   -> TEST. Activities really are created, but all\n//                                          assigned to that one user, so a real rep's task\n//                                          list is not touched while you are testing.\n//   TEST_RUN false                      -> LIVE. Activities are created and assigned to the\n//                                          deal's own owner.\nconst TEST_RUN      = true;\nconst TEST_OWNER_ID = '';\n\nconst DEMO_DATA = DEMO_PIPELINE === true && API_TOKEN.trim() === '';\n\nlet MODE = TEST_RUN !== true ? 'live'\n  : (String(TEST_OWNER_ID).trim() !== '' ? 'test' : 'preview');\n\n// Demo deals are not evidence. They cannot open the write gate, whatever TEST_RUN says.\nconst FORCED_PREVIEW = DEMO_DATA && MODE !== 'preview';\nif (FORCED_PREVIEW) MODE = 'preview';\n\nconst BASE_URL = 'https://' + (COMPANY_DOMAIN.trim() || 'api') + '.pipedrive.com/api/v1';\n\n// Every field key this workflow is configured to touch, gathered here so the PHI check runs\n// in one place rather than at each use.\nconst TOUCHED_FIELDS = []\n  .concat(Object.keys(RESULT_FIELDS).map(function (k) {\n    return { role: 'result', name: k, key: RESULT_FIELDS[k] };\n  }))\n  .concat(Object.keys(CONTEXT_FIELDS).map(function (k) {\n    return { role: 'context', name: k, key: CONTEXT_FIELDS[k] };\n  }))\n  .filter(function (f) { return String(f.key || '').trim() !== ''; });\n\nreturn [{\n  json: {\n    base_url:       BASE_URL,\n    api_token:      API_TOKEN.trim(),\n    company_domain: COMPANY_DOMAIN.trim(),\n    pipeline_id:    String(PIPELINE_ID || '').trim(),\n\n    stages:              STAGES,\n    activity_types:      ACTIVITY_TYPES,\n    reengage_after_days: Number(REENGAGE_AFTER_DAYS) || 60,\n    reengage_type:       REENGAGE_TYPE,\n    reengage_subject:    REENGAGE_SUBJECT,\n\n    horizon_days:        Number(HORIZON_DAYS) || 45,\n    grace_hours:         Number(GRACE_HOURS) || 0,\n    daily_cap:           Number(DAILY_CAP) || 0,\n    overdue_days:        Number(OVERDUE_DAYS) || 0,\n    high_priority_value: Number(HIGH_PRIORITY_VALUE) || 0,\n\n    forbidden_field_words: FORBIDDEN_FIELD_WORDS.map(function (w) {\n      return String(w).toLowerCase();\n    }),\n    result_fields:  RESULT_FIELDS,\n    context_fields: CONTEXT_FIELDS,\n    touched_fields: TOUCHED_FIELDS,\n\n    sheet_id:        SHEET_ID.trim(),\n    dashboard_tab:   DASHBOARD_TAB,\n    gaps_tab:        GAPS_TAB,\n    by_rep_tab:      BY_REP_TAB,\n    by_practice_tab: BY_PRACTICE_TAB,\n    dashboard_columns:   DASHBOARD_COLUMNS,\n    gap_columns:         GAP_COLUMNS,\n    by_rep_columns:      BY_REP_COLUMNS,\n    by_practice_columns: BY_PRACTICE_COLUMNS,\n\n    outreach_types:     OUTREACH_TYPES,\n    conversation_types: CONVERSATION_TYPES,\n    meeting_types:      MEETING_TYPES,\n    no_answer_words:    NO_ANSWER_WORDS.map(function (w) { return String(w).toLowerCase(); }),\n    partner_stages:     PARTNER_STAGES,\n    report_window_days: Number(REPORT_WINDOW_DAYS) || 7,\n\n    alert_webhook_url:   ALERT_WEBHOOK_URL.trim(),\n    manager_webhook_url: MANAGER_WEBHOOK_URL.trim(),\n    test_owner_id:       String(TEST_OWNER_ID || '').trim(),\n\n    // derived flags \u2014 the gates read these, never the raw constants\n    mode:         MODE,\n    preview_only: MODE === 'preview',\n    test_write:   MODE === 'test',\n    live_write:   MODE === 'live',\n\n    pipedrive_enabled: API_TOKEN.trim() !== '' && COMPANY_DOMAIN.trim() !== '',\n    write_enabled:     MODE !== 'preview' && API_TOKEN.trim() !== ''\n                       && COMPANY_DOMAIN.trim() !== '',\n    sheet_enabled:   SHEET_ID.trim() !== '',\n    alert_enabled:   ALERT_WEBHOOK_URL.trim() !== '',\n    manager_enabled: (MANAGER_WEBHOOK_URL.trim() || ALERT_WEBHOOK_URL.trim()) !== '',\n    manager_url:     MANAGER_WEBHOOK_URL.trim() || ALERT_WEBHOOK_URL.trim(),\n    demo_data:       DEMO_DATA,\n    forced_preview:  FORCED_PREVIEW\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pd-on",
+      "name": "Pipedrive configured?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "pd-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.pipedrive_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "deals",
+      "name": "[cred] Pipedrive - open deals",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Pipedrive v1 GET /deals. Over 500 open deals: add a pagination loop on 'start' \u2014 additional_data.pagination.more_items_in_collection says when there is another page.",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        840,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $('config').first().json.base_url }}/deals",
+        "method": "GET",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_token",
+              "value": "={{ $('config').first().json.api_token }}"
+            },
+            {
+              "name": "status",
+              "value": "open"
+            },
+            {
+              "name": "limit",
+              "value": "500"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "acts",
+      "name": "[cred] Pipedrive - activities",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "user_id=0 means every user, not 'no user'. The lookback is derived from REENGAGE_AFTER_DAYS so a partner cannot go quiet outside the window the workflow can see.",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $('config').first().json.base_url }}/activities",
+        "method": "GET",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_token",
+              "value": "={{ $('config').first().json.api_token }}"
+            },
+            {
+              "name": "user_id",
+              "value": "0"
+            },
+            {
+              "name": "start_date",
+              "value": "={{ new Date(Date.now() - ($('config').first().json.reengage_after_days + 90) * 86400000).toISOString().slice(0,10) }}"
+            },
+            {
+              "name": "limit",
+              "value": "500"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "fields",
+      "name": "[cred] Pipedrive - deal fields",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Field NAMES, which is what the PHI check reads. A custom field's 40-character key says nothing about what is in it.",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $('config').first().json.base_url }}/dealFields",
+        "method": "GET",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_token",
+              "value": "={{ $('config').first().json.api_token }}"
+            },
+            {
+              "name": "limit",
+              "value": "500"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "read",
+      "name": "read the pipeline",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1680,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Folds the three Pipedrive reads into ONE item shaped {deals, activities, deal_fields}.\n//\n// Everything downstream \u2014 the guard, the KPIs, the dashboard \u2014 reads this shape and never\n// touches a Pipedrive response directly, so the demo pipeline and the real account are\n// interchangeable from here on.\nconst cfg = $('config').first().json;\n\nconst deals = $('[cred] Pipedrive - open deals').first().json || {};\nconst acts = $('[cred] Pipedrive - activities').first().json || {};\nconst fields = $('[cred] Pipedrive - deal fields').first().json || {};\n\n// A Pipedrive call that 402s, times out or is rate-limited comes through here as an object\n// with success:false, or as nothing at all. Say which call failed rather than reporting an\n// empty pipeline as \"every deal is covered\" \u2014 that reading is the one dangerous mistake\n// this workflow can make.\nconst failures = [];\nfunction rows(payload, what) {\n  if (!payload || payload.success === false) {\n    failures.push(what + ': ' + (payload && payload.error ? payload.error : 'no response'));\n    return [];\n  }\n  return Array.isArray(payload.data) ? payload.data : [];\n}\n\nconst dealRows = rows(deals, 'deals');\nconst actRows = rows(acts, 'activities');\nconst fieldRows = rows(fields, 'deal fields');\n\nconst stageById = {};\ncfg.stages.forEach(function (s) { stageById[String(s.id)] = s; });\n\nfunction normaliseDeal(d) {\n  const stage = stageById[String(d.stage_id)] || { name: 'Unknown stage', next_type: '',\n    due_in_days: 7, stale_days: 30, subject: 'Next step' };\n  return {\n    id: d.id,\n    title: d.title || ('Deal ' + d.id),\n    stage_id: d.stage_id,\n    stage: stage.name,\n    status: d.status || 'open',\n    value: Number(d.value || 0),\n    currency: d.currency || '',\n    owner_id: (d.user_id && d.user_id.id) || d.user_id || null,\n    owner: (d.user_id && d.user_id.name) || 'Unassigned',\n    org_id: (d.org_id && d.org_id.value) || d.org_id || null,\n    organisation: (d.org_id && d.org_id.name) || d.org_name || '',\n    person_id: (d.person_id && d.person_id.value) || d.person_id || null,\n    person: (d.person_id && d.person_id.name) || d.person_name || '',\n    add_time: d.add_time || null,\n    stage_change_time: d.stage_change_time || d.add_time || null,\n    // Kept whole so the result fields can be read by key later, once the PHI check has\n    // said which keys are allowed.\n    raw: d\n  };\n}\n\nfunction normaliseActivity(a) {\n  return {\n    id: a.id,\n    deal_id: a.deal_id || null,\n    type: a.type || '',\n    subject: a.subject || '',\n    note: a.note || '',\n    done: a.done === true || a.done === 1,\n    due_date: a.due_date || null,\n    due_time: a.due_time || '',\n    marked_done_time: a.marked_done_time || null,\n    add_time: a.add_time || null,\n    owner_id: a.user_id || null\n  };\n}\n\nconst out = {\n  source: 'pipedrive',\n  read_at: new Date().toISOString(),\n  failures: failures,\n  deals: dealRows.filter(function (d) {\n    if (String(d.status || 'open') !== 'open') return false;\n    if (!cfg.pipeline_id) return true;\n    return String(d.pipeline_id) === String(cfg.pipeline_id);\n  }).map(normaliseDeal),\n  activities: actRows.map(normaliseActivity),\n  deal_fields: fieldRows.map(function (f) {\n    return { key: f.key, name: f.name || '' };\n  })\n};\n\n// An empty read that did not error is a real, reportable state. An empty read that DID\n// error must not be allowed to look like one.\nif (failures.length && out.deals.length === 0) {\n  throw new Error('Pipedrive returned nothing usable (' + failures.join('; ') +\n    '). Refusing to report an empty pipeline as fully covered.');\n}\n\nreturn [{ json: out }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "demo",
+      "name": "STOP: demo pipeline",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        840,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// STOP: Pipedrive is not configured \u2014 build the demo pipeline instead.\n//\n// Deterministic, so the same run produces the same couple of dozen deals every time and a\n// screen-share can be rehearsed. The spread is deliberate: roughly a third of the deals are\n// missing a next activity, a few are overdue rather than missing, one referral partner has\n// gone quiet past the re-engagement threshold, and one high-value deal has stalled \u2014 every\n// branch of the guard has something to do.\n//\n// Nothing here can reach Pipedrive: `demo_data` forces the run into preview in config.\nconst cfg = $('config').first().json;\n\nif (cfg.pipedrive_enabled) {\n  throw new Error('demo pipeline reached with Pipedrive configured \u2014 check the IF gate');\n}\nif (!cfg.demo_data) {\n  return [{ json: { source: 'none', read_at: new Date().toISOString(), failures: [],\n    deals: [], activities: [], deal_fields: [],\n    _note: 'No API token and DEMO_PIPELINE is off. Nothing to work on.' } }];\n}\n\nconst DAY = 86400000;\nconst now = Date.now();\nfunction iso(ms) { return new Date(ms).toISOString().slice(0, 19).replace('T', ' '); }\nfunction date(ms) { return new Date(ms).toISOString().slice(0, 10); }\n\nconst PRACTICES = [\n  ['Riverbend Pain & Spine', 'Dr. A. Whitfield', 'Pain management'],\n  ['Northgate Neurology Associates', 'Dr. P. Iyer', 'Neurology'],\n  ['Cedar Hollow Orthopaedics', 'Dr. M. Okonkwo', 'Orthopaedics'],\n  ['Lakeshore Rehabilitation Group', 'Dr. S. Duval', 'Physical medicine'],\n  ['Fairview Family Practice', 'Dr. R. Castellanos', 'Primary care'],\n  ['Summit Pain Institute', 'Dr. K. Baruah', 'Pain management'],\n  ['Harbour Point Rheumatology', 'Dr. J. Lindqvist', 'Rheumatology'],\n  ['Westfield Sports Medicine', 'Dr. T. Nakamura', 'Sports medicine']\n];\nconst REPS = [\n  { id: 11, name: 'Dana Reyes' },\n  { id: 12, name: 'Marcus Hale' },\n  { id: 13, name: 'Priya Venn' }\n];\n\n// A tiny deterministic PRNG so the fixture never shifts between runs.\nlet seed = 20260902;\nfunction rnd() { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; }\nfunction pick(list) { return list[Math.floor(rnd() * list.length)]; }\n\nconst deals = [];\nconst activities = [];\nlet dealId = 3000;\nlet actId = 9000;\n\ncfg.stages.forEach(function (stage, si) {\n  const count = si < 3 ? 4 : 2;   // top of the funnel is wider, as a real pipeline is\n  for (let i = 0; i < count; i++) {\n    const practice = PRACTICES[(si * 3 + i) % PRACTICES.length];\n    const rep = REPS[(si + i) % REPS.length];\n    const age = Math.floor(rnd() * 40) + 2;\n    const id = ++dealId;\n\n    deals.push({\n      id: id,\n      title: practice[0] + ' \u2014 CRPS referral network',\n      stage_id: stage.id,\n      stage: stage.name,\n      status: 'open',\n      value: si >= 6 ? 40000 : Math.floor(rnd() * 20000) + 3000,\n      currency: 'USD',\n      owner_id: rep.id,\n      owner: rep.name,\n      org_id: 500 + ((si * 3 + i) % PRACTICES.length),\n      organisation: practice[0],\n      person_id: 700 + ((si * 3 + i) % PRACTICES.length),\n      person: practice[1],\n      add_time: iso(now - age * DAY),\n      stage_change_time: iso(now - Math.floor(age / 2) * DAY),\n      raw: { id: id, specialty: practice[2] }\n    });\n\n    // A past activity, always. This is what \"days quiet\" is measured from.\n    const quiet = Math.floor(rnd() * (stage.stale_days + 20));\n    activities.push({\n      id: ++actId, deal_id: id, type: 'initial_call',\n      subject: 'Outreach call', note: rnd() < 0.35 ? 'No answer, left message' : 'Spoke with the practice manager',\n      done: true, due_date: date(now - quiet * DAY), due_time: '',\n      marked_done_time: iso(now - quiet * DAY), add_time: iso(now - quiet * DAY),\n      owner_id: rep.id\n    });\n\n    // The interesting part: who has a next step and who does not.\n    const roll = rnd();\n    if (roll < 0.34) {\n      // No open activity at all \u2014 this is what the guard exists to catch.\n    } else if (roll < 0.5) {\n      // Open but overdue. The guard escalates rather than stacking another task on top.\n      activities.push({\n        id: ++actId, deal_id: id, type: stage.next_type || 'follow_up_call',\n        subject: stage.subject || 'Next step', note: '',\n        done: false, due_date: date(now - (cfg.overdue_days + 2) * DAY), due_time: '09:00',\n        marked_done_time: null, add_time: iso(now - 10 * DAY), owner_id: rep.id\n      });\n    } else if (roll < 0.6) {\n      // Open, but parked so far out it is not a next step in any meaningful sense.\n      activities.push({\n        id: ++actId, deal_id: id, type: 'follow_up_call',\n        subject: 'Check back next year', note: '',\n        done: false, due_date: date(now + (cfg.horizon_days + 60) * DAY), due_time: '09:00',\n        marked_done_time: null, add_time: iso(now - 3 * DAY), owner_id: rep.id\n      });\n    } else {\n      // Properly covered.\n      activities.push({\n        id: ++actId, deal_id: id, type: stage.next_type || 'follow_up_call',\n        subject: stage.subject || 'Next step', note: '',\n        done: false, due_date: date(now + Math.floor(rnd() * 10 + 1) * DAY), due_time: '10:00',\n        marked_done_time: null, add_time: iso(now - 2 * DAY), owner_id: rep.id\n      });\n    }\n  }\n});\n\n// One referral partner that has gone quiet well past the re-engagement threshold, built\n// explicitly rather than left to the random spread \u2014 the re-engagement branch has to have\n// something to do every single time this is demonstrated.\nconst quietStage = cfg.stages.filter(function (s) {\n  return cfg.partner_stages.indexOf(s.name) !== -1;\n}).pop() || cfg.stages[cfg.stages.length - 1];\nconst quietAge = cfg.reengage_after_days + 15;\nconst quietId = ++dealId;\ndeals.push({\n  id: quietId,\n  title: 'Marchetti Interventional Pain \u2014 CRPS referral network',\n  stage_id: quietStage.id,\n  stage: quietStage.name,\n  status: 'open',\n  value: 38000,\n  currency: 'USD',\n  owner_id: REPS[0].id,\n  owner: REPS[0].name,\n  org_id: 599,\n  organisation: 'Marchetti Interventional Pain',\n  person_id: 799,\n  person: 'Dr. L. Marchetti',\n  add_time: iso(now - 400 * DAY),\n  stage_change_time: iso(now - 300 * DAY),\n  raw: { id: quietId, specialty: 'Pain management' }\n});\nactivities.push({\n  id: ++actId, deal_id: quietId, type: 'referral_follow_up',\n  subject: 'Referral check-in', note: 'Practice has not referred since the spring',\n  done: true, due_date: date(now - quietAge * DAY), due_time: '',\n  marked_done_time: iso(now - quietAge * DAY), add_time: iso(now - quietAge * DAY),\n  owner_id: REPS[0].id\n});\n\n// Activity inside the reporting window, so the weekly dashboard has real numbers rather\n// than the two that happen to fall inside seven days by chance. Roughly a third of these\n// are no-answers, which is what makes \"attempts\" and \"conversations\" different columns.\ndeals.forEach(function (d, i) {\n  if (d.id === quietId) return;   // the whole point of that one is that it is quiet\n  if (i % 2 !== 0) return;\n  const daysAgo = (i % Number(cfg.report_window_days || 7));\n  const noAnswer = i % 3 === 0;\n  activities.push({\n    id: ++actId, deal_id: d.id,\n    type: i % 4 === 0 ? 'follow_up_call' : 'email',\n    subject: i % 4 === 0 ? 'Follow-up call' : 'Study information email',\n    note: noAnswer ? 'No answer, left message with the front desk'\n                   : 'Spoke with the practice manager about the CRPS protocol',\n    done: true, due_date: date(now - daysAgo * DAY), due_time: '',\n    marked_done_time: iso(now - daysAgo * DAY), add_time: iso(now - daysAgo * DAY),\n    owner_id: d.owner_id\n  });\n  if (i % 6 === 0) {\n    activities.push({\n      id: ++actId, deal_id: d.id, type: 'physician_meeting',\n      subject: 'Physician meeting', note: 'Reviewed inclusion criteria',\n      done: true, due_date: date(now - daysAgo * DAY), due_time: '',\n      marked_done_time: iso(now - daysAgo * DAY), add_time: iso(now - daysAgo * DAY),\n      owner_id: d.owner_id\n    });\n  }\n});\n\nreturn [{\n  json: {\n    source: 'demo',\n    read_at: new Date().toISOString(),\n    failures: [],\n    deals: deals,\n    activities: activities,\n    // Field names only, which is all the PHI check needs. Deliberately clean \u2014 see the\n    // README for how to prove the check bites by pointing a config key at a bad field.\n    deal_fields: [\n      { key: 'title', name: 'Title' },\n      { key: 'value', name: 'Value' },\n      { key: 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678', name: 'Specialty' },\n      { key: 'b2c3d4e5f60718293a4b5c6d7e8f90123456789a', name: 'Territory' },\n      { key: 'c3d4e5f60718293a4b5c6d7e8f90123456789ab2', name: 'Study code' },\n      { key: 'd4e5f60718293a4b5c6d7e8f90123456789ab2c3', name: 'Referrals sent (count)' }\n    ],\n    _note: 'DEMO PIPELINE \u2014 ' + deals.length + ' fabricated deals. The run is forced into ' +\n           'preview; nothing here can reach a Pipedrive account.'\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "merge-pipe",
+      "name": "one pipeline",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1960,
+        0
+      ],
+      "parameters": {
+        "mode": "append",
+        "numberInputs": 2
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "phi",
+      "name": "check the PHI boundary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// The compliance requirement, enforced rather than documented.\n//\n// \"Do not create fields for identifiable patient medical information, diagnoses,\n//  medications, screening responses, medical records or other patient PHI.\"\n//\n// Two different things can go wrong, and they deserve two different reactions:\n//\n//   1. The CRM already contains a field whose NAME looks like PHI. That is not this\n//      workflow's doing. It is reported, loudly, in every run summary \u2014 and the field is\n//      added to a blocklist so nothing here ever reads it.\n//\n//   2. This workflow is CONFIGURED to read one of those fields. That is our mistake, and\n//      the run stops. A misconfiguration that quietly copies a diagnosis into a dashboard\n//      is exactly the failure the client wrote the requirement to prevent.\n//\n// Aggregate recruitment results \u2014 counts of referrals, screens, enrolments \u2014 are in scope\n// and are not caught by this: a number of patients is not a patient.\nconst cfg = $('config').first().json;\nconst pipeline = $json;\n\nconst words = cfg.forbidden_field_words || [];\nconst fields = pipeline.deal_fields || [];\n\nfunction looksLikePhi(name) {\n  const n = String(name || '').toLowerCase();\n  for (let i = 0; i < words.length; i++) {\n    const w = words[i];\n    // Short keys like 'dob', 'mrn', 'phi' and 'ssn' are matched as whole words, so a field\n    // called \"Method of introduction\" is not flagged for containing \"dob\"... it does not,\n    // but \"Doctor of birth cohort\" style names and abbreviations inside longer words are a\n    // real source of false positives, and a check that cries wolf gets switched off.\n    const whole = w.length <= 4;\n    const hit = whole\n      ? new RegExp('(^|[^a-z])' + w + '([^a-z]|$)').test(n)\n      : n.indexOf(w) !== -1;\n    if (hit) return w;\n  }\n  return '';\n}\n\nconst violations = [];\nconst blocked = {};\nfields.forEach(function (f) {\n  const word = looksLikePhi(f.name);\n  if (word) {\n    blocked[f.key] = true;\n    violations.push({ key: f.key, name: f.name, matched: word });\n  }\n});\n\n// The second check: is this workflow pointed at one of them?\nconst misconfigured = [];\n(cfg.touched_fields || []).forEach(function (t) {\n  const field = fields.filter(function (f) { return f.key === t.key; })[0];\n  const name = field ? field.name : '';\n  const word = looksLikePhi(name || t.name);\n  if (word) {\n    misconfigured.push(t.role + '.' + t.name + ' -> \"' + (name || t.key) +\n      '\" (matched \"' + word + '\")');\n  }\n});\n\nif (misconfigured.length) {\n  throw new Error(\n    'PHI boundary: this workflow is configured to read ' + misconfigured.length +\n    ' field(s) that look like patient clinical data \u2014 ' + misconfigured.join('; ') +\n    '. Pipedrive is the physician/practice CRM, not the patient database. Fix ' +\n    'RESULT_FIELDS / CONTEXT_FIELDS in config before running again.');\n}\n\n// Which result fields are actually captured. A blank key is reported as \"not captured\",\n// never as a zero \u2014 a zero is a finding, an absence is a gap in the CRM setup.\nconst resultFields = {};\nconst notCaptured = [];\nObject.keys(cfg.result_fields || {}).forEach(function (name) {\n  const key = String(cfg.result_fields[name] || '').trim();\n  if (!key) { notCaptured.push(name); return; }\n  if (blocked[key]) { notCaptured.push(name + ' (blocked: field name looks like PHI)'); return; }\n  resultFields[name] = key;\n});\n\nreturn [{\n  json: Object.assign({}, pipeline, {\n    phi_violations: violations,\n    phi_blocked_keys: Object.keys(blocked),\n    result_field_keys: resultFields,\n    results_not_captured: notCaptured,\n    phi_ok: true\n  })\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "verdict",
+      "name": "check every deal for a next activity",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2520,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// THE RULE: no open opportunity should exist without a next activity.\n//\n// Fans the one pipeline item out into one item per open deal, each carrying the verdict.\n// A deal is COVERED when it has at least one activity that is:\n//\n//   - not done, and\n//   - due on or before HORIZON_DAYS from today.\n//\n// The horizon is the part that matters. Without it, \"next activity\" is satisfied by a task\n// parked eleven months out, and the report says 100% while the pipeline rots. With it, a\n// parked task reads as uncovered, which is the truth.\nconst cfg = $('config').first().json;\nconst pipeline = $json;\n\nconst DAY = 86400000;\nconst now = Date.now();\nconst horizon = now + Number(cfg.horizon_days || 45) * DAY;\nconst graceFrom = now - Number(cfg.grace_hours || 0) * 3600000;\nconst overdueBefore = now - Number(cfg.overdue_days || 0) * DAY;\n\nfunction parseDate(d, t) {\n  if (!d) return null;\n  const stamp = String(d).slice(0, 10) + 'T' + (String(t || '').slice(0, 5) || '00:00') + ':00Z';\n  const ms = Date.parse(stamp);\n  return isNaN(ms) ? null : ms;\n}\n\nfunction parseStamp(s) {\n  if (!s) return null;\n  const ms = Date.parse(String(s).replace(' ', 'T') + (String(s).indexOf('Z') === -1 ? 'Z' : ''));\n  return isNaN(ms) ? null : ms;\n}\n\nconst byDeal = {};\n(pipeline.activities || []).forEach(function (a) {\n  if (!a.deal_id) return;\n  const k = String(a.deal_id);\n  if (!byDeal[k]) byDeal[k] = [];\n  byDeal[k].push(a);\n});\n\nconst stageByName = {};\n(cfg.stages || []).forEach(function (s) { stageByName[s.name] = s; });\n\nconst out = [];\nlet covered = 0;\nlet uncovered = 0;\nlet parked = 0;\nlet overdueOnly = 0;\n\n(pipeline.deals || []).forEach(function (deal) {\n  const acts = byDeal[String(deal.id)] || [];\n  const open = acts.filter(function (a) { return !a.done; });\n\n  let nextDue = null;\n  let parkedDue = null;\n  let overdueDue = null;\n  open.forEach(function (a) {\n    const due = parseDate(a.due_date, a.due_time);\n    if (due === null) return;\n    if (due <= horizon) {\n      if (nextDue === null || due < nextDue) nextDue = due;\n      if (due < overdueBefore && (overdueDue === null || due < overdueDue)) overdueDue = due;\n    } else if (parkedDue === null || due < parkedDue) {\n      parkedDue = due;\n    }\n  });\n\n  // An activity with no due date at all is not a next step either \u2014 it never surfaces on\n  // anyone's day. Counted with the parked ones.\n  const undated = open.filter(function (a) { return !a.due_date; }).length;\n  if (undated && parkedDue === null) parkedDue = horizon + DAY;\n\n  const done = acts.filter(function (a) { return a.done; })\n    .map(function (a) { return parseStamp(a.marked_done_time) || parseDate(a.due_date, a.due_time); })\n    .filter(function (ms) { return ms !== null; })\n    .sort(function (a, b) { return b - a; });\n  const lastActivity = done.length ? done[0] : parseStamp(deal.add_time);\n  const daysQuiet = lastActivity ? Math.floor((now - lastActivity) / DAY) : null;\n\n  const stage = stageByName[deal.stage] || {};\n  const added = parseStamp(deal.add_time);\n  const inGrace = added !== null && added > graceFrom;\n\n  const isCovered = nextDue !== null;\n  if (isCovered) covered++; else uncovered++;\n  if (!isCovered && parkedDue !== null) parked++;\n  if (isCovered && overdueDue !== null) overdueOnly++;\n\n  out.push({\n    json: Object.assign({}, deal, {\n      _has_gaps: true,\n      covered: isCovered,\n      in_grace: inGrace,\n      next_due: nextDue ? new Date(nextDue).toISOString().slice(0, 10) : '',\n      parked_due: parkedDue ? new Date(parkedDue).toISOString().slice(0, 10) : '',\n      overdue_due: overdueDue ? new Date(overdueDue).toISOString().slice(0, 10) : '',\n      overdue: overdueDue !== null,\n      open_activities: open.length,\n      last_activity: lastActivity ? new Date(lastActivity).toISOString().slice(0, 10) : '',\n      days_quiet: daysQuiet,\n      stale: daysQuiet !== null && daysQuiet >= Number(stage.stale_days || 30),\n      high_priority: Number(deal.value || 0) >= Number(cfg.high_priority_value || 0),\n      _pipeline: {\n        read_at: pipeline.read_at, source: pipeline.source,\n        phi_violations: pipeline.phi_violations || [],\n        results_not_captured: pipeline.results_not_captured || []\n      }\n    })\n  });\n});\n\nconst totals = {\n  open_deals: (pipeline.deals || []).length,\n  covered: covered,\n  uncovered: uncovered,\n  parked: parked,\n  overdue_but_covered: overdueOnly\n};\n\n// Every open deal already has a real next step. That is the outcome the rule exists to\n// produce, and it still needs a run summary \u2014 silence would be indistinguishable from a\n// workflow that stopped working.\nif (!out.length || uncovered === 0) {\n  return [{\n    json: {\n      _has_gaps: false,\n      totals: totals,\n      source: pipeline.source,\n      read_at: pipeline.read_at,\n      phi_violations: pipeline.phi_violations || [],\n      results_not_captured: pipeline.results_not_captured || [],\n      _note: out.length\n        ? 'Every one of ' + totals.open_deals + ' open deals has an activity due within ' +\n          cfg.horizon_days + ' days.'\n        : 'No open deals in this pipeline.'\n    }\n  }];\n}\n\nout.forEach(function (item) { item.json._totals = totals; });\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "uncovered",
+      "name": "anything uncovered?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2800,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "uncovered-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json._has_gaps }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "clean",
+      "name": "STOP: every open deal is covered",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3080,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// STOP: the rule already holds.\n//\n// Every open deal has an activity that is not done and is due inside the horizon. Nothing\n// to create. This still produces a summary \u2014 a guard that goes silent when it finds nothing\n// is indistinguishable from a guard that has stopped running, and the second one is the\n// expensive failure.\nconst cfg = $('config').first().json;\nconst j = $json;\nconst t = j.totals || {};\n\nreturn [{\n  json: {\n    _has_gaps: false,\n    source: j.source,\n    read_at: j.read_at,\n    totals: t,\n    phi_violations: j.phi_violations || [],\n    results_not_captured: j.results_not_captured || [],\n    decisions: [],\n    headline: t.open_deals\n      ? 'All ' + t.open_deals + ' open deals have a next activity within ' +\n        cfg.horizon_days + ' days.'\n      : 'No open deals in this pipeline.',\n    recorded_at: new Date().toISOString()\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "decide",
+      "name": "decide the next activity",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// What the guard would do about each deal, decided before anything is written.\n//\n// Four outcomes, and only the first one creates anything:\n//\n//   create      no next step within the horizon -> schedule the one this stage calls for\n//   escalate    there IS a next step but it is already overdue -> tell a manager, do not\n//               stack a second task on top of the one the rep is already ignoring\n//   skip        covered, in its grace window, or past the daily cap\n//   reengage    a referral partner that has gone quiet -> a different activity entirely\n//\n// The cap is enforced here, in code, not in a comment. Items are ordered worst-first so\n// that if the cap does bite it bites on the deals that matter least.\nconst cfg = $('config').first().json;\nconst items = $input.all();\n\nconst stageByName = {};\n(cfg.stages || []).forEach(function (s) { stageByName[s.name] = s; });\n\nconst types = cfg.activity_types || {};\nconst DAY = 86400000;\nconst now = Date.now();\n\nfunction dueDate(days) {\n  return new Date(now + Number(days || 1) * DAY).toISOString().slice(0, 10);\n}\n\n// Worst first: longest quiet, then highest value. A cap that truncates the tail should\n// truncate the least urgent tail.\nconst ranked = items.map(function (i) { return i.json; }).sort(function (a, b) {\n  const q = Number(b.days_quiet || 0) - Number(a.days_quiet || 0);\n  if (q !== 0) return q;\n  return Number(b.value || 0) - Number(a.value || 0);\n});\n\nlet created = 0;\nconst cap = Number(cfg.daily_cap || 0);\nconst out = [];\n\nranked.forEach(function (deal) {\n  const stage = stageByName[deal.stage] || {};\n  let action = 'skip';\n  let reason = '';\n  let type = '';\n  let subject = '';\n  let due = '';\n\n  const quietPartner = cfg.partner_stages.indexOf(deal.stage) !== -1 &&\n    Number(deal.days_quiet || 0) >= Number(cfg.reengage_after_days || 60);\n\n  if (deal.covered && deal.overdue) {\n    action = 'escalate';\n    reason = 'has a next activity, overdue since ' + deal.overdue_due +\n      ' \u2014 escalated rather than stacked';\n  } else if (deal.covered) {\n    action = 'skip';\n    reason = 'covered \u2014 next activity due ' + deal.next_due;\n  } else if (deal.in_grace) {\n    action = 'skip';\n    reason = 'created in the last ' + cfg.grace_hours + 'h \u2014 left alone';\n  } else if (quietPartner) {\n    action = 'reengage';\n    type = types[cfg.reengage_type] || cfg.reengage_type;\n    subject = cfg.reengage_subject;\n    due = dueDate(2);\n    reason = 'referral partner, quiet for ' + deal.days_quiet + ' days';\n  } else if (!stage.next_type) {\n    action = 'skip';\n    reason = 'stage \"' + deal.stage + '\" has no next_type configured \u2014 deliberately ignored';\n  } else {\n    action = 'create';\n    type = types[stage.next_type] || stage.next_type;\n    subject = stage.subject;\n    due = dueDate(stage.due_in_days);\n    reason = deal.parked_due\n      ? 'only open activity is parked at ' + deal.parked_due + ', past the ' +\n        cfg.horizon_days + '-day horizon'\n      : 'no open activity at all';\n  }\n\n  const writes = action === 'create' || action === 'reengage';\n  if (writes && cap > 0 && created >= cap) {\n    action = 'skip';\n    reason = 'daily cap of ' + cap + ' reached \u2014 picked up on the next run';\n    type = ''; subject = ''; due = '';\n  } else if (writes) {\n    created++;\n  }\n\n  out.push({\n    json: Object.assign({}, deal, {\n      action: action,\n      action_reason: reason,\n      activity_type: type,\n      activity_subject: subject,\n      activity_due: due,\n      // The owner the activity is assigned to. In test mode every activity lands on one\n      // user, so a real rep's task list is untouched while the rule is being verified.\n      assign_to: cfg.test_write && cfg.test_owner_id\n        ? Number(cfg.test_owner_id) : deal.owner_id,\n      _create: (action === 'create' || action === 'reengage') && cfg.write_enabled === true,\n      _body: (action === 'create' || action === 'reengage') ? {\n        subject: subject,\n        type: type,\n        due_date: due,\n        due_time: '09:00',\n        duration: '00:30',\n        deal_id: deal.id,\n        person_id: deal.person_id || undefined,\n        org_id: deal.org_id || undefined,\n        user_id: (cfg.test_write && cfg.test_owner_id\n          ? Number(cfg.test_owner_id) : deal.owner_id) || undefined,\n        note: 'Scheduled by the activity guard: ' + reason\n      } : null\n    })\n  });\n});\n\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "write-on",
+      "name": "creating this activity?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3360,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "write-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json._create }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "create",
+      "name": "[cred] Pipedrive - create the next activity",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Pipedrive v1 POST /activities. The body is built in 'decide the next activity' so it is readable without opening this node.",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        3640,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $('config').first().json.base_url }}/activities?api_token={{ $('config').first().json.api_token }}",
+        "method": "POST",
+        "options": {
+          "timeout": 30000
+        },
+        "jsonBody": "={{ JSON.stringify($json._body) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "recorded",
+      "name": "record what was created",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3920,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Reads Pipedrive's answer to each create and turns it into one honest line.\n//\n// A create that came back with success:false is NOT recorded as done. It is recorded as\n// failed, with whatever Pipedrive said, and the deal stays uncovered so the next run picks\n// it up again. The alternative \u2014 treating a 4xx as \"handled\" \u2014 is how a coverage report\n// slowly becomes fiction.\nconst cfg = $('config').first().json;\nconst deal = $('decide the next activity').item.json;\nconst resp = $json || {};\n\n// `a && b && c` evaluates to c, not to true. Without the coercion `ok` is the new\n// activity's numeric id, `ok === true` is false, and every successful create is\n// recorded as a failure \u2014 a coverage report that only ever goes down.\nconst ok = resp.success === true && !!(resp.data && resp.data.id);\n\nreturn [{\n  json: Object.assign({}, deal, {\n    written: ok === true,\n    activity_id: ok ? resp.data.id : null,\n    write_error: ok ? '' : (resp.error || resp.error_info || 'no id returned'),\n    outcome: ok\n      ? (cfg.test_write ? 'created (test \u2014 assigned to the test user)' : 'created')\n      : 'FAILED to create',\n    recorded_at: new Date().toISOString()\n  })\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "not-created",
+      "name": "STOP: not created",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3640,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// STOP: nothing was written for this deal.\n//\n// Open this node to read the whole decision. In preview \u2014 how the workflow ships \u2014 every\n// deal the guard WOULD have acted on is here, with the activity it would have created, the\n// stage rule that produced it and the due date. That list is the deliverable of a first\n// run: you read it, you disagree with three of them, you change the stage rules, you run\n// it again. Nothing has touched the CRM yet.\nconst cfg = $('config').first().json;\nconst deal = $json;\n\nconst why = cfg.preview_only\n  ? (cfg.forced_preview\n    ? 'PREVIEW (forced \u2014 the demo pipeline cannot write to a real account)'\n    : 'PREVIEW \u2014 TEST_RUN is true and TEST_OWNER_ID is blank')\n  : deal.action === 'escalate'\n    ? 'escalated, not created \u2014 a second task on an already-overdue deal helps nobody'\n    : deal.action_reason;\n\nreturn [{\n  json: Object.assign({}, deal, {\n    written: false,\n    activity_id: null,\n    write_error: '',\n    outcome: deal.action === 'create' || deal.action === 'reengage'\n      ? 'would ' + deal.action + ': ' + deal.activity_subject + ' (due ' + deal.activity_due + ')'\n      : deal.action,\n    held_because: why,\n    recorded_at: new Date().toISOString()\n  })\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "merge-done",
+      "name": "what happened",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        4200,
+        0
+      ],
+      "parameters": {
+        "mode": "append",
+        "numberInputs": 2
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "summary",
+      "name": "build the run summary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4480,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// One message a manager can read in ten seconds, and a decisions list an engineer can read\n// line by line. Both are produced whether or not anything was written.\nconst cfg = $('config').first().json;\nconst items = $input.all().map(function (i) { return i.json; });\n\n// The \"every deal is covered\" path arrives as a single item with no per-deal decisions.\nconst clean = items.filter(function (j) { return j._has_gaps === false; })[0];\nconst decisions = items.filter(function (j) { return j._has_gaps !== false && j.id; });\n\nconst first = decisions[0] || clean || {};\nconst totals = (first._totals || (clean && clean.totals) || {});\n\nfunction count(pred) { return decisions.filter(pred).length; }\n\nconst createdOk = decisions.filter(function (d) { return d.written === true; });\nconst failed = decisions.filter(function (d) {\n  return d.written === false && d.write_error;\n});\nconst wouldCreate = decisions.filter(function (d) {\n  return (d.action === 'create' || d.action === 'reengage') && d.written !== true;\n});\nconst escalations = decisions.filter(function (d) { return d.action === 'escalate'; });\nconst stalled = decisions.filter(function (d) { return d.stale === true; });\nconst highPriority = stalled.filter(function (d) { return d.high_priority === true; });\n\nconst open = Number(totals.open_deals || 0);\nconst covered = Number(totals.covered || 0);\nconst coverage = open ? Math.round((covered / open) * 100) : 100;\n\n// Coverage AFTER this run: what was covered already, plus what was actually written.\nconst coverageAfter = open\n  ? Math.round(((covered + createdOk.length) / open) * 100)\n  : 100;\n\nconst mode = cfg.forced_preview ? 'PREVIEW (forced \u2014 demo pipeline)'\n  : cfg.preview_only ? 'PREVIEW \u2014 nothing written'\n  : cfg.test_write ? 'TEST \u2014 written, assigned to the test user'\n  : 'LIVE';\n\nconst lines = [];\nlines.push('*Activity guard* \u2014 ' + mode);\nlines.push(open + ' open deals \u00b7 ' + coverage + '% had a next activity \u00b7 ' +\n  coverageAfter + '% after this run');\nif (createdOk.length) lines.push('created: ' + createdOk.length);\nif (wouldCreate.length && cfg.preview_only) lines.push('would create: ' + wouldCreate.length);\nif (escalations.length) lines.push('overdue, escalated: ' + escalations.length);\nif (stalled.length) lines.push('stalled: ' + stalled.length +\n  (highPriority.length ? ' (' + highPriority.length + ' high-value)' : ''));\nif (failed.length) lines.push(':warning: failed to create: ' + failed.length);\nif ((first.phi_violations || clean && clean.phi_violations || []).length) {\n  const v = first.phi_violations || clean.phi_violations;\n  lines.push(':rotating_light: PHI boundary: ' + v.length +\n    ' CRM field(s) named like patient clinical data \u2014 ' +\n    v.map(function (x) { return x.name; }).join(', '));\n}\nif (clean) lines.push(clean.headline);\n\n// The per-deal record. This is the file a rep or a manager actually argues with.\nconst rows = decisions.map(function (d) {\n  return {\n    deal_id: d.id,\n    deal: d.title,\n    practice: d.organisation,\n    contact: d.person,\n    stage: d.stage,\n    rep: d.owner,\n    value: d.value,\n    days_quiet: d.days_quiet,\n    covered_before: d.covered,\n    action: d.action,\n    why: d.action_reason,\n    activity: d.activity_subject || '',\n    due: d.activity_due || '',\n    outcome: d.outcome || '',\n    error: d.write_error || ''\n  };\n}).sort(function (a, b) { return Number(b.days_quiet || 0) - Number(a.days_quiet || 0); });\n\nreturn [{\n  json: {\n    mode: cfg.mode,\n    source: first.source || (first._pipeline && first._pipeline.source) || 'unknown',\n    open_deals: open,\n    covered_before: covered,\n    coverage_pct: coverage,\n    coverage_pct_after: coverageAfter,\n    created: createdOk.length,\n    would_create: wouldCreate.length,\n    escalated: escalations.length,\n    stalled: stalled.length,\n    high_priority_stalled: highPriority.length,\n    failed: failed.length,\n    skipped: count(function (d) { return d.action === 'skip'; }),\n    decisions: rows,\n    escalation_rows: escalations.concat(highPriority).filter(function (v, i, a) {\n      return a.indexOf(v) === i;\n    }).map(function (d) {\n      return d.owner + ' \u2014 ' + d.organisation + ' (' + d.stage + ') quiet ' +\n        d.days_quiet + 'd, ' + d.action_reason;\n    }),\n    results_not_captured: first.results_not_captured ||\n      (clean && clean.results_not_captured) || [],\n    summary: lines.join('\\n'),\n    _has_escalations: escalations.length > 0 || highPriority.length > 0,\n    _alert_body: { text: lines.join('\\n') }\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "alert-on",
+      "name": "alert configured?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4760,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "alert-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.alert_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "alert",
+      "name": "Post the run summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Slack incoming webhook shape. Any endpoint that accepts JSON works.",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        5040,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $('config').first().json.alert_webhook_url }}",
+        "method": "POST",
+        "options": {
+          "timeout": 15000
+        },
+        "jsonBody": "={{ JSON.stringify($json._alert_body) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "no-alert",
+      "name": "STOP: no alert webhook",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        5040,
+        190
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "esc-on",
+      "name": "escalations to send?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4760,
+        190
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "esc-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json._has_escalations && $('config').first().json.manager_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "escalation",
+      "name": "build the escalation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5040,
+        380
+      ],
+      "parameters": {
+        "jsCode": "// The management notification, kept separate from the rep-facing summary on purpose.\n//\n// A manager does not need the forty routine activities the guard scheduled. They need the\n// two deals that are worth more than the threshold and have gone quiet, and the ones where\n// a rep is sitting on an overdue task. Sending both audiences the same message is how both\n// stop reading it.\nconst cfg = $('config').first().json;\nconst s = $json;\n\nconst lines = [];\nlines.push('*Referral network \u2014 management escalation*');\nif (s.high_priority_stalled) {\n  lines.push(s.high_priority_stalled + ' high-value deal(s) stalled past their stage threshold');\n}\nif (s.escalated) {\n  lines.push(s.escalated + ' deal(s) with an activity overdue by more than ' +\n    cfg.overdue_days + ' days');\n}\nlines.push('');\n(s.escalation_rows || []).slice(0, 15).forEach(function (r) { lines.push('\u2022 ' + r); });\nif ((s.escalation_rows || []).length > 15) {\n  lines.push('\u2026 and ' + (s.escalation_rows.length - 15) + ' more in the run summary');\n}\nlines.push('');\nlines.push('Coverage: ' + s.coverage_pct_after + '% of ' + s.open_deals +\n  ' open deals have a next activity.');\n\nreturn [{ json: Object.assign({}, s, { _escalation_body: { text: lines.join('\\n') } }) }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "post-esc",
+      "name": "Post the management escalation",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "MANAGER_WEBHOOK_URL if set, otherwise ALERT_WEBHOOK_URL. Managers and reps get different messages on purpose.",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        5320,
+        380
+      ],
+      "parameters": {
+        "url": "={{ $('config').first().json.manager_url }}",
+        "method": "POST",
+        "options": {
+          "timeout": 15000
+        },
+        "jsonBody": "={{ JSON.stringify($json._escalation_body) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "no-esc",
+      "name": "STOP: nothing to escalate",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        5040,
+        570
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "end",
+      "name": "End",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        5600,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-00",
+      "name": "Template overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -1274
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 660,
+        "height": 994,
+        "content": "## Create next activities for uncovered open deals in Pipedrive\n\n**Who's it for**\nSales and partnership teams running a referral or business-development pipeline in Pipedrive who\nneed one rule enforced without exception: **no open deal should exist without a next activity.**\n\n**How it works**\nPipedrive's own automations fire on an event \u2014 a stage change, a deal created. They cannot answer\n*\"which deals have nothing scheduled right now\"*, because that is a question about absence, and\nnothing happens when nothing happens. This runs every weekday morning, asks that question of every\nopen deal, and schedules the activity the deal's stage calls for. A deal counts as covered only when\nit has an activity that is not done **and** due inside the horizon, so a task parked eleven months\nout reads as uncovered rather than as compliance. Deals whose next activity is already overdue are\nescalated to a manager instead of having a second task piled on top. A daily cap keeps a bad morning\nfrom flooding a rep's task list.\n\n**How to set up**\n1. Open **`config`** and set `COMPANY_DOMAIN`, `HORIZON_DAYS`, `DAILY_CAP` and the stage-to-activity map.\n2. Add your Pipedrive `API_TOKEN` when you are ready to read a real account.\n3. Leave `TEST_RUN = true` and `TEST_OWNER_ID` blank for the first run \u2014 it writes nothing.\n\n**Requirements**\nA Pipedrive account with API access. The alert and escalation webhooks (Slack or Discord) are\noptional; blank means that branch is skipped, not that the run fails.\n\n**How to customize**\nThe stage-to-activity map and the horizon live in `config`. To change what gets scheduled, edit\n**`decide the next activity`** \u2014 everything downstream is unchanged."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-01",
+      "name": "1. Read the pipeline",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -220
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 2160,
+        "height": 180,
+        "content": "### 1. Read the pipeline\n\nThree reads: open deals, their activities, and the deal-field definitions. **`read the pipeline`** joins them into one shape.\n\n**`Pipedrive configured?`** is what lets this run before you have an account \u2014 see the note on the demo pipeline below."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-02",
+      "name": "2. The PHI boundary",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2240,
+        140
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 480,
+        "height": 466,
+        "content": "### 2. The compliance boundary, enforced\n\n**`check the PHI boundary`** reads every deal field's *name* and does two different things with what it finds:\n\n- a CRM field that looks like sensitive personal or medical data is **blocked and reported** \u2014 it is not this workflow's doing, but nothing here will read it\n- this workflow being **configured** to read one is a hard stop. The run fails with the field named, because a misconfiguration that quietly copies a diagnosis into a dashboard is the exact failure the rule exists to prevent\n\nAggregate counts are in scope and pass through untouched. A number of people is not a person."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-03",
+      "name": "3. The horizon is the whole rule",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2800,
+        -440
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 480,
+        "height": 400,
+        "content": "### 3. The horizon is the whole rule\n\nA deal is covered when it has an activity that is **not done** and **due within\n`HORIZON_DAYS`**.\n\nDrop the second half and the rule is trivially satisfied by a task parked eleven\nmonths out. Coverage reads 100%, the pipeline rots, and the report is worse than\nuseless because it is confidently wrong.\n\nWith the horizon, a parked task reads as **uncovered** \u2014 which is the truth, and is\nwhat `STOP: not created` will show you in preview."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-04",
+      "name": "4. Overdue is escalated, never stacked",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3360,
+        330
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 1040,
+        "height": 312,
+        "content": "### 4. Overdue is escalated, never stacked\n\nA deal whose next activity is already overdue does **not** get a second activity piled\non top of the one the rep is already not doing. That is how a rep ends up with sixty\nopen tasks and stops reading any of them, at which point the rule is enforced on paper\nand nowhere else.\n\nIt goes to the manager instead, in a separate message from the rep-facing summary.\n\n`DAILY_CAP` is enforced in **decide the next activity**, worst-first: if the cap bites,\nit bites on the deals that have been quiet the shortest."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-05",
+      "name": "5. Nothing is written until you say so",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4480,
+        -462
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 760,
+        "height": 422,
+        "content": "### 5. Nothing is written until you say so\n\n`TEST_RUN = true` with a blank `TEST_OWNER_ID` (how it ships) runs the entire rule and\nwrites nothing. Open **STOP: not created** to read every activity it would have\ncreated: the deal, the stage, the subject, the due date and the sentence explaining\nwhy.\n\nThat list is the deliverable of a first run. Disagree with three of them, change the\nstage rules in `config`, run it again.\n\n`TEST_OWNER_ID` set -> activities are really created but all assigned to that one user.\n`TEST_RUN = false` goes live and assigns to each deal's own owner."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-06",
+      "name": "6. It runs before you have an account",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4760,
+        710
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 760,
+        "height": 356,
+        "content": "### 6. It runs before you have an account\n\n`API_TOKEN` blank and `DEMO_PIPELINE = true` (how it ships) builds a deterministic\nfake pipeline \u2014 eight stages, twenty-four deals, a realistic spread of covered,\nuncovered, parked, overdue and stalled \u2014 and runs the whole rule against it.\n\nThe run is **forced into preview** while that is on. A fabricated deal cannot\nproduce a real Pipedrive write, whatever `TEST_RUN` says.\n\nPut a real `COMPANY_DOMAIN` and `API_TOKEN` in `config` and the same nodes read the\nreal account. Nothing downstream changes."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "config": {
+      "main": [
+        [
+          {
+            "node": "Pipedrive configured?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run it now": {
+      "main": [
+        [
+          {
+            "node": "config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "one pipeline": {
+      "main": [
+        [
+          {
+            "node": "check the PHI boundary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "what happened": {
+      "main": [
+        [
+          {
+            "node": "build the run summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: not created": {
+      "main": [
+        [
+          {
+            "node": "what happened",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "alert configured?": {
+      "main": [
+        [
+          {
+            "node": "Post the run summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: no alert webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read the pipeline": {
+      "main": [
+        [
+          {
+            "node": "one pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: demo pipeline": {
+      "main": [
+        [
+          {
+            "node": "one pipeline",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "anything uncovered?": {
+      "main": [
+        [
+          {
+            "node": "decide the next activity",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: every open deal is covered",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every weekday, 07:00": {
+      "main": [
+        [
+          {
+            "node": "config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post the run summary": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "build the escalation": {
+      "main": [
+        [
+          {
+            "node": "Post the management escalation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "escalations to send?": {
+      "main": [
+        [
+          {
+            "node": "build the escalation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: nothing to escalate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pipedrive configured?": {
+      "main": [
+        [
+          {
+            "node": "[cred] Pipedrive - open deals",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: demo pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "build the run summary": {
+      "main": [
+        [
+          {
+            "node": "alert configured?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "escalations to send?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: no alert webhook": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check the PHI boundary": {
+      "main": [
+        [
+          {
+            "node": "check every deal for a next activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "creating this activity?": {
+      "main": [
+        [
+          {
+            "node": "[cred] Pipedrive - create the next activity",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: not created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "record what was created": {
+      "main": [
+        [
+          {
+            "node": "what happened",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "decide the next activity": {
+      "main": [
+        [
+          {
+            "node": "creating this activity?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: nothing to escalate": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Pipedrive - activities": {
+      "main": [
+        [
+          {
+            "node": "[cred] Pipedrive - deal fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Pipedrive - open deals": {
+      "main": [
+        [
+          {
+            "node": "[cred] Pipedrive - activities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post the management escalation": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Pipedrive - deal fields": {
+      "main": [
+        [
+          {
+            "node": "read the pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STOP: every open deal is covered": {
+      "main": [
+        [
+          {
+            "node": "build the run summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check every deal for a next activity": {
+      "main": [
+        [
+          {
+            "node": "anything uncovered?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Pipedrive - create the next activity": {
+      "main": [
+        [
+          {
+            "node": "record what was created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # 🎫 Sync Beex WhatsApp ticket messages with HubSpot contact activities
 
-> ⚡ **7 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **15 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

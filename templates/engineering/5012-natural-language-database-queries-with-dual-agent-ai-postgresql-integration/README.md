@@ -1,6 +1,6 @@
 # ⚒️ Natural language database queries with dual-agent AI & PostgreSQL integration
 
-> ⚡ **8,409 views** · ⚒️ [Engineering](../)
+> ⚡ **9,802 views** · ⚒️ [Engineering](../)
 
 ## Description
 

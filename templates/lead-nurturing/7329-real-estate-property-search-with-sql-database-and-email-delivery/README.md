@@ -1,6 +1,6 @@
 # 💬 Real estate property search with SQL database and email delivery
 
-> ⚡ **2,466 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,797 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

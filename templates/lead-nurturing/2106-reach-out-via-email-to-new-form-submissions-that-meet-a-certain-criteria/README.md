@@ -1,6 +1,6 @@
 # 💬 Reach out via email to new form submissions that meet a certain criteria
 
-> ⚡ **2,075 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,143 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

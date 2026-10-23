@@ -1,6 +1,6 @@
 # 🔬 AI based data analysis, data visualization and data report with Ada.im
 
-> ⚡ **4,697 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **8,246 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

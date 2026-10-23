@@ -1,6 +1,6 @@
 # 💬 Answer product queries via WhatsApp using OpenAI GPT-4o and PDF knowledge base
 
-> ⚡ **829 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,223 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

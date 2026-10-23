@@ -1,6 +1,6 @@
 # 💬 Send WhatsApp follow-up when a new lead submits a form with MoltFlow and log to Sheets
 
-> ⚡ **24 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **148 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Get company data and store it in Airtable
 
-> ⚡ **976 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,024 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

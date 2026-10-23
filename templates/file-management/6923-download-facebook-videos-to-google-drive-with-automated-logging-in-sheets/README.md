@@ -1,6 +1,6 @@
 # 📁 Download Facebook videos to Google Drive with automated logging in sheets
 
-> ⚡ **489 views** · 📁 [File Management](../)
+> ⚡ **692 views** · 📁 [File Management](../)
 
 ## Description
 

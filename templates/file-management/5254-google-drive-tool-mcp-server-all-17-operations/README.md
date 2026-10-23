@@ -1,6 +1,6 @@
 # 📁 🛠️ Google Drive tool MCP server 💪 all 17 operations
 
-> ⚡ **547 views** · 📁 [File Management](../)
+> ⚡ **579 views** · 📁 [File Management](../)
 
 ## Description
 

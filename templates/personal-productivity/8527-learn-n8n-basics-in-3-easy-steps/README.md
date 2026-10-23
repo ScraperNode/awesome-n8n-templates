@@ -1,6 +1,6 @@
 # ⚡ Learn n8n basics in 3 easy steps ✨
 
-> ⚡ **185,598 views** · ⚡ [Personal Productivity](../)
+> ⚡ **273,746 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Extract internal links from a webpage
 
-> ⚡ **5,666 views** · 📊 [Market Research & Insights](../)
+> ⚡ **5,863 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Generate dynamic sales pipeline metrics for Slack using Airtable
 
-> ⚡ **90 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **101 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

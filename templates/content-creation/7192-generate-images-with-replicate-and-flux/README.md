@@ -1,6 +1,6 @@
 # 🎬 Generate images with Replicate and Flux
 
-> ⚡ **1,584 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,834 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

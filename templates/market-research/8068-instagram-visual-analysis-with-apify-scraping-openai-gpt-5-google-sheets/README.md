@@ -1,6 +1,6 @@
 # 📊 Instagram visual analysis with Apify scraping, OpenAI GPT-5 & Google Sheets
 
-> ⚡ **1,088 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,200 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — Heads up — if this workflow's Instagram scraping breaks (it happens whenever Meta updates their frontend), [ScraperNode](https://scrapernode.com/instagram) is a community node that handles [profiles](https://scrapernode.com/instagram/scrapers/profiles), [posts](https://scrapernode.com/instagram/scrapers/posts), [reels](https://scrapernode.com/instagram/scrapers/reels), and [comments](https://scrapernode.com/instagram/scrapers/comments) without any HTML parsing.
 >

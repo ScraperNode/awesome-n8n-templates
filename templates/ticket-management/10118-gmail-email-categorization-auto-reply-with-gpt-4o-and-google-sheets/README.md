@@ -1,6 +1,6 @@
 # 🎫 Gmail email categorization & auto reply with GPT-4o and Google Sheets
 
-> ⚡ **1,621 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **2,563 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

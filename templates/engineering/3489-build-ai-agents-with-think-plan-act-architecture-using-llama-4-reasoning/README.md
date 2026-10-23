@@ -1,6 +1,6 @@
 # ⚒️ 🧠 Build AI agents with Think-Plan-Act architecture using Llama-4 reasoning
 
-> ⚡ **1,140 views** · ⚒️ [Engineering](../)
+> ⚡ **1,485 views** · ⚒️ [Engineering](../)
 
 ## Description
 

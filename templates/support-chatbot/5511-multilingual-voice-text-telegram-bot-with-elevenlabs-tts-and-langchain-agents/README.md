@@ -1,6 +1,6 @@
 # 💬 Multilingual voice & text Telegram bot with ElevenLabs TTS and LangChain agents
 
-> ⚡ **3,482 views** · 💬 [Support Chatbots](../)
+> ⚡ **4,063 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

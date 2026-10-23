@@ -1,6 +1,6 @@
 # 🔬 Convert DMARC reports to readable tables with Gmail automation
 
-> ⚡ **164 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **298 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

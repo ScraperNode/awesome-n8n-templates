@@ -1,6 +1,6 @@
 # 🎫 Gmail email classifier with GPT-4 auto-generated draft replies
 
-> ⚡ **986 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,315 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

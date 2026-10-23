@@ -1,6 +1,6 @@
 # 📋 Automated daily task reminder emails with Google Sheets & SMTP
 
-> ⚡ **159 views** · 📋 [Project Management](../)
+> ⚡ **208 views** · 📋 [Project Management](../)
 
 ## Description
 

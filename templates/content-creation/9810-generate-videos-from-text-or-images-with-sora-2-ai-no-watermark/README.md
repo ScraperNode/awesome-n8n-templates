@@ -1,6 +1,6 @@
 # 🎬 Generate videos from text or images with Sora 2 AI - no watermark
 
-> ⚡ **9,866 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **11,246 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

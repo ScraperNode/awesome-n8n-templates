@@ -1,6 +1,6 @@
 # 🎬 Speed Up Social Media Banners With BannerBear.com
 
-> ⚡ **5,495 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,690 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

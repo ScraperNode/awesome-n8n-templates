@@ -1,6 +1,6 @@
 # 🔬 Score SDK documentation localization readiness with Azure GPT-4o-mini and Slack alerts
 
-> ⚡ **54 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **82 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

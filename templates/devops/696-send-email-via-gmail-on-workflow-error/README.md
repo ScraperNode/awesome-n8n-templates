@@ -1,6 +1,6 @@
 # ⚙️ Send email via Gmail on workflow error
 
-> ⚡ **8,963 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **9,220 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 Build AI-ready knowledge base from Outlook & Notion using Pinecone & GPT-4
 
-> ⚡ **424 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **580 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

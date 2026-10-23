@@ -1,6 +1,6 @@
 # 🎣 Enrich event registrations with HubSpot, Clearbit, LinkedIn and Gemini AI
 
-> ⚡ **5 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **62 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

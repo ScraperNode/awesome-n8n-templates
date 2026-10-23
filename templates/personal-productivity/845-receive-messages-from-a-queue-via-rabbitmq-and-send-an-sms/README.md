@@ -1,6 +1,6 @@
 # ⚡ Receive messages from a queue via RabbitMQ and send an SMS
 
-> ⚡ **3,485 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,572 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

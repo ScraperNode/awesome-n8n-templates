@@ -1,6 +1,6 @@
 # 📋 Bidirectional ClickUp task & Google Calendar sync with multi-calendar routing
 
-> ⚡ **414 views** · 📋 [Project Management](../)
+> ⚡ **492 views** · 📋 [Project Management](../)
 
 ## Description
 

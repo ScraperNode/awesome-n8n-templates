@@ -1,6 +1,6 @@
 # 📊 Audit web pages for SEO issues with Decodo, GPT-4 and Google Sheets
 
-> ⚡ **127 views** · 📊 [Market Research & Insights](../)
+> ⚡ **164 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -68,7 +68,7 @@ Create an output sheet to store SEO results
 Add your Decodo API credentials
 
 The URL is automatically taken from the input sheet
-👉 [Decodo – Web Scraper for n8n](https://visit.decodo.com/raqXGD)
+👉 [Decodo – Web Scraper for n8n](https://visit.decodo.com/VOmXO6)
 
 **3. AI Agent**
 

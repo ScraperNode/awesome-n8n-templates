@@ -1,6 +1,6 @@
 # ⚒️ Track AI model executions with LangFuse observability for better performance insights
 
-> ⚡ **139 views** · ⚒️ [Engineering](../)
+> ⚡ **260 views** · ⚒️ [Engineering](../)
 
 ## Description
 

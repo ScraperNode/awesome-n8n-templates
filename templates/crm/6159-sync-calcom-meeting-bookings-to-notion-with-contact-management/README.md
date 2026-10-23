@@ -1,6 +1,6 @@
 # 🤝 Sync Cal.com meeting bookings to Notion with contact management
 
-> ⚡ **372 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **424 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

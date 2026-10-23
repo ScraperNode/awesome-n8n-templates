@@ -1,6 +1,6 @@
 # 🤝 CallForge - 03 - Gong transcript processor and Salesforce enricher
 
-> ⚡ **2,117 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,284 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

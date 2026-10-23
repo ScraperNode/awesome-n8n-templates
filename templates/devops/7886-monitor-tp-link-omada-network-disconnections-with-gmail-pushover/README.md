@@ -1,6 +1,6 @@
 # ⚙️ Monitor TP-Link Omada network disconnections with Gmail & Pushover
 
-> ⚡ **325 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **434 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

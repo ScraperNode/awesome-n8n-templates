@@ -1,6 +1,6 @@
 # 🔬 Convert SQL table into Excel spreadsheet
 
-> ⚡ **5,978 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **6,270 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

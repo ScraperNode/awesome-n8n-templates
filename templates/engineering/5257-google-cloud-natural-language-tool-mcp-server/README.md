@@ -1,6 +1,6 @@
 # ⚒️ Google Cloud natural language tool MCP server
 
-> ⚡ **185 views** · ⚒️ [Engineering](../)
+> ⚡ **194 views** · ⚒️ [Engineering](../)
 
 ## Description
 

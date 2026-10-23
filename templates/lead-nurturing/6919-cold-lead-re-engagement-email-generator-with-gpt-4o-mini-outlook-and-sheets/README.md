@@ -1,6 +1,6 @@
 # 💬 Cold lead re-engagement email generator with GPT-4o-mini, Outlook, and Sheets
 
-> ⚡ **831 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,008 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

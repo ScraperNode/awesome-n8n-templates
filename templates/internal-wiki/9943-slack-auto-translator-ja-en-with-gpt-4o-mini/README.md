@@ -1,6 +1,6 @@
 # 📖 Slack auto translator (JA ⇄ EN) with GPT-4o-mini
 
-> ⚡ **148 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **204 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

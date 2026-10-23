@@ -1,6 +1,6 @@
 # 🎬 Voice to podcast script generator with OpenAI & Notion via Telegram
 
-> ⚡ **245 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **291 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

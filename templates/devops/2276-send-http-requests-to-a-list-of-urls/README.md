@@ -1,6 +1,6 @@
 # ⚙️ Send HTTP requests to a list of URLs
 
-> ⚡ **3,456 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **3,502 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

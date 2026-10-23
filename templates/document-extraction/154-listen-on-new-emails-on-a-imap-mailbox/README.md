@@ -1,6 +1,6 @@
 # 🔬 Listen on new emails on a IMAP mailbox
 
-> ⚡ **8,273 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **8,450 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

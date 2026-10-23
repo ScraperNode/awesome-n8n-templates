@@ -1,6 +1,6 @@
 # ⚒️ Get the last five SpaceX launches from the spacex.land API using GraphQL
 
-> ⚡ **1,604 views** · ⚒️ [Engineering](../)
+> ⚡ **1,619 views** · ⚒️ [Engineering](../)
 
 ## Description
 

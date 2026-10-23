@@ -1,6 +1,6 @@
 # 🎫 Ai email triage & alert system with GPT-4 and Telegram notifications
 
-> ⚡ **670 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **739 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Website lead management: Send contact form submissions to WhatsApp & Google Sheets
 
-> ⚡ **1,846 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **2,481 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

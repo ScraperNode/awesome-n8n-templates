@@ -1,6 +1,6 @@
 # 🎬 Background removal API MCP server
 
-> ⚡ **478 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **520 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

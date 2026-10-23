@@ -1,6 +1,6 @@
 # 🎬 Generate videos from text prompts using GPT-5 and Google Veo-3
 
-> ⚡ **2,415 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,582 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 Insert data into a new row for a table in Coda
 
-> ⚡ **1,862 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,913 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

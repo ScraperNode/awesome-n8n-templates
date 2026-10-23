@@ -1,6 +1,6 @@
 # 👥 AI-powered candidate nurturing with scheduled WhatsApp & Gmail follow-ups
 
-> ⚡ **85 views** · 👥 [HR & Recruitment](../)
+> ⚡ **100 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

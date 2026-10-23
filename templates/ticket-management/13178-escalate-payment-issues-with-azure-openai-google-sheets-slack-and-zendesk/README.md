@@ -1,6 +1,6 @@
 # 🎫 Escalate payment issues with Azure OpenAI, Google Sheets, Slack and Zendesk
 
-> ⚡ **81 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **123 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

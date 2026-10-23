@@ -1,6 +1,6 @@
 # 💬 Business intelligence assistant for Slack using Explorium MCP & Claude AI
 
-> ⚡ **152 views** · 💬 [Support Chatbots](../)
+> ⚡ **214 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

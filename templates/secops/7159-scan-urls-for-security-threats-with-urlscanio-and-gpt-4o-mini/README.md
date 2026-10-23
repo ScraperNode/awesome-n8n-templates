@@ -1,6 +1,6 @@
 # 🔒 Scan URLs for security threats with urlscan.io and GPT-4o mini
 
-> ⚡ **1,228 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,454 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

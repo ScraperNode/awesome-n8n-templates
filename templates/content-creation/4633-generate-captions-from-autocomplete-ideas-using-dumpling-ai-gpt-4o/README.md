@@ -1,6 +1,6 @@
 # 🎬 Generate captions from autocomplete ideas using Dumpling AI + GPT-4o
 
-> ⚡ **461 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **482 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

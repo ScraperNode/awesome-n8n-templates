@@ -1,6 +1,6 @@
 # 🤝 Create Bosta shipping orders from Odoo invoices using OpenAI GPT models
 
-> ⚡ **43 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **87 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

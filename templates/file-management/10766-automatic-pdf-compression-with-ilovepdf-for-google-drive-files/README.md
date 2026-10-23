@@ -1,6 +1,6 @@
 # 📁 Automatic PDF compression with iLovePDF for Google Drive files
 
-> ⚡ **184 views** · 📁 [File Management](../)
+> ⚡ **569 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 Add a bug to Linear via Slack command
 
-> ⚡ **573 views** · 📋 [Project Management](../)
+> ⚡ **623 views** · 📋 [Project Management](../)
 
 ## Description
 

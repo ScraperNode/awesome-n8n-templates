@@ -1,6 +1,6 @@
 # 📊 Weekly Google Search Console SEO pulse: Catch top movers across keyword segments
 
-> ⚡ **1,592 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,891 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

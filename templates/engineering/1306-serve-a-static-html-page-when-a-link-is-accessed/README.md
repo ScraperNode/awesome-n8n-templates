@@ -1,6 +1,6 @@
 # ⚒️ Serve a static HTML page when a link is accessed
 
-> ⚡ **20,554 views** · ⚒️ [Engineering](../)
+> ⚡ **20,678 views** · ⚒️ [Engineering](../)
 
 ## Description
 

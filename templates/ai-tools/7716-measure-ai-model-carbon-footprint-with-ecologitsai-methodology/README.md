@@ -1,6 +1,6 @@
 # 🎯 Measure AI model carbon footprint with Ecologits.ai methodology
 
-> ⚡ **121 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **135 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

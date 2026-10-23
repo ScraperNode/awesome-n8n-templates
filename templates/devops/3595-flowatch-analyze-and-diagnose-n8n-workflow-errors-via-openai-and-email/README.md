@@ -1,6 +1,6 @@
 # ⚙️ 🧠 Flowatch 👁️ analyze and diagnose n8n workflow errors via OpenAI and email
 
-> ⚡ **1,146 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,209 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

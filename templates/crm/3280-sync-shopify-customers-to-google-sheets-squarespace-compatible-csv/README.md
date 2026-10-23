@@ -1,6 +1,6 @@
 # 🤝 Sync Shopify customers to Google Sheets + Squarespace compatible csv
 
-> ⚡ **656 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **676 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

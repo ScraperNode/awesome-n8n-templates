@@ -1,6 +1,6 @@
 # 🎫 🤖🚚 AI agent for transportation orders management with GPT-4o and Open Route API
 
-> ⚡ **1,959 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **2,416 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

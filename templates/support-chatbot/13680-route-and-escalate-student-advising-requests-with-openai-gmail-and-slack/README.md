@@ -1,6 +1,6 @@
 # 💬 Route and escalate student advising requests with OpenAI, Gmail and Slack
 
-> ⚡ **2 views** · 💬 [Support Chatbots](../)
+> ⚡ **45 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

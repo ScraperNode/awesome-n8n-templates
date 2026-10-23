@@ -1,6 +1,6 @@
 # 🔬 Automate patient intake and AI risk triage with Azure OpenAI, Google, and Slack
 
-> ⚡ **67 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **164 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

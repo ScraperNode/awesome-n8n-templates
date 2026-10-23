@@ -1,6 +1,6 @@
 # 🎬 Extract invoice data from Gmail with GPT-4o and send Slack notifications
 
-> ⚡ **287 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **371 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

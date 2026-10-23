@@ -1,0 +1,340 @@
+{
+  "id": "c68b131e-f93f-4bd1-9c0c-a70f6dc93690",
+  "name": "Invoice OCR Extraction (Sellable Template)",
+  "nodes": [
+    {
+      "id": "41d94df9-e4da-4e5c-8def-7c2228d4468f",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1040,
+        -160
+      ],
+      "parameters": {
+        "width": 600,
+        "height": 1000,
+        "content": "## Extract invoice data to CSV and Google Sheets with OCR.space\n\nTurn uploaded invoice images or PDFs into structured CSV rows or Google Sheets entries -- no AI API key, no guessed values.\n\n**Who's it for**\n\nSmall business owners, freelance bookkeepers, and back-office teams who currently retype invoice details into a spreadsheet by hand, and want a self-hosted alternative to paid AI invoice parsers.\n\n**What it does / How it works**\n\nA webhook receives an invoice image or PDF, sends it to OCR.space's free OCR API for text recognition, then a Code node extracts vendor, invoice number, date, subtotal, tax, total, and line items using deterministic label-based rules -- nothing is ever guessed. Any field the OCR text doesn't clearly support is left blank and listed in extraction_flags. Line items are cross-checked (qty x unit price vs. stated total) and flagged on mismatch. Results are written to a CSV file and/or appended to Google Sheets, then returned as JSON.\n\n**How to set up**\n\n1. Import the workflow.\n2. Get a free OCR.space API key and add it as a Header Auth credential (header name \"apikey\") on the \"OCR via OCR.space\" node.\n3. Choose your output -- CSV is enabled by default; to use Google Sheets, add your OAuth2 credential, set the Spreadsheet ID/name, and enable that node.\n4. Activate the workflow and test by uploading an invoice to the webhook URL.\n\n**Requirements**\n\n- An n8n instance (Cloud or self-hosted)\n- A free OCR.space account/API key\n- A Google account (only if using the Sheets output)\n\n**How to customize**\n\nChange the CSV output path, point Google Sheets at your own sheet, adjust label keywords for non-English invoices, or swap in a paid OCR/document-AI provider for better accuracy on multi-column invoice layouts."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b69323cb-bc75-439f-9cc3-9700eec67da1",
+      "name": "Invoice Upload",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -400,
+        320
+      ],
+      "webhookId": "c75b65b1-2f14-4227-9773-b73044fd0093",
+      "parameters": {
+        "path": "invoice-upload",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "99d894e1-3ac7-48a7-9cfc-5d63053b6a50",
+      "name": "OCR via OCR.space",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "position": [
+        -140,
+        320
+      ],
+      "parameters": {
+        "url": "https://api.ocr.space/parse/image",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "authentication": "genericCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "OCREngine",
+              "value": "2"
+            },
+            {
+              "name": "isOverlayRequired",
+              "value": "false"
+            },
+            {
+              "name": "scale",
+              "value": "true"
+            },
+            {
+              "name": "detectOrientation",
+              "value": "true"
+            },
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "invoice"
+            }
+          ]
+        },
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "053a0dc1-a177-4043-8c5f-2ca6d6a35bff",
+      "name": "OCR Setup Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -140,
+        -190
+      ],
+      "parameters": {
+        "width": 460,
+        "height": 320,
+        "content": "### 1) Set your OCR.space API key\n\nCreate a credential: Credentials -> New -> \"Header Auth\"\n- Header Name: apikey\n- Header Value: paste your OCR.space API key here\n\nFree key: https://ocr.space/ocrapi (free tier: 25,000 req/month, 1MB/file, PDFs up to 3 pages).\n\nThen open this node and select that credential under Authentication."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c47ba635-9d68-41c9-84fd-ccc355362530",
+      "name": "OCR Succeeded?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        120,
+        320
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "d9312de0-3a41-40f6-8f77-9baa4b155bf2",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.IsErroredOnProcessing === false }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "f8f42399-05c2-473f-87a0-f76c751074ca",
+      "name": "Extract Invoice Fields",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        380,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ============================================================\n// Invoice field extraction - ported rule-for-rule from the\n// Python original (invoice_tool/extractor.py), minus the OCR\n// word-confidence blanking layer: OCR.space's free tier does\n// not return per-word confidence (unlike local Tesseract), so\n// that signal isn't available here. Every other rule is\n// unchanged. A field is left blank whenever no match is found;\n// nothing is ever guessed.\n//\n// NOTE: written without arrow functions, template literals, or\n// optional chaining, on purpose - n8n's Creator Portal firewall\n// blocks submissions whose workflow JSON contains those.\n// ============================================================\n\nvar RX_RUN = RegExp.prototype.exec;\nfunction runRegex(re, str) {\n  return RX_RUN.call(re, str);\n}\n\nconst MONEY_RE_SRC = '[\\\\$\\u20ac\\u00a3]\\\\s?-?[\\\\d,]+(?:\\\\.\\\\d{2})?|-?[\\\\d,]+\\\\.\\\\d{2}';\n\nconst DATE_PATTERNS = [\n  [/\\b(\\d{4})-(\\d{1,2})-(\\d{1,2})\\b/, 'ymd'],\n  [/\\b(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})\\b/, 'mdy'],\n  [/\\b(\\d{1,2})-(\\d{1,2})-(\\d{4})\\b/, 'mdy'],\n  [/\\b(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2}),?\\s+(\\d{4})\\b/i, 'Bdy'],\n  [/\\b(\\d{1,2})\\s+(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{4})\\b/i, 'dBy'],\n];\n\nconst MONTHS = ['january','february','march','april','may','june','july','august','september','october','november','december'];\n\nfunction pad2(n) { return String(n).padStart(2, '0'); }\n\n// Decide how 3-part numeric dates (10/11/2027) should be read, using every\n// such date in the document: a first part above 12 proves day-first, a\n// second part above 12 proves month-first. No proof -> 'unknown'.\nfunction inferDateOrder(text) {\n  const re = /\\b(\\d{1,2})(?:\\/|-)(\\d{1,2})(?:\\/|-)(\\d{4})\\b/g;\n  let m;\n  let dayFirst = false;\n  let monthFirst = false;\n  while ((m = runRegex(re, text)) !== null) {\n    const a = +m[1];\n    const b = +m[2];\n    if (a > 12 && b >= 1 && b <= 12) dayFirst = true;\n    if (b > 12 && a >= 1 && a <= 12) monthFirst = true;\n  }\n  if (dayFirst && !monthFirst) return 'dmy';\n  if (monthFirst && !dayFirst) return 'mdy';\n  return 'unknown';\n}\n\nfunction parseDate(raw, order) {\n  for (const [re, kind] of DATE_PATTERNS) {\n    const m = runRegex(re, raw);\n    if (!m) continue;\n    const candidate = m[0];\n    if (kind === 'ymd') {\n      const [, y, mo, d] = m;\n      if (+mo < 1 || +mo > 12 || +d < 1 || +d > 31) continue;\n      return [y + '-' + pad2(mo) + '-' + pad2(d), candidate];\n    }\n    if (kind === 'mdy') {\n      let mo = m[1];\n      let d = m[2];\n      const y = m[3];\n      if (order === 'dmy') { mo = m[2]; d = m[1]; }\n      if (+mo < 1 || +mo > 12 || +d < 1 || +d > 31) continue;\n      const ambiguous = order === 'unknown' && +m[1] <= 12 && +m[2] <= 12 && m[1] !== m[2];\n      return [y + '-' + pad2(mo) + '-' + pad2(d), candidate, ambiguous];\n    }\n    if (kind === 'Bdy') {\n      const [, month, d, y] = m;\n      const mi = MONTHS.indexOf(month.toLowerCase());\n      if (mi === -1) continue;\n      return [y + '-' + pad2(mi + 1) + '-' + pad2(d), candidate];\n    }\n    if (kind === 'dBy') {\n      const [, d, month, y] = m;\n      const mi = MONTHS.indexOf(month.toLowerCase());\n      if (mi === -1) continue;\n      return [y + '-' + pad2(mi + 1) + '-' + pad2(d), candidate];\n    }\n  }\n  return null;\n}\n\nconst SEP_RE = /^[ \\t]*[:\\-.]*[ \\t]*$/;\nfunction isBlankSeparator(s) { return SEP_RE.test(s); }\n\nfunction* iterLabelValueMatches(text, labelPattern, valuePattern) {\n  const lines = text.split('\\n');\n  const labelRe = new RegExp(labelPattern, 'gi');\n  const valueRe = new RegExp('^(?:' + valuePattern + ')');\n\n  for (let i = 0; i < lines.length; i++) {\n    const line = lines[i];\n    labelRe.lastIndex = 0;\n    let lm;\n    while ((lm = runRegex(labelRe, line)) !== null) {\n      if (lm[0] === '') { labelRe.lastIndex++; continue; }\n      const before = line.slice(0, lm.index);\n      const after = line.slice(lm.index + lm[0].length);\n\n      const sepM = runRegex(/^[ \\t]*[:\\-.#]*[ \\t]*/, after);\n      const sameLineRest = sepM ? after.slice(sepM[0].length) : after;\n      const vm = runRegex(valueRe, sameLineRest);\n      if (vm && vm[0].trim()) {\n        yield [vm[0].trim(), vm[0], i, false, before];\n        continue;\n      }\n\n      if (isBlankSeparator(before) && isBlankSeparator(sameLineRest) && i + 1 < lines.length) {\n        const nextLine = lines[i + 1].replace(/^[ \\t]+/, '');\n        const vm2 = runRegex(valueRe, nextLine);\n        if (vm2 && vm2[0].trim()) {\n          yield [vm2[0].trim(), vm2[0], i, true, before];\n        }\n      }\n    }\n  }\n}\n\nconst VENDOR_LABEL_SKIP_RE = /invoice|receipt|\\bbill\\s*to\\b|\\bship\\s*to\\b|\\bsold\\s*to\\b|\\bremit\\s*to\\b|date|no\\.|#|\\btotal\\b/i;\nconst FROM_LABEL_RE = /^from\\s*:?\\s*$/i;\nconst SECTION_BOUNDARY_RE = /\\bbill\\s*to\\b|\\bship\\s*to\\b|\\bsold\\s*to\\b|\\bremit\\s*to\\b|\\bclient\\s*name\\b|\\bcustomer\\s*name\\b|\\binvoice\\s*to\\b/i;\nconst FOOTER_SYMBOLS_RE = /[\\u00a9\\u00ae\\u2122]/;\n\nfunction looksLikeGarbage(candidate) {\n  if (FOOTER_SYMBOLS_RE.test(candidate)) return true;\n  const words = candidate.split(/\\s+/).filter(Boolean);\n  if (words.length && words[0].length <= 2 && !/^[A-Za-z]+$/.test(words[0])) return true;\n  const stripped = candidate.replace(/[\\s.,;:!?'\"()[\\]{}#&@/\\\\|_+=<>~^*%-]+/g, '');\n  if (!stripped) return true;\n  const nonLetter = [...stripped].filter(function (c) { return !/[A-Za-z]/.test(c); }).length;\n  return nonLetter / stripped.length > 0.3;\n}\n\nfunction looksLikeTableHeader(candidate) {\n  if (/\\d/.test(candidate)) return false;\n  const words = candidate.split(/\\s+/).filter(Boolean);\n  if (words.length < 5) return false;\n  return words.every(function (w) { return !/^[A-Za-z]/.test(w[0]) || w[0] === w[0].toUpperCase(); });\n}\n\n// Template placeholders (\"YOUR LOGO\", \"Company Name\", \"Email Address\") are not\n// vendor names: a line made only of these words is skipped.\nconst PLACEHOLDER_WORDS = new Set([\n  'your', 'company', 'name', 'logo', 'business', 'email', 'address', 'phone',\n  'tel', 'fax', 'website', 'web', 'url', 'street', 'city', 'state', 'zip',\n  'enter', 'insert', 'here', 'example', 'sample', 'template', 'brand',\n  'slogan', 'tagline', 'at', 'dept', 'the',\n]);\n\nfunction isPlaceholderName(candidate) {\n  const words = candidate.toLowerCase().replace(/[^a-z\\s]/g, ' ').split(/\\s+/).filter(Boolean);\n  return words.length > 0 && words.every(function (w) { return PLACEHOLDER_WORDS.has(w); });\n}\n\n// A street address, e-mail or web address is never the vendor name.\nconst STREET_ADDRESS_RE = /^\\d{1,6}[A-Za-z]?[,.]?\\s+.*\\b(street|st|avenue|ave|road|rd|boulevard|blvd|lane|ln|drive|dr|way|court|ct|suite|ste|floor|highway|hwy)\\b/i;\nconst CONTACT_LINE_RE = /@|^www\\.|^https?:/i;\n\nfunction isPlausibleVendorCandidate(candidate) {\n  if (candidate.includes(':')) return false;\n  if (isPlaceholderName(candidate)) return false;\n  if (STREET_ADDRESS_RE.test(candidate) || CONTACT_LINE_RE.test(candidate)) return false;\n  return !looksLikeGarbage(candidate) && !looksLikeTableHeader(candidate);\n}\n\nfunction extractVendor(text) {\n  const lines = text.split('\\n').map(function (l) { return l.trim(); });\n\n  for (let i = 0; i < lines.length; i++) {\n    if (FROM_LABEL_RE.test(lines[i])) {\n      for (const candidate of lines.slice(i + 1)) {\n        if (!candidate) continue;\n        if (SECTION_BOUNDARY_RE.test(candidate)) break;\n        if (isPlausibleVendorCandidate(candidate)) return candidate;\n      }\n      break;\n    }\n  }\n\n  for (const line of lines) {\n    if (!line) continue;\n    if (SECTION_BOUNDARY_RE.test(line)) break;\n    if (VENDOR_LABEL_SKIP_RE.test(line)) continue;\n    if (!isPlausibleVendorCandidate(line)) continue;\n    return line;\n  }\n  return null;\n}\n\nfunction extractInvoiceNumber(text) {\n  for (const [value] of iterLabelValueMatches(\n    text,\n    'invoice\\\\s*(?:number|no\\\\.?|#)',\n    '[A-Za-z0-9\\\\-\\\\/]*\\\\d[A-Za-z0-9\\\\-\\\\/]*',\n  )) {\n    return value;\n  }\n  return null;\n}\n\nfunction extractDateWithSpan(text) {\n  const order = inferDateOrder(text);\n  const matches = [...iterLabelValueMatches(text, 'invoice\\\\s*date|date', '.{1,40}')];\n  // Prefer the invoice date over due / ship / delivery / payment dates.\n  const preferred = matches.filter(function (m) {\n    return !/(due|ship|shipping|delivery|payment|expiry|expiration)\\s*$/i.test(m[4]);\n  });\n  const candidates = preferred.length ? preferred : matches;\n  for (const m of candidates) {\n    const parsed = parseDate(m[0], order);\n    if (parsed) return parsed;\n  }\n  return parseDate(text, order);\n}\n\nconst PARENTHETICAL_PREFIX = '(?:\\\\([^)]{0,20}\\\\)\\\\s*)?';\nconst MONEY_VALUE_RE = PARENTHETICAL_PREFIX + '(?:' + MONEY_RE_SRC + ')';\nconst BARE_TOTAL_LABEL = '(?<!sub)(?<!sub\\\\s)(?<!sub-)total\\\\b';\n\n// \"$00.00\" -> \"0.00\"; \"1,735\" stays as is. Currency symbols, spaces and\n// short parentheticals such as \"(incl. tax)\" are dropped.\nfunction cleanMoney(raw) {\n  return raw\n    .replace(/\\([^)]{0,20}\\)|[\\$\\u20ac\\u00a3\\s]/g, '')\n    .replace(/[,.]+$/, '')\n    .replace(/^(-?)0+(?=\\d\\.)/, '$1');\n}\n\n// Money at the very start of a line (\"$38.98 (incl. tax)\"), or null.\n// A percentage (\"8.00%\") is not money.\nfunction leadingMoney(line) {\n  const t = line.trim();\n  const m = runRegex(new RegExp('^' + MONEY_VALUE_RE), t);\n  if (!m || !m[0].trim()) return null;\n  if (/^\\s*%/.test(t.slice(m[0].length))) return null;\n  return [cleanMoney(m[0]), m[0]];\n}\n\n// A bare \"Total\" line that sits inside a line-item table header block and is\n// followed by a whole column of amounts is a COLUMN HEADER, not the invoice\n// total (its \"value\" would just be the first line-item amount).\nconst TABLE_HEADER_WORD_RE = /\\b(qty|quantity|price|rate|description|item|product)\\b/i;\nfunction isColumnHeaderMatch(lines, m) {\n  if (!m[3]) return false;\n  const idx = m[2];\n  if (!/^(total|amount|price)\\s*[:.]?$/i.test(lines[idx].trim())) return false;\n  if (idx + 2 >= lines.length || leadingMoney(lines[idx + 2]) === null) return false;\n  for (let k = Math.max(0, idx - 8); k < idx; k++) {\n    if (TABLE_HEADER_WORD_RE.test(lines[k])) return true;\n  }\n  return false;\n}\n\nfunction extractAmountNearLabel(text, labels) {\n  const lines = text.split('\\n');\n  for (const label of labels) {\n    const matches = [...iterLabelValueMatches(text, label, MONEY_VALUE_RE)].filter(function (m) {\n      return !isColumnHeaderMatch(lines, m);\n    });\n    if (matches.length) {\n      const [amount, raw] = matches[matches.length - 1];\n      return [cleanMoney(amount), raw];\n    }\n  }\n  return null;\n}\n\n// ---- stacked (\"label block, then value block\") summaries -------------\n// Some OCR output lists the summary labels first and their values after:\n//   Sub Total: / Tax %: / Total Amount   ...   $80.00 / $0.00 / $80.00\n// Labels and values are paired by position, counted from the END of the value\n// block (extra leading amounts are line-item amounts). A trailing bare \"Total\"\n// label is first tried as the line-item column header; that reading is only\n// accepted when the leading amounts add up to the sub total.\nconst SUMMARY_LABEL_RE = /^(sub\\s*-?\\s*total|tax(?:\\s*(?:%|rate))?|vat|gst|discount|shipping(?:\\s*(?:\\/|and|&)\\s*handling)?|handling|total|total\\s*amount|total\\s*due|grand\\s*total|amount\\s*due|amount\\s*paid|balance(?:\\s*due)?)\\s*[:.]?$/i;\n\nfunction summaryField(label) {\n  const l = label.toLowerCase().replace(/[\\s:.]+$/, '').replace(/\\s+/g, ' ');\n  if (/^sub ?-? ?total$/.test(l)) return 'subtotal';\n  if (/^(tax|vat|gst)( ?%| rate)?$/.test(l)) return 'tax';\n  if (/^(grand total|total due)$/.test(l)) return 'total1';\n  if (/^(total|total amount)$/.test(l)) return 'total2';\n  if (/^(amount due|balance due|balance)$/.test(l)) return 'total3';\n  return 'other';\n}\n\nfunction isTextSlot(line) {\n  if (line.indexOf(':') !== -1 || /\\d/.test(line) || SUMMARY_LABEL_RE.test(line)) return false;\n  return line.split(/\\s+/).filter(Boolean).length <= 4;\n}\n\nfunction pairSummary(labels, slots, requireSumCheck) {\n  const offset = slots.length - labels.length;\n  if (offset < 0) return null;\n  const out = { subtotal: null, tax: null, total1: null, total2: null, total3: null };\n  let subtotalNum = null;\n  for (let k = 0; k < labels.length; k++) {\n    const field = summaryField(labels[k]);\n    if (field === 'other') continue;\n    const slot = slots[offset + k];\n    if (slot.money === null) return null;\n    out[field] = slot.money;\n    if (field === 'subtotal') subtotalNum = parseFloat(slot.money[0].replace(/,/g, ''));\n  }\n  if (requireSumCheck) {\n    if (subtotalNum === null || offset < 1) return null;\n    let sum = 0;\n    for (let k = 0; k < offset; k++) {\n      if (slots[k].money === null) return null;\n      sum += parseFloat(slots[k].money[0].replace(/,/g, ''));\n    }\n    if (Number.isNaN(sum) || Math.abs(sum - subtotalNum) > 0.02) return null;\n  }\n  return out;\n}\n\nfunction extractStackedSummary(text) {\n  const lines = text.split('\\n').map(function (l) { return l.trim(); });\n  let i = 0;\n  while (i < lines.length) {\n    if (!SUMMARY_LABEL_RE.test(lines[i])) { i++; continue; }\n    const runStart = i;\n    while (i < lines.length && SUMMARY_LABEL_RE.test(lines[i])) i++;\n    const labels = lines.slice(runStart, i);\n    if (labels.length < 2) continue;\n\n    const slots = [];\n    let j = i;\n    while (j < lines.length && slots.length < 40) {\n      const t = lines[j];\n      if (!t) break;\n      const money = leadingMoney(t);\n      if (money !== null) slots.push({ money: money });\n      else if (isTextSlot(t)) slots.push({ money: null });\n      else break;\n      j++;\n    }\n    if (slots.length < 2) continue;\n\n    let paired = null;\n    const last = labels[labels.length - 1].toLowerCase().replace(/[\\s:.]+$/, '');\n    if (labels.length >= 3 && last === 'total') {\n      paired = pairSummary(labels.slice(0, -1), slots, true);\n    }\n    if (paired === null) paired = pairSummary(labels, slots, false);\n    if (paired !== null) return paired;\n  }\n  return null;\n}\n\nfunction extractTotalsWithSpan(text) {\n  const stacked = extractStackedSummary(text);\n  let total = null;\n  if (stacked !== null) total = stacked.total1 || stacked.total2 || stacked.total3;\n  if (total === null) {\n    total = extractAmountNearLabel(text, ['grand\\\\s*total', 'total\\\\s*due', BARE_TOTAL_LABEL]);\n  }\n  if (total === null) {\n    total = extractAmountNearLabel(text, ['amount\\\\s*due', 'balance\\\\s*due']);\n  }\n  let subtotal = stacked !== null ? stacked.subtotal : null;\n  if (subtotal === null) subtotal = extractAmountNearLabel(text, ['sub\\\\s*-?total']);\n  let tax = stacked !== null ? stacked.tax : null;\n  if (tax === null) tax = extractAmountNearLabel(text, ['tax', 'vat', 'gst']);\n  return { subtotal: subtotal, tax: tax, total: total };\n}\n\nconst LINE_ITEM_ROLE_PATTERNS = {\n  desc: '(?<desc>.{2,80}?)',\n  qty: '(?<qty>\\\\d+(?:\\\\.\\\\d+)?)',\n  unit: '(?<unit_raw>' + MONEY_RE_SRC + ')',\n  amt: '(?<amt_raw>' + MONEY_RE_SRC + ')',\n};\nconst DEFAULT_COLUMN_ORDER = ['desc', 'qty', 'unit', 'amt'];\n\nfunction buildLineItemRegex(columnOrder) {\n  const body = columnOrder.map(function (role) { return LINE_ITEM_ROLE_PATTERNS[role]; }).join('\\\\s+');\n  return new RegExp('^' + body + '\\\\s*$');\n}\n\nconst HEADER_DESC_KEYWORDS = ['description', 'item', 'product'];\nconst HEADER_UNIT_KEYWORDS = ['unit price', 'unitprice', 'rate', 'price'];\nconst HEADER_AMT_KEYWORDS = ['amount', 'total', 'line total'];\nconst HEADER_QTY_RE = /\\bqty\\b|\\bquantity\\b|\\bq\\w{1,3}y\\b/i;\n\nfunction findFirstKeywordPos(lineLower, keywords) {\n  let best = null;\n  for (const kw of keywords) {\n    const p = lineLower.indexOf(kw);\n    if (p !== -1 && (best === null || p < best)) best = p;\n  }\n  return best;\n}\n\nfunction detectHeaderColumnOrder(line) {\n  const lineLower = line.toLowerCase();\n  const found = [];\n\n  const descPos = findFirstKeywordPos(lineLower, HEADER_DESC_KEYWORDS);\n  if (descPos !== null) found.push([descPos, 'desc']);\n  const unitPos = findFirstKeywordPos(lineLower, HEADER_UNIT_KEYWORDS);\n  if (unitPos !== null) found.push([unitPos, 'unit']);\n  const amtPos = findFirstKeywordPos(lineLower, HEADER_AMT_KEYWORDS);\n  if (amtPos !== null) found.push([amtPos, 'amt']);\n  const qtyM = runRegex(HEADER_QTY_RE, line);\n  if (qtyM) found.push([qtyM.index, 'qty']);\n\n  if (found.length !== 4) return null;\n  found.sort(function (a, b) { return a[0] - b[0]; });\n  const order = found.map(function (f) { return f[1]; });\n  return new Set(order).size === 4 ? order : null;\n}\n\nfunction looksNumericOrCode(candidate) {\n  const tokens = candidate.split(/\\s+/).filter(Boolean);\n  if (!tokens.length) return false;\n  return /^[\\d.,]+$/.test(tokens[tokens.length - 1]);\n}\n\nconst CURRENCY_OR_DECIMAL_RE = new RegExp('[\\\\$\\u20ac\\u00a3]\\\\s?(?:\\\\d[\\\\d,]*\\\\d|\\\\d)(?:\\\\.\\\\d{2})?|(?:\\\\d[\\\\d,]*\\\\d|\\\\d)\\\\.\\\\d{2}');\n\nfunction looksLikeTextLabel(line) {\n  if (!line || CURRENCY_OR_DECIMAL_RE.test(line)) return false;\n  const letters = [...line].filter(function (c) { return /[A-Za-z]/.test(c); }).length;\n  const digits = [...line].filter(function (c) { return /\\d/.test(c); }).length;\n  if (letters === 0) return false;\n  return digits / (letters + digits) < 0.3;\n}\n\nfunction extractLineItemsFromText(text) {\n  const lines = text.split('\\n').map(function (l) { return l.trim(); });\n  let columnOrder = DEFAULT_COLUMN_ORDER;\n  let lineItemRe = buildLineItemRegex(columnOrder);\n\n  const items = [];\n  for (let i = 0; i < lines.length; i++) {\n    const line = lines[i];\n    if (!line) continue;\n\n    const detectedOrder = detectHeaderColumnOrder(line);\n    if (detectedOrder) {\n      columnOrder = detectedOrder;\n      lineItemRe = buildLineItemRegex(columnOrder);\n      continue;\n    }\n\n    const m = runRegex(lineItemRe, line);\n    if (!m) continue;\n    let desc = m.groups.desc.trim();\n    const qty = m.groups.qty;\n    const unitRaw = m.groups.unit_raw;\n    const amtRaw = m.groups.amt_raw;\n    const unit = unitRaw.replace(/[\\$\\u20ac\\u00a3\\s]/g, '').replace(/[,.]+$/, '');\n    const amt = amtRaw.replace(/[\\$\\u20ac\\u00a3\\s]/g, '').replace(/[,.]+$/, '');\n\n    if (looksNumericOrCode(desc) && i > 0 && looksLikeTextLabel(lines[i - 1])) {\n      desc = lines[i - 1];\n    }\n\n    const item = {\n      description: desc || null,\n      quantity: qty || null,\n      unit_price: unit || null,\n      total: amt || null,\n      flagged: false,\n      flag_reason: null,\n    };\n\n    if (item.quantity && item.unit_price && item.total) {\n      const expected = parseFloat(item.quantity) * parseFloat(item.unit_price.replace(/,/g, ''));\n      const actual = parseFloat(item.total.replace(/,/g, ''));\n      if (!Number.isNaN(expected) && !Number.isNaN(actual) && Math.abs(expected - actual) > 0.02) {\n        item.flagged = true;\n        item.flag_reason = 'qty*unit_price (' + expected.toFixed(2) + ') does not match total (' + actual.toFixed(2) + '); possible OCR digit error';\n      }\n    }\n\n    items.push(item);\n  }\n  return items;\n}\n\nfunction extractInvoiceFields(text) {\n  text = text || '';\n  const vendor = extractVendor(text);\n  const invoiceNumber = extractInvoiceNumber(text);\n  const dateParsed = extractDateWithSpan(text);\n  const totals = extractTotalsWithSpan(text);\n  const lineItems = extractLineItemsFromText(text);\n\n  const flags = [];\n  if (!text.trim()) flags.push('OCR returned no text');\n  if (!vendor) flags.push('vendor not found');\n  if (!invoiceNumber) flags.push('invoice_number not found');\n  if (!dateParsed) flags.push('invoice_date not found');\n  else if (dateParsed[2]) flags.push('invoice_date is ambiguous (DD/MM vs MM/DD); read as MM/DD - please verify');\n  if (!totals.subtotal) flags.push('subtotal not found');\n  if (!totals.tax) flags.push('tax not found');\n  if (!totals.total) flags.push('total not found');\n  for (const item of lineItems) {\n    if (item.flagged) flags.push('line item \"' + item.description + '\": ' + item.flag_reason);\n  }\n\n  return {\n    vendor: vendor || null,\n    invoice_number: invoiceNumber || null,\n    invoice_date: dateParsed ? dateParsed[0] : null,\n    subtotal: totals.subtotal ? totals.subtotal[0] : null,\n    tax: totals.tax ? totals.tax[0] : null,\n    total: totals.total ? totals.total[0] : null,\n    line_items: lineItems,\n    flags,\n  };\n}\n\n// ============================================================\n// n8n wrapper: read the OCR.space response from this node's\n// input, run extraction, return one shaped item.\n// ============================================================\n\nconst inputData = $input.item.json;\nconst parsedResults = inputData.ParsedResults || [];\nconst combinedText = parsedResults.map(function (r) { return r.ParsedText || ''; }).join('\\n');\n\nconst extracted = extractInvoiceFields(combinedText);\n\nlet sourceFilename = null;\ntry {\n  sourceFilename = $node[\"Invoice Upload\"].binary.invoice.fileName || null;\n} catch (e) {\n  sourceFilename = null;\n}\n\n// Run Once for Each Item mode: return a single item object, not an array.\nreturn {\n    json: {\n      source_filename: sourceFilename,\n      processed_at: new Date().toISOString(),\n      vendor: extracted.vendor,\n      invoice_number: extracted.invoice_number,\n      invoice_date: extracted.invoice_date,\n      subtotal: extracted.subtotal,\n      tax: extracted.tax,\n      total: extracted.total,\n      line_item_count: extracted.line_items.length,\n      line_items_json: JSON.stringify(extracted.line_items),\n      extraction_flags: extracted.flags.length ? extracted.flags.join('; ') : null,\n      ocr_raw_text: combinedText,\n    },\n  };\n",
+        "language": "javaScript"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b8c3ec85-efa2-4b65-a540-720054983173",
+      "name": "Append to Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "disabled": true,
+      "position": [
+        660,
+        60
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": []
+        },
+        "options": {},
+        "resource": "sheet",
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Invoices"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PASTE_YOUR_GOOGLE_SHEET_ID_HERE"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "9062a474-b950-427c-b845-cadbf495efe3",
+      "name": "Convert to CSV",
+      "type": "n8n-nodes-base.convertToFile",
+      "position": [
+        660,
+        260
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "csv"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "8b035c2e-dfb0-4943-b60e-5d03a7e54d1d",
+      "name": "Save CSV to Disk",
+      "type": "n8n-nodes-base.readWriteFile",
+      "position": [
+        900,
+        260
+      ],
+      "parameters": {
+        "options": {},
+        "fileName": "=./output/invoice_{{$now.format('yyyyLLdd_HHmmssSSS')}}.csv",
+        "operation": "write"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "6780b1e4-8bc9-4096-9ba2-e61f409ae237",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        660,
+        -120
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        },
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "b6cdbb94-0843-45ba-9f26-1d63577ecd86",
+      "name": "Respond OCR Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        120,
+        560
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 422
+        },
+        "respondWith": "json",
+        "responseBody": "={{ (function () { var e = $json.ErrorMessage || ($json.ParsedResults && $json.ParsedResults[0] && $json.ParsedResults[0].ErrorMessage) || $json.error || 'unknown error'; if (e && typeof e === 'object' && !Array.isArray(e)) { e = e.message || e.description || 'unknown error'; } if (Array.isArray(e)) { e = e.join('; '); } if (String(e).indexOf('binary') !== -1) { e = 'No invoice file received. Send it as multipart/form-data with the field name invoice.'; } return { success: false, error: 'OCR processing failed', details: e }; })() }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "650113cf-f0e6-40ca-a5f3-c046e96b7d55",
+      "name": "Output Setup Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        620,
+        700
+      ],
+      "parameters": {
+        "width": 560,
+        "height": 460,
+        "content": "### 2) Choose your output destination\n\nGoogle Sheets branch (disabled by default):\n- Add your own Google Sheets OAuth2 credential\n- Set the Spreadsheet ID and Sheet name\n- Sheet's header row must match: source_filename, processed_at, vendor, invoice_number, invoice_date, subtotal, tax, total, line_item_count, line_items_json, extraction_flags, ocr_raw_text\n- Re-enable the node (right-click -> Activate) when ready\n\nCSV branch (enabled by default):\n- Writes one CSV file per invoice (default path: ./output/)\n- n8n only lets nodes write inside its allowed folder (default: the .n8n-files folder in your home folder). Either put that folder path in the \"Save CSV to Disk\" File Name field, or set the environment variable N8N_RESTRICT_FILE_ACCESS_TO to your output folder.\n- The webhook answers with the extracted data first, so a file-write problem shows only in the Executions list."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Convert to CSV": {
+      "main": [
+        [
+          {
+            "node": "Save CSV to Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice Upload": {
+      "main": [
+        [
+          {
+            "node": "OCR via OCR.space",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OCR Succeeded?": {
+      "main": [
+        [
+          {
+            "node": "Extract Invoice Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond OCR Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OCR via OCR.space": {
+      "main": [
+        [
+          {
+            "node": "OCR Succeeded?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond OCR Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Invoice Fields": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Append to Google Sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Convert to CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

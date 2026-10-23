@@ -1,6 +1,6 @@
 # 🎫 Automate Marker.io issues to Zendesk support tickets with full technical context
 
-> ⚡ **329 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **380 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

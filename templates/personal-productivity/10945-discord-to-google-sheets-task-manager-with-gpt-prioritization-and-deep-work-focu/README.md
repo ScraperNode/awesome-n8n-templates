@@ -1,6 +1,6 @@
 # ⚡ Discord to Google Sheets task manager with GPT prioritization and deep work focus
 
-> ⚡ **164 views** · ⚡ [Personal Productivity](../)
+> ⚡ **336 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

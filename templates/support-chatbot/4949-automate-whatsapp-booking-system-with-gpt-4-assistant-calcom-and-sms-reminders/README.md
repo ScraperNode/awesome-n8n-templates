@@ -1,6 +1,6 @@
 # 💬 Automate WhatsApp booking system with GPT-4 Assistant, Cal.com and SMS reminders
 
-> ⚡ **15,636 views** · 💬 [Support Chatbots](../)
+> ⚡ **18,864 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

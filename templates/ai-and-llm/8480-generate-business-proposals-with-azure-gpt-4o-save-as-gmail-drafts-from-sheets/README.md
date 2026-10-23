@@ -1,6 +1,6 @@
 # ✨ Generate business proposals with Azure GPT-4o & save as Gmail drafts from Sheets
 
-> ⚡ **61 views** · ✨ [AI & LLMs](../)
+> ⚡ **85 views** · ✨ [AI & LLMs](../)
 
 ## Description
 

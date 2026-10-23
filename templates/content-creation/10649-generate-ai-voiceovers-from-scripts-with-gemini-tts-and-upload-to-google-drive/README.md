@@ -1,6 +1,6 @@
 # 🎬 Generate AI voiceovers from scripts with Gemini TTS and upload to Google Drive
 
-> ⚡ **545 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **861 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

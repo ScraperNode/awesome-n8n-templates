@@ -1,6 +1,6 @@
 # 🎬 Create an image procedurally using Bannerbear
 
-> ⚡ **965 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,003 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

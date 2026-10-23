@@ -1,6 +1,6 @@
 # ⚒️ IoT sensor monitoring with GPT-4o anomaly detection, MQTT & multi-channel alerts
 
-> ⚡ **169 views** · ⚒️ [Engineering](../)
+> ⚡ **452 views** · ⚒️ [Engineering](../)
 
 ## Description
 

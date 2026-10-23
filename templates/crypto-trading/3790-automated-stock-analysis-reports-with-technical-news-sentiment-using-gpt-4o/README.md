@@ -1,6 +1,6 @@
 # 📈 Automated stock analysis reports with technical & news sentiment using GPT-4o
 
-> ⚡ **78,559 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **84,851 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate & upload images with Image-to-Image GPT, Google Sheets & Drive
 
-> ⚡ **1,697 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,066 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

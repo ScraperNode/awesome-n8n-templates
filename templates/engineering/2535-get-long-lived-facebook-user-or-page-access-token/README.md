@@ -1,6 +1,6 @@
 # ⚒️ Get long lived Facebook user or page access token
 
-> ⚡ **3,571 views** · ⚒️ [Engineering](../)
+> ⚡ **3,927 views** · ⚒️ [Engineering](../)
 
 ## Description
 

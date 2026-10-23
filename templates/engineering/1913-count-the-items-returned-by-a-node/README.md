@@ -1,6 +1,6 @@
 # ⚒️ Count the items returned by a node
 
-> ⚡ **3,829 views** · ⚒️ [Engineering](../)
+> ⚡ **3,962 views** · ⚒️ [Engineering](../)
 
 ## Description
 

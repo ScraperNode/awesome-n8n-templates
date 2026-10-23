@@ -1,6 +1,6 @@
 # 📱 Automated asteroid alerts with NASA API, Slack & Google Calendar
 
-> ⚡ **107 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **145 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

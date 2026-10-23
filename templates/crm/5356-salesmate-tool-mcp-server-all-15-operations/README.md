@@ -1,6 +1,6 @@
 # 🤝 🛠️ Salesmate tool MCP server 💪 all 15 operations
 
-> ⚡ **181 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **186 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

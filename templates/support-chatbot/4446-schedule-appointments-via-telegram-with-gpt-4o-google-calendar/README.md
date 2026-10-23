@@ -1,6 +1,6 @@
 # 💬 Schedule appointments via Telegram with GPT-4o & Google Calendar
 
-> ⚡ **3,453 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,912 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

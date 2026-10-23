@@ -1,6 +1,6 @@
 # ⚒️ Reduce LLM Costs with Semantic Caching using Redis Vector Store and HuggingFace
 
-> ⚡ **1,471 views** · ⚒️ [Engineering](../)
+> ⚡ **1,833 views** · ⚒️ [Engineering](../)
 
 ## Description
 

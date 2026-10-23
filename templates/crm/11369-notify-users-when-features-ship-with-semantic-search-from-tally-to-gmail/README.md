@@ -1,6 +1,6 @@
 # 🤝 Notify users when features ship with Semantic Search from Tally to Gmail
 
-> ⚡ **235 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **326 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

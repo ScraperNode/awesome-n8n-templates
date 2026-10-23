@@ -1,6 +1,6 @@
 # 🤖 Meeting management agent
 
-> ⚡ **826 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **969 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

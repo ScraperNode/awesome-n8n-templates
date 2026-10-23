@@ -1,6 +1,6 @@
 # 🤝 Identify and notify WooCommerce VIP customers with Airtable and Slack
 
-> ⚡ **8 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **15 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

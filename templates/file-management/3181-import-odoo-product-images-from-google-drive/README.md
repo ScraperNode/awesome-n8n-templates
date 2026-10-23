@@ -1,6 +1,6 @@
 # 📁 Import Odoo product images from Google Drive
 
-> ⚡ **5,115 views** · 📁 [File Management](../)
+> ⚡ **5,665 views** · 📁 [File Management](../)
 
 ## Description
 

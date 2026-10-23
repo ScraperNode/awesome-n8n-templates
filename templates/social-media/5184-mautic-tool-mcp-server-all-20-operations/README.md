@@ -1,6 +1,6 @@
 # 📱 🛠️ Mautic tool MCP server 💪 all 20 operations
 
-> ⚡ **145 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **207 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

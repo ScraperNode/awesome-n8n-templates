@@ -1,6 +1,6 @@
 # 🔬 Validate emissions data and generate carbon compliance reports with GPT-4o and Google Sheets
 
-> ⚡ **4 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **145 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

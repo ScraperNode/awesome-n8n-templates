@@ -1,6 +1,6 @@
 # 📋 Auto-ticket maker: Convert Slack conversations into structured project tickets
 
-> ⚡ **706 views** · 📋 [Project Management](../)
+> ⚡ **717 views** · 📋 [Project Management](../)
 
 ## Description
 

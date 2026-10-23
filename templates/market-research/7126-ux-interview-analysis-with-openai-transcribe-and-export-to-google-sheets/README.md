@@ -1,6 +1,6 @@
 # 📊 UX interview analysis with OpenAI: transcribe and export to Google Sheets
 
-> ⚡ **761 views** · 📊 [Market Research & Insights](../)
+> ⚡ **889 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

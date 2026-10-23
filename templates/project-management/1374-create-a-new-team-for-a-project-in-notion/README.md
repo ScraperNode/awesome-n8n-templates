@@ -1,6 +1,6 @@
 # 📋 Create a new team for a project in Notion
 
-> ⚡ **1,044 views** · 📋 [Project Management](../)
+> ⚡ **1,042 views** · 📋 [Project Management](../)
 
 ## Description
 

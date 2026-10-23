@@ -1,6 +1,6 @@
 # 📱 AI-powered social media thought leadership with Claude Sonnet & Trigify
 
-> ⚡ **975 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,169 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

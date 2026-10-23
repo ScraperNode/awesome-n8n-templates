@@ -1,6 +1,6 @@
 # 🔬 Get information of an image
 
-> ⚡ **7,313 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **7,388 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

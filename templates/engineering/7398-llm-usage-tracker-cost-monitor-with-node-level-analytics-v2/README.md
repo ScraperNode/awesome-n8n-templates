@@ -1,6 +1,6 @@
 # ⚒️ LLM usage tracker & cost monitor with node-level analytics (v2)
 
-> ⚡ **1,400 views** · ⚒️ [Engineering](../)
+> ⚡ **1,726 views** · ⚒️ [Engineering](../)
 
 ## Description
 

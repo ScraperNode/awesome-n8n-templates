@@ -1,6 +1,6 @@
 # 📋 Sync Zendesk tickets with subsequent comments to Asana tasks
 
-> ⚡ **1,085 views** · 📋 [Project Management](../)
+> ⚡ **1,215 views** · 📋 [Project Management](../)
 
 ## Description
 

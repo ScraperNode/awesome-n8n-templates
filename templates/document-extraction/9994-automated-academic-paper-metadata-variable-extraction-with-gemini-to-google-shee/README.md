@@ -1,6 +1,6 @@
 # 🔬 Automated academic paper metadata & variable extraction with Gemini to Google Sheets
 
-> ⚡ **431 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **585 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

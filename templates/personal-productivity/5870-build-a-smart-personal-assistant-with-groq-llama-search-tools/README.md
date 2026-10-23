@@ -1,6 +1,6 @@
 # ⚡ Build a smart personal assistant with GROQ, LLaMA & search tools
 
-> ⚡ **1,632 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,839 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

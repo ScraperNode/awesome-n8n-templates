@@ -1,6 +1,6 @@
 # ⚙️ Version control n8n workflows in GitLab with customer tag organization
 
-> ⚡ **1,335 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,684 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

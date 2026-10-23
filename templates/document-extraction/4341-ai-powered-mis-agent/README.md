@@ -1,6 +1,6 @@
 # 🔬 AI-powered MIS agent
 
-> ⚡ **1,174 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,421 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

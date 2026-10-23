@@ -1,6 +1,6 @@
 # 📋 Monitor construction execution from Google Drive photos with GPT‑4.1‑mini, Gmail and Google Sheets
 
-> ⚡ **42 views** · 📋 [Project Management](../)
+> ⚡ **228 views** · 📋 [Project Management](../)
 
 ## Description
 

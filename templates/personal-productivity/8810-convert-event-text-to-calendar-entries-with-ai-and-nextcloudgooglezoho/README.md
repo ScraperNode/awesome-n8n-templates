@@ -1,6 +1,6 @@
 # ⚡ Convert event text to calendar entries with AI and NextCloud/Google/Zoho
 
-> ⚡ **237 views** · ⚡ [Personal Productivity](../)
+> ⚡ **255 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

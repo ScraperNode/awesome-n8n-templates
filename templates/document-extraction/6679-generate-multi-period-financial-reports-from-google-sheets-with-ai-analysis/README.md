@@ -1,6 +1,6 @@
 # 🔬 Generate multi-period financial reports from Google Sheets with AI analysis
 
-> ⚡ **1,072 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,158 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

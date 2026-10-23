@@ -1,6 +1,6 @@
 # 💬 Ai-powered salon appointment booking system with WhatsApp and Google Sheets
 
-> ⚡ **4,277 views** · 💬 [Support Chatbots](../)
+> ⚡ **6,658 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

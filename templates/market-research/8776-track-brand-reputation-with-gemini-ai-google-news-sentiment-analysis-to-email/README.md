@@ -1,6 +1,6 @@
 # 📊 Track brand reputation with Gemini AI & Google News sentiment analysis to email
 
-> ⚡ **394 views** · 📊 [Market Research & Insights](../)
+> ⚡ **478 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

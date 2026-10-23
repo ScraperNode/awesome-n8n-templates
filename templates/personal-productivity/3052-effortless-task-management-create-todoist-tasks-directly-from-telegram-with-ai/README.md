@@ -1,6 +1,6 @@
 # ⚡ Effortless task management: Create Todoist tasks directly from Telegram with AI
 
-> ⚡ **8,470 views** · ⚡ [Personal Productivity](../)
+> ⚡ **8,964 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

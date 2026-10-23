@@ -1,6 +1,6 @@
 # 📱 Create a customer and add them to a segment in Customer.io
 
-> ⚡ **680 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **749 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Validate emails in a table using Mailcheck
 
-> ⚡ **1,805 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,884 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

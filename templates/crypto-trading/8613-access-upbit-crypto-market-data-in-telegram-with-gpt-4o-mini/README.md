@@ -1,6 +1,6 @@
 # 📈 Access Upbit crypto market data in Telegram with GPT-4o-mini
 
-> ⚡ **265 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **296 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

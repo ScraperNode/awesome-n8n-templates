@@ -1,6 +1,6 @@
 # 💬 Recover no-show appointments with Calendly, Telegram & email alerts
 
-> ⚡ **78 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **132 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

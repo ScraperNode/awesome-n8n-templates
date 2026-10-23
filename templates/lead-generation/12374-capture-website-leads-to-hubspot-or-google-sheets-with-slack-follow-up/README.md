@@ -1,6 +1,6 @@
 # 🎣 Capture website leads to HubSpot or Google Sheets with Slack follow-up
 
-> ⚡ **93 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **218 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

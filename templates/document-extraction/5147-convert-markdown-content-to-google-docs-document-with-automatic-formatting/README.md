@@ -1,6 +1,6 @@
 # 🔬 Convert markdown content to Google Docs document with automatic formatting
 
-> ⚡ **4,482 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **5,334 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

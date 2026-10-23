@@ -1,6 +1,6 @@
 # 👥 Automate job application processing from forms to Telegram for HR teams
 
-> ⚡ **1,432 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,955 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

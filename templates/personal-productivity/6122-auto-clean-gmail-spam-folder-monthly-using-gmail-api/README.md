@@ -1,6 +1,6 @@
 # ⚡ Auto-clean Gmail spam folder - monthly using Gmail API
 
-> ⚡ **570 views** · ⚡ [Personal Productivity](../)
+> ⚡ **824 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Automate client communications & management with Notion, Gmail, and GPT-4o
 
-> ⚡ **461 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **649 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

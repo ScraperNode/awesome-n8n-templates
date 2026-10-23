@@ -1,6 +1,6 @@
 # ⚒️ Get entries from a Cockpit collection
 
-> ⚡ **484 views** · ⚒️ [Engineering](../)
+> ⚡ **501 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Daily hydration 💧 reminder with Slack/Discord & Airtable reaction tracking
 
-> ⚡ **40 views** · ⚡ [Personal Productivity](../)
+> ⚡ **49 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

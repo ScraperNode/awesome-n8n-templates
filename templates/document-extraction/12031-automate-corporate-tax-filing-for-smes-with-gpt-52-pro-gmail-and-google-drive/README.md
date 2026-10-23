@@ -1,6 +1,6 @@
 # 🔬 Automate corporate tax filing for SMEs with GPT-5.2-Pro, Gmail, and Google Drive
 
-> ⚡ **47 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **136 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

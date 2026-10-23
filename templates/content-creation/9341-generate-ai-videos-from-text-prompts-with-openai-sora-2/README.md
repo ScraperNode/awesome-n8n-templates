@@ -1,6 +1,6 @@
 # 🎬 Generate AI videos from text prompts with OpenAI Sora 2
 
-> ⚡ **1,465 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,572 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

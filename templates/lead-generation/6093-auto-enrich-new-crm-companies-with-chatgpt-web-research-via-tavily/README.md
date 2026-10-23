@@ -1,6 +1,6 @@
 # 🎣 Auto-enrich new CRM companies with ChatGPT web research via Tavily
 
-> ⚡ **925 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **960 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

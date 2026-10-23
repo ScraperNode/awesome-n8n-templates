@@ -1,6 +1,6 @@
 # 📋 Daily Trello Task Deadline Digests to Slack
 
-> ⚡ **288 views** · 📋 [Project Management](../)
+> ⚡ **327 views** · 📋 [Project Management](../)
 
 ## Description
 

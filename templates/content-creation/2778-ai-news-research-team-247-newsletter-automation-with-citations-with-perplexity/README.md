@@ -1,6 +1,6 @@
 # 🎬 AI news research team: 24/7 newsletter automation with citations with Perplexity
 
-> ⚡ **5,880 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,714 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

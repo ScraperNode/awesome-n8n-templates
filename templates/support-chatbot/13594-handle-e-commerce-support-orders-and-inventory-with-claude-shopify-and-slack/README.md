@@ -1,6 +1,6 @@
 # 💬 Handle e-commerce support, orders and inventory with Claude, Shopify and Slack
 
-> ⚡ **44 views** · 💬 [Support Chatbots](../)
+> ⚡ **303 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

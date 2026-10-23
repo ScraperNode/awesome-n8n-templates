@@ -1,6 +1,6 @@
 # 🎣 Regional prospecting for registered companies in Germany
 
-> ⚡ **93 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **147 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

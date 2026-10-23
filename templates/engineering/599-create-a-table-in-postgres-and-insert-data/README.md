@@ -1,6 +1,6 @@
 # ⚒️ Create a table in Postgres and insert data
 
-> ⚡ **4,501 views** · ⚒️ [Engineering](../)
+> ⚡ **4,488 views** · ⚒️ [Engineering](../)
 
 ## Description
 

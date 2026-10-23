@@ -1,6 +1,6 @@
 # 🎫 Automatic email categorization & labeling in Zoho Mail with GPT-4o-mini
 
-> ⚡ **1,338 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,859 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

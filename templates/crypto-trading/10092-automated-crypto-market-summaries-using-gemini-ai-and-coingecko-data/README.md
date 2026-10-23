@@ -1,6 +1,6 @@
 # 📈 Automated crypto market summaries using Gemini AI and CoinGecko data
 
-> ⚡ **348 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **417 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Build website Q&A chatbot with RAG, OpenAI GPT-4o-mini and Supabase Vector DB
 
-> ⚡ **2,922 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,409 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

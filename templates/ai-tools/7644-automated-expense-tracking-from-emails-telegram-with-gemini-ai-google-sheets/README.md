@@ -1,6 +1,6 @@
 # 🎯 Automated expense tracking from emails & Telegram with Gemini AI & Google Sheets
 
-> ⚡ **886 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **1,142 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

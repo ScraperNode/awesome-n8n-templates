@@ -1,6 +1,6 @@
 # 👥 Automate HR recruitment with OpenAI resume screening & interview QnA generator
 
-> ⚡ **802 views** · 👥 [HR & Recruitment](../)
+> ⚡ **952 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Transform images with AI prompts using FLUX Kontext, Google Sheets and Drive
 
-> ⚡ **2,140 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,244 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 Automated discord spam moderation with AI and human-in-the-loop
 
-> ⚡ **1,764 views** · 🔧 [Miscellaneous](../)
+> ⚡ **2,465 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

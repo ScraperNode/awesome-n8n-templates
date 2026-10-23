@@ -1,6 +1,6 @@
 # 🎬 Generate custom AI videos with Digital Avatars using HeyGen API
 
-> ⚡ **2,597 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,248 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

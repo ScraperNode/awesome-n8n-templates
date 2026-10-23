@@ -1,6 +1,6 @@
 # 🔬 AI-powered accounting reports from Sabre EDI with GPT-4 and Pinecone RAG
 
-> ⚡ **2,249 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,654 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

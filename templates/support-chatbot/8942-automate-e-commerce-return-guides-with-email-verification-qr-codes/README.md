@@ -1,6 +1,6 @@
 # 💬 Automate e-commerce return guides with email verification & QR codes
 
-> ⚡ **269 views** · 💬 [Support Chatbots](../)
+> ⚡ **288 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

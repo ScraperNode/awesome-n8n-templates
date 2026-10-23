@@ -1,6 +1,6 @@
 # 🎫 Categorise and label Gmail emails with GPT-4o and OpenAI
 
-> ⚡ **120 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **294 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

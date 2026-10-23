@@ -1,6 +1,6 @@
 # 📱 Monthly live music events newsletter
 
-> ⚡ **2,559 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,594 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

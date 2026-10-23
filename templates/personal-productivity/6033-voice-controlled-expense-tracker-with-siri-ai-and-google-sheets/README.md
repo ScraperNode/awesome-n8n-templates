@@ -1,6 +1,6 @@
 # ⚡ Voice-controlled expense tracker with Siri, AI and Google Sheets
 
-> ⚡ **980 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,134 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

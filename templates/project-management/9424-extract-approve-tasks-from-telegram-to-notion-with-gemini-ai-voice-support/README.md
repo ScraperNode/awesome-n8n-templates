@@ -1,6 +1,6 @@
 # 📋 Extract & approve tasks from Telegram to Notion with Gemini AI & voice support
 
-> ⚡ **583 views** · 📋 [Project Management](../)
+> ⚡ **626 views** · 📋 [Project Management](../)
 
 ## Description
 

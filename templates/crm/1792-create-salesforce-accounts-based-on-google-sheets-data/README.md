@@ -1,6 +1,6 @@
 # 🤝 Create Salesforce accounts based on Google Sheets data
 
-> ⚡ **19,265 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **35,366 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

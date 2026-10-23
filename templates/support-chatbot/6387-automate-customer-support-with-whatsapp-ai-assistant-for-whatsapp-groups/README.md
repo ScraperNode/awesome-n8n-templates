@@ -1,6 +1,6 @@
 # 💬 Automate customer support with WhatsApp AI assistant for Whatsapp groups
 
-> ⚡ **3,093 views** · 💬 [Support Chatbots](../)
+> ⚡ **4,562 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

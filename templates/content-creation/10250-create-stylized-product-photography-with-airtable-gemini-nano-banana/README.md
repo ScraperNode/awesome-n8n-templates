@@ -1,6 +1,6 @@
 # 🎬 Create stylized product photography with Airtable & Gemini Nano Banana
 
-> ⚡ **815 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,132 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

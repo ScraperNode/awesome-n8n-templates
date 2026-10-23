@@ -1,6 +1,6 @@
 # 🎬 Generate trend-based video marketing ideas with GPT-4, Tavily and Veo 3
 
-> ⚡ **3,552 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,920 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

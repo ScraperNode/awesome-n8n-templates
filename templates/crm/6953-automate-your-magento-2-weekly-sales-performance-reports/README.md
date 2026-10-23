@@ -1,6 +1,6 @@
 # 🤝 Automate your Magento 2 weekly sales & performance reports
 
-> ⚡ **134 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **154 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Process invoices & engineering emails with Gmail, AI analysis & Telegram alerts
 
-> ⚡ **860 views** · 🧾 [Invoice Processing](../)
+> ⚡ **977 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔒 Send Slack alerts for AWS IAM access keys older than 365 days
 
-> ⚡ **226 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **290 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

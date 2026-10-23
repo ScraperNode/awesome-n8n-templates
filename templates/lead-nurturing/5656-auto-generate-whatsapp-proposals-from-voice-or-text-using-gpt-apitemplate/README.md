@@ -1,6 +1,6 @@
 # 💬 Auto-generate WhatsApp proposals from voice or text using GPT & APITemplate
 
-> ⚡ **7,694 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **8,930 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

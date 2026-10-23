@@ -1,6 +1,6 @@
 # 🎬 Multi-agent PDF-to-blog content generation
 
-> ⚡ **14,359 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **14,272 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

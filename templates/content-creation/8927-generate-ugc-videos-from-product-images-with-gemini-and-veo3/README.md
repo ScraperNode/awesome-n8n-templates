@@ -1,6 +1,6 @@
 # 🎬 Generate UGC videos from product images with Gemini and VEO3
 
-> ⚡ **2,003 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,467 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

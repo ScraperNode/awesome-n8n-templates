@@ -1,6 +1,6 @@
 # 💬 E-commerce assistant for Shopify & WooCommerce with GPT-4o, Gemini & RAG
 
-> ⚡ **3,435 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,991 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

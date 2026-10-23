@@ -1,6 +1,6 @@
 # 🤝 Automate digital product delivery & sales tracking with Stripe, Email, Notion & Telegram
 
-> ⚡ **109 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **129 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

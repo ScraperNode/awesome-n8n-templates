@@ -1,6 +1,6 @@
 # 🤝 Generate AI meeting briefs for Google Calendar with GPT-4 & MadKudu MCP
 
-> ⚡ **500 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **559 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 Analyze meeting sentiment with Azure OpenAI and save insights to Google Sheets
 
-> ⚡ **76 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **107 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Automated hourly n8n error monitoring with Slack notifications
 
-> ⚡ **573 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **691 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

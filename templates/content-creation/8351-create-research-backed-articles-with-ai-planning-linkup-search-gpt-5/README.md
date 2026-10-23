@@ -1,6 +1,6 @@
 # 🎬 Create research-backed articles with AI planning, Linkup Search & GPT-5
 
-> ⚡ **630 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **714 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

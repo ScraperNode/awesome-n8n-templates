@@ -1,6 +1,6 @@
 # 🎬 Automate Google Ads copy optimization with Channable feed and Relevance AI
 
-> ⚡ **415 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **559 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

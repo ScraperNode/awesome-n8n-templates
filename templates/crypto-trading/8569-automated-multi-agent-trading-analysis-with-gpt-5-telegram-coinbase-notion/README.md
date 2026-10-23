@@ -1,6 +1,6 @@
 # 📈 Automated multi-agent trading analysis with GPT-5, Telegram, Coinbase & Notion
 
-> ⚡ **2,651 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **3,829 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

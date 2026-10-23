@@ -1,6 +1,6 @@
 # 📋 Automate client onboarding with GPT-4, Google Drive, ClickUp & Slack
 
-> ⚡ **956 views** · 📋 [Project Management](../)
+> ⚡ **1,002 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 Low stock & sold out watcher for Shopify
 
-> ⚡ **2,368 views** · 🔧 [Miscellaneous](../)
+> ⚡ **2,405 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

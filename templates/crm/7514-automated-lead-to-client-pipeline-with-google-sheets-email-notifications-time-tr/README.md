@@ -1,6 +1,6 @@
 # 🤝 Automated lead-to-client pipeline with Google Sheets email notifications & time tracking
 
-> ⚡ **995 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,081 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

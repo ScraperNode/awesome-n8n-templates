@@ -1,6 +1,6 @@
 # 💬 Send application follow-up reminders from Airtable via email and SMS
 
-> ⚡ **36 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **101 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

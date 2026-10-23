@@ -1,6 +1,6 @@
 # 🔧 Automate prescription delivery via Google Sheets to email & WhatsApp
 
-> ⚡ **919 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,020 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

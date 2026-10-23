@@ -1,6 +1,6 @@
 # 📋 Automate daily standups using Slack, Notion, and Redis
 
-> ⚡ **16 views** · 📋 [Project Management](../)
+> ⚡ **251 views** · 📋 [Project Management](../)
 
 ## Description
 

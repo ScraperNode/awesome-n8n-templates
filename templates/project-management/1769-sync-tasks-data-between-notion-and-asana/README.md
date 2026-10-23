@@ -1,6 +1,6 @@
 # 📋 Sync tasks data between Notion and Asana
 
-> ⚡ **6,901 views** · 📋 [Project Management](../)
+> ⚡ **7,023 views** · 📋 [Project Management](../)
 
 ## Description
 

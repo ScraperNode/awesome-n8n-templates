@@ -1,6 +1,6 @@
 # 📋 Manage ClickUp Tasks with Natural Language via Telegram Bot and GPT-4.1
 
-> ⚡ **771 views** · 📋 [Project Management](../)
+> ⚡ **897 views** · 📋 [Project Management](../)
 
 ## Description
 

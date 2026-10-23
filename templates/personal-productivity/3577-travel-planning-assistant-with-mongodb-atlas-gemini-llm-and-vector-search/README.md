@@ -1,6 +1,6 @@
 # ⚡ Travel planning assistant with MongoDB Atlas, Gemini LLM and vector search
 
-> ⚡ **3,578 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,766 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

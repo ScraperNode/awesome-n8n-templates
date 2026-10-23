@@ -1,6 +1,6 @@
 # 🤝 Add new products to Stripe when product added to Pipedrive
 
-> ⚡ **1,127 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,180 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

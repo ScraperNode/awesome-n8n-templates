@@ -1,6 +1,6 @@
 # 🔧 AI-powered tarot readings via iMessage with GPT & Blooio
 
-> ⚡ **860 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,016 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

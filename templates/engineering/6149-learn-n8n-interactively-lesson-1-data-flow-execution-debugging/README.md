@@ -1,6 +1,6 @@
 # ⚒️ Learn n8n interactively, lesson 1: data flow, execution & debugging
 
-> ⚡ **1,272 views** · ⚒️ [Engineering](../)
+> ⚡ **1,876 views** · ⚒️ [Engineering](../)
 
 ## Description
 

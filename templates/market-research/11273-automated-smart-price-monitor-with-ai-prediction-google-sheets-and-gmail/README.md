@@ -1,6 +1,6 @@
 # 📊 Automated smart price monitor with AI prediction, Google Sheets and Gmail
 
-> ⚡ **72 views** · 📊 [Market Research & Insights](../)
+> ⚡ **127 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

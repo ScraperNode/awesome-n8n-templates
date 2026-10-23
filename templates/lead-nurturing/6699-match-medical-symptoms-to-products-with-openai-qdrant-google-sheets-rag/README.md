@@ -1,6 +1,6 @@
 # 💬 Match medical symptoms to products with OpenAI, Qdrant & Google Sheets RAG
 
-> ⚡ **167 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **207 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

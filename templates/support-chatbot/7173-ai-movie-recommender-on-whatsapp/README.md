@@ -1,6 +1,6 @@
 # 💬 Ai movie recommender on WhatsApp
 
-> ⚡ **1,415 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,617 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

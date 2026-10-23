@@ -1,6 +1,6 @@
 # 🎬 Automate SEO title & description updates for WordPress with Yoast SEO API
 
-> ⚡ **1,014 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,346 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Manage Google Calendar via Telegram and get daily AI briefings (OpenAI + Gemini)
 
-> ⚡ **23 views** · ⚡ [Personal Productivity](../)
+> ⚡ **59 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

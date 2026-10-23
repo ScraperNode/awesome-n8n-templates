@@ -1,6 +1,6 @@
 # ⚡ Create a new task in Todoist
 
-> ⚡ **1,837 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,831 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

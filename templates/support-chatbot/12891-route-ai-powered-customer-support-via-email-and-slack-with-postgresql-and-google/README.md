@@ -1,6 +1,6 @@
 # 💬 Route AI-powered customer support via email and Slack with PostgreSQL and Google Sheets
 
-> ⚡ **15 views** · 💬 [Support Chatbots](../)
+> ⚡ **58 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

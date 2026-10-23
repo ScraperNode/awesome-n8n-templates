@@ -1,6 +1,6 @@
 # ⚡ Multi-channel event countdown manager with Telegram, Slack and Email
 
-> ⚡ **135 views** · ⚡ [Personal Productivity](../)
+> ⚡ **171 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Conversational WhatsApp assistant with Gemini AI and Pinecone memory
 
-> ⚡ **1,694 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,869 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

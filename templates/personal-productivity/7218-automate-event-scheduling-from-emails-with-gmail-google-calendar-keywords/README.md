@@ -1,6 +1,6 @@
 # ⚡ Automate event scheduling from emails with Gmail & Google Calendar keywords
 
-> ⚡ **1,486 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,668 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

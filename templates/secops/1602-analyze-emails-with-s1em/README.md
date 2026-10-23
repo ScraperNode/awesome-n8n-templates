@@ -1,6 +1,6 @@
 # 🔒 Analyze emails with S1EM
 
-> ⚡ **7,330 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **7,377 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

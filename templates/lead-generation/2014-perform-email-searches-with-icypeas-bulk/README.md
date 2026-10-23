@@ -1,6 +1,6 @@
 # 🎣 Perform email searches with Icypeas (bulk)
 
-> ⚡ **725 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **761 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

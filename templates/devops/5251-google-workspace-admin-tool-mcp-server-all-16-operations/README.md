@@ -1,6 +1,6 @@
 # ⚙️ 🛠️ Google Workspace admin tool MCP server 💪 all 16 operations
 
-> ⚡ **183 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **236 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

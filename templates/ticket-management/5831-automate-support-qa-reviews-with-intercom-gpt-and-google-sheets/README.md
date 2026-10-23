@@ -1,6 +1,6 @@
 # 🎫 Automate support QA reviews with Intercom, GPT and Google Sheets
 
-> ⚡ **651 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **754 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

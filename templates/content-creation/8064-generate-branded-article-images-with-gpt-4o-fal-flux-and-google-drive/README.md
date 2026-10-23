@@ -1,6 +1,6 @@
 # 🎬 Generate branded article images with GPT-4o, FAL Flux and Google Drive
 
-> ⚡ **525 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **601 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

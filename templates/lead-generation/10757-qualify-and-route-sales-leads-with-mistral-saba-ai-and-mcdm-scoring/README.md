@@ -1,6 +1,6 @@
 # 🎣 Qualify and route sales leads with Mistral-Saba AI and MCDM scoring
 
-> ⚡ **37 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **63 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

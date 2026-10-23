@@ -1,6 +1,6 @@
 # 🧾 Classify Gmail invoice attachments with Google Gemini and forward to freee
 
-> ⚡ **39 views** · 🧾 [Invoice Processing](../)
+> ⚡ **153 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

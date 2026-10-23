@@ -1,6 +1,6 @@
 # 🎬 Publish WordPress posts from Google Sheets with images and tags
 
-> ⚡ **18 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **116 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

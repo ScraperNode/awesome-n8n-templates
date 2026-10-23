@@ -1,6 +1,6 @@
 # 📖 Control AI agent tool access with Port RBAC and Slack mentions
 
-> ⚡ **39 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **55 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

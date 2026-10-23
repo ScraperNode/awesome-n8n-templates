@@ -1,6 +1,6 @@
 # 🎬 Create and post Instagram visuals from Google Sheets with Blotato
 
-> ⚡ **149 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **506 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

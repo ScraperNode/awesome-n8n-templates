@@ -1,6 +1,6 @@
 # 💬 🤖 Self Improving Email AI Support with Human-in-the-Loop
 
-> ⚡ **2,604 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,690 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Ingredient price trend analysis & buying recommendations with PostgreSQL, API & Slack
 
-> ⚡ **522 views** · 📊 [Market Research & Insights](../)
+> ⚡ **534 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

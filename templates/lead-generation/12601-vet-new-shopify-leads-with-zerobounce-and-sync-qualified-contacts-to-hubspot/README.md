@@ -1,6 +1,6 @@
 # 🎣 Vet new Shopify leads with ZeroBounce and sync qualified contacts to HubSpot
 
-> ⚡ **27 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **56 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

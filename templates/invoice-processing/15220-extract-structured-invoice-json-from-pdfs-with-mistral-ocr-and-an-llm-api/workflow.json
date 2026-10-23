@@ -1,0 +1,340 @@
+{
+  "id": "IhEqq3b5ajzUHUvv",
+  "meta": {
+    "instanceId": "9920f9b8e0db50bb7b581fe6ae368951ba2af60d657bf2ef17f99bcc5b2fa802",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "OCR to JSON Automation",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "911f1b6a-f018-424d-a063-f5026125a015",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -1504,
+        96
+      ],
+      "webhookId": "ocr-to-json",
+      "parameters": {
+        "path": "ocr-to-json",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "921c548f-926e-44c6-a6b1-84f4e5d97694",
+      "name": "Mistral OCR",
+      "type": "n8n-nodes-base.mistralAi",
+      "position": [
+        -1248,
+        96
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "lM3pkLVVRgvxiIx6",
+          "name": "Mistral Cloud account"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b01b4e52-22c6-4e94-a480-01bdc21539fa",
+      "name": "Normalize OCR Text",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1024,
+        96
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = $json;\nconst ocrText =\n  raw.text ||\n  raw.content ||\n  raw.extractedText ||\n  raw.output ||\n  (Array.isArray(raw.pages) ? raw.pages.map(p => p.markdown || p.text || '').join('\\n\\n') : '') ||\n  JSON.stringify(raw, null, 2);\n\nreturn {\n  json: {\n    ocr_text: ocrText,\n    ocr_raw: raw,\n    received_at: new Date().toISOString()\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f87569b5-03eb-4afb-8e68-8b37d44f3410",
+      "name": "LLM Extract JSON",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -800,
+        96
+      ],
+      "parameters": {
+        "url": "https://api.mistral.ai/v1/chat/completions",
+        "method": "POST",
+        "options": {
+          "timeout": 60000
+        },
+        "jsonBody": "={\n  \"model\": \"mistral-small\",\n  \"temperature\": 0,\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You extract structured invoice/document data from OCR text. Return strict JSON only. Use null for missing scalar values, [] for empty arrays, and numbers for numeric amounts. Convert dates to YYYY-MM-DD when reasonably possible. Include a confidence score from 0 to 1.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Extract structured data from the following OCR text.\\nReturn this JSON shape exactly:\\n{\\n  \\\"document_type\\\": \\\"\\\",\\n  \\\"invoice_number\\\": null,\\n  \\\"invoice_date\\\": null,\\n  \\\"supplier_name\\\": null,\\n  \\\"currency\\\": null,\\n  \\\"total_amount\\\": null,\\n  \\\"line_items\\\": [],\\n  \\\"confidence\\\": 0\\n}\\n\\nOCR text:\\n\\\"  {{ $json.ocr_text.replace(/\\n/g, '\\\\n').replace(/\\\"/g, '\\\\\\\"') }}\"\n    }\n  ]\n}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "mistralCloudApi"
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "4gLzrxwofnfPAo7m",
+          "name": "OpenAI account"
+        },
+        "mistralCloudApi": {
+          "id": "lKeaTuvVF1RWqdrm",
+          "name": "Mistral Cloud account 2"
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "2a9128ef-0483-455b-bc7e-c34ed5c0ac90",
+      "name": "Clean JSON",
+      "type": "n8n-nodes-base.code",
+      "disabled": true,
+      "position": [
+        -576,
+        96
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const content = $json.choices?.[0]?.message?.content;\nlet data;\n\ntry {\n  data = typeof content === 'string' ? JSON.parse(content) : content;\n} catch (e) {\n  data = {\n    document_type: \"unknown\",\n    invoice_number: null,\n    invoice_date: null,\n    supplier_name: null,\n    currency: null,\n    total_amount: null,\n    line_items: [],\n    confidence: 0,\n    parse_error: \"Model output was not valid JSON\"\n  };\n}\n\nfunction toNumber(value) {\n  if (value === null || value === undefined || value === \"\") return null;\n  if (typeof value === \"number\") return value;\n  const cleaned = String(value).replace(/[^0-9.-]/g, \"\");\n  const num = Number(cleaned);\n  return Number.isNaN(num) ? null : num;\n}\n\nfunction normalizeDate(value) {\n  if (!value) return null;\n  if (/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return value;\n\n  const m1 = String(value).match(/^(\\d{1,2})[-\\/ ]([A-Za-z]{3,9})[-\\/ ](\\d{4})$/);\n  if (m1) {\n    const months = {\n      jan:\"01\", january:\"01\", feb:\"02\", february:\"02\", mar:\"03\", march:\"03\",\n      apr:\"04\", april:\"04\", may:\"05\", jun:\"06\", june:\"06\", jul:\"07\", july:\"07\",\n      aug:\"08\", august:\"08\", sep:\"09\", sept:\"09\", september:\"09\", oct:\"10\", october:\"10\",\n      nov:\"11\", november:\"11\", dec:\"12\", december:\"12\"\n    };\n    const day = m1[1].padStart(2, \"0\");\n    const mon = months[m1[2].toLowerCase()];\n    const year = m1[3];\n    if (mon) return `${year}-${mon}-${day}`;\n  }\n\n  const m2 = String(value).match(/^(\\d{1,2})[-\\/](\\d{1,2})[-\\/](\\d{4})$/);\n  if (m2) {\n    return `${m2[3]}-${m2[2].padStart(2, \"0\")}-${m2[1].padStart(2, \"0\")}`;\n  }\n\n  return value;\n}\n\ndata.total_amount = toNumber(data.total_amount);\ndata.invoice_date = normalizeDate(data.invoice_date);\n\nif (!Array.isArray(data.line_items)) data.line_items = [];\nif (typeof data.confidence !== \"number\") {\n  const c = Number(data.confidence);\n  data.confidence = Number.isNaN(c) ? 0 : c;\n}\n\nreturn {\n  json: data\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "6313b5c7-c852-4e94-a293-eafebe0cb192",
+      "name": "Confidence >= 0.5?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -352,
+        96
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "leftValue": "={{$json.confidence}}",
+              "rightValue": 0.5
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "d0a13ed4-3544-44de-bd43-7e918441ac39",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        -128,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"ok\",\n  \"data\": {{JSON.stringify($json)}}\n}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "e1bc80c8-92c0-4bef-a1fe-9d511b814396",
+      "name": "Respond Review",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        -128,
+        192
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"review_needed\",\n  \"data\": $json\n}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "6946957c-2bd7-45d8-8e3d-40132c9bbcc1",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1568,
+        -80
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 224,
+        "height": 432,
+        "content": "This webhook node Accepts a PDF or image upload via Webhook as binary property \"data\""
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b710116c-b9ce-4e3a-a64d-e20d7045fe5b",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1296,
+        -32
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 432,
+        "height": 336,
+        "content": "Runs OCR with the Mistral OCR node\n\nCreate/attach Mistral AI credentials on the \"Mistral OCR\" node\n\nNormalizes OCR text"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "34158ea5-8ad8-4dd9-a5cf-9b52224234b7",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -848,
+        -64
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 400,
+        "height": 400,
+        "content": "Sends OCR text to an LLM to extract structured JSON\n\nCreate/attach LLM AI credentials of your choice\n\nCleans and normalizes the JSON"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1ecfad88-526a-46cf-b39f-57dadabb27f0",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -400,
+        -144
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 480,
+        "height": 544,
+        "content": "Returns either:\n   - status: ok\n   - status: review_needed\n\n- The workflow returns review_needed when confidence is below 0.5.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a4e06f24-9938-463c-bc2c-df9ac9ef2779",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2016,
+        -288
+      ],
+      "parameters": {
+        "width": 400,
+        "height": 752,
+        "content": "N8N AI LLM Unstructured Invoice data PDF OCR recognition to JSON output API\n\nWhat this workflow does\n1. Accepts a PDF or image upload via Webhook as binary property \"data\"\n2. Runs OCR with the Mistral OCR node\n3. Normalizes OCR text\n4. Sends OCR text to an LLM to extract structured JSON\n5. Cleans and normalizes the JSON\n6. Returns either:\n   - status: ok\n   - status: review_needed\n\nSetup\n1. Import the workflow JSON into n8n\n2. Create/attach Mistral AI credentials on the \"Mistral OCR\" node\n3. Create/attach your choice LLM AI credentials on the OCR text to JSON converson node\n4. Activate the workflow\n5. POST a file to:\n   /webhook/ocr-to-json\n\nNotes\n- This starter is tuned for invoices/documents but can be adapted for receipts, purchase orders, or forms.\n- Depending on your installed n8n version, the Mistral node parameter names may need minor adjustment after import.\n- The workflow returns review_needed when confidence is below 0.5.\n"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": true,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "versionId": "8e7cf8a0-3ab0-4a9b-aad8-f0d2178af437",
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Mistral OCR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean JSON": {
+      "main": [
+        [
+          {
+            "node": "Confidence >= 0.5?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral OCR": {
+      "main": [
+        [
+          {
+            "node": "Normalize OCR Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Extract JSON": {
+      "main": [
+        [
+          {
+            "node": "Clean JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confidence >= 0.5?": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize OCR Text": {
+      "main": [
+        [
+          {
+            "node": "LLM Extract JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

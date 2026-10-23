@@ -1,6 +1,6 @@
 # 🤝 Score and route leads with Google Gemini, Sheets, Slack and Gmail
 
-> ⚡ **6 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **11 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Generate daily tech, manga & movies newsletter from RSS feeds with Brevo
 
-> ⚡ **207 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **431 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

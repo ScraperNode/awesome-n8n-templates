@@ -1,6 +1,6 @@
 # 💬 Personalized B2B cold email sequence with GPT-4 + Gmail auto-reply detection
 
-> ⚡ **295 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **506 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

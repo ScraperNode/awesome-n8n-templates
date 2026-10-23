@@ -1,6 +1,6 @@
 # ⚙️ Automate NPM package installation and updates for self-hosted environments
 
-> ⚡ **6,356 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **6,788 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

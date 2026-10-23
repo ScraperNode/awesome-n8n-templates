@@ -1,6 +1,6 @@
 # ⚡ Email-to-task automation with AI (Gmail/Outlook to Google Tasks/Microsoft To Do)
 
-> ⚡ **803 views** · ⚡ [Personal Productivity](../)
+> ⚡ **913 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

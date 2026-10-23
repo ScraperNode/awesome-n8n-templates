@@ -1,6 +1,6 @@
 # ⚒️ Create, update, and get a document in Google Cloud Firestore
 
-> ⚡ **8,959 views** · ⚒️ [Engineering](../)
+> ⚡ **9,187 views** · ⚒️ [Engineering](../)
 
 ## Description
 

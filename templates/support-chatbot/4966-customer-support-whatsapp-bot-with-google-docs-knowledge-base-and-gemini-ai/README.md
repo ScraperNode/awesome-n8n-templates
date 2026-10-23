@@ -1,6 +1,6 @@
 # 💬 Customer support WhatsApp bot with Google Docs knowledge base and Gemini AI
 
-> ⚡ **101,994 views** · 💬 [Support Chatbots](../)
+> ⚡ **142,986 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

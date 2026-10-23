@@ -1,6 +1,6 @@
 # 📱 Automated daily customer win-back campaign with AI offers
 
-> ⚡ **1,124 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,276 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

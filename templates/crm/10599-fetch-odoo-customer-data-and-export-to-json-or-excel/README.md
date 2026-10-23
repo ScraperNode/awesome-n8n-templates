@@ -1,6 +1,6 @@
 # 🤝 Fetch Odoo customer data and export to JSON or Excel
 
-> ⚡ **651 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **899 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

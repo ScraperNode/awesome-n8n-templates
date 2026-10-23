@@ -1,6 +1,6 @@
 # 🤝 Automate sales order prioritization with ERP-WMS-TMS integration based on SLA tiers
 
-> ⚡ **248 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **415 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

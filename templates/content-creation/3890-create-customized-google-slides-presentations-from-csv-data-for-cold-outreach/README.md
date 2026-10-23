@@ -1,6 +1,6 @@
 # 🎬 Create customized Google Slides presentations from CSV data for cold outreach 🚀
 
-> ⚡ **3,866 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,433 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

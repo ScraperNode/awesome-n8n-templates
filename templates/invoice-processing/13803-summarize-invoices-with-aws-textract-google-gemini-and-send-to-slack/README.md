@@ -1,6 +1,6 @@
 # 🧾 Summarize invoices with AWS Textract, Google Gemini, and send to Slack
 
-> ⚡ **2 views** · 🧾 [Invoice Processing](../)
+> ⚡ **46 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

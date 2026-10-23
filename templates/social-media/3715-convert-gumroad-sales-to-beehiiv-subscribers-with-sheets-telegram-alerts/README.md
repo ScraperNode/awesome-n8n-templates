@@ -1,6 +1,6 @@
 # 📱 Convert Gumroad sales to Beehiiv subscribers with Sheets & Telegram alerts
 
-> ⚡ **441 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **470 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Production AI Playbook: Human Oversight (Exercise 2)
 
-> ⚡ **46 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **200 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

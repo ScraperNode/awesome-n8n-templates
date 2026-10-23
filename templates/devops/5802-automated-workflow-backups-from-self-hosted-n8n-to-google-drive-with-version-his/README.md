@@ -1,6 +1,6 @@
 # ⚙️ Automated workflow backups from self-hosted n8n to Google Drive with version history
 
-> ⚡ **925 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,052 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

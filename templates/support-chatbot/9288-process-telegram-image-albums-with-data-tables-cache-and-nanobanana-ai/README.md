@@ -1,6 +1,6 @@
 # 💬 Process telegram image albums with Data Tables Cache and NanoBanana AI
 
-> ⚡ **895 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,133 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

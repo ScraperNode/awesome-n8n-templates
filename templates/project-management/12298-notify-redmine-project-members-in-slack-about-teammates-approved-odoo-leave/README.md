@@ -1,6 +1,6 @@
 # 📋 Notify Redmine project members in Slack about teammates’ approved Odoo leave
 
-> ⚡ **31 views** · 📋 [Project Management](../)
+> ⚡ **156 views** · 📋 [Project Management](../)
 
 ## Description
 

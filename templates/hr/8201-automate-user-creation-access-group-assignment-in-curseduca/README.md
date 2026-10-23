@@ -1,6 +1,6 @@
 # 👥 Automate user creation & access group assignment in Curseduca
 
-> ⚡ **91 views** · 👥 [HR & Recruitment](../)
+> ⚡ **101 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

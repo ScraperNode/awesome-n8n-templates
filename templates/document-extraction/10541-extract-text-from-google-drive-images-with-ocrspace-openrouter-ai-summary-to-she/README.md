@@ -1,6 +1,6 @@
 # 🔬 Extract text from Google Drive images with OCR.space, OpenRouter AI summary to sheets & Gmail
 
-> ⚡ **449 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **594 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

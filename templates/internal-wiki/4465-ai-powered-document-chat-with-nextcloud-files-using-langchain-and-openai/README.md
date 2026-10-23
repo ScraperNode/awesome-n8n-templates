@@ -1,6 +1,6 @@
 # 📖 AI-powered document chat with Nextcloud files using LangChain and OpenAI
 
-> ⚡ **2,216 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **2,434 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

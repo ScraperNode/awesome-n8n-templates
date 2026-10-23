@@ -1,6 +1,6 @@
 # 📱 Weekly gratitude pulse: Automated appreciation DMs for Slack & Discord communities
 
-> ⚡ **32 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **41 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

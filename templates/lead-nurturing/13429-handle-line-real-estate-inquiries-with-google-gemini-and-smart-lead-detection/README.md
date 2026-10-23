@@ -1,6 +1,6 @@
 # 💬 Handle LINE real estate inquiries with Google Gemini and smart lead detection
 
-> ⚡ **6 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **40 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

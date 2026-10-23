@@ -1,6 +1,6 @@
 # 📖 Document-based AI chatbot with RAG, OpenAI and Cohere reranker
 
-> ⚡ **1,744 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **1,935 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

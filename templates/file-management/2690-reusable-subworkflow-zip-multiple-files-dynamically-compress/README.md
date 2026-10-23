@@ -1,6 +1,6 @@
 # 📁 Reusable subworkflow zip multiple files dynamically (compress)
 
-> ⚡ **1,738 views** · 📁 [File Management](../)
+> ⚡ **1,762 views** · 📁 [File Management](../)
 
 ## Description
 

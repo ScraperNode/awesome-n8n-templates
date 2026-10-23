@@ -1,6 +1,6 @@
 # 🎬 Create & post viral news AI avatar videos to 9 platforms with Perplexity & HeyGen
 
-> ⚡ **1,331 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,554 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

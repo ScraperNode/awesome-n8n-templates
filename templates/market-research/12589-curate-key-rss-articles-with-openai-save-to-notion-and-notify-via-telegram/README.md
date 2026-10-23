@@ -1,6 +1,6 @@
 # 📊 Curate key RSS articles with OpenAI, save to Notion, and notify via Telegram
 
-> ⚡ **5 views** · 📊 [Market Research & Insights](../)
+> ⚡ **66 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 Googleform submission to create a Github issue bug report
 
-> ⚡ **552 views** · 📋 [Project Management](../)
+> ⚡ **535 views** · 📋 [Project Management](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

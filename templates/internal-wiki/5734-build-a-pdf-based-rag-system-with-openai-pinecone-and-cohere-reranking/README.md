@@ -1,6 +1,6 @@
 # 📖 Build a PDF-based RAG system with OpenAI, Pinecone and Cohere reranking
 
-> ⚡ **9,671 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **11,520 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

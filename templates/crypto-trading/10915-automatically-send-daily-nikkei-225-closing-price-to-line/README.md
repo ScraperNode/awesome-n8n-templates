@@ -1,6 +1,6 @@
 # 📈 Automatically send daily Nikkei 225 closing price to LINE
 
-> ⚡ **79 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **92 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

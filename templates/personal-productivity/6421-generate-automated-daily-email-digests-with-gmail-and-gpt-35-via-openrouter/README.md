@@ -1,6 +1,6 @@
 # ⚡ Generate automated daily email digests with Gmail and GPT-3.5 via OpenRouter
 
-> ⚡ **1,106 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,154 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

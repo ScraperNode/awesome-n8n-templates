@@ -1,6 +1,6 @@
 # 💬 Build a product catalog chatbot with Mistral AI, Google Drive & Supabase RAG
 
-> ⚡ **501 views** · 💬 [Support Chatbots](../)
+> ⚡ **784 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

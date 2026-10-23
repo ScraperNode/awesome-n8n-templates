@@ -1,6 +1,6 @@
 # 🎫 Forward filtered Gmail notifications to Telegram chat
 
-> ⚡ **2,999 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **3,481 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

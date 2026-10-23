@@ -1,6 +1,6 @@
 # ⚙️ Compare your n8n version with latest release using n8n API
 
-> ⚡ **565 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **678 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

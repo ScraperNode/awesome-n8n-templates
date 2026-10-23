@@ -1,6 +1,6 @@
 # ⚡ Sync Discord scheduled events to Google Calendar
 
-> ⚡ **1,856 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,860 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

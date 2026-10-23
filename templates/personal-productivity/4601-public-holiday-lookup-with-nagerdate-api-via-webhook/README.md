@@ -1,6 +1,6 @@
 # ⚡ Public holiday lookup with Nager.Date API via webhook
 
-> ⚡ **590 views** · ⚡ [Personal Productivity](../)
+> ⚡ **711 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

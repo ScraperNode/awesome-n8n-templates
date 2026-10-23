@@ -1,6 +1,6 @@
 # ⚒️ Analyze global supply chain sustainability and risk with GPT-4o and email alerts
 
-> ⚡ **10 views** · ⚒️ [Engineering](../)
+> ⚡ **129 views** · ⚒️ [Engineering](../)
 
 ## Description
 

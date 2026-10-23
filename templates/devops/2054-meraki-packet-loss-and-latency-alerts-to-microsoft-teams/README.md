@@ -1,6 +1,6 @@
 # ⚙️ Meraki packet loss and latency alerts to Microsoft Teams
 
-> ⚡ **5,297 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **5,448 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

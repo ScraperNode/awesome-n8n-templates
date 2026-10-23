@@ -1,6 +1,6 @@
 # 🔬 Automate meeting intelligence with VEXA, OpenAI & Mem0 for conversation insights
 
-> ⚡ **566 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **692 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Creating images from text prompts with Flux Kontext Max on Replicate
 
-> ⚡ **869 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **980 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

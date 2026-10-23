@@ -1,6 +1,6 @@
 # 🎬 Auto-generate product descriptions with Azure OpenAI for Adobe Commerce/Magento
 
-> ⚡ **252 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **318 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

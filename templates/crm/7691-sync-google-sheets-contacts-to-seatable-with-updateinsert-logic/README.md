@@ -1,6 +1,6 @@
 # 🤝 Sync Google Sheets contacts to SeaTable with update/insert logic
 
-> ⚡ **149 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **158 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

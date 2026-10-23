@@ -1,6 +1,6 @@
 # ⚡ Auto icon & cover for new Notion pages
 
-> ⚡ **220 views** · ⚡ [Personal Productivity](../)
+> ⚡ **262 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

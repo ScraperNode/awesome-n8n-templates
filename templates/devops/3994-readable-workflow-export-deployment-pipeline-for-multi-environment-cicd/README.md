@@ -1,6 +1,6 @@
 # ⚙️ Readable workflow export & deployment pipeline for multi-environment CI/CD
 
-> ⚡ **1,048 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,273 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

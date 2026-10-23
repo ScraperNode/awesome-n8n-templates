@@ -1,6 +1,6 @@
 # ⚒️ IPQualityScore API MCP Server
 
-> ⚡ **317 views** · ⚒️ [Engineering](../)
+> ⚡ **339 views** · ⚒️ [Engineering](../)
 
 ## Description
 

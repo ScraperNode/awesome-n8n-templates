@@ -1,6 +1,6 @@
 # 🤝 Generate AI inventory reorder recommendations from Airtable with GPT-4o, Slack and email
 
-> ⚡ **193 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **243 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

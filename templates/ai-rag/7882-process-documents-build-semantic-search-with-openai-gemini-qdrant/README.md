@@ -1,6 +1,6 @@
 # 🔍 Process documents & build semantic search with OpenAI, Gemini & Qdrant
 
-> ⚡ **983 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **1,204 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

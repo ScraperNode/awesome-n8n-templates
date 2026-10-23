@@ -1,6 +1,6 @@
 # ⚡ Create daily newsletter digests from Gmail using GPT-4.1-mini
 
-> ⚡ **1,522 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,715 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔒 Automated SSL Certificate Monitoring and Renewal with Notion and Telegram
 
-> ⚡ **1,569 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,905 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

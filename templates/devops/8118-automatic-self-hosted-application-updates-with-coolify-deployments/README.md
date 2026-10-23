@@ -1,6 +1,6 @@
 # ⚙️ Automatic self-hosted application updates with Coolify deployments
 
-> ⚡ **358 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **482 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

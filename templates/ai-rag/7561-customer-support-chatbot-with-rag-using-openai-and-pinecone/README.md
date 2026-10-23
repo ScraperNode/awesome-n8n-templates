@@ -1,6 +1,6 @@
 # 🔍 Customer support chatbot with RAG using OpenAI and Pinecone
 
-> ⚡ **2,057 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **2,465 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

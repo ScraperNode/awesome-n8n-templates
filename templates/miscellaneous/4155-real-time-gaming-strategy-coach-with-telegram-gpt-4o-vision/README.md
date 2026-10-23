@@ -1,6 +1,6 @@
 # 🔧 Real-time gaming strategy coach with Telegram & GPT-4o Vision
 
-> ⚡ **609 views** · 🔧 [Miscellaneous](../)
+> ⚡ **682 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

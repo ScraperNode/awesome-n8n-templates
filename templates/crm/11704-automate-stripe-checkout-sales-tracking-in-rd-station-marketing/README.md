@@ -1,6 +1,6 @@
 # 🤝 Automate Stripe checkout sales tracking in RD Station Marketing
 
-> ⚡ **80 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **163 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

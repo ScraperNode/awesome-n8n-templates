@@ -1,6 +1,6 @@
 # 💬 Create an AI-powered virtual receptionist with Google Calendar & Sheets
 
-> ⚡ **8,489 views** · 💬 [Support Chatbots](../)
+> ⚡ **11,441 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

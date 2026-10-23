@@ -1,6 +1,6 @@
 # 🎬 AI speech coach & generator using Telegram, Open AI and Gemini
 
-> ⚡ **1,971 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,175 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

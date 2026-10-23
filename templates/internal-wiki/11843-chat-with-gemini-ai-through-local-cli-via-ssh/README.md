@@ -1,6 +1,6 @@
 # 📖 Chat with Gemini AI through local CLI via SSH
 
-> ⚡ **807 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **1,203 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

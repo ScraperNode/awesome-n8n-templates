@@ -1,6 +1,6 @@
 # 📖 Generate contextual recommendations from Slack using Pinecone
 
-> ⚡ **417 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **484 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 Generate intraday AAPL trade signals using live data, OpenAI, Telegram and Notion
 
-> ⚡ **69 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **148 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

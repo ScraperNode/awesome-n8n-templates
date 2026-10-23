@@ -1,6 +1,6 @@
 # 📋 Monitor programme performance and governance with OpenAI and Slack
 
-> ⚡ **20 views** · 📋 [Project Management](../)
+> ⚡ **116 views** · 📋 [Project Management](../)
 
 ## Description
 

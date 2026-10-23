@@ -1,6 +1,6 @@
 # 🤝 Create a new member, update the infromation, create a note and post in Orbit
 
-> ⚡ **607 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **629 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

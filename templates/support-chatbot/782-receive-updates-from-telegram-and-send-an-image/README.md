@@ -1,6 +1,6 @@
 # 💬 Receive updates from Telegram and send an image
 
-> ⚡ **8,293 views** · 💬 [Support Chatbots](../)
+> ⚡ **8,250 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

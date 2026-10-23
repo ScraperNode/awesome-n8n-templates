@@ -1,6 +1,6 @@
 # 🤝 Sync new Shopify products to Odoo
 
-> ⚡ **121 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **147 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

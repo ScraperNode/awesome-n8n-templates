@@ -1,6 +1,6 @@
 # ⚙️ AWS EC2 lifecycle manager with AI chat agent (describe, start, stop, reboot)
 
-> ⚡ **317 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **340 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

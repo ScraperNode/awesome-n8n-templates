@@ -1,0 +1,995 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "name": "Re-check EU VAT numbers with VIES before each Stripe invoice and stop reverse charge when they lapse",
+  "nodes": [
+    {
+      "id": "46d4ed25-2270-591f-abe6-d980955bf8d7",
+      "name": "When A Stripe Invoice Is Drafted",
+      "type": "n8n-nodes-base.stripeTrigger",
+      "position": [
+        256,
+        320
+      ],
+      "parameters": {
+        "events": [
+          "invoice.created"
+        ]
+      },
+      "credentials": {
+        "stripeApi": {
+          "id": "credential-id",
+          "name": "Stripe account"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6c197638-e9f3-5049-9deb-99fc5ab4d86d",
+      "name": "Handle Each Invoice Once",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "position": [
+        496,
+        320
+      ],
+      "parameters": {
+        "logic": "removeItemsWithAlreadySeenKeyValues",
+        "options": {},
+        "operation": "removeItemsSeenInPreviousExecutions",
+        "dedupeValue": "={{ $json.data.object.id }}"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7c025b99-1fe0-5496-a916-4c115dfa59c0",
+      "name": "VAT Rules",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1008,
+        320
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "seller_country",
+              "type": "string",
+              "value": "DE"
+            },
+            {
+              "id": "a2",
+              "name": "seller_vat_number",
+              "type": "string",
+              "value": ""
+            },
+            {
+              "id": "a3",
+              "name": "eu_country_codes",
+              "type": "string",
+              "value": "AT,BE,BG,CY,CZ,DE,DK,EE,ES,FI,FR,GR,HR,HU,IE,IT,LT,LU,LV,MT,NL,PL,PT,RO,SE,SI,SK"
+            },
+            {
+              "id": "a4",
+              "name": "name_match_minimum",
+              "type": "number",
+              "value": 0.6
+            },
+            {
+              "id": "a5",
+              "name": "accept_when_name_differs",
+              "type": "boolean",
+              "value": false
+            },
+            {
+              "id": "a6",
+              "name": "hold_invoice_when_treatment_changes",
+              "type": "boolean",
+              "value": false
+            },
+            {
+              "id": "a7",
+              "name": "vies_url",
+              "type": "string",
+              "value": "https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-number"
+            },
+            {
+              "id": "a8",
+              "name": "vies_retry_minutes",
+              "type": "number",
+              "value": 20
+            },
+            {
+              "id": "a9",
+              "name": "vies_max_attempts",
+              "type": "number",
+              "value": 3
+            },
+            {
+              "id": "a10",
+              "name": "finance_email",
+              "type": "string",
+              "value": "user@example.com"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.5
+    },
+    {
+      "id": "23b6701c-f1d6-5579-b2b2-618951401553",
+      "name": "Read The Buyer",
+      "type": "n8n-nodes-base.stripe",
+      "position": [
+        1248,
+        320
+      ],
+      "parameters": {
+        "resource": "customer",
+        "operation": "get",
+        "customerId": "={{ $('Handle Each Invoice Once').item.json.data.object.customer }}"
+      },
+      "credentials": {
+        "stripeApi": {
+          "id": "credential-id",
+          "name": "Stripe account"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2c21e0f2-623e-5d84-a2cc-55cdbb7affed",
+      "name": "Which VAT Case Is This?",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1760,
+        320
+      ],
+      "parameters": {
+        "jsCode": "\n// Decide which VAT situation this invoice is in BEFORE anyone asks VIES anything.\n// The invoice comes from the trigger, the customer from Read The Buyer, paired item by item.\nconst rules = $('VAT Rules').first().json;\nconst toVies = (c) => (c === 'GR' ? 'EL' : c);          // Greece is EL in VIES, GR everywhere else\nconst EU = String(rules.eu_country_codes || '')\n  .split(',').map(s => s.trim().toUpperCase()).filter(Boolean).map(toVies);\nconst sellerVies = toVies(String(rules.seller_country || '').trim().toUpperCase());\n\nconst out = [];\n$input.all().forEach((item, i) => {\n  const customer = item.json || {};\n  const ev = $('Handle Each Invoice Once').itemMatching(i).json || {};\n  const inv = (ev.data && ev.data.object) ? ev.data.object : ev;\n\n  const ids = Array.isArray(inv.customer_tax_ids) ? inv.customer_tax_ids : [];\n  const euVat = ids.find(t => t && t.type === 'eu_vat' && t.value);\n  const clean = euVat ? String(euVat.value).toUpperCase().replace(/[^A-Z0-9]/g, '') : '';\n  const buyerCountry = String((customer.address && customer.address.country)\n    || (inv.customer_address && inv.customer_address.country) || '').toUpperCase();\n\n  let vatCountry = '';\n  let vatDigits = '';\n  if (clean) {\n    if (/^[A-Z]{2}/.test(clean)) { vatCountry = toVies(clean.slice(0, 2)); vatDigits = clean.slice(2); }\n    else { vatCountry = toVies(buyerCountry); vatDigits = clean; }   // stored without its prefix\n  }\n  const current = customer.tax_exempt || inv.customer_tax_exempt || 'none';\n  const buyerInEU = EU.includes(toVies(buyerCountry));\n\n  // Every rule below changes money only when the case is certain. Anything a person set on purpose,\n  // or that can be legitimate outside this template's scope, is left alone or flagged, never changed.\n  let kase = 'not_applicable';\n  let reason = '';\n  if (current === 'exempt') {\n    reason = 'the customer is marked tax exempt in Stripe, a deliberate setting this workflow does not override';\n  } else if (!clean) {\n    if (current === 'reverse' && buyerInEU) { kase = 'stop_reverse'; reason = 'reverse charge is set for an EU buyer who has no EU VAT number on file'; }\n    else if (current === 'reverse') { reason = 'reverse charge on a buyer outside your EU list (or with no address) can be legitimate, so it is left alone'; }\n    else { reason = 'no EU VAT number on file, so this is not a reverse-charge sale'; }\n  } else if (!EU.includes(vatCountry)) {\n    reason = 'the VAT number is not from an EU country in your list, so it is left alone';\n  } else if (vatCountry === sellerVies) {\n    if (current === 'reverse') { kase = 'flag_domestic'; reason = 'reverse charge is set on a buyer registered in your own country. Domestic reverse charge exists only for specific goods and services, so a person should confirm it'; }\n    else { reason = 'domestic sale, charge your own VAT as usual'; }\n  } else {\n    kase = 'check_vies';\n    reason = 'cross-border EU sale to a business, the VAT number must be live today';\n  }\n\n  out.push({ json: {\n    invoice_id: inv.id || null,\n    invoice_status: inv.status || null,\n    invoice_editable: inv.status === 'draft',\n    invoice_auto_advance: inv.auto_advance === true,\n    // Stripe Tax reverse-charges ANY correctly formatted tax ID \"regardless of its validity\"\n    // (docs.stripe.com/tax/invoicing/tax-ids), so on these invoices tax_exempt is not the lever.\n    stripe_tax: !!(inv.automatic_tax && inv.automatic_tax.enabled === true),\n    customer_id: customer.id || inv.customer || null,\n    customer_name: customer.name || inv.customer_name || '',\n    customer_email: customer.email || inv.customer_email || '',\n    buyer_country: buyerCountry || null,\n    current_tax_exempt: current,\n    vat_number: clean || null,\n    vat_country: vatCountry || null,\n    vat_digits: vatDigits || null,\n    case: kase,\n    case_reason: reason,\n    attempt: 0,\n    held_for_vies: false,\n    livemode: inv.livemode === true,\n  } });\n});\nreturn out;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cb5709a2-a813-535b-bda0-d4df0dd437e5",
+      "name": "Route The Case",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        2000,
+        320
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "Ask VIES",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "k1",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.case }}",
+                    "rightValue": "check_vies"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Decide Without VIES",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "k2",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ ['stop_reverse', 'flag_domestic'].includes($json.case) }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Not A Reverse Charge Sale"
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "0b617eab-d7ee-54c9-b17d-385a07617bb9",
+      "name": "Not A Reverse Charge Sale",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        2240,
+        560
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "e9b2bc20-2e1d-57cf-84be-da4b0f276d9d",
+      "name": "Build The VIES Question",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2768,
+        560
+      ],
+      "parameters": {
+        "jsCode": "\n// Build the VIES request. This node runs on the first attempt AND on every retry, so the attempt\n// counter lives here. Sending your own VAT number is what makes VIES return a consultation number.\nconst rules = $('VAT Rules').first().json;\nconst own = String(rules.seller_vat_number || '').toUpperCase().replace(/[^A-Z0-9]/g, '');\nreturn $input.all().map(item => {\n  const c = item.json;\n  const attempt = Number(c.attempt || 0) + 1;\n  const body = { countryCode: c.vat_country, vatNumber: c.vat_digits };\n  if (own.length > 2) {\n    const cc = own.slice(0, 2);\n    body.requesterMemberStateCode = cc === 'GR' ? 'EL' : cc;\n    body.requesterNumber = own.slice(2);\n  }\n  return { json: Object.assign({}, c, {\n    attempt,\n    // Only a draft that WAS going to auto-finalise counts as held by this workflow. A draft its owner\n    // left manual (auto_advance false) is never switched on later, whatever VIES answers.\n    held_for_vies: c.held_for_vies === true\n      || (attempt > 1 && c.invoice_editable === true && c.invoice_auto_advance === true),\n    vies_request: body,\n  }) };\n});\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "4bb9a52a-e42b-5157-82fc-41337f2c77c2",
+      "name": "Ask VIES Today",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        3008,
+        560
+      ],
+      "parameters": {
+        "url": "={{ $('VAT Rules').first().json.vies_url }}",
+        "method": "POST",
+        "options": {
+          "timeout": 20000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify($json.vies_request) }}",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "b27ac8e6-e95f-5d91-92ef-3a2a701e4331",
+      "name": "Read The VIES Answer",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3248,
+        560
+      ],
+      "parameters": {
+        "jsCode": "\n// Turn the VIES reply into one of four answers. The trap: a reply can say valid:false while the\n// real reason is that the member state's own service is down. That is NOT an invalid number.\nconst rules = $('VAT Rules').first().json;\nconst minScore = Number(rules.name_match_minimum);\nconst DOWN = ['MS_UNAVAILABLE', 'SERVICE_UNAVAILABLE', 'TIMEOUT', 'MS_MAX_CONCURRENT_REQ',\n  'GLOBAL_MAX_CONCURRENT_REQ', 'MS_MAX_CONCURRENT_REQ_TIME', 'GLOBAL_MAX_CONCURRENT_REQ_TIME',\n  'IP_BLOCKED', 'VAT_BLOCKED'];\n// Legal-form words carry no identity: GOOGLE IRELAND LIMITED and Google Ireland Ltd are one company.\nconst LEGAL = new Set(['LTD', 'LIMITED', 'GMBH', 'AG', 'SA', 'SAS', 'SARL', 'SRL', 'SPA', 'BV', 'NV',\n  'AB', 'AS', 'OY', 'OYJ', 'PLC', 'LLC', 'INC', 'KG', 'CO', 'COMPANY', 'THE', 'AND', 'SL', 'SE', 'UG',\n  'EV', 'KFT', 'ZRT', 'DOO', 'SRO', 'APS', 'ASA', 'LDA', 'EOOD', 'OOD', 'SPZOO', 'ZOO', 'SP', 'GROUP',\n  // VIES often returns the legal form SPELLED OUT: ORANGE POLSKA SPOLKA AKCYJNA is Orange Polska S.A.\n  'SPOLKA', 'AKCYJNA', 'OGRANICZONA', 'ODPOWIEDZIALNOSCIA', 'AKTIENGESELLSCHAFT', 'GESELLSCHAFT',\n  'BESCHRANKTER', 'HAFTUNG', 'AKTIESELSKAB', 'ANPARTSSELSKAB', 'AKTIEBOLAG', 'BESLOTEN', 'NAAMLOZE',\n  'VENNOOTSCHAP', 'SOCIETE', 'ANONYME', 'SIMPLIFIEE', 'SOCIETA', 'AZIONI', 'RESPONSABILITA', 'LIMITATA']);\n// Some letters are not an accent on a base letter, so NFD leaves them alone and the name splits in\n// two: SPOLKA with a barred L became SPO + KA. Spell them out first (Danish, Polish, Croatian, French).\nconst SPELL = { '\\u00d8': 'O', '\\u00f8': 'o', '\\u00c6': 'AE', '\\u00e6': 'ae', '\\u0141': 'L', '\\u0142': 'l', '\\u0110': 'D', '\\u0111': 'd', '\\u0152': 'OE', '\\u0153': 'oe' };\nconst tokens = (s) => String(s || '')\n  .replace(/[\\u00d8\\u00f8\\u00c6\\u00e6\\u0141\\u0142\\u0110\\u0111\\u0152\\u0153]/g, ch => SPELL[ch])\n  .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')\n  .toUpperCase().replace(/[^A-Z0-9]+/g, ' ')\n  .split(' ').filter(t => t.length > 1 && !LEGAL.has(t));\n// Whole-token comparison, never substring: ELECTION must not match inside SELECTION.\nconst dice = (a, b) => {\n  const A = new Set(tokens(a)); const B = new Set(tokens(b));\n  if (!A.size || !B.size) return 0;\n  let hit = 0; A.forEach(t => { if (B.has(t)) hit++; });\n  return (2 * hit) / (A.size + B.size);\n};\nconst NON_LATIN = /[\\u0370-\\u03ff\\u0400-\\u04ff]/;   // Greek and Cyrillic, both returned by VIES\n\nreturn $input.all().map((item, i) => {\n  const c = $('Build The VIES Question').itemMatching(i).json;\n  const r = item.json || {};\n  const body = (r.body && typeof r.body === 'object') ? r.body : r;\n  const status = Number(r.statusCode || 0);\n\n  let result = 'unavailable';\n  let error = null;\n  // Three reply shapes were measured live: {valid,...}, {errorWrappers:[{error}]} and\n  // {errorWrappers:[{error, message}]}. An error is about the REQUEST, never proof the buyer's number\n  // is bad: a mistyped seller_vat_number returns INVALID_REQUESTER_INFO for EVERY buyer.\n  const wrapped = Array.isArray(body.errorWrappers) && body.errorWrappers.length\n    ? String(body.errorWrappers[0].error || 'UNKNOWN')\n      + (body.errorWrappers[0].message ? ' (' + String(body.errorWrappers[0].message).slice(0, 150) + ')' : '')\n    : null;\n  const userError = body.userError && !['VALID', 'INVALID'].includes(String(body.userError))\n    ? String(body.userError) : null;\n\n  if (r.error) { error = 'no answer: ' + String(r.error.message || r.error).slice(0, 200); }\n  else if (status >= 500) { error = 'VIES answered HTTP ' + status; }\n  else if (wrapped || userError) {\n    error = wrapped || userError;\n    result = DOWN.includes(error.split(' ')[0]) ? 'unavailable' : 'rejected_request';\n  }\n  else if (body.valid === true) { result = 'valid'; }\n  else if (body.valid === false) { result = 'invalid'; }\n  else { error = 'VIES reply had no valid field'; }\n\n  const viesName = (typeof body.name === 'string' && body.name.trim() && body.name.trim() !== '---')\n    ? body.name.trim() : null;\n  let nameCheck = null;\n  let score = null;\n  if (result === 'valid') {\n    if (!viesName) nameCheck = 'withheld';\n    else if (NON_LATIN.test(viesName)) nameCheck = 'not_comparable';\n    else { score = Math.round(dice(viesName, c.customer_name) * 100) / 100; nameCheck = score >= minScore ? 'matches' : 'differs'; }\n  }\n\n  return { json: Object.assign({}, c, {\n    vies_result: result,\n    vies_error: error,\n    vies_name: viesName,\n    vies_address: (typeof body.address === 'string' && body.address.trim() !== '---') ? body.address.trim() : null,\n    vies_request_id: body.requestIdentifier ? String(body.requestIdentifier) : null,\n    vies_checked_at: body.requestDate ? String(body.requestDate) : new Date().toISOString(),\n    name_check: nameCheck,\n    name_score: score,\n  }) };\n});\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "98d19d02-4ff3-5436-acbc-f1ccd7468aeb",
+      "name": "Did VIES Answer?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3488,
+        560
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.vies_result }}",
+              "rightValue": "unavailable"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "8ba8d1b2-2e8c-52cf-b346-e621563b9c69",
+      "name": "Any Tries Left?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4000,
+        1040
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "t1",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              },
+              "leftValue": "={{ $json.attempt }}",
+              "rightValue": "={{ $('VAT Rules').first().json.vies_max_attempts }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "5049fd52-c0ab-5506-b44b-47979d90dd4e",
+      "name": "Hold The Draft While VIES Is Down",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 3,
+      "position": [
+        4240,
+        1280
+      ],
+      "parameters": {
+        "url": "=https://api.stripe.com/v1/invoices/{{ $json.invoice_id }}",
+        "body": "={{ ($json.invoice_editable ? 'auto_advance=false&' : '') + 'metadata[vat_decision]=waiting_for_vies' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 20000
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "authentication": "predefinedCredentialType",
+        "rawContentType": "application/x-www-form-urlencoded",
+        "nodeCredentialType": "stripeApi"
+      },
+      "credentials": {
+        "stripeApi": {
+          "id": "credential-id",
+          "name": "Stripe account"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "8c047888-b298-501e-b400-8ca6251d25cd",
+      "name": "Keep The Case Once Held",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        4480,
+        1040
+      ],
+      "parameters": {
+        "mode": "chooseBranch",
+        "output": "specifiedInput",
+        "useDataOfInput": "1",
+        "chooseBranchMode": "waitForAll"
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "0544c399-a6e0-5534-86aa-a1538578d1f8",
+      "name": "Wait Before Asking VIES Again",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        4720,
+        1040
+      ],
+      "parameters": {
+        "unit": "minutes",
+        "amount": "={{ $('VAT Rules').first().json.vies_retry_minutes }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "50639808-0603-51a7-9ad8-012e093f4511",
+      "name": "Decide The VAT Treatment",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5232,
+        320
+      ],
+      "parameters": {
+        "jsCode": "\n// One decision per invoice. Items arrive from three places - the no-VIES stop path, a VIES answer,\n// and a VIES that stayed down - and every one carries the same keys, so this node reads $json.\nconst rules = $('VAT Rules').first().json;\nconst holdOnChange = rules.hold_invoice_when_treatment_changes === true;\nconst acceptNameMismatch = rules.accept_when_name_differs === true;\n\nreturn $input.all().map(item => {\n  const c = Object.assign({ vies_result: null, vies_error: null, vies_name: null, vies_address: null,\n    vies_request_id: null, vies_checked_at: null, name_check: null, name_score: null }, item.json);\n  const current = c.current_tax_exempt || 'none';\n  const stripeTax = c.stripe_tax === true;\n  let target = null;\n  let hold = false;\n  let decision;\n  let why;\n  let todo = null;\n\n  if (c.case === 'flag_domestic') {\n    decision = 'flagged_domestic_reverse'; why = c.case_reason;\n    todo = 'Confirm the goods or services qualify for domestic reverse charge, or set the customer to taxable.';\n  } else if (c.case === 'stop_reverse') {\n    target = 'none'; decision = 'reverse_charge_removed'; why = c.case_reason;\n  } else if (c.vies_result === 'valid' && c.name_check === 'differs' && !acceptNameMismatch) {\n    hold = true; decision = 'held_name_differs';\n    why = 'VIES says ' + c.vat_number + ' is registered to \"' + c.vies_name + '\", not to \"' + c.customer_name + '\"';\n    todo = 'Check which company this customer really is, correct it in Stripe, then finalise the draft.';\n  } else if (c.vies_result === 'valid') {\n    // Under Stripe Tax the tax ID itself drives reverse charge, so the customer is not touched.\n    target = stripeTax ? null : 'reverse'; decision = 'reverse_charge_confirmed';\n    why = c.name_check === 'matches' ? 'VIES confirms the number and the registered name'\n      : c.name_check === 'withheld' ? 'VIES confirms the number; this member state does not publish the name'\n      : c.name_check === 'not_comparable' ? 'VIES confirms the number; the registered name is not in Latin script, so it was not compared'\n      : 'VIES confirms the number; the registered name differs and your rules accept that';\n  } else if (c.vies_result === 'invalid') {\n    decision = 'reverse_charge_refused';\n    why = 'VIES says ' + c.vat_number + ' is not a valid VAT registration today';\n    if (stripeTax) {\n      // Stripe Tax reverse-charges any correctly formatted tax ID \"regardless of its validity\", so\n      // setting the customer to taxable would NOT stop it. Hold, and say exactly what to remove.\n      hold = true;\n      todo = 'This invoice uses Stripe Tax, which reverse-charges any correctly formatted VAT number even when it is invalid. Remove tax ID ' + c.vat_number + ' from the customer, then finalise the draft.';\n    } else {\n      target = 'none';\n    }\n  } else if (c.vies_result === 'rejected_request') {\n    // An error is about the REQUEST, not proof that the buyer's number is bad. Never change money on it.\n    hold = true; decision = 'held_vies_rejected_request';\n    why = 'VIES rejected the request (' + c.vies_error + '). If this repeats for every buyer, check seller_vat_number in VAT Rules.';\n    todo = 'Check the number by hand on the VIES website, then finalise or correct the draft.';\n  } else {\n    hold = true; decision = 'held_vies_unavailable';\n    why = 'VIES did not answer after ' + c.attempt + ' attempt(s): ' + (c.vies_error || 'no reason given');\n    todo = 'Check the number by hand on the VIES website, then finalise the draft.';\n  }\n\n  const changes = target !== null && target !== current;\n  if (changes && holdOnChange) hold = true;\n  const editable = c.invoice_editable === true;\n  const confirmedQuietly = decision === 'reverse_charge_confirmed' && !changes && c.name_check !== 'differs';\n  const notify = !confirmedQuietly;\n\n  // Proof written onto the invoice. Stripe caps a metadata value at 500 characters.\n  const meta = {\n    vat_decision: decision,\n    vat_number_checked: c.vat_number || '',\n    vies_result: c.vies_result || 'not_asked',\n    vies_registered_name: c.vies_name || '',\n    vies_consultation_number: c.vies_request_id || '',\n    vies_checked_at: c.vies_checked_at || '',\n    vat_name_check: c.name_check || '',\n  };\n  const parts = Object.keys(meta).map(k => 'metadata[' + k + ']=' + encodeURIComponent(String(meta[k]).slice(0, 500)));\n  // Only a DRAFT can be held. Auto-finalise is switched back on ONLY for an invoice this workflow\n  // held itself; a draft its owner left manual stays manual.\n  if (editable && hold) parts.push('auto_advance=false');\n  if (editable && !hold && c.held_for_vies === true) parts.push('auto_advance=true');\n\n  const lines = [\n    'Invoice ' + c.invoice_id + ' for ' + (c.customer_name || c.customer_id) + ' (' + (c.customer_email || 'no email') + ')',\n    'Decision: ' + decision,\n    'Why: ' + why,\n    'VAT number checked: ' + (c.vat_number || 'none on file'),\n    'Tax treatment on the customer: ' + current + (changes ? ' -> ' + target : ' (unchanged)'),\n    hold ? (editable ? 'The draft invoice is HELD: it will not finalise until someone finalises it in Stripe.'\n                     : 'The invoice was already ' + c.invoice_status + ', so it could not be held. Check it now.')\n         : (editable ? 'The draft invoice was not held.' : 'The invoice was already ' + c.invoice_status + '; the change applies from the next invoice.'),\n    c.vies_request_id ? 'VIES consultation number: ' + c.vies_request_id : 'No VIES consultation number (set seller_vat_number in VAT Rules to get one).',\n    'What to do: ' + (todo || 'nothing, this is for your records.'),\n  ];\n\n  return { json: Object.assign({}, c, {\n    decision,\n    decision_reason: why,\n    action_needed: todo,\n    target_tax_exempt: target,\n    treatment_changes: changes,\n    hold_invoice: hold,\n    notify_finance: notify,\n    invoice_update_body: parts.join('&'),\n    customer_update_body: target ? 'tax_exempt=' + target + '&metadata[vat_decision]=' + encodeURIComponent(decision) : '',\n    email_subject: '[VAT] ' + decision.replace(/_/g, ' ') + ': ' + (c.customer_name || c.customer_id) + ', invoice ' + c.invoice_id,\n    email_body: lines.join('\\n'),\n  }) };\n});\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "2239fa7b-09d7-5e08-9bab-21dc18186e7f",
+      "name": "Does The Treatment Change?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        5472,
+        320
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.treatment_changes }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "5fc1f189-e327-534f-b8dc-f71bf97055da",
+      "name": "Set The Customer's VAT Treatment",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 3,
+      "position": [
+        5712,
+        560
+      ],
+      "parameters": {
+        "url": "=https://api.stripe.com/v1/customers/{{ $json.customer_id }}",
+        "body": "={{ $json.customer_update_body }}",
+        "method": "POST",
+        "options": {
+          "timeout": 20000
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "authentication": "predefinedCredentialType",
+        "rawContentType": "application/x-www-form-urlencoded",
+        "nodeCredentialType": "stripeApi"
+      },
+      "credentials": {
+        "stripeApi": {
+          "id": "credential-id",
+          "name": "Stripe account"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "26398936-f921-573f-9043-7d337a8790d8",
+      "name": "Write The VIES Proof Onto The Invoice",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 3,
+      "position": [
+        5952,
+        320
+      ],
+      "parameters": {
+        "url": "=https://api.stripe.com/v1/invoices/{{ $('Decide The VAT Treatment').item.json.invoice_id }}",
+        "body": "={{ $('Decide The VAT Treatment').item.json.invoice_update_body }}",
+        "method": "POST",
+        "options": {
+          "timeout": 20000
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "authentication": "predefinedCredentialType",
+        "rawContentType": "application/x-www-form-urlencoded",
+        "nodeCredentialType": "stripeApi"
+      },
+      "credentials": {
+        "stripeApi": {
+          "id": "credential-id",
+          "name": "Stripe account"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "9cea506b-7fe2-566c-b92d-2ba7b3bf8a25",
+      "name": "Does Finance Need To Know?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        6464,
+        320
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Decide The VAT Treatment').item.json.notify_finance }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "d3827a9b-b255-5d85-95fd-b2dcec6129a1",
+      "name": "Tell Finance What Changed",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        6704,
+        320
+      ],
+      "parameters": {
+        "sendTo": "={{ $('VAT Rules').first().json.finance_email }}",
+        "message": "={{ $('Decide The VAT Treatment').item.json.email_body }}",
+        "options": {
+          "appendAttribution": false
+        },
+        "subject": "={{ $('Decide The VAT Treatment').item.json.email_subject }}",
+        "resource": "message",
+        "emailType": "text",
+        "operation": "send"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail account"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "b291e916-249c-5f39-95e9-2b4dff9a7aab",
+      "name": "Nothing For Finance",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        6704,
+        560
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "b3973cbf-4eed-5827-b972-3bfd09b60c40",
+      "name": "Overview Sticky",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -704,
+        160
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 736,
+        "height": 1360,
+        "content": "## Re-check EU VAT numbers before each Stripe invoice\n\nStripe checks a customer's EU VAT number with VIES **once**, when it is added. Stripe Tax reverse-charges any correctly formatted number, valid or not. A buyer who deregisters keeps getting 0% invoices, and the unpaid VAT becomes yours.\n\n### How it works\n1. When Stripe drafts an invoice, the buyer is sorted: a cross-border EU business, a reverse charge that no longer applies, a domestic reverse charge to confirm, or nothing to do. Customers marked exempt are never touched.\n2. Cross-border numbers are asked of VIES again, today, and the registered name is compared with the Stripe customer where the member state publishes it.\n3. Valid keeps reverse charge. Invalid removes it, or holds the draft under Stripe Tax, where only removing the tax ID stops it. A different company name, a VIES error or a long outage holds the draft so it cannot finalise.\n4. The VIES answer is written onto the invoice as proof, and finance gets an email saying what to do.\n\n### Setup\n1. Add a Stripe credential and a Gmail credential.\n2. Open **VAT Rules**: your country, your own VAT number and the finance address. A mistyped VAT number makes VIES reject every check, so drafts are held, never cleared.\n3. Activate. Stripe finalises a draft about an hour after this runs.\n\n### Good to know\nGermany does not publish names in VIES. Greek names come back in Greek script. Both are confirmed on the number alone and say so.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d439dae6-faae-5ee4-b82d-6a5ab0f9d1e6",
+      "name": "Section 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        208,
+        160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 576,
+        "height": 400,
+        "content": "## 1. A draft invoice arrives\nStripe can send the same event twice, so each invoice is handled once."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ebc6e4c7-cde5-5103-a301-c867d969eed0",
+      "name": "Section 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        960,
+        160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 576,
+        "height": 400,
+        "content": "## 2. Your rules and the buyer\nEvery setting lives in VAT Rules. The buyer is read fresh from Stripe."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f5eb5059-b4d7-5d18-85ea-9015b13661c4",
+      "name": "Section 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1712,
+        160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 832,
+        "height": 704,
+        "content": "## 3. Which VAT case is this?\nOnly a cross-border EU sale to a business needs VIES. Exempt customers and\nbuyers outside your EU list are never changed."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b354d4cb-3f9c-5f82-ae24-0e9972ebea92",
+      "name": "Section 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2672,
+        400
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1104,
+        "height": 400,
+        "content": "## 4. Ask VIES again, today\nGreece is sent as EL. A member state that is down is not an invalid number."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "40b69cf2-b931-526f-9eb3-ec48b74933f9",
+      "name": "Section 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3952,
+        640
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1056,
+        "height": 880,
+        "content": "## 5. VIES is down: hold, wait, retry\nThe draft is held first, so it cannot finalise while nobody knows the answer."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "44e73a5a-c376-545e-a15d-65c1704bed46",
+      "name": "Section 6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        5184,
+        160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1056,
+        "height": 640,
+        "content": "## 6. Decide and change Stripe\nThe customer's treatment changes before the invoice finalises. Under Stripe Tax an\ninvalid number holds the draft instead, because only removing the tax ID stops it."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a80083cb-927e-56da-bc80-b3678350a0a1",
+      "name": "Section 7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        6416,
+        160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 576,
+        "height": 640,
+        "content": "## 7. Tell finance\nA quiet confirmation sends nothing. Everything else gets an email."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "VAT Rules": {
+      "main": [
+        [
+          {
+            "node": "Read The Buyer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask VIES Today": {
+      "main": [
+        [
+          {
+            "node": "Read The VIES Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read The Buyer": {
+      "main": [
+        [
+          {
+            "node": "Which VAT Case Is This?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route The Case": {
+      "main": [
+        [
+          {
+            "node": "Build The VIES Question",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Decide The VAT Treatment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not A Reverse Charge Sale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any Tries Left?": {
+      "main": [
+        [
+          {
+            "node": "Hold The Draft While VIES Is Down",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Keep The Case Once Held",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Decide The VAT Treatment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Did VIES Answer?": {
+      "main": [
+        [
+          {
+            "node": "Decide The VAT Treatment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Any Tries Left?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read The VIES Answer": {
+      "main": [
+        [
+          {
+            "node": "Did VIES Answer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build The VIES Question": {
+      "main": [
+        [
+          {
+            "node": "Ask VIES Today",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep The Case Once Held": {
+      "main": [
+        [
+          {
+            "node": "Wait Before Asking VIES Again",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Which VAT Case Is This?": {
+      "main": [
+        [
+          {
+            "node": "Route The Case",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide The VAT Treatment": {
+      "main": [
+        [
+          {
+            "node": "Does The Treatment Change?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Each Invoice Once": {
+      "main": [
+        [
+          {
+            "node": "VAT Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Does Finance Need To Know?": {
+      "main": [
+        [
+          {
+            "node": "Tell Finance What Changed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nothing For Finance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Does The Treatment Change?": {
+      "main": [
+        [
+          {
+            "node": "Set The Customer's VAT Treatment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write The VIES Proof Onto The Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Before Asking VIES Again": {
+      "main": [
+        [
+          {
+            "node": "Build The VIES Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set The Customer's VAT Treatment": {
+      "main": [
+        [
+          {
+            "node": "Write The VIES Proof Onto The Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When A Stripe Invoice Is Drafted": {
+      "main": [
+        [
+          {
+            "node": "Handle Each Invoice Once",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hold The Draft While VIES Is Down": {
+      "main": [
+        [
+          {
+            "node": "Keep The Case Once Held",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Write The VIES Proof Onto The Invoice": {
+      "main": [
+        [
+          {
+            "node": "Does Finance Need To Know?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

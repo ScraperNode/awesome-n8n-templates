@@ -1,6 +1,6 @@
 # 🔒 Monitor new CVEs for bug bounty hunting with Gemini AI and Slack alerts
 
-> ⚡ **995 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,393 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

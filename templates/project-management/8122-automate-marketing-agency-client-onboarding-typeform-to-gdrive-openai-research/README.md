@@ -1,6 +1,6 @@
 # 📋 Automate marketing agency client onboarding: Typeform to GDrive + OpenAI research
 
-> ⚡ **594 views** · 📋 [Project Management](../)
+> ⚡ **919 views** · 📋 [Project Management](../)
 
 ## Description
 

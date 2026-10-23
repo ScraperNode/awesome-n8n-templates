@@ -1,6 +1,6 @@
 # ⚒️ Chat with local LLMs using n8n and Ollama
 
-> ⚡ **186,162 views** · ⚒️ [Engineering](../)
+> ⚡ **231,169 views** · ⚒️ [Engineering](../)
 
 ## Description
 

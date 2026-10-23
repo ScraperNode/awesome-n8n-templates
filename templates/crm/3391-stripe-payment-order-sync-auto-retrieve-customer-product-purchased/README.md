@@ -1,6 +1,6 @@
 # 🤝 Stripe payment order sync – auto retrieve customer & product purchased
 
-> ⚡ **3,848 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **4,099 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

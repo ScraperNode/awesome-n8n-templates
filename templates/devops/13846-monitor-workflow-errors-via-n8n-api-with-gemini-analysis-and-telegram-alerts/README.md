@@ -1,6 +1,6 @@
 # ⚙️ Monitor workflow errors via n8n API with Gemini analysis and Telegram alerts
 
-> ⚡ **103 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **309 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

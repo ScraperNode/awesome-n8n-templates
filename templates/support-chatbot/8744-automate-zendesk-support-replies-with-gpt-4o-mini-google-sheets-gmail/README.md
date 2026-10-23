@@ -1,6 +1,6 @@
 # 💬 Automate Zendesk Support replies with GPT-4o-mini, Google Sheets & Gmail
 
-> ⚡ **89 views** · 💬 [Support Chatbots](../)
+> ⚡ **110 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

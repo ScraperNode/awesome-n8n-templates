@@ -1,6 +1,6 @@
 # 🎬 Generate & publish SEO articles with Claude AI, Webflow & image generation
 
-> ⚡ **11,550 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **14,224 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

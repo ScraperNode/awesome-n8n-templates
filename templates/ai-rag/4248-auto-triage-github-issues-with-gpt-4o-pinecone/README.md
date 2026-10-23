@@ -1,6 +1,6 @@
 # 🔍 Auto-triage GitHub issues with GPT-4o, Pinecone
 
-> ⚡ **208 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **211 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

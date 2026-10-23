@@ -1,6 +1,6 @@
 # 🔧 Create daily trivia icebreakers in Slack with OpenTDB & Google Sheets log
 
-> ⚡ **33 views** · 🔧 [Miscellaneous](../)
+> ⚡ **42 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Verify generic business emails across multiple domains with EmailListVerify and Google Sheets
 
-> ⚡ **157 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **187 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

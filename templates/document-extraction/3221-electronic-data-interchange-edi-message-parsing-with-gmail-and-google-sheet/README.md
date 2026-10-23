@@ -1,6 +1,6 @@
 # 🔬 📦 Electronic data interchange (EDI) message parsing with Gmail and Google Sheet
 
-> ⚡ **2,539 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,748 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

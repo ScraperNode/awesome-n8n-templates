@@ -1,6 +1,6 @@
 # 🎣 Extract URL from an email address
 
-> ⚡ **1,246 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,283 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

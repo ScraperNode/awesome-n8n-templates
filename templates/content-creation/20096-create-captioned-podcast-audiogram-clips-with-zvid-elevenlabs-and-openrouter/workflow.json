@@ -1,0 +1,1110 @@
+{
+  "name": "Create captioned podcast audiogram clips with Zvid, ElevenLabs and OpenRouter",
+  "nodes": [
+    {
+      "id": "zvid-pa-0001",
+      "name": "Every day at 7am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        50,
+        220
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "zvid-pa-0002",
+      "name": "Test manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        50,
+        400
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "zvid-pa-0003",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        300,
+        310
+      ],
+      "parameters": {
+        "mode": "raw",
+        "options": {},
+        "jsonOutput": "{\n  \"apiUrl\": \"https://api.zvid.io\",\n  \"editorUrl\": \"https://editor.zvid.io\",\n  \"feedUrl\": \"https://feeds.npr.org/510289/podcast.xml\",\n  \"clipCount\": 2,\n  \"clipSeconds\": 30,\n  \"minClipSeconds\": 18,\n  \"skipIntroSeconds\": 0,\n  \"clipWindowSeconds\": 300,\n  \"maxTranscribeMB\": 4,\n  \"sttModel\": \"scribe_v1\",\n  \"llmModel\": \"openai/gpt-4.1-mini\",\n  \"showNameOverride\": \"\",\n  \"coverImageOverride\": \"\",\n  \"handle\": \"@yourshow\",\n  \"listenLine\": \"Full episode in the show notes\",\n  \"hookFont\": \"DM Serif Display\",\n  \"uiFont\": \"Space Grotesk\",\n  \"captionFont\": \"Inter\",\n  \"inkColor\": \"#0B0A12\",\n  \"panelColor\": \"#17141F\",\n  \"textColor\": \"#F2EFFA\",\n  \"mutedColor\": \"#8E88A6\",\n  \"brandAccent\": \"#2DD4BF\",\n  \"captionAnimation\": \"karaoke\",\n  \"captionSize\": 62,\n  \"captionWordsPerCue\": 4,\n  \"captionStrokeWidth\": 6,\n  \"frameRate\": 30,\n  \"dryRun\": false,\n  \"pollSeconds\": 10,\n  \"timeoutMinutes\": 20,\n  \"maxAudioBytes\": 5242880\n}"
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "zvid-pa-0004",
+      "name": "Read podcast feed",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "maxTries": 3,
+      "position": [
+        550,
+        310
+      ],
+      "parameters": {
+        "url": "={{ $('Config').first().json.feedUrl }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "typeVersion": 1.1,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-pa-0005",
+      "name": "Pick latest episode",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        800,
+        310
+      ],
+      "parameters": {
+        "jsCode": "// The RSS node emits one item per <item>. Most podcast hosts publish newest\n// first, but that is not guaranteed, so sort by date and keep the newest\n// entry that actually carries a playable audio enclosure.\nconst cfg = $('Config').first().json;\nconst items = $input.all().map((i) => i.json);\nif (!items.length) {\n  throw new Error('The feed at ' + cfg.feedUrl + ' returned no items. Check the URL in Config - it must be the RSS feed, not the show page.');\n}\n\n// rss-parser exposes <enclosure> as { url, length, type }. Some feeds only\n// carry media:content or put the file on <link>, so probe those too before\n// giving up on an episode.\nconst audioUrlOf = (it) => {\n  const enc = it.enclosure;\n  if (enc && typeof enc === 'object' && enc.url) {\n    const type = String(enc.type || '');\n    if (!type || /^audio\\//i.test(type)) return String(enc.url);\n  }\n  if (typeof enc === 'string' && /^https?:/i.test(enc)) return enc;\n  const media = it['media:content'] || it.mediaContent;\n  const mUrl = media && (media.$ ? media.$.url : media.url);\n  if (mUrl && /^https?:/i.test(String(mUrl))) return String(mUrl);\n  if (typeof it.link === 'string' && /\\.(mp3|m4a|aac|wav)(\\?|$)/i.test(it.link)) return it.link;\n  return null;\n};\n\nconst dateOf = (it) => {\n  const raw = it.isoDate || it.pubDate || it.date;\n  const t = raw ? Date.parse(raw) : NaN;\n  return Number.isFinite(t) ? t : 0;\n};\n\n// \"2335\" | \"38:55\" | \"01:02:03\" -> seconds\nconst durationOf = (raw) => {\n  const s = String(raw == null ? '' : raw).trim();\n  if (!s) return null;\n  if (/^\\d+$/.test(s)) return Number(s);\n  const parts = s.split(':').map(Number);\n  if (parts.some((n) => !Number.isFinite(n))) return null;\n  return parts.reduce((acc, n) => acc * 60 + n, 0);\n};\n\nconst withAudio = items.filter((it) => audioUrlOf(it));\nif (!withAudio.length) {\n  throw new Error('No episode in this feed has an audio enclosure (' + items.length + ' items checked). Some feeds are video-only or link straight to a player page; point feedUrl at a standard audio podcast RSS feed.');\n}\nwithAudio.sort((a, b) => dateOf(b) - dateOf(a));\nconst it = withAudio[0];\n\nconst itunes = it.itunes || {};\nconst cover = String(cfg.coverImageOverride || '').trim()\n  || String(itunes.image || it['itunes:image'] || it.image || '').trim();\n\n// Item-level fields only: the RSS node hands back entries, not the channel,\n// so the show name comes from Config when the item does not carry one.\nconst showName = String(cfg.showNameOverride || '').trim()\n  || String(itunes.author || it.creator || it.author || '').trim()\n  || 'The Podcast';\n\nconst when = dateOf(it) ? new Date(dateOf(it)) : new Date();\nconst dateLabel = when.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }).toUpperCase();\nconst epNumber = itunes.episode ? String(itunes.episode).trim() : null;\nconst episodeChip = (epNumber ? 'EP ' + epNumber + ' - ' : '') + dateLabel;\n\n// The Range cap is what keeps a 90-minute episode from being downloaded and\n// transcribed in full. MP3/AAC decode fine from a truncated head.\nconst requestedMB = Number(cfg.maxTranscribeMB ?? 4);\nconst maxAudioBytes = Number(cfg.maxAudioBytes ?? 5242880);\nif (!Number.isFinite(requestedMB) || requestedMB <= 0 || !Number.isFinite(maxAudioBytes) || maxAudioBytes < 1) {\n  throw new Error('maxTranscribeMB and maxAudioBytes must be positive numbers in Config.');\n}\n// The same file is uploaded for rendering, so respect its audio-asset limit too.\nconst maxBytes = Math.floor(Math.min(requestedMB * 1048576, 25 * 1048576, maxAudioBytes));\n\nreturn [{\n  json: {\n    found: true,\n    showName: showName,\n    episodeTitle: String(it.title || '').replace(/\\s+/g, ' ').trim(),\n    episodeChip: episodeChip,\n    episodeLink: String(it.link || ''),\n    coverUrl: cover,\n    audioUrl: audioUrlOf(it),\n    episodeSeconds: durationOf(itunes.duration),\n    rangeHeader: 'bytes=0-' + (maxBytes - 1),\n    maxBytes: maxBytes,\n    episodesChecked: items.length,\n  },\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-pa-0006",
+      "name": "Fetch episode audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 3,
+      "position": [
+        1050,
+        310
+      ],
+      "parameters": {
+        "url": "={{ $json.audioUrl }}",
+        "options": {
+          "timeout": 300000,
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Range",
+              "value": "={{ $json.rangeHeader }}"
+            },
+            {
+              "name": "User-Agent",
+              "value": "ZvidAudiogram/1.0 (+https://zvid.io)"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-pa-0007",
+      "name": "Transcribe (Scribe)",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 3,
+      "position": [
+        1690,
+        310
+      ],
+      "parameters": {
+        "url": "https://api.elevenlabs.io/v1/speech-to-text",
+        "method": "POST",
+        "options": {
+          "timeout": 600000
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "authentication": "genericCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model_id",
+              "value": "={{ $('Config').first().json.sttModel }}",
+              "parameterType": "formData"
+            },
+            {
+              "name": "timestamps_granularity",
+              "value": "word",
+              "parameterType": "formData"
+            },
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 10000
+    },
+    {
+      "id": "zvid-pa-0008",
+      "name": "Read transcript",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1940,
+        310
+      ],
+      "parameters": {
+        "jsCode": "// Turns one ElevenLabs Scribe response into (a) the word list every later\n// node reads and (b) the numbered transcript the model picks moments from.\n// The downloaded audio is re-attached so the next node can upload the EXACT\n// bytes that were transcribed - that is what makes caption timing exact.\nconst cfg = $('Config').first().json;\nconst res = $input.first().json;\n\n// Scribe returns { text, words: [{ text, start, end, type }] }. Anything else\n// is an error payload or a plan/quota message, so say so plainly.\nconst raw = Array.isArray(res && res.words) ? res.words : null;\nif (!raw) {\n  throw new Error(\n    'ElevenLabs Scribe returned no word timings. Check the xi-api-key credential and your speech-to-text quota, and make sure timestamps_granularity is \"word\". Response: ' +\n      JSON.stringify(res).slice(0, 400)\n  );\n}\n\n// Curly quotes and dashes make caption chunks look broken and break naive\n// sentence detection, so normalise to ASCII once, here.\nconst toAscii = (s) => String(s)\n  .replace(/[\\u2018\\u2019\\u02BC]/g, \"'\")\n  .replace(/[\\u201C\\u201D]/g, '\"')\n  .replace(/[\\u2013\\u2014]/g, '-')\n  .replace(/\\u2026/g, '...')\n  .replace(/\\s+/g, ' ')\n  .trim();\n\nconst words = [];\nfor (const w of raw) {\n  if (!w) continue;\n  if (w.type && w.type !== 'word') continue; // spacing / audio_event entries\n  const text = toAscii(w.text || '');\n  const start = Number(w.start);\n  const end = Number(w.end);\n  if (!text || !Number.isFinite(start) || !Number.isFinite(end)) continue;\n  words.push({ text: text, start: start, end: end });\n}\nif (words.length < 40) {\n  throw new Error('Scribe only recognised ' + words.length + ' words in the downloaded audio. The episode may start with music, or the Range download may have been too small - raise maxTranscribeMB in Config.');\n}\n\n// Clips can only be cut inside the window the platform can seek into:\n// audioBegin/audioEnd are capped at the plan maxDuration (300 s on the free\n// plan), and we can only cut what was actually transcribed.\nconst windowEnd = Math.min(\n  Number(cfg.clipWindowSeconds || 300),\n  words[words.length - 1].end\n);\nconst windowStart = Math.max(0, Number(cfg.skipIntroSeconds || 0));\nconst eligible = words.filter((w) => w.start >= windowStart && w.end <= windowEnd);\nif (eligible.length < 40) {\n  throw new Error('Only ' + eligible.length + ' words fall inside the clip window (' + windowStart + 's to ' + Math.round(windowEnd) + 's). Lower skipIntroSeconds or raise clipWindowSeconds.');\n}\n\n// A numbered transcript: every line starts with the index of its first word,\n// so the model can answer in word indices instead of timestamps it cannot see.\nconst PER_LINE = 10;\nconst lines = [];\nfor (let i = 0; i < eligible.length; i += PER_LINE) {\n  lines.push('#' + i + ' ' + eligible.slice(i, i + PER_LINE).map((w) => w.text).join(' '));\n}\n\nconst clipCount = Math.max(1, Math.min(3, Number(cfg.clipCount || 2)));\nconst clipSeconds = Math.max(10, Math.min(90, Number(cfg.clipSeconds || 30)));\n\nconst promptText = [\n  'Below is a numbered transcript of the opening of a podcast episode. Each line',\n  'starts with #N, the index of its first word.',\n  '',\n  'Pick the ' + clipCount + ' most quotable, self-contained moments to cut as short social',\n  'clips of about ' + clipSeconds + ' seconds each (roughly ' + Math.round(clipSeconds * 2.9) + ' words).',\n  '',\n  'Rules:',\n  '- Each moment must stand alone with no context from the rest of the episode.',\n  '- Start on a sentence boundary. Never start mid-sentence.',\n  '- Avoid ad reads, intros, outros, housekeeping and cross-promotion.',\n  '- The moments must not overlap and should come from different parts.',\n  '- hook: at most 8 words, written as a scroll-stopping on-screen line. Do not',\n  '  use quotation marks, emoji or hashtags. Sentence case.',\n  '- whyItSlaps: one short sentence, for the human reviewing the run.',\n  '',\n  'Return JSON only, exactly this shape:',\n  '{\"clips\":[{\"startWord\":0,\"endWord\":80,\"hook\":\"...\",\"whyItSlaps\":\"...\"}]}',\n  '',\n  'TRANSCRIPT',\n].concat(lines).join('\\n');\n\nreturn [{\n  json: {\n    words: eligible,\n    allWords: words.length,\n    eligibleWords: eligible.length,\n    windowStart: windowStart,\n    windowEnd: Math.round(windowEnd * 100) / 100,\n    transcribedSeconds: Math.round(words[words.length - 1].end * 100) / 100,\n    clipCount: clipCount,\n    clipSeconds: clipSeconds,\n    promptText: promptText,\n  },\n  // Same bytes in, same bytes out: the upload node needs the file that was\n  // transcribed, not a second download that a dynamic-ad host would change.\n  binary: $('Fetch episode audio').first().binary,\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-pa-0009",
+      "name": "Upload episode audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "File upload exception: the published Zvid node does not expose multipart uploads. The upload step uses HTTP Request \u2192 `POST /api/uploads`, authenticated with the same **Zvid API** credential. All supported Zvid operations use the Zvid node.",
+      "maxTries": 3,
+      "position": [
+        2190,
+        310
+      ],
+      "parameters": {
+        "url": "={{ $('Config').first().json.apiUrl }}/api/uploads",
+        "method": "POST",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "authentication": "predefinedCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "nodeCredentialType": "zvidApi"
+      },
+      "notesInFlow": true,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-pa-0010",
+      "name": "Pick moments",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        50,
+        920
+      ],
+      "parameters": {
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "method": "POST",
+        "options": {
+          "timeout": 120000
+        },
+        "jsonBody": "={{ JSON.stringify({ model: $('Config').first().json.llmModel, response_format: { type: \"json_object\" }, messages: [ { role: \"system\", content: \"You are a podcast clip producer. You pick the moments that make people stop scrolling, and you return JSON only.\" }, { role: \"user\", content: $('Read transcript').first().json.promptText } ] }) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openRouterApi"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-pa-0011",
+      "name": "Prepare clips",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        300,
+        920
+      ],
+      "parameters": {
+        "jsCode": "// Turns the model's word indices into real clip windows: exact start/end\n// times plus the word timings for that slice. Emits ONE ITEM PER CLIP, so\n// everything downstream runs per clip.\nconst cfg = $('Config').first().json;\nconst t = $('Read transcript').first().json;\nconst words = t.words;\nconst res = $input.first().json;\n\nconst clipSeconds = t.clipSeconds;\nconst minSeconds = Math.max(5, Math.min(clipSeconds, Number(cfg.minClipSeconds || 18)));\nconst windowEnd = t.windowEnd;\n\nconst content = res && res.choices && res.choices[0] && res.choices[0].message && res.choices[0].message.content;\nlet picked = [];\nif (content) {\n  let parsed = null;\n  try {\n    parsed = JSON.parse(content);\n  } catch (e) {\n    const m = /\\{[\\s\\S]*\\}/.exec(content);\n    if (m) { try { parsed = JSON.parse(m[0]); } catch (e2) { parsed = null; } }\n  }\n  if (parsed && Array.isArray(parsed.clips)) picked = parsed.clips;\n}\n\n// The model is a suggestion engine, not a source of truth: every index is\n// clamped, every window is re-cut to the configured length, and a run still\n// produces clips if the model returns nothing usable.\nconst clean = (s) => String(s == null ? '' : s).replace(/\\s+/g, ' ').trim();\nconst stripQuotes = (s) => clean(s).replace(/^[\"\\u201C\\u2018\\u0027]+|[\"\\u201D\\u2019\\u0027]+$/g, '');\nconst endsSentence = (w) => /[.!?]$/.test(w.text);\n\n// Walk forward from startIdx until the target length is reached, preferring\n// the last sentence end at or before the target so clips do not stop\n// mid-thought.\nfunction cutFrom(startIdx) {\n  const start = words[startIdx].start;\n  let target = startIdx;\n  let lastSentence = -1;\n  for (let i = startIdx; i < words.length; i += 1) {\n    const len = words[i].end - start;\n    if (len > clipSeconds) break;\n    target = i;\n    if (endsSentence(words[i]) && len >= minSeconds) lastSentence = i;\n  }\n  const endIdx = lastSentence >= 0 ? lastSentence : target;\n  return { startIdx: startIdx, endIdx: endIdx };\n}\n\n// Prefer starting on the first word of a sentence, but never step back past\n// floorIdx (the word right after the previous accepted clip).\nfunction snapToSentenceStart(idx, floorIdx) {\n  for (let i = idx; i > Math.max(floorIdx, idx - 25); i -= 1) {\n    if (i === 0) return 0;\n    if (endsSentence(words[i - 1])) return i;\n  }\n  return Math.max(floorIdx, idx);\n}\n\n// A hook built straight from the transcript should not trail off on a\n// stopword (\"...worth more than every\").\nconst TRAILING = ['and', 'but', 'or', 'so', 'that', 'the', 'a', 'an', 'of', 'to', 'for', 'with', 'than', 'is', 'was', 'in', 'on', 'at', 'as', 'it'];\nfunction hookFromWords(from) {\n  const out = [];\n  for (let i = from; i < Math.min(words.length, from + 9); i += 1) {\n    out.push(words[i].text.replace(/[,;:]+$/, ''));\n    if (endsSentence(words[i])) break;\n  }\n  while (out.length > 3 && TRAILING.indexOf(out[out.length - 1].toLowerCase().replace(/[^a-z]/g, '')) !== -1) out.pop();\n  return out.slice(0, 8).join(' ').replace(/[.,;:!?]+$/, '');\n}\n\nconst cuts = [];\nlet nextFree = 0;\n\n// Cut the picks in transcript order and never let a clip start before the\n// previous one ended. A clip always runs to the configured length, so taking\n// the picks out of order would let clip 1 swallow the start of clip 2 and\n// throw away a perfectly good moment.\nconst ordered = picked\n  .filter((p) => p && Number.isFinite(Number(p.startWord)))\n  .sort((a, b) => Number(a.startWord) - Number(b.startWord));\n\nfor (const p of ordered) {\n  if (cuts.length >= t.clipCount) break;\n  const wanted = Math.max(nextFree, Math.round(Number(p.startWord)));\n  if (wanted > words.length - 2) continue;\n  const cut = cutFrom(snapToSentenceStart(wanted, nextFree));\n  const secs = words[cut.endIdx].end - words[cut.startIdx].start;\n  if (secs < minSeconds) continue;\n  nextFree = cut.endIdx + 1;\n  cuts.push({\n    startIdx: cut.startIdx,\n    endIdx: cut.endIdx,\n    hook: stripQuotes(p.hook).split(/\\s+/).filter(Boolean).slice(0, 8).join(' ').slice(0, 80) || hookFromWords(cut.startIdx),\n    whyItSlaps: clean(p.whyItSlaps).slice(0, 200),\n    source: 'model',\n  });\n}\n\n// Fallback: split the transcript into clipCount blocks and start a clip at\n// the top of each one, never before the previous clip ended. A run never\n// fails just because the model had an off day.\nlet slot = cuts.length;\nlet guard = 0;\nwhile (cuts.length < t.clipCount && guard < t.clipCount * 4) {\n  guard += 1;\n  const block = Math.floor((words.length * Math.min(slot, t.clipCount - 1)) / t.clipCount);\n  const idx = Math.min(words.length - 2, Math.max(nextFree, block));\n  slot += 1;\n  const cut = cutFrom(snapToSentenceStart(idx, nextFree));\n  const secs = words[cut.endIdx].end - words[cut.startIdx].start;\n  if (secs < minSeconds) {\n    if (idx >= words.length - 2) break;\n    continue;\n  }\n  nextFree = cut.endIdx + 1;\n  cuts.push({\n    startIdx: cut.startIdx,\n    endIdx: cut.endIdx,\n    hook: hookFromWords(cut.startIdx),\n    whyItSlaps: 'Fallback pick - the model did not return a usable moment for this slot.',\n    source: 'fallback',\n  });\n}\n\nif (!cuts.length) {\n  throw new Error('Could not cut a single clip of at least ' + minSeconds + 's from the transcribed window. Raise maxTranscribeMB, or lower minClipSeconds/clipSeconds in Config.');\n}\n\ncuts.sort((a, b) => a.startIdx - b.startIdx);\n\nreturn cuts.map((c, i) => {\n  const slice = words.slice(c.startIdx, c.endIdx + 1);\n  const startSeconds = Math.round(slice[0].start * 100) / 100;\n  const endSeconds = Math.min(windowEnd, Math.round(slice[slice.length - 1].end * 100) / 100);\n  return {\n    json: {\n      index: i + 1,\n      hook: c.hook,\n      whyItSlaps: c.whyItSlaps,\n      source: c.source,\n      startSeconds: startSeconds,\n      endSeconds: endSeconds,\n      seconds: Math.round((endSeconds - startSeconds) * 100) / 100,\n      words: slice,\n    },\n    pairedItem: { item: 0 },\n  };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-pa-0012",
+      "name": "Build project JSON",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        550,
+        920
+      ],
+      "parameters": {
+        "jsCode": "// Builds ONE audiogram payload per selected moment: the code node emits one\n// item per clip, and everything downstream (validate -> render -> watch) runs\n// per item.\n//\n// Design adapted from Zvid's library: img-social-podcast-quote (equalizer\n// motif, chip row, serif pull-quote on near-black) and social-podcast-clip\n// (cover-art composition, accent CTA rail).\n//\n// The audio is ONE uploaded asset - the exact bytes that were transcribed -\n// and each clip seeks into it with audioBegin/audioEnd. Because the captions\n// are measured against those same bytes, word timings can never drift.\n\n// --- small helpers ---------------------------------------------------------\nfunction escapeHtml(s) {\n  return String(s == null ? '' : s).replace(/[&<>\"']/g, (c) => ({\n    '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;',\n  }[c]));\n}\n\nfunction clean(v) {\n  return String(v == null ? '' : v).replace(/\\s+/g, ' ').trim();\n}\n\nfunction round2(n) {\n  return Math.round(n * 100) / 100;\n}\n\n// The render API's project-name pattern is strict ASCII: /^[a-zA-Z0-9_\\- ]+$/.\n// Episode titles are routinely not, so slug hard and keep a fallback.\nfunction sanitizeProjectName(s) {\n  const out = String(s).toLowerCase().normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '')\n    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);\n  return out || 'podcast-clip';\n}\n\n// 18.4 -> \"0:18\", 2335 -> \"38:55\"\nfunction clock(totalSeconds) {\n  const t = Math.max(0, Math.floor(Number(totalSeconds) || 0));\n  const h = Math.floor(t / 3600);\n  const m = Math.floor((t % 3600) / 60);\n  const s = t % 60;\n  const pad = (n) => (n < 10 ? '0' + n : String(n));\n  return h > 0 ? h + ':' + pad(m) + ':' + pad(s) : m + ':' + pad(s);\n}\n\nfunction hexRgb(hex) {\n  const m = /^#?([0-9a-fA-F]{6})$/.exec(String(hex).trim());\n  if (!m) return '255,255,255';\n  const n = parseInt(m[1], 16);\n  return ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255);\n}\n\n// Largest size from the ramp whose estimated wrap stays inside maxLines.\n// avgEm is the average glyph advance in em for the face (DM Serif Display\n// reads ~0.50em mixed case, Space Grotesk ~0.62em uppercase). Errs towards\n// \"one size smaller\" so nothing ever clips.\nfunction fitSize(text, sizes, boxWidth, maxLines, avgEm) {\n  const words = String(text).split(/\\s+/).filter(Boolean);\n  const longest = Math.max.apply(null, words.map((w) => w.length).concat([1]));\n  const countLines = (size) => {\n    const per = Math.max(4, Math.floor(boxWidth / (size * avgEm)));\n    let lines = 1;\n    let used = 0;\n    for (let j = 0; j < words.length; j += 1) {\n      const w = words[j];\n      const need = used === 0 ? w.length : used + 1 + w.length;\n      if (need <= per) { used = need; continue; }\n      lines += 1;\n      used = Math.min(w.length, per);\n    }\n    return lines;\n  };\n  for (let i = 0; i < sizes.length; i += 1) {\n    const size = sizes[i];\n    const lines = countLines(size);\n    if (lines <= maxLines && longest * size * avgEm <= boxWidth) {\n      return { size: size, lines: lines };\n    }\n  }\n  const last = sizes[sizes.length - 1];\n  return { size: last, lines: countLines(last) };\n}\n\n// Single-line run width in px, used to size the chips (SVG/inline pills do not\n// wrap, so anything wider than its box would spill off canvas).\nfunction runWidth(text, fontPx, letterSpacing, avgEm) {\n  return Math.ceil(String(text).length * (fontPx * avgEm + letterSpacing));\n}\n\n// Largest font whose single line fits maxWidth; truncates with an ellipsis\n// only after the smallest size still overflows.\nfunction fitRun(text, sizes, maxWidth, letterSpacing, avgEm) {\n  const t = String(text);\n  for (let i = 0; i < sizes.length; i += 1) {\n    if (runWidth(t, sizes[i], letterSpacing, avgEm) <= maxWidth) {\n      return { text: t, size: sizes[i], width: runWidth(t, sizes[i], letterSpacing, avgEm) };\n    }\n  }\n  const size = sizes[sizes.length - 1];\n  const per = Math.max(4, Math.floor(maxWidth / (size * avgEm + letterSpacing)));\n  const cut = t.slice(0, Math.max(1, per - 1)).replace(/[\\s\\u2026.,;:-]+$/, '') + '\\u2026';\n  return { text: cut, size: size, width: runWidth(cut, size, letterSpacing, avgEm) };\n}\n\n// --- the build -------------------------------------------------------------\nfunction buildClipProject(config, episode, clip, audioUrl) {\n  const cfg = config || {};\n\n  // ---- palette + type ----------------------------------------------------\n  const ink = clean(cfg.inkColor) || '#0B0A12';\n  const panel = clean(cfg.panelColor) || '#17141F';\n  const offWhite = clean(cfg.textColor) || '#F2EFFA';\n  const muted = clean(cfg.mutedColor) || '#8E88A6';\n  const accent = clean(cfg.brandAccent) || '#2DD4BF';\n  const hookFont = clean(cfg.hookFont) || 'DM Serif Display';\n  const uiFont = clean(cfg.uiFont) || 'Space Grotesk';\n  const captionFont = clean(cfg.captionFont) || 'Inter';\n  const inkRgb = hexRgb(ink);\n  const paperRgb = hexRgb(offWhite);\n  const accentRgb = hexRgb(accent);\n\n  // ---- content -----------------------------------------------------------\n  const showName = (clean(cfg.showNameOverride) || clean(episode.showName) || 'The Podcast').toUpperCase();\n  const episodeChip = clean(episode.episodeChip) || 'NEW EPISODE';\n  const handle = clean(cfg.handle);\n  const listenLine = clean(cfg.listenLine);\n  const coverUrl = clean(cfg.coverImageOverride) || clean(episode.coverUrl);\n  if (!coverUrl) throw new Error('No cover art: the feed carried no episode/show image and coverImageOverride is empty in Config.');\n  if (!audioUrl) throw new Error('No audio URL: the episode upload did not return a CDN url.');\n\n  const hook = clean(clip.hook) || clean(episode.episodeTitle) || 'Listen to this';\n  const clipStart = round2(Math.max(0, Number(clip.startSeconds)));\n  const clipEnd = round2(Number(clip.endSeconds));\n  const seconds = round2(Math.max(4, clipEnd - clipStart));\n  if (!Number.isFinite(seconds) || seconds <= 0) {\n    throw new Error('Clip ' + clip.index + ' has no usable length (start ' + clipStart + 's, end ' + clipEnd + 's).');\n  }\n\n  // ---- chips -------------------------------------------------------------\n  // The two chips share the top row: the show pill starts at x=70, the episode\n  // pill ends at x=1010, and a 30px gutter separates them. Sizing the episode\n  // pill first leaves an exact budget for the show name.\n  const epFit = fitRun(episodeChip.toUpperCase(), [22, 20, 18], 300, 3, 0.62);\n  const epChipW = Math.min(340, epFit.width + 56);\n  const showBudget = 1010 - epChipW - 30 - 70 - 74; // 74 = dot + pill padding\n  const showFit = fitRun(showName, [26, 23, 20, 18], Math.max(180, showBudget), 4, 0.62);\n\n  // ---- hook --------------------------------------------------------------\n  // The hook is centred in a fixed band, so one line and three lines both stay\n  // clear of the cover art above and of the caption zone below (which grows\n  // upwards from a fixed bottom edge).\n  const hookFit = fitSize(hook, [72, 64, 56, 50, 44], 920, 3, 0.50);\n\n  // ---- equalizer ---------------------------------------------------------\n  // 25 bars. Every animation period divides the 2.4s capture window exactly,\n  // so the captured loop repeats seamlessly for the whole clip instead of\n  // capturing hundreds of near-identical frames.\n  const EQ_H = [30, 52, 40, 78, 58, 96, 44, 68, 34, 88, 56, 96, 72, 46, 90, 62, 38, 84, 50, 96, 42, 66, 36, 54, 32];\n  const EQ_D = [1.2, 0.8, 0.6, 1.2, 0.8, 2.4, 0.6, 1.2, 0.8, 2.4, 0.6, 1.2, 0.8, 0.6, 2.4, 1.2, 0.8, 2.4, 0.6, 1.2, 0.8, 0.6, 1.2, 0.8, 0.6];\n  let eqBars = '';\n  let eqCss = '';\n  for (let i = 0; i < EQ_H.length; i += 1) {\n    eqBars += '<i></i>';\n    eqCss += '.eq i:nth-child(' + (i + 1) + '){height:' + EQ_H[i] + 'px;animation-duration:' + EQ_D[i] + 's;animation-delay:-' + round2((i * 0.17) % 2.4) + 's}';\n  }\n  const equalizerCss =\n    '.eq{display:flex;align-items:flex-end;justify-content:center;gap:19px;width:720px;height:96px}' +\n    '.eq i{display:block;width:10px;border-radius:6px;background:linear-gradient(180deg,rgba(' + accentRgb + ',1) 0%,rgba(' + accentRgb + ',0.35) 100%);' +\n    'transform-origin:50% 100%;animation-name:eqb;animation-timing-function:ease-in-out;animation-iteration-count:infinite}' +\n    '@keyframes eqb{0%,100%{transform:scaleY(0.16)}50%{transform:scaleY(1)}}' +\n    eqCss;\n\n  // ---- background --------------------------------------------------------\n  // The cover art doubles as the backdrop: blurred and dimmed, so every episode\n  // carries its own colour without a stock-photo lottery.\n  //\n  // Both cover images go through the BROWSER (an <img> inside a TEXT element)\n  // rather than an IMAGE element. Podcast feeds hand out artwork URLs like\n  // `.../format/jpg/?url=http%3A%2F%2F...` - no file extension and percent\n  // signs in the path - and ffmpeg's image2 demuxer reads those as a numbered\n  // sequence pattern and fails the whole render. Chromium does not care, and it\n  // gives true object-fit cropping, rounded corners and a real CSS blur.\n  const visuals = [];\n  visuals.push({\n    type: 'TEXT', x: 540, y: 960, width: 1080, height: 1920, anchor: 'center-center',\n    track: 0, enterBegin: 0, exitEnd: seconds,\n    style: { fontFamily: uiFont, color: offWhite },\n    html:\n      \"<div style='width:1080px; height:1920px; overflow:hidden;'>\" +\n      \"<img src='\" + escapeHtml(coverUrl) + \"' alt='' style='display:block; width:1240px; height:2200px; margin:-140px -80px; object-fit:cover; filter:blur(40px) saturate(0.42) brightness(0.44);'>\" +\n      '</div>',\n  });\n\n  visuals.push({\n    type: 'SVG', width: 1080, height: 1920, x: 540, y: 960, anchor: 'center-center',\n    track: 1, enterBegin: 0, exitEnd: seconds,\n    svg:\n      \"<svg width='1080' height='1920' viewBox='0 0 1080 1920' xmlns='http://www.w3.org/2000/svg'>\" +\n      \"<defs><linearGradient id='pacShade' x1='0' y1='0' x2='0' y2='1'>\" +\n      \"<stop offset='0' stop-color='\" + ink + \"' stop-opacity='0.86'/>\" +\n      \"<stop offset='0.42' stop-color='\" + ink + \"' stop-opacity='0.66'/>\" +\n      \"<stop offset='1' stop-color='\" + ink + \"' stop-opacity='0.95'/></linearGradient>\" +\n      \"<radialGradient id='pacGlow' cx='0.5' cy='0.25' r='0.62'>\" +\n      \"<stop offset='0' stop-color='\" + accent + \"' stop-opacity='0.20'/>\" +\n      \"<stop offset='1' stop-color='\" + accent + \"' stop-opacity='0'/></radialGradient></defs>\" +\n      \"<rect width='1080' height='1920' fill='url(#pacShade)'/>\" +\n      \"<rect width='1080' height='1920' fill='url(#pacGlow)'/>\" +\n      \"<rect x='44' y='44' width='992' height='1832' rx='34' fill='none' stroke='rgba(\" + paperRgb + \",0.09)' stroke-width='1.5'/>\" +\n      '</svg>',\n  });\n\n  // ---- cover art card ----------------------------------------------------\n  // NOTE: no `resize` on inset media. `resize` overwrites width/height with\n  // CANVAS-relative dimensions, so a \"500x500 cover\" card silently becomes a\n  // full-bleed image. Explicit width/height already centre-crop the source.\n  //\n  // The card is an <img> inside a TEXT element: object-fit gives a true\n  // centre-crop for feeds whose artwork is not perfectly square, and the\n  // wrapper carries the accent halo, the accent ring and the drop shadow in\n  // ONE element. The halo used to be its own 700x700 SVG behind the card -\n  // two elements sharing a region is exactly what the layout linter flags, and\n  // a CSS radial-gradient at the same radius and stops is pixel-equivalent.\n  visuals.push({\n    type: 'TEXT', x: 540, y: 470, width: 700, height: 700, anchor: 'center-center',\n    track: 2, enterBegin: 0, enterEnd: 0.7, enterAnimation: 'fade', exitEnd: seconds,\n    style: { fontFamily: uiFont, color: offWhite },\n    html:\n      \"<div style='width:700px; height:700px; display:flex; align-items:center; justify-content:center; \" +\n      'background:radial-gradient(circle 350px at 50% 50%, rgba(' + accentRgb + ',0.34) 0px, rgba(' + accentRgb + \",0.34) 119px, rgba(\" + accentRgb + \",0) 350px);'>\" +\n      \"<div style='width:480px; height:480px; border-radius:44px; overflow:hidden; border:2px solid rgba(\" + accentRgb + \",0.55); box-shadow:0 34px 90px rgba(0,0,0,0.72);'>\" +\n      \"<img src='\" + escapeHtml(coverUrl) + \"' alt='' style='display:block; width:100%; height:100%; object-fit:cover;'>\" +\n      '</div></div>',\n  });\n\n  // ---- chip row ----------------------------------------------------------\n  visuals.push({\n    type: 'TEXT', x: 70, y: 148, anchor: 'center-left', track: 3,\n    enterBegin: 0.15, enterEnd: 0.6, enterAnimation: 'fade', exitEnd: seconds,\n    style: { fontFamily: uiFont, color: accent },\n    html:\n      \"<div style='display:inline-block; background:rgba(\" + accentRgb + \",0.13); border:1.5px solid rgba(\" + accentRgb + \",0.5); border-radius:999px; padding:14px 26px; white-space:nowrap; color:\" + accent + \"; font-size:\" + showFit.size + \"px; font-weight:700; letter-spacing:4px;'>\" +\n      \"<span style='display:inline-block; width:11px; height:11px; border-radius:99px; background:\" + accent + \"; margin-right:14px;'></span>\" +\n      escapeHtml(showFit.text) + '</div>',\n  });\n\n  visuals.push({\n    type: 'TEXT', x: 1010, y: 148, anchor: 'center-right', track: 3,\n    enterBegin: 0.25, enterEnd: 0.7, enterAnimation: 'fade', exitEnd: seconds,\n    style: { fontFamily: uiFont, color: muted },\n    html:\n      \"<div style='display:inline-block; background:rgba(\" + paperRgb + \",0.07); border:1px solid rgba(\" + paperRgb + \",0.16); border-radius:999px; padding:14px 24px; white-space:nowrap; color:\" + muted + \"; font-size:\" + epFit.size + \"px; font-weight:700; letter-spacing:3px;'>\" +\n      escapeHtml(epFit.text) + '</div>',\n  });\n\n  // ---- equalizer ---------------------------------------------------------\n  // No enterAnimation on this one: a captured-animation element combined with\n  // an enter/exit xfade is the one combination the renderer has historically\n  // frozen on frame 0, and the bars are the proof the clip is playing.\n  //\n  // y=872 puts the 96px band 4px clear of the cover card's 700px box (which\n  // ends at y=820) - overlapping boxes are a layout-lint warning even when the\n  // ink inside them never touches.\n  visuals.push({\n    type: 'TEXT', x: 540, y: 872, width: 720, height: 96, anchor: 'center-center',\n    track: 3, enterBegin: 0, exitEnd: seconds,\n    style: { fontFamily: uiFont, color: accent },\n    html: \"<div class='eq'>\" + eqBars + '</div>',\n    customCode: { animationDuration: 2.4, css: equalizerCss },\n  });\n\n  // ---- hook --------------------------------------------------------------\n  visuals.push({\n    type: 'TEXT', x: 540, y: 1140, width: 920, anchor: 'center-center', track: 4,\n    enterBegin: 0.45, enterEnd: 1.15, enterAnimation: 'smoothup', exitEnd: seconds,\n    style: { fontFamily: hookFont, color: offWhite },\n    html:\n      \"<div style='text-align:center; color:\" + offWhite + '; font-size:' + hookFit.size + \"px; line-height:1.16; letter-spacing:-0.005em; text-shadow:0 6px 30px rgba(\" + inkRgb + \",0.7);'>\" +\n      escapeHtml(hook) + '</div>',\n  });\n\n  visuals.push({\n    type: 'SVG', width: 120, height: 4, x: 540, y: 1330, anchor: 'center-center',\n    track: 4, enterBegin: 0.9, enterEnd: 1.4, enterAnimation: 'circleopen', exitEnd: seconds,\n    svg: \"<svg width='120' height='4' viewBox='0 0 120 4' xmlns='http://www.w3.org/2000/svg'><rect width='120' height='4' rx='2' fill='\" + accent + \"' fill-opacity='0.75'/></svg>\",\n  });\n\n  // ---- player chrome -----------------------------------------------------\n  // Timestamps read like a player: where this excerpt sits in the episode on\n  // the left, the episode's own length on the right when the feed declared one.\n  const epSeconds = Number(episode.episodeSeconds);\n  const rightLabel = Number.isFinite(epSeconds) && epSeconds > clipEnd\n    ? clock(epSeconds)\n    : clock(clipEnd);\n  visuals.push({\n    type: 'TEXT', x: 540, y: 1600, width: 1040, anchor: 'center-center', track: 5,\n    enterBegin: 1.2, enterEnd: 1.7, enterAnimation: 'fade', exitEnd: seconds,\n    style: { fontFamily: uiFont, color: muted },\n    html:\n      \"<div style='display:flex; justify-content:space-between; width:1040px; color:\" + muted + \"; font-size:23px; font-weight:600; letter-spacing:3px;'>\" +\n      '<span>' + escapeHtml(clock(clipStart)) + '</span><span>' + escapeHtml(rightLabel) + '</span></div>',\n  });\n\n  // The rail is static; the accent bar rides a full-width `wiperight` enter\n  // animation that spans the whole clip, so the reveal IS the progress bar -\n  // no captured frames, exact to the frame, free.\n  visuals.push({\n    type: 'SVG', width: 1080, height: 6, x: 540, y: 1650, anchor: 'center-center',\n    track: 5, enterBegin: 0, exitEnd: seconds,\n    svg: \"<svg width='1080' height='6' viewBox='0 0 1080 6' xmlns='http://www.w3.org/2000/svg'><rect width='1080' height='6' fill='rgba(\" + paperRgb + \",0.14)'/></svg>\",\n  });\n\n  visuals.push({\n    type: 'SVG', width: 1080, height: 6, x: 540, y: 1650, anchor: 'center-center',\n    track: 6, enterBegin: 0, enterEnd: seconds, enterAnimation: 'wiperight', exitEnd: seconds,\n    svg: \"<svg width='1080' height='6' viewBox='0 0 1080 6' xmlns='http://www.w3.org/2000/svg'><rect width='1080' height='6' fill='\" + accent + \"'/></svg>\",\n  });\n\n  // ---- footer ------------------------------------------------------------\n  // One line when both parts fit, two when they do not: a 46-character handle\n  // beside a sentence wraps mid-phrase and reads like a bug.\n  const handleFit = handle ? fitRun(handle, [28, 25, 22, 20], 960, 1, 0.55) : null;\n  const listenFit = listenLine ? fitRun(listenLine, [24, 22, 20, 18], 960, 1, 0.52) : null;\n  const oneLine = handleFit && listenFit\n    ? handleFit.width + listenFit.width + 60 <= 940\n    : true;\n  const footerParts = [];\n  if (handleFit) {\n    footerParts.push(\"<span style='color:\" + offWhite + '; font-size:' + handleFit.size + \"px; font-weight:700;'>\" + escapeHtml(handleFit.text) + '</span>');\n  }\n  if (listenFit) {\n    const sep = oneLine && handleFit\n      ? \"<span style='color:rgba(\" + paperRgb + \",0.32);'> &#183; </span>\"\n      : '<br>';\n    footerParts.push(sep + \"<span style='color:\" + muted + '; font-size:' + listenFit.size + \"px; font-weight:500;'>\" + escapeHtml(listenFit.text) + '</span>');\n  }\n  if (footerParts.length) {\n    visuals.push({\n      type: 'TEXT', x: 540, y: 1706, width: 960, anchor: 'top-center', track: 5,\n      enterBegin: 1.1, enterEnd: 1.6, enterAnimation: 'fade', exitEnd: seconds,\n      style: { fontFamily: uiFont, color: muted },\n      html: \"<div style='text-align:center; line-height:1.5; color:\" + muted + \"; letter-spacing:2px;'>\" + footerParts.join('') + '</div>',\n    });\n  }\n\n  // ---- captions ----------------------------------------------------------\n  // Word timings arrive in EPISODE time; the timeline starts at the clip's\n  // first word, so everything shifts by clipStart. Cues outside the clip are\n  // dropped and the last cue is clamped to the clip end.\n  const perCue = Math.max(1, Math.min(8, Number(cfg.captionWordsPerCue == null ? 4 : cfg.captionWordsPerCue)));\n  const words = Array.isArray(clip.words) ? clip.words : [];\n  const rel = [];\n  for (let i = 0; i < words.length; i += 1) {\n    const w = words[i];\n    const s = round2(Number(w.start) - clipStart);\n    const e = round2(Number(w.end) - clipStart);\n    const text = clean(w.text);\n    if (!text) continue;\n    if (!Number.isFinite(s) || !Number.isFinite(e)) continue;\n    if (e <= 0 || s >= seconds) continue;\n    rel.push({ start: Math.max(0, s), end: Math.min(seconds, Math.max(s + 0.05, e)), text: text });\n  }\n\n  const captions = [];\n  const maxCues = 200;\n  for (let i = 0; i < rel.length && captions.length < maxCues; i += perCue) {\n    const chunk = rel.slice(i, i + perCue);\n    captions.push({\n      start: chunk[0].start,\n      end: chunk[chunk.length - 1].end,\n      text: chunk.map((w) => w.text).join(' '),\n      words: chunk.map((w) => ({ start: w.start, end: w.end, text: w.text })),\n    });\n  }\n\n  // In box modes the chip behind the spoken word is drawn first and the\n  // outline lands on top of it, so box modes get a thin outline plus padding;\n  // every other mode recolours the spoken word and keeps the heavy stroke.\n  //\n  // The chip MUST carry a corner radius. Without one the renderer falls back\n  // to libass' square BorderStyle box, and libass ignores a mid-line\n  // BorderStyle switch - the chip never paints and the dark active word ends\n  // up invisible on the dark backdrop. A radius routes the chip through the\n  // engine's drawn rounded-box path, which paints it for real.\n  const BOX_MODES = ['highlight'];\n  const animation = clean(cfg.captionAnimation) || 'karaoke';\n  const usesBox = BOX_MODES.indexOf(animation) !== -1;\n  const strokeWidth = Math.max(0, Number(cfg.captionStrokeWidth == null ? 6 : cfg.captionStrokeWidth));\n  const captionSize = Math.max(24, Math.min(96, Number(cfg.captionSize == null ? 62 : cfg.captionSize)));\n\n  const subtitle = captions.length\n    ? {\n      captions: captions,\n      animation: animation,\n      activeWord: usesBox ? { color: ink, background: accent, radius: 12 } : { color: accent },\n      font: { family: captionFont, size: captionSize, color: '#FFFFFF', bold: true, transform: 'uppercase' },\n      stroke: { color: '#000000', width: usesBox ? Math.min(strokeWidth, 2) : strokeWidth },\n      position: 'bottom-center',\n      margin: { x: 90, y: 450 },\n      maxWordsPerLine: perCue,\n    }\n    : null;\n  // 8px of padding, not 14: the padding is also the chip's horizontal bleed,\n  // and a space at this type size is ~17px, so anything larger makes the chip\n  // touch the words on either side.\n  if (usesBox && subtitle) subtitle.background = { padding: 8, color: '#000000', opacity: 0.0 };\n\n  // ---- payload -----------------------------------------------------------\n  const safeName = sanitizeProjectName('podcast clip ' + clip.index + ' ' + (episode.episodeTitle || showName));\n\n  // `resolution: 'custom'` with an explicit 1080x1920 renders identically to the\n  // `instagram-reel` preset (the engine resolves the preset to the same two\n  // numbers). It is spelled out because the layout linter only knows the canvas\n  // when it is stated: with a named preset it cannot tell a deliberate\n  // full-bleed backdrop from two content boxes fighting over the same region,\n  // and every layer in this design sits on top of a full-bleed backdrop.\n  const payload = {\n    name: safeName,\n    resolution: 'custom',\n    width: 1080,\n    height: 1920,\n    frameRate: Number(cfg.frameRate == null ? 30 : cfg.frameRate),\n    backgroundColor: ink,\n    outputFormat: 'mp4',\n    scenes: [{ id: 'clip', duration: seconds, backgroundColor: panel, visuals: visuals }],\n    // NOTE: no `track` on audio entries - the render API rejects audios[].track.\n    // audioBegin/audioEnd seek inside the uploaded episode audio, so one upload\n    // serves every clip and the captions cannot drift from the sound.\n    audios: [{ src: audioUrl, volume: 1, enter: 0, exit: seconds, audioBegin: clipStart, audioEnd: clipEnd }],\n  };\n  if (subtitle) payload.subtitle = subtitle;\n\n  return {\n    payload: payload,\n    meta: {\n      clipIndex: clip.index,\n      hook: hook,\n      whyItSlaps: clean(clip.whyItSlaps),\n      momentSource: clean(clip.source) || 'model',\n      showName: showName,\n      episodeTitle: clean(episode.episodeTitle),\n      episodeChip: epFit.text,\n      clipStart: clipStart,\n      clipEnd: clipEnd,\n      clipSeconds: seconds,\n      startLabel: clock(clipStart),\n      captionCount: captions.length,\n      captionWords: rel.length,\n      hookSize: hookFit.size,\n      hookLines: hookFit.lines,\n      showChipSize: showFit.size,\n      showChipTruncated: showFit.text !== showName,\n      coverUrl: coverUrl,\n      audioUrl: audioUrl,\n    },\n  };\n}\n\n// === n8n glue ===\nconst config = $('Config').first().json;\nconst episode = $('Pick latest episode').first().json;\n\n// The upload node returns { upload: { url, ... } }; older builds returned the\n// record flat, so accept both rather than fail on a shape difference.\nconst uploadRes = $('Upload episode audio').first().json;\nconst uploaded = (uploadRes && uploadRes.upload) || uploadRes || {};\nconst audioUrl = uploaded.url || uploaded.src || uploaded.publicUrl;\nif (!audioUrl) {\n  throw new Error('Upload episode audio returned no url: ' + JSON.stringify(uploadRes).slice(0, 300));\n}\n\nconst clips = $input.all().map((i) => i.json);\nif (!clips.length) throw new Error('No clips to build - Prepare clips produced nothing.');\n\nreturn clips.map((clip, i) => ({\n  json: buildClipProject(config, episode, clip, audioUrl),\n  pairedItem: { item: i },\n}));\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-pa-0013",
+      "name": "Validate project (free)",
+      "type": "@zvid/n8n-nodes-zvid.zvid",
+      "position": [
+        800,
+        920
+      ],
+      "parameters": {
+        "source": "json",
+        "resource": "render",
+        "operation": "validate",
+        "projectJson": "={{ JSON.stringify(({ payload: $json.payload }).payload) }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "zvid-pa-0014",
+      "name": "Check validation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1050,
+        920
+      ],
+      "parameters": {
+        "jsCode": "// The free validate endpoint runs the exact pipeline a render submission runs,\n// so a failure here is a payload bug - surface the field list per clip instead\n// of a generic HTTP error.\nconst built = $('Build project JSON').all();\nreturn $input.all().map((res, i) => {\n  const status = res.json.statusCode ?? (res.json.valid === true ? 200 : 400);\n  const body = res.json.body || { ...res.json, details: res.json.errors ?? res.json.details };\n  const meta = built[i].json.meta;\n  if (status !== 200 || body.valid === false) {\n    const details = Array.isArray(body.details)\n      ? body.details.map((d) => '  - ' + d.field + ': ' + d.message).join('\\n')\n      : JSON.stringify(body).slice(0, 500);\n    throw new Error('Zvid rejected clip ' + meta.clipIndex + ' (\"' + meta.hook + '\") with HTTP ' + status + ': ' + (body.message || body.error) + '\\n' + details);\n  }\n  return {\n    json: { ...built[i].json, creditsRequired: body.creditsRequired, warnings: body.warnings || [] },\n    pairedItem: { item: i },\n  };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-pa-0015",
+      "name": "Dry run?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1690,
+        920
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "dry-run--cond",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Config').first().json.dryRun }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zvid-pa-0016",
+      "name": "Save draft to editor",
+      "type": "@zvid/n8n-nodes-zvid.zvid",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        1940,
+        920
+      ],
+      "parameters": {
+        "resource": "project",
+        "operation": "create",
+        "projectJson": "={{ JSON.stringify(({ name: $json.payload.name, payload: $json.payload }).payload) }}",
+        "projectName": "={{ ({ name: $json.payload.name, payload: $json.payload }).name }}"
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-pa-0017",
+      "name": "Dry run summary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2190,
+        920
+      ],
+      "parameters": {
+        "jsCode": "// Dry run: everything except the paid renders. Open each editorLink to watch\n// the clip, then set dryRun to false in Config to render for real.\nconst cfg = $('Config').first().json;\nconst ep = $('Pick latest episode').first().json;\nconst checked = $('Check validation').all();\nconst total = checked.reduce((sum, c) => sum + Number(c.json.creditsRequired || 0), 0);\nreturn $input.all().map((res, i) => {\n  const d = checked[i].json;\n  let editorLink = null;\n  let draftId = null;\n  const project = res.json && res.json.project;\n  if (project && project.id) {\n    draftId = project.id;\n    editorLink = String(cfg.editorUrl || 'https://editor.zvid.io').replace(/\\/+$/, '') + '/?project=' + project.id;\n  }\n  return {\n    json: {\n      dryRun: true,\n      clip: d.meta.clipIndex,\n      hook: d.meta.hook,\n      whyItSlaps: d.meta.whyItSlaps,\n      episode: ep.episodeTitle,\n      startsAt: d.meta.startLabel,\n      clipSeconds: d.meta.clipSeconds,\n      captionCues: d.meta.captionCount,\n      creditsRequired: d.creditsRequired,\n      creditsRequiredThisRun: total,\n      editorLink: editorLink,\n      draftId: draftId,\n      warnings: d.warnings,\n      nextStep: editorLink\n        ? 'Open editorLink to preview this clip. Set dryRun to false in Config to render every clip for real.'\n        : 'Set dryRun to false in Config to render these clips.',\n      payload: d.payload,\n    },\n    pairedItem: { item: i },\n  };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-pa-0018",
+      "name": "Submit render",
+      "type": "@zvid/n8n-nodes-zvid.zvid",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        550,
+        1560
+      ],
+      "parameters": {
+        "source": "json",
+        "resource": "render",
+        "operation": "create",
+        "renderType": "={{ $json.payload.type === \"image\" ? \"image\" : \"video\" }}",
+        "projectJson": "={{ JSON.stringify(({ payload: $json.payload }).payload) }}",
+        "waitForCompletion": false
+      },
+      "retryOnFail": false,
+      "typeVersion": 1,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-pa-0019",
+      "name": "Attach job to clip",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        800,
+        1560
+      ],
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst jobId = response.jobId || response.id;\nif (!jobId) throw new Error('Render submission returned no jobId. Check https://app.zvid.io before retrying.');\nconst { payload, ...asset } = $('Prepare render attempt').first().json;\nreturn [{ json: { ...asset, jobId, renderStartedAt: Date.now() }, pairedItem: { item: 0 } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-pa-0020",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        1050,
+        1560
+      ],
+      "webhookId": "a4f2c8d1-6b93-4e57-9c02-7d18e5a3b6f4",
+      "parameters": {
+        "unit": "seconds",
+        "amount": "={{ $('Config').first().json.pollSeconds }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "zvid-pa-0021",
+      "name": "Get render status",
+      "type": "@zvid/n8n-nodes-zvid.zvid",
+      "maxTries": 3,
+      "position": [
+        1300,
+        1560
+      ],
+      "parameters": {
+        "jobId": "={{ $json.jobId }}",
+        "resource": "render",
+        "operation": "get",
+        "waitForCompletion": false
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-pa-0022",
+      "name": "Merge job status",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1550,
+        1560
+      ],
+      "parameters": {
+        "jsCode": "const carried = $('Attach job to clip').first().json;\nconst job = $input.first().json;\nreturn [{ json: { ...carried, state: job.state, failedReason: job.failedReason || null, result: job.result || null }, pairedItem: { item: 0 } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-pa-0023",
+      "name": "Render finished?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1800,
+        1560
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "render-finished--cond",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.state === 'completed' }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zvid-pa-0024",
+      "name": "Still rendering?",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1800,
+        1840
+      ],
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nif (item.state === 'failed') throw new Error('The ' + item.kind + ' render failed: ' + (item.failedReason || 'no reason given'));\nconst timeoutMs = Number($('Config').first().json.timeoutMinutes || 20) * 60000;\nif (Date.now() - Number(item.renderStartedAt) >= timeoutMs) {\n  throw new Error('Render ' + item.jobId + ' timed out. It may still finish on Zvid; check https://app.zvid.io before retrying.');\n}\nreturn $input.all();"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-pa-0025",
+      "name": "Run summary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2610,
+        1560
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// One item per finished clip - each carries videoUrl, so the Watch node\n// downloads one playable binary per clip.\nconst cfg = $('Config').first().json;\nconst ep = $('Pick latest episode').first().json;\nconst t = $('Read transcript').first().json;\nconst d = $json;\nconst videoUrl = typeof d.result === 'string' ? d.result : (d.result && d.result.url) || null;\nif (!videoUrl) {\n  throw new Error('Completed render returned no video URL for clip ' + d.meta.clipIndex);\n}\nreturn {\n  json: {\n    rendered: true,\n    clip: d.meta.clipIndex,\n    hook: d.meta.hook,\n    whyItSlaps: d.meta.whyItSlaps,\n    show: d.meta.showName,\n    episode: ep.episodeTitle,\n    episodeLink: ep.episodeLink,\n    startsAt: d.meta.startLabel,\n    clipSeconds: d.meta.clipSeconds,\n    captionCues: d.meta.captionCount,\n    momentSource: d.meta.momentSource,\n    videoUrl: videoUrl,\n    jobId: d.jobId,\n    creditsCharged: d.creditsRequired,\n    transcribedSeconds: t.transcribedSeconds,\n    clipWindowSeconds: t.windowEnd,\n    handle: cfg.handle,\n  },\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-pa-0026",
+      "name": "\u25b6 Watch video",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        3110,
+        1560
+      ],
+      "parameters": {
+        "url": "={{ $json.videoUrl }}",
+        "options": {
+          "timeout": 30000
+        },
+        "requestMethod": "GET",
+        "authentication": "none",
+        "jsonParameters": false,
+        "responseFormat": "file",
+        "dataPropertyName": "data"
+      },
+      "retryOnFail": true,
+      "typeVersion": 2,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-watch-ready",
+      "name": "Video ready to watch?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2860,
+        1560
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "zvid-watch-ready-condition",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ !$json.dryRun && /^https?:\\/\\//i.test(String(($json.videoUrl) || '')) }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zvid-pa-audio-size-guard",
+      "name": "Check audio sample",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1300,
+        310
+      ],
+      "parameters": {
+        "jsCode": "// Check actual bytes before paid transcription. Some hosts ignore Range.\nconst items = $input.all();\nconst maxBytes = Number($('Pick latest episode').first().json.maxBytes);\nif (!Number.isFinite(maxBytes) || maxBytes < 1) throw new Error('Invalid audio sample size limit. Check Config.');\nfor (let i = 0; i < items.length; i++) {\n  if (!items[i].binary?.data) throw new Error('The episode download returned no audio file.');\n  const buffer = await this.helpers.getBinaryDataBuffer(i, 'data');\n  if (!buffer.length) throw new Error('The episode download returned an empty audio file.');\n  if (buffer.length > maxBytes) {\n    throw new Error('Downloaded audio is ' + buffer.length + ' bytes, above the ' + maxBytes + '-byte sample limit. The source may have ignored Range. Use a smaller audio file or a host that supports byte ranges. No transcription or render request has been made.');\n  }\n}\nreturn items;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-pa-asset-loop",
+      "name": "Render one asset at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        50,
+        1560
+      ],
+      "parameters": {
+        "options": {},
+        "batchSize": 1
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "zvid-pa-prepare-attempt",
+      "name": "Prepare render attempt",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        300,
+        1560
+      ],
+      "parameters": {
+        "jsCode": "// Each deliverable owns its retry deadline; an accepted job is never resubmitted.\nreturn $input.all().map((item, i) => ({\n  json: { ...item.json, submitStartedAt: Date.now(), submitAttempts: 0 },\n  pairedItem: { item: i },\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-pa-retry-rejection",
+      "name": "Check submission rejection",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        550,
+        1840
+      ],
+      "parameters": {
+        "jsCode": "// Retry only an explicit HTTP 429 rejection. Timeouts/5xx may have accepted\n// a paid job already, so they stop for inspection instead of creating duplicates.\nconst item = $input.first();\nconst error = item.error || item.json.error || {};\nconst previous = $('Prepare render attempt').first().json;\nconst carried = item.json.payload ? item.json : previous;\nconst status = Number(error.httpCode || error.statusCode || error.response?.status || error.cause?.statusCode || error.cause?.response?.status);\n// n8n's task-runner serialization drops httpCode but retains its exact,\n// status-specific NodeApiError message and the API response in context.data.\nconst serialized429 = !status && error.name === 'NodeApiError' && error.message === 'The service is receiving too many requests from you';\nif (status !== 429 && !serialized429) {\n  throw new Error('Render submission failed: ' + (error.description || error.message || String(error)) + '. Check https://app.zvid.io before retrying; the request may already have created a job.');\n}\nlet body = error.response?.data || error.context?.data || error.cause?.response?.data || error.cause?.error || {};\nif (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }\nconst headers = error.response?.headers || error.cause?.response?.headers || {};\nconst rawRetry = headers['retry-after'] ?? body.retryAfter;\nconst retrySeconds = Number(rawRetry) || Math.ceil((Date.parse(rawRetry) - Date.now()) / 1000) || 30;\nconst waitSeconds = Math.max(30, retrySeconds);\nconst deadline = Number(previous.submitStartedAt) + Number($('Config').first().json.timeoutMinutes || 20) * 60000;\nif (Date.now() + waitSeconds * 1000 >= deadline) {\n  throw new Error('Render capacity stayed full until the submission deadline. Check https://app.zvid.io; completed assets from this run remain in Render one asset at a time.');\n}\nreturn [{ json: { ...carried, submitStartedAt: previous.submitStartedAt, submitAttempts: Number(carried.submitAttempts || 0) + 1, retrySeconds: waitSeconds }, pairedItem: { item: 0 } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-pa-capacity-wait",
+      "name": "Wait for render capacity",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        800,
+        1840
+      ],
+      "webhookId": "zvid-pa-capacity-wait",
+      "parameters": {
+        "unit": "seconds",
+        "amount": "={{ $json.retrySeconds }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "creator-overview-day-16",
+      "name": "Workflow overview and setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -760,
+        0
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 680,
+        "height": 1280,
+        "content": "## Turn a podcast episode into captioned clips\n\n### How it works\nFor podcast creators: read the newest RSS episode, transcribe a bounded audio sample, and ask OpenRouter to select highlights. Zvid produces vertical audiograms with episode artwork, original audio and timed captions. Review and publish the videos yourself; this workflow does not post to social accounts.\n\n### Setup\n1. Install **@zvid/n8n-nodes-zvid** from **Settings \u2192 Community nodes** before credentials. A workspace owner/admin may need to install it.\n2. Create a **Zvid API** credential using [your key](https://app.zvid.io/api-keys), with Base URL **https://api.zvid.io**. Select it on the Zvid nodes and **Upload episode audio**.\n3. Connect ElevenLabs Header Auth (**xi-api-key**, Speech to Text permission) to **Transcribe (Scribe)** and OpenRouter to **Pick moments**.\n4. In **Config**, replace **feedUrl** with your podcast feed, then set **handle**, **clipCount** and **clipSeconds**. The default download is 4 MiB; **maxAudioBytes** must fit your Zvid plan. Only the transcribed sample can supply highlights.\n5. **dryRun=false** renders and spends Zvid credits. The optional draft branch requires a Zvid node version exposing **Project \u2192 Create**; transcription and AI can still incur charges. Test manually before enabling the daily schedule.\n\n### Customization\nAdjust artwork, fonts and colors in **Config**. Multipart audio upload uses HTTP Request because the published Zvid node does not expose it. [Full setup guide](https://github.com/Zvid-io/zvid-n8n/blob/master/workflows/podcast-audiogram-clips.md)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "creator-day-16-section-1",
+      "name": "1. Choose the episode",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1520,
+        "height": 540,
+        "content": "## 1. Choose the episode\n\nSet your feed and clip limits in Config. The download and size check stop oversized audio before transcription; the daily schedule runs at 7am in the workflow timezone."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "creator-day-16-section-2",
+      "name": "2. Transcribe and upload",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1640,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 900,
+        "height": 540,
+        "content": "## 2. Transcribe and upload\n\nScribe returns word timings for the downloaded sample. Upload episode audio stores that same sample for rendering; select the Zvid API credential on this HTTP upload step."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "creator-day-16-section-3",
+      "name": "3. Choose highlights and validate",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        660
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1400,
+        "height": 500,
+        "content": "## 3. Choose highlights and validate\n\nOpenRouter selects timed passages. Prepare clips checks their timing, then Build project JSON adds artwork and captions; validation returns a credit quote before any render."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "creator-day-16-section-4",
+      "name": "4. Preview or render",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1640,
+        660
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 900,
+        "height": 500,
+        "content": "## 4. Preview or render\n\nThe default false branch renders. For dryRun=true, Save draft to editor requires Project \u2192 Create support in the installed Zvid node; the summary returns the editor link and quote."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "creator-day-16-section-5",
+      "name": "5. Render one clip at a time",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        1300
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 2440,
+        "height": 700,
+        "content": "## 5. Render one clip at a time\n\nEach accepted clip finishes before the next submission. Only explicit rate-limit rejections retry after a wait; polling and retry time are bounded by timeoutMinutes. Check Zvid before rerunning a timed-out job."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "creator-day-16-section-6",
+      "name": "6. Watch the completed clips",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2560,
+        1300
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 900,
+        "height": 500,
+        "content": "## 6. Watch the completed clips\n\nRun summary keeps the completed video links. Open Watch video \u2192 Binary \u2192 data \u2192 View and select each output item. Missing links skip downloading; a preview failure preserves the completed render."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get render status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Read podcast feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dry run?": {
+      "main": [
+        [
+          {
+            "node": "Save draft to editor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Render one asset at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run summary": {
+      "main": [
+        [
+          {
+            "node": "Video ready to watch?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick moments": {
+      "main": [
+        [
+          {
+            "node": "Prepare clips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare clips": {
+      "main": [
+        [
+          {
+            "node": "Build project JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit render": {
+      "main": [
+        [
+          {
+            "node": "Attach job to clip",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check submission rejection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test manually": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read transcript": {
+      "main": [
+        [
+          {
+            "node": "Upload episode audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check validation": {
+      "main": [
+        [
+          {
+            "node": "Dry run?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every day at 7am": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge job status": {
+      "main": [
+        [
+          {
+            "node": "Render finished?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render finished?": {
+      "main": [
+        [
+          {
+            "node": "Render one asset at a time",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Still rendering?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still rendering?": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get render status": {
+      "main": [
+        [
+          {
+            "node": "Merge job status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read podcast feed": {
+      "main": [
+        [
+          {
+            "node": "Pick latest episode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach job to clip": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build project JSON": {
+      "main": [
+        [
+          {
+            "node": "Validate project (free)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check audio sample": {
+      "main": [
+        [
+          {
+            "node": "Transcribe (Scribe)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch episode audio": {
+      "main": [
+        [
+          {
+            "node": "Check audio sample",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick latest episode": {
+      "main": [
+        [
+          {
+            "node": "Fetch episode audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe (Scribe)": {
+      "main": [
+        [
+          {
+            "node": "Read transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save draft to editor": {
+      "main": [
+        [
+          {
+            "node": "Dry run summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload episode audio": {
+      "main": [
+        [
+          {
+            "node": "Pick moments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video ready to watch?": {
+      "main": [
+        [
+          {
+            "node": "\u25b6 Watch video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Prepare render attempt": {
+      "main": [
+        [
+          {
+            "node": "Submit render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate project (free)": {
+      "main": [
+        [
+          {
+            "node": "Check validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for render capacity": {
+      "main": [
+        [
+          {
+            "node": "Submit render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check submission rejection": {
+      "main": [
+        [
+          {
+            "node": "Wait for render capacity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render one asset at a time": {
+      "main": [
+        [
+          {
+            "node": "Run summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare render attempt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # 🔬 Keep RAG system updated with Google Drive file changes to Supabase vector DB
 
-> ⚡ **513 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **653 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

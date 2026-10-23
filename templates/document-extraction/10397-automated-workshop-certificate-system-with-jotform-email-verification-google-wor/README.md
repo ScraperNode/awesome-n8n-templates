@@ -1,6 +1,6 @@
 # 🔬 Automated workshop certificate system with JotForm, email verification & Google Workspace
 
-> ⚡ **61 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **69 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

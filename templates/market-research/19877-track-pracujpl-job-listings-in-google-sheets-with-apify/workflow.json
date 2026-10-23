@@ -1,0 +1,986 @@
+{
+  "name": "Track new Pracuj.pl job listings in Google Sheets with Apify",
+  "nodes": [
+    {
+      "id": "pracuj-1",
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        420
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "pracuj-2",
+      "name": "Configure search",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        260,
+        420
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "keyword",
+              "name": "keyword",
+              "type": "string",
+              "value": "programista"
+            },
+            {
+              "id": "location",
+              "name": "location",
+              "type": "string",
+              "value": "Warszawa"
+            },
+            {
+              "id": "maxItems",
+              "name": "maxItems",
+              "type": "number",
+              "value": 20
+            },
+            {
+              "id": "maxChargeUsd",
+              "name": "maxChargeUsd",
+              "type": "number",
+              "value": 0.06
+            },
+            {
+              "id": "spreadsheetId",
+              "name": "spreadsheetId",
+              "type": "string",
+              "value": ""
+            },
+            {
+              "id": "resumeRunId",
+              "name": "resumeRunId",
+              "type": "string",
+              "value": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "pracuj-3",
+      "name": "Validate configuration",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        520,
+        420
+      ],
+      "parameters": {
+        "jsCode": "const ACTOR_ID='uyfjMbPtsvmRBL4EL';\nconst BUSINESS_TAB='Pracuj Jobs',HISTORY_TAB='Pracuj Companies',RUN_TAB='Pracuj Runs',LOCK_TAB='_PRACUJ_WORKFLOW_LOCK';\nconst MAX_EXISTING=5000,MAX_DATASET=1000;\nconst BUSINESS_HEADERS=['jobKey','jobId','title','companyName','companyKey','companyProfileUrl','sourceUrl','locations','salaryText','workModes','contractTypes','publishedAt','expiresAt','firstSeenAt','lastSeenAt','firstSeenRunId','lastRunId','firstObservationType','searchScope'];\nconst HISTORY_HEADERS=['signalKey','runId','companyKey','companyName','companyProfileUrl','baselineJobs','newlyObservedJobs','observedJobs','observedAt','keyword','location'];\nconst RUN_HEADERS=['runId','status','keyword','location','maxItems','startedAt','finishedAt','datasetId','rowsRead','rowsRejected','baselineJobs','newlyObservedJobs','rowsUpdated','companiesObserved','maxChargeUsd','buildNumber','executionId','notes'];\nfunction searchInput(input){\n const keyword=String(input?.keyword??'').trim(),location=String(input?.location??'').trim();\n if(!keyword||keyword.length>100||location.length>100)throw new Error('Set a keyword (1\u2013100 characters) and optionally a Polish location (up to 100 characters).');\n const maxItems=Number(input.maxItems);if(!Number.isInteger(maxItems)||maxItems<1||maxItems>100)throw new Error('maxItems must be an integer from 1 to 100.');\n if(input.scrapeJobDetails===true||input.startUrls?.length)throw new Error('This template supports keyword/location listing runs only, with details disabled and no startUrls.');\n return {keyword,location,maxItems,scrapeJobDetails:false};\n}\nfunction scope(input){return JSON.stringify([input.keyword,input.location]);}\nfunction config(input){\n const c={...input,...searchInput(input)};c.spreadsheetId=String(input.spreadsheetId??'').trim();c.resumeRunId=String(input.resumeRunId??'').trim();c.maxChargeUsd=Number(input.maxChargeUsd);\n if(!/^[A-Za-z0-9_-]{20,100}$/.test(c.spreadsheetId))throw new Error('Paste the spreadsheet ID (not its URL) in Configure search before starting a paid run.');\n if(c.resumeRunId&&!/^[A-Za-z0-9]{17}$/.test(c.resumeRunId))throw new Error('resumeRunId must be the 17-character Apify run ID.');\n if(!Number.isFinite(c.maxChargeUsd)||c.maxChargeUsd<0.01||c.maxChargeUsd>1)throw new Error('maxChargeUsd must be between 0.01 and 1 USD.');return c;\n}\nfunction originalInput(input){return searchInput(input);}\nfunction checkScope(input,ledger){for(const r of ledger){if(r[2]!==input.keyword||String(r[3]??'')!==input.location)throw new Error('This destination belongs to another keyword/location. Use a new spreadsheet for a different search to keep baseline semantics reliable.');}}\nfunction prepareSheet(meta){\n if(!Array.isArray(meta.sheets))throw new Error('Cannot read destination tabs.');const names=meta.sheets.map(s=>s.properties.title);\n if(names.includes(LOCK_TAB))throw new Error('Pracuj destination is locked. Check active executions and Pracuj Runs. Only after none is active, remove _PRACUJ_WORKFLOW_LOCK and resume the saved run ID.');\n const requests=[{addSheet:{properties:{title:LOCK_TAB,gridProperties:{rowCount:5,columnCount:2}}}}];\n for(const title of [BUSINESS_TAB,HISTORY_TAB,RUN_TAB])if(!names.includes(title))requests.push({addSheet:{properties:{title,gridProperties:{rowCount:MAX_EXISTING+2,columnCount:22}}}});return {requests};\n}\nfunction validateTable(values,headers,label){\n if(!values?.length)return [];if(headers.some((h,i)=>values[0]?.[i]!==h))throw new Error(label+' headers do not match the managed schema.');\n const rows=values.slice(1);if(rows.length>MAX_EXISTING)throw new Error(label+' exceeds 5000 rows. Archive to a new destination.');const keys=new Set();for(const r of rows){if(!r[0]||keys.has(String(r[0])))throw new Error(label+' contains missing or duplicate keys.');keys.add(String(r[0]));}return rows;\n}\nfunction checkRun(run){\n if(run.actId!==ACTOR_ID)throw new Error('Recovery run belongs to another Actor.');if(['FAILED','ABORTED','TIMED-OUT'].includes(run.status))throw new Error('Pracuj run '+run.id+' ended '+run.status+'. Partial output will not be imported.');\n if(!['READY','RUNNING','TIMING-OUT','ABORTING','SUCCEEDED'].includes(run.status))throw new Error('Unsupported Actor status: '+run.status);return run.status==='SUCCEEDED';\n}\nfunction checkDataset(meta){\n if(!Number.isInteger(meta.itemCount)||meta.itemCount<0||meta.itemCount>MAX_DATASET)throw new Error('Invalid or oversized dataset. The 1000-row bound never silently truncates results.');\n // An empty output is not sufficient evidence of a successful empty search.\n if(meta.itemCount===0)throw new Error('Pracuj returned no rows. Inspect the Actor log before interpreting this as no matching jobs. Existing jobs and company observations are unchanged.');return meta.itemCount;\n}\nconst scalar=v=>typeof v==='string'?v.trim().slice(0,2000):'';\nconst list=v=>Array.isArray(v)?v.filter(x=>typeof x==='string').map(scalar).join('; '):scalar(v);\nconst date=v=>typeof v==='string'&&Number.isFinite(Date.parse(v))?v:'';\nfunction normalize(item){\n if(!item||!scalar(item.title)||typeof item.url!=='string')return null;\n const m=item.url.match(/^https:\\/\\/(?:www\\.)?pracuj\\.pl\\/praca\\/[^?#\\s]+,oferta,(\\d{5,20})(?:[?#]|$)/i);if(!m)return null;\n const id=m[1],name=scalar(item.company?.name),cid=item.company?.id;\n const validId=(typeof cid==='number'&&Number.isSafeInteger(cid)&&cid>0)||(typeof cid==='string'&&/^\\d+$/.test(cid));\n // Source IDs group employers; fallback names are exact labels, not verified entities.\n const companyKey=validId?'id:'+cid:name?'name:'+name:'unknown-job:'+id;\n const profile=validId?'https://pracodawcy.pracuj.pl/company/'+cid:'';\n return {key:'pracuj:'+id,id,title:scalar(item.title),name,companyKey,profile,url:item.url.split(/[?#]/)[0],locations:list(item.locations),salary:scalar(item.salary),modes:list(item.workModes),contracts:list(item.typesOfContract),published:date(item.publishedAt),expires:date(item.expiresAt)};\n}\nfunction ledgerRow(ctx,status,counts={},notes=''){\n const {run,input,executionId}=ctx;return [run.id,status,input.keyword,input.location,input.maxItems,run.startedAt,run.finishedAt??'',run.defaultDatasetId,counts.read??'',counts.rejected??'',counts.baselines??'',counts.newJobs??'',counts.updated??'',counts.companies??'',run.options?.maxTotalChargeUsd??'',run.buildNumber??'',String(executionId),notes];\n}\nfunction planWrites(ctx,items,existing,ledger,datasetCount,signals=[]){\n if(!Array.isArray(items)||items.length!==datasetCount)throw new Error('Dataset retrieval is incomplete.');checkDataset({itemCount:items.length});const input=originalInput(ctx.input);checkScope(input,ledger);\n const time=ctx.run.finishedAt;if(!time||!Number.isFinite(Date.parse(time)))throw new Error('Completed run timestamp missing.');\n const oldMap=new Map(existing.map((r,i)=>[r[0],{row:r,index:i+2}]));\n for(const r of existing){if(r[18]!==scope(input))throw new Error('Existing job search scope differs from this run.');if(!Number.isFinite(Date.parse(r[14])))throw new Error('Invalid lastSeenAt.');if(Date.parse(r[14])>Date.parse(time))throw new Error('This run predates existing observations. Use a separate spreadsheet for older runs.');}\n const known=ledger.findIndex(r=>r[0]===ctx.run.id),replayed=known>=0&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(ledger[known][1]);\n const baseline=!ledger.some(r=>r[0]!==ctx.run.id&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(r[1]));\n const unique=new Map(),counts={read:items.length,rejected:0,duplicates:0,baselines:0,newJobs:0,updated:0,replayed:0,companies:0};\n for(const item of items){const n=normalize(item);if(!n){counts.rejected++;continue;}if(unique.has(n.key)){counts.duplicates++;continue;}unique.set(n.key,n);}\n if(!unique.size)throw new Error('No valid Pracuj job identities. Possible schema drift; no jobs or signals written.');\n const data=[{range:`'${BUSINESS_TAB}'!A1:S1`,values:[BUSINESS_HEADERS]},{range:`'${HISTORY_TAB}'!A1:K1`,values:[HISTORY_HEADERS]},{range:`'${RUN_TAB}'!A1:R1`,values:[RUN_HEADERS]}];\n const companies=new Map();let next=existing.length+2;\n for(const n of unique.values()){\n  const old=oldMap.get(n.key),r=old?.row;\n  if(replayed){if(!r||r[16]!==ctx.run.id)throw new Error('Successful run ledger disagrees with job state. Restore the destination before replay.');counts.replayed++;continue;}\n  if(r?.[16]===ctx.run.id)throw new Error('Jobs contain this run without a successful ledger. Inspect interrupted writes before recovery.');\n  if(r&&Date.parse(r[14])===Date.parse(time))throw new Error('Different runs have identical observation timestamps. Review before import.');\n  const type=r?r[17]:baseline?'BASELINE':'NEW';const row=old?.index??next++;if(row>MAX_EXISTING+1)throw new Error('Jobs table is full.');\n  data.push({range:`'${BUSINESS_TAB}'!A${row}:S${row}`,values:[[n.key,n.id,n.title,n.name,n.companyKey,n.profile,n.url,n.locations,n.salary,n.modes,n.contracts,n.published,n.expires,r?.[13]||time,time,r?.[15]||ctx.run.id,ctx.run.id,type,scope(input)]]});\n  if(!r){if(baseline)counts.baselines++;else counts.newJobs++;}else counts.updated++;\n  let c=companies.get(n.companyKey);if(!c){c={n,baseline:0,newJobs:0,observed:0};companies.set(n.companyKey,c);}c.observed++;if(!r){if(baseline)c.baseline++;else c.newJobs++;}\n }\n const signalMap=new Map(signals.map((r,i)=>[r[0],{row:r,index:i+2}]));let snext=signals.length+2;\n for(const [key,c]of companies){const sk=ctx.run.id+':'+key;if(signalMap.has(sk))throw new Error('Company signals contain this run without a successful ledger. Inspect interrupted writes.');if(snext>MAX_EXISTING+1)throw new Error('Company signals are full.');data.push({range:`'${HISTORY_TAB}'!A${snext}:K${snext}`,values:[[sk,ctx.run.id,key,c.n.name,c.n.profile,c.baseline,c.newJobs,c.observed,time,input.keyword,input.location]]});snext++;}\n if(replayed){for(const n of unique.values())if(!signalMap.has(ctx.run.id+':'+n.companyKey))throw new Error('Replay is missing company signal rows. Restore the destination.');}\n counts.companies=companies.size;\n const status=counts.rejected?'PARTIAL_ROWS_REJECTED':'IMPORTED';const notes=`${counts.baselines} baseline jobs; ${counts.newJobs} newly observed jobs; ${counts.updated} refreshed; ${counts.replayed} replayed. First seen is not publication time. Missing jobs are not assumed closed. Company counts describe this bounded search only.`;\n const ri=known>=0?known+2:ledger.length+2;if(ri>MAX_EXISTING+1)throw new Error('Run log is full.');if(!replayed)data.push({range:`'${RUN_TAB}'!A${ri}:R${ri}`,values:[ledgerRow(ctx,status,counts,notes)]});\n return {body:{valueInputOption:'RAW',data},summary:{status,runId:ctx.run.id,datasetId:ctx.run.defaultDatasetId,...counts,notes}};\n}\n\nreturn [{json:config($json)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pracuj-4",
+      "name": "Read destination",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select your Google Sheets OAuth2 credential. Safe reads / idempotent writes retry up to 3 times.",
+      "maxTries": 3,
+      "position": [
+        780,
+        420
+      ],
+      "parameters": {
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $('Validate configuration').first().json.spreadsheetId + '?fields=spreadsheetId,sheets(properties)' }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api"
+      },
+      "notesInFlow": false,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "pracuj-5",
+      "name": "Prepare tabs and lock",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1040,
+        420
+      ],
+      "parameters": {
+        "jsCode": "const ACTOR_ID='uyfjMbPtsvmRBL4EL';\nconst BUSINESS_TAB='Pracuj Jobs',HISTORY_TAB='Pracuj Companies',RUN_TAB='Pracuj Runs',LOCK_TAB='_PRACUJ_WORKFLOW_LOCK';\nconst MAX_EXISTING=5000,MAX_DATASET=1000;\nconst BUSINESS_HEADERS=['jobKey','jobId','title','companyName','companyKey','companyProfileUrl','sourceUrl','locations','salaryText','workModes','contractTypes','publishedAt','expiresAt','firstSeenAt','lastSeenAt','firstSeenRunId','lastRunId','firstObservationType','searchScope'];\nconst HISTORY_HEADERS=['signalKey','runId','companyKey','companyName','companyProfileUrl','baselineJobs','newlyObservedJobs','observedJobs','observedAt','keyword','location'];\nconst RUN_HEADERS=['runId','status','keyword','location','maxItems','startedAt','finishedAt','datasetId','rowsRead','rowsRejected','baselineJobs','newlyObservedJobs','rowsUpdated','companiesObserved','maxChargeUsd','buildNumber','executionId','notes'];\nfunction searchInput(input){\n const keyword=String(input?.keyword??'').trim(),location=String(input?.location??'').trim();\n if(!keyword||keyword.length>100||location.length>100)throw new Error('Set a keyword (1\u2013100 characters) and optionally a Polish location (up to 100 characters).');\n const maxItems=Number(input.maxItems);if(!Number.isInteger(maxItems)||maxItems<1||maxItems>100)throw new Error('maxItems must be an integer from 1 to 100.');\n if(input.scrapeJobDetails===true||input.startUrls?.length)throw new Error('This template supports keyword/location listing runs only, with details disabled and no startUrls.');\n return {keyword,location,maxItems,scrapeJobDetails:false};\n}\nfunction scope(input){return JSON.stringify([input.keyword,input.location]);}\nfunction config(input){\n const c={...input,...searchInput(input)};c.spreadsheetId=String(input.spreadsheetId??'').trim();c.resumeRunId=String(input.resumeRunId??'').trim();c.maxChargeUsd=Number(input.maxChargeUsd);\n if(!/^[A-Za-z0-9_-]{20,100}$/.test(c.spreadsheetId))throw new Error('Paste the spreadsheet ID (not its URL) in Configure search before starting a paid run.');\n if(c.resumeRunId&&!/^[A-Za-z0-9]{17}$/.test(c.resumeRunId))throw new Error('resumeRunId must be the 17-character Apify run ID.');\n if(!Number.isFinite(c.maxChargeUsd)||c.maxChargeUsd<0.01||c.maxChargeUsd>1)throw new Error('maxChargeUsd must be between 0.01 and 1 USD.');return c;\n}\nfunction originalInput(input){return searchInput(input);}\nfunction checkScope(input,ledger){for(const r of ledger){if(r[2]!==input.keyword||String(r[3]??'')!==input.location)throw new Error('This destination belongs to another keyword/location. Use a new spreadsheet for a different search to keep baseline semantics reliable.');}}\nfunction prepareSheet(meta){\n if(!Array.isArray(meta.sheets))throw new Error('Cannot read destination tabs.');const names=meta.sheets.map(s=>s.properties.title);\n if(names.includes(LOCK_TAB))throw new Error('Pracuj destination is locked. Check active executions and Pracuj Runs. Only after none is active, remove _PRACUJ_WORKFLOW_LOCK and resume the saved run ID.');\n const requests=[{addSheet:{properties:{title:LOCK_TAB,gridProperties:{rowCount:5,columnCount:2}}}}];\n for(const title of [BUSINESS_TAB,HISTORY_TAB,RUN_TAB])if(!names.includes(title))requests.push({addSheet:{properties:{title,gridProperties:{rowCount:MAX_EXISTING+2,columnCount:22}}}});return {requests};\n}\nfunction validateTable(values,headers,label){\n if(!values?.length)return [];if(headers.some((h,i)=>values[0]?.[i]!==h))throw new Error(label+' headers do not match the managed schema.');\n const rows=values.slice(1);if(rows.length>MAX_EXISTING)throw new Error(label+' exceeds 5000 rows. Archive to a new destination.');const keys=new Set();for(const r of rows){if(!r[0]||keys.has(String(r[0])))throw new Error(label+' contains missing or duplicate keys.');keys.add(String(r[0]));}return rows;\n}\nfunction checkRun(run){\n if(run.actId!==ACTOR_ID)throw new Error('Recovery run belongs to another Actor.');if(['FAILED','ABORTED','TIMED-OUT'].includes(run.status))throw new Error('Pracuj run '+run.id+' ended '+run.status+'. Partial output will not be imported.');\n if(!['READY','RUNNING','TIMING-OUT','ABORTING','SUCCEEDED'].includes(run.status))throw new Error('Unsupported Actor status: '+run.status);return run.status==='SUCCEEDED';\n}\nfunction checkDataset(meta){\n if(!Number.isInteger(meta.itemCount)||meta.itemCount<0||meta.itemCount>MAX_DATASET)throw new Error('Invalid or oversized dataset. The 1000-row bound never silently truncates results.');\n // An empty output is not sufficient evidence of a successful empty search.\n if(meta.itemCount===0)throw new Error('Pracuj returned no rows. Inspect the Actor log before interpreting this as no matching jobs. Existing jobs and company observations are unchanged.');return meta.itemCount;\n}\nconst scalar=v=>typeof v==='string'?v.trim().slice(0,2000):'';\nconst list=v=>Array.isArray(v)?v.filter(x=>typeof x==='string').map(scalar).join('; '):scalar(v);\nconst date=v=>typeof v==='string'&&Number.isFinite(Date.parse(v))?v:'';\nfunction normalize(item){\n if(!item||!scalar(item.title)||typeof item.url!=='string')return null;\n const m=item.url.match(/^https:\\/\\/(?:www\\.)?pracuj\\.pl\\/praca\\/[^?#\\s]+,oferta,(\\d{5,20})(?:[?#]|$)/i);if(!m)return null;\n const id=m[1],name=scalar(item.company?.name),cid=item.company?.id;\n const validId=(typeof cid==='number'&&Number.isSafeInteger(cid)&&cid>0)||(typeof cid==='string'&&/^\\d+$/.test(cid));\n // Source IDs group employers; fallback names are exact labels, not verified entities.\n const companyKey=validId?'id:'+cid:name?'name:'+name:'unknown-job:'+id;\n const profile=validId?'https://pracodawcy.pracuj.pl/company/'+cid:'';\n return {key:'pracuj:'+id,id,title:scalar(item.title),name,companyKey,profile,url:item.url.split(/[?#]/)[0],locations:list(item.locations),salary:scalar(item.salary),modes:list(item.workModes),contracts:list(item.typesOfContract),published:date(item.publishedAt),expires:date(item.expiresAt)};\n}\nfunction ledgerRow(ctx,status,counts={},notes=''){\n const {run,input,executionId}=ctx;return [run.id,status,input.keyword,input.location,input.maxItems,run.startedAt,run.finishedAt??'',run.defaultDatasetId,counts.read??'',counts.rejected??'',counts.baselines??'',counts.newJobs??'',counts.updated??'',counts.companies??'',run.options?.maxTotalChargeUsd??'',run.buildNumber??'',String(executionId),notes];\n}\nfunction planWrites(ctx,items,existing,ledger,datasetCount,signals=[]){\n if(!Array.isArray(items)||items.length!==datasetCount)throw new Error('Dataset retrieval is incomplete.');checkDataset({itemCount:items.length});const input=originalInput(ctx.input);checkScope(input,ledger);\n const time=ctx.run.finishedAt;if(!time||!Number.isFinite(Date.parse(time)))throw new Error('Completed run timestamp missing.');\n const oldMap=new Map(existing.map((r,i)=>[r[0],{row:r,index:i+2}]));\n for(const r of existing){if(r[18]!==scope(input))throw new Error('Existing job search scope differs from this run.');if(!Number.isFinite(Date.parse(r[14])))throw new Error('Invalid lastSeenAt.');if(Date.parse(r[14])>Date.parse(time))throw new Error('This run predates existing observations. Use a separate spreadsheet for older runs.');}\n const known=ledger.findIndex(r=>r[0]===ctx.run.id),replayed=known>=0&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(ledger[known][1]);\n const baseline=!ledger.some(r=>r[0]!==ctx.run.id&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(r[1]));\n const unique=new Map(),counts={read:items.length,rejected:0,duplicates:0,baselines:0,newJobs:0,updated:0,replayed:0,companies:0};\n for(const item of items){const n=normalize(item);if(!n){counts.rejected++;continue;}if(unique.has(n.key)){counts.duplicates++;continue;}unique.set(n.key,n);}\n if(!unique.size)throw new Error('No valid Pracuj job identities. Possible schema drift; no jobs or signals written.');\n const data=[{range:`'${BUSINESS_TAB}'!A1:S1`,values:[BUSINESS_HEADERS]},{range:`'${HISTORY_TAB}'!A1:K1`,values:[HISTORY_HEADERS]},{range:`'${RUN_TAB}'!A1:R1`,values:[RUN_HEADERS]}];\n const companies=new Map();let next=existing.length+2;\n for(const n of unique.values()){\n  const old=oldMap.get(n.key),r=old?.row;\n  if(replayed){if(!r||r[16]!==ctx.run.id)throw new Error('Successful run ledger disagrees with job state. Restore the destination before replay.');counts.replayed++;continue;}\n  if(r?.[16]===ctx.run.id)throw new Error('Jobs contain this run without a successful ledger. Inspect interrupted writes before recovery.');\n  if(r&&Date.parse(r[14])===Date.parse(time))throw new Error('Different runs have identical observation timestamps. Review before import.');\n  const type=r?r[17]:baseline?'BASELINE':'NEW';const row=old?.index??next++;if(row>MAX_EXISTING+1)throw new Error('Jobs table is full.');\n  data.push({range:`'${BUSINESS_TAB}'!A${row}:S${row}`,values:[[n.key,n.id,n.title,n.name,n.companyKey,n.profile,n.url,n.locations,n.salary,n.modes,n.contracts,n.published,n.expires,r?.[13]||time,time,r?.[15]||ctx.run.id,ctx.run.id,type,scope(input)]]});\n  if(!r){if(baseline)counts.baselines++;else counts.newJobs++;}else counts.updated++;\n  let c=companies.get(n.companyKey);if(!c){c={n,baseline:0,newJobs:0,observed:0};companies.set(n.companyKey,c);}c.observed++;if(!r){if(baseline)c.baseline++;else c.newJobs++;}\n }\n const signalMap=new Map(signals.map((r,i)=>[r[0],{row:r,index:i+2}]));let snext=signals.length+2;\n for(const [key,c]of companies){const sk=ctx.run.id+':'+key;if(signalMap.has(sk))throw new Error('Company signals contain this run without a successful ledger. Inspect interrupted writes.');if(snext>MAX_EXISTING+1)throw new Error('Company signals are full.');data.push({range:`'${HISTORY_TAB}'!A${snext}:K${snext}`,values:[[sk,ctx.run.id,key,c.n.name,c.n.profile,c.baseline,c.newJobs,c.observed,time,input.keyword,input.location]]});snext++;}\n if(replayed){for(const n of unique.values())if(!signalMap.has(ctx.run.id+':'+n.companyKey))throw new Error('Replay is missing company signal rows. Restore the destination.');}\n counts.companies=companies.size;\n const status=counts.rejected?'PARTIAL_ROWS_REJECTED':'IMPORTED';const notes=`${counts.baselines} baseline jobs; ${counts.newJobs} newly observed jobs; ${counts.updated} refreshed; ${counts.replayed} replayed. First seen is not publication time. Missing jobs are not assumed closed. Company counts describe this bounded search only.`;\n const ri=known>=0?known+2:ledger.length+2;if(ri>MAX_EXISTING+1)throw new Error('Run log is full.');if(!replayed)data.push({range:`'${RUN_TAB}'!A${ri}:R${ri}`,values:[ledgerRow(ctx,status,counts,notes)]});\n return {body:{valueInputOption:'RAW',data},summary:{status,runId:ctx.run.id,datasetId:ctx.run.defaultDatasetId,...counts,notes}};\n}\n\nreturn [{json:prepareSheet($json.body)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pracuj-6",
+      "name": "Acquire destination lock",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select your Google Sheets OAuth2 credential. This mutation is deliberately not retried automatically.",
+      "maxTries": 3,
+      "position": [
+        1300,
+        420
+      ],
+      "parameters": {
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $('Validate configuration').first().json.spreadsheetId + ':batchUpdate' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 75000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ $json }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api"
+      },
+      "notesInFlow": false,
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "pracuj-7",
+      "name": "Read existing rows",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select your Google Sheets OAuth2 credential. Safe reads / idempotent writes retry up to 3 times.",
+      "maxTries": 3,
+      "position": [
+        1560,
+        420
+      ],
+      "parameters": {
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $('Validate configuration').first().json.spreadsheetId + '/values:batchGet?valueRenderOption=UNFORMATTED_VALUE&ranges=' + encodeURIComponent(\"'Pracuj Jobs'!A1:S5002\") + '&ranges=' + encodeURIComponent(\"'Pracuj Runs'!A1:R5002\") + '&ranges=' + encodeURIComponent(\"'Pracuj Companies'!A1:K5002\") }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api"
+      },
+      "notesInFlow": false,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "pracuj-8",
+      "name": "Validate existing tables",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1820,
+        420
+      ],
+      "parameters": {
+        "jsCode": "const ACTOR_ID='uyfjMbPtsvmRBL4EL';\nconst BUSINESS_TAB='Pracuj Jobs',HISTORY_TAB='Pracuj Companies',RUN_TAB='Pracuj Runs',LOCK_TAB='_PRACUJ_WORKFLOW_LOCK';\nconst MAX_EXISTING=5000,MAX_DATASET=1000;\nconst BUSINESS_HEADERS=['jobKey','jobId','title','companyName','companyKey','companyProfileUrl','sourceUrl','locations','salaryText','workModes','contractTypes','publishedAt','expiresAt','firstSeenAt','lastSeenAt','firstSeenRunId','lastRunId','firstObservationType','searchScope'];\nconst HISTORY_HEADERS=['signalKey','runId','companyKey','companyName','companyProfileUrl','baselineJobs','newlyObservedJobs','observedJobs','observedAt','keyword','location'];\nconst RUN_HEADERS=['runId','status','keyword','location','maxItems','startedAt','finishedAt','datasetId','rowsRead','rowsRejected','baselineJobs','newlyObservedJobs','rowsUpdated','companiesObserved','maxChargeUsd','buildNumber','executionId','notes'];\nfunction searchInput(input){\n const keyword=String(input?.keyword??'').trim(),location=String(input?.location??'').trim();\n if(!keyword||keyword.length>100||location.length>100)throw new Error('Set a keyword (1\u2013100 characters) and optionally a Polish location (up to 100 characters).');\n const maxItems=Number(input.maxItems);if(!Number.isInteger(maxItems)||maxItems<1||maxItems>100)throw new Error('maxItems must be an integer from 1 to 100.');\n if(input.scrapeJobDetails===true||input.startUrls?.length)throw new Error('This template supports keyword/location listing runs only, with details disabled and no startUrls.');\n return {keyword,location,maxItems,scrapeJobDetails:false};\n}\nfunction scope(input){return JSON.stringify([input.keyword,input.location]);}\nfunction config(input){\n const c={...input,...searchInput(input)};c.spreadsheetId=String(input.spreadsheetId??'').trim();c.resumeRunId=String(input.resumeRunId??'').trim();c.maxChargeUsd=Number(input.maxChargeUsd);\n if(!/^[A-Za-z0-9_-]{20,100}$/.test(c.spreadsheetId))throw new Error('Paste the spreadsheet ID (not its URL) in Configure search before starting a paid run.');\n if(c.resumeRunId&&!/^[A-Za-z0-9]{17}$/.test(c.resumeRunId))throw new Error('resumeRunId must be the 17-character Apify run ID.');\n if(!Number.isFinite(c.maxChargeUsd)||c.maxChargeUsd<0.01||c.maxChargeUsd>1)throw new Error('maxChargeUsd must be between 0.01 and 1 USD.');return c;\n}\nfunction originalInput(input){return searchInput(input);}\nfunction checkScope(input,ledger){for(const r of ledger){if(r[2]!==input.keyword||String(r[3]??'')!==input.location)throw new Error('This destination belongs to another keyword/location. Use a new spreadsheet for a different search to keep baseline semantics reliable.');}}\nfunction prepareSheet(meta){\n if(!Array.isArray(meta.sheets))throw new Error('Cannot read destination tabs.');const names=meta.sheets.map(s=>s.properties.title);\n if(names.includes(LOCK_TAB))throw new Error('Pracuj destination is locked. Check active executions and Pracuj Runs. Only after none is active, remove _PRACUJ_WORKFLOW_LOCK and resume the saved run ID.');\n const requests=[{addSheet:{properties:{title:LOCK_TAB,gridProperties:{rowCount:5,columnCount:2}}}}];\n for(const title of [BUSINESS_TAB,HISTORY_TAB,RUN_TAB])if(!names.includes(title))requests.push({addSheet:{properties:{title,gridProperties:{rowCount:MAX_EXISTING+2,columnCount:22}}}});return {requests};\n}\nfunction validateTable(values,headers,label){\n if(!values?.length)return [];if(headers.some((h,i)=>values[0]?.[i]!==h))throw new Error(label+' headers do not match the managed schema.');\n const rows=values.slice(1);if(rows.length>MAX_EXISTING)throw new Error(label+' exceeds 5000 rows. Archive to a new destination.');const keys=new Set();for(const r of rows){if(!r[0]||keys.has(String(r[0])))throw new Error(label+' contains missing or duplicate keys.');keys.add(String(r[0]));}return rows;\n}\nfunction checkRun(run){\n if(run.actId!==ACTOR_ID)throw new Error('Recovery run belongs to another Actor.');if(['FAILED','ABORTED','TIMED-OUT'].includes(run.status))throw new Error('Pracuj run '+run.id+' ended '+run.status+'. Partial output will not be imported.');\n if(!['READY','RUNNING','TIMING-OUT','ABORTING','SUCCEEDED'].includes(run.status))throw new Error('Unsupported Actor status: '+run.status);return run.status==='SUCCEEDED';\n}\nfunction checkDataset(meta){\n if(!Number.isInteger(meta.itemCount)||meta.itemCount<0||meta.itemCount>MAX_DATASET)throw new Error('Invalid or oversized dataset. The 1000-row bound never silently truncates results.');\n // An empty output is not sufficient evidence of a successful empty search.\n if(meta.itemCount===0)throw new Error('Pracuj returned no rows. Inspect the Actor log before interpreting this as no matching jobs. Existing jobs and company observations are unchanged.');return meta.itemCount;\n}\nconst scalar=v=>typeof v==='string'?v.trim().slice(0,2000):'';\nconst list=v=>Array.isArray(v)?v.filter(x=>typeof x==='string').map(scalar).join('; '):scalar(v);\nconst date=v=>typeof v==='string'&&Number.isFinite(Date.parse(v))?v:'';\nfunction normalize(item){\n if(!item||!scalar(item.title)||typeof item.url!=='string')return null;\n const m=item.url.match(/^https:\\/\\/(?:www\\.)?pracuj\\.pl\\/praca\\/[^?#\\s]+,oferta,(\\d{5,20})(?:[?#]|$)/i);if(!m)return null;\n const id=m[1],name=scalar(item.company?.name),cid=item.company?.id;\n const validId=(typeof cid==='number'&&Number.isSafeInteger(cid)&&cid>0)||(typeof cid==='string'&&/^\\d+$/.test(cid));\n // Source IDs group employers; fallback names are exact labels, not verified entities.\n const companyKey=validId?'id:'+cid:name?'name:'+name:'unknown-job:'+id;\n const profile=validId?'https://pracodawcy.pracuj.pl/company/'+cid:'';\n return {key:'pracuj:'+id,id,title:scalar(item.title),name,companyKey,profile,url:item.url.split(/[?#]/)[0],locations:list(item.locations),salary:scalar(item.salary),modes:list(item.workModes),contracts:list(item.typesOfContract),published:date(item.publishedAt),expires:date(item.expiresAt)};\n}\nfunction ledgerRow(ctx,status,counts={},notes=''){\n const {run,input,executionId}=ctx;return [run.id,status,input.keyword,input.location,input.maxItems,run.startedAt,run.finishedAt??'',run.defaultDatasetId,counts.read??'',counts.rejected??'',counts.baselines??'',counts.newJobs??'',counts.updated??'',counts.companies??'',run.options?.maxTotalChargeUsd??'',run.buildNumber??'',String(executionId),notes];\n}\nfunction planWrites(ctx,items,existing,ledger,datasetCount,signals=[]){\n if(!Array.isArray(items)||items.length!==datasetCount)throw new Error('Dataset retrieval is incomplete.');checkDataset({itemCount:items.length});const input=originalInput(ctx.input);checkScope(input,ledger);\n const time=ctx.run.finishedAt;if(!time||!Number.isFinite(Date.parse(time)))throw new Error('Completed run timestamp missing.');\n const oldMap=new Map(existing.map((r,i)=>[r[0],{row:r,index:i+2}]));\n for(const r of existing){if(r[18]!==scope(input))throw new Error('Existing job search scope differs from this run.');if(!Number.isFinite(Date.parse(r[14])))throw new Error('Invalid lastSeenAt.');if(Date.parse(r[14])>Date.parse(time))throw new Error('This run predates existing observations. Use a separate spreadsheet for older runs.');}\n const known=ledger.findIndex(r=>r[0]===ctx.run.id),replayed=known>=0&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(ledger[known][1]);\n const baseline=!ledger.some(r=>r[0]!==ctx.run.id&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(r[1]));\n const unique=new Map(),counts={read:items.length,rejected:0,duplicates:0,baselines:0,newJobs:0,updated:0,replayed:0,companies:0};\n for(const item of items){const n=normalize(item);if(!n){counts.rejected++;continue;}if(unique.has(n.key)){counts.duplicates++;continue;}unique.set(n.key,n);}\n if(!unique.size)throw new Error('No valid Pracuj job identities. Possible schema drift; no jobs or signals written.');\n const data=[{range:`'${BUSINESS_TAB}'!A1:S1`,values:[BUSINESS_HEADERS]},{range:`'${HISTORY_TAB}'!A1:K1`,values:[HISTORY_HEADERS]},{range:`'${RUN_TAB}'!A1:R1`,values:[RUN_HEADERS]}];\n const companies=new Map();let next=existing.length+2;\n for(const n of unique.values()){\n  const old=oldMap.get(n.key),r=old?.row;\n  if(replayed){if(!r||r[16]!==ctx.run.id)throw new Error('Successful run ledger disagrees with job state. Restore the destination before replay.');counts.replayed++;continue;}\n  if(r?.[16]===ctx.run.id)throw new Error('Jobs contain this run without a successful ledger. Inspect interrupted writes before recovery.');\n  if(r&&Date.parse(r[14])===Date.parse(time))throw new Error('Different runs have identical observation timestamps. Review before import.');\n  const type=r?r[17]:baseline?'BASELINE':'NEW';const row=old?.index??next++;if(row>MAX_EXISTING+1)throw new Error('Jobs table is full.');\n  data.push({range:`'${BUSINESS_TAB}'!A${row}:S${row}`,values:[[n.key,n.id,n.title,n.name,n.companyKey,n.profile,n.url,n.locations,n.salary,n.modes,n.contracts,n.published,n.expires,r?.[13]||time,time,r?.[15]||ctx.run.id,ctx.run.id,type,scope(input)]]});\n  if(!r){if(baseline)counts.baselines++;else counts.newJobs++;}else counts.updated++;\n  let c=companies.get(n.companyKey);if(!c){c={n,baseline:0,newJobs:0,observed:0};companies.set(n.companyKey,c);}c.observed++;if(!r){if(baseline)c.baseline++;else c.newJobs++;}\n }\n const signalMap=new Map(signals.map((r,i)=>[r[0],{row:r,index:i+2}]));let snext=signals.length+2;\n for(const [key,c]of companies){const sk=ctx.run.id+':'+key;if(signalMap.has(sk))throw new Error('Company signals contain this run without a successful ledger. Inspect interrupted writes.');if(snext>MAX_EXISTING+1)throw new Error('Company signals are full.');data.push({range:`'${HISTORY_TAB}'!A${snext}:K${snext}`,values:[[sk,ctx.run.id,key,c.n.name,c.n.profile,c.baseline,c.newJobs,c.observed,time,input.keyword,input.location]]});snext++;}\n if(replayed){for(const n of unique.values())if(!signalMap.has(ctx.run.id+':'+n.companyKey))throw new Error('Replay is missing company signal rows. Restore the destination.');}\n counts.companies=companies.size;\n const status=counts.rejected?'PARTIAL_ROWS_REJECTED':'IMPORTED';const notes=`${counts.baselines} baseline jobs; ${counts.newJobs} newly observed jobs; ${counts.updated} refreshed; ${counts.replayed} replayed. First seen is not publication time. Missing jobs are not assumed closed. Company counts describe this bounded search only.`;\n const ri=known>=0?known+2:ledger.length+2;if(ri>MAX_EXISTING+1)throw new Error('Run log is full.');if(!replayed)data.push({range:`'${RUN_TAB}'!A${ri}:R${ri}`,values:[ledgerRow(ctx,status,counts,notes)]});\n return {body:{valueInputOption:'RAW',data},summary:{status,runId:ctx.run.id,datasetId:ctx.run.defaultDatasetId,...counts,notes}};\n}\n\nconst ranges=$json.body.valueRanges;\nconst existing=validateTable(ranges[0].values,BUSINESS_HEADERS,BUSINESS_TAB);\nconst ledger=validateTable(ranges[1].values,RUN_HEADERS,RUN_TAB);\nconst history=validateTable(ranges[2].values,HISTORY_HEADERS,HISTORY_TAB);\nif(!$('Validate configuration').first().json.resumeRunId)checkScope($('Validate configuration').first().json,ledger);\nif(history.length+ $('Validate configuration').first().json.maxItems>MAX_EXISTING && !$('Validate configuration').first().json.resumeRunId)throw new Error('History may be full. Archive to a new spreadsheet before paid work.');\nif(ledger.length>=MAX_EXISTING && !$('Validate configuration').first().json.resumeRunId)throw new Error('Run log is full; archive before starting paid work.');\nreturn [{json:{existing,ledger,history}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pracuj-9",
+      "name": "Resume an existing run?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -20,
+        1040
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "Resume an existing run?",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Validate configuration').first().json.resumeRunId !== '' }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "pracuj-10",
+      "name": "Load recovery run",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select your Apify API credential. Safe reads / idempotent writes retry up to 3 times.",
+      "maxTries": 3,
+      "position": [
+        260,
+        960
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/actor-runs/' + $('Validate configuration').first().json.resumeRunId }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "apifyApi"
+      },
+      "notesInFlow": false,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "pracuj-11",
+      "name": "Start bounded Pracuj run",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select your Apify API credential. This mutation is deliberately not retried automatically.",
+      "maxTries": 3,
+      "position": [
+        260,
+        1240
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/acts/uyfjMbPtsvmRBL4EL/runs?timeout=180&build=0.0.1&maxTotalChargeUsd=' + $('Validate configuration').first().json.maxChargeUsd }}",
+        "method": "POST",
+        "options": {
+          "timeout": 75000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ { keyword: $('Validate configuration').first().json.keyword, location: $('Validate configuration').first().json.location, maxItems: $('Validate configuration').first().json.maxItems, scrapeJobDetails: false } }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "apifyApi"
+      },
+      "notesInFlow": false,
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "pracuj-12",
+      "name": "Capture run",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        520,
+        1040
+      ],
+      "parameters": {
+        "jsCode": "const ACTOR_ID='uyfjMbPtsvmRBL4EL';\nconst BUSINESS_TAB='Pracuj Jobs',HISTORY_TAB='Pracuj Companies',RUN_TAB='Pracuj Runs',LOCK_TAB='_PRACUJ_WORKFLOW_LOCK';\nconst MAX_EXISTING=5000,MAX_DATASET=1000;\nconst BUSINESS_HEADERS=['jobKey','jobId','title','companyName','companyKey','companyProfileUrl','sourceUrl','locations','salaryText','workModes','contractTypes','publishedAt','expiresAt','firstSeenAt','lastSeenAt','firstSeenRunId','lastRunId','firstObservationType','searchScope'];\nconst HISTORY_HEADERS=['signalKey','runId','companyKey','companyName','companyProfileUrl','baselineJobs','newlyObservedJobs','observedJobs','observedAt','keyword','location'];\nconst RUN_HEADERS=['runId','status','keyword','location','maxItems','startedAt','finishedAt','datasetId','rowsRead','rowsRejected','baselineJobs','newlyObservedJobs','rowsUpdated','companiesObserved','maxChargeUsd','buildNumber','executionId','notes'];\nfunction searchInput(input){\n const keyword=String(input?.keyword??'').trim(),location=String(input?.location??'').trim();\n if(!keyword||keyword.length>100||location.length>100)throw new Error('Set a keyword (1\u2013100 characters) and optionally a Polish location (up to 100 characters).');\n const maxItems=Number(input.maxItems);if(!Number.isInteger(maxItems)||maxItems<1||maxItems>100)throw new Error('maxItems must be an integer from 1 to 100.');\n if(input.scrapeJobDetails===true||input.startUrls?.length)throw new Error('This template supports keyword/location listing runs only, with details disabled and no startUrls.');\n return {keyword,location,maxItems,scrapeJobDetails:false};\n}\nfunction scope(input){return JSON.stringify([input.keyword,input.location]);}\nfunction config(input){\n const c={...input,...searchInput(input)};c.spreadsheetId=String(input.spreadsheetId??'').trim();c.resumeRunId=String(input.resumeRunId??'').trim();c.maxChargeUsd=Number(input.maxChargeUsd);\n if(!/^[A-Za-z0-9_-]{20,100}$/.test(c.spreadsheetId))throw new Error('Paste the spreadsheet ID (not its URL) in Configure search before starting a paid run.');\n if(c.resumeRunId&&!/^[A-Za-z0-9]{17}$/.test(c.resumeRunId))throw new Error('resumeRunId must be the 17-character Apify run ID.');\n if(!Number.isFinite(c.maxChargeUsd)||c.maxChargeUsd<0.01||c.maxChargeUsd>1)throw new Error('maxChargeUsd must be between 0.01 and 1 USD.');return c;\n}\nfunction originalInput(input){return searchInput(input);}\nfunction checkScope(input,ledger){for(const r of ledger){if(r[2]!==input.keyword||String(r[3]??'')!==input.location)throw new Error('This destination belongs to another keyword/location. Use a new spreadsheet for a different search to keep baseline semantics reliable.');}}\nfunction prepareSheet(meta){\n if(!Array.isArray(meta.sheets))throw new Error('Cannot read destination tabs.');const names=meta.sheets.map(s=>s.properties.title);\n if(names.includes(LOCK_TAB))throw new Error('Pracuj destination is locked. Check active executions and Pracuj Runs. Only after none is active, remove _PRACUJ_WORKFLOW_LOCK and resume the saved run ID.');\n const requests=[{addSheet:{properties:{title:LOCK_TAB,gridProperties:{rowCount:5,columnCount:2}}}}];\n for(const title of [BUSINESS_TAB,HISTORY_TAB,RUN_TAB])if(!names.includes(title))requests.push({addSheet:{properties:{title,gridProperties:{rowCount:MAX_EXISTING+2,columnCount:22}}}});return {requests};\n}\nfunction validateTable(values,headers,label){\n if(!values?.length)return [];if(headers.some((h,i)=>values[0]?.[i]!==h))throw new Error(label+' headers do not match the managed schema.');\n const rows=values.slice(1);if(rows.length>MAX_EXISTING)throw new Error(label+' exceeds 5000 rows. Archive to a new destination.');const keys=new Set();for(const r of rows){if(!r[0]||keys.has(String(r[0])))throw new Error(label+' contains missing or duplicate keys.');keys.add(String(r[0]));}return rows;\n}\nfunction checkRun(run){\n if(run.actId!==ACTOR_ID)throw new Error('Recovery run belongs to another Actor.');if(['FAILED','ABORTED','TIMED-OUT'].includes(run.status))throw new Error('Pracuj run '+run.id+' ended '+run.status+'. Partial output will not be imported.');\n if(!['READY','RUNNING','TIMING-OUT','ABORTING','SUCCEEDED'].includes(run.status))throw new Error('Unsupported Actor status: '+run.status);return run.status==='SUCCEEDED';\n}\nfunction checkDataset(meta){\n if(!Number.isInteger(meta.itemCount)||meta.itemCount<0||meta.itemCount>MAX_DATASET)throw new Error('Invalid or oversized dataset. The 1000-row bound never silently truncates results.');\n // An empty output is not sufficient evidence of a successful empty search.\n if(meta.itemCount===0)throw new Error('Pracuj returned no rows. Inspect the Actor log before interpreting this as no matching jobs. Existing jobs and company observations are unchanged.');return meta.itemCount;\n}\nconst scalar=v=>typeof v==='string'?v.trim().slice(0,2000):'';\nconst list=v=>Array.isArray(v)?v.filter(x=>typeof x==='string').map(scalar).join('; '):scalar(v);\nconst date=v=>typeof v==='string'&&Number.isFinite(Date.parse(v))?v:'';\nfunction normalize(item){\n if(!item||!scalar(item.title)||typeof item.url!=='string')return null;\n const m=item.url.match(/^https:\\/\\/(?:www\\.)?pracuj\\.pl\\/praca\\/[^?#\\s]+,oferta,(\\d{5,20})(?:[?#]|$)/i);if(!m)return null;\n const id=m[1],name=scalar(item.company?.name),cid=item.company?.id;\n const validId=(typeof cid==='number'&&Number.isSafeInteger(cid)&&cid>0)||(typeof cid==='string'&&/^\\d+$/.test(cid));\n // Source IDs group employers; fallback names are exact labels, not verified entities.\n const companyKey=validId?'id:'+cid:name?'name:'+name:'unknown-job:'+id;\n const profile=validId?'https://pracodawcy.pracuj.pl/company/'+cid:'';\n return {key:'pracuj:'+id,id,title:scalar(item.title),name,companyKey,profile,url:item.url.split(/[?#]/)[0],locations:list(item.locations),salary:scalar(item.salary),modes:list(item.workModes),contracts:list(item.typesOfContract),published:date(item.publishedAt),expires:date(item.expiresAt)};\n}\nfunction ledgerRow(ctx,status,counts={},notes=''){\n const {run,input,executionId}=ctx;return [run.id,status,input.keyword,input.location,input.maxItems,run.startedAt,run.finishedAt??'',run.defaultDatasetId,counts.read??'',counts.rejected??'',counts.baselines??'',counts.newJobs??'',counts.updated??'',counts.companies??'',run.options?.maxTotalChargeUsd??'',run.buildNumber??'',String(executionId),notes];\n}\nfunction planWrites(ctx,items,existing,ledger,datasetCount,signals=[]){\n if(!Array.isArray(items)||items.length!==datasetCount)throw new Error('Dataset retrieval is incomplete.');checkDataset({itemCount:items.length});const input=originalInput(ctx.input);checkScope(input,ledger);\n const time=ctx.run.finishedAt;if(!time||!Number.isFinite(Date.parse(time)))throw new Error('Completed run timestamp missing.');\n const oldMap=new Map(existing.map((r,i)=>[r[0],{row:r,index:i+2}]));\n for(const r of existing){if(r[18]!==scope(input))throw new Error('Existing job search scope differs from this run.');if(!Number.isFinite(Date.parse(r[14])))throw new Error('Invalid lastSeenAt.');if(Date.parse(r[14])>Date.parse(time))throw new Error('This run predates existing observations. Use a separate spreadsheet for older runs.');}\n const known=ledger.findIndex(r=>r[0]===ctx.run.id),replayed=known>=0&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(ledger[known][1]);\n const baseline=!ledger.some(r=>r[0]!==ctx.run.id&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(r[1]));\n const unique=new Map(),counts={read:items.length,rejected:0,duplicates:0,baselines:0,newJobs:0,updated:0,replayed:0,companies:0};\n for(const item of items){const n=normalize(item);if(!n){counts.rejected++;continue;}if(unique.has(n.key)){counts.duplicates++;continue;}unique.set(n.key,n);}\n if(!unique.size)throw new Error('No valid Pracuj job identities. Possible schema drift; no jobs or signals written.');\n const data=[{range:`'${BUSINESS_TAB}'!A1:S1`,values:[BUSINESS_HEADERS]},{range:`'${HISTORY_TAB}'!A1:K1`,values:[HISTORY_HEADERS]},{range:`'${RUN_TAB}'!A1:R1`,values:[RUN_HEADERS]}];\n const companies=new Map();let next=existing.length+2;\n for(const n of unique.values()){\n  const old=oldMap.get(n.key),r=old?.row;\n  if(replayed){if(!r||r[16]!==ctx.run.id)throw new Error('Successful run ledger disagrees with job state. Restore the destination before replay.');counts.replayed++;continue;}\n  if(r?.[16]===ctx.run.id)throw new Error('Jobs contain this run without a successful ledger. Inspect interrupted writes before recovery.');\n  if(r&&Date.parse(r[14])===Date.parse(time))throw new Error('Different runs have identical observation timestamps. Review before import.');\n  const type=r?r[17]:baseline?'BASELINE':'NEW';const row=old?.index??next++;if(row>MAX_EXISTING+1)throw new Error('Jobs table is full.');\n  data.push({range:`'${BUSINESS_TAB}'!A${row}:S${row}`,values:[[n.key,n.id,n.title,n.name,n.companyKey,n.profile,n.url,n.locations,n.salary,n.modes,n.contracts,n.published,n.expires,r?.[13]||time,time,r?.[15]||ctx.run.id,ctx.run.id,type,scope(input)]]});\n  if(!r){if(baseline)counts.baselines++;else counts.newJobs++;}else counts.updated++;\n  let c=companies.get(n.companyKey);if(!c){c={n,baseline:0,newJobs:0,observed:0};companies.set(n.companyKey,c);}c.observed++;if(!r){if(baseline)c.baseline++;else c.newJobs++;}\n }\n const signalMap=new Map(signals.map((r,i)=>[r[0],{row:r,index:i+2}]));let snext=signals.length+2;\n for(const [key,c]of companies){const sk=ctx.run.id+':'+key;if(signalMap.has(sk))throw new Error('Company signals contain this run without a successful ledger. Inspect interrupted writes.');if(snext>MAX_EXISTING+1)throw new Error('Company signals are full.');data.push({range:`'${HISTORY_TAB}'!A${snext}:K${snext}`,values:[[sk,ctx.run.id,key,c.n.name,c.n.profile,c.baseline,c.newJobs,c.observed,time,input.keyword,input.location]]});snext++;}\n if(replayed){for(const n of unique.values())if(!signalMap.has(ctx.run.id+':'+n.companyKey))throw new Error('Replay is missing company signal rows. Restore the destination.');}\n counts.companies=companies.size;\n const status=counts.rejected?'PARTIAL_ROWS_REJECTED':'IMPORTED';const notes=`${counts.baselines} baseline jobs; ${counts.newJobs} newly observed jobs; ${counts.updated} refreshed; ${counts.replayed} replayed. First seen is not publication time. Missing jobs are not assumed closed. Company counts describe this bounded search only.`;\n const ri=known>=0?known+2:ledger.length+2;if(ri>MAX_EXISTING+1)throw new Error('Run log is full.');if(!replayed)data.push({range:`'${RUN_TAB}'!A${ri}:R${ri}`,values:[ledgerRow(ctx,status,counts,notes)]});\n return {body:{valueInputOption:'RAW',data},summary:{status,runId:ctx.run.id,datasetId:ctx.run.defaultDatasetId,...counts,notes}};\n}\n\nconst run=$json.body.data;\nif(run.actId!==ACTOR_ID)throw new Error('Recovery ID belongs to another Actor.');\nreturn [{json:run}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pracuj-13",
+      "name": "Read original run input",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select your Apify API credential. Safe reads / idempotent writes retry up to 3 times.",
+      "maxTries": 3,
+      "position": [
+        780,
+        1040
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/key-value-stores/' + $('Capture run').first().json.defaultKeyValueStoreId + '/records/INPUT' }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "apifyApi"
+      },
+      "notesInFlow": false,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "pracuj-14",
+      "name": "Prepare run checkpoint",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1040,
+        1040
+      ],
+      "parameters": {
+        "jsCode": "const ACTOR_ID='uyfjMbPtsvmRBL4EL';\nconst BUSINESS_TAB='Pracuj Jobs',HISTORY_TAB='Pracuj Companies',RUN_TAB='Pracuj Runs',LOCK_TAB='_PRACUJ_WORKFLOW_LOCK';\nconst MAX_EXISTING=5000,MAX_DATASET=1000;\nconst BUSINESS_HEADERS=['jobKey','jobId','title','companyName','companyKey','companyProfileUrl','sourceUrl','locations','salaryText','workModes','contractTypes','publishedAt','expiresAt','firstSeenAt','lastSeenAt','firstSeenRunId','lastRunId','firstObservationType','searchScope'];\nconst HISTORY_HEADERS=['signalKey','runId','companyKey','companyName','companyProfileUrl','baselineJobs','newlyObservedJobs','observedJobs','observedAt','keyword','location'];\nconst RUN_HEADERS=['runId','status','keyword','location','maxItems','startedAt','finishedAt','datasetId','rowsRead','rowsRejected','baselineJobs','newlyObservedJobs','rowsUpdated','companiesObserved','maxChargeUsd','buildNumber','executionId','notes'];\nfunction searchInput(input){\n const keyword=String(input?.keyword??'').trim(),location=String(input?.location??'').trim();\n if(!keyword||keyword.length>100||location.length>100)throw new Error('Set a keyword (1\u2013100 characters) and optionally a Polish location (up to 100 characters).');\n const maxItems=Number(input.maxItems);if(!Number.isInteger(maxItems)||maxItems<1||maxItems>100)throw new Error('maxItems must be an integer from 1 to 100.');\n if(input.scrapeJobDetails===true||input.startUrls?.length)throw new Error('This template supports keyword/location listing runs only, with details disabled and no startUrls.');\n return {keyword,location,maxItems,scrapeJobDetails:false};\n}\nfunction scope(input){return JSON.stringify([input.keyword,input.location]);}\nfunction config(input){\n const c={...input,...searchInput(input)};c.spreadsheetId=String(input.spreadsheetId??'').trim();c.resumeRunId=String(input.resumeRunId??'').trim();c.maxChargeUsd=Number(input.maxChargeUsd);\n if(!/^[A-Za-z0-9_-]{20,100}$/.test(c.spreadsheetId))throw new Error('Paste the spreadsheet ID (not its URL) in Configure search before starting a paid run.');\n if(c.resumeRunId&&!/^[A-Za-z0-9]{17}$/.test(c.resumeRunId))throw new Error('resumeRunId must be the 17-character Apify run ID.');\n if(!Number.isFinite(c.maxChargeUsd)||c.maxChargeUsd<0.01||c.maxChargeUsd>1)throw new Error('maxChargeUsd must be between 0.01 and 1 USD.');return c;\n}\nfunction originalInput(input){return searchInput(input);}\nfunction checkScope(input,ledger){for(const r of ledger){if(r[2]!==input.keyword||String(r[3]??'')!==input.location)throw new Error('This destination belongs to another keyword/location. Use a new spreadsheet for a different search to keep baseline semantics reliable.');}}\nfunction prepareSheet(meta){\n if(!Array.isArray(meta.sheets))throw new Error('Cannot read destination tabs.');const names=meta.sheets.map(s=>s.properties.title);\n if(names.includes(LOCK_TAB))throw new Error('Pracuj destination is locked. Check active executions and Pracuj Runs. Only after none is active, remove _PRACUJ_WORKFLOW_LOCK and resume the saved run ID.');\n const requests=[{addSheet:{properties:{title:LOCK_TAB,gridProperties:{rowCount:5,columnCount:2}}}}];\n for(const title of [BUSINESS_TAB,HISTORY_TAB,RUN_TAB])if(!names.includes(title))requests.push({addSheet:{properties:{title,gridProperties:{rowCount:MAX_EXISTING+2,columnCount:22}}}});return {requests};\n}\nfunction validateTable(values,headers,label){\n if(!values?.length)return [];if(headers.some((h,i)=>values[0]?.[i]!==h))throw new Error(label+' headers do not match the managed schema.');\n const rows=values.slice(1);if(rows.length>MAX_EXISTING)throw new Error(label+' exceeds 5000 rows. Archive to a new destination.');const keys=new Set();for(const r of rows){if(!r[0]||keys.has(String(r[0])))throw new Error(label+' contains missing or duplicate keys.');keys.add(String(r[0]));}return rows;\n}\nfunction checkRun(run){\n if(run.actId!==ACTOR_ID)throw new Error('Recovery run belongs to another Actor.');if(['FAILED','ABORTED','TIMED-OUT'].includes(run.status))throw new Error('Pracuj run '+run.id+' ended '+run.status+'. Partial output will not be imported.');\n if(!['READY','RUNNING','TIMING-OUT','ABORTING','SUCCEEDED'].includes(run.status))throw new Error('Unsupported Actor status: '+run.status);return run.status==='SUCCEEDED';\n}\nfunction checkDataset(meta){\n if(!Number.isInteger(meta.itemCount)||meta.itemCount<0||meta.itemCount>MAX_DATASET)throw new Error('Invalid or oversized dataset. The 1000-row bound never silently truncates results.');\n // An empty output is not sufficient evidence of a successful empty search.\n if(meta.itemCount===0)throw new Error('Pracuj returned no rows. Inspect the Actor log before interpreting this as no matching jobs. Existing jobs and company observations are unchanged.');return meta.itemCount;\n}\nconst scalar=v=>typeof v==='string'?v.trim().slice(0,2000):'';\nconst list=v=>Array.isArray(v)?v.filter(x=>typeof x==='string').map(scalar).join('; '):scalar(v);\nconst date=v=>typeof v==='string'&&Number.isFinite(Date.parse(v))?v:'';\nfunction normalize(item){\n if(!item||!scalar(item.title)||typeof item.url!=='string')return null;\n const m=item.url.match(/^https:\\/\\/(?:www\\.)?pracuj\\.pl\\/praca\\/[^?#\\s]+,oferta,(\\d{5,20})(?:[?#]|$)/i);if(!m)return null;\n const id=m[1],name=scalar(item.company?.name),cid=item.company?.id;\n const validId=(typeof cid==='number'&&Number.isSafeInteger(cid)&&cid>0)||(typeof cid==='string'&&/^\\d+$/.test(cid));\n // Source IDs group employers; fallback names are exact labels, not verified entities.\n const companyKey=validId?'id:'+cid:name?'name:'+name:'unknown-job:'+id;\n const profile=validId?'https://pracodawcy.pracuj.pl/company/'+cid:'';\n return {key:'pracuj:'+id,id,title:scalar(item.title),name,companyKey,profile,url:item.url.split(/[?#]/)[0],locations:list(item.locations),salary:scalar(item.salary),modes:list(item.workModes),contracts:list(item.typesOfContract),published:date(item.publishedAt),expires:date(item.expiresAt)};\n}\nfunction ledgerRow(ctx,status,counts={},notes=''){\n const {run,input,executionId}=ctx;return [run.id,status,input.keyword,input.location,input.maxItems,run.startedAt,run.finishedAt??'',run.defaultDatasetId,counts.read??'',counts.rejected??'',counts.baselines??'',counts.newJobs??'',counts.updated??'',counts.companies??'',run.options?.maxTotalChargeUsd??'',run.buildNumber??'',String(executionId),notes];\n}\nfunction planWrites(ctx,items,existing,ledger,datasetCount,signals=[]){\n if(!Array.isArray(items)||items.length!==datasetCount)throw new Error('Dataset retrieval is incomplete.');checkDataset({itemCount:items.length});const input=originalInput(ctx.input);checkScope(input,ledger);\n const time=ctx.run.finishedAt;if(!time||!Number.isFinite(Date.parse(time)))throw new Error('Completed run timestamp missing.');\n const oldMap=new Map(existing.map((r,i)=>[r[0],{row:r,index:i+2}]));\n for(const r of existing){if(r[18]!==scope(input))throw new Error('Existing job search scope differs from this run.');if(!Number.isFinite(Date.parse(r[14])))throw new Error('Invalid lastSeenAt.');if(Date.parse(r[14])>Date.parse(time))throw new Error('This run predates existing observations. Use a separate spreadsheet for older runs.');}\n const known=ledger.findIndex(r=>r[0]===ctx.run.id),replayed=known>=0&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(ledger[known][1]);\n const baseline=!ledger.some(r=>r[0]!==ctx.run.id&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(r[1]));\n const unique=new Map(),counts={read:items.length,rejected:0,duplicates:0,baselines:0,newJobs:0,updated:0,replayed:0,companies:0};\n for(const item of items){const n=normalize(item);if(!n){counts.rejected++;continue;}if(unique.has(n.key)){counts.duplicates++;continue;}unique.set(n.key,n);}\n if(!unique.size)throw new Error('No valid Pracuj job identities. Possible schema drift; no jobs or signals written.');\n const data=[{range:`'${BUSINESS_TAB}'!A1:S1`,values:[BUSINESS_HEADERS]},{range:`'${HISTORY_TAB}'!A1:K1`,values:[HISTORY_HEADERS]},{range:`'${RUN_TAB}'!A1:R1`,values:[RUN_HEADERS]}];\n const companies=new Map();let next=existing.length+2;\n for(const n of unique.values()){\n  const old=oldMap.get(n.key),r=old?.row;\n  if(replayed){if(!r||r[16]!==ctx.run.id)throw new Error('Successful run ledger disagrees with job state. Restore the destination before replay.');counts.replayed++;continue;}\n  if(r?.[16]===ctx.run.id)throw new Error('Jobs contain this run without a successful ledger. Inspect interrupted writes before recovery.');\n  if(r&&Date.parse(r[14])===Date.parse(time))throw new Error('Different runs have identical observation timestamps. Review before import.');\n  const type=r?r[17]:baseline?'BASELINE':'NEW';const row=old?.index??next++;if(row>MAX_EXISTING+1)throw new Error('Jobs table is full.');\n  data.push({range:`'${BUSINESS_TAB}'!A${row}:S${row}`,values:[[n.key,n.id,n.title,n.name,n.companyKey,n.profile,n.url,n.locations,n.salary,n.modes,n.contracts,n.published,n.expires,r?.[13]||time,time,r?.[15]||ctx.run.id,ctx.run.id,type,scope(input)]]});\n  if(!r){if(baseline)counts.baselines++;else counts.newJobs++;}else counts.updated++;\n  let c=companies.get(n.companyKey);if(!c){c={n,baseline:0,newJobs:0,observed:0};companies.set(n.companyKey,c);}c.observed++;if(!r){if(baseline)c.baseline++;else c.newJobs++;}\n }\n const signalMap=new Map(signals.map((r,i)=>[r[0],{row:r,index:i+2}]));let snext=signals.length+2;\n for(const [key,c]of companies){const sk=ctx.run.id+':'+key;if(signalMap.has(sk))throw new Error('Company signals contain this run without a successful ledger. Inspect interrupted writes.');if(snext>MAX_EXISTING+1)throw new Error('Company signals are full.');data.push({range:`'${HISTORY_TAB}'!A${snext}:K${snext}`,values:[[sk,ctx.run.id,key,c.n.name,c.n.profile,c.baseline,c.newJobs,c.observed,time,input.keyword,input.location]]});snext++;}\n if(replayed){for(const n of unique.values())if(!signalMap.has(ctx.run.id+':'+n.companyKey))throw new Error('Replay is missing company signal rows. Restore the destination.');}\n counts.companies=companies.size;\n const status=counts.rejected?'PARTIAL_ROWS_REJECTED':'IMPORTED';const notes=`${counts.baselines} baseline jobs; ${counts.newJobs} newly observed jobs; ${counts.updated} refreshed; ${counts.replayed} replayed. First seen is not publication time. Missing jobs are not assumed closed. Company counts describe this bounded search only.`;\n const ri=known>=0?known+2:ledger.length+2;if(ri>MAX_EXISTING+1)throw new Error('Run log is full.');if(!replayed)data.push({range:`'${RUN_TAB}'!A${ri}:R${ri}`,values:[ledgerRow(ctx,status,counts,notes)]});\n return {body:{valueInputOption:'RAW',data},summary:{status,runId:ctx.run.id,datasetId:ctx.run.defaultDatasetId,...counts,notes}};\n}\n\nconst run=$('Capture run').first().json,input=originalInput($json.body);\ncheckScope(input,$('Validate existing tables').first().json.ledger);\nconst ctx={run,input,executionId:$execution.id};\nconst ledger=$('Validate existing tables').first().json.ledger;\nconst found=ledger.findIndex(r=>r[0]===run.id), row=found>=0?found+2:ledger.length+2;\nif(row>MAX_EXISTING+1)throw new Error('Run log is full.');\nconst data=[{range:\"'Pracuj Runs'!A1:R1\",values:[RUN_HEADERS]}];\nif(!(found>=0&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(ledger[found][1])))data.push({range:\"'Pracuj Runs'!A\"+row+':R'+row,values:[ledgerRow(ctx,'PROCESSING',{},'Run saved. If interrupted, set resumeRunId to this run ID; clear a stale lock only after checking active executions.') ]});\nreturn [{json:{ctx,body:{valueInputOption:'RAW',data}}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pracuj-15",
+      "name": "Save run checkpoint",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select your Google Sheets OAuth2 credential. Safe reads / idempotent writes retry up to 3 times.",
+      "maxTries": 3,
+      "position": [
+        1300,
+        1040
+      ],
+      "parameters": {
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $('Validate configuration').first().json.spreadsheetId + '/values:batchUpdate' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 75000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ $json.body }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api"
+      },
+      "notesInFlow": false,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "pracuj-16",
+      "name": "Wait for Actor status",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select your Apify API credential. Safe reads / idempotent writes retry up to 3 times.",
+      "maxTries": 3,
+      "position": [
+        1560,
+        1040
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/actor-runs/' + $('Capture run').first().json.id + '?waitForFinish=30' }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "apifyApi"
+      },
+      "notesInFlow": false,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "pracuj-17",
+      "name": "Inspect Actor status",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1820,
+        1040
+      ],
+      "parameters": {
+        "jsCode": "const ACTOR_ID='uyfjMbPtsvmRBL4EL';\nconst BUSINESS_TAB='Pracuj Jobs',HISTORY_TAB='Pracuj Companies',RUN_TAB='Pracuj Runs',LOCK_TAB='_PRACUJ_WORKFLOW_LOCK';\nconst MAX_EXISTING=5000,MAX_DATASET=1000;\nconst BUSINESS_HEADERS=['jobKey','jobId','title','companyName','companyKey','companyProfileUrl','sourceUrl','locations','salaryText','workModes','contractTypes','publishedAt','expiresAt','firstSeenAt','lastSeenAt','firstSeenRunId','lastRunId','firstObservationType','searchScope'];\nconst HISTORY_HEADERS=['signalKey','runId','companyKey','companyName','companyProfileUrl','baselineJobs','newlyObservedJobs','observedJobs','observedAt','keyword','location'];\nconst RUN_HEADERS=['runId','status','keyword','location','maxItems','startedAt','finishedAt','datasetId','rowsRead','rowsRejected','baselineJobs','newlyObservedJobs','rowsUpdated','companiesObserved','maxChargeUsd','buildNumber','executionId','notes'];\nfunction searchInput(input){\n const keyword=String(input?.keyword??'').trim(),location=String(input?.location??'').trim();\n if(!keyword||keyword.length>100||location.length>100)throw new Error('Set a keyword (1\u2013100 characters) and optionally a Polish location (up to 100 characters).');\n const maxItems=Number(input.maxItems);if(!Number.isInteger(maxItems)||maxItems<1||maxItems>100)throw new Error('maxItems must be an integer from 1 to 100.');\n if(input.scrapeJobDetails===true||input.startUrls?.length)throw new Error('This template supports keyword/location listing runs only, with details disabled and no startUrls.');\n return {keyword,location,maxItems,scrapeJobDetails:false};\n}\nfunction scope(input){return JSON.stringify([input.keyword,input.location]);}\nfunction config(input){\n const c={...input,...searchInput(input)};c.spreadsheetId=String(input.spreadsheetId??'').trim();c.resumeRunId=String(input.resumeRunId??'').trim();c.maxChargeUsd=Number(input.maxChargeUsd);\n if(!/^[A-Za-z0-9_-]{20,100}$/.test(c.spreadsheetId))throw new Error('Paste the spreadsheet ID (not its URL) in Configure search before starting a paid run.');\n if(c.resumeRunId&&!/^[A-Za-z0-9]{17}$/.test(c.resumeRunId))throw new Error('resumeRunId must be the 17-character Apify run ID.');\n if(!Number.isFinite(c.maxChargeUsd)||c.maxChargeUsd<0.01||c.maxChargeUsd>1)throw new Error('maxChargeUsd must be between 0.01 and 1 USD.');return c;\n}\nfunction originalInput(input){return searchInput(input);}\nfunction checkScope(input,ledger){for(const r of ledger){if(r[2]!==input.keyword||String(r[3]??'')!==input.location)throw new Error('This destination belongs to another keyword/location. Use a new spreadsheet for a different search to keep baseline semantics reliable.');}}\nfunction prepareSheet(meta){\n if(!Array.isArray(meta.sheets))throw new Error('Cannot read destination tabs.');const names=meta.sheets.map(s=>s.properties.title);\n if(names.includes(LOCK_TAB))throw new Error('Pracuj destination is locked. Check active executions and Pracuj Runs. Only after none is active, remove _PRACUJ_WORKFLOW_LOCK and resume the saved run ID.');\n const requests=[{addSheet:{properties:{title:LOCK_TAB,gridProperties:{rowCount:5,columnCount:2}}}}];\n for(const title of [BUSINESS_TAB,HISTORY_TAB,RUN_TAB])if(!names.includes(title))requests.push({addSheet:{properties:{title,gridProperties:{rowCount:MAX_EXISTING+2,columnCount:22}}}});return {requests};\n}\nfunction validateTable(values,headers,label){\n if(!values?.length)return [];if(headers.some((h,i)=>values[0]?.[i]!==h))throw new Error(label+' headers do not match the managed schema.');\n const rows=values.slice(1);if(rows.length>MAX_EXISTING)throw new Error(label+' exceeds 5000 rows. Archive to a new destination.');const keys=new Set();for(const r of rows){if(!r[0]||keys.has(String(r[0])))throw new Error(label+' contains missing or duplicate keys.');keys.add(String(r[0]));}return rows;\n}\nfunction checkRun(run){\n if(run.actId!==ACTOR_ID)throw new Error('Recovery run belongs to another Actor.');if(['FAILED','ABORTED','TIMED-OUT'].includes(run.status))throw new Error('Pracuj run '+run.id+' ended '+run.status+'. Partial output will not be imported.');\n if(!['READY','RUNNING','TIMING-OUT','ABORTING','SUCCEEDED'].includes(run.status))throw new Error('Unsupported Actor status: '+run.status);return run.status==='SUCCEEDED';\n}\nfunction checkDataset(meta){\n if(!Number.isInteger(meta.itemCount)||meta.itemCount<0||meta.itemCount>MAX_DATASET)throw new Error('Invalid or oversized dataset. The 1000-row bound never silently truncates results.');\n // An empty output is not sufficient evidence of a successful empty search.\n if(meta.itemCount===0)throw new Error('Pracuj returned no rows. Inspect the Actor log before interpreting this as no matching jobs. Existing jobs and company observations are unchanged.');return meta.itemCount;\n}\nconst scalar=v=>typeof v==='string'?v.trim().slice(0,2000):'';\nconst list=v=>Array.isArray(v)?v.filter(x=>typeof x==='string').map(scalar).join('; '):scalar(v);\nconst date=v=>typeof v==='string'&&Number.isFinite(Date.parse(v))?v:'';\nfunction normalize(item){\n if(!item||!scalar(item.title)||typeof item.url!=='string')return null;\n const m=item.url.match(/^https:\\/\\/(?:www\\.)?pracuj\\.pl\\/praca\\/[^?#\\s]+,oferta,(\\d{5,20})(?:[?#]|$)/i);if(!m)return null;\n const id=m[1],name=scalar(item.company?.name),cid=item.company?.id;\n const validId=(typeof cid==='number'&&Number.isSafeInteger(cid)&&cid>0)||(typeof cid==='string'&&/^\\d+$/.test(cid));\n // Source IDs group employers; fallback names are exact labels, not verified entities.\n const companyKey=validId?'id:'+cid:name?'name:'+name:'unknown-job:'+id;\n const profile=validId?'https://pracodawcy.pracuj.pl/company/'+cid:'';\n return {key:'pracuj:'+id,id,title:scalar(item.title),name,companyKey,profile,url:item.url.split(/[?#]/)[0],locations:list(item.locations),salary:scalar(item.salary),modes:list(item.workModes),contracts:list(item.typesOfContract),published:date(item.publishedAt),expires:date(item.expiresAt)};\n}\nfunction ledgerRow(ctx,status,counts={},notes=''){\n const {run,input,executionId}=ctx;return [run.id,status,input.keyword,input.location,input.maxItems,run.startedAt,run.finishedAt??'',run.defaultDatasetId,counts.read??'',counts.rejected??'',counts.baselines??'',counts.newJobs??'',counts.updated??'',counts.companies??'',run.options?.maxTotalChargeUsd??'',run.buildNumber??'',String(executionId),notes];\n}\nfunction planWrites(ctx,items,existing,ledger,datasetCount,signals=[]){\n if(!Array.isArray(items)||items.length!==datasetCount)throw new Error('Dataset retrieval is incomplete.');checkDataset({itemCount:items.length});const input=originalInput(ctx.input);checkScope(input,ledger);\n const time=ctx.run.finishedAt;if(!time||!Number.isFinite(Date.parse(time)))throw new Error('Completed run timestamp missing.');\n const oldMap=new Map(existing.map((r,i)=>[r[0],{row:r,index:i+2}]));\n for(const r of existing){if(r[18]!==scope(input))throw new Error('Existing job search scope differs from this run.');if(!Number.isFinite(Date.parse(r[14])))throw new Error('Invalid lastSeenAt.');if(Date.parse(r[14])>Date.parse(time))throw new Error('This run predates existing observations. Use a separate spreadsheet for older runs.');}\n const known=ledger.findIndex(r=>r[0]===ctx.run.id),replayed=known>=0&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(ledger[known][1]);\n const baseline=!ledger.some(r=>r[0]!==ctx.run.id&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(r[1]));\n const unique=new Map(),counts={read:items.length,rejected:0,duplicates:0,baselines:0,newJobs:0,updated:0,replayed:0,companies:0};\n for(const item of items){const n=normalize(item);if(!n){counts.rejected++;continue;}if(unique.has(n.key)){counts.duplicates++;continue;}unique.set(n.key,n);}\n if(!unique.size)throw new Error('No valid Pracuj job identities. Possible schema drift; no jobs or signals written.');\n const data=[{range:`'${BUSINESS_TAB}'!A1:S1`,values:[BUSINESS_HEADERS]},{range:`'${HISTORY_TAB}'!A1:K1`,values:[HISTORY_HEADERS]},{range:`'${RUN_TAB}'!A1:R1`,values:[RUN_HEADERS]}];\n const companies=new Map();let next=existing.length+2;\n for(const n of unique.values()){\n  const old=oldMap.get(n.key),r=old?.row;\n  if(replayed){if(!r||r[16]!==ctx.run.id)throw new Error('Successful run ledger disagrees with job state. Restore the destination before replay.');counts.replayed++;continue;}\n  if(r?.[16]===ctx.run.id)throw new Error('Jobs contain this run without a successful ledger. Inspect interrupted writes before recovery.');\n  if(r&&Date.parse(r[14])===Date.parse(time))throw new Error('Different runs have identical observation timestamps. Review before import.');\n  const type=r?r[17]:baseline?'BASELINE':'NEW';const row=old?.index??next++;if(row>MAX_EXISTING+1)throw new Error('Jobs table is full.');\n  data.push({range:`'${BUSINESS_TAB}'!A${row}:S${row}`,values:[[n.key,n.id,n.title,n.name,n.companyKey,n.profile,n.url,n.locations,n.salary,n.modes,n.contracts,n.published,n.expires,r?.[13]||time,time,r?.[15]||ctx.run.id,ctx.run.id,type,scope(input)]]});\n  if(!r){if(baseline)counts.baselines++;else counts.newJobs++;}else counts.updated++;\n  let c=companies.get(n.companyKey);if(!c){c={n,baseline:0,newJobs:0,observed:0};companies.set(n.companyKey,c);}c.observed++;if(!r){if(baseline)c.baseline++;else c.newJobs++;}\n }\n const signalMap=new Map(signals.map((r,i)=>[r[0],{row:r,index:i+2}]));let snext=signals.length+2;\n for(const [key,c]of companies){const sk=ctx.run.id+':'+key;if(signalMap.has(sk))throw new Error('Company signals contain this run without a successful ledger. Inspect interrupted writes.');if(snext>MAX_EXISTING+1)throw new Error('Company signals are full.');data.push({range:`'${HISTORY_TAB}'!A${snext}:K${snext}`,values:[[sk,ctx.run.id,key,c.n.name,c.n.profile,c.baseline,c.newJobs,c.observed,time,input.keyword,input.location]]});snext++;}\n if(replayed){for(const n of unique.values())if(!signalMap.has(ctx.run.id+':'+n.companyKey))throw new Error('Replay is missing company signal rows. Restore the destination.');}\n counts.companies=companies.size;\n const status=counts.rejected?'PARTIAL_ROWS_REJECTED':'IMPORTED';const notes=`${counts.baselines} baseline jobs; ${counts.newJobs} newly observed jobs; ${counts.updated} refreshed; ${counts.replayed} replayed. First seen is not publication time. Missing jobs are not assumed closed. Company counts describe this bounded search only.`;\n const ri=known>=0?known+2:ledger.length+2;if(ri>MAX_EXISTING+1)throw new Error('Run log is full.');if(!replayed)data.push({range:`'${RUN_TAB}'!A${ri}:R${ri}`,values:[ledgerRow(ctx,status,counts,notes)]});\n return {body:{valueInputOption:'RAW',data},summary:{status,runId:ctx.run.id,datasetId:ctx.run.defaultDatasetId,...counts,notes}};\n}\n\nconst run=$json.body.data;\nconst finished=checkRun(run);\nif(!finished&&$runIndex>=7)throw new Error('Stopped waiting for run '+run.id+'. Check Apify; n8n cancellation does not abort it. Resume this run, do not start another.');\nreturn [{json:{run,finished}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pracuj-18",
+      "name": "Actor succeeded?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2080,
+        1040
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "Actor succeeded?",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.finished }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "pracuj-19",
+      "name": "Fetch complete bounded dataset",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select your Apify API credential. Safe reads / idempotent writes retry up to 3 times.",
+      "maxTries": 3,
+      "position": [
+        -20,
+        1760
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/datasets/' + $('Inspect Actor status').last().json.run.defaultDatasetId + '/items?format=json&limit=1001' }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "apifyApi"
+      },
+      "notesInFlow": false,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "pracuj-20",
+      "name": "Plan hiring observations",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        780,
+        1760
+      ],
+      "parameters": {
+        "jsCode": "const ACTOR_ID='uyfjMbPtsvmRBL4EL';\nconst BUSINESS_TAB='Pracuj Jobs',HISTORY_TAB='Pracuj Companies',RUN_TAB='Pracuj Runs',LOCK_TAB='_PRACUJ_WORKFLOW_LOCK';\nconst MAX_EXISTING=5000,MAX_DATASET=1000;\nconst BUSINESS_HEADERS=['jobKey','jobId','title','companyName','companyKey','companyProfileUrl','sourceUrl','locations','salaryText','workModes','contractTypes','publishedAt','expiresAt','firstSeenAt','lastSeenAt','firstSeenRunId','lastRunId','firstObservationType','searchScope'];\nconst HISTORY_HEADERS=['signalKey','runId','companyKey','companyName','companyProfileUrl','baselineJobs','newlyObservedJobs','observedJobs','observedAt','keyword','location'];\nconst RUN_HEADERS=['runId','status','keyword','location','maxItems','startedAt','finishedAt','datasetId','rowsRead','rowsRejected','baselineJobs','newlyObservedJobs','rowsUpdated','companiesObserved','maxChargeUsd','buildNumber','executionId','notes'];\nfunction searchInput(input){\n const keyword=String(input?.keyword??'').trim(),location=String(input?.location??'').trim();\n if(!keyword||keyword.length>100||location.length>100)throw new Error('Set a keyword (1\u2013100 characters) and optionally a Polish location (up to 100 characters).');\n const maxItems=Number(input.maxItems);if(!Number.isInteger(maxItems)||maxItems<1||maxItems>100)throw new Error('maxItems must be an integer from 1 to 100.');\n if(input.scrapeJobDetails===true||input.startUrls?.length)throw new Error('This template supports keyword/location listing runs only, with details disabled and no startUrls.');\n return {keyword,location,maxItems,scrapeJobDetails:false};\n}\nfunction scope(input){return JSON.stringify([input.keyword,input.location]);}\nfunction config(input){\n const c={...input,...searchInput(input)};c.spreadsheetId=String(input.spreadsheetId??'').trim();c.resumeRunId=String(input.resumeRunId??'').trim();c.maxChargeUsd=Number(input.maxChargeUsd);\n if(!/^[A-Za-z0-9_-]{20,100}$/.test(c.spreadsheetId))throw new Error('Paste the spreadsheet ID (not its URL) in Configure search before starting a paid run.');\n if(c.resumeRunId&&!/^[A-Za-z0-9]{17}$/.test(c.resumeRunId))throw new Error('resumeRunId must be the 17-character Apify run ID.');\n if(!Number.isFinite(c.maxChargeUsd)||c.maxChargeUsd<0.01||c.maxChargeUsd>1)throw new Error('maxChargeUsd must be between 0.01 and 1 USD.');return c;\n}\nfunction originalInput(input){return searchInput(input);}\nfunction checkScope(input,ledger){for(const r of ledger){if(r[2]!==input.keyword||String(r[3]??'')!==input.location)throw new Error('This destination belongs to another keyword/location. Use a new spreadsheet for a different search to keep baseline semantics reliable.');}}\nfunction prepareSheet(meta){\n if(!Array.isArray(meta.sheets))throw new Error('Cannot read destination tabs.');const names=meta.sheets.map(s=>s.properties.title);\n if(names.includes(LOCK_TAB))throw new Error('Pracuj destination is locked. Check active executions and Pracuj Runs. Only after none is active, remove _PRACUJ_WORKFLOW_LOCK and resume the saved run ID.');\n const requests=[{addSheet:{properties:{title:LOCK_TAB,gridProperties:{rowCount:5,columnCount:2}}}}];\n for(const title of [BUSINESS_TAB,HISTORY_TAB,RUN_TAB])if(!names.includes(title))requests.push({addSheet:{properties:{title,gridProperties:{rowCount:MAX_EXISTING+2,columnCount:22}}}});return {requests};\n}\nfunction validateTable(values,headers,label){\n if(!values?.length)return [];if(headers.some((h,i)=>values[0]?.[i]!==h))throw new Error(label+' headers do not match the managed schema.');\n const rows=values.slice(1);if(rows.length>MAX_EXISTING)throw new Error(label+' exceeds 5000 rows. Archive to a new destination.');const keys=new Set();for(const r of rows){if(!r[0]||keys.has(String(r[0])))throw new Error(label+' contains missing or duplicate keys.');keys.add(String(r[0]));}return rows;\n}\nfunction checkRun(run){\n if(run.actId!==ACTOR_ID)throw new Error('Recovery run belongs to another Actor.');if(['FAILED','ABORTED','TIMED-OUT'].includes(run.status))throw new Error('Pracuj run '+run.id+' ended '+run.status+'. Partial output will not be imported.');\n if(!['READY','RUNNING','TIMING-OUT','ABORTING','SUCCEEDED'].includes(run.status))throw new Error('Unsupported Actor status: '+run.status);return run.status==='SUCCEEDED';\n}\nfunction checkDataset(meta){\n if(!Number.isInteger(meta.itemCount)||meta.itemCount<0||meta.itemCount>MAX_DATASET)throw new Error('Invalid or oversized dataset. The 1000-row bound never silently truncates results.');\n // An empty output is not sufficient evidence of a successful empty search.\n if(meta.itemCount===0)throw new Error('Pracuj returned no rows. Inspect the Actor log before interpreting this as no matching jobs. Existing jobs and company observations are unchanged.');return meta.itemCount;\n}\nconst scalar=v=>typeof v==='string'?v.trim().slice(0,2000):'';\nconst list=v=>Array.isArray(v)?v.filter(x=>typeof x==='string').map(scalar).join('; '):scalar(v);\nconst date=v=>typeof v==='string'&&Number.isFinite(Date.parse(v))?v:'';\nfunction normalize(item){\n if(!item||!scalar(item.title)||typeof item.url!=='string')return null;\n const m=item.url.match(/^https:\\/\\/(?:www\\.)?pracuj\\.pl\\/praca\\/[^?#\\s]+,oferta,(\\d{5,20})(?:[?#]|$)/i);if(!m)return null;\n const id=m[1],name=scalar(item.company?.name),cid=item.company?.id;\n const validId=(typeof cid==='number'&&Number.isSafeInteger(cid)&&cid>0)||(typeof cid==='string'&&/^\\d+$/.test(cid));\n // Source IDs group employers; fallback names are exact labels, not verified entities.\n const companyKey=validId?'id:'+cid:name?'name:'+name:'unknown-job:'+id;\n const profile=validId?'https://pracodawcy.pracuj.pl/company/'+cid:'';\n return {key:'pracuj:'+id,id,title:scalar(item.title),name,companyKey,profile,url:item.url.split(/[?#]/)[0],locations:list(item.locations),salary:scalar(item.salary),modes:list(item.workModes),contracts:list(item.typesOfContract),published:date(item.publishedAt),expires:date(item.expiresAt)};\n}\nfunction ledgerRow(ctx,status,counts={},notes=''){\n const {run,input,executionId}=ctx;return [run.id,status,input.keyword,input.location,input.maxItems,run.startedAt,run.finishedAt??'',run.defaultDatasetId,counts.read??'',counts.rejected??'',counts.baselines??'',counts.newJobs??'',counts.updated??'',counts.companies??'',run.options?.maxTotalChargeUsd??'',run.buildNumber??'',String(executionId),notes];\n}\nfunction planWrites(ctx,items,existing,ledger,datasetCount,signals=[]){\n if(!Array.isArray(items)||items.length!==datasetCount)throw new Error('Dataset retrieval is incomplete.');checkDataset({itemCount:items.length});const input=originalInput(ctx.input);checkScope(input,ledger);\n const time=ctx.run.finishedAt;if(!time||!Number.isFinite(Date.parse(time)))throw new Error('Completed run timestamp missing.');\n const oldMap=new Map(existing.map((r,i)=>[r[0],{row:r,index:i+2}]));\n for(const r of existing){if(r[18]!==scope(input))throw new Error('Existing job search scope differs from this run.');if(!Number.isFinite(Date.parse(r[14])))throw new Error('Invalid lastSeenAt.');if(Date.parse(r[14])>Date.parse(time))throw new Error('This run predates existing observations. Use a separate spreadsheet for older runs.');}\n const known=ledger.findIndex(r=>r[0]===ctx.run.id),replayed=known>=0&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(ledger[known][1]);\n const baseline=!ledger.some(r=>r[0]!==ctx.run.id&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(r[1]));\n const unique=new Map(),counts={read:items.length,rejected:0,duplicates:0,baselines:0,newJobs:0,updated:0,replayed:0,companies:0};\n for(const item of items){const n=normalize(item);if(!n){counts.rejected++;continue;}if(unique.has(n.key)){counts.duplicates++;continue;}unique.set(n.key,n);}\n if(!unique.size)throw new Error('No valid Pracuj job identities. Possible schema drift; no jobs or signals written.');\n const data=[{range:`'${BUSINESS_TAB}'!A1:S1`,values:[BUSINESS_HEADERS]},{range:`'${HISTORY_TAB}'!A1:K1`,values:[HISTORY_HEADERS]},{range:`'${RUN_TAB}'!A1:R1`,values:[RUN_HEADERS]}];\n const companies=new Map();let next=existing.length+2;\n for(const n of unique.values()){\n  const old=oldMap.get(n.key),r=old?.row;\n  if(replayed){if(!r||r[16]!==ctx.run.id)throw new Error('Successful run ledger disagrees with job state. Restore the destination before replay.');counts.replayed++;continue;}\n  if(r?.[16]===ctx.run.id)throw new Error('Jobs contain this run without a successful ledger. Inspect interrupted writes before recovery.');\n  if(r&&Date.parse(r[14])===Date.parse(time))throw new Error('Different runs have identical observation timestamps. Review before import.');\n  const type=r?r[17]:baseline?'BASELINE':'NEW';const row=old?.index??next++;if(row>MAX_EXISTING+1)throw new Error('Jobs table is full.');\n  data.push({range:`'${BUSINESS_TAB}'!A${row}:S${row}`,values:[[n.key,n.id,n.title,n.name,n.companyKey,n.profile,n.url,n.locations,n.salary,n.modes,n.contracts,n.published,n.expires,r?.[13]||time,time,r?.[15]||ctx.run.id,ctx.run.id,type,scope(input)]]});\n  if(!r){if(baseline)counts.baselines++;else counts.newJobs++;}else counts.updated++;\n  let c=companies.get(n.companyKey);if(!c){c={n,baseline:0,newJobs:0,observed:0};companies.set(n.companyKey,c);}c.observed++;if(!r){if(baseline)c.baseline++;else c.newJobs++;}\n }\n const signalMap=new Map(signals.map((r,i)=>[r[0],{row:r,index:i+2}]));let snext=signals.length+2;\n for(const [key,c]of companies){const sk=ctx.run.id+':'+key;if(signalMap.has(sk))throw new Error('Company signals contain this run without a successful ledger. Inspect interrupted writes.');if(snext>MAX_EXISTING+1)throw new Error('Company signals are full.');data.push({range:`'${HISTORY_TAB}'!A${snext}:K${snext}`,values:[[sk,ctx.run.id,key,c.n.name,c.n.profile,c.baseline,c.newJobs,c.observed,time,input.keyword,input.location]]});snext++;}\n if(replayed){for(const n of unique.values())if(!signalMap.has(ctx.run.id+':'+n.companyKey))throw new Error('Replay is missing company signal rows. Restore the destination.');}\n counts.companies=companies.size;\n const status=counts.rejected?'PARTIAL_ROWS_REJECTED':'IMPORTED';const notes=`${counts.baselines} baseline jobs; ${counts.newJobs} newly observed jobs; ${counts.updated} refreshed; ${counts.replayed} replayed. First seen is not publication time. Missing jobs are not assumed closed. Company counts describe this bounded search only.`;\n const ri=known>=0?known+2:ledger.length+2;if(ri>MAX_EXISTING+1)throw new Error('Run log is full.');if(!replayed)data.push({range:`'${RUN_TAB}'!A${ri}:R${ri}`,values:[ledgerRow(ctx,status,counts,notes)]});\n return {body:{valueInputOption:'RAW',data},summary:{status,runId:ctx.run.id,datasetId:ctx.run.defaultDatasetId,...counts,notes}};\n}\n\nconst ctx={...$('Prepare run checkpoint').first().json.ctx,run:$('Inspect Actor status').last().json.run};\nconst {existing,ledger,history}=$('Validate existing tables').first().json;\nconst count=checkDataset({itemCount:$json.body.length});\nreturn [{json:planWrites(ctx,$json.body,existing,ledger,count,history)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pracuj-21",
+      "name": "Write jobs companies and run log",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select your Google Sheets OAuth2 credential. Safe reads / idempotent writes retry up to 3 times.",
+      "maxTries": 3,
+      "position": [
+        1040,
+        1760
+      ],
+      "parameters": {
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $('Validate configuration').first().json.spreadsheetId + '/values:batchUpdate' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 75000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ $json.body }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api"
+      },
+      "notesInFlow": false,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "pracuj-22",
+      "name": "Prepare lock release",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1300,
+        1760
+      ],
+      "parameters": {
+        "jsCode": "const ACTOR_ID='uyfjMbPtsvmRBL4EL';\nconst BUSINESS_TAB='Pracuj Jobs',HISTORY_TAB='Pracuj Companies',RUN_TAB='Pracuj Runs',LOCK_TAB='_PRACUJ_WORKFLOW_LOCK';\nconst MAX_EXISTING=5000,MAX_DATASET=1000;\nconst BUSINESS_HEADERS=['jobKey','jobId','title','companyName','companyKey','companyProfileUrl','sourceUrl','locations','salaryText','workModes','contractTypes','publishedAt','expiresAt','firstSeenAt','lastSeenAt','firstSeenRunId','lastRunId','firstObservationType','searchScope'];\nconst HISTORY_HEADERS=['signalKey','runId','companyKey','companyName','companyProfileUrl','baselineJobs','newlyObservedJobs','observedJobs','observedAt','keyword','location'];\nconst RUN_HEADERS=['runId','status','keyword','location','maxItems','startedAt','finishedAt','datasetId','rowsRead','rowsRejected','baselineJobs','newlyObservedJobs','rowsUpdated','companiesObserved','maxChargeUsd','buildNumber','executionId','notes'];\nfunction searchInput(input){\n const keyword=String(input?.keyword??'').trim(),location=String(input?.location??'').trim();\n if(!keyword||keyword.length>100||location.length>100)throw new Error('Set a keyword (1\u2013100 characters) and optionally a Polish location (up to 100 characters).');\n const maxItems=Number(input.maxItems);if(!Number.isInteger(maxItems)||maxItems<1||maxItems>100)throw new Error('maxItems must be an integer from 1 to 100.');\n if(input.scrapeJobDetails===true||input.startUrls?.length)throw new Error('This template supports keyword/location listing runs only, with details disabled and no startUrls.');\n return {keyword,location,maxItems,scrapeJobDetails:false};\n}\nfunction scope(input){return JSON.stringify([input.keyword,input.location]);}\nfunction config(input){\n const c={...input,...searchInput(input)};c.spreadsheetId=String(input.spreadsheetId??'').trim();c.resumeRunId=String(input.resumeRunId??'').trim();c.maxChargeUsd=Number(input.maxChargeUsd);\n if(!/^[A-Za-z0-9_-]{20,100}$/.test(c.spreadsheetId))throw new Error('Paste the spreadsheet ID (not its URL) in Configure search before starting a paid run.');\n if(c.resumeRunId&&!/^[A-Za-z0-9]{17}$/.test(c.resumeRunId))throw new Error('resumeRunId must be the 17-character Apify run ID.');\n if(!Number.isFinite(c.maxChargeUsd)||c.maxChargeUsd<0.01||c.maxChargeUsd>1)throw new Error('maxChargeUsd must be between 0.01 and 1 USD.');return c;\n}\nfunction originalInput(input){return searchInput(input);}\nfunction checkScope(input,ledger){for(const r of ledger){if(r[2]!==input.keyword||String(r[3]??'')!==input.location)throw new Error('This destination belongs to another keyword/location. Use a new spreadsheet for a different search to keep baseline semantics reliable.');}}\nfunction prepareSheet(meta){\n if(!Array.isArray(meta.sheets))throw new Error('Cannot read destination tabs.');const names=meta.sheets.map(s=>s.properties.title);\n if(names.includes(LOCK_TAB))throw new Error('Pracuj destination is locked. Check active executions and Pracuj Runs. Only after none is active, remove _PRACUJ_WORKFLOW_LOCK and resume the saved run ID.');\n const requests=[{addSheet:{properties:{title:LOCK_TAB,gridProperties:{rowCount:5,columnCount:2}}}}];\n for(const title of [BUSINESS_TAB,HISTORY_TAB,RUN_TAB])if(!names.includes(title))requests.push({addSheet:{properties:{title,gridProperties:{rowCount:MAX_EXISTING+2,columnCount:22}}}});return {requests};\n}\nfunction validateTable(values,headers,label){\n if(!values?.length)return [];if(headers.some((h,i)=>values[0]?.[i]!==h))throw new Error(label+' headers do not match the managed schema.');\n const rows=values.slice(1);if(rows.length>MAX_EXISTING)throw new Error(label+' exceeds 5000 rows. Archive to a new destination.');const keys=new Set();for(const r of rows){if(!r[0]||keys.has(String(r[0])))throw new Error(label+' contains missing or duplicate keys.');keys.add(String(r[0]));}return rows;\n}\nfunction checkRun(run){\n if(run.actId!==ACTOR_ID)throw new Error('Recovery run belongs to another Actor.');if(['FAILED','ABORTED','TIMED-OUT'].includes(run.status))throw new Error('Pracuj run '+run.id+' ended '+run.status+'. Partial output will not be imported.');\n if(!['READY','RUNNING','TIMING-OUT','ABORTING','SUCCEEDED'].includes(run.status))throw new Error('Unsupported Actor status: '+run.status);return run.status==='SUCCEEDED';\n}\nfunction checkDataset(meta){\n if(!Number.isInteger(meta.itemCount)||meta.itemCount<0||meta.itemCount>MAX_DATASET)throw new Error('Invalid or oversized dataset. The 1000-row bound never silently truncates results.');\n // An empty output is not sufficient evidence of a successful empty search.\n if(meta.itemCount===0)throw new Error('Pracuj returned no rows. Inspect the Actor log before interpreting this as no matching jobs. Existing jobs and company observations are unchanged.');return meta.itemCount;\n}\nconst scalar=v=>typeof v==='string'?v.trim().slice(0,2000):'';\nconst list=v=>Array.isArray(v)?v.filter(x=>typeof x==='string').map(scalar).join('; '):scalar(v);\nconst date=v=>typeof v==='string'&&Number.isFinite(Date.parse(v))?v:'';\nfunction normalize(item){\n if(!item||!scalar(item.title)||typeof item.url!=='string')return null;\n const m=item.url.match(/^https:\\/\\/(?:www\\.)?pracuj\\.pl\\/praca\\/[^?#\\s]+,oferta,(\\d{5,20})(?:[?#]|$)/i);if(!m)return null;\n const id=m[1],name=scalar(item.company?.name),cid=item.company?.id;\n const validId=(typeof cid==='number'&&Number.isSafeInteger(cid)&&cid>0)||(typeof cid==='string'&&/^\\d+$/.test(cid));\n // Source IDs group employers; fallback names are exact labels, not verified entities.\n const companyKey=validId?'id:'+cid:name?'name:'+name:'unknown-job:'+id;\n const profile=validId?'https://pracodawcy.pracuj.pl/company/'+cid:'';\n return {key:'pracuj:'+id,id,title:scalar(item.title),name,companyKey,profile,url:item.url.split(/[?#]/)[0],locations:list(item.locations),salary:scalar(item.salary),modes:list(item.workModes),contracts:list(item.typesOfContract),published:date(item.publishedAt),expires:date(item.expiresAt)};\n}\nfunction ledgerRow(ctx,status,counts={},notes=''){\n const {run,input,executionId}=ctx;return [run.id,status,input.keyword,input.location,input.maxItems,run.startedAt,run.finishedAt??'',run.defaultDatasetId,counts.read??'',counts.rejected??'',counts.baselines??'',counts.newJobs??'',counts.updated??'',counts.companies??'',run.options?.maxTotalChargeUsd??'',run.buildNumber??'',String(executionId),notes];\n}\nfunction planWrites(ctx,items,existing,ledger,datasetCount,signals=[]){\n if(!Array.isArray(items)||items.length!==datasetCount)throw new Error('Dataset retrieval is incomplete.');checkDataset({itemCount:items.length});const input=originalInput(ctx.input);checkScope(input,ledger);\n const time=ctx.run.finishedAt;if(!time||!Number.isFinite(Date.parse(time)))throw new Error('Completed run timestamp missing.');\n const oldMap=new Map(existing.map((r,i)=>[r[0],{row:r,index:i+2}]));\n for(const r of existing){if(r[18]!==scope(input))throw new Error('Existing job search scope differs from this run.');if(!Number.isFinite(Date.parse(r[14])))throw new Error('Invalid lastSeenAt.');if(Date.parse(r[14])>Date.parse(time))throw new Error('This run predates existing observations. Use a separate spreadsheet for older runs.');}\n const known=ledger.findIndex(r=>r[0]===ctx.run.id),replayed=known>=0&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(ledger[known][1]);\n const baseline=!ledger.some(r=>r[0]!==ctx.run.id&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(r[1]));\n const unique=new Map(),counts={read:items.length,rejected:0,duplicates:0,baselines:0,newJobs:0,updated:0,replayed:0,companies:0};\n for(const item of items){const n=normalize(item);if(!n){counts.rejected++;continue;}if(unique.has(n.key)){counts.duplicates++;continue;}unique.set(n.key,n);}\n if(!unique.size)throw new Error('No valid Pracuj job identities. Possible schema drift; no jobs or signals written.');\n const data=[{range:`'${BUSINESS_TAB}'!A1:S1`,values:[BUSINESS_HEADERS]},{range:`'${HISTORY_TAB}'!A1:K1`,values:[HISTORY_HEADERS]},{range:`'${RUN_TAB}'!A1:R1`,values:[RUN_HEADERS]}];\n const companies=new Map();let next=existing.length+2;\n for(const n of unique.values()){\n  const old=oldMap.get(n.key),r=old?.row;\n  if(replayed){if(!r||r[16]!==ctx.run.id)throw new Error('Successful run ledger disagrees with job state. Restore the destination before replay.');counts.replayed++;continue;}\n  if(r?.[16]===ctx.run.id)throw new Error('Jobs contain this run without a successful ledger. Inspect interrupted writes before recovery.');\n  if(r&&Date.parse(r[14])===Date.parse(time))throw new Error('Different runs have identical observation timestamps. Review before import.');\n  const type=r?r[17]:baseline?'BASELINE':'NEW';const row=old?.index??next++;if(row>MAX_EXISTING+1)throw new Error('Jobs table is full.');\n  data.push({range:`'${BUSINESS_TAB}'!A${row}:S${row}`,values:[[n.key,n.id,n.title,n.name,n.companyKey,n.profile,n.url,n.locations,n.salary,n.modes,n.contracts,n.published,n.expires,r?.[13]||time,time,r?.[15]||ctx.run.id,ctx.run.id,type,scope(input)]]});\n  if(!r){if(baseline)counts.baselines++;else counts.newJobs++;}else counts.updated++;\n  let c=companies.get(n.companyKey);if(!c){c={n,baseline:0,newJobs:0,observed:0};companies.set(n.companyKey,c);}c.observed++;if(!r){if(baseline)c.baseline++;else c.newJobs++;}\n }\n const signalMap=new Map(signals.map((r,i)=>[r[0],{row:r,index:i+2}]));let snext=signals.length+2;\n for(const [key,c]of companies){const sk=ctx.run.id+':'+key;if(signalMap.has(sk))throw new Error('Company signals contain this run without a successful ledger. Inspect interrupted writes.');if(snext>MAX_EXISTING+1)throw new Error('Company signals are full.');data.push({range:`'${HISTORY_TAB}'!A${snext}:K${snext}`,values:[[sk,ctx.run.id,key,c.n.name,c.n.profile,c.baseline,c.newJobs,c.observed,time,input.keyword,input.location]]});snext++;}\n if(replayed){for(const n of unique.values())if(!signalMap.has(ctx.run.id+':'+n.companyKey))throw new Error('Replay is missing company signal rows. Restore the destination.');}\n counts.companies=companies.size;\n const status=counts.rejected?'PARTIAL_ROWS_REJECTED':'IMPORTED';const notes=`${counts.baselines} baseline jobs; ${counts.newJobs} newly observed jobs; ${counts.updated} refreshed; ${counts.replayed} replayed. First seen is not publication time. Missing jobs are not assumed closed. Company counts describe this bounded search only.`;\n const ri=known>=0?known+2:ledger.length+2;if(ri>MAX_EXISTING+1)throw new Error('Run log is full.');if(!replayed)data.push({range:`'${RUN_TAB}'!A${ri}:R${ri}`,values:[ledgerRow(ctx,status,counts,notes)]});\n return {body:{valueInputOption:'RAW',data},summary:{status,runId:ctx.run.id,datasetId:ctx.run.defaultDatasetId,...counts,notes}};\n}\n\nconst replies=$('Acquire destination lock').first().json.body.replies;\nconst lock=replies[0].addSheet.properties;\nif(lock.title!==LOCK_TAB)throw new Error('Unexpected lock response; inspect destination.');\nreturn [{json:{requests:[{deleteSheet:{sheetId:lock.sheetId}}]}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pracuj-23",
+      "name": "Release destination lock",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select your Google Sheets OAuth2 credential. This mutation is deliberately not retried automatically.",
+      "maxTries": 3,
+      "position": [
+        1560,
+        1760
+      ],
+      "parameters": {
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $('Validate configuration').first().json.spreadsheetId + ':batchUpdate' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 75000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ $json }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api"
+      },
+      "notesInFlow": false,
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "pracuj-24",
+      "name": "Run summary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1820,
+        1760
+      ],
+      "parameters": {
+        "jsCode": "const ACTOR_ID='uyfjMbPtsvmRBL4EL';\nconst BUSINESS_TAB='Pracuj Jobs',HISTORY_TAB='Pracuj Companies',RUN_TAB='Pracuj Runs',LOCK_TAB='_PRACUJ_WORKFLOW_LOCK';\nconst MAX_EXISTING=5000,MAX_DATASET=1000;\nconst BUSINESS_HEADERS=['jobKey','jobId','title','companyName','companyKey','companyProfileUrl','sourceUrl','locations','salaryText','workModes','contractTypes','publishedAt','expiresAt','firstSeenAt','lastSeenAt','firstSeenRunId','lastRunId','firstObservationType','searchScope'];\nconst HISTORY_HEADERS=['signalKey','runId','companyKey','companyName','companyProfileUrl','baselineJobs','newlyObservedJobs','observedJobs','observedAt','keyword','location'];\nconst RUN_HEADERS=['runId','status','keyword','location','maxItems','startedAt','finishedAt','datasetId','rowsRead','rowsRejected','baselineJobs','newlyObservedJobs','rowsUpdated','companiesObserved','maxChargeUsd','buildNumber','executionId','notes'];\nfunction searchInput(input){\n const keyword=String(input?.keyword??'').trim(),location=String(input?.location??'').trim();\n if(!keyword||keyword.length>100||location.length>100)throw new Error('Set a keyword (1\u2013100 characters) and optionally a Polish location (up to 100 characters).');\n const maxItems=Number(input.maxItems);if(!Number.isInteger(maxItems)||maxItems<1||maxItems>100)throw new Error('maxItems must be an integer from 1 to 100.');\n if(input.scrapeJobDetails===true||input.startUrls?.length)throw new Error('This template supports keyword/location listing runs only, with details disabled and no startUrls.');\n return {keyword,location,maxItems,scrapeJobDetails:false};\n}\nfunction scope(input){return JSON.stringify([input.keyword,input.location]);}\nfunction config(input){\n const c={...input,...searchInput(input)};c.spreadsheetId=String(input.spreadsheetId??'').trim();c.resumeRunId=String(input.resumeRunId??'').trim();c.maxChargeUsd=Number(input.maxChargeUsd);\n if(!/^[A-Za-z0-9_-]{20,100}$/.test(c.spreadsheetId))throw new Error('Paste the spreadsheet ID (not its URL) in Configure search before starting a paid run.');\n if(c.resumeRunId&&!/^[A-Za-z0-9]{17}$/.test(c.resumeRunId))throw new Error('resumeRunId must be the 17-character Apify run ID.');\n if(!Number.isFinite(c.maxChargeUsd)||c.maxChargeUsd<0.01||c.maxChargeUsd>1)throw new Error('maxChargeUsd must be between 0.01 and 1 USD.');return c;\n}\nfunction originalInput(input){return searchInput(input);}\nfunction checkScope(input,ledger){for(const r of ledger){if(r[2]!==input.keyword||String(r[3]??'')!==input.location)throw new Error('This destination belongs to another keyword/location. Use a new spreadsheet for a different search to keep baseline semantics reliable.');}}\nfunction prepareSheet(meta){\n if(!Array.isArray(meta.sheets))throw new Error('Cannot read destination tabs.');const names=meta.sheets.map(s=>s.properties.title);\n if(names.includes(LOCK_TAB))throw new Error('Pracuj destination is locked. Check active executions and Pracuj Runs. Only after none is active, remove _PRACUJ_WORKFLOW_LOCK and resume the saved run ID.');\n const requests=[{addSheet:{properties:{title:LOCK_TAB,gridProperties:{rowCount:5,columnCount:2}}}}];\n for(const title of [BUSINESS_TAB,HISTORY_TAB,RUN_TAB])if(!names.includes(title))requests.push({addSheet:{properties:{title,gridProperties:{rowCount:MAX_EXISTING+2,columnCount:22}}}});return {requests};\n}\nfunction validateTable(values,headers,label){\n if(!values?.length)return [];if(headers.some((h,i)=>values[0]?.[i]!==h))throw new Error(label+' headers do not match the managed schema.');\n const rows=values.slice(1);if(rows.length>MAX_EXISTING)throw new Error(label+' exceeds 5000 rows. Archive to a new destination.');const keys=new Set();for(const r of rows){if(!r[0]||keys.has(String(r[0])))throw new Error(label+' contains missing or duplicate keys.');keys.add(String(r[0]));}return rows;\n}\nfunction checkRun(run){\n if(run.actId!==ACTOR_ID)throw new Error('Recovery run belongs to another Actor.');if(['FAILED','ABORTED','TIMED-OUT'].includes(run.status))throw new Error('Pracuj run '+run.id+' ended '+run.status+'. Partial output will not be imported.');\n if(!['READY','RUNNING','TIMING-OUT','ABORTING','SUCCEEDED'].includes(run.status))throw new Error('Unsupported Actor status: '+run.status);return run.status==='SUCCEEDED';\n}\nfunction checkDataset(meta){\n if(!Number.isInteger(meta.itemCount)||meta.itemCount<0||meta.itemCount>MAX_DATASET)throw new Error('Invalid or oversized dataset. The 1000-row bound never silently truncates results.');\n // An empty output is not sufficient evidence of a successful empty search.\n if(meta.itemCount===0)throw new Error('Pracuj returned no rows. Inspect the Actor log before interpreting this as no matching jobs. Existing jobs and company observations are unchanged.');return meta.itemCount;\n}\nconst scalar=v=>typeof v==='string'?v.trim().slice(0,2000):'';\nconst list=v=>Array.isArray(v)?v.filter(x=>typeof x==='string').map(scalar).join('; '):scalar(v);\nconst date=v=>typeof v==='string'&&Number.isFinite(Date.parse(v))?v:'';\nfunction normalize(item){\n if(!item||!scalar(item.title)||typeof item.url!=='string')return null;\n const m=item.url.match(/^https:\\/\\/(?:www\\.)?pracuj\\.pl\\/praca\\/[^?#\\s]+,oferta,(\\d{5,20})(?:[?#]|$)/i);if(!m)return null;\n const id=m[1],name=scalar(item.company?.name),cid=item.company?.id;\n const validId=(typeof cid==='number'&&Number.isSafeInteger(cid)&&cid>0)||(typeof cid==='string'&&/^\\d+$/.test(cid));\n // Source IDs group employers; fallback names are exact labels, not verified entities.\n const companyKey=validId?'id:'+cid:name?'name:'+name:'unknown-job:'+id;\n const profile=validId?'https://pracodawcy.pracuj.pl/company/'+cid:'';\n return {key:'pracuj:'+id,id,title:scalar(item.title),name,companyKey,profile,url:item.url.split(/[?#]/)[0],locations:list(item.locations),salary:scalar(item.salary),modes:list(item.workModes),contracts:list(item.typesOfContract),published:date(item.publishedAt),expires:date(item.expiresAt)};\n}\nfunction ledgerRow(ctx,status,counts={},notes=''){\n const {run,input,executionId}=ctx;return [run.id,status,input.keyword,input.location,input.maxItems,run.startedAt,run.finishedAt??'',run.defaultDatasetId,counts.read??'',counts.rejected??'',counts.baselines??'',counts.newJobs??'',counts.updated??'',counts.companies??'',run.options?.maxTotalChargeUsd??'',run.buildNumber??'',String(executionId),notes];\n}\nfunction planWrites(ctx,items,existing,ledger,datasetCount,signals=[]){\n if(!Array.isArray(items)||items.length!==datasetCount)throw new Error('Dataset retrieval is incomplete.');checkDataset({itemCount:items.length});const input=originalInput(ctx.input);checkScope(input,ledger);\n const time=ctx.run.finishedAt;if(!time||!Number.isFinite(Date.parse(time)))throw new Error('Completed run timestamp missing.');\n const oldMap=new Map(existing.map((r,i)=>[r[0],{row:r,index:i+2}]));\n for(const r of existing){if(r[18]!==scope(input))throw new Error('Existing job search scope differs from this run.');if(!Number.isFinite(Date.parse(r[14])))throw new Error('Invalid lastSeenAt.');if(Date.parse(r[14])>Date.parse(time))throw new Error('This run predates existing observations. Use a separate spreadsheet for older runs.');}\n const known=ledger.findIndex(r=>r[0]===ctx.run.id),replayed=known>=0&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(ledger[known][1]);\n const baseline=!ledger.some(r=>r[0]!==ctx.run.id&&['IMPORTED','PARTIAL_ROWS_REJECTED'].includes(r[1]));\n const unique=new Map(),counts={read:items.length,rejected:0,duplicates:0,baselines:0,newJobs:0,updated:0,replayed:0,companies:0};\n for(const item of items){const n=normalize(item);if(!n){counts.rejected++;continue;}if(unique.has(n.key)){counts.duplicates++;continue;}unique.set(n.key,n);}\n if(!unique.size)throw new Error('No valid Pracuj job identities. Possible schema drift; no jobs or signals written.');\n const data=[{range:`'${BUSINESS_TAB}'!A1:S1`,values:[BUSINESS_HEADERS]},{range:`'${HISTORY_TAB}'!A1:K1`,values:[HISTORY_HEADERS]},{range:`'${RUN_TAB}'!A1:R1`,values:[RUN_HEADERS]}];\n const companies=new Map();let next=existing.length+2;\n for(const n of unique.values()){\n  const old=oldMap.get(n.key),r=old?.row;\n  if(replayed){if(!r||r[16]!==ctx.run.id)throw new Error('Successful run ledger disagrees with job state. Restore the destination before replay.');counts.replayed++;continue;}\n  if(r?.[16]===ctx.run.id)throw new Error('Jobs contain this run without a successful ledger. Inspect interrupted writes before recovery.');\n  if(r&&Date.parse(r[14])===Date.parse(time))throw new Error('Different runs have identical observation timestamps. Review before import.');\n  const type=r?r[17]:baseline?'BASELINE':'NEW';const row=old?.index??next++;if(row>MAX_EXISTING+1)throw new Error('Jobs table is full.');\n  data.push({range:`'${BUSINESS_TAB}'!A${row}:S${row}`,values:[[n.key,n.id,n.title,n.name,n.companyKey,n.profile,n.url,n.locations,n.salary,n.modes,n.contracts,n.published,n.expires,r?.[13]||time,time,r?.[15]||ctx.run.id,ctx.run.id,type,scope(input)]]});\n  if(!r){if(baseline)counts.baselines++;else counts.newJobs++;}else counts.updated++;\n  let c=companies.get(n.companyKey);if(!c){c={n,baseline:0,newJobs:0,observed:0};companies.set(n.companyKey,c);}c.observed++;if(!r){if(baseline)c.baseline++;else c.newJobs++;}\n }\n const signalMap=new Map(signals.map((r,i)=>[r[0],{row:r,index:i+2}]));let snext=signals.length+2;\n for(const [key,c]of companies){const sk=ctx.run.id+':'+key;if(signalMap.has(sk))throw new Error('Company signals contain this run without a successful ledger. Inspect interrupted writes.');if(snext>MAX_EXISTING+1)throw new Error('Company signals are full.');data.push({range:`'${HISTORY_TAB}'!A${snext}:K${snext}`,values:[[sk,ctx.run.id,key,c.n.name,c.n.profile,c.baseline,c.newJobs,c.observed,time,input.keyword,input.location]]});snext++;}\n if(replayed){for(const n of unique.values())if(!signalMap.has(ctx.run.id+':'+n.companyKey))throw new Error('Replay is missing company signal rows. Restore the destination.');}\n counts.companies=companies.size;\n const status=counts.rejected?'PARTIAL_ROWS_REJECTED':'IMPORTED';const notes=`${counts.baselines} baseline jobs; ${counts.newJobs} newly observed jobs; ${counts.updated} refreshed; ${counts.replayed} replayed. First seen is not publication time. Missing jobs are not assumed closed. Company counts describe this bounded search only.`;\n const ri=known>=0?known+2:ledger.length+2;if(ri>MAX_EXISTING+1)throw new Error('Run log is full.');if(!replayed)data.push({range:`'${RUN_TAB}'!A${ri}:R${ri}`,values:[ledgerRow(ctx,status,counts,notes)]});\n return {body:{valueInputOption:'RAW',data},summary:{status,runId:ctx.run.id,datasetId:ctx.run.defaultDatasetId,...counts,notes}};\n}\n\nreturn [{json:{...$('Plan hiring observations').first().json.summary,spreadsheetUrl:'https://docs.google.com/spreadsheets/d/'+$('Validate configuration').first().json.spreadsheetId}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pracuj-25",
+      "name": "Start here",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        -800
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 1100,
+        "height": 900,
+        "content": "## Track Pracuj.pl job observations\n\n### How it works\nRun manually to observe Pracuj.pl listings for one keyword and location with [FalconScrape\u2019s Pracuj.pl Job Offers Scraper](https://apify.com/piotrv1001/pracuj-pl-job-offers-scraper). Paid job-detail enrichment is disabled.\n\n1. The workflow validates your search and spreadsheet, then locks the destination against overlapping writes.\n2. It starts one charge-capped Apify run, or resumes a saved run ID, and waits for the result.\n3. It validates job IDs and writes job observations, company counts, and a recovery log to Google Sheets.\n\n**Pracuj Jobs** keeps each listing and its first and latest observation dates. **Pracuj Companies** records jobs per displayed employer per run. **Pracuj Runs** records import status and the run ID. The first import is a baseline. Later unseen IDs are NEW to this spreadsheet, not necessarily newly published. Missing listings are not assumed closed. Company-name fallbacks are labelled; counts do not establish headcount growth or hiring urgency.\n\n### Setup\n1. Install the official Apify integration. Select your **Apify API** credential on the Apify request nodes and **Google Sheets OAuth2** on the Sheets request nodes.\n2. Create an empty spreadsheet. In **Configure search**, enter its ID, one keyword, and one location. Leave **resumeRunId** blank for a new run. Use one search per spreadsheet.\n3. Keep **20 jobs** and the **$0.06** charge cap for the first test, then select **Execute workflow**. The three tabs are created automatically. The template is free; the Actor and n8n hosting may incur charges.\n4. If execution stops, inspect **Pracuj Runs** and the Actor log before retrying. After confirming no execution is active, remove **_PRACUJ_WORKFLOW_LOCK** and set **resumeRunId** to reuse that run. Stopping n8n does not stop Apify. Empty results require inspection.\n\n### Customization\nKeep personal notes in column T onward in **Pracuj Jobs**. Archive to a new spreadsheet before reaching 5,000 rows.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pracuj-26",
+      "name": "1. Configure and check access",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1020,
+        "height": 460,
+        "content": "## 1. Enter your search and spreadsheet\nOpen **Configure search** and enter one keyword, location, and the ID of an empty spreadsheet. Keep the first run at 20 jobs and $0.06. These nodes validate the limits and confirm Sheets access before starting the paid Actor."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pracuj-27",
+      "name": "2. Prepare the destination",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        980,
+        160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1420,
+        "height": 460,
+        "content": "## 2. Create and protect the output tabs\nThe workflow creates **Pracuj Jobs**, **Pracuj Companies**, and **Pracuj Runs** when needed. A temporary lock prevents overlapping writes. Existing rows are checked before scraping; keep one keyword and location per spreadsheet so later observations remain comparable."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pracuj-28",
+      "name": "3. Start or recover a scrape",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        700
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1020,
+        "height": 720,
+        "content": "## 3. Choose new run or recovery\nLeave **resumeRunId** blank to start one charge-capped listing scrape with job details disabled. Enter a saved Apify run ID to resume without starting another paid scrape. The workflow verifies the Actor and original search before importing."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pracuj-29",
+      "name": "4. Save the run and wait",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        980,
+        700
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1420,
+        "height": 720,
+        "content": "## 4. Save recovery details and wait\nBefore polling, the workflow records the Apify run ID and original input in **Pracuj Runs**. It imports only a successful result. If the Actor fails or waiting expires, inspect that saved run and its log before retrying."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pracuj-30",
+      "name": "5. Record jobs and company counts",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        1500
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1280,
+        "height": 480,
+        "content": "## 5. Validate listings and count employers\nThe dataset must contain usable job IDs. Existing jobs keep their first-seen dates; unseen IDs are NEW to this spreadsheet. The workflow updates **Pracuj Jobs**, adds dated job counts per employer to **Pracuj Companies**, and logs the import without duplicating a replay."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pracuj-31",
+      "name": "6. Unlock and summarize",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1240,
+        1500
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1160,
+        "height": 480,
+        "content": "## 6. Unlock and review the result\nAfter the writes succeed, the temporary lock is removed. **Run summary** gives observed, new, baseline, and rejected counts plus a spreadsheet link. If execution stopped earlier, use the saved run ID and recovery steps in the overview."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "settings": {
+    "timezone": "Europe/Warsaw",
+    "executionOrder": "v1",
+    "executionTimeout": 600,
+    "saveExecutionProgress": true
+  },
+  "connections": {
+    "Capture run": {
+      "main": [
+        [
+          {
+            "node": "Read original run input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Configure search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actor succeeded?": {
+      "main": [
+        [
+          {
+            "node": "Fetch complete bounded dataset",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for Actor status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure search": {
+      "main": [
+        [
+          {
+            "node": "Validate configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read destination": {
+      "main": [
+        [
+          {
+            "node": "Prepare tabs and lock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load recovery run": {
+      "main": [
+        [
+          {
+            "node": "Capture run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read existing rows": {
+      "main": [
+        [
+          {
+            "node": "Validate existing tables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save run checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Wait for Actor status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect Actor status": {
+      "main": [
+        [
+          {
+            "node": "Actor succeeded?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare lock release": {
+      "main": [
+        [
+          {
+            "node": "Release destination lock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare tabs and lock": {
+      "main": [
+        [
+          {
+            "node": "Acquire destination lock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Actor status": {
+      "main": [
+        [
+          {
+            "node": "Inspect Actor status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare run checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Save run checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate configuration": {
+      "main": [
+        [
+          {
+            "node": "Read destination",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read original run input": {
+      "main": [
+        [
+          {
+            "node": "Prepare run checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume an existing run?": {
+      "main": [
+        [
+          {
+            "node": "Load recovery run",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Start bounded Pracuj run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acquire destination lock": {
+      "main": [
+        [
+          {
+            "node": "Read existing rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan hiring observations": {
+      "main": [
+        [
+          {
+            "node": "Write jobs companies and run log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Release destination lock": {
+      "main": [
+        [
+          {
+            "node": "Run summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start bounded Pracuj run": {
+      "main": [
+        [
+          {
+            "node": "Capture run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate existing tables": {
+      "main": [
+        [
+          {
+            "node": "Resume an existing run?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch complete bounded dataset": {
+      "main": [
+        [
+          {
+            "node": "Plan hiring observations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write jobs companies and run log": {
+      "main": [
+        [
+          {
+            "node": "Prepare lock release",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

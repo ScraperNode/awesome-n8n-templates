@@ -1,6 +1,6 @@
 # 📊 Monitor backlink profile with SE Ranking and export to Google Sheets
 
-> ⚡ **6 views** · 📊 [Market Research & Insights](../)
+> ⚡ **26 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

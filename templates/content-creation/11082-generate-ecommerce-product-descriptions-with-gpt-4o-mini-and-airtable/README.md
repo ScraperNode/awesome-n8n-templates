@@ -1,6 +1,6 @@
 # 🎬 Generate eCommerce product descriptions with GPT-4o-mini and Airtable
 
-> ⚡ **322 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **410 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

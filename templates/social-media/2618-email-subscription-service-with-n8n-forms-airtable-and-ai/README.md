@@ -1,6 +1,6 @@
 # 📱 Email subscription service with n8n forms, Airtable and AI
 
-> ⚡ **3,247 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **3,303 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

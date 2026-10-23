@@ -1,6 +1,6 @@
 # 💬 Re-engage stalled HubSpot deals with GPT-5-mini, Gmail, and Slack
 
-> ⚡ **23 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **92 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

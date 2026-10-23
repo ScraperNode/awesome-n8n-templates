@@ -1,6 +1,6 @@
 # 💬 N8N automated Twitter reply bot workflow
 
-> ⚡ **1,425 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,038 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >

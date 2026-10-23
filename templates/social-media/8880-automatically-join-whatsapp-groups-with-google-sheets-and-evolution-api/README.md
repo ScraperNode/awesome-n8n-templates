@@ -1,6 +1,6 @@
 # 📱 Automatically join WhatsApp groups with Google Sheets and Evolution API
 
-> ⚡ **536 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **656 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

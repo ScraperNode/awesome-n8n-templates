@@ -1,6 +1,6 @@
 # ⚡ Create Google Calendar events from labeled Gmail emails with Google Gemini AI
 
-> ⚡ **2,121 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,297 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Turn new high-volume ranked keywords into Asana tasks with DataForSEO
 
-> ⚡ **24 views** · 📊 [Market Research & Insights](../)
+> ⚡ **84 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

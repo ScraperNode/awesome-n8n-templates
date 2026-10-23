@@ -1,6 +1,6 @@
 # 🧾 Stripe dispute management with Google Sheets ledger & Gmail notifications
 
-> ⚡ **63 views** · 🧾 [Invoice Processing](../)
+> ⚡ **96 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

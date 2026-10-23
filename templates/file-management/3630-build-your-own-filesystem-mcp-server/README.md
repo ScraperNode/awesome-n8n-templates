@@ -1,6 +1,6 @@
 # 📁 Build your own FileSystem MCP server
 
-> ⚡ **4,039 views** · 📁 [File Management](../)
+> ⚡ **4,423 views** · 📁 [File Management](../)
 
 ## Description
 

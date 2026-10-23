@@ -1,6 +1,6 @@
 # 🔬 Generate HIPAA-safe patient-friendly EMR summaries with GPT-4, PDF tools and Google Drive
 
-> ⚡ **6 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **107 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Create, update and get a user from Iterable
 
-> ⚡ **620 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **629 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

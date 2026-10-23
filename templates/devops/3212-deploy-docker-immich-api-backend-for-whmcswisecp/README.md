@@ -1,6 +1,6 @@
 # ⚙️ Deploy Docker Immich, API backend for WHMCS/WISECP
 
-> ⚡ **349 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **392 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

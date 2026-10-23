@@ -1,6 +1,6 @@
-# 📖 Chat with your Airtable CRM using OpenAI GPT-4.1-mini
+# 📖 AI Agent to Chat with Airtable
 
-> ⚡ **3 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **61 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Auto-assign deals in Hubspot to fitting sales reps based on geo and company size
 
-> ⚡ **1,508 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,504 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

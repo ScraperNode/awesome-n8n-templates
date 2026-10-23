@@ -1,6 +1,6 @@
 # 📱 Publish LinkedIn posts from tech trends with Ollama AI quality checks
 
-> ⚡ **40 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **234 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

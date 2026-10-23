@@ -1,6 +1,6 @@
 # ⚙️ Automate droplet snapshots on DigitalOcean
 
-> ⚡ **720 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **730 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

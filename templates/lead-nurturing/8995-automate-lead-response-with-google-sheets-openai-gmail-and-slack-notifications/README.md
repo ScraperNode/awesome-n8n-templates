@@ -1,6 +1,6 @@
 # 💬 Automate lead response with Google Sheets, OpenAI, Gmail, and Slack notifications
 
-> ⚡ **291 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **480 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Track SEO keyword rankings with Bright Data MCP and GPT-5.2 AI analysis
 
-> ⚡ **43,587 views** · 📊 [Market Research & Insights](../)
+> ⚡ **62,865 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >

@@ -1,6 +1,6 @@
 # 📊 Track broken backlinks with DataForSEO, log to Google Sheets, and create Asana tasks
 
-> ⚡ **5 views** · 📊 [Market Research & Insights](../)
+> ⚡ **54 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

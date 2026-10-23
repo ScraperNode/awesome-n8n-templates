@@ -1,6 +1,6 @@
 # 🎬 Bidirectional ticket sync between Freshdesk and Linear with error logging
 
-> ⚡ **93 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **114 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

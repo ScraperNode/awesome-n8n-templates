@@ -1,6 +1,6 @@
 # 🎣 Enrich contact information with HubSpot and ClearBit
 
-> ⚡ **2,531 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **2,650 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

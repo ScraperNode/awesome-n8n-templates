@@ -1,6 +1,6 @@
 # 💬 Create a WhatsApp chatbot with GPT-4o, Whisper transcription and Redis buffer
 
-> ⚡ **996 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,368 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 AI text-to-image for Telegram (Gemini + Hugging Face FLUX)
 
-> ⚡ **270 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **300 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

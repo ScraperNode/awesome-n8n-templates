@@ -1,6 +1,6 @@
 # 🔬 Generate marketing reports from Google Sheets with GPT-4 insights and PDF.co
 
-> ⚡ **330 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **349 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

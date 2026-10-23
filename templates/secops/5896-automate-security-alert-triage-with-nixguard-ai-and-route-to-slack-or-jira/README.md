@@ -1,6 +1,6 @@
 # 🔒 Automate security alert triage with NixGuard AI and route to Slack or Jira
 
-> ⚡ **1,393 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,816 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

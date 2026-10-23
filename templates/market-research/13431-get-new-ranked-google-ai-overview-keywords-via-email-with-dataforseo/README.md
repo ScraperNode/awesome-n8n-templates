@@ -1,6 +1,6 @@
 # 📊 Get new ranked Google AI Overview keywords via email with DataForSEO
 
-> ⚡ **33 views** · 📊 [Market Research & Insights](../)
+> ⚡ **133 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

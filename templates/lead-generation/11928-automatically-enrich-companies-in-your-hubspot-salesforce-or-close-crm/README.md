@@ -1,6 +1,6 @@
 # 🎣 Automatically enrich companies in your HubSpot, Salesforce or Close CRM
 
-> ⚡ **47 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **63 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

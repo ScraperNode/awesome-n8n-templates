@@ -1,6 +1,6 @@
 # 📈 Get live crypto market data with AI-powered CoinMarketCap agent
 
-> ⚡ **8,320 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **8,641 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

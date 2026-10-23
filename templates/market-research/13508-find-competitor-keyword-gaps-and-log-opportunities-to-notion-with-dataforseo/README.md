@@ -1,6 +1,6 @@
 # 📊 Find competitor keyword gaps and log opportunities to Notion with DataForSEO
 
-> ⚡ **44 views** · 📊 [Market Research & Insights](../)
+> ⚡ **237 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
 >
@@ -8,7 +8,7 @@
 
 ## Description
 
-![Pull competitor’s ranked keywords and run gap analysis in Notion with DataForSEO.png](fileId:4465)
+![Keyword gaps.png](fileId:5225)
 
 This workflow helps you discover new SEO content opportunities by automatically identifying keyword gaps between your website and a competing domain.
 
@@ -16,7 +16,7 @@ On each manual run, the workflow retrieves the top 100 organically ranked keywor
 
 For every missing keyword, the workflow adds useful SEO metrics, including search volume, competition level, competitor ranking position, and the competitor’s exact URL that ranks on Google. All identified keywords are stored in a structured Notion database, making it easy to review, prioritize, and turn them into actionable content ideas.
 
-Once the keywords are saved, you can use Notion AI to instantly generate a content plan based on these opportunities. Recommended prompt: **“Analyze the keyword gap between my website’s page {{your URL}} and competitor website’s page and build a content strategy for me.”**
+Once the keywords are saved, you can use Notion AI to instantly generate a content plan based on these opportunities. Recommended prompt: **“Analyse the keywords present in this table - this is the keyword gap between my website’s page {{my url}} and the competitor’s URL listed in the table, and based on this data, build a content strategy for me.”**
 
 ## Who’s it for
 This workflow is ideal for SEO specialists, content marketers, and website owners who want to discover new content ideas, improve organic visibility, and systematically close the keyword gap with competitors.

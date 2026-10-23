@@ -1,6 +1,6 @@
 # ⚡ Get Airtable data via AI and Obsidian notes
 
-> ⚡ **2,681 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,777 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

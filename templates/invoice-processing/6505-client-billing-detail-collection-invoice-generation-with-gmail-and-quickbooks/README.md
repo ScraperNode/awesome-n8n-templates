@@ -1,6 +1,6 @@
 # 🧾 Client billing detail collection & invoice generation with Gmail and QuickBooks
 
-> ⚡ **572 views** · 🧾 [Invoice Processing](../)
+> ⚡ **846 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

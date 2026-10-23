@@ -1,6 +1,6 @@
 # 🎫 Create a ticket in Zendesk
 
-> ⚡ **1,582 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,601 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

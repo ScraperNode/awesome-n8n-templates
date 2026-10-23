@@ -1,6 +1,6 @@
 # 🧾 Automate travel expense extraction with OCR, Mistral AI and Supabase
 
-> ⚡ **238 views** · 🧾 [Invoice Processing](../)
+> ⚡ **369 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Search and retrieve eBay product data with Catalog API for AI agents
 
-> ⚡ **1,320 views** · ⚒️ [Engineering](../)
+> ⚡ **1,522 views** · ⚒️ [Engineering](../)
 
 ## Description
 

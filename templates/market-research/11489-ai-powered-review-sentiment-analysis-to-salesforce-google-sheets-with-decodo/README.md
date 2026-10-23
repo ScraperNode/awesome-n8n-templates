@@ -1,6 +1,6 @@
 # 📊 AI-powered review sentiment analysis to Salesforce & Google Sheets with Decodo
 
-> ⚡ **40 views** · 📊 [Market Research & Insights](../)
+> ⚡ **70 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -15,7 +15,7 @@ This workflow scrapes **customer reviews from Trustpilot**, analyzes them with A
 It uses **Decodo** to reliably extract review content from Trustpilot, processes the text with **OpenAI**, and orchestrates everything using **n8n**.
 
 
-👉 [Deocodo](Decodo)
+👉 [Deocodo](https://visit.decodo.com/VOmXO6)
 
 
 
@@ -46,7 +46,7 @@ This creates a reusable dataset for dashboards and reporting.
 ## How to configure it (general)
 
 - **Google Sheets**: add review URLs + Salesforce Account IDs  
-- **[Decodo](Decodo)**: add your API key to scrape Trustpilot reliably  
+- **[Decodo](https://visit.decodo.com/VOmXO6)**: add your API key to scrape Trustpilot reliably  
    
 - **OpenAI**: add your API key for AI analysis  
 - **Salesforce**:

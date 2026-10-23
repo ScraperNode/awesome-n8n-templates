@@ -1,6 +1,6 @@
 # 📱 7-day Pinterest content planner with Notion integration and email delivery
 
-> ⚡ **146 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **196 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

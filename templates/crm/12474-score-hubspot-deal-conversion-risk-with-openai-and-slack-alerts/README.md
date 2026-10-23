@@ -1,6 +1,6 @@
 # 🤝 Score HubSpot deal conversion risk with OpenAI and Slack alerts
 
-> ⚡ **50 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **71 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

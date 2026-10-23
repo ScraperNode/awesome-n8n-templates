@@ -1,6 +1,6 @@
 # 💬 Personal shopper chatbot for WooCommerce with RAG using Google Drive and openAI
 
-> ⚡ **13,638 views** · 💬 [Support Chatbots](../)
+> ⚡ **13,795 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

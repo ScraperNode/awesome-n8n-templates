@@ -1,6 +1,6 @@
 # 🔧 Create, update, and get an object from Bubble
 
-> ⚡ **3,264 views** · 🔧 [Miscellaneous](../)
+> ⚡ **3,259 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

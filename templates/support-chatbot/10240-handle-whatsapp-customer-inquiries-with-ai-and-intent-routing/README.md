@@ -1,6 +1,6 @@
 # 💬 Handle WhatsApp customer inquiries with AI and intent routing
 
-> ⚡ **1,816 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,093 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

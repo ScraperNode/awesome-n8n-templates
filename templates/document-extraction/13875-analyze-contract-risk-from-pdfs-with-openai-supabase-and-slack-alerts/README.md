@@ -1,6 +1,6 @@
 # 🔬 Analyze contract risk from PDFs with OpenAI, Supabase and Slack alerts
 
-> ⚡ **110 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **178 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,0 +1,683 @@
+{
+  "meta": {
+    "instanceId": "48aac30adfc5487a33ef16e0e958096f27cef40df3ed0febcbe1ca199e789786"
+  },
+  "nodes": [
+    {
+      "id": "b2fcf63e-b2a0-4d0a-8df1-6e06e2b3dc1e",
+      "name": "Schedule DB Quality Scan",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -672,
+        224
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "bad30ec6-11fa-4d9c-b66f-f685546fb82d",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -464,
+        224
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "confidenceThreshold",
+              "type": "number",
+              "value": 0.85
+            },
+            {
+              "id": "id-2",
+              "name": "maxNullPercentage",
+              "type": "number",
+              "value": 0.15
+            },
+            {
+              "id": "id-3",
+              "name": "outlierStdDevThreshold",
+              "type": "number",
+              "value": 3
+            },
+            {
+              "id": "id-4",
+              "name": "auditTableName",
+              "type": "string",
+              "value": "data_quality_audit"
+            },
+            {
+              "id": "id-5",
+              "name": "baselineTableName",
+              "type": "string",
+              "value": "data_quality_baselines"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "b3eebfd6-88bb-435f-80d7-411fb423f546",
+      "name": "Get Schema Metadata",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        -128,
+        -48
+      ],
+      "parameters": {
+        "query": "SELECT table_name, column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema = <__PLACEHOLDER_VALUE__target schema name__> ORDER BY table_name, ordinal_position",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.6
+    },
+    {
+      "id": "40d7ac18-bef8-47f5-964a-0bbe59107125",
+      "name": "Get Table Statistics",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        -128,
+        224
+      ],
+      "parameters": {
+        "query": "SELECT schemaname, tablename, n_live_tup as row_count, n_dead_tup as dead_rows FROM pg_stat_user_tables WHERE schemaname = <__PLACEHOLDER_VALUE__target schema name__>",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.6
+    },
+    {
+      "id": "5a61e58d-fd77-4bc0-aef0-eabc3fc410a9",
+      "name": "Get Historical Baselines",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        -128,
+        416
+      ],
+      "parameters": {
+        "query": "{{ 'SELECT * FROM ' + $('Workflow Configuration').first().json.baselineTableName + ' ORDER BY recorded_at DESC LIMIT 1' }}",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.6
+    },
+    {
+      "id": "42867364-5006-44b2-ab56-3f7c0897fcb8",
+      "name": "Detect Schema Drift",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        208,
+        -48
+      ],
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "from datetime import datetime\nimport json\n\n# Get current schema metadata from Get Schema Metadata node\ncurrent_schema = _input.all()[0].get('json', {})\n\n# Get historical baselines from Get Historical Baselines node\nhistorical_data = _input.all()[1].get('json', {})\n\nissues = []\n\n# Parse current schema and historical baselines\nif isinstance(current_schema, list):\n    current_tables = {item.get('table_name'): item for item in current_schema}\nelse:\n    current_tables = {current_schema.get('table_name'): current_schema}\n\nif isinstance(historical_data, list):\n    historical_tables = {item.get('table_name'): item for item in historical_data}\nelse:\n    historical_tables = {historical_data.get('table_name'): historical_data}\n\ntimestamp = datetime.utcnow().isoformat()\n\n# Check for schema drift\nfor table_name, current_table in current_tables.items():\n    if table_name not in historical_tables:\n        # New table detected\n        issues.append({\n            'type': 'schema_drift',\n            'severity': 'medium',\n            'table_name': table_name,\n            'column_name': None,\n            'change_description': f'New table {table_name} detected',\n            'detected_at': timestamp\n        })\n        continue\n    \n    historical_table = historical_tables[table_name]\n    current_columns = current_table.get('columns', {})\n    historical_columns = historical_table.get('columns', {})\n    \n    # Check for added columns\n    for col_name, col_info in current_columns.items():\n        if col_name not in historical_columns:\n            issues.append({\n                'type': 'schema_drift',\n                'severity': 'low',\n                'table_name': table_name,\n                'column_name': col_name,\n                'change_description': f'New column {col_name} added to {table_name}',\n                'detected_at': timestamp\n            })\n    \n    # Check for removed columns\n    for col_name in historical_columns:\n        if col_name not in current_columns:\n            issues.append({\n                'type': 'schema_drift',\n                'severity': 'high',\n                'table_name': table_name,\n                'column_name': col_name,\n                'change_description': f'Column {col_name} removed from {table_name}',\n                'detected_at': timestamp\n            })\n    \n    # Check for data type changes\n    for col_name, col_info in current_columns.items():\n        if col_name in historical_columns:\n            current_type = col_info.get('data_type')\n            historical_type = historical_columns[col_name].get('data_type')\n            \n            if current_type != historical_type:\n                issues.append({\n                    'type': 'schema_drift',\n                    'severity': 'high',\n                    'table_name': table_name,\n                    'column_name': col_name,\n                    'change_description': f'Data type changed from {historical_type} to {current_type} for {col_name} in {table_name}',\n                    'detected_at': timestamp\n                })\n            \n            # Check for nullability changes\n            current_nullable = col_info.get('is_nullable', True)\n            historical_nullable = historical_columns[col_name].get('is_nullable', True)\n            \n            if current_nullable != historical_nullable:\n                nullable_change = 'nullable' if current_nullable else 'not nullable'\n                issues.append({\n                    'type': 'schema_drift',\n                    'severity': 'medium',\n                    'table_name': table_name,\n                    'column_name': col_name,\n                    'change_description': f'Nullability changed to {nullable_change} for {col_name} in {table_name}',\n                    'detected_at': timestamp\n                })\n\n# Check for removed tables\nfor table_name in historical_tables:\n    if table_name not in current_tables:\n        issues.append({\n            'type': 'schema_drift',\n            'severity': 'critical',\n            'table_name': table_name,\n            'column_name': None,\n            'change_description': f'Table {table_name} has been removed',\n            'detected_at': timestamp\n        })\n\nreturn issues"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7ac59653-ed75-41ac-b19d-02e2e2beeee3",
+      "name": "Detect Null Explosions",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        208,
+        160
+      ],
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "from datetime import datetime\nimport json\n\n# Get configuration from Workflow Configuration node\nconfig = _input.first().json\ntables_to_monitor = config.get('tablesToMonitor', [])\nmax_null_percentage = config.get('maxNullPercentage', 5.0)\n\n# Get table statistics from Get Table Statistics node\ntable_stats = _input.all()\n\nissues = []\n\nfor stat in table_stats:\n    table_name = stat.json.get('table_name')\n    columns_data = stat.json.get('columns', [])\n    \n    # Check if this table should be monitored\n    if table_name not in tables_to_monitor:\n        continue\n    \n    # Analyze each column for null explosions\n    for column in columns_data:\n        column_name = column.get('column_name')\n        null_count = column.get('null_count', 0)\n        total_count = column.get('total_count', 0)\n        \n        if total_count == 0:\n            continue\n        \n        null_percentage = (null_count / total_count) * 100\n        \n        # Check if null percentage exceeds threshold\n        if null_percentage > max_null_percentage:\n            severity = 'critical' if null_percentage > max_null_percentage * 2 else 'high'\n            \n            issues.append({\n                'type': 'null_explosion',\n                'severity': severity,\n                'table_name': table_name,\n                'column_name': column_name,\n                'null_percentage': round(null_percentage, 2),\n                'threshold': max_null_percentage,\n                'detected_at': datetime.utcnow().isoformat()\n            })\n\nreturn issues"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "d2790027-d863-4126-9ce8-c2998809ae3a",
+      "name": "Detect Outlier Distributions",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        208,
+        384
+      ],
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "from datetime import datetime\nimport math\n\n# Get configuration from Workflow Configuration node\nconfig = _input.first().get('json', {})\noutlier_threshold = config.get('outlierStdDevThreshold', 3)\n\n# Get table statistics from Get Table Statistics node\ntable_stats = []\nfor item in _input.all():\n    if 'table_name' in item.get('json', {}):\n        table_stats.append(item['json'])\n\n# Get historical baselines from Get Historical Baselines node\nbaselines = {}\nfor item in _input.all():\n    baseline = item.get('json', {})\n    if 'table_name' in baseline and 'column_name' in baseline:\n        key = f\"{baseline['table_name']}.{baseline['column_name']}\"\n        baselines[key] = baseline\n\nissues = []\n\n# Analyze each table's statistics\nfor stat in table_stats:\n    table_name = stat.get('table_name')\n    column_name = stat.get('column_name')\n    column_type = stat.get('column_type', '')\n    \n    # Only analyze numeric columns\n    if not any(t in column_type.lower() for t in ['int', 'float', 'numeric', 'decimal', 'double']):\n        continue\n    \n    current_mean = stat.get('mean')\n    current_stddev = stat.get('stddev')\n    current_count = stat.get('row_count', 0)\n    \n    if current_mean is None or current_stddev is None:\n        continue\n    \n    # Get historical baseline\n    baseline_key = f\"{table_name}.{column_name}\"\n    baseline = baselines.get(baseline_key, {})\n    baseline_mean = baseline.get('baseline_mean')\n    baseline_stddev = baseline.get('baseline_stddev')\n    \n    if baseline_mean is None or baseline_stddev is None or baseline_stddev == 0:\n        continue\n    \n    # Calculate z-score for the current mean compared to baseline\n    z_score = abs((current_mean - baseline_mean) / baseline_stddev)\n    \n    # Detect outliers based on threshold\n    if z_score > outlier_threshold:\n        # Estimate outlier count (simplified approach)\n        outlier_count = int(current_count * (z_score / 10))  # Rough estimate\n        \n        # Determine severity based on z-score\n        if z_score > outlier_threshold * 2:\n            severity = 'critical'\n        elif z_score > outlier_threshold * 1.5:\n            severity = 'high'\n        else:\n            severity = 'medium'\n        \n        issues.append({\n            'type': 'outlier_distribution',\n            'severity': severity,\n            'table_name': table_name,\n            'column_name': column_name,\n            'outlier_count': outlier_count,\n            'z_score': round(z_score, 2),\n            'current_mean': round(current_mean, 2),\n            'baseline_mean': round(baseline_mean, 2),\n            'current_stddev': round(current_stddev, 2),\n            'detected_at': datetime.utcnow().isoformat()\n        })\n\nreturn issues"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "dbe44b7a-936f-44cd-a376-888c71f5e242",
+      "name": "Combine All Issues",
+      "type": "n8n-nodes-base.aggregate",
+      "position": [
+        464,
+        128
+      ],
+      "parameters": {
+        "options": {},
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "issues"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "7835d9d6-b483-496e-a8f1-e4861d29fed2",
+      "name": "Calculate Confidence Scores",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        640,
+        128
+      ],
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "# Calculate confidence scores for each data quality issue\n# Score based on: severity, historical frequency, data volume affected, and consistency\n\nimport json\n\n# Get all items from previous node\nitems = _items('all')\n\n# Process each issue and calculate confidence score\nfor item in items:\n    issue = item['json']\n    \n    # Initialize score components (0-1 scale)\n    severity_score = 0\n    frequency_score = 0\n    volume_score = 0\n    consistency_score = 0\n    \n    # 1. Severity Score (based on issue type and impact)\n    severity = issue.get('severity', 'medium').lower()\n    if severity == 'critical':\n        severity_score = 1.0\n    elif severity == 'high':\n        severity_score = 0.8\n    elif severity == 'medium':\n        severity_score = 0.5\n    else:\n        severity_score = 0.3\n    \n    # 2. Historical Frequency Score (how often this issue occurs)\n    historical_count = issue.get('historical_count', 0)\n    if historical_count >= 10:\n        frequency_score = 1.0\n    elif historical_count >= 5:\n        frequency_score = 0.7\n    elif historical_count >= 2:\n        frequency_score = 0.5\n    else:\n        frequency_score = 0.2\n    \n    # 3. Data Volume Score (percentage of data affected)\n    affected_rows = issue.get('affected_rows', 0)\n    total_rows = issue.get('total_rows', 1)\n    affected_percentage = (affected_rows / total_rows) * 100 if total_rows > 0 else 0\n    \n    if affected_percentage >= 50:\n        volume_score = 1.0\n    elif affected_percentage >= 25:\n        volume_score = 0.8\n    elif affected_percentage >= 10:\n        volume_score = 0.6\n    elif affected_percentage >= 1:\n        volume_score = 0.4\n    else:\n        volume_score = 0.2\n    \n    # 4. Consistency Score (detected across multiple checks)\n    detection_count = issue.get('detection_count', 1)\n    if detection_count >= 3:\n        consistency_score = 1.0\n    elif detection_count >= 2:\n        consistency_score = 0.7\n    else:\n        consistency_score = 0.4\n    \n    # Calculate weighted confidence score\n    # Weights: severity (40%), volume (30%), frequency (20%), consistency (10%)\n    confidence_score = (\n        severity_score * 0.4 +\n        volume_score * 0.3 +\n        frequency_score * 0.2 +\n        consistency_score * 0.1\n    )\n    \n    # Round to 3 decimal places\n    confidence_score = round(confidence_score, 3)\n    \n    # Add confidence score to the issue\n    issue['confidence_score'] = confidence_score\n    issue['confidence_breakdown'] = {\n        'severity': severity_score,\n        'volume': volume_score,\n        'frequency': frequency_score,\n        'consistency': consistency_score\n    }\n\n# Return all items with confidence scores\nreturn items"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ba0f352a-1a7c-4c62-9c2b-bc3a9c42d730",
+      "name": "Check Confidence Threshold",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        800,
+        128
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "id-1",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty"
+              },
+              "leftValue": "={{ $json.issues }}"
+            },
+            {
+              "id": "id-2",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.issues.some(issue => issue.confidence_score >= $('Workflow Configuration').first().json.confidenceThreshold) }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "fecc8343-1930-4730-9fc0-8760aaf6097b",
+      "name": "Generate SQL Fixes",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1088,
+        112
+      ],
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "# Generate SQL fix suggestions for each high-confidence issue\nimport json\n\n# Get all items from previous node\nitems = _items('all')\n\nresults = []\n\nfor item in items:\n    issue = item['json']\n    issue_type = issue.get('issue_type', '')\n    table_name = issue.get('table_name', '')\n    column_name = issue.get('column_name', '')\n    \n    sql_fix = ''\n    rollback_sql = ''\n    \n    if issue_type == 'schema_drift':\n        # Generate ALTER TABLE statements for schema changes\n        drift_details = issue.get('details', {})\n        change_type = drift_details.get('change_type', '')\n        \n        if change_type == 'column_added':\n            # Suggest documenting or validating the new column\n            sql_fix = f\"-- New column detected: {column_name}\\nCOMMENT ON COLUMN {table_name}.{column_name} IS 'Added on {drift_details.get(\\\"detected_at\\\", \\\"unknown\\\")}';\\n\"\n            rollback_sql = f\"ALTER TABLE {table_name} DROP COLUMN IF EXISTS {column_name};\"\n        elif change_type == 'column_removed':\n            # Suggest adding back the column if needed\n            sql_fix = f\"-- Column removed: {column_name}\\n-- Review if this was intentional\\nALTER TABLE {table_name} ADD COLUMN {column_name} {drift_details.get('data_type', 'TEXT')};\"\n            rollback_sql = f\"ALTER TABLE {table_name} DROP COLUMN IF EXISTS {column_name};\"\n        elif change_type == 'type_changed':\n            old_type = drift_details.get('old_type', 'TEXT')\n            new_type = drift_details.get('new_type', 'TEXT')\n            sql_fix = f\"-- Type change detected: {old_type} -> {new_type}\\nALTER TABLE {table_name} ALTER COLUMN {column_name} TYPE {old_type} USING {column_name}::{old_type};\"\n            rollback_sql = f\"ALTER TABLE {table_name} ALTER COLUMN {column_name} TYPE {new_type} USING {column_name}::{new_type};\"\n    \n    elif issue_type == 'null_explosion':\n        # Generate UPDATE or constraint additions for null explosions\n        null_percentage = issue.get('null_percentage', 0)\n        \n        if null_percentage > 50:\n            # High null rate - suggest adding NOT NULL constraint or default value\n            sql_fix = f\"-- High null rate detected ({null_percentage}%)\\n-- Option 1: Add default value\\nUPDATE {table_name} SET {column_name} = '<default_value>' WHERE {column_name} IS NULL;\\nALTER TABLE {table_name} ALTER COLUMN {column_name} SET DEFAULT '<default_value>';\\n\\n-- Option 2: Add NOT NULL constraint (after fixing nulls)\\n-- ALTER TABLE {table_name} ALTER COLUMN {column_name} SET NOT NULL;\"\n            rollback_sql = f\"ALTER TABLE {table_name} ALTER COLUMN {column_name} DROP NOT NULL;\\nALTER TABLE {table_name} ALTER COLUMN {column_name} DROP DEFAULT;\"\n        else:\n            # Moderate null rate - suggest investigation\n            sql_fix = f\"-- Investigate null values\\nSELECT * FROM {table_name} WHERE {column_name} IS NULL LIMIT 100;\\n\\n-- If appropriate, update nulls:\\n-- UPDATE {table_name} SET {column_name} = '<value>' WHERE {column_name} IS NULL;\"\n            rollback_sql = f\"-- Manual rollback required based on UPDATE operation\"\n    \n    elif issue_type == 'outlier_distribution':\n        # Generate data cleanup queries for outliers\n        outlier_details = issue.get('details', {})\n        outlier_count = outlier_details.get('outlier_count', 0)\n        \n        sql_fix = f\"-- Outlier distribution detected\\n-- Review outlier values:\\nSELECT {column_name}, COUNT(*) as frequency\\nFROM {table_name}\\nGROUP BY {column_name}\\nORDER BY frequency DESC;\\n\\n-- Option 1: Cap extreme values\\n-- UPDATE {table_name} SET {column_name} = <max_threshold> WHERE {column_name} > <max_threshold>;\\n-- UPDATE {table_name} SET {column_name} = <min_threshold> WHERE {column_name} < <min_threshold>;\\n\\n-- Option 2: Remove outliers (use with caution)\\n-- DELETE FROM {table_name} WHERE {column_name} > <max_threshold> OR {column_name} < <min_threshold>;\"\n        rollback_sql = f\"-- Backup data before cleanup:\\n-- CREATE TABLE {table_name}_backup AS SELECT * FROM {table_name};\\n-- Restore: INSERT INTO {table_name} SELECT * FROM {table_name}_backup;\"\n    \n    # Add SQL fix fields to the issue\n    issue['sql_fix'] = sql_fix\n    issue['rollback_sql'] = rollback_sql\n    \n    results.append({'json': issue})\n\nreturn results"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8f05dfe2-f1b7-4cf4-8645-887cb7c9bb12",
+      "name": "Store Issue in Audit Log",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1344,
+        112
+      ],
+      "parameters": {
+        "table": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Workflow Configuration').first().json.auditTableName }}"
+        },
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "columns": {
+          "value": {
+            "sql_fix": "={{ $json.sql_fix }}",
+            "severity": "={{ $json.severity }}",
+            "issue_type": "={{ $json.type }}",
+            "table_name": "={{ $json.table_name }}",
+            "column_name": "={{ $json.column_name }}",
+            "description": "={{ $json.change_description }}",
+            "detected_at": "={{ $json.detected_at }}",
+            "confidence_score": "={{ $json.confidence_score }}"
+          },
+          "schema": [
+            {
+              "id": "issue_type",
+              "required": false,
+              "displayName": "issue_type",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "table_name",
+              "required": false,
+              "displayName": "table_name",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "column_name",
+              "required": false,
+              "displayName": "column_name",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "severity",
+              "required": false,
+              "displayName": "severity",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "confidence_score",
+              "required": false,
+              "displayName": "confidence_score",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "required": false,
+              "displayName": "description",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sql_fix",
+              "required": false,
+              "displayName": "sql_fix",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "detected_at",
+              "required": false,
+              "displayName": "detected_at",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "issue_type",
+            "table_name",
+            "column_name",
+            "severity",
+            "confidence_score",
+            "description",
+            "sql_fix",
+            "detected_at"
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 2.6
+    },
+    {
+      "id": "bd9b5a43-277f-4b70-940f-ea546ab079cd",
+      "name": "Send Alert to Team",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1552,
+        112
+      ],
+      "webhookId": "92274cac-0b17-41a6-8eef-abe8a43e3de8",
+      "parameters": {
+        "text": "=\ud83d\udea8 **Data Quality Alert**\n\n**Severity:** {{ $json.severity }}\n**Confidence Score:** {{ $json.confidenceScore }}%\n\n**Affected Resources:**\n\u2022 Table: {{ $json.table }}\n\u2022 Column: {{ $json.column }}\n\n**Issue Details:**\n{{ $json.issueDescription }}\n\n**Suggested SQL Fix:**\n```sql\n{{ $json.sqlFix }}\n```\n\n**Detection Time:** {{ $json.detectedAt }}\n**Issue ID:** {{ $json.issueId }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "<__PLACEHOLDER_VALUE__Slack channel ID or name__>"
+        },
+        "otherOptions": {
+          "includeLinkToWorkflow": true
+        }
+      },
+      "typeVersion": 2.4
+    },
+    {
+      "id": "03b96358-29c8-497a-a1da-8bd9d4723c76",
+      "name": "Update Baselines",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1728,
+        112
+      ],
+      "parameters": {
+        "table": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Workflow Configuration').first().json.baselineTableName }}"
+        },
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "columns": {
+          "value": {
+            "avg_value": "={{ $json.avg_value }}",
+            "data_type": "={{ $json.data_type }}",
+            "max_value": "={{ $json.max_value }}",
+            "min_value": "={{ $json.min_value }}",
+            "null_count": "={{ $json.null_count }}",
+            "table_name": "={{ $json.table_name }}",
+            "total_rows": "={{ $json.total_rows }}",
+            "column_name": "={{ $json.column_name }}",
+            "schema_name": "={{ $json.schema_name }}",
+            "distinct_count": "={{ $json.distinct_count }}",
+            "baseline_timestamp": "={{ $now }}"
+          },
+          "mappingMode": "defineBelow"
+        },
+        "options": {}
+      },
+      "typeVersion": 2.6
+    },
+    {
+      "id": "3b790b9c-eb8b-4cee-a353-147f5220f9ec",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        992,
+        -32
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 256,
+        "height": 368,
+        "content": "## Suggestions\n\nFor high-confidence issues, the workflow generates SQL suggestions for investigation or correction."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ab37b97d-d2c9-4bd9-a634-a7005e5930aa",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1328,
+        96
+      ],
+      "parameters": {
+        "width": 448,
+        "height": 448,
+        "content": "## Autonomous Data Quality Monitoring and Remediation for Production Databases\n This workflow continuously monitors PostgreSQL database health by running automated data quality checks every six hours. It retrieves schema metadata, table statistics, and historical baselines to detect structural and statistical anomalies.\n\nThe workflow analyzes three major issue types: schema drift (table or column changes), null value explosions, and abnormal data distributions. All detected issues are aggregated and evaluated using a confidence scoring system based on severity, frequency, and data impact.\n\nIf an issue exceeds the defined confidence threshold, the workflow automatically generates SQL remediation suggestions, logs the issue in a database audit table, and sends alerts to Slack for team awareness.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c55ed3d0-c3dd-49ab-822e-5c3a59bc32e4",
+      "name": "Sticky Note8",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1264,
+        -16
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 704,
+        "height": 336,
+        "content": "## Logging, Alerts & Baseline Updates\n\nConfirmed issues are stored in a PostgreSQL audit table and alerts are sent to Slack.\nFinally, the workflow updates baseline statistics to improve future anomaly detection accuracy."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e15e09e6-e46a-4fbf-aa43-f0b3f181c326",
+      "name": "Sticky Note10",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        432,
+        -32
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 544,
+        "height": 368,
+        "content": "## Issue Scoring & Filtering\n\nEach issue receives a confidence score based on severity, frequency, data volume affected, and consistency.\nOnly issues exceeding the configured confidence threshold proceed to remediation and alerting."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "77d8b644-03cc-4cd3-878d-7cc869621d74",
+      "name": "Sticky Note11",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        96,
+        -272
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 304,
+        "height": 1040,
+        "content": "## Data Quality Detection Engine\n\nThree parallel checks detect potential problems:\n1>Schema drift (structure changes)\n2>Null explosions (unexpected missing values)\n3>Outlier distributions (statistical anomalies)\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "16a1ff1b-c8e2-49d6-819b-087f0100a606",
+      "name": "Sticky Note12",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -272,
+        -272
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 352,
+        "height": 1040,
+        "content": "## Database Metadata Collection\n\nFetches schema metadata, table statistics, and historical baseline records from PostgreSQL.\nThese datasets provide the reference points required to analyze schema changes, column behavior, and statistical deviations in the database."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "afbd454d-4ee3-43b4-b105-b90b42e4906c",
+      "name": "Sticky Note13",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -752,
+        80
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 464,
+        "height": 320,
+        "content": "## Workflow Trigger & Configuration\n\nRuns every 6 hours to monitor database quality."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Combine All Issues": {
+      "main": [
+        [
+          {
+            "node": "Calculate Confidence Scores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate SQL Fixes": {
+      "main": [
+        [
+          {
+            "node": "Store Issue in Audit Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Alert to Team": {
+      "main": [
+        [
+          {
+            "node": "Update Baselines",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Schema Drift": {
+      "main": [
+        [
+          {
+            "node": "Combine All Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Schema Metadata": {
+      "main": [
+        [
+          {
+            "node": "Detect Schema Drift",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Table Statistics": {
+      "main": [
+        [
+          {
+            "node": "Detect Null Explosions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Detect Outlier Distributions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Null Explosions": {
+      "main": [
+        [
+          {
+            "node": "Combine All Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "Get Schema Metadata",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Table Statistics",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Historical Baselines",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule DB Quality Scan": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Issue in Audit Log": {
+      "main": [
+        [
+          {
+            "node": "Send Alert to Team",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Confidence Threshold": {
+      "main": [
+        [
+          {
+            "node": "Generate SQL Fixes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Confidence Scores": {
+      "main": [
+        [
+          {
+            "node": "Check Confidence Threshold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Outlier Distributions": {
+      "main": [
+        [
+          {
+            "node": "Combine All Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

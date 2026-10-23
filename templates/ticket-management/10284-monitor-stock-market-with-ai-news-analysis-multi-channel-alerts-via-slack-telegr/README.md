@@ -1,6 +1,6 @@
 # 🎫 Monitor stock market with AI: news analysis & multi-channel alerts via Slack & Telegram
 
-> ⚡ **573 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **775 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

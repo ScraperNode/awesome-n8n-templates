@@ -1,6 +1,6 @@
 # 🤝 Gumroad Clientbell: Auto-log sales, ping Telegram, & thank via email
 
-> ⚡ **1,064 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,122 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

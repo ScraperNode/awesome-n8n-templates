@@ -1,6 +1,6 @@
 # 📖 Build and update RAG system with Google Drive, Qdrant, and Gemini Chat
 
-> ⚡ **7,578 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **8,612 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

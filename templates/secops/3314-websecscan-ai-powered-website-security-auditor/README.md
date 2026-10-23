@@ -1,6 +1,6 @@
 # 🔒 WebSecScan: AI-powered website security auditor
 
-> ⚡ **31,104 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **36,177 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

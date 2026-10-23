@@ -1,6 +1,6 @@
 # 🎣 Enrich chatbot and demo request leads with Lusha, HubSpot, and Slack
 
-> ⚡ **3 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **43 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Categorize Revolut transactions automatically with GPT-4 and Supabase
 
-> ⚡ **291 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **429 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

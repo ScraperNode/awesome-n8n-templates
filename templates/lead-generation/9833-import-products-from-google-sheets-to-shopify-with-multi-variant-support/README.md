@@ -1,6 +1,6 @@
 # 🎣 Import products from Google Sheets to Shopify with multi-variant support
 
-> ⚡ **414 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **499 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

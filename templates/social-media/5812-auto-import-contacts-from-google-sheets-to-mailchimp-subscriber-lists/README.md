@@ -1,6 +1,6 @@
 # 📱 Auto-import contacts from Google Sheets to MailChimp subscriber lists
 
-> ⚡ **630 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **760 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

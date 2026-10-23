@@ -1,6 +1,6 @@
 # 🎬 Automated Thai content creation & publishing with Ollama, Gemini & Telegram
 
-> ⚡ **1,893 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,166 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

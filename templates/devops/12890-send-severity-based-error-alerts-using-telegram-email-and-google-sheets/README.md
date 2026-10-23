@@ -1,6 +1,6 @@
 # ⚙️ Send severity-based error alerts using Telegram, email and Google Sheets
 
-> ⚡ **22 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **37 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

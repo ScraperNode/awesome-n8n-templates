@@ -1,6 +1,6 @@
 # 👥 Automate performance review process with Google Sheets, Calendar, Email & Slack
 
-> ⚡ **145 views** · 👥 [HR & Recruitment](../)
+> ⚡ **179 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

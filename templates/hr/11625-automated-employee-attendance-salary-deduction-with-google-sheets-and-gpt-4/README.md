@@ -1,6 +1,6 @@
 # 👥 Automated employee attendance & salary deduction with Google Sheets and GPT-4
 
-> ⚡ **392 views** · 👥 [HR & Recruitment](../)
+> ⚡ **902 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

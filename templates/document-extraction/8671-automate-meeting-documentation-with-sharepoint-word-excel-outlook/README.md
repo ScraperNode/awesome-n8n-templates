@@ -1,6 +1,6 @@
 # 🔬 Automate meeting documentation with SharePoint, Word, Excel & Outlook
 
-> ⚡ **2,948 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,030 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

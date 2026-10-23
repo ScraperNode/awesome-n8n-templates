@@ -1,6 +1,6 @@
 # 🎫 Analyze support screenshots with UploadToURL, GPT-4o Vision, Zendesk, and Jira
 
-> ⚡ **16 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **35 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

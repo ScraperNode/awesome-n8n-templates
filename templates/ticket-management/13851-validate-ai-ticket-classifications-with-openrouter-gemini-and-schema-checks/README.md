@@ -1,6 +1,6 @@
-# 🎫 Validate AI ticket classifications with OpenRouter Gemini and schema checks
+# 🎫 Production AI Playbook: Deterministic Steps & AI Steps (2 of 5) 
 
-> ⚡ **0 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **110 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 
@@ -20,9 +20,13 @@ Validate AI-generated outputs before your workflow acts on them. This template s
 **Why it matters**
 AI models don't always return what you expect. A confidence score of "high" instead of 0.95, a missing category field, or a malformed JSON response can silently break downstream steps. This template catches those failures before they propagate.
 
+This template is a learning companion to the Production AI Playbook, a series that explores strategies, shares best practices, and provides practical examples for building reliable AI systems in n8n.  
+
+[https://go.n8n.io/PAP-D&A-Blog](https://go.n8n.io/PAP-D&A-Blog)
+
 ## 🔗 Nodes Used
 
-Webhook, AI Agent, OpenRouter Chat Model
+Webhook, AI Agent, Structured Output Parser, OpenRouter Chat Model
 
 ## 📥 Import
 

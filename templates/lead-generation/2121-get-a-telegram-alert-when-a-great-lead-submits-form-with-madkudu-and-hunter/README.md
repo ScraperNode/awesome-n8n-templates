@@ -1,6 +1,6 @@
 # 🎣 Get a Telegram alert when a great lead submits form with MadKudu and Hunter
 
-> ⚡ **922 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **961 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

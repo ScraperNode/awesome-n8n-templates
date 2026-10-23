@@ -1,6 +1,6 @@
 # 🎯 Automatically categorize Gmail messages with GPT-4 mini classification
 
-> ⚡ **1,198 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **1,291 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Automate e-commerce orders, inventory & feedback with Slack, Sheets & Gmail
 
-> ⚡ **433 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **561 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

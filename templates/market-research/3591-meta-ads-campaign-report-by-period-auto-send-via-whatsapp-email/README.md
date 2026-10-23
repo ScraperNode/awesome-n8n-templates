@@ -1,6 +1,6 @@
 # 📊 ✨ Meta ads campaign report by period – auto-send via WhatsApp & email
 
-> ⚡ **2,369 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,563 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — If you've run into Facebook's Graph API permission restrictions, [ScraperNode](https://scrapernode.com/facebook) is a community node that scrapes [pages](https://scrapernode.com/facebook/scrapers/profiles), [groups](https://scrapernode.com/facebook/scrapers/groups), [posts](https://scrapernode.com/facebook/scrapers/posts), and [comments](https://scrapernode.com/facebook/scrapers/comments) directly — no app review needed.
 >

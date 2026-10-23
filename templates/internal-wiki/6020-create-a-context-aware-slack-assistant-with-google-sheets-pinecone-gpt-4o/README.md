@@ -1,6 +1,6 @@
 # 📖 Create a context-aware Slack assistant with Google Sheets, Pinecone & GPT-4o
 
-> ⚡ **322 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **353 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

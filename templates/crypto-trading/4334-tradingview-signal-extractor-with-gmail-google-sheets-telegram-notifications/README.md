@@ -1,6 +1,6 @@
 # 📈 TradingView signal extractor with Gmail, Google Sheets & Telegram notifications
 
-> ⚡ **9,530 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **10,474 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ WordPress context backup to github
 
-> ⚡ **752 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **865 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

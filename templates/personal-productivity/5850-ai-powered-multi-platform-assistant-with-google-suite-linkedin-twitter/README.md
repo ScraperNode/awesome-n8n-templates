@@ -1,6 +1,6 @@
 # ⚡ AI-powered multi-platform assistant with Google Suite, LinkedIn & Twitter
 
-> ⚡ **5,700 views** · ⚡ [Personal Productivity](../)
+> ⚡ **6,214 views** · ⚡ [Personal Productivity](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -161,7 +161,7 @@ If you want to interact with all your work tools from a single prompt—this is 
 ## 📎 Repo & Credits
 
 - Discord bot trigger: [n8n_discord_trigger_bot](https://github.com/Jharilela/n8n_discord_trigger_bot)
-- Creator: [Jay (Emp₀)](https://twitter.com/jharilela)
+- Creator: [Jay (Emp₀)](https://twitter.com/JayAIAutomation)
 
 ## 🔗 Nodes Used
 

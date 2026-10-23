@@ -1,6 +1,6 @@
 # 🎬 Creative design agency simulation with OpenAI O3 and GPT-4.1-mini multi-agent
 
-> ⚡ **5,437 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **7,217 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

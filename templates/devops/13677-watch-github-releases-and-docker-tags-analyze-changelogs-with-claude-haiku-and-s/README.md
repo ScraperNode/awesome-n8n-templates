@@ -1,6 +1,6 @@
 # ⚙️ Watch GitHub releases and Docker tags, analyze changelogs with Claude Haiku, and send update digests to Slack, Discord, Telegram, and ntfy
 
-> ⚡ **18 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **82 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

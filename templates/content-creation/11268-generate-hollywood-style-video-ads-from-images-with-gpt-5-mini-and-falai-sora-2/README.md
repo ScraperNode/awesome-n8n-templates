@@ -1,6 +1,6 @@
 # 🎬 Generate Hollywood-style video ads from images with GPT-5 Mini and Fal.ai Sora-2
 
-> ⚡ **157 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **210 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

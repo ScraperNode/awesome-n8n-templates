@@ -1,6 +1,6 @@
 # 🤖 🤖 Discord message proxy: Bot mentions → AI actions
 
-> ⚡ **536 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **574 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

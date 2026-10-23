@@ -1,6 +1,6 @@
 # 🔬 Automated video analysis: AI-powered insight generation from Google Drive
 
-> ⚡ **1,996 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,400 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

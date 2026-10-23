@@ -1,6 +1,6 @@
 # ⚙️ Send notification when deployment fails
 
-> ⚡ **1,161 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,216 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

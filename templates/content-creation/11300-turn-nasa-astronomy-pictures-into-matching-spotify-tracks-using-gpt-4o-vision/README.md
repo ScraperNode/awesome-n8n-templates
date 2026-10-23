@@ -1,6 +1,6 @@
 # 🎬 Turn NASA astronomy pictures into matching Spotify tracks using GPT-4o Vision
 
-> ⚡ **199 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **244 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

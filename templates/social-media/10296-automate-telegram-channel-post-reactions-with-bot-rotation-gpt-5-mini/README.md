@@ -1,6 +1,6 @@
 # 📱 Automate Telegram channel post reactions with bot rotation & GPT-5-mini
 
-> ⚡ **406 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,322 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Automate AI-powered quiz generation from PDFs with Google Forms
 
-> ⚡ **325 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **526 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

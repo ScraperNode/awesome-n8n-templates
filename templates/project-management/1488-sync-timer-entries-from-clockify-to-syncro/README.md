@@ -1,6 +1,6 @@
 # 📋 Sync timer entries from Clockify to Syncro
 
-> ⚡ **1,164 views** · 📋 [Project Management](../)
+> ⚡ **1,255 views** · 📋 [Project Management](../)
 
 ## Description
 

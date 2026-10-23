@@ -1,6 +1,6 @@
 # 🔒 Send TheHive alerts using SIGNL4
 
-> ⚡ **1,012 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,043 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

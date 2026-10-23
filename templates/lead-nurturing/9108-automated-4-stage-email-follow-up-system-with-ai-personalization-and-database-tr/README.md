@@ -1,6 +1,6 @@
 # 💬 Automated 4-stage email follow-up system with AI personalization and database tracking
 
-> ⚡ **361 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **519 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

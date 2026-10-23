@@ -1,6 +1,6 @@
 # 🎬 Multi-agent LinkedIn content creation with GPT-4o, Google Sheets, and human review
 
-> ⚡ **602 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **812 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

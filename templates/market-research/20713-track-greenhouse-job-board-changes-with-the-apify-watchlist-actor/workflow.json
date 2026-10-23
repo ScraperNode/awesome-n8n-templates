@@ -1,0 +1,1171 @@
+{
+  "name": "Track Greenhouse job board changes with Apify watchlist snapshots",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "gw-1",
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "gw-2",
+      "name": "Configure",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function assert(ok, message) { if (!ok) throw new Error(message); }\nfunction captureRun(response, prepared) {\n  const run = responseBody(response)?.data;\n  assert(run && id(run.id) && run.actId === 'hKiF2epI17OkpTRdh', 'Run start could not be identified. Do not retry POST. Inspect Apify Runs.');\n  return {runId: run.id, pendingState: {...prepared.intent, pendingRunId: run.id}};\n}\nfunction commitData(response, snapshot, summary, run, config) {\n  const changes = responseBody(response);\n  assert(Array.isArray(changes) && changes.length === summary.changeCount, 'Change file is incomplete.');\n  assert(changes.every(row => object(row) && config.boardSlugs.includes(row.board) && ['new','changed','noLongerListed','reappeared'].includes(row.eventType) && typeof row.baseline === 'boolean'), 'Unexpected change record.');\n  return {state: {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot, lastRunId: run.runId},\n    result: {runId: run.runId, consoleUrl: `https://console.apify.com/actors/hKiF2epI17OkpTRdh/runs/${run.runId}#output`, baseline: summary.baseline, currentJobCount: summary.currentJobCount, changeCount: changes.length, changes}};\n}\nfunction configure(config) {\n  assert(config.singleWriterConfirmed === true, 'Read SETUP.md. Use one execution at a time and one workflow per store; then set singleWriterConfirmed=true.');\n  const boards = config.boardSlugs;\n  assert(Array.isArray(boards) && boards.length >= 1 && boards.length <= 20 && boards.every(b => typeof b === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(b)), 'Provide 1-20 valid board slugs.');\n  assert(new Set(boards.map(b => b.toLowerCase())).size === boards.length, 'Duplicate boards.');\n  assert(typeof config.stateStoreName === 'string' && /^gh-watchlist-[a-z0-9-]{1,45}$/.test(config.stateStoreName), 'Use a dedicated gh-watchlist-... store name.');\n  return {...config, boardSlugs: [...boards].sort()};\n}\nfunction confirmedResult(response, commit) {\n  assert(same(responseBody(response), commit.state), 'Saved history was not confirmed. Inspect STATE before the next execution.');\n  return {...commit.result, historySaved: true};\n}\nfunction id(value) { return typeof value === 'string' && /^[A-Za-z0-9]{1,64}$/.test(value); }\nfunction object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }\nfunction prepare(response, config, now) {\n  let state;\n  if (response.statusCode === 404 && response.body?.error?.type === 'record-not-found') {\n    state = {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot: null, lastRunId: null};\n  } else {\n    state = responseBody(response);\n    assert(object(state) && state.schemaVersion === 1 && ['ready', 'pending'].includes(state.status) && same(state.boardSlugs, config.boardSlugs), 'State is invalid or belongs to another watchlist.');\n    assert(Object.hasOwn(state, 'snapshot'), 'State has no snapshot field.');\n    if (state.snapshot !== null) snapshotValid(state.snapshot, config.boardSlugs);\n    else assert(state.lastRunId === null, 'Existing history is missing.');\n  }\n  if (state.status === 'pending') {\n    assert(id(state.pendingRunId), 'A previous start has an uncertain result. Inspect Apify Runs before any new start. Keep STATE unchanged; see recovery instructions.');\n    return {needsStart: false, runId: state.pendingRunId, state};\n  }\n  const input = {boardSlugs: config.boardSlugs};\n  if (state.snapshot !== null) input.previousSnapshot = state.snapshot;\n  assert(Buffer.byteLength(JSON.stringify(input), 'utf8') <= 5 * 1024 * 1024, 'Input exceeds the Actor limit.');\n  return {needsStart: true, runId: null, state, input,\n    intent: {...state, status: 'pending', pendingRunId: null, startedAt: now}};\n}\nfunction responseBody(response) {\n  assert(response && Number.isInteger(response.statusCode) && response.statusCode >= 200 && response.statusCode < 300, 'Unexpected HTTP status; keep the previous history.');\n  return response.body;\n}\nfunction same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }\nfunction snapshotValid(snapshot, boards) {\n  assert(object(snapshot) && snapshot.type === 'greenhouse-watchlist-snapshot' && snapshot.schemaVersion === 1 && same(snapshot.boardSlugs, boards) && object(snapshot.boards), 'Invalid or incompatible snapshot; do not reset automatically.');\n  assert(same(Object.keys(snapshot.boards).sort(), boards), 'Snapshot board set mismatch.');\n  assert(typeof snapshot.observedAt === 'string' && Number.isFinite(Date.parse(snapshot.observedAt)), 'Invalid snapshot observation time.');\n  assert(boards.every(b => object(snapshot.boards[b]) && object(snapshot.boards[b].jobs) && Number.isInteger(snapshot.boards[b].successfulObservations) && snapshot.boards[b].successfulObservations >= 1), 'Incomplete snapshot.');\n  return snapshot;\n}\nfunction storeInfo(response, config) {\n  const store = responseBody(response)?.data;\n  assert(store && id(store.id) && store.name === config.stateStoreName, 'Unexpected state store.');\n  // Do not carry signing keys or platform-generated public URLs downstream.\n  return {storeId: store.id};\n}\nfunction validateBilling(response) {\n  const receipt = responseBody(response);\n  assert(object(receipt) && receipt.event === 'watchlist-completed' && ['charged', 'already_recorded'].includes(receipt.status) && receipt.chargedCount === 1 && receipt.retryAllowed === false, 'Billing receipt is uncertain or unexpected. Stop and inspect; never retry a charge.');\n  return {acknowledged: true};\n}\nfunction validateRun(response, runId) {\n  const run = responseBody(response)?.data;\n  assert(run && run.id === runId && run.actId === 'hKiF2epI17OkpTRdh', 'Unexpected Actor run.');\n  assert(run.status === 'SUCCEEDED', 'Run is not SUCCEEDED. History stays unchanged. If still running, a new full workflow execution resumes this run without starting another. Failed runs require inspection.');\n  assert(id(run.defaultKeyValueStoreId) && id(run.defaultDatasetId), 'Missing run storage.');\n  return {runId: run.id, storeId: run.defaultKeyValueStoreId, datasetId: run.defaultDatasetId};\n}\nfunction validateSnapshot(response, config, summary, prepared) {\n  const snapshot = snapshotValid(responseBody(response), config.boardSlugs);\n  assert(snapshot.observedAt === summary.observedAt, 'Snapshot and summary refer to different observations.');\n  if (prepared.state.snapshot !== null) {\n    assert(Date.parse(snapshot.observedAt) > Date.parse(prepared.state.snapshot.observedAt), 'Snapshot did not advance.');\n    for (const board of config.boardSlugs) assert(snapshot.boards[board].successfulObservations === prepared.state.snapshot.boards[board].successfulObservations + 1, 'Observation sequence broke.');\n  } else assert(config.boardSlugs.every(b => snapshot.boards[b].successfulObservations === 1), 'Baseline sequence is invalid.');\n  assert(Buffer.byteLength(JSON.stringify({boardSlugs: config.boardSlugs, previousSnapshot: snapshot}), 'utf8') <= 5 * 1024 * 1024, 'Next input would exceed the limit.');\n  return snapshot;\n}\nfunction validateSummary(response, config, prepared) {\n  const summary = responseBody(response);\n  assert(object(summary) && summary.product === 'greenhouse-watchlist-export' && summary.complete === true && summary.chargingEnabled === true, 'Incomplete or unexpected delivery.');\n  assert(summary.boardCount === config.boardSlugs.length && Array.isArray(summary.boards) && summary.boards.length === config.boardSlugs.length, 'Incomplete coverage.');\n  assert(same(summary.boards.map(b => b.board).sort(), config.boardSlugs) && summary.boards.every(b => b.status === 'ok' && b.complete === true), 'A requested board failed.');\n  assert(Number.isInteger(summary.changeCount) && summary.changeCount >= 0 && Number.isInteger(summary.currentJobCount) && summary.currentJobCount >= 0, 'Invalid output counts.');\n  assert(summary.baseline === (prepared.state.snapshot === null), 'Unexpected baseline reset.');\n  return summary;\n}\nfunction verifyIntent(response, prepared) {\n  assert(same(responseBody(response), prepared.intent), 'Start intent was not persisted. No run should start.');\n  return {verified: true};\n}\nreturn [{json: configure($input.first().json)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "gw-3",
+      "name": "Open state store",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the same Header Auth credential in every HTTP node. Header: Authorization. Value: Bearer <your Apify token>. Never put a token in node fields or URLs.",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "url": "https://api.apify.com/v2/key-value-stores",
+        "method": "POST",
+        "options": {
+          "timeout": 75000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": false,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendQuery": true,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $('Configure').first().json.stateStoreName }}"
+            }
+          ]
+        }
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "gw-4",
+      "name": "State store",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function assert(ok, message) { if (!ok) throw new Error(message); }\nfunction captureRun(response, prepared) {\n  const run = responseBody(response)?.data;\n  assert(run && id(run.id) && run.actId === 'hKiF2epI17OkpTRdh', 'Run start could not be identified. Do not retry POST. Inspect Apify Runs.');\n  return {runId: run.id, pendingState: {...prepared.intent, pendingRunId: run.id}};\n}\nfunction commitData(response, snapshot, summary, run, config) {\n  const changes = responseBody(response);\n  assert(Array.isArray(changes) && changes.length === summary.changeCount, 'Change file is incomplete.');\n  assert(changes.every(row => object(row) && config.boardSlugs.includes(row.board) && ['new','changed','noLongerListed','reappeared'].includes(row.eventType) && typeof row.baseline === 'boolean'), 'Unexpected change record.');\n  return {state: {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot, lastRunId: run.runId},\n    result: {runId: run.runId, consoleUrl: `https://console.apify.com/actors/hKiF2epI17OkpTRdh/runs/${run.runId}#output`, baseline: summary.baseline, currentJobCount: summary.currentJobCount, changeCount: changes.length, changes}};\n}\nfunction configure(config) {\n  assert(config.singleWriterConfirmed === true, 'Read SETUP.md. Use one execution at a time and one workflow per store; then set singleWriterConfirmed=true.');\n  const boards = config.boardSlugs;\n  assert(Array.isArray(boards) && boards.length >= 1 && boards.length <= 20 && boards.every(b => typeof b === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(b)), 'Provide 1-20 valid board slugs.');\n  assert(new Set(boards.map(b => b.toLowerCase())).size === boards.length, 'Duplicate boards.');\n  assert(typeof config.stateStoreName === 'string' && /^gh-watchlist-[a-z0-9-]{1,45}$/.test(config.stateStoreName), 'Use a dedicated gh-watchlist-... store name.');\n  return {...config, boardSlugs: [...boards].sort()};\n}\nfunction confirmedResult(response, commit) {\n  assert(same(responseBody(response), commit.state), 'Saved history was not confirmed. Inspect STATE before the next execution.');\n  return {...commit.result, historySaved: true};\n}\nfunction id(value) { return typeof value === 'string' && /^[A-Za-z0-9]{1,64}$/.test(value); }\nfunction object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }\nfunction prepare(response, config, now) {\n  let state;\n  if (response.statusCode === 404 && response.body?.error?.type === 'record-not-found') {\n    state = {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot: null, lastRunId: null};\n  } else {\n    state = responseBody(response);\n    assert(object(state) && state.schemaVersion === 1 && ['ready', 'pending'].includes(state.status) && same(state.boardSlugs, config.boardSlugs), 'State is invalid or belongs to another watchlist.');\n    assert(Object.hasOwn(state, 'snapshot'), 'State has no snapshot field.');\n    if (state.snapshot !== null) snapshotValid(state.snapshot, config.boardSlugs);\n    else assert(state.lastRunId === null, 'Existing history is missing.');\n  }\n  if (state.status === 'pending') {\n    assert(id(state.pendingRunId), 'A previous start has an uncertain result. Inspect Apify Runs before any new start. Keep STATE unchanged; see recovery instructions.');\n    return {needsStart: false, runId: state.pendingRunId, state};\n  }\n  const input = {boardSlugs: config.boardSlugs};\n  if (state.snapshot !== null) input.previousSnapshot = state.snapshot;\n  assert(Buffer.byteLength(JSON.stringify(input), 'utf8') <= 5 * 1024 * 1024, 'Input exceeds the Actor limit.');\n  return {needsStart: true, runId: null, state, input,\n    intent: {...state, status: 'pending', pendingRunId: null, startedAt: now}};\n}\nfunction responseBody(response) {\n  assert(response && Number.isInteger(response.statusCode) && response.statusCode >= 200 && response.statusCode < 300, 'Unexpected HTTP status; keep the previous history.');\n  return response.body;\n}\nfunction same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }\nfunction snapshotValid(snapshot, boards) {\n  assert(object(snapshot) && snapshot.type === 'greenhouse-watchlist-snapshot' && snapshot.schemaVersion === 1 && same(snapshot.boardSlugs, boards) && object(snapshot.boards), 'Invalid or incompatible snapshot; do not reset automatically.');\n  assert(same(Object.keys(snapshot.boards).sort(), boards), 'Snapshot board set mismatch.');\n  assert(typeof snapshot.observedAt === 'string' && Number.isFinite(Date.parse(snapshot.observedAt)), 'Invalid snapshot observation time.');\n  assert(boards.every(b => object(snapshot.boards[b]) && object(snapshot.boards[b].jobs) && Number.isInteger(snapshot.boards[b].successfulObservations) && snapshot.boards[b].successfulObservations >= 1), 'Incomplete snapshot.');\n  return snapshot;\n}\nfunction storeInfo(response, config) {\n  const store = responseBody(response)?.data;\n  assert(store && id(store.id) && store.name === config.stateStoreName, 'Unexpected state store.');\n  // Do not carry signing keys or platform-generated public URLs downstream.\n  return {storeId: store.id};\n}\nfunction validateBilling(response) {\n  const receipt = responseBody(response);\n  assert(object(receipt) && receipt.event === 'watchlist-completed' && ['charged', 'already_recorded'].includes(receipt.status) && receipt.chargedCount === 1 && receipt.retryAllowed === false, 'Billing receipt is uncertain or unexpected. Stop and inspect; never retry a charge.');\n  return {acknowledged: true};\n}\nfunction validateRun(response, runId) {\n  const run = responseBody(response)?.data;\n  assert(run && run.id === runId && run.actId === 'hKiF2epI17OkpTRdh', 'Unexpected Actor run.');\n  assert(run.status === 'SUCCEEDED', 'Run is not SUCCEEDED. History stays unchanged. If still running, a new full workflow execution resumes this run without starting another. Failed runs require inspection.');\n  assert(id(run.defaultKeyValueStoreId) && id(run.defaultDatasetId), 'Missing run storage.');\n  return {runId: run.id, storeId: run.defaultKeyValueStoreId, datasetId: run.defaultDatasetId};\n}\nfunction validateSnapshot(response, config, summary, prepared) {\n  const snapshot = snapshotValid(responseBody(response), config.boardSlugs);\n  assert(snapshot.observedAt === summary.observedAt, 'Snapshot and summary refer to different observations.');\n  if (prepared.state.snapshot !== null) {\n    assert(Date.parse(snapshot.observedAt) > Date.parse(prepared.state.snapshot.observedAt), 'Snapshot did not advance.');\n    for (const board of config.boardSlugs) assert(snapshot.boards[board].successfulObservations === prepared.state.snapshot.boards[board].successfulObservations + 1, 'Observation sequence broke.');\n  } else assert(config.boardSlugs.every(b => snapshot.boards[b].successfulObservations === 1), 'Baseline sequence is invalid.');\n  assert(Buffer.byteLength(JSON.stringify({boardSlugs: config.boardSlugs, previousSnapshot: snapshot}), 'utf8') <= 5 * 1024 * 1024, 'Next input would exceed the limit.');\n  return snapshot;\n}\nfunction validateSummary(response, config, prepared) {\n  const summary = responseBody(response);\n  assert(object(summary) && summary.product === 'greenhouse-watchlist-export' && summary.complete === true && summary.chargingEnabled === true, 'Incomplete or unexpected delivery.');\n  assert(summary.boardCount === config.boardSlugs.length && Array.isArray(summary.boards) && summary.boards.length === config.boardSlugs.length, 'Incomplete coverage.');\n  assert(same(summary.boards.map(b => b.board).sort(), config.boardSlugs) && summary.boards.every(b => b.status === 'ok' && b.complete === true), 'A requested board failed.');\n  assert(Number.isInteger(summary.changeCount) && summary.changeCount >= 0 && Number.isInteger(summary.currentJobCount) && summary.currentJobCount >= 0, 'Invalid output counts.');\n  assert(summary.baseline === (prepared.state.snapshot === null), 'Unexpected baseline reset.');\n  return summary;\n}\nfunction verifyIntent(response, prepared) {\n  assert(same(responseBody(response), prepared.intent), 'Start intent was not persisted. No run should start.');\n  return {verified: true};\n}\nreturn [{json: storeInfo($input.first().json, $('Configure').first().json)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "gw-5",
+      "name": "Read state",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the same Header Auth credential in every HTTP node. Header: Authorization. Value: Bearer <your Apify token>. Never put a token in node fields or URLs.",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/key-value-stores/' + $('State store').first().json.storeId + '/records/STATE' }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "gw-6",
+      "name": "Prepare",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function assert(ok, message) { if (!ok) throw new Error(message); }\nfunction captureRun(response, prepared) {\n  const run = responseBody(response)?.data;\n  assert(run && id(run.id) && run.actId === 'hKiF2epI17OkpTRdh', 'Run start could not be identified. Do not retry POST. Inspect Apify Runs.');\n  return {runId: run.id, pendingState: {...prepared.intent, pendingRunId: run.id}};\n}\nfunction commitData(response, snapshot, summary, run, config) {\n  const changes = responseBody(response);\n  assert(Array.isArray(changes) && changes.length === summary.changeCount, 'Change file is incomplete.');\n  assert(changes.every(row => object(row) && config.boardSlugs.includes(row.board) && ['new','changed','noLongerListed','reappeared'].includes(row.eventType) && typeof row.baseline === 'boolean'), 'Unexpected change record.');\n  return {state: {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot, lastRunId: run.runId},\n    result: {runId: run.runId, consoleUrl: `https://console.apify.com/actors/hKiF2epI17OkpTRdh/runs/${run.runId}#output`, baseline: summary.baseline, currentJobCount: summary.currentJobCount, changeCount: changes.length, changes}};\n}\nfunction configure(config) {\n  assert(config.singleWriterConfirmed === true, 'Read SETUP.md. Use one execution at a time and one workflow per store; then set singleWriterConfirmed=true.');\n  const boards = config.boardSlugs;\n  assert(Array.isArray(boards) && boards.length >= 1 && boards.length <= 20 && boards.every(b => typeof b === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(b)), 'Provide 1-20 valid board slugs.');\n  assert(new Set(boards.map(b => b.toLowerCase())).size === boards.length, 'Duplicate boards.');\n  assert(typeof config.stateStoreName === 'string' && /^gh-watchlist-[a-z0-9-]{1,45}$/.test(config.stateStoreName), 'Use a dedicated gh-watchlist-... store name.');\n  return {...config, boardSlugs: [...boards].sort()};\n}\nfunction confirmedResult(response, commit) {\n  assert(same(responseBody(response), commit.state), 'Saved history was not confirmed. Inspect STATE before the next execution.');\n  return {...commit.result, historySaved: true};\n}\nfunction id(value) { return typeof value === 'string' && /^[A-Za-z0-9]{1,64}$/.test(value); }\nfunction object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }\nfunction prepare(response, config, now) {\n  let state;\n  if (response.statusCode === 404 && response.body?.error?.type === 'record-not-found') {\n    state = {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot: null, lastRunId: null};\n  } else {\n    state = responseBody(response);\n    assert(object(state) && state.schemaVersion === 1 && ['ready', 'pending'].includes(state.status) && same(state.boardSlugs, config.boardSlugs), 'State is invalid or belongs to another watchlist.');\n    assert(Object.hasOwn(state, 'snapshot'), 'State has no snapshot field.');\n    if (state.snapshot !== null) snapshotValid(state.snapshot, config.boardSlugs);\n    else assert(state.lastRunId === null, 'Existing history is missing.');\n  }\n  if (state.status === 'pending') {\n    assert(id(state.pendingRunId), 'A previous start has an uncertain result. Inspect Apify Runs before any new start. Keep STATE unchanged; see recovery instructions.');\n    return {needsStart: false, runId: state.pendingRunId, state};\n  }\n  const input = {boardSlugs: config.boardSlugs};\n  if (state.snapshot !== null) input.previousSnapshot = state.snapshot;\n  assert(Buffer.byteLength(JSON.stringify(input), 'utf8') <= 5 * 1024 * 1024, 'Input exceeds the Actor limit.');\n  return {needsStart: true, runId: null, state, input,\n    intent: {...state, status: 'pending', pendingRunId: null, startedAt: now}};\n}\nfunction responseBody(response) {\n  assert(response && Number.isInteger(response.statusCode) && response.statusCode >= 200 && response.statusCode < 300, 'Unexpected HTTP status; keep the previous history.');\n  return response.body;\n}\nfunction same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }\nfunction snapshotValid(snapshot, boards) {\n  assert(object(snapshot) && snapshot.type === 'greenhouse-watchlist-snapshot' && snapshot.schemaVersion === 1 && same(snapshot.boardSlugs, boards) && object(snapshot.boards), 'Invalid or incompatible snapshot; do not reset automatically.');\n  assert(same(Object.keys(snapshot.boards).sort(), boards), 'Snapshot board set mismatch.');\n  assert(typeof snapshot.observedAt === 'string' && Number.isFinite(Date.parse(snapshot.observedAt)), 'Invalid snapshot observation time.');\n  assert(boards.every(b => object(snapshot.boards[b]) && object(snapshot.boards[b].jobs) && Number.isInteger(snapshot.boards[b].successfulObservations) && snapshot.boards[b].successfulObservations >= 1), 'Incomplete snapshot.');\n  return snapshot;\n}\nfunction storeInfo(response, config) {\n  const store = responseBody(response)?.data;\n  assert(store && id(store.id) && store.name === config.stateStoreName, 'Unexpected state store.');\n  // Do not carry signing keys or platform-generated public URLs downstream.\n  return {storeId: store.id};\n}\nfunction validateBilling(response) {\n  const receipt = responseBody(response);\n  assert(object(receipt) && receipt.event === 'watchlist-completed' && ['charged', 'already_recorded'].includes(receipt.status) && receipt.chargedCount === 1 && receipt.retryAllowed === false, 'Billing receipt is uncertain or unexpected. Stop and inspect; never retry a charge.');\n  return {acknowledged: true};\n}\nfunction validateRun(response, runId) {\n  const run = responseBody(response)?.data;\n  assert(run && run.id === runId && run.actId === 'hKiF2epI17OkpTRdh', 'Unexpected Actor run.');\n  assert(run.status === 'SUCCEEDED', 'Run is not SUCCEEDED. History stays unchanged. If still running, a new full workflow execution resumes this run without starting another. Failed runs require inspection.');\n  assert(id(run.defaultKeyValueStoreId) && id(run.defaultDatasetId), 'Missing run storage.');\n  return {runId: run.id, storeId: run.defaultKeyValueStoreId, datasetId: run.defaultDatasetId};\n}\nfunction validateSnapshot(response, config, summary, prepared) {\n  const snapshot = snapshotValid(responseBody(response), config.boardSlugs);\n  assert(snapshot.observedAt === summary.observedAt, 'Snapshot and summary refer to different observations.');\n  if (prepared.state.snapshot !== null) {\n    assert(Date.parse(snapshot.observedAt) > Date.parse(prepared.state.snapshot.observedAt), 'Snapshot did not advance.');\n    for (const board of config.boardSlugs) assert(snapshot.boards[board].successfulObservations === prepared.state.snapshot.boards[board].successfulObservations + 1, 'Observation sequence broke.');\n  } else assert(config.boardSlugs.every(b => snapshot.boards[b].successfulObservations === 1), 'Baseline sequence is invalid.');\n  assert(Buffer.byteLength(JSON.stringify({boardSlugs: config.boardSlugs, previousSnapshot: snapshot}), 'utf8') <= 5 * 1024 * 1024, 'Next input would exceed the limit.');\n  return snapshot;\n}\nfunction validateSummary(response, config, prepared) {\n  const summary = responseBody(response);\n  assert(object(summary) && summary.product === 'greenhouse-watchlist-export' && summary.complete === true && summary.chargingEnabled === true, 'Incomplete or unexpected delivery.');\n  assert(summary.boardCount === config.boardSlugs.length && Array.isArray(summary.boards) && summary.boards.length === config.boardSlugs.length, 'Incomplete coverage.');\n  assert(same(summary.boards.map(b => b.board).sort(), config.boardSlugs) && summary.boards.every(b => b.status === 'ok' && b.complete === true), 'A requested board failed.');\n  assert(Number.isInteger(summary.changeCount) && summary.changeCount >= 0 && Number.isInteger(summary.currentJobCount) && summary.currentJobCount >= 0, 'Invalid output counts.');\n  assert(summary.baseline === (prepared.state.snapshot === null), 'Unexpected baseline reset.');\n  return summary;\n}\nfunction verifyIntent(response, prepared) {\n  assert(same(responseBody(response), prepared.intent), 'Start intent was not persisted. No run should start.');\n  return {verified: true};\n}\nreturn [{json: prepare($input.first().json, $('Configure').first().json, new Date().toISOString())}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "gw-7",
+      "name": "Need a new run",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "needs-start",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.needsStart }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "gw-8",
+      "name": "Save start intent",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the same Header Auth credential in every HTTP node. Header: Authorization. Value: Bearer <your Apify token>. Never put a token in node fields or URLs.",
+      "position": [
+        1760,
+        -240
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/key-value-stores/' + $('State store').first().json.storeId + '/records/STATE' }}",
+        "method": "PUT",
+        "options": {
+          "timeout": 75000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": false,
+              "fullResponse": true,
+              "responseFormat": "autodetect"
+            }
+          }
+        },
+        "jsonBody": "={{ $('Prepare').first().json.intent }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "gw-9",
+      "name": "Read start intent",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the same Header Auth credential in every HTTP node. Header: Authorization. Value: Bearer <your Apify token>. Never put a token in node fields or URLs.",
+      "position": [
+        1980,
+        -240
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/key-value-stores/' + $('State store').first().json.storeId + '/records/STATE' }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": false,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "gw-10",
+      "name": "Verify start intent",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2200,
+        -240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function assert(ok, message) { if (!ok) throw new Error(message); }\nfunction captureRun(response, prepared) {\n  const run = responseBody(response)?.data;\n  assert(run && id(run.id) && run.actId === 'hKiF2epI17OkpTRdh', 'Run start could not be identified. Do not retry POST. Inspect Apify Runs.');\n  return {runId: run.id, pendingState: {...prepared.intent, pendingRunId: run.id}};\n}\nfunction commitData(response, snapshot, summary, run, config) {\n  const changes = responseBody(response);\n  assert(Array.isArray(changes) && changes.length === summary.changeCount, 'Change file is incomplete.');\n  assert(changes.every(row => object(row) && config.boardSlugs.includes(row.board) && ['new','changed','noLongerListed','reappeared'].includes(row.eventType) && typeof row.baseline === 'boolean'), 'Unexpected change record.');\n  return {state: {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot, lastRunId: run.runId},\n    result: {runId: run.runId, consoleUrl: `https://console.apify.com/actors/hKiF2epI17OkpTRdh/runs/${run.runId}#output`, baseline: summary.baseline, currentJobCount: summary.currentJobCount, changeCount: changes.length, changes}};\n}\nfunction configure(config) {\n  assert(config.singleWriterConfirmed === true, 'Read SETUP.md. Use one execution at a time and one workflow per store; then set singleWriterConfirmed=true.');\n  const boards = config.boardSlugs;\n  assert(Array.isArray(boards) && boards.length >= 1 && boards.length <= 20 && boards.every(b => typeof b === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(b)), 'Provide 1-20 valid board slugs.');\n  assert(new Set(boards.map(b => b.toLowerCase())).size === boards.length, 'Duplicate boards.');\n  assert(typeof config.stateStoreName === 'string' && /^gh-watchlist-[a-z0-9-]{1,45}$/.test(config.stateStoreName), 'Use a dedicated gh-watchlist-... store name.');\n  return {...config, boardSlugs: [...boards].sort()};\n}\nfunction confirmedResult(response, commit) {\n  assert(same(responseBody(response), commit.state), 'Saved history was not confirmed. Inspect STATE before the next execution.');\n  return {...commit.result, historySaved: true};\n}\nfunction id(value) { return typeof value === 'string' && /^[A-Za-z0-9]{1,64}$/.test(value); }\nfunction object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }\nfunction prepare(response, config, now) {\n  let state;\n  if (response.statusCode === 404 && response.body?.error?.type === 'record-not-found') {\n    state = {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot: null, lastRunId: null};\n  } else {\n    state = responseBody(response);\n    assert(object(state) && state.schemaVersion === 1 && ['ready', 'pending'].includes(state.status) && same(state.boardSlugs, config.boardSlugs), 'State is invalid or belongs to another watchlist.');\n    assert(Object.hasOwn(state, 'snapshot'), 'State has no snapshot field.');\n    if (state.snapshot !== null) snapshotValid(state.snapshot, config.boardSlugs);\n    else assert(state.lastRunId === null, 'Existing history is missing.');\n  }\n  if (state.status === 'pending') {\n    assert(id(state.pendingRunId), 'A previous start has an uncertain result. Inspect Apify Runs before any new start. Keep STATE unchanged; see recovery instructions.');\n    return {needsStart: false, runId: state.pendingRunId, state};\n  }\n  const input = {boardSlugs: config.boardSlugs};\n  if (state.snapshot !== null) input.previousSnapshot = state.snapshot;\n  assert(Buffer.byteLength(JSON.stringify(input), 'utf8') <= 5 * 1024 * 1024, 'Input exceeds the Actor limit.');\n  return {needsStart: true, runId: null, state, input,\n    intent: {...state, status: 'pending', pendingRunId: null, startedAt: now}};\n}\nfunction responseBody(response) {\n  assert(response && Number.isInteger(response.statusCode) && response.statusCode >= 200 && response.statusCode < 300, 'Unexpected HTTP status; keep the previous history.');\n  return response.body;\n}\nfunction same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }\nfunction snapshotValid(snapshot, boards) {\n  assert(object(snapshot) && snapshot.type === 'greenhouse-watchlist-snapshot' && snapshot.schemaVersion === 1 && same(snapshot.boardSlugs, boards) && object(snapshot.boards), 'Invalid or incompatible snapshot; do not reset automatically.');\n  assert(same(Object.keys(snapshot.boards).sort(), boards), 'Snapshot board set mismatch.');\n  assert(typeof snapshot.observedAt === 'string' && Number.isFinite(Date.parse(snapshot.observedAt)), 'Invalid snapshot observation time.');\n  assert(boards.every(b => object(snapshot.boards[b]) && object(snapshot.boards[b].jobs) && Number.isInteger(snapshot.boards[b].successfulObservations) && snapshot.boards[b].successfulObservations >= 1), 'Incomplete snapshot.');\n  return snapshot;\n}\nfunction storeInfo(response, config) {\n  const store = responseBody(response)?.data;\n  assert(store && id(store.id) && store.name === config.stateStoreName, 'Unexpected state store.');\n  // Do not carry signing keys or platform-generated public URLs downstream.\n  return {storeId: store.id};\n}\nfunction validateBilling(response) {\n  const receipt = responseBody(response);\n  assert(object(receipt) && receipt.event === 'watchlist-completed' && ['charged', 'already_recorded'].includes(receipt.status) && receipt.chargedCount === 1 && receipt.retryAllowed === false, 'Billing receipt is uncertain or unexpected. Stop and inspect; never retry a charge.');\n  return {acknowledged: true};\n}\nfunction validateRun(response, runId) {\n  const run = responseBody(response)?.data;\n  assert(run && run.id === runId && run.actId === 'hKiF2epI17OkpTRdh', 'Unexpected Actor run.');\n  assert(run.status === 'SUCCEEDED', 'Run is not SUCCEEDED. History stays unchanged. If still running, a new full workflow execution resumes this run without starting another. Failed runs require inspection.');\n  assert(id(run.defaultKeyValueStoreId) && id(run.defaultDatasetId), 'Missing run storage.');\n  return {runId: run.id, storeId: run.defaultKeyValueStoreId, datasetId: run.defaultDatasetId};\n}\nfunction validateSnapshot(response, config, summary, prepared) {\n  const snapshot = snapshotValid(responseBody(response), config.boardSlugs);\n  assert(snapshot.observedAt === summary.observedAt, 'Snapshot and summary refer to different observations.');\n  if (prepared.state.snapshot !== null) {\n    assert(Date.parse(snapshot.observedAt) > Date.parse(prepared.state.snapshot.observedAt), 'Snapshot did not advance.');\n    for (const board of config.boardSlugs) assert(snapshot.boards[board].successfulObservations === prepared.state.snapshot.boards[board].successfulObservations + 1, 'Observation sequence broke.');\n  } else assert(config.boardSlugs.every(b => snapshot.boards[b].successfulObservations === 1), 'Baseline sequence is invalid.');\n  assert(Buffer.byteLength(JSON.stringify({boardSlugs: config.boardSlugs, previousSnapshot: snapshot}), 'utf8') <= 5 * 1024 * 1024, 'Next input would exceed the limit.');\n  return snapshot;\n}\nfunction validateSummary(response, config, prepared) {\n  const summary = responseBody(response);\n  assert(object(summary) && summary.product === 'greenhouse-watchlist-export' && summary.complete === true && summary.chargingEnabled === true, 'Incomplete or unexpected delivery.');\n  assert(summary.boardCount === config.boardSlugs.length && Array.isArray(summary.boards) && summary.boards.length === config.boardSlugs.length, 'Incomplete coverage.');\n  assert(same(summary.boards.map(b => b.board).sort(), config.boardSlugs) && summary.boards.every(b => b.status === 'ok' && b.complete === true), 'A requested board failed.');\n  assert(Number.isInteger(summary.changeCount) && summary.changeCount >= 0 && Number.isInteger(summary.currentJobCount) && summary.currentJobCount >= 0, 'Invalid output counts.');\n  assert(summary.baseline === (prepared.state.snapshot === null), 'Unexpected baseline reset.');\n  return summary;\n}\nfunction verifyIntent(response, prepared) {\n  assert(same(responseBody(response), prepared.intent), 'Start intent was not persisted. No run should start.');\n  return {verified: true};\n}\nreturn [{json: verifyIntent($input.first().json, $('Prepare').first().json)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "gw-11",
+      "name": "Start Actor once",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the same Header Auth credential in every HTTP node. Header: Authorization. Value: Bearer <your Apify token>. Never put a token in node fields or URLs.",
+      "position": [
+        2420,
+        -240
+      ],
+      "parameters": {
+        "url": "https://api.apify.com/v2/actors/hKiF2epI17OkpTRdh/runs",
+        "method": "POST",
+        "options": {
+          "timeout": 75000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": false,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ $('Prepare').first().json.input }}",
+        "sendBody": true,
+        "sendQuery": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "waitForFinish",
+              "value": "60"
+            },
+            {
+              "name": "timeout",
+              "value": "360"
+            },
+            {
+              "name": "memory",
+              "value": "512"
+            },
+            {
+              "name": "maxTotalChargeUsd",
+              "value": "0.05"
+            },
+            {
+              "name": "build",
+              "value": "latest"
+            }
+          ]
+        }
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "gw-12",
+      "name": "Capture run",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2640,
+        -240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function assert(ok, message) { if (!ok) throw new Error(message); }\nfunction captureRun(response, prepared) {\n  const run = responseBody(response)?.data;\n  assert(run && id(run.id) && run.actId === 'hKiF2epI17OkpTRdh', 'Run start could not be identified. Do not retry POST. Inspect Apify Runs.');\n  return {runId: run.id, pendingState: {...prepared.intent, pendingRunId: run.id}};\n}\nfunction commitData(response, snapshot, summary, run, config) {\n  const changes = responseBody(response);\n  assert(Array.isArray(changes) && changes.length === summary.changeCount, 'Change file is incomplete.');\n  assert(changes.every(row => object(row) && config.boardSlugs.includes(row.board) && ['new','changed','noLongerListed','reappeared'].includes(row.eventType) && typeof row.baseline === 'boolean'), 'Unexpected change record.');\n  return {state: {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot, lastRunId: run.runId},\n    result: {runId: run.runId, consoleUrl: `https://console.apify.com/actors/hKiF2epI17OkpTRdh/runs/${run.runId}#output`, baseline: summary.baseline, currentJobCount: summary.currentJobCount, changeCount: changes.length, changes}};\n}\nfunction configure(config) {\n  assert(config.singleWriterConfirmed === true, 'Read SETUP.md. Use one execution at a time and one workflow per store; then set singleWriterConfirmed=true.');\n  const boards = config.boardSlugs;\n  assert(Array.isArray(boards) && boards.length >= 1 && boards.length <= 20 && boards.every(b => typeof b === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(b)), 'Provide 1-20 valid board slugs.');\n  assert(new Set(boards.map(b => b.toLowerCase())).size === boards.length, 'Duplicate boards.');\n  assert(typeof config.stateStoreName === 'string' && /^gh-watchlist-[a-z0-9-]{1,45}$/.test(config.stateStoreName), 'Use a dedicated gh-watchlist-... store name.');\n  return {...config, boardSlugs: [...boards].sort()};\n}\nfunction confirmedResult(response, commit) {\n  assert(same(responseBody(response), commit.state), 'Saved history was not confirmed. Inspect STATE before the next execution.');\n  return {...commit.result, historySaved: true};\n}\nfunction id(value) { return typeof value === 'string' && /^[A-Za-z0-9]{1,64}$/.test(value); }\nfunction object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }\nfunction prepare(response, config, now) {\n  let state;\n  if (response.statusCode === 404 && response.body?.error?.type === 'record-not-found') {\n    state = {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot: null, lastRunId: null};\n  } else {\n    state = responseBody(response);\n    assert(object(state) && state.schemaVersion === 1 && ['ready', 'pending'].includes(state.status) && same(state.boardSlugs, config.boardSlugs), 'State is invalid or belongs to another watchlist.');\n    assert(Object.hasOwn(state, 'snapshot'), 'State has no snapshot field.');\n    if (state.snapshot !== null) snapshotValid(state.snapshot, config.boardSlugs);\n    else assert(state.lastRunId === null, 'Existing history is missing.');\n  }\n  if (state.status === 'pending') {\n    assert(id(state.pendingRunId), 'A previous start has an uncertain result. Inspect Apify Runs before any new start. Keep STATE unchanged; see recovery instructions.');\n    return {needsStart: false, runId: state.pendingRunId, state};\n  }\n  const input = {boardSlugs: config.boardSlugs};\n  if (state.snapshot !== null) input.previousSnapshot = state.snapshot;\n  assert(Buffer.byteLength(JSON.stringify(input), 'utf8') <= 5 * 1024 * 1024, 'Input exceeds the Actor limit.');\n  return {needsStart: true, runId: null, state, input,\n    intent: {...state, status: 'pending', pendingRunId: null, startedAt: now}};\n}\nfunction responseBody(response) {\n  assert(response && Number.isInteger(response.statusCode) && response.statusCode >= 200 && response.statusCode < 300, 'Unexpected HTTP status; keep the previous history.');\n  return response.body;\n}\nfunction same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }\nfunction snapshotValid(snapshot, boards) {\n  assert(object(snapshot) && snapshot.type === 'greenhouse-watchlist-snapshot' && snapshot.schemaVersion === 1 && same(snapshot.boardSlugs, boards) && object(snapshot.boards), 'Invalid or incompatible snapshot; do not reset automatically.');\n  assert(same(Object.keys(snapshot.boards).sort(), boards), 'Snapshot board set mismatch.');\n  assert(typeof snapshot.observedAt === 'string' && Number.isFinite(Date.parse(snapshot.observedAt)), 'Invalid snapshot observation time.');\n  assert(boards.every(b => object(snapshot.boards[b]) && object(snapshot.boards[b].jobs) && Number.isInteger(snapshot.boards[b].successfulObservations) && snapshot.boards[b].successfulObservations >= 1), 'Incomplete snapshot.');\n  return snapshot;\n}\nfunction storeInfo(response, config) {\n  const store = responseBody(response)?.data;\n  assert(store && id(store.id) && store.name === config.stateStoreName, 'Unexpected state store.');\n  // Do not carry signing keys or platform-generated public URLs downstream.\n  return {storeId: store.id};\n}\nfunction validateBilling(response) {\n  const receipt = responseBody(response);\n  assert(object(receipt) && receipt.event === 'watchlist-completed' && ['charged', 'already_recorded'].includes(receipt.status) && receipt.chargedCount === 1 && receipt.retryAllowed === false, 'Billing receipt is uncertain or unexpected. Stop and inspect; never retry a charge.');\n  return {acknowledged: true};\n}\nfunction validateRun(response, runId) {\n  const run = responseBody(response)?.data;\n  assert(run && run.id === runId && run.actId === 'hKiF2epI17OkpTRdh', 'Unexpected Actor run.');\n  assert(run.status === 'SUCCEEDED', 'Run is not SUCCEEDED. History stays unchanged. If still running, a new full workflow execution resumes this run without starting another. Failed runs require inspection.');\n  assert(id(run.defaultKeyValueStoreId) && id(run.defaultDatasetId), 'Missing run storage.');\n  return {runId: run.id, storeId: run.defaultKeyValueStoreId, datasetId: run.defaultDatasetId};\n}\nfunction validateSnapshot(response, config, summary, prepared) {\n  const snapshot = snapshotValid(responseBody(response), config.boardSlugs);\n  assert(snapshot.observedAt === summary.observedAt, 'Snapshot and summary refer to different observations.');\n  if (prepared.state.snapshot !== null) {\n    assert(Date.parse(snapshot.observedAt) > Date.parse(prepared.state.snapshot.observedAt), 'Snapshot did not advance.');\n    for (const board of config.boardSlugs) assert(snapshot.boards[board].successfulObservations === prepared.state.snapshot.boards[board].successfulObservations + 1, 'Observation sequence broke.');\n  } else assert(config.boardSlugs.every(b => snapshot.boards[b].successfulObservations === 1), 'Baseline sequence is invalid.');\n  assert(Buffer.byteLength(JSON.stringify({boardSlugs: config.boardSlugs, previousSnapshot: snapshot}), 'utf8') <= 5 * 1024 * 1024, 'Next input would exceed the limit.');\n  return snapshot;\n}\nfunction validateSummary(response, config, prepared) {\n  const summary = responseBody(response);\n  assert(object(summary) && summary.product === 'greenhouse-watchlist-export' && summary.complete === true && summary.chargingEnabled === true, 'Incomplete or unexpected delivery.');\n  assert(summary.boardCount === config.boardSlugs.length && Array.isArray(summary.boards) && summary.boards.length === config.boardSlugs.length, 'Incomplete coverage.');\n  assert(same(summary.boards.map(b => b.board).sort(), config.boardSlugs) && summary.boards.every(b => b.status === 'ok' && b.complete === true), 'A requested board failed.');\n  assert(Number.isInteger(summary.changeCount) && summary.changeCount >= 0 && Number.isInteger(summary.currentJobCount) && summary.currentJobCount >= 0, 'Invalid output counts.');\n  assert(summary.baseline === (prepared.state.snapshot === null), 'Unexpected baseline reset.');\n  return summary;\n}\nfunction verifyIntent(response, prepared) {\n  assert(same(responseBody(response), prepared.intent), 'Start intent was not persisted. No run should start.');\n  return {verified: true};\n}\nreturn [{json: captureRun($input.first().json, $('Prepare').first().json)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "gw-13",
+      "name": "Save pending run",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the same Header Auth credential in every HTTP node. Header: Authorization. Value: Bearer <your Apify token>. Never put a token in node fields or URLs.",
+      "position": [
+        2860,
+        -240
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/key-value-stores/' + $('State store').first().json.storeId + '/records/STATE' }}",
+        "method": "PUT",
+        "options": {
+          "timeout": 75000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": false,
+              "fullResponse": true,
+              "responseFormat": "autodetect"
+            }
+          }
+        },
+        "jsonBody": "={{ $('Capture run').first().json.pendingState }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "gw-14",
+      "name": "Started run",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3080,
+        -240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function assert(ok, message) { if (!ok) throw new Error(message); }\nfunction captureRun(response, prepared) {\n  const run = responseBody(response)?.data;\n  assert(run && id(run.id) && run.actId === 'hKiF2epI17OkpTRdh', 'Run start could not be identified. Do not retry POST. Inspect Apify Runs.');\n  return {runId: run.id, pendingState: {...prepared.intent, pendingRunId: run.id}};\n}\nfunction commitData(response, snapshot, summary, run, config) {\n  const changes = responseBody(response);\n  assert(Array.isArray(changes) && changes.length === summary.changeCount, 'Change file is incomplete.');\n  assert(changes.every(row => object(row) && config.boardSlugs.includes(row.board) && ['new','changed','noLongerListed','reappeared'].includes(row.eventType) && typeof row.baseline === 'boolean'), 'Unexpected change record.');\n  return {state: {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot, lastRunId: run.runId},\n    result: {runId: run.runId, consoleUrl: `https://console.apify.com/actors/hKiF2epI17OkpTRdh/runs/${run.runId}#output`, baseline: summary.baseline, currentJobCount: summary.currentJobCount, changeCount: changes.length, changes}};\n}\nfunction configure(config) {\n  assert(config.singleWriterConfirmed === true, 'Read SETUP.md. Use one execution at a time and one workflow per store; then set singleWriterConfirmed=true.');\n  const boards = config.boardSlugs;\n  assert(Array.isArray(boards) && boards.length >= 1 && boards.length <= 20 && boards.every(b => typeof b === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(b)), 'Provide 1-20 valid board slugs.');\n  assert(new Set(boards.map(b => b.toLowerCase())).size === boards.length, 'Duplicate boards.');\n  assert(typeof config.stateStoreName === 'string' && /^gh-watchlist-[a-z0-9-]{1,45}$/.test(config.stateStoreName), 'Use a dedicated gh-watchlist-... store name.');\n  return {...config, boardSlugs: [...boards].sort()};\n}\nfunction confirmedResult(response, commit) {\n  assert(same(responseBody(response), commit.state), 'Saved history was not confirmed. Inspect STATE before the next execution.');\n  return {...commit.result, historySaved: true};\n}\nfunction id(value) { return typeof value === 'string' && /^[A-Za-z0-9]{1,64}$/.test(value); }\nfunction object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }\nfunction prepare(response, config, now) {\n  let state;\n  if (response.statusCode === 404 && response.body?.error?.type === 'record-not-found') {\n    state = {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot: null, lastRunId: null};\n  } else {\n    state = responseBody(response);\n    assert(object(state) && state.schemaVersion === 1 && ['ready', 'pending'].includes(state.status) && same(state.boardSlugs, config.boardSlugs), 'State is invalid or belongs to another watchlist.');\n    assert(Object.hasOwn(state, 'snapshot'), 'State has no snapshot field.');\n    if (state.snapshot !== null) snapshotValid(state.snapshot, config.boardSlugs);\n    else assert(state.lastRunId === null, 'Existing history is missing.');\n  }\n  if (state.status === 'pending') {\n    assert(id(state.pendingRunId), 'A previous start has an uncertain result. Inspect Apify Runs before any new start. Keep STATE unchanged; see recovery instructions.');\n    return {needsStart: false, runId: state.pendingRunId, state};\n  }\n  const input = {boardSlugs: config.boardSlugs};\n  if (state.snapshot !== null) input.previousSnapshot = state.snapshot;\n  assert(Buffer.byteLength(JSON.stringify(input), 'utf8') <= 5 * 1024 * 1024, 'Input exceeds the Actor limit.');\n  return {needsStart: true, runId: null, state, input,\n    intent: {...state, status: 'pending', pendingRunId: null, startedAt: now}};\n}\nfunction responseBody(response) {\n  assert(response && Number.isInteger(response.statusCode) && response.statusCode >= 200 && response.statusCode < 300, 'Unexpected HTTP status; keep the previous history.');\n  return response.body;\n}\nfunction same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }\nfunction snapshotValid(snapshot, boards) {\n  assert(object(snapshot) && snapshot.type === 'greenhouse-watchlist-snapshot' && snapshot.schemaVersion === 1 && same(snapshot.boardSlugs, boards) && object(snapshot.boards), 'Invalid or incompatible snapshot; do not reset automatically.');\n  assert(same(Object.keys(snapshot.boards).sort(), boards), 'Snapshot board set mismatch.');\n  assert(typeof snapshot.observedAt === 'string' && Number.isFinite(Date.parse(snapshot.observedAt)), 'Invalid snapshot observation time.');\n  assert(boards.every(b => object(snapshot.boards[b]) && object(snapshot.boards[b].jobs) && Number.isInteger(snapshot.boards[b].successfulObservations) && snapshot.boards[b].successfulObservations >= 1), 'Incomplete snapshot.');\n  return snapshot;\n}\nfunction storeInfo(response, config) {\n  const store = responseBody(response)?.data;\n  assert(store && id(store.id) && store.name === config.stateStoreName, 'Unexpected state store.');\n  // Do not carry signing keys or platform-generated public URLs downstream.\n  return {storeId: store.id};\n}\nfunction validateBilling(response) {\n  const receipt = responseBody(response);\n  assert(object(receipt) && receipt.event === 'watchlist-completed' && ['charged', 'already_recorded'].includes(receipt.status) && receipt.chargedCount === 1 && receipt.retryAllowed === false, 'Billing receipt is uncertain or unexpected. Stop and inspect; never retry a charge.');\n  return {acknowledged: true};\n}\nfunction validateRun(response, runId) {\n  const run = responseBody(response)?.data;\n  assert(run && run.id === runId && run.actId === 'hKiF2epI17OkpTRdh', 'Unexpected Actor run.');\n  assert(run.status === 'SUCCEEDED', 'Run is not SUCCEEDED. History stays unchanged. If still running, a new full workflow execution resumes this run without starting another. Failed runs require inspection.');\n  assert(id(run.defaultKeyValueStoreId) && id(run.defaultDatasetId), 'Missing run storage.');\n  return {runId: run.id, storeId: run.defaultKeyValueStoreId, datasetId: run.defaultDatasetId};\n}\nfunction validateSnapshot(response, config, summary, prepared) {\n  const snapshot = snapshotValid(responseBody(response), config.boardSlugs);\n  assert(snapshot.observedAt === summary.observedAt, 'Snapshot and summary refer to different observations.');\n  if (prepared.state.snapshot !== null) {\n    assert(Date.parse(snapshot.observedAt) > Date.parse(prepared.state.snapshot.observedAt), 'Snapshot did not advance.');\n    for (const board of config.boardSlugs) assert(snapshot.boards[board].successfulObservations === prepared.state.snapshot.boards[board].successfulObservations + 1, 'Observation sequence broke.');\n  } else assert(config.boardSlugs.every(b => snapshot.boards[b].successfulObservations === 1), 'Baseline sequence is invalid.');\n  assert(Buffer.byteLength(JSON.stringify({boardSlugs: config.boardSlugs, previousSnapshot: snapshot}), 'utf8') <= 5 * 1024 * 1024, 'Next input would exceed the limit.');\n  return snapshot;\n}\nfunction validateSummary(response, config, prepared) {\n  const summary = responseBody(response);\n  assert(object(summary) && summary.product === 'greenhouse-watchlist-export' && summary.complete === true && summary.chargingEnabled === true, 'Incomplete or unexpected delivery.');\n  assert(summary.boardCount === config.boardSlugs.length && Array.isArray(summary.boards) && summary.boards.length === config.boardSlugs.length, 'Incomplete coverage.');\n  assert(same(summary.boards.map(b => b.board).sort(), config.boardSlugs) && summary.boards.every(b => b.status === 'ok' && b.complete === true), 'A requested board failed.');\n  assert(Number.isInteger(summary.changeCount) && summary.changeCount >= 0 && Number.isInteger(summary.currentJobCount) && summary.currentJobCount >= 0, 'Invalid output counts.');\n  assert(summary.baseline === (prepared.state.snapshot === null), 'Unexpected baseline reset.');\n  return summary;\n}\nfunction verifyIntent(response, prepared) {\n  assert(same(responseBody(response), prepared.intent), 'Start intent was not persisted. No run should start.');\n  return {verified: true};\n}\nreturn [{json: (responseBody($input.first().json), {runId:$('Capture run').first().json.runId})}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "gw-15",
+      "name": "Existing run",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3080,
+        160
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function assert(ok, message) { if (!ok) throw new Error(message); }\nfunction captureRun(response, prepared) {\n  const run = responseBody(response)?.data;\n  assert(run && id(run.id) && run.actId === 'hKiF2epI17OkpTRdh', 'Run start could not be identified. Do not retry POST. Inspect Apify Runs.');\n  return {runId: run.id, pendingState: {...prepared.intent, pendingRunId: run.id}};\n}\nfunction commitData(response, snapshot, summary, run, config) {\n  const changes = responseBody(response);\n  assert(Array.isArray(changes) && changes.length === summary.changeCount, 'Change file is incomplete.');\n  assert(changes.every(row => object(row) && config.boardSlugs.includes(row.board) && ['new','changed','noLongerListed','reappeared'].includes(row.eventType) && typeof row.baseline === 'boolean'), 'Unexpected change record.');\n  return {state: {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot, lastRunId: run.runId},\n    result: {runId: run.runId, consoleUrl: `https://console.apify.com/actors/hKiF2epI17OkpTRdh/runs/${run.runId}#output`, baseline: summary.baseline, currentJobCount: summary.currentJobCount, changeCount: changes.length, changes}};\n}\nfunction configure(config) {\n  assert(config.singleWriterConfirmed === true, 'Read SETUP.md. Use one execution at a time and one workflow per store; then set singleWriterConfirmed=true.');\n  const boards = config.boardSlugs;\n  assert(Array.isArray(boards) && boards.length >= 1 && boards.length <= 20 && boards.every(b => typeof b === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(b)), 'Provide 1-20 valid board slugs.');\n  assert(new Set(boards.map(b => b.toLowerCase())).size === boards.length, 'Duplicate boards.');\n  assert(typeof config.stateStoreName === 'string' && /^gh-watchlist-[a-z0-9-]{1,45}$/.test(config.stateStoreName), 'Use a dedicated gh-watchlist-... store name.');\n  return {...config, boardSlugs: [...boards].sort()};\n}\nfunction confirmedResult(response, commit) {\n  assert(same(responseBody(response), commit.state), 'Saved history was not confirmed. Inspect STATE before the next execution.');\n  return {...commit.result, historySaved: true};\n}\nfunction id(value) { return typeof value === 'string' && /^[A-Za-z0-9]{1,64}$/.test(value); }\nfunction object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }\nfunction prepare(response, config, now) {\n  let state;\n  if (response.statusCode === 404 && response.body?.error?.type === 'record-not-found') {\n    state = {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot: null, lastRunId: null};\n  } else {\n    state = responseBody(response);\n    assert(object(state) && state.schemaVersion === 1 && ['ready', 'pending'].includes(state.status) && same(state.boardSlugs, config.boardSlugs), 'State is invalid or belongs to another watchlist.');\n    assert(Object.hasOwn(state, 'snapshot'), 'State has no snapshot field.');\n    if (state.snapshot !== null) snapshotValid(state.snapshot, config.boardSlugs);\n    else assert(state.lastRunId === null, 'Existing history is missing.');\n  }\n  if (state.status === 'pending') {\n    assert(id(state.pendingRunId), 'A previous start has an uncertain result. Inspect Apify Runs before any new start. Keep STATE unchanged; see recovery instructions.');\n    return {needsStart: false, runId: state.pendingRunId, state};\n  }\n  const input = {boardSlugs: config.boardSlugs};\n  if (state.snapshot !== null) input.previousSnapshot = state.snapshot;\n  assert(Buffer.byteLength(JSON.stringify(input), 'utf8') <= 5 * 1024 * 1024, 'Input exceeds the Actor limit.');\n  return {needsStart: true, runId: null, state, input,\n    intent: {...state, status: 'pending', pendingRunId: null, startedAt: now}};\n}\nfunction responseBody(response) {\n  assert(response && Number.isInteger(response.statusCode) && response.statusCode >= 200 && response.statusCode < 300, 'Unexpected HTTP status; keep the previous history.');\n  return response.body;\n}\nfunction same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }\nfunction snapshotValid(snapshot, boards) {\n  assert(object(snapshot) && snapshot.type === 'greenhouse-watchlist-snapshot' && snapshot.schemaVersion === 1 && same(snapshot.boardSlugs, boards) && object(snapshot.boards), 'Invalid or incompatible snapshot; do not reset automatically.');\n  assert(same(Object.keys(snapshot.boards).sort(), boards), 'Snapshot board set mismatch.');\n  assert(typeof snapshot.observedAt === 'string' && Number.isFinite(Date.parse(snapshot.observedAt)), 'Invalid snapshot observation time.');\n  assert(boards.every(b => object(snapshot.boards[b]) && object(snapshot.boards[b].jobs) && Number.isInteger(snapshot.boards[b].successfulObservations) && snapshot.boards[b].successfulObservations >= 1), 'Incomplete snapshot.');\n  return snapshot;\n}\nfunction storeInfo(response, config) {\n  const store = responseBody(response)?.data;\n  assert(store && id(store.id) && store.name === config.stateStoreName, 'Unexpected state store.');\n  // Do not carry signing keys or platform-generated public URLs downstream.\n  return {storeId: store.id};\n}\nfunction validateBilling(response) {\n  const receipt = responseBody(response);\n  assert(object(receipt) && receipt.event === 'watchlist-completed' && ['charged', 'already_recorded'].includes(receipt.status) && receipt.chargedCount === 1 && receipt.retryAllowed === false, 'Billing receipt is uncertain or unexpected. Stop and inspect; never retry a charge.');\n  return {acknowledged: true};\n}\nfunction validateRun(response, runId) {\n  const run = responseBody(response)?.data;\n  assert(run && run.id === runId && run.actId === 'hKiF2epI17OkpTRdh', 'Unexpected Actor run.');\n  assert(run.status === 'SUCCEEDED', 'Run is not SUCCEEDED. History stays unchanged. If still running, a new full workflow execution resumes this run without starting another. Failed runs require inspection.');\n  assert(id(run.defaultKeyValueStoreId) && id(run.defaultDatasetId), 'Missing run storage.');\n  return {runId: run.id, storeId: run.defaultKeyValueStoreId, datasetId: run.defaultDatasetId};\n}\nfunction validateSnapshot(response, config, summary, prepared) {\n  const snapshot = snapshotValid(responseBody(response), config.boardSlugs);\n  assert(snapshot.observedAt === summary.observedAt, 'Snapshot and summary refer to different observations.');\n  if (prepared.state.snapshot !== null) {\n    assert(Date.parse(snapshot.observedAt) > Date.parse(prepared.state.snapshot.observedAt), 'Snapshot did not advance.');\n    for (const board of config.boardSlugs) assert(snapshot.boards[board].successfulObservations === prepared.state.snapshot.boards[board].successfulObservations + 1, 'Observation sequence broke.');\n  } else assert(config.boardSlugs.every(b => snapshot.boards[b].successfulObservations === 1), 'Baseline sequence is invalid.');\n  assert(Buffer.byteLength(JSON.stringify({boardSlugs: config.boardSlugs, previousSnapshot: snapshot}), 'utf8') <= 5 * 1024 * 1024, 'Next input would exceed the limit.');\n  return snapshot;\n}\nfunction validateSummary(response, config, prepared) {\n  const summary = responseBody(response);\n  assert(object(summary) && summary.product === 'greenhouse-watchlist-export' && summary.complete === true && summary.chargingEnabled === true, 'Incomplete or unexpected delivery.');\n  assert(summary.boardCount === config.boardSlugs.length && Array.isArray(summary.boards) && summary.boards.length === config.boardSlugs.length, 'Incomplete coverage.');\n  assert(same(summary.boards.map(b => b.board).sort(), config.boardSlugs) && summary.boards.every(b => b.status === 'ok' && b.complete === true), 'A requested board failed.');\n  assert(Number.isInteger(summary.changeCount) && summary.changeCount >= 0 && Number.isInteger(summary.currentJobCount) && summary.currentJobCount >= 0, 'Invalid output counts.');\n  assert(summary.baseline === (prepared.state.snapshot === null), 'Unexpected baseline reset.');\n  return summary;\n}\nfunction verifyIntent(response, prepared) {\n  assert(same(responseBody(response), prepared.intent), 'Start intent was not persisted. No run should start.');\n  return {verified: true};\n}\nreturn [{json: ({runId:$('Prepare').first().json.runId})}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "gw-16",
+      "name": "Get run",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the same Header Auth credential in every HTTP node. Header: Authorization. Value: Bearer <your Apify token>. Never put a token in node fields or URLs.",
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/actor-runs/' + $json.runId }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": false,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendQuery": true,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "waitForFinish",
+              "value": "60"
+            }
+          ]
+        }
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "gw-17",
+      "name": "Successful run",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3520,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function assert(ok, message) { if (!ok) throw new Error(message); }\nfunction captureRun(response, prepared) {\n  const run = responseBody(response)?.data;\n  assert(run && id(run.id) && run.actId === 'hKiF2epI17OkpTRdh', 'Run start could not be identified. Do not retry POST. Inspect Apify Runs.');\n  return {runId: run.id, pendingState: {...prepared.intent, pendingRunId: run.id}};\n}\nfunction commitData(response, snapshot, summary, run, config) {\n  const changes = responseBody(response);\n  assert(Array.isArray(changes) && changes.length === summary.changeCount, 'Change file is incomplete.');\n  assert(changes.every(row => object(row) && config.boardSlugs.includes(row.board) && ['new','changed','noLongerListed','reappeared'].includes(row.eventType) && typeof row.baseline === 'boolean'), 'Unexpected change record.');\n  return {state: {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot, lastRunId: run.runId},\n    result: {runId: run.runId, consoleUrl: `https://console.apify.com/actors/hKiF2epI17OkpTRdh/runs/${run.runId}#output`, baseline: summary.baseline, currentJobCount: summary.currentJobCount, changeCount: changes.length, changes}};\n}\nfunction configure(config) {\n  assert(config.singleWriterConfirmed === true, 'Read SETUP.md. Use one execution at a time and one workflow per store; then set singleWriterConfirmed=true.');\n  const boards = config.boardSlugs;\n  assert(Array.isArray(boards) && boards.length >= 1 && boards.length <= 20 && boards.every(b => typeof b === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(b)), 'Provide 1-20 valid board slugs.');\n  assert(new Set(boards.map(b => b.toLowerCase())).size === boards.length, 'Duplicate boards.');\n  assert(typeof config.stateStoreName === 'string' && /^gh-watchlist-[a-z0-9-]{1,45}$/.test(config.stateStoreName), 'Use a dedicated gh-watchlist-... store name.');\n  return {...config, boardSlugs: [...boards].sort()};\n}\nfunction confirmedResult(response, commit) {\n  assert(same(responseBody(response), commit.state), 'Saved history was not confirmed. Inspect STATE before the next execution.');\n  return {...commit.result, historySaved: true};\n}\nfunction id(value) { return typeof value === 'string' && /^[A-Za-z0-9]{1,64}$/.test(value); }\nfunction object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }\nfunction prepare(response, config, now) {\n  let state;\n  if (response.statusCode === 404 && response.body?.error?.type === 'record-not-found') {\n    state = {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot: null, lastRunId: null};\n  } else {\n    state = responseBody(response);\n    assert(object(state) && state.schemaVersion === 1 && ['ready', 'pending'].includes(state.status) && same(state.boardSlugs, config.boardSlugs), 'State is invalid or belongs to another watchlist.');\n    assert(Object.hasOwn(state, 'snapshot'), 'State has no snapshot field.');\n    if (state.snapshot !== null) snapshotValid(state.snapshot, config.boardSlugs);\n    else assert(state.lastRunId === null, 'Existing history is missing.');\n  }\n  if (state.status === 'pending') {\n    assert(id(state.pendingRunId), 'A previous start has an uncertain result. Inspect Apify Runs before any new start. Keep STATE unchanged; see recovery instructions.');\n    return {needsStart: false, runId: state.pendingRunId, state};\n  }\n  const input = {boardSlugs: config.boardSlugs};\n  if (state.snapshot !== null) input.previousSnapshot = state.snapshot;\n  assert(Buffer.byteLength(JSON.stringify(input), 'utf8') <= 5 * 1024 * 1024, 'Input exceeds the Actor limit.');\n  return {needsStart: true, runId: null, state, input,\n    intent: {...state, status: 'pending', pendingRunId: null, startedAt: now}};\n}\nfunction responseBody(response) {\n  assert(response && Number.isInteger(response.statusCode) && response.statusCode >= 200 && response.statusCode < 300, 'Unexpected HTTP status; keep the previous history.');\n  return response.body;\n}\nfunction same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }\nfunction snapshotValid(snapshot, boards) {\n  assert(object(snapshot) && snapshot.type === 'greenhouse-watchlist-snapshot' && snapshot.schemaVersion === 1 && same(snapshot.boardSlugs, boards) && object(snapshot.boards), 'Invalid or incompatible snapshot; do not reset automatically.');\n  assert(same(Object.keys(snapshot.boards).sort(), boards), 'Snapshot board set mismatch.');\n  assert(typeof snapshot.observedAt === 'string' && Number.isFinite(Date.parse(snapshot.observedAt)), 'Invalid snapshot observation time.');\n  assert(boards.every(b => object(snapshot.boards[b]) && object(snapshot.boards[b].jobs) && Number.isInteger(snapshot.boards[b].successfulObservations) && snapshot.boards[b].successfulObservations >= 1), 'Incomplete snapshot.');\n  return snapshot;\n}\nfunction storeInfo(response, config) {\n  const store = responseBody(response)?.data;\n  assert(store && id(store.id) && store.name === config.stateStoreName, 'Unexpected state store.');\n  // Do not carry signing keys or platform-generated public URLs downstream.\n  return {storeId: store.id};\n}\nfunction validateBilling(response) {\n  const receipt = responseBody(response);\n  assert(object(receipt) && receipt.event === 'watchlist-completed' && ['charged', 'already_recorded'].includes(receipt.status) && receipt.chargedCount === 1 && receipt.retryAllowed === false, 'Billing receipt is uncertain or unexpected. Stop and inspect; never retry a charge.');\n  return {acknowledged: true};\n}\nfunction validateRun(response, runId) {\n  const run = responseBody(response)?.data;\n  assert(run && run.id === runId && run.actId === 'hKiF2epI17OkpTRdh', 'Unexpected Actor run.');\n  assert(run.status === 'SUCCEEDED', 'Run is not SUCCEEDED. History stays unchanged. If still running, a new full workflow execution resumes this run without starting another. Failed runs require inspection.');\n  assert(id(run.defaultKeyValueStoreId) && id(run.defaultDatasetId), 'Missing run storage.');\n  return {runId: run.id, storeId: run.defaultKeyValueStoreId, datasetId: run.defaultDatasetId};\n}\nfunction validateSnapshot(response, config, summary, prepared) {\n  const snapshot = snapshotValid(responseBody(response), config.boardSlugs);\n  assert(snapshot.observedAt === summary.observedAt, 'Snapshot and summary refer to different observations.');\n  if (prepared.state.snapshot !== null) {\n    assert(Date.parse(snapshot.observedAt) > Date.parse(prepared.state.snapshot.observedAt), 'Snapshot did not advance.');\n    for (const board of config.boardSlugs) assert(snapshot.boards[board].successfulObservations === prepared.state.snapshot.boards[board].successfulObservations + 1, 'Observation sequence broke.');\n  } else assert(config.boardSlugs.every(b => snapshot.boards[b].successfulObservations === 1), 'Baseline sequence is invalid.');\n  assert(Buffer.byteLength(JSON.stringify({boardSlugs: config.boardSlugs, previousSnapshot: snapshot}), 'utf8') <= 5 * 1024 * 1024, 'Next input would exceed the limit.');\n  return snapshot;\n}\nfunction validateSummary(response, config, prepared) {\n  const summary = responseBody(response);\n  assert(object(summary) && summary.product === 'greenhouse-watchlist-export' && summary.complete === true && summary.chargingEnabled === true, 'Incomplete or unexpected delivery.');\n  assert(summary.boardCount === config.boardSlugs.length && Array.isArray(summary.boards) && summary.boards.length === config.boardSlugs.length, 'Incomplete coverage.');\n  assert(same(summary.boards.map(b => b.board).sort(), config.boardSlugs) && summary.boards.every(b => b.status === 'ok' && b.complete === true), 'A requested board failed.');\n  assert(Number.isInteger(summary.changeCount) && summary.changeCount >= 0 && Number.isInteger(summary.currentJobCount) && summary.currentJobCount >= 0, 'Invalid output counts.');\n  assert(summary.baseline === (prepared.state.snapshot === null), 'Unexpected baseline reset.');\n  return summary;\n}\nfunction verifyIntent(response, prepared) {\n  assert(same(responseBody(response), prepared.intent), 'Start intent was not persisted. No run should start.');\n  return {verified: true};\n}\nreturn [{json: validateRun($input.first().json, $('Prepare').first().json.runId || $('Capture run').first().json.runId)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "gw-18",
+      "name": "Read summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the same Header Auth credential in every HTTP node. Header: Authorization. Value: Bearer <your Apify token>. Never put a token in node fields or URLs.",
+      "position": [
+        3740,
+        0
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/key-value-stores/' + $('Successful run').first().json.storeId + '/records/SUMMARY' }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": false,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "gw-19",
+      "name": "Complete summary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3960,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function assert(ok, message) { if (!ok) throw new Error(message); }\nfunction captureRun(response, prepared) {\n  const run = responseBody(response)?.data;\n  assert(run && id(run.id) && run.actId === 'hKiF2epI17OkpTRdh', 'Run start could not be identified. Do not retry POST. Inspect Apify Runs.');\n  return {runId: run.id, pendingState: {...prepared.intent, pendingRunId: run.id}};\n}\nfunction commitData(response, snapshot, summary, run, config) {\n  const changes = responseBody(response);\n  assert(Array.isArray(changes) && changes.length === summary.changeCount, 'Change file is incomplete.');\n  assert(changes.every(row => object(row) && config.boardSlugs.includes(row.board) && ['new','changed','noLongerListed','reappeared'].includes(row.eventType) && typeof row.baseline === 'boolean'), 'Unexpected change record.');\n  return {state: {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot, lastRunId: run.runId},\n    result: {runId: run.runId, consoleUrl: `https://console.apify.com/actors/hKiF2epI17OkpTRdh/runs/${run.runId}#output`, baseline: summary.baseline, currentJobCount: summary.currentJobCount, changeCount: changes.length, changes}};\n}\nfunction configure(config) {\n  assert(config.singleWriterConfirmed === true, 'Read SETUP.md. Use one execution at a time and one workflow per store; then set singleWriterConfirmed=true.');\n  const boards = config.boardSlugs;\n  assert(Array.isArray(boards) && boards.length >= 1 && boards.length <= 20 && boards.every(b => typeof b === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(b)), 'Provide 1-20 valid board slugs.');\n  assert(new Set(boards.map(b => b.toLowerCase())).size === boards.length, 'Duplicate boards.');\n  assert(typeof config.stateStoreName === 'string' && /^gh-watchlist-[a-z0-9-]{1,45}$/.test(config.stateStoreName), 'Use a dedicated gh-watchlist-... store name.');\n  return {...config, boardSlugs: [...boards].sort()};\n}\nfunction confirmedResult(response, commit) {\n  assert(same(responseBody(response), commit.state), 'Saved history was not confirmed. Inspect STATE before the next execution.');\n  return {...commit.result, historySaved: true};\n}\nfunction id(value) { return typeof value === 'string' && /^[A-Za-z0-9]{1,64}$/.test(value); }\nfunction object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }\nfunction prepare(response, config, now) {\n  let state;\n  if (response.statusCode === 404 && response.body?.error?.type === 'record-not-found') {\n    state = {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot: null, lastRunId: null};\n  } else {\n    state = responseBody(response);\n    assert(object(state) && state.schemaVersion === 1 && ['ready', 'pending'].includes(state.status) && same(state.boardSlugs, config.boardSlugs), 'State is invalid or belongs to another watchlist.');\n    assert(Object.hasOwn(state, 'snapshot'), 'State has no snapshot field.');\n    if (state.snapshot !== null) snapshotValid(state.snapshot, config.boardSlugs);\n    else assert(state.lastRunId === null, 'Existing history is missing.');\n  }\n  if (state.status === 'pending') {\n    assert(id(state.pendingRunId), 'A previous start has an uncertain result. Inspect Apify Runs before any new start. Keep STATE unchanged; see recovery instructions.');\n    return {needsStart: false, runId: state.pendingRunId, state};\n  }\n  const input = {boardSlugs: config.boardSlugs};\n  if (state.snapshot !== null) input.previousSnapshot = state.snapshot;\n  assert(Buffer.byteLength(JSON.stringify(input), 'utf8') <= 5 * 1024 * 1024, 'Input exceeds the Actor limit.');\n  return {needsStart: true, runId: null, state, input,\n    intent: {...state, status: 'pending', pendingRunId: null, startedAt: now}};\n}\nfunction responseBody(response) {\n  assert(response && Number.isInteger(response.statusCode) && response.statusCode >= 200 && response.statusCode < 300, 'Unexpected HTTP status; keep the previous history.');\n  return response.body;\n}\nfunction same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }\nfunction snapshotValid(snapshot, boards) {\n  assert(object(snapshot) && snapshot.type === 'greenhouse-watchlist-snapshot' && snapshot.schemaVersion === 1 && same(snapshot.boardSlugs, boards) && object(snapshot.boards), 'Invalid or incompatible snapshot; do not reset automatically.');\n  assert(same(Object.keys(snapshot.boards).sort(), boards), 'Snapshot board set mismatch.');\n  assert(typeof snapshot.observedAt === 'string' && Number.isFinite(Date.parse(snapshot.observedAt)), 'Invalid snapshot observation time.');\n  assert(boards.every(b => object(snapshot.boards[b]) && object(snapshot.boards[b].jobs) && Number.isInteger(snapshot.boards[b].successfulObservations) && snapshot.boards[b].successfulObservations >= 1), 'Incomplete snapshot.');\n  return snapshot;\n}\nfunction storeInfo(response, config) {\n  const store = responseBody(response)?.data;\n  assert(store && id(store.id) && store.name === config.stateStoreName, 'Unexpected state store.');\n  // Do not carry signing keys or platform-generated public URLs downstream.\n  return {storeId: store.id};\n}\nfunction validateBilling(response) {\n  const receipt = responseBody(response);\n  assert(object(receipt) && receipt.event === 'watchlist-completed' && ['charged', 'already_recorded'].includes(receipt.status) && receipt.chargedCount === 1 && receipt.retryAllowed === false, 'Billing receipt is uncertain or unexpected. Stop and inspect; never retry a charge.');\n  return {acknowledged: true};\n}\nfunction validateRun(response, runId) {\n  const run = responseBody(response)?.data;\n  assert(run && run.id === runId && run.actId === 'hKiF2epI17OkpTRdh', 'Unexpected Actor run.');\n  assert(run.status === 'SUCCEEDED', 'Run is not SUCCEEDED. History stays unchanged. If still running, a new full workflow execution resumes this run without starting another. Failed runs require inspection.');\n  assert(id(run.defaultKeyValueStoreId) && id(run.defaultDatasetId), 'Missing run storage.');\n  return {runId: run.id, storeId: run.defaultKeyValueStoreId, datasetId: run.defaultDatasetId};\n}\nfunction validateSnapshot(response, config, summary, prepared) {\n  const snapshot = snapshotValid(responseBody(response), config.boardSlugs);\n  assert(snapshot.observedAt === summary.observedAt, 'Snapshot and summary refer to different observations.');\n  if (prepared.state.snapshot !== null) {\n    assert(Date.parse(snapshot.observedAt) > Date.parse(prepared.state.snapshot.observedAt), 'Snapshot did not advance.');\n    for (const board of config.boardSlugs) assert(snapshot.boards[board].successfulObservations === prepared.state.snapshot.boards[board].successfulObservations + 1, 'Observation sequence broke.');\n  } else assert(config.boardSlugs.every(b => snapshot.boards[b].successfulObservations === 1), 'Baseline sequence is invalid.');\n  assert(Buffer.byteLength(JSON.stringify({boardSlugs: config.boardSlugs, previousSnapshot: snapshot}), 'utf8') <= 5 * 1024 * 1024, 'Next input would exceed the limit.');\n  return snapshot;\n}\nfunction validateSummary(response, config, prepared) {\n  const summary = responseBody(response);\n  assert(object(summary) && summary.product === 'greenhouse-watchlist-export' && summary.complete === true && summary.chargingEnabled === true, 'Incomplete or unexpected delivery.');\n  assert(summary.boardCount === config.boardSlugs.length && Array.isArray(summary.boards) && summary.boards.length === config.boardSlugs.length, 'Incomplete coverage.');\n  assert(same(summary.boards.map(b => b.board).sort(), config.boardSlugs) && summary.boards.every(b => b.status === 'ok' && b.complete === true), 'A requested board failed.');\n  assert(Number.isInteger(summary.changeCount) && summary.changeCount >= 0 && Number.isInteger(summary.currentJobCount) && summary.currentJobCount >= 0, 'Invalid output counts.');\n  assert(summary.baseline === (prepared.state.snapshot === null), 'Unexpected baseline reset.');\n  return summary;\n}\nfunction verifyIntent(response, prepared) {\n  assert(same(responseBody(response), prepared.intent), 'Start intent was not persisted. No run should start.');\n  return {verified: true};\n}\nreturn [{json: validateSummary($input.first().json, $('Configure').first().json, $('Prepare').first().json)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "gw-20",
+      "name": "Read billing receipt",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the same Header Auth credential in every HTTP node. Header: Authorization. Value: Bearer <your Apify token>. Never put a token in node fields or URLs.",
+      "position": [
+        4180,
+        0
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/key-value-stores/' + $('Successful run').first().json.storeId + '/records/BILLING' }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": false,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "gw-21",
+      "name": "Confirmed billing",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4400,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function assert(ok, message) { if (!ok) throw new Error(message); }\nfunction captureRun(response, prepared) {\n  const run = responseBody(response)?.data;\n  assert(run && id(run.id) && run.actId === 'hKiF2epI17OkpTRdh', 'Run start could not be identified. Do not retry POST. Inspect Apify Runs.');\n  return {runId: run.id, pendingState: {...prepared.intent, pendingRunId: run.id}};\n}\nfunction commitData(response, snapshot, summary, run, config) {\n  const changes = responseBody(response);\n  assert(Array.isArray(changes) && changes.length === summary.changeCount, 'Change file is incomplete.');\n  assert(changes.every(row => object(row) && config.boardSlugs.includes(row.board) && ['new','changed','noLongerListed','reappeared'].includes(row.eventType) && typeof row.baseline === 'boolean'), 'Unexpected change record.');\n  return {state: {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot, lastRunId: run.runId},\n    result: {runId: run.runId, consoleUrl: `https://console.apify.com/actors/hKiF2epI17OkpTRdh/runs/${run.runId}#output`, baseline: summary.baseline, currentJobCount: summary.currentJobCount, changeCount: changes.length, changes}};\n}\nfunction configure(config) {\n  assert(config.singleWriterConfirmed === true, 'Read SETUP.md. Use one execution at a time and one workflow per store; then set singleWriterConfirmed=true.');\n  const boards = config.boardSlugs;\n  assert(Array.isArray(boards) && boards.length >= 1 && boards.length <= 20 && boards.every(b => typeof b === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(b)), 'Provide 1-20 valid board slugs.');\n  assert(new Set(boards.map(b => b.toLowerCase())).size === boards.length, 'Duplicate boards.');\n  assert(typeof config.stateStoreName === 'string' && /^gh-watchlist-[a-z0-9-]{1,45}$/.test(config.stateStoreName), 'Use a dedicated gh-watchlist-... store name.');\n  return {...config, boardSlugs: [...boards].sort()};\n}\nfunction confirmedResult(response, commit) {\n  assert(same(responseBody(response), commit.state), 'Saved history was not confirmed. Inspect STATE before the next execution.');\n  return {...commit.result, historySaved: true};\n}\nfunction id(value) { return typeof value === 'string' && /^[A-Za-z0-9]{1,64}$/.test(value); }\nfunction object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }\nfunction prepare(response, config, now) {\n  let state;\n  if (response.statusCode === 404 && response.body?.error?.type === 'record-not-found') {\n    state = {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot: null, lastRunId: null};\n  } else {\n    state = responseBody(response);\n    assert(object(state) && state.schemaVersion === 1 && ['ready', 'pending'].includes(state.status) && same(state.boardSlugs, config.boardSlugs), 'State is invalid or belongs to another watchlist.');\n    assert(Object.hasOwn(state, 'snapshot'), 'State has no snapshot field.');\n    if (state.snapshot !== null) snapshotValid(state.snapshot, config.boardSlugs);\n    else assert(state.lastRunId === null, 'Existing history is missing.');\n  }\n  if (state.status === 'pending') {\n    assert(id(state.pendingRunId), 'A previous start has an uncertain result. Inspect Apify Runs before any new start. Keep STATE unchanged; see recovery instructions.');\n    return {needsStart: false, runId: state.pendingRunId, state};\n  }\n  const input = {boardSlugs: config.boardSlugs};\n  if (state.snapshot !== null) input.previousSnapshot = state.snapshot;\n  assert(Buffer.byteLength(JSON.stringify(input), 'utf8') <= 5 * 1024 * 1024, 'Input exceeds the Actor limit.');\n  return {needsStart: true, runId: null, state, input,\n    intent: {...state, status: 'pending', pendingRunId: null, startedAt: now}};\n}\nfunction responseBody(response) {\n  assert(response && Number.isInteger(response.statusCode) && response.statusCode >= 200 && response.statusCode < 300, 'Unexpected HTTP status; keep the previous history.');\n  return response.body;\n}\nfunction same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }\nfunction snapshotValid(snapshot, boards) {\n  assert(object(snapshot) && snapshot.type === 'greenhouse-watchlist-snapshot' && snapshot.schemaVersion === 1 && same(snapshot.boardSlugs, boards) && object(snapshot.boards), 'Invalid or incompatible snapshot; do not reset automatically.');\n  assert(same(Object.keys(snapshot.boards).sort(), boards), 'Snapshot board set mismatch.');\n  assert(typeof snapshot.observedAt === 'string' && Number.isFinite(Date.parse(snapshot.observedAt)), 'Invalid snapshot observation time.');\n  assert(boards.every(b => object(snapshot.boards[b]) && object(snapshot.boards[b].jobs) && Number.isInteger(snapshot.boards[b].successfulObservations) && snapshot.boards[b].successfulObservations >= 1), 'Incomplete snapshot.');\n  return snapshot;\n}\nfunction storeInfo(response, config) {\n  const store = responseBody(response)?.data;\n  assert(store && id(store.id) && store.name === config.stateStoreName, 'Unexpected state store.');\n  // Do not carry signing keys or platform-generated public URLs downstream.\n  return {storeId: store.id};\n}\nfunction validateBilling(response) {\n  const receipt = responseBody(response);\n  assert(object(receipt) && receipt.event === 'watchlist-completed' && ['charged', 'already_recorded'].includes(receipt.status) && receipt.chargedCount === 1 && receipt.retryAllowed === false, 'Billing receipt is uncertain or unexpected. Stop and inspect; never retry a charge.');\n  return {acknowledged: true};\n}\nfunction validateRun(response, runId) {\n  const run = responseBody(response)?.data;\n  assert(run && run.id === runId && run.actId === 'hKiF2epI17OkpTRdh', 'Unexpected Actor run.');\n  assert(run.status === 'SUCCEEDED', 'Run is not SUCCEEDED. History stays unchanged. If still running, a new full workflow execution resumes this run without starting another. Failed runs require inspection.');\n  assert(id(run.defaultKeyValueStoreId) && id(run.defaultDatasetId), 'Missing run storage.');\n  return {runId: run.id, storeId: run.defaultKeyValueStoreId, datasetId: run.defaultDatasetId};\n}\nfunction validateSnapshot(response, config, summary, prepared) {\n  const snapshot = snapshotValid(responseBody(response), config.boardSlugs);\n  assert(snapshot.observedAt === summary.observedAt, 'Snapshot and summary refer to different observations.');\n  if (prepared.state.snapshot !== null) {\n    assert(Date.parse(snapshot.observedAt) > Date.parse(prepared.state.snapshot.observedAt), 'Snapshot did not advance.');\n    for (const board of config.boardSlugs) assert(snapshot.boards[board].successfulObservations === prepared.state.snapshot.boards[board].successfulObservations + 1, 'Observation sequence broke.');\n  } else assert(config.boardSlugs.every(b => snapshot.boards[b].successfulObservations === 1), 'Baseline sequence is invalid.');\n  assert(Buffer.byteLength(JSON.stringify({boardSlugs: config.boardSlugs, previousSnapshot: snapshot}), 'utf8') <= 5 * 1024 * 1024, 'Next input would exceed the limit.');\n  return snapshot;\n}\nfunction validateSummary(response, config, prepared) {\n  const summary = responseBody(response);\n  assert(object(summary) && summary.product === 'greenhouse-watchlist-export' && summary.complete === true && summary.chargingEnabled === true, 'Incomplete or unexpected delivery.');\n  assert(summary.boardCount === config.boardSlugs.length && Array.isArray(summary.boards) && summary.boards.length === config.boardSlugs.length, 'Incomplete coverage.');\n  assert(same(summary.boards.map(b => b.board).sort(), config.boardSlugs) && summary.boards.every(b => b.status === 'ok' && b.complete === true), 'A requested board failed.');\n  assert(Number.isInteger(summary.changeCount) && summary.changeCount >= 0 && Number.isInteger(summary.currentJobCount) && summary.currentJobCount >= 0, 'Invalid output counts.');\n  assert(summary.baseline === (prepared.state.snapshot === null), 'Unexpected baseline reset.');\n  return summary;\n}\nfunction verifyIntent(response, prepared) {\n  assert(same(responseBody(response), prepared.intent), 'Start intent was not persisted. No run should start.');\n  return {verified: true};\n}\nreturn [{json: validateBilling($input.first().json)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "gw-22",
+      "name": "Read snapshot",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the same Header Auth credential in every HTTP node. Header: Authorization. Value: Bearer <your Apify token>. Never put a token in node fields or URLs.",
+      "position": [
+        4620,
+        0
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/key-value-stores/' + $('Successful run').first().json.storeId + '/records/SNAPSHOT' }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": false,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "gw-23",
+      "name": "Next snapshot",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4840,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function assert(ok, message) { if (!ok) throw new Error(message); }\nfunction captureRun(response, prepared) {\n  const run = responseBody(response)?.data;\n  assert(run && id(run.id) && run.actId === 'hKiF2epI17OkpTRdh', 'Run start could not be identified. Do not retry POST. Inspect Apify Runs.');\n  return {runId: run.id, pendingState: {...prepared.intent, pendingRunId: run.id}};\n}\nfunction commitData(response, snapshot, summary, run, config) {\n  const changes = responseBody(response);\n  assert(Array.isArray(changes) && changes.length === summary.changeCount, 'Change file is incomplete.');\n  assert(changes.every(row => object(row) && config.boardSlugs.includes(row.board) && ['new','changed','noLongerListed','reappeared'].includes(row.eventType) && typeof row.baseline === 'boolean'), 'Unexpected change record.');\n  return {state: {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot, lastRunId: run.runId},\n    result: {runId: run.runId, consoleUrl: `https://console.apify.com/actors/hKiF2epI17OkpTRdh/runs/${run.runId}#output`, baseline: summary.baseline, currentJobCount: summary.currentJobCount, changeCount: changes.length, changes}};\n}\nfunction configure(config) {\n  assert(config.singleWriterConfirmed === true, 'Read SETUP.md. Use one execution at a time and one workflow per store; then set singleWriterConfirmed=true.');\n  const boards = config.boardSlugs;\n  assert(Array.isArray(boards) && boards.length >= 1 && boards.length <= 20 && boards.every(b => typeof b === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(b)), 'Provide 1-20 valid board slugs.');\n  assert(new Set(boards.map(b => b.toLowerCase())).size === boards.length, 'Duplicate boards.');\n  assert(typeof config.stateStoreName === 'string' && /^gh-watchlist-[a-z0-9-]{1,45}$/.test(config.stateStoreName), 'Use a dedicated gh-watchlist-... store name.');\n  return {...config, boardSlugs: [...boards].sort()};\n}\nfunction confirmedResult(response, commit) {\n  assert(same(responseBody(response), commit.state), 'Saved history was not confirmed. Inspect STATE before the next execution.');\n  return {...commit.result, historySaved: true};\n}\nfunction id(value) { return typeof value === 'string' && /^[A-Za-z0-9]{1,64}$/.test(value); }\nfunction object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }\nfunction prepare(response, config, now) {\n  let state;\n  if (response.statusCode === 404 && response.body?.error?.type === 'record-not-found') {\n    state = {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot: null, lastRunId: null};\n  } else {\n    state = responseBody(response);\n    assert(object(state) && state.schemaVersion === 1 && ['ready', 'pending'].includes(state.status) && same(state.boardSlugs, config.boardSlugs), 'State is invalid or belongs to another watchlist.');\n    assert(Object.hasOwn(state, 'snapshot'), 'State has no snapshot field.');\n    if (state.snapshot !== null) snapshotValid(state.snapshot, config.boardSlugs);\n    else assert(state.lastRunId === null, 'Existing history is missing.');\n  }\n  if (state.status === 'pending') {\n    assert(id(state.pendingRunId), 'A previous start has an uncertain result. Inspect Apify Runs before any new start. Keep STATE unchanged; see recovery instructions.');\n    return {needsStart: false, runId: state.pendingRunId, state};\n  }\n  const input = {boardSlugs: config.boardSlugs};\n  if (state.snapshot !== null) input.previousSnapshot = state.snapshot;\n  assert(Buffer.byteLength(JSON.stringify(input), 'utf8') <= 5 * 1024 * 1024, 'Input exceeds the Actor limit.');\n  return {needsStart: true, runId: null, state, input,\n    intent: {...state, status: 'pending', pendingRunId: null, startedAt: now}};\n}\nfunction responseBody(response) {\n  assert(response && Number.isInteger(response.statusCode) && response.statusCode >= 200 && response.statusCode < 300, 'Unexpected HTTP status; keep the previous history.');\n  return response.body;\n}\nfunction same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }\nfunction snapshotValid(snapshot, boards) {\n  assert(object(snapshot) && snapshot.type === 'greenhouse-watchlist-snapshot' && snapshot.schemaVersion === 1 && same(snapshot.boardSlugs, boards) && object(snapshot.boards), 'Invalid or incompatible snapshot; do not reset automatically.');\n  assert(same(Object.keys(snapshot.boards).sort(), boards), 'Snapshot board set mismatch.');\n  assert(typeof snapshot.observedAt === 'string' && Number.isFinite(Date.parse(snapshot.observedAt)), 'Invalid snapshot observation time.');\n  assert(boards.every(b => object(snapshot.boards[b]) && object(snapshot.boards[b].jobs) && Number.isInteger(snapshot.boards[b].successfulObservations) && snapshot.boards[b].successfulObservations >= 1), 'Incomplete snapshot.');\n  return snapshot;\n}\nfunction storeInfo(response, config) {\n  const store = responseBody(response)?.data;\n  assert(store && id(store.id) && store.name === config.stateStoreName, 'Unexpected state store.');\n  // Do not carry signing keys or platform-generated public URLs downstream.\n  return {storeId: store.id};\n}\nfunction validateBilling(response) {\n  const receipt = responseBody(response);\n  assert(object(receipt) && receipt.event === 'watchlist-completed' && ['charged', 'already_recorded'].includes(receipt.status) && receipt.chargedCount === 1 && receipt.retryAllowed === false, 'Billing receipt is uncertain or unexpected. Stop and inspect; never retry a charge.');\n  return {acknowledged: true};\n}\nfunction validateRun(response, runId) {\n  const run = responseBody(response)?.data;\n  assert(run && run.id === runId && run.actId === 'hKiF2epI17OkpTRdh', 'Unexpected Actor run.');\n  assert(run.status === 'SUCCEEDED', 'Run is not SUCCEEDED. History stays unchanged. If still running, a new full workflow execution resumes this run without starting another. Failed runs require inspection.');\n  assert(id(run.defaultKeyValueStoreId) && id(run.defaultDatasetId), 'Missing run storage.');\n  return {runId: run.id, storeId: run.defaultKeyValueStoreId, datasetId: run.defaultDatasetId};\n}\nfunction validateSnapshot(response, config, summary, prepared) {\n  const snapshot = snapshotValid(responseBody(response), config.boardSlugs);\n  assert(snapshot.observedAt === summary.observedAt, 'Snapshot and summary refer to different observations.');\n  if (prepared.state.snapshot !== null) {\n    assert(Date.parse(snapshot.observedAt) > Date.parse(prepared.state.snapshot.observedAt), 'Snapshot did not advance.');\n    for (const board of config.boardSlugs) assert(snapshot.boards[board].successfulObservations === prepared.state.snapshot.boards[board].successfulObservations + 1, 'Observation sequence broke.');\n  } else assert(config.boardSlugs.every(b => snapshot.boards[b].successfulObservations === 1), 'Baseline sequence is invalid.');\n  assert(Buffer.byteLength(JSON.stringify({boardSlugs: config.boardSlugs, previousSnapshot: snapshot}), 'utf8') <= 5 * 1024 * 1024, 'Next input would exceed the limit.');\n  return snapshot;\n}\nfunction validateSummary(response, config, prepared) {\n  const summary = responseBody(response);\n  assert(object(summary) && summary.product === 'greenhouse-watchlist-export' && summary.complete === true && summary.chargingEnabled === true, 'Incomplete or unexpected delivery.');\n  assert(summary.boardCount === config.boardSlugs.length && Array.isArray(summary.boards) && summary.boards.length === config.boardSlugs.length, 'Incomplete coverage.');\n  assert(same(summary.boards.map(b => b.board).sort(), config.boardSlugs) && summary.boards.every(b => b.status === 'ok' && b.complete === true), 'A requested board failed.');\n  assert(Number.isInteger(summary.changeCount) && summary.changeCount >= 0 && Number.isInteger(summary.currentJobCount) && summary.currentJobCount >= 0, 'Invalid output counts.');\n  assert(summary.baseline === (prepared.state.snapshot === null), 'Unexpected baseline reset.');\n  return summary;\n}\nfunction verifyIntent(response, prepared) {\n  assert(same(responseBody(response), prepared.intent), 'Start intent was not persisted. No run should start.');\n  return {verified: true};\n}\nreturn [{json: validateSnapshot($input.first().json, $('Configure').first().json, $('Complete summary').first().json, $('Prepare').first().json)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "gw-24",
+      "name": "Read changes",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the same Header Auth credential in every HTTP node. Header: Authorization. Value: Bearer <your Apify token>. Never put a token in node fields or URLs.",
+      "position": [
+        5060,
+        0
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/key-value-stores/' + $('Successful run').first().json.storeId + '/records/CHANGES.json' }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": false,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "gw-25",
+      "name": "Commit data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5280,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function assert(ok, message) { if (!ok) throw new Error(message); }\nfunction captureRun(response, prepared) {\n  const run = responseBody(response)?.data;\n  assert(run && id(run.id) && run.actId === 'hKiF2epI17OkpTRdh', 'Run start could not be identified. Do not retry POST. Inspect Apify Runs.');\n  return {runId: run.id, pendingState: {...prepared.intent, pendingRunId: run.id}};\n}\nfunction commitData(response, snapshot, summary, run, config) {\n  const changes = responseBody(response);\n  assert(Array.isArray(changes) && changes.length === summary.changeCount, 'Change file is incomplete.');\n  assert(changes.every(row => object(row) && config.boardSlugs.includes(row.board) && ['new','changed','noLongerListed','reappeared'].includes(row.eventType) && typeof row.baseline === 'boolean'), 'Unexpected change record.');\n  return {state: {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot, lastRunId: run.runId},\n    result: {runId: run.runId, consoleUrl: `https://console.apify.com/actors/hKiF2epI17OkpTRdh/runs/${run.runId}#output`, baseline: summary.baseline, currentJobCount: summary.currentJobCount, changeCount: changes.length, changes}};\n}\nfunction configure(config) {\n  assert(config.singleWriterConfirmed === true, 'Read SETUP.md. Use one execution at a time and one workflow per store; then set singleWriterConfirmed=true.');\n  const boards = config.boardSlugs;\n  assert(Array.isArray(boards) && boards.length >= 1 && boards.length <= 20 && boards.every(b => typeof b === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(b)), 'Provide 1-20 valid board slugs.');\n  assert(new Set(boards.map(b => b.toLowerCase())).size === boards.length, 'Duplicate boards.');\n  assert(typeof config.stateStoreName === 'string' && /^gh-watchlist-[a-z0-9-]{1,45}$/.test(config.stateStoreName), 'Use a dedicated gh-watchlist-... store name.');\n  return {...config, boardSlugs: [...boards].sort()};\n}\nfunction confirmedResult(response, commit) {\n  assert(same(responseBody(response), commit.state), 'Saved history was not confirmed. Inspect STATE before the next execution.');\n  return {...commit.result, historySaved: true};\n}\nfunction id(value) { return typeof value === 'string' && /^[A-Za-z0-9]{1,64}$/.test(value); }\nfunction object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }\nfunction prepare(response, config, now) {\n  let state;\n  if (response.statusCode === 404 && response.body?.error?.type === 'record-not-found') {\n    state = {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot: null, lastRunId: null};\n  } else {\n    state = responseBody(response);\n    assert(object(state) && state.schemaVersion === 1 && ['ready', 'pending'].includes(state.status) && same(state.boardSlugs, config.boardSlugs), 'State is invalid or belongs to another watchlist.');\n    assert(Object.hasOwn(state, 'snapshot'), 'State has no snapshot field.');\n    if (state.snapshot !== null) snapshotValid(state.snapshot, config.boardSlugs);\n    else assert(state.lastRunId === null, 'Existing history is missing.');\n  }\n  if (state.status === 'pending') {\n    assert(id(state.pendingRunId), 'A previous start has an uncertain result. Inspect Apify Runs before any new start. Keep STATE unchanged; see recovery instructions.');\n    return {needsStart: false, runId: state.pendingRunId, state};\n  }\n  const input = {boardSlugs: config.boardSlugs};\n  if (state.snapshot !== null) input.previousSnapshot = state.snapshot;\n  assert(Buffer.byteLength(JSON.stringify(input), 'utf8') <= 5 * 1024 * 1024, 'Input exceeds the Actor limit.');\n  return {needsStart: true, runId: null, state, input,\n    intent: {...state, status: 'pending', pendingRunId: null, startedAt: now}};\n}\nfunction responseBody(response) {\n  assert(response && Number.isInteger(response.statusCode) && response.statusCode >= 200 && response.statusCode < 300, 'Unexpected HTTP status; keep the previous history.');\n  return response.body;\n}\nfunction same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }\nfunction snapshotValid(snapshot, boards) {\n  assert(object(snapshot) && snapshot.type === 'greenhouse-watchlist-snapshot' && snapshot.schemaVersion === 1 && same(snapshot.boardSlugs, boards) && object(snapshot.boards), 'Invalid or incompatible snapshot; do not reset automatically.');\n  assert(same(Object.keys(snapshot.boards).sort(), boards), 'Snapshot board set mismatch.');\n  assert(typeof snapshot.observedAt === 'string' && Number.isFinite(Date.parse(snapshot.observedAt)), 'Invalid snapshot observation time.');\n  assert(boards.every(b => object(snapshot.boards[b]) && object(snapshot.boards[b].jobs) && Number.isInteger(snapshot.boards[b].successfulObservations) && snapshot.boards[b].successfulObservations >= 1), 'Incomplete snapshot.');\n  return snapshot;\n}\nfunction storeInfo(response, config) {\n  const store = responseBody(response)?.data;\n  assert(store && id(store.id) && store.name === config.stateStoreName, 'Unexpected state store.');\n  // Do not carry signing keys or platform-generated public URLs downstream.\n  return {storeId: store.id};\n}\nfunction validateBilling(response) {\n  const receipt = responseBody(response);\n  assert(object(receipt) && receipt.event === 'watchlist-completed' && ['charged', 'already_recorded'].includes(receipt.status) && receipt.chargedCount === 1 && receipt.retryAllowed === false, 'Billing receipt is uncertain or unexpected. Stop and inspect; never retry a charge.');\n  return {acknowledged: true};\n}\nfunction validateRun(response, runId) {\n  const run = responseBody(response)?.data;\n  assert(run && run.id === runId && run.actId === 'hKiF2epI17OkpTRdh', 'Unexpected Actor run.');\n  assert(run.status === 'SUCCEEDED', 'Run is not SUCCEEDED. History stays unchanged. If still running, a new full workflow execution resumes this run without starting another. Failed runs require inspection.');\n  assert(id(run.defaultKeyValueStoreId) && id(run.defaultDatasetId), 'Missing run storage.');\n  return {runId: run.id, storeId: run.defaultKeyValueStoreId, datasetId: run.defaultDatasetId};\n}\nfunction validateSnapshot(response, config, summary, prepared) {\n  const snapshot = snapshotValid(responseBody(response), config.boardSlugs);\n  assert(snapshot.observedAt === summary.observedAt, 'Snapshot and summary refer to different observations.');\n  if (prepared.state.snapshot !== null) {\n    assert(Date.parse(snapshot.observedAt) > Date.parse(prepared.state.snapshot.observedAt), 'Snapshot did not advance.');\n    for (const board of config.boardSlugs) assert(snapshot.boards[board].successfulObservations === prepared.state.snapshot.boards[board].successfulObservations + 1, 'Observation sequence broke.');\n  } else assert(config.boardSlugs.every(b => snapshot.boards[b].successfulObservations === 1), 'Baseline sequence is invalid.');\n  assert(Buffer.byteLength(JSON.stringify({boardSlugs: config.boardSlugs, previousSnapshot: snapshot}), 'utf8') <= 5 * 1024 * 1024, 'Next input would exceed the limit.');\n  return snapshot;\n}\nfunction validateSummary(response, config, prepared) {\n  const summary = responseBody(response);\n  assert(object(summary) && summary.product === 'greenhouse-watchlist-export' && summary.complete === true && summary.chargingEnabled === true, 'Incomplete or unexpected delivery.');\n  assert(summary.boardCount === config.boardSlugs.length && Array.isArray(summary.boards) && summary.boards.length === config.boardSlugs.length, 'Incomplete coverage.');\n  assert(same(summary.boards.map(b => b.board).sort(), config.boardSlugs) && summary.boards.every(b => b.status === 'ok' && b.complete === true), 'A requested board failed.');\n  assert(Number.isInteger(summary.changeCount) && summary.changeCount >= 0 && Number.isInteger(summary.currentJobCount) && summary.currentJobCount >= 0, 'Invalid output counts.');\n  assert(summary.baseline === (prepared.state.snapshot === null), 'Unexpected baseline reset.');\n  return summary;\n}\nfunction verifyIntent(response, prepared) {\n  assert(same(responseBody(response), prepared.intent), 'Start intent was not persisted. No run should start.');\n  return {verified: true};\n}\nreturn [{json: commitData($input.first().json, $('Next snapshot').first().json, $('Complete summary').first().json, $('Successful run').first().json, $('Configure').first().json)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "gw-26",
+      "name": "Save ready history",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the same Header Auth credential in every HTTP node. Header: Authorization. Value: Bearer <your Apify token>. Never put a token in node fields or URLs.",
+      "position": [
+        5500,
+        0
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/key-value-stores/' + $('State store').first().json.storeId + '/records/STATE' }}",
+        "method": "PUT",
+        "options": {
+          "timeout": 75000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": false,
+              "fullResponse": true,
+              "responseFormat": "autodetect"
+            }
+          }
+        },
+        "jsonBody": "={{ $('Commit data').first().json.state }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "gw-27",
+      "name": "Read back history",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select the same Header Auth credential in every HTTP node. Header: Authorization. Value: Bearer <your Apify token>. Never put a token in node fields or URLs.",
+      "position": [
+        5720,
+        0
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.apify.com/v2/key-value-stores/' + $('State store').first().json.storeId + '/records/STATE' }}",
+        "method": "GET",
+        "options": {
+          "timeout": 75000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": false,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "gw-28",
+      "name": "Results",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5940,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function assert(ok, message) { if (!ok) throw new Error(message); }\nfunction captureRun(response, prepared) {\n  const run = responseBody(response)?.data;\n  assert(run && id(run.id) && run.actId === 'hKiF2epI17OkpTRdh', 'Run start could not be identified. Do not retry POST. Inspect Apify Runs.');\n  return {runId: run.id, pendingState: {...prepared.intent, pendingRunId: run.id}};\n}\nfunction commitData(response, snapshot, summary, run, config) {\n  const changes = responseBody(response);\n  assert(Array.isArray(changes) && changes.length === summary.changeCount, 'Change file is incomplete.');\n  assert(changes.every(row => object(row) && config.boardSlugs.includes(row.board) && ['new','changed','noLongerListed','reappeared'].includes(row.eventType) && typeof row.baseline === 'boolean'), 'Unexpected change record.');\n  return {state: {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot, lastRunId: run.runId},\n    result: {runId: run.runId, consoleUrl: `https://console.apify.com/actors/hKiF2epI17OkpTRdh/runs/${run.runId}#output`, baseline: summary.baseline, currentJobCount: summary.currentJobCount, changeCount: changes.length, changes}};\n}\nfunction configure(config) {\n  assert(config.singleWriterConfirmed === true, 'Read SETUP.md. Use one execution at a time and one workflow per store; then set singleWriterConfirmed=true.');\n  const boards = config.boardSlugs;\n  assert(Array.isArray(boards) && boards.length >= 1 && boards.length <= 20 && boards.every(b => typeof b === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(b)), 'Provide 1-20 valid board slugs.');\n  assert(new Set(boards.map(b => b.toLowerCase())).size === boards.length, 'Duplicate boards.');\n  assert(typeof config.stateStoreName === 'string' && /^gh-watchlist-[a-z0-9-]{1,45}$/.test(config.stateStoreName), 'Use a dedicated gh-watchlist-... store name.');\n  return {...config, boardSlugs: [...boards].sort()};\n}\nfunction confirmedResult(response, commit) {\n  assert(same(responseBody(response), commit.state), 'Saved history was not confirmed. Inspect STATE before the next execution.');\n  return {...commit.result, historySaved: true};\n}\nfunction id(value) { return typeof value === 'string' && /^[A-Za-z0-9]{1,64}$/.test(value); }\nfunction object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }\nfunction prepare(response, config, now) {\n  let state;\n  if (response.statusCode === 404 && response.body?.error?.type === 'record-not-found') {\n    state = {schemaVersion: 1, status: 'ready', boardSlugs: config.boardSlugs, snapshot: null, lastRunId: null};\n  } else {\n    state = responseBody(response);\n    assert(object(state) && state.schemaVersion === 1 && ['ready', 'pending'].includes(state.status) && same(state.boardSlugs, config.boardSlugs), 'State is invalid or belongs to another watchlist.');\n    assert(Object.hasOwn(state, 'snapshot'), 'State has no snapshot field.');\n    if (state.snapshot !== null) snapshotValid(state.snapshot, config.boardSlugs);\n    else assert(state.lastRunId === null, 'Existing history is missing.');\n  }\n  if (state.status === 'pending') {\n    assert(id(state.pendingRunId), 'A previous start has an uncertain result. Inspect Apify Runs before any new start. Keep STATE unchanged; see recovery instructions.');\n    return {needsStart: false, runId: state.pendingRunId, state};\n  }\n  const input = {boardSlugs: config.boardSlugs};\n  if (state.snapshot !== null) input.previousSnapshot = state.snapshot;\n  assert(Buffer.byteLength(JSON.stringify(input), 'utf8') <= 5 * 1024 * 1024, 'Input exceeds the Actor limit.');\n  return {needsStart: true, runId: null, state, input,\n    intent: {...state, status: 'pending', pendingRunId: null, startedAt: now}};\n}\nfunction responseBody(response) {\n  assert(response && Number.isInteger(response.statusCode) && response.statusCode >= 200 && response.statusCode < 300, 'Unexpected HTTP status; keep the previous history.');\n  return response.body;\n}\nfunction same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }\nfunction snapshotValid(snapshot, boards) {\n  assert(object(snapshot) && snapshot.type === 'greenhouse-watchlist-snapshot' && snapshot.schemaVersion === 1 && same(snapshot.boardSlugs, boards) && object(snapshot.boards), 'Invalid or incompatible snapshot; do not reset automatically.');\n  assert(same(Object.keys(snapshot.boards).sort(), boards), 'Snapshot board set mismatch.');\n  assert(typeof snapshot.observedAt === 'string' && Number.isFinite(Date.parse(snapshot.observedAt)), 'Invalid snapshot observation time.');\n  assert(boards.every(b => object(snapshot.boards[b]) && object(snapshot.boards[b].jobs) && Number.isInteger(snapshot.boards[b].successfulObservations) && snapshot.boards[b].successfulObservations >= 1), 'Incomplete snapshot.');\n  return snapshot;\n}\nfunction storeInfo(response, config) {\n  const store = responseBody(response)?.data;\n  assert(store && id(store.id) && store.name === config.stateStoreName, 'Unexpected state store.');\n  // Do not carry signing keys or platform-generated public URLs downstream.\n  return {storeId: store.id};\n}\nfunction validateBilling(response) {\n  const receipt = responseBody(response);\n  assert(object(receipt) && receipt.event === 'watchlist-completed' && ['charged', 'already_recorded'].includes(receipt.status) && receipt.chargedCount === 1 && receipt.retryAllowed === false, 'Billing receipt is uncertain or unexpected. Stop and inspect; never retry a charge.');\n  return {acknowledged: true};\n}\nfunction validateRun(response, runId) {\n  const run = responseBody(response)?.data;\n  assert(run && run.id === runId && run.actId === 'hKiF2epI17OkpTRdh', 'Unexpected Actor run.');\n  assert(run.status === 'SUCCEEDED', 'Run is not SUCCEEDED. History stays unchanged. If still running, a new full workflow execution resumes this run without starting another. Failed runs require inspection.');\n  assert(id(run.defaultKeyValueStoreId) && id(run.defaultDatasetId), 'Missing run storage.');\n  return {runId: run.id, storeId: run.defaultKeyValueStoreId, datasetId: run.defaultDatasetId};\n}\nfunction validateSnapshot(response, config, summary, prepared) {\n  const snapshot = snapshotValid(responseBody(response), config.boardSlugs);\n  assert(snapshot.observedAt === summary.observedAt, 'Snapshot and summary refer to different observations.');\n  if (prepared.state.snapshot !== null) {\n    assert(Date.parse(snapshot.observedAt) > Date.parse(prepared.state.snapshot.observedAt), 'Snapshot did not advance.');\n    for (const board of config.boardSlugs) assert(snapshot.boards[board].successfulObservations === prepared.state.snapshot.boards[board].successfulObservations + 1, 'Observation sequence broke.');\n  } else assert(config.boardSlugs.every(b => snapshot.boards[b].successfulObservations === 1), 'Baseline sequence is invalid.');\n  assert(Buffer.byteLength(JSON.stringify({boardSlugs: config.boardSlugs, previousSnapshot: snapshot}), 'utf8') <= 5 * 1024 * 1024, 'Next input would exceed the limit.');\n  return snapshot;\n}\nfunction validateSummary(response, config, prepared) {\n  const summary = responseBody(response);\n  assert(object(summary) && summary.product === 'greenhouse-watchlist-export' && summary.complete === true && summary.chargingEnabled === true, 'Incomplete or unexpected delivery.');\n  assert(summary.boardCount === config.boardSlugs.length && Array.isArray(summary.boards) && summary.boards.length === config.boardSlugs.length, 'Incomplete coverage.');\n  assert(same(summary.boards.map(b => b.board).sort(), config.boardSlugs) && summary.boards.every(b => b.status === 'ok' && b.complete === true), 'A requested board failed.');\n  assert(Number.isInteger(summary.changeCount) && summary.changeCount >= 0 && Number.isInteger(summary.currentJobCount) && summary.currentJobCount >= 0, 'Invalid output counts.');\n  assert(summary.baseline === (prepared.state.snapshot === null), 'Unexpected baseline reset.');\n  return summary;\n}\nfunction verifyIntent(response, prepared) {\n  assert(same(responseBody(response), prepared.intent), 'Start intent was not persisted. No run should start.');\n  return {verified: true};\n}\nreturn [{json: confirmedResult($input.first().json, $('Commit data').first().json)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "gw-29",
+      "name": "Watchlist settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "watchlist-boards",
+              "name": "boardSlugs",
+              "type": "array",
+              "value": [
+                "airbnb"
+              ]
+            },
+            {
+              "id": "watchlist-store",
+              "name": "stateStoreName",
+              "type": "string",
+              "value": "gh-watchlist-airbnb-example"
+            },
+            {
+              "id": "watchlist-single-writer",
+              "name": "singleWriterConfirmed",
+              "type": "boolean",
+              "value": false
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "gw-30",
+      "name": "Read before running",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -940
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 580,
+        "height": 850,
+        "content": "# Track Greenhouse job changes with Apify and saved snapshots\n\n## Who is this for?\n\nAutomation builders maintaining a job feed for a known list of companies using Greenhouse. This workflow keeps the previous observation so you can compare listing metadata without manually copying a snapshot.\n\n## How it works\n\nRun the workflow manually. It checks 1\u201320 boards with Greenhouse Watchlist Export, validates completion and saves the new snapshot in a dedicated Apify key-value store. The next execution compares against that history and returns observed changes. The first run is a baseline, not proof that every job is new.\n\nAn unfinished run is resumed on the next execution. If a start response is lost, the workflow stops for inspection instead of starting another run automatically.\n\n## Setup and requirements\n\n1. Use n8n and an Apify account. Add one Header Auth credential (`Authorization: Bearer <token>`) to every HTTP node.\n2. Edit **Watchlist settings**: board slugs, dedicated store name and the single-writer confirmation.\n3. Run the whole workflow twice, sequentially. Check **Results** for saved history and `baseline: false` on the second run.\n\nThe template is free; the required [Apify Actor](https://apify.com/downy_sublimity/greenhouse-watchlist-export) currently costs **US$0.05 per completed watchlist**, including unchanged/empty checks. Separate n8n hosting and platform/storage costs may apply.\n\nUse one writer per store. No schedule or notifications are included. A changed board list needs a new store and baseline. Tested with n8n 2.42.6; setup and recovery instructions are included in the workflow notes.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "gw-31",
+      "name": "Keep one history sequence",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        660,
+        -650
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1100,
+        "height": 270,
+        "content": "## 1. Configure and recover history\nSelect your Header Auth credential in every HTTP node. In Watchlist settings, choose board slugs and a dedicated store. Set singleWriterConfirmed=true only when one workflow and one execution will write this store.\n\nThe default is deliberately false. An existing pending run is retrieved without a new POST. Do not erase STATE to clear an error."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "gw-32",
+      "name": "Never retry a start blindly",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1960,
+        -620
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1550,
+        "height": 290,
+        "content": "## 2. Start once or resume\nThe workflow saves and reads back the start intent before calling the Actor. A missing response leaves a pending state for inspection. Never retry the POST node alone.\n\nThe status request waits for up to 60 seconds; there is no automatic polling loop. If a run is still working, execute the whole workflow later to retrieve it. For failed runs or an unknown start, follow the Recover interrupted checks note below."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "gw-33",
+      "name": "Commit only verified output",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3800,
+        -500
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1650,
+        "height": 250,
+        "content": "## 3. Validate, save and inspect Results\nHistory advances only after a successful complete run, confirmed completion receipt, matching snapshot and complete change file. A partial or uncertain result preserves the previous snapshot.\n\nResults includes the run link, counts and changes. Baseline events are first observations; a disappearance is confirmed after two valid absences and does not prove that a role was filled."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "gw-34",
+      "name": "Recover interrupted checks",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1540,
+        430
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 860,
+        "height": 700,
+        "content": "## Recovery without duplicate starts\nThese instructions are included here so no external setup file is required.\n\n**Known pendingRunId:** run the whole workflow later to retrieve that same run. If still working, wait. Never retry the POST node alone.\n\n**Pending state without an ID:** the start may have reached Apify even if its response was lost. In Apify Runs, inspect this Actor around STATE.startedAt and compare the exact board list and input. Back up STATE. Only after uniquely identifying the run may an operator record its ID as pendingRunId, preserving every other field, then rerun the whole workflow. If uncertain, stop.\n\n**Failed or aborted run:** inspect the run and billing first. After confirming it is terminal, an operator can deliberately restore status=ready, preserve snapshot and lastRunId, and remove pending fields. This permits a new paid check. Do not resurrect the run or adopt partial outputs.\n\n**Unknown billing:** inspect Apify charging records before any further payment action. Do not retry a charge.\n\n**Save acknowledgement lost:** inspect STATE. A ready state with the expected lastRunId means history was saved. Never replace it with an older snapshot or erase history to clear an error.\n\nKeep the named store private. Review n8n execution retention. This workflow has no distributed lock; one writer and one execution per store is mandatory."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 600,
+    "saveManualExecutions": true
+  },
+  "connections": {
+    "Get run": {
+      "main": [
+        [
+          {
+            "node": "Successful run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare": {
+      "main": [
+        [
+          {
+            "node": "Need a new run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure": {
+      "main": [
+        [
+          {
+            "node": "Open state store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read state": {
+      "main": [
+        [
+          {
+            "node": "Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Capture run": {
+      "main": [
+        [
+          {
+            "node": "Save pending run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Commit data": {
+      "main": [
+        [
+          {
+            "node": "Save ready history",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Started run": {
+      "main": [
+        [
+          {
+            "node": "Get run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "State store": {
+      "main": [
+        [
+          {
+            "node": "Read state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existing run": {
+      "main": [
+        [
+          {
+            "node": "Get run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read changes": {
+      "main": [
+        [
+          {
+            "node": "Commit data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read summary": {
+      "main": [
+        [
+          {
+            "node": "Complete summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Watchlist settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Next snapshot": {
+      "main": [
+        [
+          {
+            "node": "Read changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read snapshot": {
+      "main": [
+        [
+          {
+            "node": "Next snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Need a new run": {
+      "main": [
+        [
+          {
+            "node": "Save start intent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Existing run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Successful run": {
+      "main": [
+        [
+          {
+            "node": "Read summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Complete summary": {
+      "main": [
+        [
+          {
+            "node": "Read billing receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open state store": {
+      "main": [
+        [
+          {
+            "node": "State store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save pending run": {
+      "main": [
+        [
+          {
+            "node": "Started run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Actor once": {
+      "main": [
+        [
+          {
+            "node": "Capture run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirmed billing": {
+      "main": [
+        [
+          {
+            "node": "Read snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read back history": {
+      "main": [
+        [
+          {
+            "node": "Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read start intent": {
+      "main": [
+        [
+          {
+            "node": "Verify start intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save start intent": {
+      "main": [
+        [
+          {
+            "node": "Read start intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save ready history": {
+      "main": [
+        [
+          {
+            "node": "Read back history",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Watchlist settings": {
+      "main": [
+        [
+          {
+            "node": "Configure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify start intent": {
+      "main": [
+        [
+          {
+            "node": "Start Actor once",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read billing receipt": {
+      "main": [
+        [
+          {
+            "node": "Confirmed billing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

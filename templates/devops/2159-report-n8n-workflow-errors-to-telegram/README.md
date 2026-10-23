@@ -1,6 +1,6 @@
 # ⚙️ 🚨 Report n8n workflow errors to Telegram
 
-> ⚡ **25,257 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **52,848 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

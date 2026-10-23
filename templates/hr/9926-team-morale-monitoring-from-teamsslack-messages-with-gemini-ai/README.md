@@ -1,6 +1,6 @@
 # 👥 Team morale monitoring from Teams/Slack messages with Gemini AI
 
-> ⚡ **133 views** · 👥 [HR & Recruitment](../)
+> ⚡ **150 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

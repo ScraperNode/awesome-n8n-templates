@@ -1,6 +1,6 @@
 # 💬 Lead qualification and scoring with Jotform, Gemini AI, and Slack
 
-> ⚡ **283 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **507 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

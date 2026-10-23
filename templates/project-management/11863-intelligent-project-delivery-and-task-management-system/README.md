@@ -1,6 +1,6 @@
 # 📋 Intelligent project delivery and task management system
 
-> ⚡ **737 views** · 📋 [Project Management](../)
+> ⚡ **1,379 views** · 📋 [Project Management](../)
 
 ## Description
 

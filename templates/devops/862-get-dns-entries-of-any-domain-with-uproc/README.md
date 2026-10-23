@@ -1,6 +1,6 @@
 # ⚙️ Get DNS entries of any domain with uProc
 
-> ⚡ **1,706 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,753 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

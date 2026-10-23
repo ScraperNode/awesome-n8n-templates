@@ -1,6 +1,6 @@
 # 🔬 Transcribe and analyze meetings or podcasts with ElevenLabs and Google Gemini AI
 
-> ⚡ **782 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **938 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Add a new user to Notion database on Calendly invite creation
 
-> ⚡ **1,874 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,974 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Get daily poems in Telegram
 
-> ⚡ **1,113 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,128 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

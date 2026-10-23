@@ -1,6 +1,6 @@
 # 📱 Create Smart URLs with BioURL.link's Geo, Device & Language Targeting
 
-> ⚡ **278 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **287 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

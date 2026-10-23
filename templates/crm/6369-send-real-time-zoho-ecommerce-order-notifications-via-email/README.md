@@ -1,6 +1,6 @@
 # 🤝 Send real-time Zoho ecommerce order notifications via email
 
-> ⚡ **66 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **79 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

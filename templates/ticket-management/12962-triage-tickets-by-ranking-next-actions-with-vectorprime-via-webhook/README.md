@@ -1,6 +1,6 @@
 # 🎫 Triage tickets by ranking next actions with VectorPrime via webhook
 
-> ⚡ **0 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **6 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

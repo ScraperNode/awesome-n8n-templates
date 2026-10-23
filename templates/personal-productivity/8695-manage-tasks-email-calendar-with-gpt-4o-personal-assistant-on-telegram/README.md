@@ -1,6 +1,6 @@
 # ⚡ Manage tasks, email & calendar with GPT-4o personal assistant on Telegram
 
-> ⚡ **162 views** · ⚡ [Personal Productivity](../)
+> ⚡ **220 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

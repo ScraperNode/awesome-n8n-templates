@@ -1,6 +1,6 @@
 # 📖 Adaptive RAG with Google Gemini & Qdrant: context-aware query answering
 
-> ⚡ **4,517 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **4,677 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate SEO content briefs with GPT-4o, DataForSEO keyword research & SERP analysis
 
-> ⚡ **579 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **738 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
 >

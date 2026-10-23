@@ -1,6 +1,6 @@
 # 🤝 Receive updates on an order created in Shopify
 
-> ⚡ **2,487 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,564 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

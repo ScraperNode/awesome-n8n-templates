@@ -1,6 +1,6 @@
 # 🎫 AI-powered ticket triage with multi-model classification & knowledge base
 
-> ⚡ **228 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **626 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

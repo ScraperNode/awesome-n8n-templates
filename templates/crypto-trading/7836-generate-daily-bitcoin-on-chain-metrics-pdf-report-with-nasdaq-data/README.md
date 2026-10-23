@@ -1,6 +1,6 @@
 # 📈 Generate daily Bitcoin on-chain metrics PDF report with NASDAQ data
 
-> ⚡ **72 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **92 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

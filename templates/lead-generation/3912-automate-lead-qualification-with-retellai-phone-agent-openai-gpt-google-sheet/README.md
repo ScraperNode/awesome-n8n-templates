@@ -1,6 +1,6 @@
 # 🎣 Automate lead qualification with RetellAI Phone Agent, OpenAI GPT & Google Sheet
 
-> ⚡ **22,069 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **23,794 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

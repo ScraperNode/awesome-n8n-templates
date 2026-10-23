@@ -1,6 +1,6 @@
 # 💬 Automate installation booking approvals with Slack & Gmail forms
 
-> ⚡ **180 views** · 💬 [Support Chatbots](../)
+> ⚡ **229 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

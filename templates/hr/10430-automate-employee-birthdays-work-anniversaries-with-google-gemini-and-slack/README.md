@@ -1,6 +1,6 @@
 # 👥 Automate employee birthdays & work anniversaries with Google Gemini and Slack
 
-> ⚡ **303 views** · 👥 [HR & Recruitment](../)
+> ⚡ **384 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

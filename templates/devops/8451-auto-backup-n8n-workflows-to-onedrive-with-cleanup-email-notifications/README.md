@@ -1,6 +1,6 @@
 # ⚙️ Auto-backup n8n workflows to OneDrive with cleanup & email notifications
 
-> ⚡ **969 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,470 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

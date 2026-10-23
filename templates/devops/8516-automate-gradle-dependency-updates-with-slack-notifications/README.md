@@ -1,6 +1,6 @@
 # ⚙️ Automate Gradle dependency updates with Slack notifications
 
-> ⚡ **13 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **21 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

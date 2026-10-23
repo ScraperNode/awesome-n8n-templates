@@ -1,6 +1,6 @@
 # ⚙️ Auto-heal failing workflows with Azure OpenAI, n8n API, and Slack alerts
 
-> ⚡ **136 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **3,315 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Track personal finances in Google Sheets with AI agent via Slack
 
-> ⚡ **656 views** · ⚡ [Personal Productivity](../)
+> ⚡ **964 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

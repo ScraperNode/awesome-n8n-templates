@@ -1,6 +1,6 @@
 # 🎫 Send feedback from Google Sheets to Mattermost
 
-> ⚡ **504 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **510 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

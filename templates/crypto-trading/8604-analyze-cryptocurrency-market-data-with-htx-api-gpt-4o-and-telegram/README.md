@@ -1,6 +1,6 @@
 # 📈 Analyze cryptocurrency market data with HTX API, GPT-4o and Telegram
 
-> ⚡ **5,765 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **6,930 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

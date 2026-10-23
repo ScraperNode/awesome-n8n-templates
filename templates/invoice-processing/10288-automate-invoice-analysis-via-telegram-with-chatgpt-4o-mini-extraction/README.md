@@ -1,6 +1,6 @@
 # 🧾 Automate invoice analysis via Telegram with ChatGPT-4o-mini extraction
 
-> ⚡ **468 views** · 🧾 [Invoice Processing](../)
+> ⚡ **694 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

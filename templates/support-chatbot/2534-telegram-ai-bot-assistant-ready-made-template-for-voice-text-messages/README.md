@@ -1,6 +1,6 @@
 # 💬 Telegram AI bot assistant: ready-made template for voice & text messages
 
-> ⚡ **44,648 views** · 💬 [Support Chatbots](../)
+> ⚡ **46,044 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

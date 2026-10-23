@@ -1,6 +1,6 @@
 # 🤝 Send or update new Mailchimp subscribers in HubSpot
 
-> ⚡ **1,222 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,233 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

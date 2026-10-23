@@ -1,6 +1,6 @@
 # 📊 Detect keyword cannibalization with GPT-4o and Google Search Console
 
-> ⚡ **493 views** · 📊 [Market Research & Insights](../)
+> ⚡ **598 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

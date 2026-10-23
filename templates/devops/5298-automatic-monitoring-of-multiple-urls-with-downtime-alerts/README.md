@@ -1,6 +1,6 @@
 # ⚙️ Automatic monitoring of multiple URLs with downtime alerts
 
-> ⚡ **16,609 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **20,548 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

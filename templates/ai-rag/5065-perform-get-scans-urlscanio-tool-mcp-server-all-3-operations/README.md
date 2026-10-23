@@ -1,6 +1,6 @@
 # 🔍 Perform, get scans 🛠️ urlscan.io tool MCP server 💪 all 3 operations
 
-> ⚡ **135 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **149 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

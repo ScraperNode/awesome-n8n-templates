@@ -1,6 +1,6 @@
 # 🔬 📁 Extract and clean PDF data from Google Drive
 
-> ⚡ **3,477 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,688 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

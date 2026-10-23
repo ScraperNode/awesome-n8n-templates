@@ -1,6 +1,6 @@
 # 🎣 Simple lead capture and follow-on with n8n multi-forms
 
-> ⚡ **6,886 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **7,184 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

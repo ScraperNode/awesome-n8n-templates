@@ -1,6 +1,6 @@
 # 📖 AI agent to chat with you Search Console data, using OpenAI and Postgres
 
-> ⚡ **9,168 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **9,562 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

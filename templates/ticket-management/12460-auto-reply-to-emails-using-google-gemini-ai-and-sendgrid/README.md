@@ -1,6 +1,6 @@
 # 🎫 Auto-reply to emails using Google Gemini AI and SendGrid
 
-> ⚡ **10 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **133 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

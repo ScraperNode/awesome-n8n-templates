@@ -1,6 +1,6 @@
 # 💬 WordPress - AI chatbot to enhance user experience - with Supabase and OpenAI
 
-> ⚡ **12,887 views** · 💬 [Support Chatbots](../)
+> ⚡ **13,099 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 Document-based RAG chat assistant with Google Drive, Supabase & OpenAI
 
-> ⚡ **528 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **794 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

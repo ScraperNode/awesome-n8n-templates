@@ -1,0 +1,763 @@
+{
+  "meta": {
+    "instanceId": "7acee3d405453a2bf5c1eb9898527d635dbd09309071d72196b1e45e0dfd4a6a",
+    "templateCredsSetupCompleted": true
+  },
+  "nodes": [
+    {
+      "id": "90eded44-29f3-4d2e-bc49-5e0eaab02ace",
+      "name": "Read Log Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        496,
+        768
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultName": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1zj0LlOO4f0pOqmnvCocHMdibKVzyBglKcoCDHujjhYc",
+          "cachedResultName": "daily jira logs"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "efXQaXWbd26Rb3Ns",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "e413a007-ed1d-4d37-aafa-a7aa387eeba6",
+      "name": "Filter Pending + Today",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        688,
+        768
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst today = new Date();\nconst yyyy = today.getFullYear();\nconst mm = String(today.getMonth() + 1).padStart(2, '0');\nconst dd = String(today.getDate()).padStart(2, '0');\nconst todayStr = yyyy + '-' + mm + '-' + dd;\n\nconst pending = items.map((item, index) => {\n  return { \n    ...item.json, \n    sheet_row: index + 2\n  };\n}).filter(r => {\n  const rowDate = (r.date || '').toString().trim();\n  const rowStatus = (r.status || '').toString().trim().toLowerCase();\n  return rowStatus === 'pending' && rowDate <= todayStr && rowDate !== '';\n});\n\nif (pending.length === 0) {\n  return [{ json: { nothingToDo: true, todayStr, rows: [] } }];\n}\nreturn [{ json: { nothingToDo: false, todayStr, rows: pending } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "5635df8f-d763-4d4a-a23b-fa8eb0861b2a",
+      "name": "Anything To Process?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        912,
+        768
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.nothingToDo }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "5a1c200c-732e-47bb-86c3-13e0d118b271",
+      "name": "Split Into Rows",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1184,
+        976
+      ],
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nif (d.nothingToDo || !d.rows || d.rows.length === 0) return [];\n\nconst allSessions = $getWorkflowStaticData('global');\nallSessions.__loopResults = [];\n\nreturn d.rows.map(r => ({ json: r }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7c0c0f1b-a57d-4264-9b30-ec0a1b82a7ff",
+      "name": "Loop Rows",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        1440,
+        976
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "dd94842a-6b14-44a0-8374-0b689c45241e",
+      "name": "Build Payload",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1792,
+        992
+      ],
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nconst rowDate = (row.date || new Date().toISOString().slice(0, 10)).trim();\nlet startedISO = rowDate + 'T09:00:00.000+0000';\n\nif (row.started_at) {\n  try {\n    const timeStr = row.started_at.toString().trim();\n    const combined = rowDate + 'T' + timeStr + ':00.000+0000';\n    const parsed = new Date(combined);\n    if (!isNaN(parsed)) {\n      startedISO = parsed.toISOString().replace('Z', '+0000');\n    } else {\n      const parsed2 = new Date(rowDate + ' ' + timeStr);\n      if (!isNaN(parsed2)) startedISO = parsed2.toISOString().replace('Z', '+0000');\n    }\n  } catch(e) {}\n}\n\nlet timeSpent = '1h';\nif (row.log_time) {\n  const raw = row.log_time.toString().trim().toLowerCase();\n  if (/^\\d+h(\\d+m)?$/.test(raw))  { timeSpent = raw; }\n  else if (/^\\d+m$/.test(raw))      { timeSpent = raw; }\n  else if (/^[\\d.]+$/.test(raw))    {\n    const hrs = parseFloat(raw);\n    const h = Math.floor(hrs);\n    const m = Math.round((hrs - h) * 60);\n    timeSpent = h > 0 ? (h + 'h' + (m > 0 ? m + 'm' : '')) : m + 'm';\n  }\n}\n\nconst payload = { ...row, jiraIssueKey: row.ticket_id, rowDate, timeSpent, startedISO, logComment: row.log_text || 'Daily worklog' };\n\nconst allSessions = $getWorkflowStaticData('global');\nallSessions.__currentRow = { ticket_id: row.ticket_id, date: row.date, timeSpent, log_text: row.log_text || '', retry_count: parseInt(row.retry_count || 0), row_number: row.row_number };\n\nreturn [{ json: payload }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "764bccc9-2ebc-47bd-a5ac-8ff38b5e6176",
+      "name": "Jira: Add Worklog",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2208,
+        992
+      ],
+      "parameters": {
+        "url": "=https://YOUR-DOMAIN.atlassian.net/rest/api/3/issue/{{ $json.jiraIssueKey }}/worklog",
+        "method": "POST",
+        "options": {
+          "timeout": 15000
+        },
+        "jsonBody": "={{ { \"timeSpent\": $json.timeSpent, \"started\": $json.startedISO, \"comment\": { \"type\": \"doc\", \"version\": 1, \"content\": [{ \"type\": \"paragraph\", \"content\": [{ \"type\": \"text\", \"text\": $json.logComment }] }] } } }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth"
+      },
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "L6qJtD0ZGGwZ7Oh5",
+          "name": "Unnamed credential"
+        }
+      },
+      "typeVersion": 4.2,
+      "continueOnFail": true
+    },
+    {
+      "id": "7afeba35-7bde-46b7-81ea-fc47b9738d92",
+      "name": "Handle Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2512,
+        992
+      ],
+      "parameters": {
+        "jsCode": "const jiraResp = $input.first().json;\nconst allSessions = $getWorkflowStaticData('global');\nconst rowData = allSessions.__currentRow || {};\n\nconst isSuccess = !!(jiraResp.id || jiraResp.self);\n\nconst result = {\n  sheet_row:     rowData.row_number || rowData.sheet_row, \n  status:        isSuccess ? 'Completed' : 'Pending',\n  error_message: isSuccess ? '' : JSON.stringify(jiraResp).slice(0, 200),\n  retry_count:   isSuccess ? 0 : (rowData.retry_count + 1),\n  jiraSuccess:   isSuccess,\n  ticket_id:     rowData.ticket_id,\n  timeSpent:     rowData.timeSpent,\n};\n\nif (!allSessions.__loopResults) allSessions.__loopResults = [];\nallSessions.__loopResults.push(result);\n\nreturn [{ json: result }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "0c1deaea-9cf6-464d-a50d-b689a3150f25",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2752,
+        992
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "status",
+              "type": "string",
+              "value": "={{ $json.status }}"
+            },
+            {
+              "id": "a2",
+              "name": "error_message",
+              "type": "string",
+              "value": "={{ $json.error_message }}"
+            },
+            {
+              "id": "a3",
+              "name": "retry_count",
+              "type": "number",
+              "value": "={{ $json.retry_count }}"
+            },
+            {
+              "id": "a4",
+              "name": "ticket_id",
+              "type": "string",
+              "value": "={{ $json.ticket_id }}"
+            },
+            {
+              "id": "a5",
+              "name": "sheet_row",
+              "type": "number",
+              "value": "={{ $json.sheet_row }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "eafd898e-978e-4943-a651-0f15ef501720",
+      "name": "Update Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2928,
+        1088
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "status": "={{ $json.status }}",
+            "ticket_id": "={{ $json.ticket_id }}",
+            "row_number": "={{ $json.sheet_row }}",
+            "retry_count": "={{ $json.retry_count }}",
+            "error_message": "={{ $json.error_message }}"
+          },
+          "schema": [
+            {
+              "id": "ticket_id",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "ticket_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_text",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "log_text",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "started_at",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "started_at",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_time",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "log_time",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error_message",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "error_message",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "retry_count",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "retry_count",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "type": "number",
+              "display": true,
+              "removed": false,
+              "readOnly": true,
+              "required": false,
+              "displayName": "row_number",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "row_number"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultName": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1zj0LlOO4f0pOqmnvCocHMdibKVzyBglKcoCDHujjhYc",
+          "cachedResultName": "daily jira logs"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "efXQaXWbd26Rb3Ns",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "49a41b04-5e79-41b6-acd1-44df8fae51d3",
+      "name": "Build Summary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1776,
+        608
+      ],
+      "parameters": {
+        "jsCode": "const allSessions = $getWorkflowStaticData('global');\nconst results = allSessions.__loopResults || [];\nallSessions.__loopResults = [];\n\nlet success = 0, failed = 0, totalMinutes = 0;\nconst failedTickets = [];\nconst ticketIds = [];\n\nfor (const item of results) {\n  if (item.ticket_id) { ticketIds.push(item.ticket_id); }\n  if (item.jiraSuccess === true) {\n    success++;\n    const ts = item.timeSpent || '0m';\n    const h = ts.match(/(\\d+)h/) ? parseInt(ts.match(/(\\d+)h/)[1]) : 0;\n    const m = ts.match(/(\\d+)m/) ? parseInt(ts.match(/(\\d+)m/)[1]) : 0;\n    totalMinutes += (h * 60) + m;\n  } else {\n    failed++;\n    failedTickets.push(item.ticket_id + ' (' + item.date + ')');\n  }\n}\n\nconst h = Math.floor(totalMinutes / 60);\nconst m = totalMinutes % 60;\nconst totalStr = h > 0 ? h + 'h ' + (m > 0 ? m + 'm' : '') : m + 'm';\n\nreturn [{ json: { success, failed, totalStr: totalStr.trim() || '0m', today: new Date().toISOString().slice(0, 10), failedTickets: failedTickets.join(', ') || 'None', ticket_ids: ticketIds.join(', ') } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "3d4c3e82-8c57-4926-9aed-562cd7fbd010",
+      "name": "AI Summary",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        2064,
+        608
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {},
+        "messages": {
+          "values": [
+            {
+              "content": "={{ 'Write a friendly 2-3 sentence self-update about today\\'s Jira worklog. ' + $json.success + ' logs were added successfully, ' + $json.failed + ' failed. Total time logged: ' + $json.totalStr + '. ' + ($json.failed > 0 ? 'Failed tickets: ' + $json.failedTickets + '. ' : '') + 'Here is a summary of all tickets worked on today: ' + $json.ticket_ids + '. Keep it concise, positive, and professional.' }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "a3ms1tfFhxpJmnOI",
+          "name": "n8n free OpenAI API credits"
+        }
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "f65d4463-dfa3-40d6-aff1-764df96f5fdd",
+      "name": "Email: Nothing To Do",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1200,
+        576
+      ],
+      "webhookId": "da1f6abe-394e-4fb2-b010-af598e5fa5d6",
+      "parameters": {
+        "sendTo": "your@email.com",
+        "message": "<p>\ud83d\udca4 <strong>Jira Worklog \u2014 {{ $json.todayStr }}</strong></p><p>No pending rows found. Nothing to log today.</p>",
+        "options": {},
+        "subject": "Jira Worklog \u2014 No Rows Today"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "vUwbDKYaFbTMmTk5",
+          "name": "Gmail OAuth2 API"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "57a405ae-dcca-4295-87f3-82735d9abee1",
+      "name": "Email: Final Report",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        2480,
+        608
+      ],
+      "webhookId": "07c5735b-ee32-4a81-9193-433b99d3488b",
+      "parameters": {
+        "sendTo": "your@email.com",
+        "message": "=<p>\ud83d\udcc5 <strong>Jira Daily Report \u2014 {{ $('Build Summary').first().json.today }}</strong></p><p>\u2705 Success: <strong>{{ $('Build Summary').first().json.success }} ticket(s)</strong></p><p>\u274c Failed: <strong>{{ $('Build Summary').first().json.failed }} ticket(s)</strong></p><p>\u23f3 Total: <strong>{{ $('Build Summary').first().json.totalStr }}</strong></p>{{ $('Build Summary').first().json.failed > 0 ? '<p>\u26a0\ufe0f Failed: <code>' + $('Build Summary').first().json.failedTickets + '</code></p>' : '' }}<p>\ud83e\udd16 {{ $json.message.content }}</p>",
+        "options": {},
+        "subject": "Jira Daily Worklog Report"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "vUwbDKYaFbTMmTk5",
+          "name": "Gmail OAuth2 API"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "638156fb-4f6a-4418-913e-a0d171b247fd",
+      "name": "Every Night 10 PM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        224,
+        768
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 22 * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "ff78c3bb-cba3-4cd8-8c35-028d42178499",
+      "name": "SN: Jira Daily Worklog Automation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        224
+      ],
+      "parameters": {
+        "width": 668,
+        "height": 256,
+        "content": "**Jira Daily Worklog Automation**\n\nLogs time to Jira every night from a Google Sheet. No manual entries needed.\n\n\u2192 Reads sheet \u2192 filters pending rows \u2192 posts to Jira API \u2192 updates status \u2192 sends email report\n\n**Requires:** Google Sheets \u00b7 Gmail \u00b7 Jira Basic Auth \u00b7 OpenAI API"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "eaceddcf-0463-4a6c-9036-6a32dd2401bb",
+      "name": "SN: Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        688,
+        224
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 368,
+        "height": 256,
+        "content": "**\u2699\ufe0f Setup**\n\n1. Set your **Google Sheet ID** in `Read Log Sheet` and `Update Sheet`\n2. Add your **Jira domain** to the URL in `Jira: Add Worklog`\n3. Set `sendTo` email in both Gmail nodes\n4. Credentials needed:\n   - Google Sheets OAuth2\n   - Gmail OAuth2\n   - HTTP Basic Auth (Jira email + API token)\n   - OpenAI API key"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e7d42f6c-f3d0-4397-a8bc-6089efd7131e",
+      "name": "SN: Trigger + Read + Filter",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        496
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1064,
+        "height": 528,
+        "content": "**\u2460 Trigger + Read + Filter**\n\nRuns every night at **10 PM** (`0 0 22 * * *`)\n\nReads all rows \u00b7 keeps only:\n- `status = pending`\n- `date \u2264 today` (catches past missed rows)\n- Assigns `sheet_row` for precise update later"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "72845bf9-80a0-4b39-bffd-68c0a09ff74b",
+      "name": "SN: No Pending Rows",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1120,
+        432
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 284,
+        "height": 320,
+        "content": "**\u2461 No Pending Rows**\n\nSends a \"nothing to log\" email and stops."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b630881b-93ac-4e51-8122-0a7742ba3d82",
+      "name": "SN: Loop \u2014 One Row at a Time",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1120,
+        816
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 512,
+        "height": 336,
+        "content": "**\u2462 Loop \u2014 One Row at a Time**\n\n- Output 0 \u2192 done \u2192 Build Summary\n- Output 1 \u2192 next item \u2192 Build Payload\n- After sheet update, loops back for next row"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "38e008b7-89f7-453a-8db1-21c822788caa",
+      "name": "SN: Build Payload",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1696,
+        816
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 360,
+        "height": 336,
+        "content": "**\u2463 Build Payload**\n\n- Uses `row.date` for timestamp (not today)\n- Normalises `log_time` \u2192 Jira format (`1h30m`)\n- Stores row in static data so it survives the HTTP call"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a1a5e274-c632-495d-9a5a-42f121cdad08",
+      "name": "SN: Jira API",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2080,
+        816
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 324,
+        "height": 336,
+        "content": "**\u2464 Jira API**\n\n`POST /rest/api/3/issue/{ticket_id}/worklog`\n\nAuth: HTTP Basic (email + API token)\n`continueOnFail: true` \u2014 one failure won't stop the loop"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b3742666-b040-4dc2-bf3f-c31f1c013d57",
+      "name": "SN: Handle Response + Update Sheet",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2432,
+        816
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 628,
+        "height": 428,
+        "content": "**\u2465 Handle Response + Update Sheet**\n\n- Reads row from static data (safe after HTTP call)\n- \u2705 Success \u2192 sets `status = Completed`\n- \u274c Fail \u2192 keeps `Pending`, increments `retry_count`, logs error\n- Matches by `row_number` \u2014 works even if ticket_id appears twice"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "286bf39f-54d9-433d-8454-62fc259425d8",
+      "name": "SN: Summary + Email",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1696,
+        432
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1016,
+        "height": 360,
+        "content": "**\u2466 Summary + Email**\n\n- Reads all results from `__loopResults[]` static array\n- GPT-4o-mini writes a friendly 2\u20133 sentence team update\n- Sends HTML email: success count \u00b7 fail count \u00b7 total time \u00b7 AI note"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Loop Rows": {
+      "main": [
+        [
+          {
+            "node": "Build Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Summary": {
+      "main": [
+        [
+          {
+            "node": "Email: Final Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Update Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Payload": {
+      "main": [
+        [
+          {
+            "node": "Jira: Add Worklog",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Summary": {
+      "main": [
+        [
+          {
+            "node": "AI Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Log Sheet": {
+      "main": [
+        [
+          {
+            "node": "Filter Pending + Today",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Response": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Into Rows": {
+      "main": [
+        [
+          {
+            "node": "Loop Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Night 10 PM": {
+      "main": [
+        [
+          {
+            "node": "Read Log Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira: Add Worklog": {
+      "main": [
+        [
+          {
+            "node": "Handle Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything To Process?": {
+      "main": [
+        [
+          {
+            "node": "Email: Nothing To Do",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Split Into Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Pending + Today": {
+      "main": [
+        [
+          {
+            "node": "Anything To Process?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

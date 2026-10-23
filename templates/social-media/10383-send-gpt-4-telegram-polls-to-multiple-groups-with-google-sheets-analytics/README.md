@@ -1,6 +1,6 @@
 # 📱 Send GPT-4 Telegram polls to multiple groups with Google Sheets analytics
 
-> ⚡ **6 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **102 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate & Translate Video Subtitles with OpenAI Whisper and LibreTranslate
 
-> ⚡ **1,670 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,244 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

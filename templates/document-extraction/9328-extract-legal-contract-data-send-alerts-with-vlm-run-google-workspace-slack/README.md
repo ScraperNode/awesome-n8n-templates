@@ -1,6 +1,6 @@
 # 🔬 Extract legal contract data & send alerts with VLM run, Google Workspace & Slack
 
-> ⚡ **171 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **201 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

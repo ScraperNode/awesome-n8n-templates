@@ -1,6 +1,6 @@
 # ⚡ Detect holiday conflicts & suggest meeting reschedules with Google Calendar and Slack
 
-> ⚡ **81 views** · ⚡ [Personal Productivity](../)
+> ⚡ **105 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎯 Extract invoice data from Google Drive to Sheets using PDF.co AI parser
 
-> ⚡ **403 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **423 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

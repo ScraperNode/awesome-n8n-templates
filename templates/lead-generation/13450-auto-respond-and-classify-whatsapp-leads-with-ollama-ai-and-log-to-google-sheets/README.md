@@ -1,6 +1,6 @@
 # 🎣 Auto-respond and classify WhatsApp leads with Ollama AI and log to Google Sheets
 
-> ⚡ **326 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,989 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

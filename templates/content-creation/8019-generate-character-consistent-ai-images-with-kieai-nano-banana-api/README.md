@@ -1,6 +1,6 @@
 # 🎬 Generate character-consistent AI images with KIE.AI Nano Banana API
 
-> ⚡ **3,486 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,159 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

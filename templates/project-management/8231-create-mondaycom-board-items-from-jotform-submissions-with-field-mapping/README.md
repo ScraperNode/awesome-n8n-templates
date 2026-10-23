@@ -1,6 +1,6 @@
 # 📋 Create Monday.com board items from Jotform submissions with field mapping
 
-> ⚡ **225 views** · 📋 [Project Management](../)
+> ⚡ **284 views** · 📋 [Project Management](../)
 
 ## Description
 

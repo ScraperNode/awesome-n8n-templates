@@ -1,6 +1,6 @@
 # 🧾 Automatic invoice detection & reminder creation with Gmail & Google Tasks
 
-> ⚡ **1,818 views** · 🧾 [Invoice Processing](../)
+> ⚡ **2,045 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

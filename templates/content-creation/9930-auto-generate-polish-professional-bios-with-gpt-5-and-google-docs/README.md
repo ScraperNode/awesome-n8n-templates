@@ -1,6 +1,6 @@
 # 🎬 Auto-generate & polish professional bios with GPT-5 and Google Docs
 
-> ⚡ **56 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **61 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Convert audio emails to Japanese transcripts with OpenAI GPT-4o & Google Suite
 
-> ⚡ **43 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **83 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

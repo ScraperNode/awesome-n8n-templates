@@ -1,6 +1,6 @@
 # 🔬 Transcribe audio files from Cloud Storage
 
-> ⚡ **10,703 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **10,809 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

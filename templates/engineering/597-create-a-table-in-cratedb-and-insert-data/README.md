@@ -1,6 +1,6 @@
 # ⚒️ Create a table in CrateDB and insert data
 
-> ⚡ **512 views** · ⚒️ [Engineering](../)
+> ⚡ **521 views** · ⚒️ [Engineering](../)
 
 ## Description
 

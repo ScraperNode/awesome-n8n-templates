@@ -1,6 +1,6 @@
 # 🔬 Automated certificate generator with Google Sheets, Slides, PDF & Gmail delivery
 
-> ⚡ **768 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,137 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

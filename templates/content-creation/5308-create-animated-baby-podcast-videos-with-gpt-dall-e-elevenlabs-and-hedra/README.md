@@ -1,6 +1,6 @@
 # 🎬 Create animated baby podcast videos with GPT, DALL-E, ElevenLabs and Hedra
 
-> ⚡ **361 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **383 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

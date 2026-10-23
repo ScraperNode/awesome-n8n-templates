@@ -1,6 +1,6 @@
 # 🎣 GPT 4.1 - Freelancer.com job alert system with auto proposal generator
 
-> ⚡ **252 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **379 views** · 🎣 [Lead Generation & Enrichment](../)
 
 > 💡 **Pro Tip** — Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.
 >

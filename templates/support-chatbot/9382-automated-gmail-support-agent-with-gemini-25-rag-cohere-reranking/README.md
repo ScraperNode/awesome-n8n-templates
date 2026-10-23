@@ -1,6 +1,6 @@
 # 💬 Automated Gmail support agent with Gemini 2.5, RAG & Cohere reranking
 
-> ⚡ **288 views** · 💬 [Support Chatbots](../)
+> ⚡ **374 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

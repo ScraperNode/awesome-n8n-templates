@@ -1,6 +1,6 @@
 # 🎬 Generate 3D models & textures from images with Hunyuan3D AI
 
-> ⚡ **1,917 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,286 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

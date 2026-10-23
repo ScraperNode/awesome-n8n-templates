@@ -1,6 +1,6 @@
 # 💬 Voice-driven travel itinerary generator using ElevenLabs, GPT-4o & Pinecone
 
-> ⚡ **864 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,431 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

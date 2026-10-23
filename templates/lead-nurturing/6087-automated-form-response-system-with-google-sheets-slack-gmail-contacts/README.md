@@ -1,6 +1,6 @@
 # 💬 Automated form response system with Google Sheets, Slack, Gmail & Contacts
 
-> ⚡ **381 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **454 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

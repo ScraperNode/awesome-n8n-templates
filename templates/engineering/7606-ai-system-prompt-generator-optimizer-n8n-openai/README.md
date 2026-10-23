@@ -1,6 +1,6 @@
 # ⚒️ AI system prompt generator & optimizer (n8n + OpenAI)
 
-> ⚡ **1,712 views** · ⚒️ [Engineering](../)
+> ⚡ **2,857 views** · ⚒️ [Engineering](../)
 
 ## Description
 

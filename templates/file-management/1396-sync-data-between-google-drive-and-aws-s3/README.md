@@ -1,6 +1,6 @@
 # 📁 Sync data between Google Drive and AWS S3
 
-> ⚡ **3,502 views** · 📁 [File Management](../)
+> ⚡ **3,576 views** · 📁 [File Management](../)
 
 ## Description
 

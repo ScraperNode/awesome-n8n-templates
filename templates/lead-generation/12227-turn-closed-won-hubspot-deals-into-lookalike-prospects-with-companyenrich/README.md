@@ -1,6 +1,6 @@
 # 🎣 Turn closed-won HubSpot deals into lookalike prospects with CompanyEnrich
 
-> ⚡ **51 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **86 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

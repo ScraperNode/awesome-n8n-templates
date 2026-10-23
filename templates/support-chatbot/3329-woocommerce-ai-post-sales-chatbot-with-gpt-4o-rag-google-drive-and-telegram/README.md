@@ -1,6 +1,6 @@
 # 💬 WooCommerce AI post-sales chatbot with GPT-4o, RAG, Google Drive and Telegram
 
-> ⚡ **3,835 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,962 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

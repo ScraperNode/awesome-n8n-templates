@@ -1,6 +1,6 @@
 # 📁 Bilibili video downloader with Google Drive upload & email notification
 
-> ⚡ **461 views** · 📁 [File Management](../)
+> ⚡ **654 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Create single new masked email address with Fastmail
 
-> ⚡ **499 views** · ⚡ [Personal Productivity](../)
+> ⚡ **585 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Automate invoice creation and delivery with Google Sheets, Invoice Ninja and Gmail
 
-> ⚡ **129 views** · 🧾 [Invoice Processing](../)
+> ⚡ **148 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

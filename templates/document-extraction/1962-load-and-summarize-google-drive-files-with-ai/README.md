@@ -1,6 +1,6 @@
 # 🔬 Load and summarize Google Drive files with AI
 
-> ⚡ **35,317 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **41,385 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

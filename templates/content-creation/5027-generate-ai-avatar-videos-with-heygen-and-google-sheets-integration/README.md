@@ -1,6 +1,6 @@
 # 🎬 Generate AI avatar videos with HeyGen and Google Sheets integration
 
-> ⚡ **3,171 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,451 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

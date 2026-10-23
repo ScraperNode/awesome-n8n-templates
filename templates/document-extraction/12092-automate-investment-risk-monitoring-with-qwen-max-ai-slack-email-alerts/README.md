@@ -1,6 +1,6 @@
 # 🔬 Automate investment risk monitoring with Qwen-Max AI, Slack & email alerts
 
-> ⚡ **224 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **336 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

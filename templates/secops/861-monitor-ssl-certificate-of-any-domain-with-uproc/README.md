@@ -1,6 +1,6 @@
 # 🔒 Monitor SSL certificate of any domain with uProc
 
-> ⚡ **2,991 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **3,135 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

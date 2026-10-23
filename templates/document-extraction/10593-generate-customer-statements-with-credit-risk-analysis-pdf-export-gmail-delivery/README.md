@@ -1,6 +1,6 @@
 # 🔬 Generate customer statements with credit risk analysis, PDF export & Gmail delivery
 
-> ⚡ **108 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **325 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

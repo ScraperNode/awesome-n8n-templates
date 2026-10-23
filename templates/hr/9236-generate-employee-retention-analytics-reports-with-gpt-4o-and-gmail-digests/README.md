@@ -1,6 +1,6 @@
 # 👥 Generate employee retention analytics reports with GPT-4o and Gmail digests
 
-> ⚡ **86 views** · 👥 [HR & Recruitment](../)
+> ⚡ **109 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

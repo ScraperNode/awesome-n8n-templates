@@ -1,6 +1,6 @@
 # 📁 Automatically save & organize LINE message files in Google Drive with Sheets logging
 
-> ⚡ **4,759 views** · 📁 [File Management](../)
+> ⚡ **5,053 views** · 📁 [File Management](../)
 
 ## Description
 

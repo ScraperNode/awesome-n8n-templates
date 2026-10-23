@@ -1,6 +1,6 @@
 # 💬 Automate real estate property tours with Google Calendar, Slack & Calendly
 
-> ⚡ **669 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **770 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

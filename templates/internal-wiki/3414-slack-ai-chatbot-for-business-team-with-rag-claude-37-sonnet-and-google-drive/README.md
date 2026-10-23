@@ -1,6 +1,6 @@
 # 📖 Slack AI chatbot for business team with RAG, Claude 3.7 Sonnet and Google Drive
 
-> ⚡ **9,756 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **10,336 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

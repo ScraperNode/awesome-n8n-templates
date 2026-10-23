@@ -1,6 +1,6 @@
 # 🔬 Generating tax summaries from Stripe, storing in Google Sheets, and sending Slack alerts
 
-> ⚡ **106 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **124 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

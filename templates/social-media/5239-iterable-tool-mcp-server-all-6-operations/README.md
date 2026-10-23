@@ -1,6 +1,6 @@
 # 📱 🛠️ Iterable tool MCP server 💪 all 6 operations
 
-> ⚡ **168 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **172 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

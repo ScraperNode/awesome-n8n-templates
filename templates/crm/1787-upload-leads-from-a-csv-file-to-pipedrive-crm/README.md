@@ -1,6 +1,6 @@
 # 🤝 Upload leads from a CSV file to Pipedrive CRM
 
-> ⚡ **3,113 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **3,320 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

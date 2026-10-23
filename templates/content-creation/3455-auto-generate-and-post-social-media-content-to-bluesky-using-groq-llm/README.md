@@ -1,6 +1,6 @@
 # 🎬 Auto-generate and post social media content to Bluesky using Groq LLM
 
-> ⚡ **1,414 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,482 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

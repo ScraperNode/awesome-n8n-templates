@@ -1,6 +1,6 @@
 # 📖 RAG chatbot for company documents using Google Drive and Gemini
 
-> ⚡ **277,478 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **349,060 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

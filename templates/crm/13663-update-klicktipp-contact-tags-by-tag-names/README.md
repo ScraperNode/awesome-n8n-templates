@@ -1,6 +1,6 @@
 # 🤝 Update KlickTipp contact tags by tag names
 
-> ⚡ **0 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **10 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

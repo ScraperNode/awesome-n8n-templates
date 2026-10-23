@@ -1,59 +1,78 @@
-# 🔬 Generate M&A due diligence reports with OpenAI, LlamaIndex and Pinecone
+# 🔬 Generate M&A due diligence reports with Decodo, OpenAI and Pinecone
 
-> ⚡ **32 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **143 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 
-M&A Due Diligence Automation with AI
+Half a day of deal reading, compressed into minutes. This [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) workflow turns unstructured pitch decks and investment memos into polished Due Diligence PDF reports. Documents get parsed, claims get verified against live web data, and an AI Agent writes the analysis.
 
-Automatically parse financial documents using LlamaIndex, embed data into Pinecone, and generate AI-driven reports with GPT-5-mini. Reducing manual review from days to minutes.
+*Last updated: September 2026.*
 
-## Why Use This Workflow?
+## The Problem It Solves
 
-Cuts document review time dramatically, minimizes reliance on expensive analysts for initial extraction, ensures consistent data-backed insights, and scales effortlessly across multiple deals in parallel.
+Reviewing a single deal, reading the deck, cross-checking claims online, formatting the summary, easily takes half a day. Multiply that by 10–20 inbound deals per week, and your team is buried in low-leverage work before any real analysis begins.
 
-## Ideal For
-
-Investment analysts, private equity firms, M&A advisors, and financial professionals who need rapid, standardized preliminary due diligence reports.
+This workflow compresses that cycle into a single automated pipeline.
 
 ## How It Works
 
-1. **Trigger** — A webhook receives due diligence documents (PDF, DOCX, XLSX) with metadata.
-2. **Cache Check** — Pinecone is queried first. If the deal was processed before, parsing is skipped entirely.
-3. **Document Parsing** — New documents are sent to LlamaIndex for structured text extraction.
-4. **Vectorization** — Parsed text is embedded via OpenAI and stored in a Pinecone namespace unique to each deal.
-5. **AI Analysis** — A Langchain Agent (GPT-5-mini) acting as a Senior Investment Analyst queries Pinecone across six key areas (company profile, financials, risks, business model, etc.) and outputs structured JSON.
-6. **Report Generation** — The JSON is converted to HTML, then rendered as a professional PDF via Puppeteer.
-7. **Delivery** — The PDF is uploaded to AWS S3 and a public URL is returned via the webhook.
+1. **Upload:** Send a PDF, DOCX, or PPTX to the webhook endpoint.
+2. **Parse:** LlamaParse extracts clean Markdown from complex layouts, preserving tables and financial data.
+3. **Enrich:** The workflow identifies the target company, then pulls supplementary data from the open web (corporate pages, risk signals) using Decodo's search and scraping APIs to verify and contextualize claims made in the source documents.
+4. **Analyze:** An AI Agent runs six targeted retrieval queries against the combined dataset: revenue history, key risks, business model, competitive landscape, management profile, and deal terms.
+5. **Deliver:** Results render into a branded HTML template, convert to PDF via Puppeteer, upload to Cloudflare R2, and return a download link.
 
-## Setup
+Each deal gets a unique namespace in Pinecone, so documents are isolated and repeat uploads skip redundant parsing.
 
-### Prerequisites
+## What You Need
 
-| Requirement | Purpose |
-|---|---|
-| [n8n instance](https://n8n.partnerlinks.io/khmuhtadin) | Workflow execution |
-| LlamaIndex API Key | Document parsing |
-| OpenAI API Key | Embeddings + GPT-5-mini agent |
-| Pinecone API Key | Vector storage & retrieval |
-| AWS S3 Account | PDF report storage |
+| Service | Role |
+| --- | --- |
+| [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) | Workflow orchestration |
+| [LlamaIndex Cloud](https://cloud.llamaindex.ai/) | Document parsing (LlamaParse) |
+| [Pinecone](https://www.pinecone.io/) | Vector storage & retrieval |
+| [OpenAI API](https://openai.com/) | Embeddings (text-embedding-3-small) & LLM analysis (GPT-5.4) |
+| [Decodo API](https://visit.decodo.com/1G9ox6) | Web search & page scraping |
+| [Cloudflare R2](https://developers.cloudflare.com/r2/) | Report file storage (S3-compatible) |
 
-### Steps
+## Quick Start
 
-1. Import the JSON workflow into your [n8n instance](https://n8n.partnerlinks.io/khmuhtadin).
-2. Configure credentials for LlamaIndex (HTTP Header Auth), OpenAI, Pinecone, and AWS S3.
-3. Set your S3 `bucketName` and update `baseUrl` in the "Create Public URL" node.
-4. Optionally customize the AI persona and queries in the "Analyze" (Langchain Agent) node.
-5. Test by sending sample documents to `/webhook/dd-ai`.
+1. Import the workflow JSON into your [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance.
+2. Add credentials for OpenAI, Pinecone, LlamaIndex (Header Auth), Decodo, and Cloudflare R2 (S3-compatible).
+3. Update the R2 base URL in the "Build Public Report URL" node.
+4. Fire a test POST with a sample deck to the webhook.
 
-## Customization
+## Customization Ideas
 
-Modify the agent prompt to adjust personas or add new queries. Update the output parser's JSON schema to capture additional fields. For advanced use, integrate with CRMs (Salesforce, HubSpot), virtual data rooms (Datasite), or add Slack/email notifications on report completion.
+- Swap the HTML template to match your firm's branding and report structure.
+- Extend the AI Agent prompt to cover additional dimensions like ESG scoring or technical debt.
+- Route the finished PDF to Slack, email, or your CRM instead of (or alongside) R2.
+
+## Troubleshooting
+
+| Symptom | Likely Fix |
+| --- | --- |
+| Parsing times out | Increase the Wait node duration; check file size against LlamaParse limits |
+| Thin or generic analysis | Verify the source PDF is text-based, not a scanned image, enable OCR if needed |
+| Broken PDF layout | Simplify CSS in the HTML render node; older Puppeteer builds handle basic layouts better |
 
 ---
 
-**Created by:** [Khmuhtadin](https://khmuhtadin.com) | [Workflows](https://khaisa.studio/products/) • [LinkedIn](https://www.linkedin.com/in/khmuhtadin/) • [Medium](https://medium.com/@khaisastudio)
-**Need custom workflows?** [Contact us](https://khaisa.studio/contact)
+### Quick Answers
+**What documents can it read?**  
+PDF, DOCX, and PPTX sent to the webhook endpoint.  
+**How is each deal kept separate?**  
+A unique Pinecone namespace per deal isolates documents and skips re-parsing on repeat uploads.  
+**Where does the report go?**  
+Cloudflare R2, with a download link returned instantly.  
+
+**Made by:** [khmuhtadin](https://khmuhtadin.com)
+**Category:** Business Intelligence | **Tags:** AI, RAG, Due Diligence, Decodo
+
+[Portfolio](https://khmuhtadin.com) • [Store](https://khaisa.studio/products/) • [LinkedIn](https://www.linkedin.com/in/khmuhtadin/) • [Medium](https://medium.com/@khaisastudio) • [Threads](https://www.threads.com/@khmuhtadin)
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

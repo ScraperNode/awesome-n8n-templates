@@ -1,6 +1,6 @@
 # 📈 Predict next 5-day stock trends with Twelve Data API & Google Sheets
 
-> ⚡ **558 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **723 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

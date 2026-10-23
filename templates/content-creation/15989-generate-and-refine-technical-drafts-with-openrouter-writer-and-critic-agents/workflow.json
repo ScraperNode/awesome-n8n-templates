@@ -1,0 +1,373 @@
+{
+  "id": "UipnLeMYC2fboPBb",
+  "meta": {
+    "instanceId": "da13b80f35ed9d16adbf337111fadd798f3c80e989940f27089cab3947e57699"
+  },
+  "name": "Template 4: Self-Critiquing Writer Loop (Writer + Critic)",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "063918df-c3a8-44f9-aca7-00907411481b",
+      "name": "Webhook - Brief In",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        112,
+        304
+      ],
+      "webhookId": "2a5995e5-5803-402a-a435-f0edc6049179",
+      "parameters": {
+        "path": "self-critiquing-writer",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "05fa9ac6-a4e1-4ab5-9f70-7322da11684c",
+      "name": "Normalize Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        320,
+        304
+      ],
+      "parameters": {
+        "jsCode": "// Normalize incoming brief and initialize loop state\nconst raw = $input.first().json;\nconst src = (raw && typeof raw.body === 'object' && raw.body !== null) ? raw.body : raw;\nreturn {\n  json: {\n    requestId: src.requestId || 'REQ-' + Date.now(),\n    topic: String(src.topic || '').trim(),\n    brief: String(src.brief || '').trim(),\n    minScore: typeof src.minScore === 'number' ? src.minScore : 7.5,\n    maxIterations: typeof src.maxIterations === 'number' ? src.maxIterations : 3,\n    iterationCount: 0,\n    previousDraft: null,\n    critiqueScore: null,\n    critiqueSubscores: null,\n    critiqueIssues: null,\n    critiqueFeedback: null,\n    currentDraft: null,\n    draftWordCount: 0,\n    passed: false,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9bf87e7b-050a-4af6-973d-12881f65cc75",
+      "name": "Writer Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        544,
+        304
+      ],
+      "parameters": {
+        "text": "=Topic: {{ $json.topic }}\n\nBrief:\n{{ $json.brief }}\n\nIteration: {{ $json.iterationCount + 1 }} of {{ $json.maxIterations }}\n\n{{ $json.critiqueFeedback ? ('Previous draft:\\n' + ($json.previousDraft || '') + '\\n\\nCritic feedback to address in this revision (last score ' + $json.critiqueScore + '):\\n' + $json.critiqueFeedback) : 'This is the first draft.' }}",
+        "options": {
+          "systemMessage": "You are a technical writer for a content pipeline. Given a topic and brief, write a clear, focused draft.\n\nIf a previous draft and critic feedback are provided, you are revising the draft. Address every issue the critic raised while keeping what was already working. Do not introduce new issues. Your previous draft is shown for reference.\n\nGuidelines:\n- Match the brief's tone and audience.\n- Lead with the strongest point.\n- No filler sentences, no hedging openers, no summary restatements of the brief.\n- Aim for 300 to 500 words unless the brief specifies otherwise.\n\nReturn ONLY valid JSON in this exact shape (no prose, no code fences):\n{\n  \"draft\": \"the full article text as a single string with paragraph breaks as \\\\n\\\\n\",\n  \"wordCount\": 0,\n  \"revisionOf\": null or \"previous\"\n}"
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "0369db9a-4102-4070-ba34-b7a4fae4d13f",
+      "name": "OpenRouter - Writer",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "position": [
+        448,
+        528
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "credentials": {
+        "openRouterApi": {
+          "id": "m9IRh1pT1eHIdKoX",
+          "name": "OpenRouter account 2"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "04e4aec7-2860-4523-a6c9-6ba35edcc33c",
+      "name": "Parse Writer Output",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        784,
+        304
+      ],
+      "parameters": {
+        "jsCode": "// Parse writer output and merge with current pipeline state.\n// Read state from Increment + Stage Feedback on loop iterations, fall back to Normalize Request on the first iteration.\nconst raw = $input.first().json;\nlet state;\ntry { state = $('Increment + Stage Feedback').last().json; }\ncatch (e) { state = $('Normalize Request').first().json; }\nif (!state || state.iterationCount === undefined) state = $('Normalize Request').first().json;\n\nlet draft = '';\nlet wordCount = 0;\nlet parseError = null;\ntry {\n  const text = typeof raw.output === 'string' ? raw.output : JSON.stringify(raw.output);\n  const m = text.match(/\\{[\\s\\S]*\\}/);\n  const parsed = JSON.parse(m ? m[0] : text);\n  if (!parsed.draft) throw new Error('Missing draft');\n  draft = parsed.draft;\n  wordCount = parsed.wordCount || draft.trim().split(/\\s+/).length;\n} catch (e) {\n  parseError = e.message;\n}\n\nreturn {\n  json: {\n    ...state,\n    currentDraft: draft,\n    draftWordCount: wordCount,\n    writerParseError: parseError\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "0ba240bf-8046-4fa0-98da-851da4c54df5",
+      "name": "Critic Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1008,
+        304
+      ],
+      "parameters": {
+        "text": "=Brief:\n{{ $json.brief }}\n\nDraft to review (iteration {{ $json.iterationCount + 1 }} of {{ $json.maxIterations }}):\n{{ $json.currentDraft }}",
+        "options": {
+          "systemMessage": "You are an editorial critic for a content pipeline. Given a brief and a draft, score the draft on a 1 to 10 scale and provide specific, actionable feedback for revision.\n\nScore on these dimensions (each 1 to 10), then return a weighted overall score:\n- accuracy: are facts and claims well-supported and not invented? (weight 30%)\n- clarity: is it easy to follow, with strong paragraph structure? (weight 25%)\n- relevance: does it match the brief's audience, tone, and stated goals? (weight 25%)\n- conciseness: free of filler, hedging openers, and restatement? (weight 20%)\n\nIf you can spot a specific problem, name it. Do not just say 'improve clarity', say what specifically is unclear and how to fix it. Limit issues to the 3 most important ones for the next revision.\n\nReturn ONLY valid JSON in this exact shape (no prose, no code fences):\n{\n  \"score\": 0,\n  \"subscores\": { \"accuracy\": 0, \"clarity\": 0, \"relevance\": 0, \"conciseness\": 0 },\n  \"issues\": [\"specific issue 1\", \"specific issue 2\"],\n  \"feedback\": \"1 to 2 sentence summary of what to fix in the next revision\"\n}"
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "dbdb5af3-0d14-41ec-b5bc-db8a65593937",
+      "name": "OpenRouter - Critic",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "position": [
+        912,
+        528
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "credentials": {
+        "openRouterApi": {
+          "id": "m9IRh1pT1eHIdKoX",
+          "name": "OpenRouter account 2"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d6ab8d4b-5427-4f11-9dcc-1a571d8b937a",
+      "name": "Parse Critic Output",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1248,
+        304
+      ],
+      "parameters": {
+        "jsCode": "// Parse critic output and decide whether the draft passes the quality bar\nconst raw = $input.first().json;\nconst state = $('Parse Writer Output').last().json;\n\nlet parsed = null;\nlet parseError = null;\ntry {\n  const text = typeof raw.output === 'string' ? raw.output : JSON.stringify(raw.output);\n  const m = text.match(/\\{[\\s\\S]*\\}/);\n  parsed = JSON.parse(m ? m[0] : text);\n} catch (e) {\n  parseError = e.message;\n}\n\nconst score = typeof parsed?.score === 'number' ? parsed.score : 0;\nconst subscores = parsed?.subscores || {};\nconst issues = Array.isArray(parsed?.issues) ? parsed.issues : [];\nconst feedbackSummary = parsed?.feedback || '';\n\nconst passed = score >= state.minScore;\n\n// Compose the feedback the writer will see on the next iteration\nlet critiqueFeedback = null;\nif (!passed) {\n  const issueLines = issues.length ? issues.map((it, i) => `${i + 1}. ${it}`).join('\\n') : '(none enumerated)';\n  critiqueFeedback = feedbackSummary + '\\n\\nSpecific issues to fix:\\n' + issueLines;\n}\n\nreturn {\n  json: {\n    ...state,\n    critiqueScore: score,\n    critiqueSubscores: subscores,\n    critiqueIssues: issues,\n    critiqueFeedback: critiqueFeedback,\n    passed: passed,\n    criticParseError: parseError\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "840f2a47-83d3-4f49-a1f6-2e1c4ee5b4ff",
+      "name": "Passed or Max Iterations?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1472,
+        304
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "id": "cond-passed",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.passed }}",
+              "rightValue": true
+            },
+            {
+              "id": "cond-max-hit",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "leftValue": "={{ $json.iterationCount + 1 }}",
+              "rightValue": "={{ $json.maxIterations }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "03e33f98-2bd5-4a90-888a-cb24bf604293",
+      "name": "Finalize Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1680,
+        208
+      ],
+      "parameters": {
+        "jsCode": "// Build the final response envelope\nconst s = $input.first().json;\nconst iterationsUsed = (s.iterationCount || 0) + 1;\nconst hitMaxIterations = iterationsUsed >= s.maxIterations && !s.passed;\n\nreturn {\n  json: {\n    requestId: s.requestId,\n    topic: s.topic,\n    brief: s.brief,\n    success: s.passed === true,\n    finalDraft: s.currentDraft,\n    wordCount: s.draftWordCount || 0,\n    finalScore: s.critiqueScore,\n    subscores: s.critiqueSubscores || {},\n    issues: s.critiqueIssues || [],\n    iterationsUsed: iterationsUsed,\n    maxIterations: s.maxIterations,\n    hitMaxIterations: hitMaxIterations,\n    routedTo: s.passed ? 'downstream' : 'human_review',\n    lastCritiqueFeedback: s.passed ? null : s.critiqueFeedback,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "bb027f26-bd00-42a9-9589-58b1274604c7",
+      "name": "Respond to Client",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1904,
+        208
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "b6665f0f-18e1-42ee-8361-9c0f100b076e",
+      "name": "Increment + Stage Feedback",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1680,
+        432
+      ],
+      "parameters": {
+        "jsCode": "// Bump the iteration counter and stage the prior draft + critic feedback for the next pass\nconst s = $input.first().json;\nreturn {\n  json: {\n    ...s,\n    iterationCount: (s.iterationCount || 0) + 1,\n    previousDraft: s.currentDraft,\n    currentDraft: null,\n    passed: false\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9f1adffb-9020-460f-b0c0-8f96054e4529",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -608,
+        -16
+      ],
+      "parameters": {
+        "width": 560,
+        "height": 800,
+        "content": "## Self-Critiquing Writer Loop (Writer + Critic)\n\n### How it works\nTwo cooperating agents produce a revised draft against a quality bar:\n1. **Intake** (Deterministic): Webhook receives topic and brief. Code node normalizes the payload and initializes loop state (`iterationCount`, `minScore`, `maxIterations`).\n2. **Writer Agent** (AI): Drafts an article from the topic and brief. On revision iterations, it receives the Critic's enumerated issues and the previous draft so it can revise rather than rewrite.\n3. **Critic Agent** (AI): Scores the draft on accuracy, clarity, relevance, and conciseness using a weighted formula. Returns a score, subscores, enumerated issues, and a short summary for the Writer.\n4. **Decision** (Deterministic): IF node exits the loop when the score meets `minScore` OR `iterationCount` reaches `maxIterations`.\n5. **Outcome**: Passing drafts flow to Finalize + Respond. Failures route to human review with the last raw draft and unresolved critic feedback preserved.\n\n### Setup\n- Connect your **LLM credentials** to the Writer and Critic Chat Model sub-nodes (template ships with `openai/gpt-4o-mini` on both)\n- Copy the Webhook test URL and send a POST with `topic`, `brief`, `minScore`, `maxIterations`\n- Start with `minScore: 7.5` for the happy path, then raise to `9.0` to exercise the revision loop and max-iterations exit\n\n### Customization\n- Swap in a cheaper model for the Writer and a stronger one for the Critic without touching anything else\n- Edit the Critic's system prompt to change the four scoring dimensions or their weights\n- Tighten or loosen `maxIterations` based on your cost/quality tradeoff\n\nThis template is a learning companion to the Production AI Playbook, a series that explores strategies, shares best practices, and provides practical examples for building reliable AI systems in n8n."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": true,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "versionId": "335c84cd-0fdc-4967-a7ec-8e235e259a03",
+  "connections": {
+    "Critic Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse Critic Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Writer Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse Writer Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Request": {
+      "main": [
+        [
+          {
+            "node": "Writer Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Brief In": {
+      "main": [
+        [
+          {
+            "node": "Normalize Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter - Critic": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Critic Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter - Writer": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Writer Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Critic Output": {
+      "main": [
+        [
+          {
+            "node": "Passed or Max Iterations?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Writer Output": {
+      "main": [
+        [
+          {
+            "node": "Critic Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Passed or Max Iterations?": {
+      "main": [
+        [
+          {
+            "node": "Finalize Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Increment + Stage Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Increment + Stage Feedback": {
+      "main": [
+        [
+          {
+            "node": "Writer Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

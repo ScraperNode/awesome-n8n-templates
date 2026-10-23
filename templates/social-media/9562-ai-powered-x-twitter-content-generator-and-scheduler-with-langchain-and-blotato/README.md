@@ -1,6 +1,6 @@
 # 📱 AI-powered X (Twitter) content generator and scheduler with LangChain and Blotato
 
-> ⚡ **357 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **434 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

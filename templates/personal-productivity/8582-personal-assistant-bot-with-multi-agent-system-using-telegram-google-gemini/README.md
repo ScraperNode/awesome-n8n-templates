@@ -1,6 +1,6 @@
 # ⚡ Personal assistant bot with multi-agent system using Telegram & Google Gemini
 
-> ⚡ **2,997 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,820 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

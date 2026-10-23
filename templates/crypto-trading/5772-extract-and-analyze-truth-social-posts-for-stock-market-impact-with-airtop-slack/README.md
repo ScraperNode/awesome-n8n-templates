@@ -1,6 +1,6 @@
 # 📈 Extract and analyze Truth Social posts for stock market impact with Airtop & Slack
 
-> ⚡ **2,563 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **3,209 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

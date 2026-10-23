@@ -1,6 +1,6 @@
 # 📋 Manage Trello tasks with AI assistants via MCP server
 
-> ⚡ **242 views** · 📋 [Project Management](../)
+> ⚡ **434 views** · 📋 [Project Management](../)
 
 ## Description
 

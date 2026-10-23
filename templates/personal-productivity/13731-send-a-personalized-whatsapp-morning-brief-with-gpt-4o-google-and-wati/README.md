@@ -1,6 +1,6 @@
 # ⚡ Send a personalized WhatsApp morning brief with GPT-4o, Google and WATI
 
-> ⚡ **17 views** · ⚡ [Personal Productivity](../)
+> ⚡ **211 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

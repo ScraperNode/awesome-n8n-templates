@@ -1,6 +1,6 @@
 # 📱 Automatically import your Meta Threads posts into Notion
 
-> ⚡ **2,925 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,966 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

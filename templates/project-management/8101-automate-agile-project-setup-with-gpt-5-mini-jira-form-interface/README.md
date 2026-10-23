@@ -1,6 +1,6 @@
 # 📋 Automate agile project setup with GPT-5 Mini, Jira & form interface
 
-> ⚡ **509 views** · 📋 [Project Management](../)
+> ⚡ **538 views** · 📋 [Project Management](../)
 
 ## Description
 

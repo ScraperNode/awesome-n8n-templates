@@ -1,6 +1,6 @@
 # ⚙️ Triage alerts from Syncro and submit to OpsGenie
 
-> ⚡ **1,421 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,428 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Automated invoice generation & payment reminders with QuickBooks, Jotform & GPT-4o
 
-> ⚡ **242 views** · 🧾 [Invoice Processing](../)
+> ⚡ **347 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

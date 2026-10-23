@@ -1,6 +1,6 @@
 # 🎣 Automate JotForm submissions to Google Sheets
 
-> ⚡ **55 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **71 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

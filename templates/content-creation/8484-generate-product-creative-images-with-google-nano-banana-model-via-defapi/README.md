@@ -1,6 +1,6 @@
 # 🎬 Generate product creative images with Google Nano-Banana model via Defapi
 
-> ⚡ **2,100 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,266 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

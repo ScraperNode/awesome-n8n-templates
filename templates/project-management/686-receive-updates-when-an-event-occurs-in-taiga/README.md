@@ -1,6 +1,6 @@
 # 📋 Receive updates when an event occurs in Taiga
 
-> ⚡ **769 views** · 📋 [Project Management](../)
+> ⚡ **798 views** · 📋 [Project Management](../)
 
 ## Description
 

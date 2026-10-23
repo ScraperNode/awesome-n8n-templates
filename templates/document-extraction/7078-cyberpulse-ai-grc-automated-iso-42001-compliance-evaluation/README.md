@@ -1,6 +1,6 @@
 # 🔬 CYBERPULSE AI GRC: automated ISO 42001 compliance evaluation
 
-> ⚡ **85 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **140 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔒 Automate free IP analysis: NixGuard AI summaries & Wazuh integration
 
-> ⚡ **1,813 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,342 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

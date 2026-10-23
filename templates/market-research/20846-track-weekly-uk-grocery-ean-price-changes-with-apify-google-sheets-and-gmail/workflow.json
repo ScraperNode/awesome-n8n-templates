@@ -1,0 +1,929 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "name": "UK grocery basket: weekly EAN price monitor",
+  "nodes": [
+    {
+      "id": "3f6a1c52-8d2e-4b7a-9c31-5e0d7a4b2f10",
+      "name": "Every Monday 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 8,
+              "weeksInterval": 1,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "8a4d2e97-1b63-4f0c-a5d8-2c7e9b1f3a46",
+      "name": "Settings",
+      "type": "n8n-nodes-base.set",
+      "notes": "The one node you edit: the EAN list (one per line), the alert threshold in percent, the Google Sheet and tab for the history, and the email address the alerts go to.",
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5c2f8a19-3b7e-4d04-9e61-a8d0c4b7f235",
+              "name": "standbyUrl",
+              "type": "string",
+              "value": "https://yappman--uk-supermarket-price-scraper.apify.actor"
+            },
+            {
+              "id": "9e4b1d76-0a53-4c8f-b2e7-3f6a5c8d1b04",
+              "name": "eans",
+              "type": "string",
+              "value": "501+12345678907\n+12345678904385\n5+1234567890029"
+            },
+            {
+              "id": "2b7a0e93-d1c6-4f58-8a34-c5e9b0d7a612",
+              "name": "thresholdPct",
+              "type": "number",
+              "value": 5
+            },
+            {
+              "id": "d8f31c5a-6e92-4b07-a9d1-0c4e7b2f8a53",
+              "name": "sheetDocumentId",
+              "type": "string",
+              "value": "YOUR_SHEET_ID"
+            },
+            {
+              "id": "46a9e2d8-b0f4-4c31-97e5-8d2a6c1b3f70",
+              "name": "sheetName",
+              "type": "string",
+              "value": "Prices"
+            },
+            {
+              "id": "0c5d7b34-9a18-4e62-b3f0-7a1c8e4d2b95",
+              "name": "alertTo",
+              "type": "string",
+              "value": "you@example.com"
+            },
+            {
+              "id": "e1b83a6f-4d27-4c90-8a5b-2f9d0c7e6a18",
+              "name": "includeLoyalty",
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "c1e7b530-6a94-4d28-8f1b-0a3d5c9e7b82",
+      "name": "Build basket request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Build the request body for POST /basket from the EAN list in the Settings node.\n//\n// Everything above the entry marker near the bottom is a pure function with no\n// n8n globals, so it is unit-tested with node --test on integrations/n8n/test/*.test.mjs.\n// After editing this file run `node integrations/n8n/build.mjs`; that copies it\n// into the Build basket request Code node of weekly-ean-price-monitor.json.\n\nconst MAX_ITEMS = 200;\nconst EAN_LENGTHS = [8, 12, 13, 14];\n\nfunction toBool(value, fallback) {\n  if (value === undefined || value === null || value === '') return fallback;\n  if (typeof value === 'string') return !['false', '0', 'no', 'off'].includes(value.trim().toLowerCase());\n  return Boolean(value);\n}\n\n// A GTIN-12 and the same code padded to GTIN-13 are one product, so compare\n// EANs without their leading zeros.\nfunction eanKey(ean) {\n  return ean.replace(/^0+(?=[0-9])/, '');\n}\n\nfunction problem(headline, reason, action, rejected, duplicates) {\n  return {\n    status: 'problem',\n    headline,\n    reason,\n    action,\n    text: `${headline}\\n\\n${reason}\\n\\n${action}`,\n    count: 0,\n    rejected,\n    duplicates,\n  };\n}\n\n// Returns { status: 'ok', body, count, rejected, duplicates } or, when the list\n// cannot be sent, { status: 'problem', headline, reason, action, text, ... }.\n// It never throws: a bad list goes to the problem branch instead of crashing.\nfunction buildBasketRequest(eansInput, options) {\n  const includeLoyalty = toBool(options && options.includeLoyalty, true);\n  const pieces = Array.isArray(eansInput) ? eansInput : String(eansInput ?? '').split(/[\\r\\n,;]+/);\n  const items = [];\n  const seen = new Set();\n  const rejected = [];\n  const duplicates = [];\n  for (const piece of pieces) {\n    const input = String(piece ?? '').trim();\n    if (input === '') continue;\n    if (!/^[0-9]+$/.test(input)) {\n      rejected.push({ input, reason: 'not all digits' });\n    } else if (!EAN_LENGTHS.includes(input.length)) {\n      rejected.push({ input, reason: `${input.length} digits, an EAN has 8, 12, 13 or 14` });\n    } else if (seen.has(eanKey(input))) {\n      duplicates.push(input);\n    } else {\n      seen.add(eanKey(input));\n      items.push({ ean: input });\n    }\n  }\n\n  if (items.length === 0) {\n    const shown = rejected.slice(0, 5).map((r) => r.input).join(', ');\n    return problem(\n      'no valid EANs in Settings',\n      rejected.length > 0\n        ? `None of the ${rejected.length} entries in the eans field is a valid EAN (8, 12, 13 or 14 digits). First few: ${shown}.`\n        : 'The eans field in Settings is empty.',\n      'Put one EAN per line in the eans field of the Settings node, then run the workflow again. Nothing was sent to Apify.',\n      rejected,\n      duplicates,\n    );\n  }\n  if (items.length > MAX_ITEMS) {\n    return problem(\n      'too many EANs',\n      `The list has ${items.length} valid EANs but the basket endpoint takes at most ${MAX_ITEMS} per request.`,\n      `Remove ${items.length - MAX_ITEMS} of them, or split the list across two copies of this workflow, each with its own sheet tab. Nothing was sent to Apify.`,\n      rejected,\n      duplicates,\n    );\n  }\n  return {\n    status: 'ok',\n    count: items.length,\n    body: { items, live: false, includeLoyalty },\n    rejected,\n    duplicates,\n  };\n}\n\n// --- n8n entry ---\nconst settings = $('Settings').first().json;\nreturn [{ json: buildBasketRequest(settings.eans, { includeLoyalty: settings.includeLoyalty }) }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "5b9f0d4a-2e71-4c86-b3a5-7d1e8c0f6a29",
+      "name": "Valid basket?",
+      "type": "n8n-nodes-base.if",
+      "notes": "True: send the request. False: email the problem (no valid EAN, or more than 200).",
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "7f0a4c92-e5b1-4d36-8c27-b9d3a1e6f508",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "ok"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "e2a86f13-9c40-4b57-a1d3-4f8b0e6c2d75",
+      "name": "Price the basket",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Header Auth credential: name Authorization, value Bearer then a space then your Apify token. Error answers come back as data on purpose, so the next node can explain them.",
+      "onError": "continueRegularOutput",
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $('Settings').first().json.standbyUrl.replace(/\\/+$/, '') + '/basket' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 300000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "credential-id",
+          "name": "Apify API token (Bearer)"
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "7d3c5a81-f2b6-4e09-9a4c-1b6e8d0f3c57",
+      "name": "Check the answer",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1500,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Classify the answer of the Price the basket HTTP Request node.\n//\n// Returns { status: 'ok', answer, warnings, ... } for a usable answer, or\n// { status: 'problem', headline, reason, action, ... } with a plain-English\n// reason for the problem email. A retailer that is down is only a warning.\n//\n// Everything above the entry marker near the bottom is a pure function with no\n// n8n globals, so it is unit-tested with node --test on integrations/n8n/test/*.test.mjs.\n// After editing this file run `node integrations/n8n/build.mjs`; that copies it\n// into the Check the answer Code node of weekly-ean-price-monitor.json.\n\nconst STALE_DAYS = 10;\nconst WEEK_PATTERN = /^\\d{4}-W\\d{2}$/;\nconst NETWORK_CODES = ['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'ECONNABORTED', 'ENOTFOUND', 'EAI_AGAIN', 'EHOSTUNREACH', 'EPIPE'];\n\nfunction problem(fields) {\n  const p = { status: 'problem', statusCode: null, code: null, retryAfter: null, details: null, ...fields };\n  p.text = `${p.headline}\\n\\n${p.reason}\\n\\n${p.action}`;\n  return p;\n}\n\nfunction headerValue(headers, name) {\n  if (!headers || typeof headers !== 'object') return null;\n  for (const key of Object.keys(headers)) {\n    if (key.toLowerCase() === name) return String(headers[key]);\n  }\n  return null;\n}\n\nfunction parseBody(body) {\n  if (typeof body !== 'string') return body;\n  try {\n    return JSON.parse(body);\n  } catch (e) {\n    return body;\n  }\n}\n\n// The endpoint answers errors as { error: { code, message, details } }.\nfunction readError(body) {\n  if (body && typeof body === 'object' && body.error && typeof body.error === 'object') {\n    return { code: body.error.code ?? null, message: String(body.error.message ?? ''), details: body.error.details ?? null };\n  }\n  if (body && typeof body === 'object' && typeof body.error === 'string') {\n    return { code: null, message: body.error, details: null };\n  }\n  if (typeof body === 'string' && body.trim() !== '') {\n    return { code: null, message: body.trim().slice(0, 200), details: null };\n  }\n  return { code: null, message: '', details: null };\n}\n\nfunction classifyError(statusCode, body, retryAfter) {\n  const err = readError(body);\n  const said = err.message ? ` The endpoint said: ${err.message.endsWith('.') ? err.message : `${err.message}.`}` : '';\n  const seconds = retryAfter && /^[0-9]+$/.test(retryAfter) ? `${retryAfter} seconds` : retryAfter;\n  const wait = seconds ? ` The endpoint asks you to wait ${seconds} before trying again.` : '';\n  const tag = err.code ? `${statusCode} ${err.code}` : `${statusCode}`;\n  const found = { statusCode, code: err.code, retryAfter, details: err.details };\n\n  if (statusCode === 400) {\n    return problem({\n      ...found,\n      headline: 'the basket request was invalid',\n      reason: `The endpoint rejected the request as invalid (${tag}).${said}`,\n      action: 'Check the eans field in Settings: 8, 12, 13 or 14 digits each, at most 200. Then run the workflow again.',\n    });\n  }\n  if (statusCode === 401 || statusCode === 403) {\n    return problem({\n      ...found,\n      headline: 'Apify refused the token',\n      reason: `Apify answered ${tag}: the token was not accepted for this Actor.${said}`,\n      action: 'Check the Header Auth credential: name Authorization, value Bearer, a space, then your token. The token needs the account-level Actors Run permission and Permission mode Full access (Apify refuses a Standby call from a token that can run only this one Actor).',\n    });\n  }\n  if (statusCode === 402) {\n    return problem({\n      ...found,\n      headline: 'Apify spend limit reached',\n      reason: `Apify says the spend limit has been reached (${tag}), so the basket was not priced.${said}`,\n      action: 'Raise the usage limit on your Apify account or wait for it to reset, then run the workflow again.',\n    });\n  }\n  if (statusCode === 429) {\n    return problem({\n      ...found,\n      headline: 'the basket endpoint is busy',\n      reason: `The endpoint is busy (${tag}).${said}${wait}`,\n      action: 'Run the workflow again after the wait. This workflow prices from the weekly snapshot (live is off), so this should be rare.',\n    });\n  }\n  if (statusCode === 503) {\n    if (err.code === 'index-unavailable') {\n      return problem({\n        ...found,\n        headline: 'the weekly price index is not available',\n        reason: `The endpoint could not load the weekly price index (${tag}).${said}${wait}`,\n        action: 'This usually clears within minutes. Run the workflow again after the wait. If it stays broken, check the weekly snapshot run in Apify Console.',\n      });\n    }\n    if (err.code === 'charging-failed') {\n      return problem({\n        ...found,\n        headline: 'the endpoint could not charge for the request',\n        reason: `The endpoint could not record the charge (${tag}), so it returned no prices.${said}${wait}`,\n        action: 'Run the workflow again after the wait. If it repeats, check the billing and spend limit on your Apify account.',\n      });\n    }\n    if (err.code === 'pricing-not-configured') {\n      return problem({\n        ...found,\n        headline: 'the Actor pricing is not set up',\n        reason: `The Actor has no price for basket lines configured yet (${tag}). This is a problem on the Actor side.${said}${wait}`,\n        action: 'There is nothing to change in this workflow. Try again later, or tell the Actor author if it persists.',\n      });\n    }\n    return problem({\n      ...found,\n      headline: 'the basket endpoint is unavailable',\n      reason: `The endpoint is temporarily unavailable (${tag}).${said}${wait}`,\n      action: 'Run the workflow again after the wait.',\n    });\n  }\n  if (statusCode === 504) {\n    return problem({\n      ...found,\n      headline: 'pricing the basket timed out',\n      reason: `The endpoint took too long to price the basket (${tag}).${said}`,\n      action: 'Run the workflow again. If it repeats, shorten the eans list or split it across two copies of this workflow.',\n    });\n  }\n  if (statusCode === 404) {\n    return problem({\n      ...found,\n      headline: 'the basket endpoint was not found',\n      reason: `Nothing answered at that address (${tag}).${said}`,\n      action: 'Check standbyUrl in Settings. It should be the Actor Standby address, without /basket on the end.',\n    });\n  }\n  return problem({\n    ...found,\n    headline: `unexpected answer (${statusCode})`,\n    reason: `The endpoint answered ${tag}.${said}${wait}`,\n    action: 'Open the failed execution in n8n and look at the output of Price the basket for the full answer.',\n  });\n}\n\nfunction isIsoWeek(value) {\n  return typeof value === 'string' && WEEK_PATTERN.test(value);\n}\n\n// The error n8n hands over can carry the request it made, headers and token\n// included, so it is never printed or serialised. Only a few named fields with a\n// strict shape, or a known network error code found in a plain message, are used.\nfunction describeFailure(err) {\n  const found = [];\n  if (err && typeof err === 'object') {\n    if (typeof err.name === 'string' && err.name !== 'Error' && /^[A-Za-z]{1,40}$/.test(err.name)) found.push(err.name);\n    if (typeof err.code === 'string' && /^[A-Za-z0-9_]{1,40}$/.test(err.code)) found.push(err.code);\n    const status = String(err.httpCode ?? err.statusCode ?? '');\n    if (/^[0-9]{3}$/.test(status)) found.push(`HTTP ${status}`);\n  } else if (typeof err === 'string') {\n    for (const code of NETWORK_CODES) {\n      if (err.includes(code)) found.push(code);\n    }\n  }\n  return found.length > 0 ? found.join(', ') : 'no response from the endpoint';\n}\n\nfunction checkAnswer(response) {\n  const res = response || {};\n  if (res.statusCode === undefined || res.statusCode === null) {\n    return problem({\n      headline: 'no answer from the basket endpoint',\n      reason: `The request did not get an HTTP answer: ${describeFailure(res.error)}.`,\n      action: 'Check standbyUrl in Settings and that n8n can reach the internet, then run the workflow again. If the request timed out after 300 seconds it may still have been charged, so look at your Apify usage first.',\n    });\n  }\n  const statusCode = Number(res.statusCode);\n  const body = parseBody(res.body);\n  if (!(statusCode >= 200 && statusCode < 300)) {\n    return classifyError(statusCode, body, headerValue(res.headers, 'retry-after'));\n  }\n  if (!body || typeof body !== 'object' || !Array.isArray(body.retailers) || body.retailers.length === 0) {\n    return problem({\n      statusCode,\n      headline: 'unexpected answer',\n      reason: `The endpoint answered ${statusCode} but the body has no list of retailers.`,\n      action: 'Open the failed execution in n8n and look at the output of Price the basket. If the answer format has changed, this workflow needs updating.',\n    });\n  }\n  const snapshot = body.snapshot || {};\n  const weeks = [snapshot.week];\n  for (const r of body.retailers) {\n    if (r && r.snapshot && r.snapshot.week !== undefined && r.snapshot.week !== null) weeks.push(r.snapshot.week);\n  }\n  const wrongWeeks = weeks.filter((w) => !isIsoWeek(w));\n  if (wrongWeeks.length > 0) {\n    const got = wrongWeeks[0] === undefined || wrongWeeks[0] === null ? 'none' : String(wrongWeeks[0]).slice(0, 20);\n    return problem({\n      statusCode,\n      headline: 'unexpected snapshot week',\n      reason: `The snapshot week in the answer is not an ISO week such as 2026-W40 (got ${got}), so nothing was written to the sheet.`,\n      action: 'Open the failed execution in n8n and look at the output of Price the basket. If the answer format has changed, this workflow needs updating.',\n    });\n  }\n  if (snapshot.stale === true) {\n    const age = typeof snapshot.ageDays === 'number' ? `, ${snapshot.ageDays} days old` : '';\n    return problem({\n      statusCode,\n      headline: 'prices are stale',\n      reason: `Prices are more than ${STALE_DAYS} days old, the weekly snapshot may have failed (snapshot ${snapshot.week ?? 'unknown'}${age}). Nothing was written to the sheet.`,\n      action: 'Look at the weekly snapshot run in Apify Console; the index is rebuilt on Sundays. Run this workflow again once a fresh snapshot exists.',\n    });\n  }\n\n  const warnings = [];\n  let available = 0;\n  let matchedLines = 0;\n  for (const r of body.retailers) {\n    if (r.available === false) {\n      warnings.push({ retailer: r.retailer, reason: r.reason ?? 'unavailable' });\n      continue;\n    }\n    available += 1;\n    matchedLines += Array.isArray(r.lines) ? r.lines.length : 0;\n    if (r.snapshot && r.snapshot.stale === true) {\n      warnings.push({ retailer: r.retailer, reason: `prices are more than ${STALE_DAYS} days old` });\n    }\n  }\n  if (available === 0) {\n    return problem({\n      statusCode,\n      headline: 'no retailer could be priced',\n      reason: `Every retailer was unavailable: ${warnings.map((w) => `${w.retailer} (${w.reason})`).join(', ')}.`,\n      action: 'Check the weekly snapshot run in Apify Console, then run the workflow again.',\n    });\n  }\n  if (matchedLines === 0) {\n    return problem({\n      statusCode,\n      headline: 'no EAN matched anywhere',\n      reason: 'None of the EANs in Settings matched a product at any retailer this week.',\n      action: 'Check the EANs (copy one from a product page to test). If they matched before, the weekly snapshot may be incomplete: look at the snapshot run in Apify Console.',\n    });\n  }\n  return { status: 'ok', statusCode, answer: body, warnings, week: snapshot.week ?? null, matchedLines };\n}\n\n// --- n8n entry ---\nreturn [{ json: checkAnswer($input.first().json) }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "0f8e2b64-3a1d-4c95-b7e0-6a9c4d2f1e83",
+      "name": "Answer ok?",
+      "type": "n8n-nodes-base.if",
+      "notes": "True: carry on to the sheet. False: email the problem with the reason.",
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "3d9c6e15-a8f2-4b70-9d43-e0b5c2a7f184",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "ok"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "b46d1e08-7c53-4a2f-8e91-3d5b0a7c9f14",
+      "name": "Flatten prices",
+      "type": "n8n-nodes-base.code",
+      "onError": "continueErrorOutput",
+      "position": [
+        2100,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Flatten the basket answer into one sheet row per matched line per retailer.\n//\n// Row columns, in the order the Google Sheet header row must have them:\n// week, pricedAt, retailer, ean, name, packSize, price, loyaltyPrice,\n// effectivePrice, currency, matchedBy, confidence, retailerProductId, url,\n// recordedAt. A missing packSize or loyaltyPrice becomes an empty cell. A line\n// with no name, price or retailer product id is an error, never a half-empty row.\n// A snapshot week that is not an ISO week returns a problem item instead of rows;\n// the entry block turns that into an error so it reaches the problem email.\n//\n// Everything above the entry marker near the bottom is a pure function with no\n// n8n globals, so it is unit-tested with node --test on integrations/n8n/test/*.test.mjs.\n// After editing this file run `node integrations/n8n/build.mjs`; that copies it\n// into the Flatten prices Code node of weekly-ean-price-monitor.json.\n\nconst WEEK_PATTERN = /^\\d{4}-W\\d{2}$/;\n\nfunction toBool(value, fallback) {\n  if (value === undefined || value === null || value === '') return fallback;\n  if (typeof value === 'string') return !['false', '0', 'no', 'off'].includes(value.trim().toLowerCase());\n  return Boolean(value);\n}\n\nfunction isNumber(value) {\n  return typeof value === 'number' && Number.isFinite(value);\n}\n\nfunction blank(value) {\n  return value === undefined || value === null ? '' : value;\n}\n\nfunction fail(where, what) {\n  throw new Error(`flattenPrices: ${where} has no ${what}`);\n}\n\n// A snapshot week that is not an ISO week (2026-W40) is a problem item, not rows.\nfunction badWeek(got) {\n  const shown = got === undefined || got === null ? 'none' : String(got).slice(0, 20);\n  const headline = 'unexpected snapshot week';\n  const reason = `The snapshot week in the answer is not an ISO week such as 2026-W40 (got ${shown}), so no rows were made.`;\n  const action = 'Open the failed execution in n8n and look at the output of Price the basket. If the answer format has changed, this workflow needs updating.';\n  return { status: 'problem', headline, reason, action, text: `${headline}\\n\\n${reason}\\n\\n${action}` };\n}\n\n// answer: the body of a 200 answer from POST /basket (the `answer` field the\n// Check the answer node passes on). settings: { includeLoyalty }.\n// nowIso: the ISO time of this run, written to the recordedAt column.\nfunction flattenPrices(answer, settings, nowIso) {\n  if (!answer || !Array.isArray(answer.retailers)) fail('the answer', 'list of retailers');\n  const top = answer.snapshot || {};\n  const weeks = [top.week];\n  for (const r of answer.retailers) {\n    if (r && r.available !== false && r.snapshot && r.snapshot.week !== undefined && r.snapshot.week !== null) weeks.push(r.snapshot.week);\n  }\n  const wrongWeeks = weeks.filter((w) => typeof w !== 'string' || !WEEK_PATTERN.test(w));\n  if (wrongWeeks.length > 0) return badWeek(wrongWeeks[0]);\n  if (typeof answer.currency !== 'string' || answer.currency === '') fail('the answer', 'currency');\n  const includeLoyalty = toBool(settings && settings.includeLoyalty, true);\n\n  const rows = [];\n  const unmatched = [];\n  const unavailable = [];\n  const eans = [];\n  const seenEans = new Set();\n  const noteEan = (ean) => {\n    if (!seenEans.has(ean)) {\n      seenEans.add(ean);\n      eans.push(ean);\n    }\n  };\n\n  for (const retailer of answer.retailers) {\n    const retailerName = retailer && retailer.retailer;\n    if (typeof retailerName !== 'string' || retailerName === '') fail('a retailer entry', 'retailer name');\n    if (retailer.available === false) {\n      unavailable.push({ retailer: retailerName, reason: blank(retailer.reason) });\n      continue;\n    }\n    const snap = retailer.snapshot || top;\n    for (const line of retailer.lines || []) {\n      const where = `${retailerName} line ${line && line.index}`;\n      const ean = line && line.input && line.input.ean;\n      const m = line && line.matched;\n      if (!ean) fail(where, 'input ean');\n      if (!m) fail(where, 'matched product');\n      if (typeof m.name !== 'string' || m.name === '') fail(where, 'name');\n      if (!isNumber(m.price)) fail(where, 'price');\n      if (m.retailerProductId === undefined || m.retailerProductId === null || m.retailerProductId === '') {\n        fail(where, 'retailerProductId');\n      }\n      const loyalty = isNumber(m.loyaltyPrice) ? m.loyaltyPrice : null;\n      noteEan(String(ean));\n      rows.push({\n        week: snap.week || top.week,\n        pricedAt: m.pricedAt || snap.pricedAt || top.pricedAt || '',\n        retailer: retailerName,\n        ean: String(ean),\n        name: m.name,\n        packSize: blank(m.packSize),\n        price: m.price,\n        loyaltyPrice: loyalty === null ? '' : loyalty,\n        effectivePrice: includeLoyalty && loyalty !== null && loyalty < m.price ? loyalty : m.price,\n        currency: answer.currency,\n        matchedBy: blank(m.matchedBy),\n        confidence: isNumber(m.confidence) ? m.confidence : '',\n        retailerProductId: String(m.retailerProductId),\n        url: blank(m.url),\n        recordedAt: nowIso,\n      });\n    }\n    const missing = [];\n    for (const u of retailer.unmatched || []) {\n      const ean = u && u.input && u.input.ean;\n      if (ean) {\n        missing.push(String(ean));\n        noteEan(String(ean));\n      }\n    }\n    if (missing.length > 0) unmatched.push({ retailer: retailerName, eans: missing });\n  }\n\n  return {\n    status: 'ok',\n    week: top.week,\n    pricedAt: top.pricedAt || '',\n    currency: answer.currency,\n    recordedAt: nowIso,\n    includeLoyalty,\n    rowCount: rows.length,\n    rows,\n    unmatched,\n    unavailable,\n    eans,\n  };\n}\n\n// --- n8n entry ---\nconst settings = $('Settings').first().json;\nconst flat = flattenPrices($input.first().json.answer, { includeLoyalty: settings.includeLoyalty }, new Date().toISOString());\nif (flat.status === 'problem') throw new Error(`${flat.headline}: ${flat.reason}`);\nreturn [{ json: flat }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "29a5c7f3-4e80-4d16-a0b2-8c1f6e3d5a97",
+      "name": "Read history",
+      "type": "n8n-nodes-base.googleSheets",
+      "notes": "Reads every row of the history tab. Always outputs one item, so an empty tab (first run) still carries on.",
+      "onError": "continueErrorOutput",
+      "position": [
+        2400,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Settings').first().json.sheetName }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Settings').first().json.sheetDocumentId }}"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "d90b3e6a-1f47-4c82-9b5d-2e7a0c4f8b31",
+      "name": "Compare with last week",
+      "type": "n8n-nodes-base.code",
+      "onError": "continueErrorOutput",
+      "position": [
+        2700,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Compare this week's prices with the history read from the Google Sheet.\n//\n// For each retailer and EAN it finds the latest earlier week in the history and\n// works out the % change of effectivePrice. Movers change by thresholdPct or\n// more, up or down. It also lists items priced last week but not this week,\n// lists items that now match a different retailer product (not compared, since\n// a different product is not a price move), marks a week that is already in the\n// sheet (so nothing is appended twice) and, when there is no earlier week at\n// all, records a baseline with no alerts.\n//\n// Everything above the entry marker near the bottom is a pure function with no\n// n8n globals, so it is unit-tested with node --test on integrations/n8n/test/*.test.mjs.\n// After editing this file run `node integrations/n8n/build.mjs`; that copies it\n// into the Compare with last week Code node of weekly-ean-price-monitor.json.\n\nconst DEFAULT_THRESHOLD_PCT = 5;\nconst WEEK_PATTERN = /^[0-9]{4}-W[0-9]{2}$/;\n\n// A sheet that already holds numbers can hand EANs and product ids back without\n// their leading zeros, so compare them without.\nfunction eanKey(value) {\n  return String(value ?? '').trim().replace(/^0+(?=[0-9])/, '');\n}\n\nfunction toNumber(value) {\n  if (typeof value === 'number') return Number.isFinite(value) ? value : null;\n  if (typeof value !== 'string') return null;\n  const cleaned = value.trim().replace(/[\u00a3$\u20ac, ]/g, '');\n  if (cleaned === '') return null;\n  const n = Number(cleaned);\n  return Number.isFinite(n) ? n : null;\n}\n\nfunction esc(value) {\n  return String(value ?? '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#39;');\n}\n\n// Plain text. In the HTML every string that came from the endpoint goes through\n// esc(), so wrap this in esc() there; the text version uses it as it is.\nfunction money(value, currency) {\n  const n = Number(value);\n  if (!Number.isFinite(n)) return '';\n  return currency === 'GBP' ? `\u00a3${n.toFixed(2)}` : `${n.toFixed(2)} ${currency ?? ''}`.trim();\n}\n\nfunction signedPct(value) {\n  return `${value > 0 ? '+' : ''}${value.toFixed(1)}%`;\n}\n\nfunction link(name, url) {\n  const label = esc(name);\n  const safe = typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://'));\n  return safe ? `<a href='${esc(url)}'>${label}</a>` : label;\n}\n\n// History rows come back from Google Sheets as text or numbers. Keep the ones\n// with a week, retailer, EAN and price, and count the rest so the note can say so.\n// productId is the retailerProductId cell, or '' when it is empty.\nfunction readHistory(history) {\n  const rows = [];\n  let ignored = 0;\n  for (const raw of Array.isArray(history) ? history : []) {\n    if (!raw || typeof raw !== 'object' || Object.keys(raw).length === 0) continue;\n    const week = String(raw.week ?? '').trim();\n    const retailer = String(raw.retailer ?? '').trim();\n    const ean = eanKey(raw.ean);\n    const price = toNumber(raw.effectivePrice) ?? toNumber(raw.price);\n    if (!WEEK_PATTERN.test(week) || retailer === '' || ean === '' || price === null) {\n      ignored += 1;\n      continue;\n    }\n    rows.push({\n      week,\n      retailer,\n      ean,\n      price,\n      name: String(raw.name ?? ''),\n      url: String(raw.url ?? ''),\n      productId: String(raw.retailerProductId ?? '').trim(),\n    });\n  }\n  return { rows, ignored };\n}\n\n// The latest history row of one retailer and EAN from a week before `week`.\n// ISO week labels (2026-W39) sort correctly as plain text.\nfunction latestBefore(rows, week) {\n  let best = null;\n  for (const r of rows || []) {\n    if (r.week < week && (best === null || r.week >= best.week)) best = r;\n  }\n  return best;\n}\n\nfunction renderEmail(r, flat, rejected) {\n  const cur = flat.currency;\n  const unmatched = flat.unmatched || [];\n  const unavailable = flat.unavailable || [];\n  const html = [`<p>${esc(r.summary)}</p>`];\n  const text = [r.summary];\n\n  if (r.alerts.length > 0) {\n    const body = r.alerts\n      .map((a) => {\n        const fuzzy = a.matchedBy && a.matchedBy !== 'ean' ? ` <em>(matched by ${esc(a.matchedBy)}, confidence ${esc(a.confidence)})</em>` : '';\n        return `<tr><td>${esc(a.retailer)}</td><td>${link(a.name, a.url)}${fuzzy}</td><td>${esc(a.ean)}</td><td>${esc(money(a.oldPrice, cur))}</td><td>${esc(money(a.newPrice, cur))}</td><td>${esc(signedPct(a.changePct))}</td><td>${esc(a.fromWeek)} to ${esc(a.toWeek)}</td></tr>`;\n      })\n      .join('');\n    html.push(`<table border='1' cellpadding='4' cellspacing='0'><tr><th>Retailer</th><th>Product</th><th>EAN</th><th>Was</th><th>Now</th><th>Change</th><th>Weeks</th></tr>${body}</table>`);\n    for (const a of r.alerts) {\n      text.push(`${a.retailer}: ${a.name} (EAN ${a.ean}) ${money(a.oldPrice, cur)} -> ${money(a.newPrice, cur)}, ${signedPct(a.changePct)}, ${a.fromWeek} to ${a.toWeek}`);\n    }\n  }\n  if (r.gone.length > 0) {\n    const items = r.gone\n      .map((g) => `<li>${esc(g.retailer)}: ${link(g.name || g.ean, g.url)} (EAN ${esc(g.ean)}), last price ${esc(money(g.lastPrice, cur))}</li>`)\n      .join('');\n    html.push(`<p>No longer priced (priced in ${esc(r.previousWeek)}, missing this week):</p><ul>${items}</ul>`);\n    text.push('No longer priced:');\n    for (const g of r.gone) text.push(`${g.retailer}: ${g.name || g.ean} (EAN ${g.ean}), last price ${money(g.lastPrice, cur)}`);\n  }\n  if (r.changedProduct.length > 0) {\n    const items = r.changedProduct\n      .map((c) => `<li>${esc(c.retailer)}: EAN ${esc(c.ean)} was ${esc(c.oldName || 'an unnamed product')} (product ${esc(c.oldProductId)}, ${esc(money(c.oldPrice, cur))}), now ${link(c.name, c.url)} (product ${esc(c.newProductId)}, ${esc(money(c.newPrice, cur))})</li>`)\n      .join('');\n    html.push(`<p>Matched a different product than last time (not compared, so not counted as price moves):</p><ul>${items}</ul>`);\n    text.push('Matched a different product than last time (not compared):');\n    for (const c of r.changedProduct) {\n      text.push(`${c.retailer}: EAN ${c.ean} was ${c.oldName || 'an unnamed product'} (product ${c.oldProductId}, ${money(c.oldPrice, cur)}), now ${c.name} (product ${c.newProductId}, ${money(c.newPrice, cur)})`);\n    }\n  }\n  if (unmatched.length > 0) {\n    const items = unmatched.map((u) => `<li>${esc(u.retailer)}: ${esc(u.eans.join(', '))}</li>`).join('');\n    html.push(`<p>Not found this week (no price recorded):</p><ul>${items}</ul>`);\n    for (const u of unmatched) text.push(`Not found at ${u.retailer}: ${u.eans.join(', ')}`);\n  }\n  if (unavailable.length > 0) {\n    const names = unavailable.map((u) => `${u.retailer} (${u.reason || 'unavailable'})`).join(', ');\n    html.push(`<p>Could not be priced this week: ${esc(names)}.</p>`);\n    text.push(`Could not be priced this week: ${names}.`);\n  }\n  if (rejected.length > 0) {\n    const names = rejected.map((x) => x.input).join(', ');\n    html.push(`<p>Ignored in the eans field (not valid EANs): ${esc(names)}.</p>`);\n    text.push(`Ignored in the eans field (not valid EANs): ${names}.`);\n  }\n  for (const w of r.warnings) {\n    html.push(`<p>${esc(w)}</p>`);\n    text.push(w);\n  }\n  const basis = flat.includeLoyalty === false ? 'shelf price' : 'effective price (the loyalty price when it is lower than the shelf price)';\n  html.push(`<p>Prices from the UK Supermarket Price Scraper on Apify, weekly snapshot of ${esc(flat.pricedAt)}. Changes compare the ${basis}.</p>`);\n  return { html: html.join(''), text: text.join('\\n') };\n}\n\n// flat: the output of Flatten prices. history: the rows of the sheet, one plain\n// object each. options: { thresholdPct, rejected }.\nfunction compareWeeks(flat, history, options) {\n  if (!flat || !Array.isArray(flat.rows) || typeof flat.week !== 'string' || !WEEK_PATTERN.test(flat.week)) {\n    throw new Error('compareWeeks: expected the output of Flatten prices (rows and an ISO week)');\n  }\n  const opts = options || {};\n  const rejected = Array.isArray(opts.rejected) ? opts.rejected : [];\n  const warnings = [];\n  let thresholdPct = toNumber(opts.thresholdPct);\n  if (thresholdPct === null || thresholdPct < 0) {\n    warnings.push(`thresholdPct was not a number of zero or more, so ${DEFAULT_THRESHOLD_PCT} was used.`);\n    thresholdPct = DEFAULT_THRESHOLD_PCT;\n  }\n\n  const thisWeek = flat.week;\n  const { rows: past, ignored } = readHistory(history);\n  if (ignored > 0) warnings.push(`${ignored} history rows were ignored (no week, retailer, EAN or price).`);\n  const alreadyRecorded = past.some((r) => r.week === thisWeek);\n  const earlier = past.filter((r) => r.week < thisWeek);\n  const previousWeek = earlier.reduce((max, r) => (max === null || r.week > max ? r.week : max), null);\n\n  const byKey = new Map();\n  for (const r of earlier) {\n    const key = `${r.retailer}|${r.ean}`;\n    if (!byKey.has(key)) byKey.set(key, []);\n    byKey.get(key).push(r);\n  }\n\n  // Movers: this week against the latest earlier week of the same retailer and\n  // EAN, but only when both weeks matched the same retailer product. A different\n  // retailerProductId (a fuzzy match that switched product, say) is not a price\n  // move; it goes to changedProduct. An empty product id on either side cannot\n  // be checked, so that pair is compared as before.\n  const alerts = [];\n  const changedProduct = [];\n  const currentKeys = new Set();\n  let compared = 0;\n  let newItems = 0;\n  for (const row of flat.rows) {\n    const key = `${row.retailer}|${eanKey(row.ean)}`;\n    currentKeys.add(key);\n    const prev = latestBefore(byKey.get(key), row.week);\n    if (prev === null) {\n      newItems += 1;\n      continue;\n    }\n    const currentId = eanKey(row.retailerProductId);\n    if (currentId !== '' && prev.productId !== '' && currentId !== eanKey(prev.productId)) {\n      changedProduct.push({\n        retailer: row.retailer,\n        ean: row.ean,\n        name: row.name,\n        url: row.url,\n        oldName: prev.name,\n        oldProductId: prev.productId,\n        newProductId: String(row.retailerProductId),\n        oldPrice: prev.price,\n        newPrice: toNumber(row.effectivePrice),\n        fromWeek: prev.week,\n        toWeek: row.week,\n        matchedBy: row.matchedBy,\n        confidence: row.confidence,\n      });\n      continue;\n    }\n    const current = toNumber(row.effectivePrice);\n    if (current === null || prev.price === 0) continue;\n    compared += 1;\n    const raw = ((current - prev.price) / prev.price) * 100;\n    const change = Math.round(raw * 1e6) / 1e6;\n    if (change !== 0 && Math.abs(change) >= thresholdPct) {\n      alerts.push({\n        retailer: row.retailer,\n        ean: row.ean,\n        name: row.name,\n        url: row.url,\n        oldPrice: prev.price,\n        newPrice: current,\n        changePct: Math.round(raw * 100) / 100,\n        direction: change > 0 ? 'up' : 'down',\n        fromWeek: prev.week,\n        toWeek: row.week,\n        matchedBy: row.matchedBy,\n        confidence: row.confidence,\n      });\n    }\n  }\n  alerts.sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct) || a.retailer.localeCompare(b.retailer) || a.ean.localeCompare(b.ean));\n\n  // Priced last week, not priced this week. Skip EANs that are no longer in the\n  // list and retailers that were down (they are reported as unavailable instead).\n  const requested = new Map();\n  for (const e of Array.isArray(flat.eans) ? flat.eans : []) requested.set(eanKey(e), String(e));\n  const down = new Set((flat.unavailable || []).map((u) => u.retailer));\n  const gone = [];\n  if (previousWeek !== null) {\n    const listed = new Set();\n    for (const r of earlier) {\n      const key = `${r.retailer}|${r.ean}`;\n      if (r.week !== previousWeek || currentKeys.has(key) || listed.has(key) || down.has(r.retailer)) continue;\n      if (requested.size > 0 && !requested.has(r.ean)) continue;\n      listed.add(key);\n      gone.push({\n        retailer: r.retailer,\n        ean: requested.get(r.ean) ?? r.ean,\n        name: r.name,\n        url: r.url,\n        lastPrice: r.price,\n        lastWeek: r.week,\n      });\n    }\n  }\n\n  // Rows to append: nothing when the week is already in the sheet, and never a\n  // row whose week, retailer and EAN are already there.\n  let rowsToAppend = [];\n  if (!alreadyRecorded) {\n    const have = new Set(past.map((r) => `${r.week}|${r.retailer}|${r.ean}`));\n    rowsToAppend = flat.rows.filter((row) => !have.has(`${row.week}|${row.retailer}|${eanKey(row.ean)}`));\n  }\n\n  const baseline = previousWeek === null;\n  let note;\n  if (baseline) {\n    note = alreadyRecorded\n      ? `${thisWeek} is already in the sheet and there is no earlier week to compare with, so nothing was appended.`\n      : `Baseline recorded for ${thisWeek}: ${rowsToAppend.length} prices. Alerts start next week, once there is an earlier week to compare with.`;\n  } else {\n    const different = changedProduct.length > 0 ? `, ${changedProduct.length} matched a different product` : '';\n    note = `Compared ${compared} prices with ${previousWeek}: ${alerts.length} moved ${thresholdPct}% or more, ${gone.length} no longer priced${different}.`;\n    if (alreadyRecorded) note += ` ${thisWeek} is already in the sheet, so nothing was appended.`;\n  }\n\n  // A different product on its own does not send an email; it rides along when\n  // something else did.\n  const hasAlerts = alerts.length > 0 || gone.length > 0;\n  const result = {\n    status: 'ok',\n    week: thisWeek,\n    previousWeek,\n    thresholdPct,\n    alreadyRecorded,\n    baseline,\n    note,\n    compared,\n    newItems,\n    hasAlerts,\n    moverCount: alerts.length,\n    goneCount: gone.length,\n    changedProductCount: changedProduct.length,\n    alerts,\n    gone,\n    changedProduct,\n    unmatched: flat.unmatched || [],\n    unavailable: flat.unavailable || [],\n    rejected,\n    warnings,\n    rowsToAppend,\n    summary: '',\n    subject: '',\n    html: '',\n    text: '',\n  };\n  if (hasAlerts) {\n    const many = (n) => (n === 1 ? '' : 's');\n    const moved = alerts.length === 0 ? 'No price moved' : `${alerts.length} of ${compared} compared prices moved`;\n    result.summary = `${moved} by ${thresholdPct}% or more between ${previousWeek} and ${thisWeek}.`;\n    const goneText = gone.length > 0 ? `, ${gone.length} no longer priced` : '';\n    const differentText = changedProduct.length > 0 ? `, ${changedProduct.length} matched a different product` : '';\n    result.subject = `${alerts.length} grocery price${many(alerts.length)} moved ${thresholdPct}% or more${goneText}${differentText} (${thisWeek})`;\n    const email = renderEmail(result, flat, rejected);\n    result.html = email.html;\n    result.text = email.text;\n  }\n  return result;\n}\n\n// --- n8n entry ---\nconst flat = $('Flatten prices').first().json;\nconst settings = $('Settings').first().json;\nconst build = $('Build basket request').first().json;\nconst history = $input.all().map((item) => item.json);\nconst result = compareWeeks(flat, history, { thresholdPct: settings.thresholdPct, rejected: build.rejected });\nreturn [{ json: result }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "61c8a4d2-5b09-4e73-8f26-9a0d3b7e1c45",
+      "name": "Week not recorded yet?",
+      "type": "n8n-nodes-base.if",
+      "notes": "True: append this week's rows. False: the week is already in the sheet, so nothing is added twice. Keep this branch above Anything moved? so the history is saved before any email is sent.",
+      "position": [
+        3000,
+        -200
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "b52e8f07-1c4a-4d93-a6e8-4f7d0b3c9a21",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.alreadyRecorded }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "a3f5d7b1-0c62-4984-b1e8-5d2c9a4f6e07",
+      "name": "Split rows to append",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        3300,
+        -200
+      ],
+      "parameters": {
+        "include": "noOtherFields",
+        "options": {},
+        "fieldToSplitOut": "rowsToAppend"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "4e1b9c85-a7d3-4f20-96c8-0b5e2d8a3f61",
+      "name": "Append this week",
+      "type": "n8n-nodes-base.googleSheets",
+      "notes": "Appends the rows to the bottom of the history tab, matching columns by the names in the header row. Cell format is RAW: values are stored as typed text, so a value starting with an equals sign can never become a formula and EAN leading zeros are kept.",
+      "onError": "continueErrorOutput",
+      "position": [
+        3600,
+        -200
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": []
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Settings').first().json.sheetName }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Settings').first().json.sheetDocumentId }}"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "f7c2e049-8b15-4a6d-a3e9-1c4d7b0f5e28",
+      "name": "Anything moved?",
+      "type": "n8n-nodes-base.if",
+      "notes": "True: at least one price moved by the threshold or an item is no longer priced. False: nothing to say, so no email (quiet weeks and the first baseline run).",
+      "position": [
+        3000,
+        200
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "68a1d3f4-7b0e-4c25-b9a6-1e8c5d2f7b03",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.hasAlerts }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "1a6d8f32-c4e7-4b90-8d5a-7e3c1b9f0a64",
+      "name": "Email the movers",
+      "type": "n8n-nodes-base.gmail",
+      "notes": "Gmail node (OAuth2). Any other channel works: swap this node for Slack, SMTP Send Email or Telegram; the message fields are $json.subject, $json.html and $json.text.",
+      "position": [
+        3300,
+        200
+      ],
+      "parameters": {
+        "sendTo": "={{ $('Settings').first().json.alertTo }}",
+        "message": "={{ $json.html }}",
+        "options": {},
+        "subject": "={{ $json.subject }}",
+        "emailType": "html"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail account"
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "83e0b5c7-2d9a-4f16-b4a8-6c1e7d3a5f92",
+      "name": "Email a problem",
+      "type": "n8n-nodes-base.gmail",
+      "notes": "Plain-text email with the reason and what to do. Swap for Slack if you prefer: use $json.text, or $json.error for a step that failed.",
+      "position": [
+        3900,
+        480
+      ],
+      "parameters": {
+        "sendTo": "={{ $('Settings').first().json.alertTo }}",
+        "message": "={{ $json.text || ('A step of the workflow failed: ' + (($json.error && $json.error.message) || $json.error || 'no detail') + '. Open the failed execution in n8n to see which step. Common causes: the Google Sheets credential, the sheet id or the tab name in Settings, or a header row that does not match the README.') }}",
+        "options": {},
+        "subject": "={{ 'Weekly EAN price monitor needs attention: ' + ($json.headline || 'a step failed') }}",
+        "emailType": "text"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail account"
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "9b3e5a71-2c08-4d64-8f1a-c6d0e7b4a935",
+      "name": "Note: Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -460,
+        -420
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 320,
+        "height": 780,
+        "content": "## Weekly EAN price monitor\n\nPrices a fixed list of EANs at Tesco, Sainsbury's, Asda and Aldi once a week, adds the prices to a Google Sheet as history, compares them with the previous week and alerts you only about items that moved by more than your threshold.\n\nPrices come from the Actor's weekly snapshot (live is off). The index is rebuilt on Sundays, so a Monday run reads fresh data.\n\n**Set up:** fill in Settings, add the three credentials (Header Auth for Apify, Google Sheets, Gmail), give the sheet its header row (see the README), run once by hand to record the baseline, then activate.\n\n**Cost:** EANs x retailers x $0.002 per week at most (only matched lines are charged), plus your own Apify Standby compute. Example: 20 EANs at 4 retailers is at most $0.16 a week.\n\n**Slack:** swap either Gmail node for a Slack Send a message node. The movers text is $json.text; a problem has $json.reason and $json.action.\n\n**Failures elsewhere:** set an Error Workflow in the workflow settings."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1d7f0c48-b3a9-4e52-a6c1-5e8b2d9f0a73",
+      "name": "Note: Every Monday 08:00",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -90,
+        -320
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 280,
+        "height": 260,
+        "content": "## Every Monday 08:00\n**What it does:** starts the workflow once a week. The Actor rebuilds its price index every Sunday, so Monday morning is the first time the new prices are ready. Running it more often only returns the same prices and charges you again.\n**Change:** the day and time, and your n8n timezone.\n**Cost:** none."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e6a2b9d0-4f15-4c83-9b7e-0d3a8c1f5e46",
+      "name": "Note: Settings",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        210,
+        -480
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 280,
+        "height": 420,
+        "content": "## Settings\n**What it does:** the one node you edit.\n- standbyUrl: the Actor's public Standby address (the same for everyone)\n- eans: one per line, 8, 12, 13 or 14 digits, at most 200\n- thresholdPct: alert when a price moves this many % or more, up or down\n- sheetDocumentId, sheetName: the Google Sheet and tab that hold the history\n- alertTo: who gets the emails\n- includeLoyalty: true compares Clubcard and Nectar prices when they are lower\n\n**Change:** replace the placeholders.\n**Cost:** every EAN you add costs up to 4 x $0.002 a week."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "52c8e1a7-d9b0-4f34-a8e6-7b1c4d0a2f98",
+      "name": "Note: Build basket request",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        510,
+        -400
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 280,
+        "height": 340,
+        "content": "## Build basket request\n**What it does:** trims the list, keeps numbers of 8, 12, 13 or 14 digits, removes duplicates and refuses more than 200. Builds the request body with live: false. If nothing valid is left it goes to the problem email instead of calling Apify.\n**Change:** rarely. The code lives in src/build-request.js.\n**Cost:** none."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a0d4f6b3-8e21-4c79-b5a0-3c9e7d1f6b52",
+      "name": "Note: Valid basket?",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        810,
+        -300
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 280,
+        "height": 240,
+        "content": "## Valid basket?\n**What it does:** true sends the request. false sends the problem email with the reason (no valid EAN, or too many).\n**Change:** nothing.\n**Cost:** none."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "74b1c9e5-0a3d-4f86-8d2b-e5a7c0f4b119",
+      "name": "Note: Price the basket",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1110,
+        -460
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 280,
+        "height": 400,
+        "content": "## Price the basket\n**What it does:** POST to your standbyUrl + /basket with your Apify token (Header Auth credential, value Bearer then a space then the token). Waits up to 300 s. An error answer comes back as data, not as a workflow error, so the next step can explain it.\n**Change:** the credential, and standbyUrl in Settings.\n**Cost:** $0.002 per matched line per retailer, so EANs x retailers x $0.002 a week at most, plus your own Standby compute."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c8e3a5d1-6f92-4b07-a4c8-1d0b7e9f3a65",
+      "name": "Note: Check the answer",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1410,
+        -500
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 280,
+        "height": 440,
+        "content": "## Check the answer\n**What it does:** turns the status into ok or a problem with a plain reason: 400 invalid, 401/403 token, 402 spend limit, 429 busy, 503 index or charging, 504 timeout, with Retry-After when sent. Prices more than 10 days old count as a problem (the weekly snapshot may have failed). A retailer that is down is only a warning.\n**Change:** rarely. The code lives in src/check-answer.js.\n**Cost:** none."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3a9f7d20-e1b6-4c48-9e0d-b4c8a2f5d701",
+      "name": "Note: Answer ok?",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1710,
+        -300
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 280,
+        "height": 240,
+        "content": "## Answer ok?\n**What it does:** true carries on to the sheet. false sends the problem email.\n**Change:** nothing.\n**Cost:** none."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f1c6b2a8-5d03-4e97-a1b4-8a3e0c7d9f26",
+      "name": "Note: Flatten prices",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2010,
+        -400
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 280,
+        "height": 340,
+        "content": "## Flatten prices\n**What it does:** one row per matched line per retailer, in the order of the sheet header row. effectivePrice is the loyalty price when includeLoyalty is on and it is lower. Also collects the EANs that matched nowhere, for the alert.\n**Change:** if you add a column, add it to the sheet header too. The code lives in src/flatten-prices.js.\n**Cost:** none."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0e5d8a3c-b7f1-4d62-9c95-2f6a1e4b0d83",
+      "name": "Note: Read history",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2310,
+        -360
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 280,
+        "height": 300,
+        "content": "## Read history\n**What it does:** reads every row of the history tab. An empty tab is fine on the first run. A failure here (credential, sheet id, tab name) goes to the problem email.\n**Change:** the Google Sheets credential; sheetDocumentId and sheetName in Settings.\n**Cost:** none (Google API quota only)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "96b0e4f7-3a5c-4d18-b8e2-c1d7a9f0e534",
+      "name": "Note: Compare with last week",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2610,
+        -620
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 280,
+        "height": 560,
+        "content": "## Compare with last week\n**What it does:** for each retailer and EAN, finds the latest earlier week in the history and works out the % change in effectivePrice. Movers change by thresholdPct or more. Only compares a retailer and EAN when both weeks matched the same retailer product; a product that changed is listed on its own, not as a move. Also lists items priced last week but not now, marks a week that is already in the sheet (nothing is appended twice), and on a first run records a baseline with no alerts.\n**Change:** thresholdPct in Settings. The code lives in src/compare-weeks.js.\n**Cost:** none."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2f8c1d6b-a4e0-4b59-8a73-d5e9b0c3f172",
+      "name": "Note: Week not recorded yet?",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2910,
+        -600
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 280,
+        "height": 340,
+        "content": "## Week not recorded yet?\n**What it does:** true goes on to append this week's rows. false (the week is already in the sheet) skips it. This branch sits above the alert branch on purpose: n8n runs the top branch first, so the history is saved before any email goes out.\n**Change:** nothing. Keep it above Anything moved?.\n**Cost:** none."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b7a3f9e0-1c68-4d25-9e4a-6c0d2b8f5a91",
+      "name": "Note: Split rows to append",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3210,
+        -500
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 280,
+        "height": 240,
+        "content": "## Split rows to append\n**What it does:** turns the list of rows into one item per row, ready for the Google Sheets node.\n**Change:** nothing.\n**Cost:** none."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "4c0e7b2d-f8a5-4a13-b6d9-9e3a1c5f7b08",
+      "name": "Note: Append this week",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3510,
+        -620
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 280,
+        "height": 360,
+        "content": "## Append this week\n**What it does:** adds the rows to the bottom of the history tab, matching columns by the header names.\n**Change:** the header row must be exactly the columns listed in the README. Keep the Cell Format option on RAW: values are stored as text, so nothing from a retailer can become a formula and EAN leading zeros survive.\n**Cost:** none. A failure goes to the problem email."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d2f6a8c4-0b91-4e37-a5c0-e7b3d1f9a246",
+      "name": "Note: Anything moved?",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2910,
+        340
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 280,
+        "height": 260,
+        "content": "## Anything moved?\n**What it does:** true when at least one price moved by the threshold or an item is no longer priced. false ends quietly, so quiet weeks and the first (baseline) run send nothing.\n**Change:** nothing.\n**Cost:** none."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8b1d5e93-c7a0-4f62-9d8e-0a4c6b2e7f35",
+      "name": "Note: Email the movers",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3210,
+        340
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 280,
+        "height": 380,
+        "content": "## Email the movers\n**What it does:** an HTML table of the movers, then the items no longer priced, the items now matched to a different product, the EANs not found and any retailer that could not be priced. The subject says how many moved and the week.\n**Change:** alertTo in Settings and the Gmail credential. For Slack, replace this node with Slack Send a message and use $json.text.\n**Cost:** none."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "60a4c2f8-e9d3-4b71-8c5a-f1b7e0d3a689",
+      "name": "Note: Email a problem",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3810,
+        640
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 280,
+        "height": 340,
+        "content": "## Email a problem\n**What it does:** a plain-text email with the reason and what to do. Reached from a bad EAN list, a bad answer, and errors in Flatten prices, Read history, Compare with last week or Append this week.\n**Change:** alertTo in Settings and the Gmail credential. For Slack use $json.text, or $json.error for a step that failed.\n**Cost:** none."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Settings": {
+      "main": [
+        [
+          {
+            "node": "Build basket request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer ok?": {
+      "main": [
+        [
+          {
+            "node": "Flatten prices",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email a problem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read history": {
+      "main": [
+        [
+          {
+            "node": "Compare with last week",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email a problem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid basket?": {
+      "main": [
+        [
+          {
+            "node": "Price the basket",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email a problem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flatten prices": {
+      "main": [
+        [
+          {
+            "node": "Read history",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email a problem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything moved?": {
+      "main": [
+        [
+          {
+            "node": "Email the movers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append this week": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Email a problem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the answer": {
+      "main": [
+        [
+          {
+            "node": "Answer ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Price the basket": {
+      "main": [
+        [
+          {
+            "node": "Check the answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Monday 08:00": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build basket request": {
+      "main": [
+        [
+          {
+            "node": "Valid basket?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split rows to append": {
+      "main": [
+        [
+          {
+            "node": "Append this week",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare with last week": {
+      "main": [
+        [
+          {
+            "node": "Week not recorded yet?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Anything moved?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email a problem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Week not recorded yet?": {
+      "main": [
+        [
+          {
+            "node": "Split rows to append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

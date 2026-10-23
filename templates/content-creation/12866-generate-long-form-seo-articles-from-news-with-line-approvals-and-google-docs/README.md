@@ -1,6 +1,6 @@
 # 🎬 Generate long-form SEO articles from news with LINE approvals and Google Docs
 
-> ⚡ **39 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **114 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

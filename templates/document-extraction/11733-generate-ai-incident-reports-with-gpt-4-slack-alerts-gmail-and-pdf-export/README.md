@@ -1,6 +1,6 @@
 # 🔬 Generate AI incident reports with GPT-4, Slack alerts, Gmail and PDF export
 
-> ⚡ **99 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **113 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

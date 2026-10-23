@@ -1,6 +1,6 @@
 # 👥 Automate HR Q&A sessions with AI question clustering and Google Calendar integration
 
-> ⚡ **1,958 views** · 👥 [HR & Recruitment](../)
+> ⚡ **2,057 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

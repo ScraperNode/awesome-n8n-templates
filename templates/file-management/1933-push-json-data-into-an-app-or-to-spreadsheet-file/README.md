@@ -1,6 +1,6 @@
 # 📁 Push JSON data into an app or to spreadsheet file
 
-> ⚡ **9,819 views** · 📁 [File Management](../)
+> ⚡ **10,060 views** · 📁 [File Management](../)
 
 ## Description
 

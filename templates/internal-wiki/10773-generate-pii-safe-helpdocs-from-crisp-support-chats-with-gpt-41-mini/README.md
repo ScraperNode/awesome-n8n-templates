@@ -1,6 +1,6 @@
 # 📖 Generate PII-safe Helpdocs from Crisp Support chats with GPT-4.1-mini
 
-> ⚡ **119 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **152 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

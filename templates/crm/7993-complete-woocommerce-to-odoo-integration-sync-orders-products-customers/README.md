@@ -1,6 +1,6 @@
 # 🤝 Complete WooCommerce to Odoo integration: Sync orders, products & customers
 
-> ⚡ **290 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **389 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

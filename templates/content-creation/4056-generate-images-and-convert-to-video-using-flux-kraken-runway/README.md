@@ -1,6 +1,6 @@
 # 🎬 Generate images and convert to video using Flux, Kraken & Runway
 
-> ⚡ **6,182 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **6,529 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

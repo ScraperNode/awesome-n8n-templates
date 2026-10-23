@@ -1,6 +1,6 @@
 # 🔬 Deliver encrypted payroll PDFs via Google Drive, Sheets, Gmail and Slack
 
-> ⚡ **10 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **50 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

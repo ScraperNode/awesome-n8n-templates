@@ -1,6 +1,6 @@
 # 📋 Create Asana ticket from terminal bash-dash
 
-> ⚡ **889 views** · 📋 [Project Management](../)
+> ⚡ **943 views** · 📋 [Project Management](../)
 
 ## Description
 

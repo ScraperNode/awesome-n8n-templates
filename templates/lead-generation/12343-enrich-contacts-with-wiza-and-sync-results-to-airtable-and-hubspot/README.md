@@ -1,6 +1,6 @@
 # 🎣 Enrich contacts with Wiza and sync results to Airtable and HubSpot
 
-> ⚡ **44 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **118 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

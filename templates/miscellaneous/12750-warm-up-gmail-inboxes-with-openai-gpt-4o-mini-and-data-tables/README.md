@@ -1,6 +1,6 @@
 # 🔧 Warm up Gmail inboxes with OpenAI GPT-4o-mini and Data Tables
 
-> ⚡ **180 views** · 🔧 [Miscellaneous](../)
+> ⚡ **666 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

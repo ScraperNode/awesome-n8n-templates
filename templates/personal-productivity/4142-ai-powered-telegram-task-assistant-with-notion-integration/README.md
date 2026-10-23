@@ -1,6 +1,6 @@
 # ⚡ AI-powered Telegram task assistant with Notion integration
 
-> ⚡ **1,750 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,829 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

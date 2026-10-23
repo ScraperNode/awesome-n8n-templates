@@ -1,6 +1,6 @@
 # ⚡ Voice activated multi-agent demo for Vagent.io using Notion and Google Calendar
 
-> ⚡ **12,762 views** · ⚡ [Personal Productivity](../)
+> ⚡ **12,639 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

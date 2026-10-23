@@ -1,6 +1,6 @@
 # 🔬 Automate full agreement lifecycle with JotForm, approvals, Signwell e-signatures & tracking
 
-> ⚡ **288 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **493 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

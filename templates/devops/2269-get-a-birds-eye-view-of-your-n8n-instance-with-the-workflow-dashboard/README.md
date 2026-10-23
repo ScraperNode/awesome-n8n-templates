@@ -1,6 +1,6 @@
 # ⚙️ 🦅 Get a bird's-eye view of your n8n instance with the Workflow Dashboard!
 
-> ⚡ **9,706 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **9,883 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

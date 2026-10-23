@@ -1,6 +1,6 @@
 # 🔬 Automatically disable unsold Magento 2 products after 1 year with Gmail approval
 
-> ⚡ **83 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **96 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

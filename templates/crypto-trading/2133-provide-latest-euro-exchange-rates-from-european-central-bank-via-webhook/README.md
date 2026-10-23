@@ -1,6 +1,6 @@
 # 📈 Provide latest euro exchange rates from European Central Bank via webhook
 
-> ⚡ **3,695 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **3,724 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

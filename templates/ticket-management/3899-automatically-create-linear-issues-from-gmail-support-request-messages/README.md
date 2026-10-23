@@ -1,6 +1,6 @@
 # 🎫 Automatically create Linear issues from Gmail support request messages
 
-> ⚡ **1,203 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,318 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

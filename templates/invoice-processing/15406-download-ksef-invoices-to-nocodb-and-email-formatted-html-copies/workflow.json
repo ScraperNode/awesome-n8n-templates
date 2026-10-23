@@ -1,0 +1,1178 @@
+{
+  "meta": {
+    "instanceId": ""
+  },
+  "nodes": [
+    {
+      "id": "504c0022-d4f1-4aab-805a-e321eef084bb",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -128,
+        -32
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 384,
+        "height": 520,
+        "content": "## \ud83d\udd27 Configuration\nEdit the JSON below to set your:\n- **nip** \u2014 your 10-digit NIP number\n- **authToken** \u2014 KSeF authorization token\n- **startDate / endDate** \u2014 ISO 8601 format\n- **subjectType** \u2014\n  `Subject2` = invoices you **received** (buyer)\n  `Subject1` = invoices you **issued** (seller)\n\nDates use `PermanentStorage` type (when KSeF stored the invoice)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8a04b72b-d387-4260-b3ac-adff425c3999",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        272,
+        -32
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1468,
+        "height": 520,
+        "content": "## \ud83d\udd10 Authentication Flow (v2 API)\nKSeF uses a multi-step auth:\n1. **Get Public Key** \u2014 fetch RSA certificate\n2. **Get Challenge** \u2014 get a challenge + timestamp\n3. **Encrypt Token** \u2014 RSA-OAEP encrypt `token|timestamp`\n4. **Init Auth** \u2014 submit encrypted token, get temp JWT\n5. **Wait + Check Status** \u2014 poll until auth is ready\n6. **Redeem Token** \u2014 exchange temp JWT for access token\n\n\u26a0\ufe0f The `authenticationToken` from step 4 is **temporary**!\nOnly the `accessToken` from step 6 works for API calls."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b4e43681-2a9b-4868-bb3d-6b55a3a46be4",
+      "name": "\u2699\ufe0f Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        128,
+        256
+      ],
+      "parameters": {
+        "mode": "raw",
+        "options": {},
+        "jsonOutput": "={\n  \"baseUrl\": \"https://api.ksef.mf.gov.pl/v2\",\n  \"nip\": \"yyy\",\n  \"authToken\": \"xxx\",\n  \"startDate\": \"{{ $now.minus(7,'days').toUTC().toString() }}\",\n  \"endDate\": \"{{ $now.toUTC().toString() }}\",\n  \"emailToSendInvoicesTo\": \"my-example-mail@example.com\",\n  \"emailToSendInvoicesFrom\": \"my-example-mail@example.com\"\n}"
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "74ef9813-7e3d-4f9a-89ec-1c6afd49ecc1",
+      "name": "Get Public Key",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        304,
+        256
+      ],
+      "parameters": {
+        "url": "={{ $json.baseUrl }}/security/public-key-certificates",
+        "options": {}
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "f1a3b201-76d1-43fa-8abb-d8c407b747c4",
+      "name": "Get Challenge",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        528,
+        256
+      ],
+      "parameters": {
+        "url": "={{ $('\u2699\ufe0f Config').first().json.baseUrl }}/auth/challenge",
+        "method": "POST",
+        "options": {}
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "7aa34ed4-c3f7-4005-af43-07aa4dad4ded",
+      "name": "Encrypt Token",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        736,
+        256
+      ],
+      "parameters": {
+        "jsCode": "// RSA-OAEP SHA-256 encryption of KSeF token\n// Format: authToken|timestampMs encrypted with KSeF public certificate\nconst crypto = require('crypto');\nconst config = $('\u2699\ufe0f Config').first().json;\n\nconst challengeData = $input.first().json;\nconst challenge = challengeData.challenge;\nconst timestampMs = challengeData.timestampMs;\n\n// Get public key(s) from Get Public Key node\nconst keyItems = $('Get Public Key').all();\nlet publicKeys;\nif (Array.isArray(keyItems[0].json)) {\n  publicKeys = keyItems[0].json;\n} else if (keyItems.length > 1) {\n  publicKeys = keyItems.map(i => i.json);\n} else {\n  publicKeys = [keyItems[0].json];\n}\n\n// Find the key for token encryption\nconst encKey = publicKeys.find(k => \n  (k.usage && k.usage.includes('KsefTokenEncryption')) ||\n  (k.usageTypes && k.usageTypes.includes('KsefTokenEncryption'))\n) || publicKeys[0];\n\n// Prepare plaintext: authToken|timestampMs\nconst plaintext = `${config.authToken}|${timestampMs}`;\n\n// Convert certificate to PEM format with proper 64-char line breaks\nconst certBase64 = typeof encKey === 'string' ? encKey : (encKey.certificate || encKey.publicKey);\nlet certPem;\nif (certBase64.includes('-----BEGIN')) {\n  certPem = certBase64;\n} else {\n  const formatted = certBase64.match(/.{1,64}/g).join('\\n');\n  certPem = `-----BEGIN CERTIFICATE-----\\n${formatted}\\n-----END CERTIFICATE-----`;\n}\n\n// Encrypt with RSA-OAEP SHA-256 + MGF1\nconst encryptedBuffer = crypto.publicEncrypt(\n  {\n    key: certPem,\n    padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,\n    oaepHash: 'sha256'\n  },\n  Buffer.from(plaintext)\n);\nconst encryptedToken = encryptedBuffer.toString('base64');\n\nreturn [{\n  json: {\n    challenge: challenge,\n    contextIdentifier: {\n      type: 'Nip',\n      value: config.nip\n    },\n    encryptedToken: encryptedToken\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "d5ad3e77-fcf7-4e1e-9b0d-f853530cd8a6",
+      "name": "Init Auth",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        944,
+        256
+      ],
+      "parameters": {
+        "url": "={{ $('\u2699\ufe0f Config').first().json.baseUrl }}/auth/ksef-token",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "71ba0d6c-9097-4e2a-9025-bd6f52158722",
+      "name": "Check Auth Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1360,
+        256
+      ],
+      "parameters": {
+        "url": "={{ $('\u2699\ufe0f Config').first().json.baseUrl }}/auth/{{ $('Init Auth').first().json.referenceNumber }}",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Init Auth').first().json.authenticationToken.token }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "d76b1fd0-2067-4764-99d7-b6465af74c52",
+      "name": "Redeem Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1568,
+        256
+      ],
+      "parameters": {
+        "url": "={{ $('\u2699\ufe0f Config').first().json.baseUrl }}/auth/token/redeem",
+        "method": "POST",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Init Auth').first().json.authenticationToken.token }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "7c69acde-d2c7-41dd-a284-33f13d6f6f61",
+      "name": "Extract Invoices",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2496,
+        128
+      ],
+      "parameters": {
+        "jsCode": "// Collect all invoices from paginated results\nconst pages = $input.all();\nconst allInvoices = [];\n\nfor (const page of pages) {\n  if (page.json.invoices && Array.isArray(page.json.invoices)) {\n    const type = page.json.type;\n\n    allInvoices.push(\n      ...page.json.invoices.map(inv => ({\n        ...inv,\n        type,\n      }))\n    );\n  }\n}\n\nif (allInvoices.length === 0) {\n  return [{ json: { _noInvoices: true, message: 'No invoices found in the specified date range', count: 0 } }];\n}\n\nconsole.log(`Found ${allInvoices.length} invoices`);\nreturn allInvoices.map(inv => ({ json: inv }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "789774ee-7073-44e8-9a32-eb132daf6947",
+      "name": "Send an Email",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        1840,
+        720
+      ],
+      "webhookId": "16330f9d-241e-401a-9325-d9bafef5704c",
+      "parameters": {
+        "html": "=Nowa faktura kosztowa KSeF od\n{{ $json.seller.name }} <br>\nNumer: {{ $json.invoiceNumber }} <br>\nNetto: {{ $json.netAmount }} <br>\nBrutto: {{ $json.grossAmount }} <br>\nWaluta: {{ $json.currency }} <br>",
+        "options": {
+          "attachments": "=invoiceHTMLFile"
+        },
+        "subject": "=Faktura KSeF {{ $json.seller.name }}",
+        "toEmail": "={{ $('\u2699\ufe0f Config').first().json.emailToSendInvoicesTo }}",
+        "fromEmail": "={{ $('\u2699\ufe0f Config').first().json.emailToSendInvoicesFrom }}"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "cf5d5cca-ea99-4c4d-85b8-bb8acece6c25",
+      "name": "Convert to File",
+      "type": "n8n-nodes-base.convertToFile",
+      "position": [
+        1360,
+        1040
+      ],
+      "parameters": {
+        "options": {
+          "fileName": "faktura.html"
+        },
+        "operation": "toBinary",
+        "sourceProperty": "htmlBase64",
+        "binaryPropertyName": "invoiceHTMLFile"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "755e6fc1-8c9d-4939-9309-e75e34144806",
+      "name": "Covert to Base64",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1152,
+        1040
+      ],
+      "parameters": {
+        "jsCode": "const htmlBase64 = Buffer.from($input.first().json.invoiceHTML).toString('base64');\nreturn [{  htmlBase64  }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8cdc7c88-1b0c-4f0d-953f-bacfe2810e15",
+      "name": "Query Cost Invoices",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1840,
+        352
+      ],
+      "parameters": {
+        "url": "={{ $('\u2699\ufe0f Config').first().json.baseUrl }}/invoices/query/metadata",
+        "method": "POST",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "pageOffset",
+                    "value": "={{ $pageCount }}"
+                  }
+                ]
+              },
+              "completeExpression": "={{ $response.body.hasMore === false }}",
+              "paginationCompleteWhen": "other"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify({ subjectType: \"Subject2\", dateRange: { dateType: 'PermanentStorage', from: $('\u2699\ufe0f Config').first().json.startDate, to: $('\u2699\ufe0f Config').first().json.endDate } }) }}",
+        "sendBody": true,
+        "sendQuery": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "pageSize",
+              "value": "250"
+            },
+            {
+              "name": "sortOrder",
+              "value": "Desc"
+            }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Redeem Token').first().json.accessToken.token }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "a2f15ef4-1767-4656-b9f4-d8e8644c58f0",
+      "name": "Query Issued Invoices",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1840,
+        128
+      ],
+      "parameters": {
+        "url": "={{ $('\u2699\ufe0f Config').first().json.baseUrl }}/invoices/query/metadata",
+        "method": "POST",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "pageOffset",
+                    "value": "={{ $pageCount }}"
+                  }
+                ]
+              },
+              "completeExpression": "={{ $response.body.hasMore === false }}",
+              "paginationCompleteWhen": "other"
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify({ subjectType: \"Subject1\", dateRange: { dateType: 'PermanentStorage', from: $('\u2699\ufe0f Config').first().json.startDate, to: $('\u2699\ufe0f Config').first().json.endDate } }) }}",
+        "sendBody": true,
+        "sendQuery": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "pageSize",
+              "value": "250"
+            },
+            {
+              "name": "sortOrder",
+              "value": "Desc"
+            }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Redeem Token').first().json.accessToken.token }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "19d57a2e-0da6-49c1-898c-3378719de6e3",
+      "name": "Process only new invoices",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        2736,
+        320
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "joinMode": "keepNonMatches",
+        "outputDataFrom": "input1",
+        "fieldsToMatchString": "ksefNumber"
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "a8fb355c-2950-499c-88d9-82742e4ac6ad",
+      "name": "For each invoice",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        304,
+        672
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "6c29eced-527f-4a8b-9d21-2f9696ee67eb",
+      "name": "Get invoice details",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        528,
+        1040
+      ],
+      "parameters": {
+        "url": "={{ $('\u2699\ufe0f Config').first().json.baseUrl }}/invoices/ksef/{{ $json.ksefNumber }}",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Redeem Token').first().json.accessToken.token }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "d3bf87ae-791b-4d88-80c1-1080984bdd57",
+      "name": "to JSON",
+      "type": "n8n-nodes-base.xml",
+      "position": [
+        736,
+        1040
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "fdd89b07-a2df-404d-899b-f5fcdc684366",
+      "name": "Convert to HTML",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        944,
+        1040
+      ],
+      "parameters": {
+        "jsCode": "// \u2500\u2500\u2500 strip ns prefix recursively \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nfunction stripNs(obj) {\n  if (Array.isArray(obj)) return obj.map(stripNs);\n  if (obj !== null && typeof obj === 'object') {\n    return Object.fromEntries(\n      Object.entries(obj).map(([k, v]) => [k.replace(/^[^:]+:/, ''), stripNs(v)])\n    );\n  }\n  return obj;\n}\n\nconst raw = $input.first().json;\nconst input = stripNs(raw);\n\n// \u2500\u2500\u2500 root: obs\u0142uga z Faktura lub bez \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst f = input.Faktura ?? Object.values(input)[0];\nconst fa = f.Fa;\n\n// \u2500\u2500\u2500 helpers \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst safe = (val, fallback = '\u2014') =>\n  (val !== undefined && val !== null && val !== '') ? val : fallback;\nconst safeGet = (obj, ...keys) =>\n  keys.reduce((o, k) => (o && o[k] !== undefined ? o[k] : undefined), obj);\n\n// \u2500\u2500\u2500 wiersze: FaWiersz (VAT) lub ZamowienieWiersz (ZAL) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst rodzaj = safe(fa.RodzajFaktury, 'VAT');\n\nlet wiersze = [];\nif (fa.FaWiersz) {\n  const raw = fa.FaWiersz;\n  wiersze = Array.isArray(raw) ? raw : [raw];\n} else if (fa.Zamowienie) {\n  const zam = fa.Zamowienie;\n  const rawZ = zam.ZamowienieWiersz;\n  const arr = Array.isArray(rawZ) ? rawZ : (rawZ ? [rawZ] : []);\n  // normalizacja do wsp\u00f3lnego formatu\n  wiersze = arr.map(w => ({\n    NrWierszaFa: w.NrWierszaZam,\n    P_7:  w.P_7Z,\n    P_8A: w.P_8AZ,\n    P_8B: w.P_8BZ,\n    P_9A: w.P_9AZ,\n    P_11: w.P_11NettoZ,\n    P_11Vat: w.P_11VatZ,\n    P_12: w.P_12Z,\n  }));\n}\n\n// \u2500\u2500\u2500 kwota / cena jedn. \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst kwotaWiersza = (w) => safe(w.P_11 ?? w.P_11A);\nconst cenaJedn     = (w) => safe(w.P_9A ?? w.P_9B);\n\n// \u2500\u2500\u2500 okres faktury \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst okresOd = safeGet(fa, 'OkresFa', 'P_6_Od');\nconst okresDo = safeGet(fa, 'OkresFa', 'P_6_Do');\nconst okresHtml = (okresOd && okresDo)\n  ? `<div><label>Okres faktury</label><span>${okresOd} \u2013 ${okresDo}</span></div>`\n  : '';\n\n// \u2500\u2500\u2500 daty p\u0142atno\u015bci \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst dataZaplaty =\n  safeGet(fa, 'Platnosc', 'DataZaplaty') ??\n  safeGet(fa, 'Platnosc', 'TerminPlatnosci', 'Termin') ?? '\u2014';\n\n// \u2500\u2500\u2500 do zap\u0142aty \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst doZaplaty = safe(fa.P_15 ?? safeGet(fa, 'Rozliczenie', 'DoZaplaty'));\n\n// \u2500\u2500\u2500 KRS / REGON \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst krs  = safeGet(f, 'Stopka', 'Rejestry', 'KRS');\nconst regon = safeGet(f, 'Stopka', 'Rejestry', 'REGON');\nconst krsHtml  = krs   ? `KRS: ${krs} &nbsp;|&nbsp; ` : '';\nconst regonHtml = regon ? `REGON: ${regon}` : '';\n\n// \u2500\u2500\u2500 rachunek bankowy \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst nrRB = safeGet(fa, 'Platnosc', 'RachunekBankowy', 'NrRB');\nconst nrRBHtml = nrRB\n  ? `<div><div class=\"fl\">Rachunek bankowy</div>${nrRB}</div>` : '';\n\n// \u2500\u2500\u2500 stopka \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst stopkaFaktury = safeGet(f, 'Stopka', 'Informacje', 'StopkaFaktury') ?? '';\n\n// \u2500\u2500\u2500 rozliczenie \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst rozliczenie = fa.Rozliczenie;\nlet rozliczenieHtml = '';\nif (rozliczenie) {\n  const obciazenia = Array.isArray(rozliczenie.Obciazenia)\n    ? rozliczenie.Obciazenia\n    : (rozliczenie.Obciazenia ? [rozliczenie.Obciazenia] : []);\n  if (obciazenia.length > 0) {\n    const oRows = obciazenia.map(o =>\n      `<tr><td class=\"muted\">${safe(o.Powod)}</td><td style=\"text-align:right\">${safe(o.Kwota)} PLN</td></tr>`\n    ).join('');\n    rozliczenieHtml = `\n      <div style=\"display:flex;justify-content:flex-end;margin-bottom:28px;\">\n        <table class=\"tot-t\">\n          <tr><td colspan=\"2\" style=\"font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#01696f;padding-bottom:8px;font-weight:600;\">Rozliczenie</td></tr>\n          ${oRows}\n          <tr class=\"tot-row\">\n            <td>Do zap\u0142aty (z rozliczeniem)</td>\n            <td>${safe(rozliczenie.DoZaplaty)} PLN</td>\n          </tr>\n        </table>\n      </div>`;\n  }\n}\n\n// \u2500\u2500\u2500 wiersze tabeli \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst rows = wiersze.map((w, i) => `\n  <tr>\n    <td>${i + 1}</td>\n    <td class=\"desc\">\n      ${safe(w.P_7)}\n      <div class=\"item-id\">Nr wiersza: ${safe(w.NrWierszaFa)}</div>\n    </td>\n    <td style=\"text-align:right\">${safe(w.P_8B)}</td>\n    <td style=\"text-align:right\">${cenaJedn(w)}</td>\n    <td style=\"text-align:right\">${safe(w.P_12)}%</td>\n    <td style=\"text-align:right\"><strong>${kwotaWiersza(w)} PLN</strong></td>\n  </tr>\n`).join('');\n\n// \u2500\u2500\u2500 badge \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst zaplacono = safeGet(fa, 'Platnosc', 'Zaplacono');\nconst badgeHtml = zaplacono === '1'\n  ? `<div class=\"badge\">&#10003; Zap\u0142acono</div>`\n  : `<div class=\"badge badge-pending\">Termin: ${dataZaplaty}</div>`;\n\n// \u2500\u2500\u2500 HTML \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst html = `<!DOCTYPE html>\n<html lang=\"pl\">\n<head>\n<meta charset=\"UTF-8\">\n<title>Faktura ${safe(fa.P_2)}</title>\n<style>\n  :root { --primary: #01696f; --text: #28251d; --muted: #7a7974; --divider: #dcd9d5; --bg: #f7f6f2; }\n  * { box-sizing: border-box; margin: 0; padding: 0; }\n  body { font-family: Arial, 'Helvetica Neue', sans-serif; font-size: 14px; line-height: 1.6; color: var(--text); background: var(--bg); padding: 40px 20px; }\n  .wrap { max-width: 860px; margin: 0 auto; background: #fff; border-radius: 10px; padding: 48px 56px; box-shadow: 0 4px 12px rgba(40,37,29,.08); }\n  .hdr { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--divider); padding-bottom: 28px; margin-bottom: 32px; }\n  .title { font-size: 26px; font-weight: 700; }\n  .nr { font-size: 13px; color: var(--muted); margin-top: 4px; }\n  .rodzaj { font-size: 12px; color: var(--primary); font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: .06em; }\n  .badge { background: #d4dfcc; color: #437a22; padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; }\n  .badge-pending { background: #e9e0c6; color: #8a5b00; }\n  .parties { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 28px; }\n  .party h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 8px; }\n  .pname { font-size: 15px; font-weight: 600; margin-bottom: 4px; }\n  .pdet { font-size: 13px; color: var(--muted); line-height: 1.7; }\n  .meta { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; background: var(--bg); border-radius: 8px; padding: 18px 20px; margin-bottom: 32px; }\n  .meta label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 3px; }\n  .meta span { font-size: 14px; font-weight: 500; }\n  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }\n  thead tr { border-bottom: 2px solid var(--primary); }\n  th { padding: 9px 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--primary); }\n  td { padding: 12px 10px; font-size: 13px; vertical-align: top; border-bottom: 1px solid var(--divider); }\n  tbody tr:last-child td { border-bottom: none; }\n  .desc { max-width: 320px; word-break: break-word; }\n  .item-id { font-size: 11px; color: var(--muted); margin-top: 2px; }\n  .muted { color: var(--muted); }\n  .tot-t { width: 300px; }\n  .tot-t td { padding: 5px 0; font-size: 13px; border: none; }\n  .tot-t td:last-child { text-align: right; font-weight: 500; }\n  .tot-row td { padding-top: 10px; border-top: 2px solid var(--primary) !important; font-size: 16px; font-weight: 700; color: var(--primary); }\n  .footer { border-top: 1px solid var(--divider); padding-top: 20px; font-size: 12px; color: var(--muted); line-height: 1.7; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }\n  .fl { font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: .06em; margin-bottom: 3px; }\n  @media print { body { background: #fff; padding: 0; } .wrap { box-shadow: none; } }\n</style>\n</head>\n<body>\n<div class=\"wrap\">\n\n  <div class=\"hdr\">\n    <div>\n      <div class=\"title\">Faktura VAT</div>\n      <div class=\"nr\">Nr ${safe(fa.P_2)}</div>\n      <div class=\"rodzaj\">${rodzaj}</div>\n    </div>\n    ${badgeHtml}\n  </div>\n\n  <div class=\"parties\">\n    <div class=\"party\">\n      <h3>Sprzedawca</h3>\n      <div class=\"pname\">${safe(safeGet(f, 'Podmiot1', 'DaneIdentyfikacyjne', 'Nazwa'))}</div>\n      <div class=\"pdet\">\n        NIP: ${safe(safeGet(f, 'Podmiot1', 'DaneIdentyfikacyjne', 'NIP'))}<br>\n        ${safe(safeGet(f, 'Podmiot1', 'Adres', 'AdresL1'))}<br>\n        ${safe(safeGet(f, 'Podmiot1', 'Adres', 'AdresL2'), '')}\n      </div>\n    </div>\n    <div class=\"party\">\n      <h3>Nabywca</h3>\n      <div class=\"pname\">${safe(safeGet(f, 'Podmiot2', 'DaneIdentyfikacyjne', 'Nazwa'))}</div>\n      <div class=\"pdet\">\n        NIP: ${safe(safeGet(f, 'Podmiot2', 'DaneIdentyfikacyjne', 'NIP'))}<br>\n        ${safe(safeGet(f, 'Podmiot2', 'Adres', 'AdresL1'))}<br>\n        ${safe(safeGet(f, 'Podmiot2', 'Adres', 'AdresL2'), '')}\n      </div>\n    </div>\n  </div>\n\n  <div class=\"meta\">\n    <div><label>Data wystawienia</label><span>${safe(fa.P_1)}</span></div>\n    ${okresHtml}\n    <div><label>Termin p\u0142atno\u015bci</label><span>${dataZaplaty}</span></div>\n    <div><label>Waluta</label><span>${safe(fa.KodWaluty)}</span></div>\n  </div>\n\n  <table>\n    <thead>\n      <tr>\n        <th>Lp.</th>\n        <th>Opis us\u0142ugi</th>\n        <th style=\"text-align:right\">Ilo\u015b\u0107</th>\n        <th style=\"text-align:right\">Cena jedn.</th>\n        <th style=\"text-align:right\">VAT</th>\n        <th style=\"text-align:right\">Kwota</th>\n      </tr>\n    </thead>\n    <tbody>${rows}</tbody>\n  </table>\n\n  <div style=\"display:flex;justify-content:flex-end;margin-bottom:28px;\">\n    <table class=\"tot-t\">\n      <tr><td class=\"muted\">Netto</td><td>${safe(fa.P_13_1)} PLN</td></tr>\n      <tr><td class=\"muted\">VAT</td><td>${safe(fa.P_14_1)} PLN</td></tr>\n      <tr class=\"tot-row\"><td>Do zap\u0142aty</td><td>${doZaplaty} PLN</td></tr>\n    </table>\n  </div>\n\n  ${rozliczenieHtml}\n\n  <div class=\"footer\">\n    <div>\n      <div class=\"fl\">Dane rejestrowe</div>\n      ${krsHtml}${regonHtml}\n    </div>\n    ${stopkaFaktury ? `<div><div class=\"fl\">Informacje</div>${stopkaFaktury}</div>` : ''}\n    ${nrRBHtml}\n  </div>\n\n</div>\n</body>\n</html>`;\n\nreturn [{  \"invoiceHTML\": html  }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "d4ee37ce-91ea-42cc-bee7-3eab578a3602",
+      "name": "Created row with file input to be sent",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1584,
+        720
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "combineBy": "combineByPosition"
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "4fb04d31-f1d0-4155-b4e0-aaf0e60148d7",
+      "name": "Insert new invoice details",
+      "type": "n8n-nodes-base.nocoDb",
+      "position": [
+        1360,
+        704
+      ],
+      "parameters": {
+        "table": "myhvkaewo3ex4x1",
+        "operation": "create",
+        "projectId": "petuhbbnhw06691",
+        "dataToSend": "autoMapInputData",
+        "authentication": "nocoDbApiToken"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "bf5fdde7-87ab-4c1f-92da-a95a4ab40e49",
+      "name": "Process both types",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        2240,
+        256
+      ],
+      "parameters": {},
+      "typeVersion": 3.2
+    },
+    {
+      "id": "27abe008-32f5-4d54-8456-624acbf07dad",
+      "name": "Get existing invoices",
+      "type": "n8n-nodes-base.nocoDb",
+      "position": [
+        2496,
+        336
+      ],
+      "parameters": {
+        "table": "myhvkaewo3ex4x1",
+        "options": {},
+        "operation": "getAll",
+        "projectId": "petuhbbnhw06691",
+        "returnAll": true,
+        "authentication": "nocoDbApiToken"
+      },
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "kAY3Nntg4Ze5X5sG",
+          "name": "NocoDB Token"
+        }
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "f5e9e485-7891-4e1f-a1dd-d7bb93bb9253",
+      "name": "Mark as \"issued\" invoice",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2048,
+        128
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fc7702cf-503a-498f-a126-d835674ac9b3",
+              "name": "type",
+              "type": "string",
+              "value": "issued"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "8e0f4d0c-f4ee-452c-accd-7859b20b65eb",
+      "name": "Mark as \"cost\" invoice",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2048,
+        352
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fc7702cf-503a-498f-a126-d835674ac9b3",
+              "name": "type",
+              "type": "string",
+              "value": "cost"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "aa62245a-97c3-4919-a637-c0ffbb9087ef",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1760,
+        -32
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 608,
+        "height": 528,
+        "content": "## Get Invoices\nGet both types of invoices - cost and issued "
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e53bd278-91e0-4d6e-8828-0494590db996",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2384,
+        -32
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 528,
+        "height": 528,
+        "content": "## Filter What You Have\nCompare to what you have in database - no need to process already existing invoices"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "122dd694-240d-44c1-b697-d44c939f110e",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        448,
+        896
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1104,
+        "height": 304,
+        "content": "## Get Details\n\nGet details of each of your invoices so we can create human-readable HTML. This HTML is then convered in a way that allows attaching to email"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "82c80135-baf3-4584-bc45-5c9e2f16bbe2",
+      "name": "Combine HTML with base invoice data",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1152,
+        704
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "combineBy": "combineByPosition"
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "a1f82d6f-fd04-42c8-8821-28a3f0065986",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1120,
+        544
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 848,
+        "height": 336,
+        "content": "## Finished data\nFinished and polished data goes into your database. From now on you won't get duplicates. Also receive email with your invoice details in human-readable HTML format"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b4d375b3-60ac-45a2-a3ee-d89015e2fffc",
+      "name": "Monitor Every Day for new invoices",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -80,
+        256
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "daysInterval": 30
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "da4aa041-78ec-4e1d-a205-dfae439e87f5",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -656,
+        -160
+      ],
+      "parameters": {
+        "width": 512,
+        "height": 656,
+        "content": "## KSeF - Download Invoices to NocoDB\n\n### How it works\n\nThe workflow takes data form Config node, uses it to authenticate to KSeF Invoices system, fetches both issued and received invoices and compares them with what already exists in NocoDB. Only new invoices are getting processed. For each new invoice, flow fetches it's details, combine with already existing data, and structure it as html document, which is later put into database as well as sent to you as a notification. At the end, flow terminates Auth session to prevent any bad actors from accessing your system.\n\nThis workflow is improvement of [this workflow by Greg Brzezinka](https://n8n.io/workflows/13925-download-ksef-polands-e-invoicing-system-invoices-to-an-excel-spreadsheet/)\n\n### Setup steps\n\n- Fill out NocoDB Config node\n- Run Setup first, it will create necessary NocoDB table.\n- Fill out Config node.\n- Inside NocoDB Nodes, select your newly created table\n\nYou are all set, there isn't much more to it.\n\n### Customization\n\nYou can customize Noco DB table name inside `NocoDB Config` node\n\n\n\n\n\n\n\nHappy hacking! For custom n8n workflow solutions or dedicated software development, reach out at [developers@sailingbyte.com](mailto:developers@sailingbyte.com) or visit [sailingbyte.com](https://sailingbyte.com/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "30563bf1-a413-4b91-a125-6e4f497be721",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "notes": "KSeF needs a moment to process authentication\n2 seconds is usually enough",
+      "position": [
+        1152,
+        256
+      ],
+      "webhookId": "74b854c3-ccd4-44cd-965e-0ded00bf63cb",
+      "parameters": {},
+      "notesInFlow": true,
+      "typeVersion": 1.1
+    },
+    {
+      "id": "1d297981-13b2-4f19-b27c-aa77d14e15d2",
+      "name": "Terminate Auth Session",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        528,
+        544
+      ],
+      "parameters": {
+        "url": "={{ $('\u2699\ufe0f Config').first().json.baseUrl }}/auth/sessions/current",
+        "method": "DELETE",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Redeem Token').first().json.accessToken.token }}"
+            }
+          ]
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.4
+    },
+    {
+      "id": "7b223337-002e-42d5-9f62-a4469bb549df",
+      "name": "Wait 2s",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        2240,
+        1072
+      ],
+      "webhookId": "9cd62327-9d09-4ca5-9660-4c8fe265c94d",
+      "parameters": {
+        "amount": 2
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "8438c142-542a-43a0-9236-9bf523ee20b7",
+      "name": "Create Tables",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -624,
+        720
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "bb32a2f8-72eb-44ba-b74c-1fc915f6a177",
+      "name": "NocoDB Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -448,
+        720
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "54aae501-d2c2-4d1e-b268-341126fcfb9b",
+              "name": "Base ID",
+              "type": "string",
+              "value": ""
+            },
+            {
+              "id": "697fc737-8f87-403e-83fe-b82d4ce4ab48",
+              "name": "NocoDB Url",
+              "type": "string",
+              "value": "https://nocodb.com/"
+            },
+            {
+              "id": "d066c673-9b3e-4b98-aaec-d4fa0579c481",
+              "name": "Table Name",
+              "type": "string",
+              "value": "KSeF Invoices"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "1ef89718-663a-4ad8-bbae-788da6ae4ba2",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -656,
+        512
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 512,
+        "height": 432,
+        "content": "## Run this first!\nThis short 'flow' will create necessary table inside NocoDB for you. One thing less to worry about. Make sure you don't have table called `KSeF Invoices`. If you do, edit"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2310ac27-aa89-4fba-a25e-9d88da363e83",
+      "name": "Create NocoDB KSeF Invoices Table",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -272,
+        720
+      ],
+      "parameters": {
+        "url": "={{ $json[\"NocoDB Url\"] }}api/v3/meta/bases/{{$('NocoDB Config').first().json['Base ID']}}/tables",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={\n  \"title\": \"{{$json['Table Name']}}\",\n  \"table_name\": \"{{$json['Table Name']}}\",\n  \"fields\": [\n  {\n    \"title\": \"ksefNumber\",\n    \"type\": \"SingleLineText\"\n  },\n  {\n    \"title\": \"invoiceNumber\",\n    \"type\": \"SingleLineText\"\n  },\n  {\n    \"title\": \"issueDate\",\n    \"type\": \"SingleLineText\"\n  },\n  {\n    \"title\": \"invoicingDate\",\n    \"type\": \"SingleLineText\"\n  },\n  {\n    \"title\": \"acquisitionDate\",\n    \"type\": \"SingleLineText\"\n  },\n  {\n    \"title\": \"permanentStorageDate\",\n    \"type\": \"SingleLineText\"\n  },\n  {\n    \"title\": \"seller\",\n    \"type\": \"JSON\"\n  },\n  {\n    \"title\": \"buyer\",\n    \"type\": \"JSON\"\n  },\n  {\n    \"title\": \"netAmount\",\n    \"type\": \"Decimal\",\n    \"options\": {\n      \"precision\": 2\n    }\n  },\n  {\n    \"title\": \"grossAmount\",\n    \"type\": \"Decimal\",\n    \"options\": {\n      \"precision\": 2\n    }\n  },\n  {\n    \"title\": \"vatAmount\",\n    \"type\": \"Decimal\",\n    \"options\": {\n      \"precision\": 2\n    }\n  },\n  {\n    \"title\": \"currency\",\n    \"type\": \"SingleLineText\"\n  },\n  {\n    \"title\": \"invoicingMode\",\n    \"type\": \"SingleLineText\"\n  },\n  {\n    \"title\": \"invoiceType\",\n    \"type\": \"SingleLineText\"\n  },\n  {\n    \"title\": \"formCode\",\n    \"type\": \"JSON\"\n  },\n  {\n    \"title\": \"isSelfInvoicing\",\n    \"type\": \"SingleLineText\"\n  },\n  {\n    \"title\": \"hasAttachment\",\n    \"type\": \"SingleLineText\"\n  },\n  {\n    \"title\": \"invoiceHash\",\n    \"type\": \"SingleLineText\"\n  },\n  {\n    \"title\": \"invoiceHTML\",\n    \"type\": \"LongText\"\n  },\n  {\n    \"title\": \"type\",\n    \"type\": \"SingleSelect\",\n    \"options\": {\n      \"choices\": [\n        {\n          \"title\": \"issued\",\n          \"color\": \"#cfdffe\"\n        },\n        {\n          \"title\": \"cost\",\n          \"color\": \"#d0f1fd\"\n        }\n      ]\n    }\n  }\n]\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "nocoDbApiToken"
+      },
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "kAY3Nntg4Ze5X5sG",
+          "name": "NocoDB Token"
+        }
+      },
+      "typeVersion": 4.3
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Check Auth Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 2s": {
+      "main": [
+        [
+          {
+            "node": "For each invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "to JSON": {
+      "main": [
+        [
+          {
+            "node": "Convert to HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Auth": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redeem Token": {
+      "main": [
+        [
+          {
+            "node": "Query Issued Invoices",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Query Cost Invoices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Tables": {
+      "main": [
+        [
+          {
+            "node": "NocoDB Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Encrypt Token": {
+      "main": [
+        [
+          {
+            "node": "Init Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Challenge": {
+      "main": [
+        [
+          {
+            "node": "Encrypt Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NocoDB Config": {
+      "main": [
+        [
+          {
+            "node": "Create NocoDB KSeF Invoices Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an Email": {
+      "main": [
+        [
+          {
+            "node": "Wait 2s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\u2699\ufe0f Config": {
+      "main": [
+        [
+          {
+            "node": "Get Public Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Public Key": {
+      "main": [
+        [
+          {
+            "node": "Get Challenge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Created row with file input to be sent",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Convert to HTML": {
+      "main": [
+        [
+          {
+            "node": "Combine HTML with base invoice data",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Covert to Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Covert to Base64": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Invoices": {
+      "main": [
+        [
+          {
+            "node": "Process only new invoices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "For each invoice": {
+      "main": [
+        [
+          {
+            "node": "Terminate Auth Session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Combine HTML with base invoice data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get invoice details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Auth Status": {
+      "main": [
+        [
+          {
+            "node": "Redeem Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process both types": {
+      "main": [
+        [
+          {
+            "node": "Extract Invoices",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get existing invoices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get invoice details": {
+      "main": [
+        [
+          {
+            "node": "to JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Cost Invoices": {
+      "main": [
+        [
+          {
+            "node": "Mark as \"cost\" invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get existing invoices": {
+      "main": [
+        [
+          {
+            "node": "Process only new invoices",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Query Issued Invoices": {
+      "main": [
+        [
+          {
+            "node": "Mark as \"issued\" invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as \"cost\" invoice": {
+      "main": [
+        [
+          {
+            "node": "Process both types",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Mark as \"issued\" invoice": {
+      "main": [
+        [
+          {
+            "node": "Process both types",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process only new invoices": {
+      "main": [
+        [
+          {
+            "node": "For each invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert new invoice details": {
+      "main": [
+        [
+          {
+            "node": "Created row with file input to be sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create NocoDB KSeF Invoices Table": {
+      "main": [
+        []
+      ]
+    },
+    "Monitor Every Day for new invoices": {
+      "main": [
+        [
+          {
+            "node": "\u2699\ufe0f Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine HTML with base invoice data": {
+      "main": [
+        [
+          {
+            "node": "Insert new invoice details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Created row with file input to be sent": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # ⚙️ Deploy Docker MinIO, API backend for WHMCS/WISECP
 
-> ⚡ **654 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **702 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

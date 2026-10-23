@@ -1,6 +1,6 @@
 # 🎯 Route feedback by sentiment using Typeform, GCP Natural Language, Notion & Trello
 
-> ⚡ **189 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **255 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Daily B2B lead monitoring: Website visitor digest with ProspectPro and Gmail
 
-> ⚡ **285 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **317 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

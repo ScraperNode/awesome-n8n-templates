@@ -1,6 +1,6 @@
 # ⚡ Send emails via Gmail from Obsidian
 
-> ⚡ **3,638 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,730 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Automated compliance control scoring with CyberPulse, GPT-4o & Google Sheets
 
-> ⚡ **71 views** · ⚒️ [Engineering](../)
+> ⚡ **98 views** · ⚒️ [Engineering](../)
 
 ## Description
 

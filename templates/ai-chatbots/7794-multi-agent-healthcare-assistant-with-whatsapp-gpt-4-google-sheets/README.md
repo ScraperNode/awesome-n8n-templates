@@ -1,6 +1,6 @@
 # 🤖 Multi-agent healthcare assistant with WhatsApp, GPT-4 & Google Sheets
 
-> ⚡ **2,545 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **3,273 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

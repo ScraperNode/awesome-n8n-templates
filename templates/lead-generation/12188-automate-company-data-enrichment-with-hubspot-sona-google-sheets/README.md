@@ -1,6 +1,6 @@
 # 🎣 Automate company data enrichment with HubSpot, Sona & Google Sheets
 
-> ⚡ **119 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **165 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

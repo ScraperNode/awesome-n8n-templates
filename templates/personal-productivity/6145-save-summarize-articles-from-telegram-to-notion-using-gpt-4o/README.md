@@ -1,6 +1,6 @@
 # ⚡ Save & summarize articles from Telegram to Notion using GPT-4o
 
-> ⚡ **785 views** · ⚡ [Personal Productivity](../)
+> ⚡ **816 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

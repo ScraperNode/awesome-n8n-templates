@@ -1,6 +1,6 @@
 # 📊 Summarize SERPBear data with AI (via Openrouter) and save it to Baserow
 
-> ⚡ **878 views** · 📊 [Market Research & Insights](../)
+> ⚡ **893 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

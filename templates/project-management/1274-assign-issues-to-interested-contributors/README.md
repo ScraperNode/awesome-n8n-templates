@@ -1,6 +1,6 @@
 # 📋 Assign issues to interested contributors
 
-> ⚡ **949 views** · 📋 [Project Management](../)
+> ⚡ **955 views** · 📋 [Project Management](../)
 
 ## Description
 

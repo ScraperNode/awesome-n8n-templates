@@ -1,6 +1,6 @@
 # ⚙️ Generate GitHub release notes with AI comparison
 
-> ⚡ **79 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **174 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

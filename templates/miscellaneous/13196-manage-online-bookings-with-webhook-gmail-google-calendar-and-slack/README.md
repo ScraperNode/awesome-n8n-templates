@@ -1,6 +1,6 @@
 # 🔧 Manage online bookings with webhook, Gmail, Google Calendar and Slack
 
-> ⚡ **12 views** · 🔧 [Miscellaneous](../)
+> ⚡ **48 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

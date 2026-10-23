@@ -1,6 +1,6 @@
 # 📊 Automate daily keyword research with Google Sheets, Suggest API & Custom Search
 
-> ⚡ **1,040 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,147 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

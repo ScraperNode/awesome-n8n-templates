@@ -1,6 +1,6 @@
 # 🎣 🛠️ Dropcontact tool MCP server
 
-> ⚡ **131 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **154 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

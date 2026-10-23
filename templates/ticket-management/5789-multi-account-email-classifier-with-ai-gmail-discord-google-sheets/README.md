@@ -1,6 +1,6 @@
 # 🎫 Multi-account email classifier with AI, Gmail, Discord & Google Sheets
 
-> ⚡ **2,625 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **3,178 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Extract business card data from Telegram to Google Sheets with OpenRouter AI Vision
 
-> ⚡ **490 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **688 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

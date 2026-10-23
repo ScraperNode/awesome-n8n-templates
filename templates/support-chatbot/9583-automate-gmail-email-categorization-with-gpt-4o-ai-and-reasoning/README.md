@@ -1,6 +1,6 @@
 # 💬 Automate Gmail email categorization with GPT-4o AI and reasoning
 
-> ⚡ **407 views** · 💬 [Support Chatbots](../)
+> ⚡ **566 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

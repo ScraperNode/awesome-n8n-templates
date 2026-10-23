@@ -1,6 +1,6 @@
 # 🔧 Create a PayPal batch payout
 
-> ⚡ **1,554 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,604 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

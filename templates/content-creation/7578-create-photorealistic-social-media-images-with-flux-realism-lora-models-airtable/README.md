@@ -1,6 +1,6 @@
 # 🎬 Create photorealistic social media images with Flux Realism, LoRa models & Airtable
 
-> ⚡ **1,203 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,468 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

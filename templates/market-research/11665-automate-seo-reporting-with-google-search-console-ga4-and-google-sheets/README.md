@@ -1,6 +1,6 @@
 # 📊 Automate SEO reporting with Google Search Console, GA4, and Google Sheets
 
-> ⚡ **934 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,616 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

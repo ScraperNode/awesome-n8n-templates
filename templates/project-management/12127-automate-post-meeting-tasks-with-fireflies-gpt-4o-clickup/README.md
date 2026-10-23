@@ -1,6 +1,6 @@
 # 📋 Automate post-meeting tasks with Fireflies, GPT-4o & ClickUp
 
-> ⚡ **133 views** · 📋 [Project Management](../)
+> ⚡ **164 views** · 📋 [Project Management](../)
 
 ## Description
 

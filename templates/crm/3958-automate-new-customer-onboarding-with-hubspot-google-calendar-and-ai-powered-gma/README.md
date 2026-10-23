@@ -1,6 +1,6 @@
 # 🤝 Automate new customer onboarding with HubSpot, Google Calendar, and AI-powered Gmail
 
-> ⚡ **5,380 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **5,754 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Enrich new HubSpot contacts with Lusha and alert reps in Slack
 
-> ⚡ **1 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **28 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Add user authorization layer to your Telegram bot with admin alerts
 
-> ⚡ **918 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,126 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

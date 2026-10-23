@@ -1,6 +1,6 @@
 # 🎬 Generate 360° virtual try-on videos for clothing with Kling API (unofficial)
 
-> ⚡ **3,283 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,678 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Capture leads in HubSpot from Typeform
 
-> ⚡ **4,666 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **5,009 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

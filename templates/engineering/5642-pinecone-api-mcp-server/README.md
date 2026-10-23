@@ -1,6 +1,6 @@
 # ⚒️ Pinecone API MCP server
 
-> ⚡ **140 views** · ⚒️ [Engineering](../)
+> ⚡ **148 views** · ⚒️ [Engineering](../)
 
 ## Description
 

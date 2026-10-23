@@ -1,6 +1,6 @@
 # 💬 Telegram AI bot-to-human handoff for sales calls
 
-> ⚡ **16,939 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **17,908 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

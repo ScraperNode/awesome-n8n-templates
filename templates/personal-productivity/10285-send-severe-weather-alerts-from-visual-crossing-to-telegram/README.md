@@ -1,6 +1,6 @@
 # ⚡ Send severe weather alerts from Visual Crossing to Telegram
 
-> ⚡ **33 views** · ⚡ [Personal Productivity](../)
+> ⚡ **78 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 N8N español - Telegram welcome bot
 
-> ⚡ **3,788 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **3,998 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

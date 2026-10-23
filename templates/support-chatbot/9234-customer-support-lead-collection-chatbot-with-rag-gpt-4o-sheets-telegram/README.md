@@ -1,6 +1,6 @@
 # 💬 Customer support & lead collection chatbot with RAG, GPT-4o, Sheets & Telegram
 
-> ⚡ **719 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,104 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

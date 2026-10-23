@@ -1,6 +1,6 @@
 # ⚒️ MCP Supabase agent – manage your database with AI
 
-> ⚡ **2,745 views** · ⚒️ [Engineering](../)
+> ⚡ **2,819 views** · ⚒️ [Engineering](../)
 
 ## Description
 

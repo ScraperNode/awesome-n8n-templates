@@ -1,6 +1,6 @@
 # ⚙️ Monitor & auto-heal AWS EC2 instances with multi-channel alerts
 
-> ⚡ **140 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **199 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

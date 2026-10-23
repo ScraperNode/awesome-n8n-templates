@@ -1,6 +1,6 @@
 # ⚡ Daily habit RPG: Gamified Gmail reminders with quest system and progress tracking
 
-> ⚡ **365 views** · ⚡ [Personal Productivity](../)
+> ⚡ **683 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Reddit post finder with Google Gemini summarization via Telegram
 
-> ⚡ **158 views** · 📊 [Market Research & Insights](../)
+> ⚡ **170 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

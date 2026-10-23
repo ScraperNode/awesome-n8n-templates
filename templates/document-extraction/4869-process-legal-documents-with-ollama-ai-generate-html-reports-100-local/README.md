@@ -1,6 +1,6 @@
 # 🔬 Process legal documents with Ollama AI & generate HTML reports (100% local)
 
-> ⚡ **985 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,106 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

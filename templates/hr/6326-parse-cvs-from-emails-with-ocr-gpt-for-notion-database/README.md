@@ -1,6 +1,6 @@
 # 👥 Parse CVs from emails with OCR & GPT for Notion database
 
-> ⚡ **512 views** · 👥 [HR & Recruitment](../)
+> ⚡ **529 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

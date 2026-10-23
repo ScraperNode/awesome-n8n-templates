@@ -1,6 +1,6 @@
 # ⚙️ 🛠️ Cloudflare tool MCP server
 
-> ⚡ **477 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **551 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

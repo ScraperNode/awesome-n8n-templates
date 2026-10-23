@@ -1,6 +1,6 @@
 # 💬 Score Zoho support tickets with OpenAI and sync upsell alerts to Zoho CRM
 
-> ⚡ **89 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **128 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

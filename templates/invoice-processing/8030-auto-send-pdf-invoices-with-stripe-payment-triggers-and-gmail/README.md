@@ -1,6 +1,6 @@
 # 🧾 Auto-send PDF invoices with Stripe payment triggers and Gmail
 
-> ⚡ **387 views** · 🧾 [Invoice Processing](../)
+> ⚡ **412 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Receive updates when an email is bounced or opened
 
-> ⚡ **716 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **734 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

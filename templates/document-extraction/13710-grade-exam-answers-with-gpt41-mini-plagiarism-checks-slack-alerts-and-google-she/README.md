@@ -1,6 +1,6 @@
 # 🔬 Grade exam answers with GPT‑4.1 mini, plagiarism checks, Slack alerts and Google Sheets logging
 
-> ⚡ **17 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **124 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Reddit API Hub: Manage posts, comments & subreddits via server-sent events
 
-> ⚡ **1,434 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,577 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

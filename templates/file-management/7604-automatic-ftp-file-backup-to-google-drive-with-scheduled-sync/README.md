@@ -1,6 +1,6 @@
 # 📁 Automatic FTP file backup to Google Drive with scheduled sync
 
-> ⚡ **203 views** · 📁 [File Management](../)
+> ⚡ **279 views** · 📁 [File Management](../)
 
 ## Description
 

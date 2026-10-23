@@ -1,6 +1,6 @@
 # 🎬 Transform product photos into ad campaigns with Gemini Vision and Claude via Telegram
 
-> ⚡ **355 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **651 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

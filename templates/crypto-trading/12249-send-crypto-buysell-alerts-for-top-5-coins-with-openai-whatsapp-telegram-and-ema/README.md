@@ -1,6 +1,6 @@
 # 📈 Send crypto BUY/SELL alerts for top 5 coins with OpenAI, WhatsApp, Telegram, and email
 
-> ⚡ **516 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **711 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

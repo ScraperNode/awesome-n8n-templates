@@ -1,6 +1,6 @@
 # ⚒️ [New York Times] article search API MCP server
 
-> ⚡ **543 views** · ⚒️ [Engineering](../)
+> ⚡ **587 views** · ⚒️ [Engineering](../)
 
 ## Description
 

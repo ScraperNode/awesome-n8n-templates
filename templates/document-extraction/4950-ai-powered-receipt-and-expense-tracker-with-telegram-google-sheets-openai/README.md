@@ -1,40 +1,41 @@
 # 🔬 AI-powered receipt and expense tracker with Telegram, Google Sheets & OpenAI
 
-> ⚡ **832 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **920 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 
-**Automatically capture, categorize, and log expenses from receipts, PDFs, voice notes, or text — powered by AI and integrated with Telegram and Google Sheets.**
+**Automatically capture, categorize, and log expenses from receipts, PDFs, voice notes, or text. Powered by AI, delivered through Telegram, stored in Google Sheets.**
+
+*Last updated: September 2026.*
+
+### Who is this for?
+
+Small business owners, freelancers, digital nomads, and finance professionals who want to kill manual expense tracking and automate financial data entry through chat, AI, and cloud tools.
 
 
-### 🧑‍💼 Who is this for?
+### What problem is this workflow solving?
 
-Small business owners, freelancers, digital nomads, and finance professionals who want to eliminate manual expense tracking and automate financial data entry through chat, AI, and cloud tools.
+Receipts and expenses come in every format: paper, PDF, voice. Handling them by hand is slow and error-prone. This workflow automates the whole chain, OCR, categorization, validation, and reporting, so your finances stay organized with zero manual effort.
 
+### What You Get
 
-### ❓ What problem is this workflow solving?
-
-Manually managing receipts and tracking expenses across various formats (paper, PDF, or voice) is time-consuming and error-prone. This workflow automates that entire process—OCR, categorization, validation, and reporting—so your finances stay organized with zero manual effort.
-
-### 📦 What You Get
-
-* ✅ Complete `Smart_Money_Manager.json` n8n workflow
-* 📄 API credential setup guide
-* 📈 Google Sheets sample template
-* 🛠️ AI prompt customization examples
-* 🧪 Troubleshooting & error handling logic
-* 📺 Bonus video tutorial (if provided)
-* 💬 Telegram support from the developer
+* Complete `Smart_Money_Manager.json` [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) workflow
+* API credential setup guide
+* Google Sheets sample template
+* AI prompt customization examples
+* Troubleshooting & error handling logic
+* Bonus video tutorial (if provided)
+* Telegram support from the developer
 
 
-### ⚙️ What this workflow does
+### What this workflow does
 
-#### 🎯 Triggers
+#### Triggers
 
 * Runs on **Telegram message** (text, image, voice note, PDF)
 * Smart **inline menu** to select income or expense tracking
 
-#### 🧠 Processing
+#### Processing
 
 * Auto-detects content type (photo, PDF, voice note, or text)
 * Transcribes voice using **OpenAI Whisper**
@@ -44,13 +45,13 @@ Manually managing receipts and tracking expenses across various formats (paper, 
 * Categorizes by income/expense, with subcategories like Food, Transport, etc.
 * Parses currency and performs logic validation on totals
 
-#### 📊 Logging
+#### Logging
 
 * Automatically appends categorized transaction data into **Google Sheets**
 * Adds details like date, merchant, item list, payment method, etc.
 * Saves both income and expenses with conditional Google Sheet routing
 
-#### 💬 Notifications
+#### Notifications
 
 * Sends detailed transaction summaries via Telegram
 * Warns users of errors or invalid inputs with friendly retry guidance
@@ -58,22 +59,22 @@ Manually managing receipts and tracking expenses across various formats (paper, 
 
 ---
 
-### 🔧 How to customize this workflow to your needs
+### How to customize this workflow to your needs
 
-* 🧾 **Add custom expense types** — edit categorization prompts in the GPT node
-* 🌎 **Enable multi-language or multi-currency support** by modifying AI prompts
-* 🗂️ **Route to different Google Sheets** by user ID, business unit, or project
-* 📣 **Expand to other platforms** — Add Slack or email notifications
-* 🔍 **Enhance validation** with stricter logic for budgets, tax codes, or policy rules
+* **Add custom expense types** — edit categorization prompts in the GPT node
+* **Enable multi-language or multi-currency support** by modifying AI prompts
+* **Route to different Google Sheets** by user ID, business unit, or project
+* **Expand to other platforms** — Add Slack or email notifications
+* **Enhance validation** with stricter logic for budgets, tax codes, or policy rules
 
 
 
-### 🚀 Setup Instructions
+### Setup Instructions
 
 #### Requirements:
 
-* **[n8n instance](https://n8n.partnerlinks.io/khaisastudio) (Cloud or self-hosted)** (Cloud or self-hosted)
-* Telegram Bot API credentials
+* **[n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin) (Cloud or self-hosted)**
+* Telegram Bot API credentials ([Bot API docs](https://core.telegram.org/bots))
 * Google Cloud (Vision API)
 * OpenAI API key
 * LlamaIndex API key
@@ -82,7 +83,7 @@ Manually managing receipts and tracking expenses across various formats (paper, 
 
 #### Step-by-step:
 
-1. **Import `workflow.json`** into your n8n instance
+1. **Import `workflow.json`** into your [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance
 2. Configure credentials for all services: Telegram, OpenAI, Google, Redis
 3. Set up your **Google Sheets** with defined columns
 4. Modify AI prompts (optional) for categories and business rules
@@ -91,7 +92,7 @@ Manually managing receipts and tracking expenses across various formats (paper, 
 
 
 
-### 🧩 Nodes Used
+### Nodes Used
 
 * **Telegram Trigger + Chat Node** (bot interaction and input selection)
 * **Switch/IF nodes** (content-type routing and condition checking)
@@ -105,13 +106,24 @@ Manually managing receipts and tracking expenses across various formats (paper, 
 
 ---
 
-Made by: [Khaisa Studio](https://khaisa.studio)  
-Tag: youtube, summarizer, telegram, openai  
-Category: AI Automation, Video Tools
+### Quick Answers
+**What can I send the bot?**  
+Text, receipt photos, PDFs, or voice notes. It detects the type automatically.  
+**Where does my data go?**  
+Categorized rows land in your Google Sheets with date, merchant, items, and payment details.  
+**Is Redis required?**  
+No. It is optional, only for session memory.  
+
+Made by: [khmuhtadin](https://khmuhtadin.com)  
+Tag: finance, expense-tracker, telegram, openai, google-sheets  
+Category: Finance & Productivity
 Need a custom? [Contact Me](https://khmuhtadin.com/contact)
 
 
-*💸 Take control of your finances with zero manual work. Let Smart Money Manager handle the receipts, so you can focus on growing your business.*
+*Take control of your finances with zero manual work. Let Smart Money Manager handle the receipts, so you can focus on growing your business.*
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

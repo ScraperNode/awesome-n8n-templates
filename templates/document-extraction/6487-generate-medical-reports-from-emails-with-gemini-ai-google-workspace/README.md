@@ -1,6 +1,6 @@
 # 🔬 Generate medical reports from emails with Gemini AI & Google Workspace
 
-> ⚡ **871 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,018 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Convert LLM output into rich Telegram messages — Auto-Media & smart chunking
 
-> ⚡ **1,078 views** · ⚒️ [Engineering](../)
+> ⚡ **1,240 views** · ⚒️ [Engineering](../)
 
 ## Description
 

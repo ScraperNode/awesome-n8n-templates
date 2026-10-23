@@ -1,6 +1,6 @@
 # 🎫 A very simple "Human in the Loop" email response system using AI and IMAP
 
-> ⚡ **32,875 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **40,333 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

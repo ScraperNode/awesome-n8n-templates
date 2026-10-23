@@ -1,6 +1,6 @@
 # 💬 Business hours lead response system with Gmail, Google Sheets & Telegram alerts
 
-> ⚡ **152 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **209 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,56 +1,40 @@
 # 🎯 Auto-document and backup workflows with GPT-4 and Airtable
 
-> ⚡ **230 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **243 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 
-Never worry about losing your n8n workflows again. This template provides a powerful, automated backup system that gives you the peace of mind of version control without the complexity of Git. 
-
-On a schedule you define, it intelligently scans your n8n instance for new workflow versions and saves them as downloadable snapshots in a clean and organized Airtable base.
-
-But it’s more than just a backup. This workflow uses AI to automatically generate a concise summary of what each workflow does and even documents the changes between versions. The result is a fully searchable, self-documenting library of all your automations, making it the perfect "single source of truth" for your team or personal projects.
-
-## Who is this for?
-
-* **Self-hosted n8n users:** This is an essential insurance policy to protect your critical automations from server issues or data loss.
-* **n8n developers & freelancers:** Maintain a complete version history for client projects, allowing you to easily review changes and restore previous versions.
-* **Teams using n8n:** Create a central, browseable, and documented repository of all team workflows, making collaboration and handovers seamless.
-* **Any n8n user who values their work:** Protect your time and effort with an easy-to-use, "set it and forget it" backup solution.
-
-## What problem does this solve?
-
-* **Prevents catastrophic data loss:** Provides a simple, automated way to back up your most critical assets—your workflows.
-* **Creates "no-code" version control:** Offers the benefits of version history (like Git) but in a user-friendly Airtable interface, allowing you to browse and download any previous snapshot.
-* **Automates documentation:** Who has time to document every change? The AI summary and changelog features mean you always have up-to-date documentation, even if you forget to write it yourself.
-* **Improves workflow discovery:** Your Airtable base becomes a searchable and browseable library of all your workflows and their purposes, complete with AI-generated summaries.
+## Quick overview
+Automatically backs up every new version of your n8n workflows to Airtable on a schedule, then uses AI to generate a plain-English summary of each workflow and a one-sentence changelog of what changed since the last snapshot.
 
 ## How it works
-
-1.  **Scheduled check:** On a recurring schedule (e.g., daily), the workflow fetches a list of all workflows from your n8n instance.
-2.  **Detect new versions:** It compares the current version ID of each workflow with the snapshot IDs already saved in your Airtable base. It only proceeds with new, unsaved versions.
-3.  **Generate AI documentation:** For each new snapshot, the workflow performs two smart actions:
-    * **AI Changelog:** It compares the new workflow JSON with the previously saved version and uses AI to generate a one-sentence summary of what’s changed.
-    * **AI Summary:** It periodically re-analyzes the entire workflow to generate a fresh, high-level summary of its purpose, ensuring the main description stays up-to-date.
-4.  **Store in Airtable:** It saves everything neatly in the provided two-table Airtable base:
-    * A `Workflows` table holds the main record and the AI summary.
-    * A linked `Snapshots` table stores the version-specific details, the AI changelog, and the actual `.json` backup file as an attachment.
+1. A **Schedule Trigger** runs the workflow at the frequency you set (for example, daily), starting with the **Get all n8n workflows** node, which fetches every workflow from your n8n instance via the n8n API.
+2. In parallel, **Search all existing snapshots** reads all previously stored version IDs from the `Snapshots` table in Airtable, and **Match snapshot IDs** (`Merge`, `keepNonMatches`) compares them against the current version ID of each workflow to isolate only the workflows with a new, unsaved version. **Only keep new snapshots** filters out any leftover items without a version ID before looping through the results with **Loop Over Items**.
+3. For each new version, **Create or update workflow** upserts a record in the `Workflows` table (matching on `Workflow ID`), setting the workflow name and creation time. **Search all snapshots** then retrieves the past snapshot count for that workflow, and the **Check workflow status** Code node decides whether the AI summary needs to be regenerated (on the 1st, 2nd, and every 5th snapshot).
+4. If a previous snapshot exists, **Download previous snapshot** and **Extract from File1** pull the last stored `.json` backup from Airtable, and **Document workflow differences** (an OpenAI-backed LangChain chain, via **OpenAI Chat Model1**) compares it to the current workflow JSON to produce a one-sentence changelog. If it's the very first snapshot, **State that this is the first version** sets a fixed `N/A - First identified version` note instead.
+5. When **Needs new workflow summary?** is true, **Re-summarise workflow** calls the same AI model to generate a fresh, one-sentence description of the whole workflow's purpose, which **Store new workflow summary** saves back to the `Workflows` table's `AI summary` field.
+6. *Store new snapshot** creates the new `Snapshots` record (version ID, update time, changelog, linked `Workflow`), then **Get full workflow JSON**, **Move Binary Data**, and **Extract from File** convert the full workflow JSON into a binary file. **Store workflow file into Airtable** (HTTP Request to the Airtable content API) uploads that file as an attachment to the snapshot's `Workflow_file` field, and a **Wait** node pauses 3 seconds before the loop continues, to stay under Airtable's API rate limits.
 
 ## Setup
+1. Duplicate the Airtable base template (linked in the workflow's sticky note) into your own Airtable account. It contains the two required tables: `Workflows` (workflow name, AI summary, linked snapshots) and `Snapshots` (n8n version ID, update time, AI changelog, `Workflow_file` attachment).
+2. Add your n8n API credentials to the **Get all n8n workflows**, **Get full workflow JSON**, and **Create or update workflow** (n8n node type) nodes so the workflow can list and read your instance's workflows.
+3. Add your Airtable credentials to all Airtable nodes (**Search all existing snapshots**, **Search all snapshots**, **Create or update workflow**, **Download previous snapshot**, **Store new workflow summary**, **Store new snapshot**) and remap each node's base and table to the base you just duplicated.
+4. Add an OpenAI (or compatible) credential to the **OpenAI Chat Model1** node, which powers both the **Document workflow differences** and **Re-summarise workflow** AI chains. It defaults to `gpt-4.1-nano`; swap the model if you need higher quality summaries.
+5. In the **Store workflow file into Airtable** HTTP Request node, replace `<AIRTABLE-BASE-ID>` in the URL with your duplicated base's ID (starts with "app...", found in the base's Airtable URL). This node also needs an Airtable Token API credential (`nodeCredentialType` `airtableTokenApi`) with attachment upload permission.
+6. Set your desired frequency on the **Schedule Trigger** node (for example, once daily) and activate the workflow.
 
-1.  **Duplicate the Airtable base:** Before you start, **[click here to duplicate the Airtable Base template](https://airtable.com/appPFFj6CUUhZyDPT/shrorM8k6HsUqBACB)** into your own Airtable account.
-2.  **Configure the workflow:**
-    * Connect your **n8n API** credentials to the **n8n** nodes.
-    * Connect your **Airtable** credentials and map the nodes to the base you just duplicated.
-    * Connect your **AI provider** credentials to the **OpenAI Chat Model** nodes.
-    * **Important:** In the **Store workflow file into Airtable** (HTTP Request) node, you must replace `&lt;AIRTABLE-BASE-ID&gt;` in the URL with your own base ID (it starts with `app...`).
-3.  **Set your schedule:** Configure the **Schedule Trigger** to your desired frequency (daily is a good start).
-4.  **Activate the workflow.** Your automated, AI-powered backup system is now live!
+## Requirements
+- An n8n instance reachable via the n8n API (with an API key credential).
+- An Airtable account with a base duplicated from the provided template, plus an Airtable API/token credential.
+- An OpenAI (or compatible) API credential for the two AI summary/changelog steps.
 
-## Taking it further
+## Customization
+- Add a Slack or Email node at the end of the run to notify your team which workflows were backed up.
+- Swap Airtable for Google Drive, Dropbox, Google Sheets, or Notion by adapting the storage and metadata nodes to those services.
+- Edit the **Check workflow status** Code node's logic to change how often the full AI summary is regenerated (currently: 1st, 2nd, and every 5th snapshot), to control AI token usage.
 
-* **Add notifications:** Add a **Slack** or **Email** node at the end of the workflow to send a summary of which workflows were backed up during each run.
-* **Use different storage:** While designed for Airtable, you could adapt the logic to store the JSON files in **Google Drive** or **Dropbox** and the metadata in **Google Sheets** or **Notion**.
-* **Optimize AI costs:** The **Check workflow status** (Code) node is set to regenerate the main AI summary for the first few snapshots and then every 5th snapshot. You can edit the code in this node to change this frequency and manage your token consumption.
+## Additional info
+Duplicate the reference Airtable base before running this workflow: https://airtable.com/appPFFj6CUUhZyDPT/shrorM8k6HsUqBACB. The workflow uses Airtable's content upload API endpoint to store the workflow JSON as a file attachment directly from base64 data, avoiding a separate Drive/Dropbox upload step.
 
 ## 🔗 Nodes Used
 

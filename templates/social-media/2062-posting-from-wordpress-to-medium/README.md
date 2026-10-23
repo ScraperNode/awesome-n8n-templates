@@ -1,6 +1,6 @@
 # 📱 Posting from Wordpress to Medium
 
-> ⚡ **2,810 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,864 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

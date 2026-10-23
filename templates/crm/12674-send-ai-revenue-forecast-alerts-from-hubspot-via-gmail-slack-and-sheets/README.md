@@ -1,6 +1,6 @@
 # 🤝 Send AI revenue forecast alerts from HubSpot via Gmail, Slack and Sheets
 
-> ⚡ **46 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **57 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

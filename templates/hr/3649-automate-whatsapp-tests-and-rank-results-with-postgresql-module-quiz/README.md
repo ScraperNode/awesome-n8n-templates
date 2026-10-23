@@ -1,6 +1,6 @@
 # 👥 Automate WhatsApp tests and rank results with PostgreSQL (Module "Quiz")
 
-> ⚡ **471 views** · 👥 [HR & Recruitment](../)
+> ⚡ **481 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

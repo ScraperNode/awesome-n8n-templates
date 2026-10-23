@@ -1,6 +1,6 @@
 # 🎣 Email list validation and cleanup with Google Sheets and VerifiEmail
 
-> ⚡ **92 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **137 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

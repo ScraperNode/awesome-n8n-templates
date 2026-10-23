@@ -1,6 +1,6 @@
 # 📖 Build a RAG system by uploading PDFs to the Google Gemini File Search Store
 
-> ⚡ **3,434 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **4,255 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

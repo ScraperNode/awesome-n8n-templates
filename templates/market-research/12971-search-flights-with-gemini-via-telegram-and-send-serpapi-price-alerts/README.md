@@ -1,6 +1,6 @@
 # 📊 Search flights with Gemini via Telegram and send SerpAPI price alerts
 
-> ⚡ **306 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,864 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

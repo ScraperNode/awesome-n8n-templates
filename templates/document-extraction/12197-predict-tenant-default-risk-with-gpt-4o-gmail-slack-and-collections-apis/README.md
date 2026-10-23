@@ -1,6 +1,6 @@
 # 🔬 Predict tenant default risk with GPT-4o, Gmail, Slack and collections APIs
 
-> ⚡ **95 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **119 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

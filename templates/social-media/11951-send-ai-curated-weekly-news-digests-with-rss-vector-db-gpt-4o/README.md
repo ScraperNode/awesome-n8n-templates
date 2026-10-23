@@ -1,6 +1,6 @@
 # 📱 Send AI-curated weekly news digests with RSS, Vector DB & GPT-4o
 
-> ⚡ **162 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **274 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

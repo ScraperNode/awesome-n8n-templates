@@ -1,6 +1,6 @@
 # 🎬 Generate illustrated stories with GPT-4, DALL-E 3 and Firebase
 
-> ⚡ **140 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **170 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

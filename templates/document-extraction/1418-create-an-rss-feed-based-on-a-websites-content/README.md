@@ -1,6 +1,6 @@
 # 🔬 Create an RSS feed based on a website's content
 
-> ⚡ **44,466 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **49,228 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

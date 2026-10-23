@@ -1,6 +1,6 @@
 # 🎫 Extract Gmail metadata to Google Sheets
 
-> ⚡ **823 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,073 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

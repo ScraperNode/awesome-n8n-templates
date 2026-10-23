@@ -1,6 +1,6 @@
 # 🎬 Create AI nature videos with Sora 2 (Kie AI), Gemini, and send to Telegram
 
-> ⚡ **1,319 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,630 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

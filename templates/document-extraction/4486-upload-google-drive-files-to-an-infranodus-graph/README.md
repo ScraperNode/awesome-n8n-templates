@@ -1,6 +1,6 @@
 # 🔬 Upload Google Drive files to an InfraNodus graph
 
-> ⚡ **716 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **753 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

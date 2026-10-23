@@ -1,6 +1,6 @@
 # 🔬 Process & summarize PDFs from email & messaging apps with OpenAI GPT
 
-> ⚡ **527 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **653 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

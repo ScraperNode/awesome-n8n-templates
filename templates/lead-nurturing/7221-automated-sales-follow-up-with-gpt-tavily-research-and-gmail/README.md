@@ -1,6 +1,6 @@
 # 💬 Automated sales follow-up with GPT, Tavily Research and Gmail
 
-> ⚡ **880 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **944 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

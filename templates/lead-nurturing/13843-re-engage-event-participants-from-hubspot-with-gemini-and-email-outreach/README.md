@@ -1,6 +1,6 @@
 # 💬 Re-engage event participants from HubSpot with Gemini and email outreach
 
-> ⚡ **0 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **50 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

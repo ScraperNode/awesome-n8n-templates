@@ -1,0 +1,771 @@
+{
+  "meta": {
+    "instanceId": "3ce807f6d92313d1b497881a4727b9cb8519be7f369ed2f92bceeffcc7475a9e",
+    "templateCredsSetupCompleted": true
+  },
+  "nodes": [
+    {
+      "id": "e01d01ef-5f08-42d5-a8fb-5362c7986b62",
+      "name": "Receive Event",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        0,
+        112
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "flow4gold-PrepareEvent",
+      "name": "Prepare Event",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        224,
+        112
+      ],
+      "parameters": {
+        "jsCode": "// Validate the request before reading the trusted machine catalog.\nconst items = $input.all();\nif (items.length !== 1) throw new Error('Submit exactly one request per execution.');\nconst input = items[0].json;\nif (!input || typeof input !== 'object' || Array.isArray(input))\n  throw new Error('Input must be an object.');\nconst inspect = input.operation === 'inspect';\nconst allowed = inspect\n  ? ['caseId', 'operation']\n  : [\n      'caseId',\n      'eventId',\n      'type',\n      'payload',\n      'causationId',\n      'correlationId',\n      'taskInvocationId',\n      'machine',\n      'machineVersion',\n    ];\nif (Object.keys(input).some((key) => !allowed.includes(key)))\n  throw new Error('Unknown input field; state is reconstructed from events.');\nfor (const key of inspect ? ['caseId'] : ['caseId', 'eventId', 'type']) {\n  if (typeof input[key] !== 'string' || !input[key].trim() || input[key] !== input[key].trim())\n    throw new Error(`${key} must be a nonempty string without surrounding whitespace.`);\n}\nif (inspect) return [{ json: { request: { caseId: input.caseId, operation: 'inspect' } } }];\nfor (const key of ['causationId', 'correlationId', 'taskInvocationId']) {\n  if (\n    input[key] !== undefined &&\n    (typeof input[key] !== 'string' ||\n      input[key] !== input[key].trim() ||\n      (key !== 'causationId' && !input[key]))\n  )\n    throw new Error(\n      `${key} must be a string without surrounding whitespace; correlationId/taskInvocationId cannot be empty.`,\n    );\n}\nif ((input.machine === undefined) !== (input.machineVersion === undefined))\n  throw new Error('machine and machineVersion must be supplied together.');\nif (\n  input.machine !== undefined &&\n  (typeof input.machine !== 'string' ||\n    !input.machine.trim() ||\n    input.machine.trim() !== input.machine ||\n    !Number.isSafeInteger(input.machineVersion) ||\n    input.machineVersion < 1)\n)\n  throw new Error('machine must be a nonempty string and machineVersion a positive integer.');\n// The core validates the envelope; task adapters own domain-specific payload rules.\nconst payload = input.payload === undefined ? {} : input.payload;\nif (!payload || typeof payload !== 'object' || Array.isArray(payload))\n  throw new Error('payload must be a JSON object.');\nreturn [\n  {\n    json: {\n      request: {\n        caseId: input.caseId,\n        eventId: input.eventId,\n        type: input.type,\n        payload,\n        causationId: input.causationId ?? '',\n        taskInvocationId: input.taskInvocationId ?? '',\n        ...(input.correlationId === undefined ? {} : { correlationId: input.correlationId }),\n        ...(input.machine === undefined\n          ? {}\n          : { machine: input.machine, machineVersion: input.machineVersion }),\n      },\n    },\n  },\n];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "flow4gold-ReadMachineDefinitions",
+      "name": "Read Machine Definitions",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        448,
+        112
+      ],
+      "parameters": {
+        "operation": "get",
+        "returnAll": true,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "Lm8JZL9uCNqj14vE"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "flow4gold-LoadMachineDefinitions",
+      "name": "Load Machine Definitions",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        672,
+        112
+      ],
+      "parameters": {
+        "jsCode": "const object = (value, path) => {\n  if (!value || typeof value !== 'object' || Array.isArray(value))\n    throw new Error(`${path} must be an object.`);\n  return value;\n};\nconst string = (value, path) => {\n  if (typeof value !== 'string' || !value.trim() || value !== value.trim())\n    throw new Error(`${path} must be a non-empty string without surrounding whitespace.`);\n  return value;\n};\nconst optionalString = (value, path) => {\n  if (value !== undefined && typeof value !== 'string')\n    throw new Error(`${path} must be a string.`);\n};\n/** Validate executable graph structure; preserve additional JSON metadata unchanged. */\nfunction parseMachine(input) {\n  const root = object(input, 'Machine');\n  const unsupported = (value, path, keys) => {\n    for (const key of keys)\n      if (Object.hasOwn(value, key))\n        throw new Error(`${path}.${key} is unsupported by this runtime.`);\n  };\n  unsupported(root, 'Machine', ['invoke', 'actions', 'guards', 'entry', 'exit']);\n  string(root.machine, 'machine');\n  if (!Number.isSafeInteger(root.version) || root.version < 1)\n    throw new Error('version must be a positive integer.');\n  const initial = string(root.initial, 'initial');\n  const states = object(root.states, 'states');\n  if (!Object.keys(states).length) throw new Error('states must contain at least one state.');\n  if (!Object.hasOwn(states, initial))\n    throw new Error(`Initial state \"${initial}\" does not exist.`);\n  for (const [id, raw] of Object.entries(states)) {\n    string(id, 'State name');\n    const state = object(raw, `states.${id}`);\n    unsupported(state, `states.${id}`, [\n      'states',\n      'initial',\n      'type',\n      'entry',\n      'exit',\n      'invoke',\n      'actions',\n      'guards',\n      'always',\n      'after',\n      'onDone',\n    ]);\n    if (state.final !== undefined && typeof state.final !== 'boolean')\n      throw new Error(`states.${id}.final must be a boolean.`);\n    optionalString(state.description, `states.${id}.description`);\n    if (state.tasks !== undefined) {\n      if (!Array.isArray(state.tasks))\n        throw new Error(`states.${id}.tasks must be an array of strings.`);\n      if (state.tasks.length > 1)\n        throw new Error(`states.${id} supports only one task per entered state.`);\n      state.tasks.forEach((task, index) => {\n        string(task, `states.${id}.tasks[${index}]`);\n        if (task.includes(':'))\n          throw new Error(\n            `states.${id}.tasks[${index}] cannot contain ':'; it is reserved as the task invocation delimiter.`,\n          );\n      });\n    }\n    const events = new Set();\n    for (const kind of ['on', 'decide']) {\n      if (state[kind] === undefined) continue;\n      for (const [event, rawTransition] of Object.entries(\n        object(state[kind], `states.${id}.${kind}`),\n      )) {\n        string(event, `Event name in states.${id}.${kind}`);\n        if (events.has(event))\n          throw new Error(`states.${id} declares event \"${event}\" in both on and decide.`);\n        events.add(event);\n        const path = `states.${id}.${kind}.${event}`;\n        const transition = object(rawTransition, path);\n        unsupported(transition, path, [\n          'guard',\n          'guards',\n          'cond',\n          'actions',\n          'action',\n          'internal',\n          'reenter',\n        ]);\n        const target = string(transition.target, `${path}.target`);\n        if (!Object.hasOwn(states, target))\n          throw new Error(`${path} targets unknown state \"${target}\".`);\n        if (transition.taskResult !== undefined && transition.taskResult !== true)\n          throw new Error(`${path}.taskResult must be true when declared.`);\n        if (transition.taskResult && state.tasks?.length !== 1)\n          throw new Error(`${path}.taskResult requires exactly one task on the source state.`);\n        optionalString(transition.description, `${path}.description`);\n        optionalString(transition.outcome, `${path}.outcome`);\n      }\n    }\n    if (state.final && (events.size || state.tasks?.length))\n      throw new Error(`Final state \"${id}\" cannot have outgoing transitions or tasks.`);\n  }\n  if (states[initial].tasks?.length)\n    throw new Error('Initial state must be passive; tasks run only after an accepted transition.');\n  return input;\n}\nfunction canonicalJson(value) {\n  if (value === null || typeof value !== 'object') return JSON.stringify(value);\n  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;\n  return `{${Object.keys(value)\n    .sort()\n    .map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`)\n    .join(',')}}`;\n}\n/** Validate definition identities independently of editor/default metadata. */\nfunction parseMachineDefinitions(rows) {\n  if (!Array.isArray(rows)) throw new Error('Machine catalog rows must be an array.');\n  const identities = new Set();\n  return rows.map((row) => {\n    object(row, 'Machine catalog row');\n    if (typeof row.definition !== 'string')\n      throw new Error('Stored machine definition must be JSON text.');\n    let definition;\n    try {\n      definition = parseMachine(JSON.parse(row.definition));\n    } catch (error) {\n      throw new Error(`Invalid stored machine definition: ${error.message}`);\n    }\n    if (row.machine !== definition.machine || row.version !== definition.version)\n      throw new Error('Machine catalog identity does not match its definition.');\n    const identity = JSON.stringify([row.machine, row.version]);\n    if (identities.has(identity))\n      throw new Error('Duplicate machine/version catalog rows require correction.');\n    identities.add(identity);\n    return definition;\n  });\n}\n/** Editor/catalog defaults do not select runtime case identity. */\nfunction parseMachineCatalog(rows) {\n  const definitions = parseMachineDefinitions(rows);\n  const machines = rows.map((row, index) => {\n    if (typeof row.isDefault !== 'boolean')\n      throw new Error('Machine catalog default flag must be a boolean.');\n    return {\n      machine: row.machine,\n      version: row.version,\n      definition: definitions[index],\n      isDefault: row.isDefault,\n    };\n  });\n  const defaults = machines.filter((machine) => machine.isDefault);\n  if (defaults.length !== 1)\n    throw new Error('Machine catalog must contain exactly one default definition.');\n  return { machines, default: { machine: defaults[0].machine, version: defaults[0].version } };\n}\n\n// Shared validator is bundled as code; definitions come exclusively from the Data Table.\nconst definitions = parseMachineDefinitions($input.all().map((item) => item.json));\nreturn [{ json: { ...$('Prepare Event').first().json, definitions } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "flow4gold-FindEvent",
+      "name": "Find Event",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        896,
+        112
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "caseId",
+              "keyValue": "={{ $('Prepare Event').first().json.request.caseId }}"
+            },
+            {
+              "keyName": "eventId",
+              "keyValue": "={{ $('Prepare Event').first().json.request.eventId ?? '' }}"
+            },
+            {
+              "keyName": "eventId",
+              "keyValue": "={{ $('Prepare Event').first().json.request.causationId ?? '' }}"
+            }
+          ]
+        },
+        "operation": "get",
+        "returnAll": true,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "TjuB58skTvPRCwB3"
+        }
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "flow4gold-PlanTransition",
+      "name": "Plan Transition",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1120,
+        112
+      ],
+      "parameters": {
+        "jsCode": "// Pure replay and planning. Only the downstream Append Event node writes.\nconst { request, definitions } = $('Load Machine Definitions').first().json;\n// Empty query placeholders must not include unrelated malformed rows.\nconst rows = $input\n  .all()\n  .map((item) => item.json)\n  .filter(\n    (row) =>\n      row.caseId === request.caseId ||\n      (request.eventId && row.eventId === request.eventId) ||\n      (request.causationId && row.eventId === request.causationId),\n  );\nconst has = (object, key) => Object.prototype.hasOwnProperty.call(object, key);\nconst canonical = (value) =>\n  JSON.stringify(\n    value === null || typeof value !== 'object'\n      ? value\n      : Array.isArray(value)\n        ? value.map((value) => JSON.parse(canonical(value)))\n        : Object.fromEntries(\n            Object.keys(value)\n              .sort()\n              .map((key) => [key, JSON.parse(canonical(value[key]))]),\n          ),\n  );\nconst isId = (value) => typeof value === 'string' && value.length > 0 && value.trim() === value;\nconst stream = rows\n  .filter((row) => row.caseId === request.caseId)\n  .sort((a, b) => a.sequence - b.sequence);\nconst beforeReplay = (status, reason) => [\n  {\n    json: {\n      action: 'return',\n      result: {\n        caseId: request.caseId,\n        eventId: request.eventId ?? null,\n        status,\n        reason,\n        currentState: null,\n        outcome: null,\n        sequence: 0,\n      },\n    },\n  },\n];\nif (!stream.length && request.operation === 'inspect')\n  return beforeReplay('not_found', 'Case has no recorded events.');\nif (!stream.length && request.machine === undefined)\n  return beforeReplay('rejected', 'A new case requires explicit machine and machineVersion.');\nif (\n  stream.length &&\n  request.machine !== undefined &&\n  (request.machine !== stream[0].machine || request.machineVersion !== stream[0].machineVersion)\n)\n  return beforeReplay('rejected', 'Case machine and version are pinned by its first event.');\n// A catalog update never changes the definition used to replay an existing case.\nconst identity = stream.length\n  ? { machine: stream[0].machine, version: stream[0].machineVersion }\n  : { machine: request.machine, version: request.machineVersion };\nconst definition = definitions.find(\n  (item) => item.machine === identity.machine && item.version === identity.version,\n);\nif (!definition) return beforeReplay('rejected', 'Unknown machine or version.');\nlet currentState = definition.initial,\n  outcome = null,\n  sequence = 0;\nlet correlationId = request.correlationId ?? stream[0]?.correlationId ?? request.caseId;\nconst output = (result, extra = {}) => [\n  {\n    json: {\n      action: 'return',\n      result: {\n        caseId: request.caseId,\n        eventId: request.eventId ?? null,\n        currentState: stream.length ? currentState : null,\n        outcome,\n        sequence,\n        correlationId,\n        causationId: request.causationId ?? '',\n        ...result,\n      },\n      ...extra,\n    },\n  },\n];\nconst reject = (reason) => output({ status: 'rejected', reason });\nconst transition = (stateName, type) => {\n  const state = definition.states[stateName];\n  if (!state || state.final) return null;\n  const kind = has(state.on || {}, type) ? 'on' : has(state.decide || {}, type) ? 'decide' : null;\n  if (!kind) return null;\n  const edge = state[kind][type];\n  return has(definition.states, edge.target) ? { ...edge, kind } : null;\n};\nconst ids = new Set();\nfor (const event of rows) {\n  if (\n    !isId(event.eventId) ||\n    !isId(event.caseId) ||\n    !isId(event.type) ||\n    !isId(event.correlationId) ||\n    typeof event.causationId !== 'string' ||\n    event.causationId.trim() !== event.causationId ||\n    (event.taskInvocationId != null &&\n      (typeof event.taskInvocationId !== 'string' ||\n        event.taskInvocationId.trim() !== event.taskInvocationId)) ||\n    event.causationId === event.eventId ||\n    !Number.isSafeInteger(event.sequence) ||\n    event.sequence < 1 ||\n    !isId(event.machine) ||\n    !Number.isSafeInteger(event.machineVersion) ||\n    event.machineVersion < 1 ||\n    (event.caseId === request.caseId &&\n      (event.machine !== definition.machine || event.machineVersion !== definition.version))\n  )\n    return reject('Invalid persisted event identity, sequence, or machine version.');\n  if (ids.has(event.eventId))\n    return reject('Multiple rows share an eventId; manual reconciliation required.');\n  ids.add(event.eventId);\n  try {\n    const payload = JSON.parse(event.payload);\n    if (!payload || typeof payload !== 'object' || Array.isArray(payload))\n      return reject('Invalid persisted event payload.');\n  } catch {\n    return reject('Invalid persisted event payload.');\n  }\n}\nconst seen = new Set();\nlet previousEvent;\n// Result lineage binds a callback to this entry into the state, not an older task run.\nconst validInvocation = (event, state, trigger) => {\n  const invocationId = event.taskInvocationId ?? '';\n  const requiresResult = transition(state, event.type)?.taskResult === true;\n  if (!invocationId) return !requiresResult;\n  const tasks = definition.states[state].tasks || [];\n  return (\n    tasks.length === 1 &&\n    trigger &&\n    event.causationId === trigger.eventId &&\n    invocationId === `${trigger.eventId}:${tasks[0]}` &&\n    event.eventId === `${invocationId}:result`\n  );\n};\n// Replay reconstructs state only. Dispatch is planned later for a newly accepted event.\nfor (const event of stream) {\n  if (event.sequence !== sequence + 1)\n    return reject('Event stream sequence must be contiguous from 1.');\n  if (event.correlationId !== stream[0].correlationId)\n    return reject('Event stream correlationId changed.');\n  const localCause = stream.find((candidate) => candidate.eventId === event.causationId);\n  if (localCause && !seen.has(localCause.eventId))\n    return reject('Event stream has a forward causation reference.');\n  if (!validInvocation(event, currentState, previousEvent))\n    return reject('Event stream contains an invalid task invocation.');\n  const edge = transition(currentState, event.type);\n  if (!edge) return reject('Event stream contains an illegal transition.');\n  currentState = edge.target;\n  outcome = edge.outcome ?? outcome;\n  sequence = event.sequence;\n  seen.add(event.eventId);\n  previousEvent = event;\n}\nif (request.operation === 'inspect')\n  return output({ status: stream.length ? 'inspected' : 'not_found' });\nif (request.causationId === request.eventId) return reject('An event cannot cause itself.');\nconst cause = request.causationId\n  ? rows.find((event) => event.eventId === request.causationId)\n  : undefined;\nif (request.causationId && !cause) return reject('causationId must reference an existing event.');\ncorrelationId =\n  request.correlationId ?? stream[0]?.correlationId ?? cause?.correlationId ?? request.caseId;\nif (\n  (stream.length && correlationId !== stream[0].correlationId) ||\n  (cause && correlationId !== cause.correlationId)\n)\n  return reject('correlationId must agree with the case stream and cause.');\nif (request.taskInvocationId && request.eventId !== `${request.taskInvocationId}:result`)\n  return reject('Task result eventId must match taskInvocationId.');\n// Check retries before validating the current state: an accepted result may have moved it on.\nconst duplicate = rows.find((event) => event.eventId === request.eventId);\nif (duplicate) {\n  if (\n    duplicate.caseId !== request.caseId ||\n    duplicate.type !== request.type ||\n    canonical(JSON.parse(duplicate.payload)) !== canonical(request.payload) ||\n    (duplicate.taskInvocationId ?? '') !== (request.taskInvocationId ?? '') ||\n    duplicate.causationId !== request.causationId ||\n    duplicate.correlationId !== correlationId\n  )\n    return reject('eventId already belongs to a different event.');\n  return output({ status: 'duplicate' });\n}\nif (!validInvocation(request, currentState, stream.at(-1)))\n  return reject('Task result does not match the current task invocation.');\nconst edge = transition(currentState, request.type);\nif (!edge) return reject('Event is not enabled in the current state.');\nconst tasks = definition.states[edge.target].tasks || [];\nif (tasks.length > 1) return reject('Only one task per entered state is supported.');\nconst taskInvocation = tasks.length\n  ? {\n      caseId: request.caseId,\n      task: tasks[0],\n      taskInvocationId: `${request.eventId}:${tasks[0]}`,\n      triggerEventId: request.eventId,\n      correlationId,\n      state: edge.target,\n      machine: definition.machine,\n      machineVersion: definition.version,\n      input: request.payload,\n    }\n  : null;\nconst from = currentState;\nconst eventRecord = {\n  eventId: request.eventId,\n  caseId: request.caseId,\n  sequence: sequence + 1,\n  type: request.type,\n  taskInvocationId: request.taskInvocationId ?? '',\n  payload: canonical(request.payload),\n  causationId: request.causationId,\n  correlationId,\n  machine: definition.machine,\n  machineVersion: definition.version,\n};\nreturn output(\n  {\n    status: 'applied',\n    currentState: edge.target,\n    sequence: eventRecord.sequence,\n    outcome: edge.outcome ?? outcome,\n    transition: { from, target: edge.target, event: request.type, kind: edge.kind },\n  },\n  { action: 'apply', eventRecord, taskInvocation },\n);\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "flow4gold-ApplyTransition",
+      "name": "Append Event?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1344,
+        112
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ApplyTransition",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "apply"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "flow4gold-AppendEvent",
+      "name": "Append Event",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        1568,
+        16
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "type": "={{ $('Plan Transition').first().json.eventRecord.type }}",
+            "caseId": "={{ $('Plan Transition').first().json.eventRecord.caseId }}",
+            "eventId": "={{ $('Plan Transition').first().json.eventRecord.eventId }}",
+            "machine": "={{ $('Plan Transition').first().json.eventRecord.machine }}",
+            "payload": "={{ $('Plan Transition').first().json.eventRecord.payload }}",
+            "sequence": "={{ $('Plan Transition').first().json.eventRecord.sequence }}",
+            "causationId": "={{ $('Plan Transition').first().json.eventRecord.causationId }}",
+            "correlationId": "={{ $('Plan Transition').first().json.eventRecord.correlationId }}",
+            "machineVersion": "={{ $('Plan Transition').first().json.eventRecord.machineVersion }}",
+            "taskInvocationId": "={{ $('Plan Transition').first().json.eventRecord.taskInvocationId }}"
+          },
+          "schema": [
+            {
+              "id": "eventId",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "eventId",
+              "defaultMatch": false
+            },
+            {
+              "id": "caseId",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "caseId",
+              "defaultMatch": false
+            },
+            {
+              "id": "sequence",
+              "type": "number",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "sequence",
+              "defaultMatch": false
+            },
+            {
+              "id": "type",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "type",
+              "defaultMatch": false
+            },
+            {
+              "id": "payload",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "payload",
+              "defaultMatch": false
+            },
+            {
+              "id": "causationId",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "causationId",
+              "defaultMatch": false
+            },
+            {
+              "id": "correlationId",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "correlationId",
+              "defaultMatch": false
+            },
+            {
+              "id": "machine",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "machine",
+              "defaultMatch": false
+            },
+            {
+              "id": "machineVersion",
+              "type": "number",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "machineVersion",
+              "defaultMatch": false
+            },
+            {
+              "id": "taskInvocationId",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "taskInvocationId",
+              "defaultMatch": false
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "TjuB58skTvPRCwB3"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "flow4gold-HasTask",
+      "name": "Has Task?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2016,
+        16
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "HasTask",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.hasTask }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "flow4gold-AfterAppend",
+      "name": "After Append",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1792,
+        16
+      ],
+      "parameters": {
+        "jsCode": "const plan = $('Plan Transition').first().json;\nreturn [{ json: { ...plan, hasTask: !!plan.taskInvocation } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "flow4gold-FindTaskBinding",
+      "name": "Find Task Binding",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        2240,
+        -80
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "machine",
+              "keyValue": "={{ $('Plan Transition').first().json.taskInvocation.machine }}"
+            },
+            {
+              "keyName": "machineVersion",
+              "keyValue": "={{ $('Plan Transition').first().json.taskInvocation.machineVersion }}"
+            },
+            {
+              "keyName": "task",
+              "keyValue": "={{ $('Plan Transition').first().json.taskInvocation.task }}"
+            }
+          ]
+        },
+        "matchType": "allConditions",
+        "operation": "get",
+        "returnAll": true,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gYLwq6bG2pQQcF1w"
+        }
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "flow4gold-PrepareTaskDispatch",
+      "name": "Prepare Task Dispatch",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2464,
+        -80
+      ],
+      "parameters": {
+        "jsCode": "const invocation = $('Plan Transition').first().json.taskInvocation;\nconst bindings = $input\n  .all()\n  .map((item) => item.json)\n  .filter(\n    (row) =>\n      row.task === invocation.task &&\n      row.machine === invocation.machine &&\n      row.machineVersion === invocation.machineVersion,\n  );\nconst available =\n  bindings.length === 1 &&\n  typeof bindings[0].workflowId === 'string' &&\n  !!bindings[0].workflowId.trim();\nreturn [\n  {\n    json: {\n      ...invocation,\n      bindingAvailable: available,\n      workflowId: available ? bindings[0].workflowId.trim() : '',\n      dispatchReason: available\n        ? ''\n        : 'Task requires exactly one machine/version/task binding with a workflowId.',\n    },\n  },\n];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "flow4gold-BindingAvailable",
+      "name": "Binding Available?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2688,
+        -80
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "BindingAvailable",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.bindingAvailable }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "flow4gold-TaskInput",
+      "name": "Task Input",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2912,
+        -368
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: $('Plan Transition').first().json.taskInvocation }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "flow4gold-RunTask",
+      "name": "Run Task",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "position": [
+        2912,
+        -176
+      ],
+      "parameters": {
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        },
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Prepare Task Dispatch').first().json.workflowId }}"
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "flow4gold-DispatchedResult",
+      "name": "Dispatched Result",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3136,
+        -176
+      ],
+      "parameters": {
+        "jsCode": "const task = $('Prepare Task Dispatch').first().json;\nreturn [\n  {\n    json: {\n      ...$('Plan Transition').first().json.result,\n      dispatch: { status: 'started', task: task.task, taskInvocationId: task.taskInvocationId },\n    },\n  },\n];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "flow4gold-DispatchUnavailable",
+      "name": "Dispatch Unavailable",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2912,
+        16
+      ],
+      "parameters": {
+        "jsCode": "const task = $('Prepare Task Dispatch').first().json;\nreturn [\n  {\n    json: {\n      ...$('Plan Transition').first().json.result,\n      dispatch: {\n        status: 'unavailable',\n        task: task.task,\n        taskInvocationId: task.taskInvocationId,\n        reason: task.dispatchReason,\n      },\n    },\n  },\n];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "flow4gold-AppliedResult",
+      "name": "Applied Result",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2240,
+        112
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: $('Plan Transition').first().json.result }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "flow4gold-ExistingResult",
+      "name": "Existing Result",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1568,
+        208
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: $('Plan Transition').first().json.result }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "flow4gold-Overview",
+      "name": "Start Here \u2014 Generic Runtime",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -608,
+        -400
+      ],
+      "parameters": {
+        "width": 552,
+        "height": 880,
+        "content": "# Generic state-machine runtime\n\n## How it works\n1. The runtime rebuilds a case from accepted events and validates the next transition.\n2. It appends one fact, starts the entered state\u2019s task asynchronously, and returns the saved state.\n\n## Setup\n- [ ] Connect **machine_definitions**, **case_event_stream**, and **task_bindings** Data Tables.\n- [ ] Bind tasks by machine + version + task and publish their workflows.\n\n## Try it\nCall from an adapter with caseId, eventId, type and payload. A new case also needs machine + machineVersion.\n\nRead without writing: `{ \"caseId\": \"your-case\", \"operation\": \"inspect\" }`.\n\n## Expected result\nApplied, duplicate, rejected, or inspected; with state, sequence and outcome. Replay never starts tasks.\n\n**PoC:** sequential requests; append and dispatch are separate, with no automatic retry."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "flow4gold-InputSection",
+      "name": "1 \u00b7 Input and catalog",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        176,
+        -64
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 672,
+        "height": 352,
+        "content": "## 1 \u00b7 Validate input and load definitions\nAccept one request. Read the trusted catalog; definitions stay pinned by machine and version."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "flow4gold-ReplaySection",
+      "name": "2 \u00b7 Replay and validate",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        864,
+        -64
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 640,
+        "height": 352,
+        "content": "## 2 \u00b7 Rebuild state and check the event\nReplay facts, check identity and task lineage, then choose append or a read-only result. Replay never runs tasks."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "flow4gold-AppendSection",
+      "name": "3 \u00b7 Append one fact",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1536,
+        -192
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 656,
+        "height": 560,
+        "content": "## 3 \u00b7 Persist before dispatch\nOne accepted event = one row. Restore the plan after insertion. The lower branch returns inspection, duplicate or rejection without writing."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "flow4gold-DispatchSection",
+      "name": "4 \u00b7 Dispatch and return",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2208,
+        -592
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 1104,
+        "height": 880,
+        "content": "## 4 \u00b7 Start the task, then finish\nResolve exactly one machine/version/task binding. Start without waiting; its callback is a new event. Missing binding returns unavailable; no task returns the applied state."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Run Task": {
+      "main": [
+        [
+          {
+            "node": "Dispatched Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Task?": {
+      "main": [
+        [
+          {
+            "node": "Find Task Binding",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Applied Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Event": {
+      "main": [
+        [
+          {
+            "node": "Plan Transition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Task Input": {
+      "main": [
+        [
+          {
+            "node": "Run Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "After Append": {
+      "main": [
+        [
+          {
+            "node": "Has Task?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Event": {
+      "main": [
+        [
+          {
+            "node": "After Append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Event?": {
+      "main": [
+        [
+          {
+            "node": "Append Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Existing Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Event": {
+      "main": [
+        [
+          {
+            "node": "Read Machine Definitions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive Event": {
+      "main": [
+        [
+          {
+            "node": "Prepare Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan Transition": {
+      "main": [
+        [
+          {
+            "node": "Append Event?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Task Binding": {
+      "main": [
+        [
+          {
+            "node": "Prepare Task Dispatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Binding Available?": {
+      "main": [
+        [
+          {
+            "node": "Task Input",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Dispatch Unavailable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Task Dispatch": {
+      "main": [
+        [
+          {
+            "node": "Binding Available?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Machine Definitions": {
+      "main": [
+        [
+          {
+            "node": "Find Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Machine Definitions": {
+      "main": [
+        [
+          {
+            "node": "Load Machine Definitions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

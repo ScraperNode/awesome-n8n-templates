@@ -1,6 +1,6 @@
 # 📈 US stocks earnings calendar AI updates to Telegram (Finnhub + Gemini)
 
-> ⚡ **1,857 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,913 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

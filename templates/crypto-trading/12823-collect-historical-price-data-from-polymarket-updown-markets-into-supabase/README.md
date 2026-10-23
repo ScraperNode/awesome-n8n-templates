@@ -1,6 +1,6 @@
 # 📈 Collect historical price data from Polymarket Up/Down markets into Supabase
 
-> ⚡ **520 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,289 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

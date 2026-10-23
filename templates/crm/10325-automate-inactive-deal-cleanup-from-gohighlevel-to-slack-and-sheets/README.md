@@ -1,6 +1,6 @@
 # 🤝 Automate inactive deal cleanup from GoHighLevel to Slack and Sheets
 
-> ⚡ **94 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **103 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📁 Automated document sync between SharePoint and Google Drive with Supabase
 
-> ⚡ **158 views** · 📁 [File Management](../)
+> ⚡ **293 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 🛠️ Trello tool MCP server 💪 all 41 operations
 
-> ⚡ **213 views** · 📋 [Project Management](../)
+> ⚡ **254 views** · 📋 [Project Management](../)
 
 ## Description
 

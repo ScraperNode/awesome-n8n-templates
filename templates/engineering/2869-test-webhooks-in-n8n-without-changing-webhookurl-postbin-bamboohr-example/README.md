@@ -1,6 +1,6 @@
 # ⚒️ Test webhooks in n8n without changing WEBHOOK_URL (PostBin & BambooHR example)
 
-> ⚡ **2,019 views** · ⚒️ [Engineering](../)
+> ⚡ **2,270 views** · ⚒️ [Engineering](../)
 
 ## Description
 

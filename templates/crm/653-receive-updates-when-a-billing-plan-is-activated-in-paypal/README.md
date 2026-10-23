@@ -1,6 +1,6 @@
 # 🤝 Receive updates when a billing plan is activated in PayPal
 
-> ⚡ **1,268 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,308 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

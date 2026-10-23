@@ -1,6 +1,6 @@
 # 🤝 Process Shopify new orders with Zoho CRM and Harvest
 
-> ⚡ **4,831 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **5,005 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

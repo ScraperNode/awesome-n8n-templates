@@ -1,6 +1,6 @@
 # 🔍 Renew, get certs 🛠️ Venafi TLS Protect Cloud Tool MCP Server 💪 all 8 operations
 
-> ⚡ **133 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **168 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

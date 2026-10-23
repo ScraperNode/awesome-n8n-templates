@@ -1,6 +1,6 @@
 # 🤝 Receive updates on a new project created in Copper
 
-> ⚡ **477 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **504 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

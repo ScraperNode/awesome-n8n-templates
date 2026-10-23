@@ -1,6 +1,6 @@
 # ⚙️ Detect unused Android feature flags with GitLab, LaunchDarkly, Jira & Slack
 
-> ⚡ **114 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **178 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

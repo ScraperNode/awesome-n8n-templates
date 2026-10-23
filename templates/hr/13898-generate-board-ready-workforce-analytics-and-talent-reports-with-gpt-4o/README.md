@@ -1,6 +1,6 @@
 # 👥 Generate board-ready workforce analytics and talent reports with GPT-4o
 
-> ⚡ **63 views** · 👥 [HR & Recruitment](../)
+> ⚡ **151 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

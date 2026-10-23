@@ -1,6 +1,6 @@
 # 🔬 Smart shipping prioritization with Google Gemini and Google Sheets
 
-> ⚡ **529 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **558 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

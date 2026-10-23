@@ -1,6 +1,6 @@
-# 📊 Web research summarizer with Decodo Scraper, Google Gemini AI & Sheets integration
+# 📊 Web research summarizer with Decodo Scraper and Google Gemini AI
 
-> ⚡ **231 views** · 📊 [Market Research & Insights](../)
+> ⚡ **410 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -9,7 +9,7 @@
 ## Description
 
 ## How it works  
-This workflow takes a list of links from Google Sheets, visits each page, extracts the main text using [Decodo](https://visit.decodo.com/raqXGD), and creates a summary with the help of artificial intelligence.  
+This workflow takes a list of links from Google Sheets, visits each page, extracts the main text using [Decodo](https://visit.decodo.com/VOmXO6), and creates a summary with the help of artificial intelligence.  
 It helps you turn research articles or web pages into clear, structured insights you can reuse for your projects, content ideas, or newsletters.
 
 **Input:** A Google Sheet named `input` with one column called `url`.  
@@ -26,7 +26,7 @@ It helps you turn research articles or web pages into clear, structured insights
 ## Setup steps  
 1. Connect your Google Sheets account.  
 2. Add your links to the `input` sheet.  
-3. In the **[Decodo](https://visit.decodo.com/raqXGD)** node, insert your API key.  
+3. In the **[Decodo](https://visit.decodo.com/VOmXO6)** node, insert your API key.  
 4. Configure the AI model (for example, Gemini).  
 5. Run the workflow and check the results in the `output` sheet.
 

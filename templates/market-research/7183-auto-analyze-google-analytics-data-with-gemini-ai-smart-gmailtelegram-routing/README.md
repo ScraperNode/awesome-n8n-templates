@@ -1,6 +1,6 @@
 # 📊 Auto-analyze Google Analytics data with Gemini AI & smart Gmail/Telegram routing
 
-> ⚡ **1,528 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,641 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

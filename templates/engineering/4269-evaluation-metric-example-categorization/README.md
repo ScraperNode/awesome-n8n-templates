@@ -1,6 +1,6 @@
 # ⚒️ Evaluation metric example: categorization
 
-> ⚡ **1,544 views** · ⚒️ [Engineering](../)
+> ⚡ **1,777 views** · ⚒️ [Engineering](../)
 
 ## Description
 

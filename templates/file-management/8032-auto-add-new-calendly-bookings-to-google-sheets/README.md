@@ -1,6 +1,6 @@
 # 📁 Auto-add new Calendly bookings to Google Sheets
 
-> ⚡ **186 views** · 📁 [File Management](../)
+> ⚡ **289 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Track Partnerstack affiliate events with Google Sheets & Telegram notifications
 
-> ⚡ **433 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **520 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

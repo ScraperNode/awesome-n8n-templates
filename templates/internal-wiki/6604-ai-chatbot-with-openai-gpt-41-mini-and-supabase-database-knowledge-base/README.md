@@ -1,6 +1,6 @@
 # 📖 AI chatbot with OpenAI GPT-4.1-Mini and Supabase database knowledge base
 
-> ⚡ **136 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **158 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

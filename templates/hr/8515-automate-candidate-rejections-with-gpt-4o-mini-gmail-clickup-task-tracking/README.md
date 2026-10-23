@@ -1,6 +1,6 @@
 # 👥 Automate candidate rejections with GPT-4o-mini, Gmail & ClickUp task tracking
 
-> ⚡ **54 views** · 👥 [HR & Recruitment](../)
+> ⚡ **77 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

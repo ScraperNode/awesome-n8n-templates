@@ -1,6 +1,6 @@
 # 🎬 Automated blog post generator with GPT-4, DALL-E, and Wikipedia for WordPress
 
-> ⚡ **1,367 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,640 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

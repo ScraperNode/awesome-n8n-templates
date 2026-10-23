@@ -1,6 +1,6 @@
 # 📱 Run email outreach campaigns from Telegram with Gmail and Google Sheets
 
-> ⚡ **82 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **191 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

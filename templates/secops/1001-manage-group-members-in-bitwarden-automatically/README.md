@@ -1,6 +1,6 @@
 # 🔒 Manage group members in Bitwarden automatically
 
-> ⚡ **1,141 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,207 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

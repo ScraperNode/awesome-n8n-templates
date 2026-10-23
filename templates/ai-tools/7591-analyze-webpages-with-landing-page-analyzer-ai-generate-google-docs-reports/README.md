@@ -1,6 +1,6 @@
 # 🎯 Analyze webpages with Landing Page Analyzer AI & generate Google Docs reports
 
-> ⚡ **1,130 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **1,310 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

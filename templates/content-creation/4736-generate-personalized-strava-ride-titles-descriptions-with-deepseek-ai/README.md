@@ -1,6 +1,6 @@
 # 🎬 Generate personalized Strava ride titles & descriptions with DeepSeek AI
 
-> ⚡ **1,287 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,556 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

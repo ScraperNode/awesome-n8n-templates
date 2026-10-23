@@ -1,6 +1,6 @@
 # ⚡ Extend n8n with additional tools
 
-> ⚡ **5,791 views** · ⚡ [Personal Productivity](../)
+> ⚡ **5,952 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

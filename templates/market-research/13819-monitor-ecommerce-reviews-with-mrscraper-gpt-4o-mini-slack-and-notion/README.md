@@ -1,6 +1,6 @@
 # 📊 Monitor ecommerce reviews with MrScraper, GPT-4o-mini, Slack and Notion
 
-> ⚡ **3 views** · 📊 [Market Research & Insights](../)
+> ⚡ **68 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -8,84 +8,54 @@
 
 ## Description
 
-## Description
+## Quick overview
+Automatically monitor ecommerce product reviews across multiple platforms using MrScraper, GPT-4o-mini, Slack, Notion, and Google Sheets. Extract reviews, analyze customer sentiment and brand signals with AI, send urgent Slack alerts, archive results in Notion, and receive a daily brand health digest.
 
-This n8n template gives ecommerce brands a fully automated review intelligence system — running every morning to scrape, analyze, and report on what customers are actually saying across every platform. It uses MrScraper to collect reviews from Tokopedia, Shopee, Lazada, Bukalapak, Amazon, and more, then GPT-4o-mini to extract 15 brand intelligence signals per review including sentiment, emotion, viral risk, competitor mentions, and CS response suggestions.
 
-The result is a daily Brand Awareness Score (BAS) delivered to Slack, every review archived in Notion, and urgent alerts fired the moment a critical review is detected — before it goes viral.
+## How it works
+1. The workflow runs automatically every morning using the Schedule Trigger and reads the products you want to monitor from Google Sheets.
+2. For each product, MrScraper's Map Agent discovers review pages or identifies reviews embedded directly on the product page.
+3. MrScraper's General Agent extracts review data including review text, star rating, reviewer name, review date, photos, helpful votes, verified purchase status, and seller replies.
+4. Reviews are filtered and deduplicated before being sent to GPT-4o-mini. Short reviews are normally skipped, except for 1- and 2-star reviews, which are retained because even brief negative feedback can contain important signals.
+5. GPT-4o-mini analyzes each review and returns structured brand intelligence including sentiment, sentiment score, emotions, affected product dimensions, CX score, competitor mentions, viral risk, urgency, and a suggested customer service response.
+6. Reviews requiring immediate attention trigger an alert in Slack, while all processed reviews and their metadata are stored in Notion.
+7. After all products have been processed, the workflow calculates a Brand Awareness Score (BAS) and generates a daily digest containing sentiment trends, praises, complaints, competitor mentions, viral risks, and recommended actions. The report is then posted to Slack.
 
----
-
-## How It Works
-
-* **Phase 1 – Trigger & Config:** A Schedule Trigger fires daily at 6AM. The workflow reads your product list from Google Sheets — each row is one product SKU across any platform — and loops through them one by one.
-* **Phase 2 – Review URL Discovery:** For each product, the Map Agent crawls the product page and discovers review section URLs or paginated review pages. A smart fallback ensures reviews embedded directly on the product page (common on Tokopedia and Shopee) are still captured even when no separate review URL exists.
-* **Phase 3 – Review Extraction & Filtering:** Each review URL is processed by the General Agent, which extracts the full review text, star rating, reviewer name, date, photo count, helpful votes, verified purchase status, and any existing seller reply. Short reviews under 10 words are skipped — unless the rating is 1 or 2 stars, where even brief negative feedback is treated as a valuable signal. A deduplication hash is generated per review to prevent double-processing on re-runs.
-* **Phase 4 – AI Brand Sentiment Analysis:** Every valid review is sent to GPT-4o-mini with a structured prompt that returns 15 brand intelligence fields: sentiment label and score, emotion tags (frustration, delight, anger, loyalty, etc.), the most impacted product dimension (quality, delivery, packaging, pricing, authenticity), a CX score out of 10, competitor brand mentions, viral risk assessment, urgency level, and a ready-to-use customer service response suggestion.
-* **Phase 5 – Storage, Alerts & Daily Digest:** Reviews flagged as action-required trigger an immediate Slack alert to your `#brand-alerts` channel. Every review is saved to Notion with all 27 metadata fields. At the end of each run, a Daily Brand Health Digest is compiled — including the Brand Awareness Score (BAS) out of 100, sentiment breakdown, top praises and complaints, emotion trends, competitor mentions, viral risk list, and action items — then posted to your `#brand-monitoring` Slack channel.
-
----
-
-## How to Set Up
-
-1. **Prepare your Google Sheet** with these columns: `Platform`, `Product_URL`, `Brand_Name`, `SKU_Code`, `Category`, `Active` (Y/N). Add one row per product SKU you want to monitor.
-
-2. **Create 2 scrapers in your MrScraper account:**
-   * Review List Scraper (Map Agent) — crawls product pages and discovers review URLs
-   * Review Detail Scraper (General Agent) — extracts review_text, rating, reviewer_name, review_date, photo_count, helpful_votes, verified_purchase, seller_reply
-   * Copy the `scraperId` for each and paste into the corresponding n8n nodes.
-
-3. **Enable AI Scraper API access** in your MrScraper account settings.
-
-4. **Add your credentials in n8n:**
-   * MrScraper API key
-   * OpenAI API key
-   * Slack OAuth
-   * Notion OAuth
-   * Google Sheets OAuth2
-
-5. **Configure your Notion database** with all 27 properties listed in the setup note inside the workflow (Title, SKU Code, Platform, Sentiment, Sentiment Score, Emotion Tags, CX Score, Viral Risk, Action Required, and more).
-
-6. **Update config values** inside the `Filter & Enrich Review Data` node:
-   * `slackChannel` (e.g. `#brand-monitoring`)
-   * `slackAlertChannel` (e.g. `#brand-alerts`)
-   * `notionDatabaseId` (from your Notion database URL)
-   * `competitorKeywords` (comma-separated competitor brand names to detect)
-   * `alertThreshold` (default: 2.5 stars)
-
-7. **Adjust the Map Agent node** include/exclude patterns for your target platform (e.g. `/review`, `/ulasan` for Indonesian platforms, paginated review paths for Amazon).
-
-8. **Set your trigger time** in the Schedule node to match your timezone (default: every 24 hours).
-
----
+## Setup
+1. Create a Google Sheet containing your products with these columns: `Platform`, `Product_URL`, `Brand_Name`, `SKU_Code`, `Category`, and `Active`. Add one row for each product SKU you want to monitor.
+2. Create two scrapers in MrScraper:
+3. * A Review List Scraper using the Map Agent to discover review URLs.
+4. * A Review Detail Scraper using the General Agent to extract review details such as review text, rating, reviewer name, date, photo count, helpful votes, verified purchase status, and seller replies.
+5. Copy the `scraperId` from each MrScraper scraper and add it to the corresponding nodes in the n8n workflow.
+6. Make sure API access is enabled for your MrScraper account.
+7. Connect your MrScraper, OpenAI, Slack, Notion, and Google Sheets credentials in n8n.
+8. Create or configure the Notion database used to store review data. Match its properties with the fields described in the setup notes inside the workflow.
+9. Update the configuration in the `Filter & Enrich Review Data` node, including your Slack monitoring channel, alert channel, Notion database ID, competitor keywords, and review alert threshold.
+10. Adjust the Map Agent include/exclude patterns for the ecommerce platforms you want to monitor, such as `/review` or `/ulasan`.
+11. Finally, configure the Schedule Trigger for your preferred monitoring frequency and timezone.
 
 ## Requirements
+- MrScraper account with API access
+- OpenAI API access for GPT-4o-mini
+- Slack workspace with OAuth connected
+- Notion workspace with a configured database
+- Google Sheets with OAuth2 connected
+- An n8n instance where the workflow can run on a schedule
 
-* **MrScraper** account with API access enabled
-* **OpenAI** account (GPT-4o-mini used by default)
-* **Slack** workspace with OAuth connected (two channels recommended: one for digest, one for urgent alerts)
-* **Notion** workspace with a database configured and OAuth connected
-* **Google Sheets** (OAuth2 connected) for your product SKU list
+## Customization
+- Monitor multiple brands by using separate product lists or adapting the workflow for multiple brand configurations.
+- Add Jira, Asana, or Trello to automatically create customer service tickets for critical reviews.
+- Add Gmail to send the daily brand health digest by email.
+- Connect stored review data to Looker Studio or Metabase for sentiment and BAS dashboards.
+- Customize competitor keywords, alert thresholds, Slack channels, scraping patterns, and workflow frequency.
+- Add a dedicated alert branch when customers mention switching to a competitor.
 
----
-
-## Good to Know
-
-* The **Brand Awareness Score (BAS)** is calculated using a weighted formula combining average star rating (30%), positive review rate (25%), sentiment score (20%), brand loyalty signals (10%), and a viral risk penalty (up to -10 points). It gives you a single number to track brand health over time.
-* GPT-4o-mini processes each review for approximately $0.0001 — making it extremely cost-effective even for catalogs with hundreds of SKUs.
-* Short 1–2 star reviews are never skipped, even if they contain only a few words — a single-word complaint like "rusak" (broken) or "fake" carries strong signal and is always analyzed.
-* The workflow has two independent Slack outputs: an instant urgent alert fires the moment a critical review is detected, while the Daily Digest posts a full brand health report after all reviews for the day have been processed.
-* Reviews from platforms where feedback is embedded on the product page (no separate review URL) are handled automatically via the smart URL fallback in the Extract Review URLs node.
-
----
-
-## Customising This Workflow
-
-* **Multi-brand monitoring:** Duplicate the workflow and point it at a different Google Sheet to run separate brand intelligence pipelines for different product lines or client brands.
-* **Auto CS ticket creation:** Add a Jira, Asana, or Trello node after the Notion save step to automatically create customer service tickets for every critical or high-urgency review.
-* **Email reporting:** Insert a Gmail node after the Slack Daily Digest to also deliver the Brand Health Report as a formatted email to your marketing or brand team each morning.
-* **Visual dashboards:** Connect your Notion database to Google Looker Studio or Metabase to build BAS trend charts, sentiment heatmaps by platform, and weekly brand health dashboards.
-* **Competitor switch alerts:** Extend the competitor keyword list and add a dedicated Slack message branch specifically for reviews where a competitor switch is mentioned — a high-priority signal for retention teams.
+## Additional info
+The Brand Awareness Score (BAS) combines average star rating, positive review rate, AI sentiment, brand loyalty signals, and viral-risk penalties into a single brand health score.
+Short negative reviews with 1 or 2 stars are retained even when they contain fewer than 10 words, helping capture concise but important complaints.
+The workflow uses separate Slack outputs for immediate critical-review alerts and the final daily brand health digest.
+Reviews embedded directly on product pages can still be processed through the workflow's fallback logic when a dedicated review URL is unavailable.
+GPT-4o-mini usage costs depend on the number and length of reviews processed and current OpenAI API pricing.
 
 ## 🔗 Nodes Used
 

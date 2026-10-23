@@ -1,6 +1,6 @@
 # ⚒️ Deduplicate data records using JavaScript array methods
 
-> ⚡ **296 views** · ⚒️ [Engineering](../)
+> ⚡ **393 views** · ⚒️ [Engineering](../)
 
 ## Description
 

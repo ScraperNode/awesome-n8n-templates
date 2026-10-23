@@ -1,6 +1,6 @@
 # 🎬 Generate UGC marketing videos for eCommerce with Sora 2 and Gemini
 
-> ⚡ **8,379 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **9,559 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

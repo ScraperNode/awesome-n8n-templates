@@ -1,6 +1,6 @@
 # ⚙️ Automate docker container updates with Telegram approval system
 
-> ⚡ **3,147 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **3,401 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 Analyze tradingview.com charts with Chrome extension, n8n and OpenAI
 
-> ⚡ **43,504 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **45,767 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

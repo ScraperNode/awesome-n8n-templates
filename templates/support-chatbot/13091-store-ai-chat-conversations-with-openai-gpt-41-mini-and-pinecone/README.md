@@ -1,6 +1,6 @@
 # 💬 Store AI chat conversations with OpenAI GPT-4.1-mini and Pinecone
 
-> ⚡ **9 views** · 💬 [Support Chatbots](../)
+> ⚡ **39 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

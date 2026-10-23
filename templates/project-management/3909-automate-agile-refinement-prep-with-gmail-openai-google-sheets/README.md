@@ -1,6 +1,6 @@
 # 📋 Automate agile refinement prep with Gmail, OpenAI & Google Sheets
 
-> ⚡ **374 views** · 📋 [Project Management](../)
+> ⚡ **387 views** · 📋 [Project Management](../)
 
 ## Description
 

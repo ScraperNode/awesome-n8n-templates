@@ -1,6 +1,6 @@
 # 🤖 AI-powered WhatsApp customer service with GPT-4, smart routing & knowledge base
 
-> ⚡ **427 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **614 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Automate monthly CrUX report transfer from BigQuery to NocoDB with data cleanup
 
-> ⚡ **60 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **87 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

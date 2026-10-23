@@ -1,6 +1,6 @@
 # 📁 Export WordPress posts to CSV and upload to Google Drive
 
-> ⚡ **1,825 views** · 📁 [File Management](../)
+> ⚡ **1,811 views** · 📁 [File Management](../)
 
 ## Description
 

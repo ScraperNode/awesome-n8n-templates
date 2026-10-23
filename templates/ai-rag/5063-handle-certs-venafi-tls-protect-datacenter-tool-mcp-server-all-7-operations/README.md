@@ -1,6 +1,6 @@
 # 🔍 Handle certs 🛠️ Venafi TLS Protect Datacenter Tool MCP Server 💪 all 7 operations
 
-> ⚡ **131 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **148 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

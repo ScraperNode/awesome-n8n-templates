@@ -1,6 +1,6 @@
 # ⚡ Send a daily summary of your Google Calendar events to Slack
 
-> ⚡ **6,003 views** · ⚡ [Personal Productivity](../)
+> ⚡ **6,019 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

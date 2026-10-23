@@ -1,6 +1,6 @@
 # 📱 Let AI agents create, get, update subscribers with MailerLite Tool MCP Server
 
-> ⚡ **141 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **179 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

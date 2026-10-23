@@ -1,6 +1,6 @@
 # 🎫 Moderate Facebook group posts with OpenAI, Slack, and Airtable
 
-> ⚡ **34 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **141 views** · 🎫 [Ticket Management & Triage](../)
 
 > 💡 **Pro Tip** — If you've run into Facebook's Graph API permission restrictions, [ScraperNode](https://scrapernode.com/facebook) is a community node that scrapes [pages](https://scrapernode.com/facebook/scrapers/profiles), [groups](https://scrapernode.com/facebook/scrapers/groups), [posts](https://scrapernode.com/facebook/scrapers/posts), and [comments](https://scrapernode.com/facebook/scrapers/comments) directly — no app review needed.
 >

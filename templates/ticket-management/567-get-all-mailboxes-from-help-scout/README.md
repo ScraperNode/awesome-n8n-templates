@@ -1,6 +1,6 @@
 # 🎫 Get all mailboxes from Help Scout
 
-> ⚡ **657 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **668 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

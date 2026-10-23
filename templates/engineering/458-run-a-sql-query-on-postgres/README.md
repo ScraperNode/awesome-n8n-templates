@@ -1,6 +1,6 @@
 # ⚒️ Run a SQL query on Postgres
 
-> ⚡ **6,209 views** · ⚒️ [Engineering](../)
+> ⚡ **6,196 views** · ⚒️ [Engineering](../)
 
 ## Description
 

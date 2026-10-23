@@ -1,6 +1,6 @@
 # 📱 Post on X using Airtop and automate content pipelines
 
-> ⚡ **1,505 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,625 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

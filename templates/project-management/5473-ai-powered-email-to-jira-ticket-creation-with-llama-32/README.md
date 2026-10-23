@@ -1,6 +1,6 @@
 # 📋 AI-powered email to Jira ticket creation with Llama 3.2
 
-> ⚡ **3,988 views** · 📋 [Project Management](../)
+> ⚡ **4,847 views** · 📋 [Project Management](../)
 
 ## Description
 

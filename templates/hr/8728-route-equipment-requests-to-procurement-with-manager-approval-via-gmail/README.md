@@ -1,6 +1,6 @@
 # 👥 Route equipment requests to Procurement with manager approval via Gmail
 
-> ⚡ **488 views** · 👥 [HR & Recruitment](../)
+> ⚡ **719 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

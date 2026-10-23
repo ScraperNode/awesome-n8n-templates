@@ -1,6 +1,6 @@
 # ⚡ Automated recipe finder with an API - n8n API tutorial material
 
-> ⚡ **194 views** · ⚡ [Personal Productivity](../)
+> ⚡ **241 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

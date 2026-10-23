@@ -1,6 +1,6 @@
 # ⚒️ Manage healthcare resource allocation and conflicts with Anthropic Claude
 
-> ⚡ **23 views** · ⚒️ [Engineering](../)
+> ⚡ **129 views** · ⚒️ [Engineering](../)
 
 ## Description
 

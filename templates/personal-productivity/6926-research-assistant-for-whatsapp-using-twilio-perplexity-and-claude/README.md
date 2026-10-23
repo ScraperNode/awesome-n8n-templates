@@ -1,6 +1,6 @@
 # ⚡ Research assistant for WhatsApp using Twilio, Perplexity and Claude
 
-> ⚡ **914 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,056 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

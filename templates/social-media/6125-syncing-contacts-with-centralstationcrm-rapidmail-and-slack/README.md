@@ -1,6 +1,6 @@
 # 📱 Syncing contacts with CentralStationCRM, Rapidmail, and Slack
 
-> ⚡ **127 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **154 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

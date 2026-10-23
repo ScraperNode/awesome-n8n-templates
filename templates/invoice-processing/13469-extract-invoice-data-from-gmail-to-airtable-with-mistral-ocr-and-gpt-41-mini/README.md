@@ -1,6 +1,6 @@
 # 🧾 Extract invoice data from Gmail to Airtable with Mistral OCR and GPT-4.1-mini
 
-> ⚡ **56 views** · 🧾 [Invoice Processing](../)
+> ⚡ **268 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Transform support emails into FAQs with GPT-4o, Gmail, Notion, and Slack
 
-> ⚡ **75 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **93 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

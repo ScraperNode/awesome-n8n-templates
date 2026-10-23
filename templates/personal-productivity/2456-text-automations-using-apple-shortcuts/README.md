@@ -1,6 +1,6 @@
 # ⚡ Text automations using Apple Shortcuts
 
-> ⚡ **5,199 views** · ⚡ [Personal Productivity](../)
+> ⚡ **5,280 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

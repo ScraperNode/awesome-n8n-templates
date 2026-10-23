@@ -1,6 +1,6 @@
 # ⚡ Actioning your meeting next steps using transcripts and AI
 
-> ⚡ **34,166 views** · ⚡ [Personal Productivity](../)
+> ⚡ **34,455 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ 🛠️ Metabase tool MCP server 💪 all 10 operations
 
-> ⚡ **278 views** · ⚒️ [Engineering](../)
+> ⚡ **333 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Smart email outreach sequence – AI-powered & customizable
 
-> ⚡ **4,360 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **4,423 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

@@ -1,6 +1,6 @@
 # 🎬 Auto-generate Instagram captions for photos with GPT-4o-mini and Airtable
 
-> ⚡ **46 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **50 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

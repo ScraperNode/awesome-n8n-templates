@@ -1,6 +1,6 @@
 # 👥 Weekly coffee chat (Matrix version)
 
-> ⚡ **1,108 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,190 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

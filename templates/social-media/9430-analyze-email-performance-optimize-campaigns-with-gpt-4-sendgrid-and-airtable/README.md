@@ -1,6 +1,6 @@
 # 📱 Analyze email performance & optimize campaigns with GPT-4, SendGrid, and Airtable
 
-> ⚡ **89 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **98 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

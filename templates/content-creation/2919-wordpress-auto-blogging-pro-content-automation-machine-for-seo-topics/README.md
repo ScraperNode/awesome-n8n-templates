@@ -1,6 +1,6 @@
 # 🎬 WordPress auto-blogging pro - content automation machine for SEO topics
 
-> ⚡ **5,231 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,744 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Translate & repost Twitter threads in multiple languages with OpenAI
 
-> ⚡ **5,329 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **5,402 views** · 📱 [Social Media & Email Marketing](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >

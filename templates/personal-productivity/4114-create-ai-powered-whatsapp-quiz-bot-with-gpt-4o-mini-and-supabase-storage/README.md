@@ -1,6 +1,6 @@
 # ⚡ Create AI-powered WhatsApp quiz bot with GPT-4o-mini and Supabase storage
 
-> ⚡ **1,480 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,749 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

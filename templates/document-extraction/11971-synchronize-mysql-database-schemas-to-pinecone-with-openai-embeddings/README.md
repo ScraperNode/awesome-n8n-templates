@@ -1,6 +1,6 @@
 # 🔬 Synchronize MySQL database schemas to Pinecone with OpenAI embeddings
 
-> ⚡ **158 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **284 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

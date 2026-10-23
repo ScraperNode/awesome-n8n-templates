@@ -1,6 +1,6 @@
 # 🔬 Create RAG vector database from Google Drive documents using Gemini & Supabase
 
-> ⚡ **712 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **987 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

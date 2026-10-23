@@ -1,6 +1,6 @@
 # 📱 Create, update, and get a subscriber using the e-goi node
 
-> ⚡ **616 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **630 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

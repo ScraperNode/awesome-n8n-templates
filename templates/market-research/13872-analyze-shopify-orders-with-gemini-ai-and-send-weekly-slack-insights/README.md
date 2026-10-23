@@ -1,6 +1,6 @@
 # 📊 Analyze Shopify orders with Gemini AI and send weekly Slack insights
 
-> ⚡ **55 views** · 📊 [Market Research & Insights](../)
+> ⚡ **224 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

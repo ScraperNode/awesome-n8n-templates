@@ -1,6 +1,6 @@
 # 📱 Sending SMS to users
 
-> ⚡ **5,871 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **6,210 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

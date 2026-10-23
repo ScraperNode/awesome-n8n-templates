@@ -1,6 +1,6 @@
 # ⚒️ Route engineering risks with Anthropic multi-agents and Slack alerts
 
-> ⚡ **24 views** · ⚒️ [Engineering](../)
+> ⚡ **186 views** · ⚒️ [Engineering](../)
 
 ## Description
 

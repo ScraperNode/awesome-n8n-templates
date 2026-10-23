@@ -1,6 +1,6 @@
 # 🎬 Generate product images & videos with Gemini AI, DeepSeek, and GoAPI for e-commerce
 
-> ⚡ **1,660 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,006 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Microsoft Outlook AI email assistant with contact support from Monday and Airtable
 
-> ⚡ **7,079 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **7,211 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

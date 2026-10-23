@@ -1,6 +1,6 @@
 # 📖 Build a document-based AI chatbot with Google Drive, Llama 3, and Qdrant RAG
 
-> ⚡ **669 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **748 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

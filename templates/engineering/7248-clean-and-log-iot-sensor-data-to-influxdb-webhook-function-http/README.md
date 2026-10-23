@@ -1,6 +1,6 @@
 # ⚒️ Clean and log IoT sensor data to InfluxDB (Webhook | Function | HTTP)
 
-> ⚡ **486 views** · ⚒️ [Engineering](../)
+> ⚡ **547 views** · ⚒️ [Engineering](../)
 
 ## Description
 

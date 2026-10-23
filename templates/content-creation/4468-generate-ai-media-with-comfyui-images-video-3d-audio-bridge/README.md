@@ -1,6 +1,6 @@
 # 🎬 Generate AI media with ComfyUI: Images, video, 3D & audio bridge
 
-> ⚡ **3,229 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,946 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

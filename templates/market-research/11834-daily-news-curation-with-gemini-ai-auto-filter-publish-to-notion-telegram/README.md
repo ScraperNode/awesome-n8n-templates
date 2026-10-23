@@ -1,6 +1,6 @@
 # 📊 Daily news curation with Gemini AI: auto-filter & publish to Notion & Telegram
 
-> ⚡ **49 views** · 📊 [Market Research & Insights](../)
+> ⚡ **75 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

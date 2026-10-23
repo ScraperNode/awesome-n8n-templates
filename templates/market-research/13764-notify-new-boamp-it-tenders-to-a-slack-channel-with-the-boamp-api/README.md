@@ -1,6 +1,6 @@
 # 📊 Notify new BOAMP IT tenders to a Slack channel with the BOAMP API
 
-> ⚡ **0 views** · 📊 [Market Research & Insights](../)
+> ⚡ **11 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

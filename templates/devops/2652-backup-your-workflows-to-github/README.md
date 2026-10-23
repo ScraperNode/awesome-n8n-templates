@@ -1,6 +1,6 @@
 # ⚙️ Backup your workflows to GitHub
 
-> ⚡ **12,956 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **13,461 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

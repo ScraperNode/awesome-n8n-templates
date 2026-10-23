@@ -1,6 +1,6 @@
 # 💬 Bitrix24 AI-Powered RAG Chatbot for Open Line Channels
 
-> ⚡ **6,886 views** · 💬 [Support Chatbots](../)
+> ⚡ **7,632 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Manage KlickTipp contacts via Telegram Bot with GPT-5 mini agent
 
-> ⚡ **495 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **537 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

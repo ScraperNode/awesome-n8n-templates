@@ -1,6 +1,6 @@
 # ⚡ Generate language learning flashcards with GPT-4, Telegram and Google Sheets for Anki
 
-> ⚡ **931 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,112 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

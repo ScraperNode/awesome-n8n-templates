@@ -1,6 +1,6 @@
 # 🎬 Generate Sora videos from Google Sheets and save results to Google Drive
 
-> ⚡ **177 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **193 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

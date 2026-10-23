@@ -1,6 +1,6 @@
 # 🎯 Automate code reviews for GitLab MRs with Gemini AI and JIRA context
 
-> ⚡ **1,196 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **1,460 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

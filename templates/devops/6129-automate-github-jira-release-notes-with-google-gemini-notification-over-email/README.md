@@ -1,6 +1,6 @@
 # ⚙️ Automate GitHub, JIRA release notes with Google Gemini & notification over email
 
-> ⚡ **1,299 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,476 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

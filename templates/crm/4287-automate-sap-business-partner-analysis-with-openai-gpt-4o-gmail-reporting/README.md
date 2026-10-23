@@ -1,6 +1,6 @@
 # 🤝 Automate SAP Business Partner analysis with OpenAI GPT-4o & Gmail reporting
 
-> ⚡ **1,811 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,054 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

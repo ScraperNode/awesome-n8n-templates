@@ -1,6 +1,6 @@
 # 🔬 Automate Google Meet notes with GPT-4.1-mini, Notion, Slack & Gmail distribution
 
-> ⚡ **553 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **850 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

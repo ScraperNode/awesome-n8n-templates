@@ -1,6 +1,6 @@
 # 📱 Automate video story publishing to Facebook Page using Google Drive and Sheets
 
-> ⚡ **670 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,068 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

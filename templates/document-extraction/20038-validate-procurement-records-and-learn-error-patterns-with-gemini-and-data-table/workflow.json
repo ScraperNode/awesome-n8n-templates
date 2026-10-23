@@ -1,0 +1,1069 @@
+{
+  "id": "dHG6yPcnfgHd228H",
+  "meta": {
+    "instanceId": "9f24379abd1ca05a3f590fdaa874ca82fbc5e1188798d609d51d2a8f6bacb662"
+  },
+  "name": "AI-Based Procurement Data Error Detection",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "80995c50-41ce-4120-8ab3-1d96cada479b",
+      "name": "Workflow Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -448,
+        464
+      ],
+      "parameters": {
+        "width": 764,
+        "height": 686,
+        "content": "# AI-Based Procurement Data Error Detection\n\n## How it works\nThis workflow receives procurement records through a POST webhook, normalizes and validates required fields, quantities, pricing, subtotal, tax, currency, and unit values, then checks an n8n Data Table for a previously learned error signature. Trusted recurring patterns bypass AI. New or untrusted combinations are reviewed by a Basic LLM Chain using Google Gemini for semantic anomalies such as category, coding, supplier-item, or unit inconsistencies. Detected issues are returned immediately to the calling system and saved as reusable patterns for future prevention.\n\n## Setup steps\n1. Create an n8n Data Table named `procurement_error_patterns` with the columns listed in the Learning section.\n2. Select your Google Gemini credential in the Gemini Chat Model node.\n3. Review the workflow configuration in n8n Variables, including AI confidence, recurring-error, pattern-confidence, tax-tolerance, subtotal-tolerance, default currency, default tax rate, required fields, and pattern-learning settings.\n4. Send procurement records as JSON to the webhook. Recommended fields: supplier, item_code, description, category, quantity, unit, unit_price, subtotal, tax_rate, tax_amount, and currency.\n5. Test valid, mathematical-error, semantic-error, and recurring-pattern cases before activation."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "68e8f56c-359b-43d0-b4ee-2c92eefb3744",
+      "name": "Learning Section",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3376,
+        464
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 892,
+        "height": 688,
+        "content": "## Learning & Validation Response\n\nUpserts detected error patterns into the n8n Data Table for future reuse. Invalid records return detected issues and correction guidance, while valid records return an accepted response. Both branches finish through the same webhook response node."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2ad54943-d288-4929-a7e3-0ccc241b4396",
+      "name": "Receive Procurement Record",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        464,
+        704
+      ],
+      "webhookId": "7a7e0ed2-b6db-4013-869e-6513e8e7ff83",
+      "parameters": {
+        "path": "procurement-data-quality-check",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "404dc7bf-653f-4ae8-ae6c-7d18ac62cc7c",
+      "name": "Configure Validation Rules",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        656,
+        704
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "247396c1-ad91-4c32-90d1-f0304ba60827",
+              "name": "cfg_default_currency",
+              "type": "string",
+              "value": "USD"
+            },
+            {
+              "id": "7c47c39e-9c81-415a-9c9b-1447b3c60348",
+              "name": "cfg_default_tax_rate",
+              "type": "number",
+              "value": 0
+            },
+            {
+              "id": "386e6d3a-4ed0-4e25-8682-2b0629f5f656",
+              "name": "cfg_tax_tolerance",
+              "type": "number",
+              "value": 0.01
+            },
+            {
+              "id": "fc028a96-b521-495d-91ec-756e36eaa346",
+              "name": "cfg_subtotal_tolerance",
+              "type": "number",
+              "value": 0.01
+            },
+            {
+              "id": "70255d00-1fb2-4ab0-8b0c-2dda2d049ecf",
+              "name": "cfg_pattern_confidence_threshold",
+              "type": "number",
+              "value": 0.9
+            },
+            {
+              "id": "6fa91825-9368-4731-bf44-49b427c1b356",
+              "name": "cfg_recurring_error_threshold",
+              "type": "number",
+              "value": 3
+            },
+            {
+              "id": "5014a4ad-8e5a-49f0-bf68-323e17ddc43a",
+              "name": "cfg_ai_confidence_threshold",
+              "type": "number",
+              "value": 0.7
+            },
+            {
+              "id": "d6bcd288-ebd3-43b8-91b0-21f51de5723d",
+              "name": "cfg_enable_pattern_learning",
+              "type": "boolean",
+              "value": true
+            },
+            {
+              "id": "1f3c97f3-0111-41db-a690-ea08d7f34128",
+              "name": "cfg_required_fields",
+              "type": "string",
+              "value": "supplier,item_code,description,category,quantity,unit,unit_price,currency"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "6e98a375-37de-4239-81a8-424f77dfe602",
+      "name": "Normalize and Validate Procurement Record",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        864,
+        704
+      ],
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "item = _items[0][\"json\"]\nsrc = item.get(\"body\") if isinstance(item.get(\"body\"), dict) else item\n\n\ndef text(value):\n    return \"\" if value is None else str(value).strip()\n\n\ndef num(value):\n    if value is None or value == \"\":\n        return None\n    try:\n        return float(str(value).replace(\",\", \"\"))\n    except (TypeError, ValueError):\n        return None\n\n\ndef round2(value):\n    return round(value + 1e-12, 2)\n\n\ndef to_bool(value, default=True):\n    if value is None:\n        return default\n    if isinstance(value, bool):\n        return value\n    return str(value).strip().lower() in {\"true\", \"1\", \"yes\", \"on\"}\n\ncfg = {\n    \"defaultCurrency\": text(item.get(\"cfg_default_currency\") or \"USD\").upper(),\n    \"defaultTaxRate\": num(item.get(\"cfg_default_tax_rate\")) if item.get(\"cfg_default_tax_rate\") is not None else 0,\n    \"taxTolerance\": num(item.get(\"cfg_tax_tolerance\")) if item.get(\"cfg_tax_tolerance\") is not None else 0.01,\n    \"subtotalTolerance\": num(item.get(\"cfg_subtotal_tolerance\")) if item.get(\"cfg_subtotal_tolerance\") is not None else 0.01,\n    \"patternConfidenceThreshold\": num(item.get(\"cfg_pattern_confidence_threshold\")) if item.get(\"cfg_pattern_confidence_threshold\") is not None else 0.9,\n    \"recurringErrorThreshold\": num(item.get(\"cfg_recurring_error_threshold\")) if item.get(\"cfg_recurring_error_threshold\") is not None else 3,\n    \"aiConfidenceThreshold\": num(item.get(\"cfg_ai_confidence_threshold\")) if item.get(\"cfg_ai_confidence_threshold\") is not None else 0.7,\n    \"enablePatternLearning\": to_bool(item.get(\"cfg_enable_pattern_learning\"), True),\n    \"requiredFields\": [v.strip() for v in text(item.get(\"cfg_required_fields\")).split(\",\") if v.strip()],\n}\n\nunit_aliases = {\n    \"EACH\": \"EA\", \"EACHES\": \"EA\", \"PIECE\": \"EA\", \"PIECES\": \"EA\", \"PCS\": \"EA\", \"PC\": \"EA\",\n    \"KILOGRAM\": \"KG\", \"KILOGRAMS\": \"KG\", \"KGS\": \"KG\",\n    \"GRAM\": \"G\", \"GRAMS\": \"G\",\n    \"LITER\": \"L\", \"LITERS\": \"L\", \"LITRE\": \"L\", \"LITRES\": \"L\",\n    \"MILLILITER\": \"ML\", \"MILLILITERS\": \"ML\", \"MILLILITRE\": \"ML\", \"MILLILITRES\": \"ML\",\n}\n\nraw_unit = text(src.get(\"unit\") or src.get(\"uom\")).upper()\n\nrecord = {\n    \"supplier\": text(src.get(\"supplier\")),\n    \"item_code\": text(src.get(\"item_code\") or src.get(\"itemCode\")),\n    \"description\": text(src.get(\"description\")),\n    \"category\": text(src.get(\"category\")),\n    \"quantity\": num(src.get(\"quantity\")),\n    \"unit\": unit_aliases.get(raw_unit, raw_unit),\n    \"unit_price\": num(src.get(\"unit_price\") if src.get(\"unit_price\") is not None else src.get(\"unitPrice\")),\n    \"subtotal\": num(src.get(\"subtotal\")),\n    \"tax_rate\": num(src.get(\"tax_rate\") if src.get(\"tax_rate\") is not None else src.get(\"taxRate\")),\n    \"tax_amount\": num(src.get(\"tax_amount\") if src.get(\"tax_amount\") is not None else src.get(\"taxAmount\")),\n    \"currency\": text(src.get(\"currency\") or cfg[\"defaultCurrency\"]).upper(),\n    \"document_id\": text(src.get(\"document_id\") or src.get(\"po_number\") or src.get(\"invoice_number\") or src.get(\"reference\")),\n}\n\nerrors = []\nfor field in cfg[\"requiredFields\"]:\n    value = record.get(field)\n    if value in (\"\", None):\n        errors.append({\n            \"field\": field,\n            \"type\": \"MISSING_REQUIRED_FIELD\",\n            \"actual\": value,\n            \"expected\": \"non-empty value\",\n            \"severity\": \"high\",\n            \"reason\": f\"{field} is required.\",\n        })\n\nif record[\"quantity\"] is not None and record[\"quantity\"] <= 0:\n    errors.append({\"field\": \"quantity\", \"type\": \"INVALID_QUANTITY\", \"actual\": record[\"quantity\"], \"expected\": \"greater than 0\", \"severity\": \"high\", \"reason\": \"Quantity must be greater than zero.\"})\n\nif record[\"unit_price\"] is not None and record[\"unit_price\"] < 0:\n    errors.append({\"field\": \"unit_price\", \"type\": \"INVALID_UNIT_PRICE\", \"actual\": record[\"unit_price\"], \"expected\": \"0 or greater\", \"severity\": \"high\", \"reason\": \"Unit price cannot be negative.\"})\n\nif record[\"tax_rate\"] is not None and (record[\"tax_rate\"] < 0 or record[\"tax_rate\"] > 100):\n    errors.append({\"field\": \"tax_rate\", \"type\": \"INVALID_TAX_RATE\", \"actual\": record[\"tax_rate\"], \"expected\": \"0 to 100\", \"severity\": \"high\", \"reason\": \"Tax rate must be between 0 and 100.\"})\n\nexpected_subtotal = None\nif record[\"quantity\"] is not None and record[\"unit_price\"] is not None:\n    expected_subtotal = round2(record[\"quantity\"] * record[\"unit_price\"])\n\nif record[\"subtotal\"] is not None and expected_subtotal is not None and abs(record[\"subtotal\"] - expected_subtotal) > cfg[\"subtotalTolerance\"]:\n    errors.append({\"field\": \"subtotal\", \"type\": \"SUBTOTAL_MISMATCH\", \"actual\": record[\"subtotal\"], \"expected\": expected_subtotal, \"severity\": \"high\", \"reason\": \"Subtotal does not match quantity multiplied by unit price.\"})\n\neffective_subtotal = record[\"subtotal\"] if record[\"subtotal\"] is not None else expected_subtotal\neffective_tax_rate = record[\"tax_rate\"] if record[\"tax_rate\"] is not None else cfg[\"defaultTaxRate\"]\nexpected_tax = round2(effective_subtotal * effective_tax_rate / 100) if effective_subtotal is not None else None\n\nif record[\"tax_amount\"] is not None and expected_tax is not None and abs(record[\"tax_amount\"] - expected_tax) > cfg[\"taxTolerance\"]:\n    errors.append({\"field\": \"tax_amount\", \"type\": \"TAX_MISMATCH\", \"actual\": record[\"tax_amount\"], \"expected\": expected_tax, \"severity\": \"high\", \"reason\": \"Tax amount does not match subtotal and tax rate.\"})\n\nsignature_parts = [\n    record[\"supplier\"].upper(),\n    record[\"item_code\"].upper(),\n    record[\"category\"].upper(),\n    record[\"unit\"].upper(),\n    str(effective_tax_rate if effective_tax_rate is not None else \"\"),\n]\npattern_key = \"|\".join(signature_parts)\n\nreturn [{\n    \"json\": {\n        \"record\": record,\n        \"config\": cfg,\n        \"validation\": {\n            \"has_errors\": len(errors) > 0,\n            \"error_count\": len(errors),\n            \"errors\": errors,\n            \"expected_subtotal\": expected_subtotal,\n            \"expected_tax\": expected_tax,\n        },\n        \"pattern_key\": pattern_key,\n    }\n}]\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8c9c973b-a1d5-4636-9b66-a0495967c37f",
+      "name": "Find Known Error Pattern",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        1136,
+        800
+      ],
+      "parameters": {
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "pattern_key",
+              "keyValue": "={{ $json.pattern_key }}"
+            }
+          ]
+        },
+        "matchType": "allConditions",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "procurement_error_patterns"
+        }
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "78ce6ddc-2171-4547-b501-37ec6cde2e8d",
+      "name": "Merge Record With Pattern",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1440,
+        720
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "combineBy": "combineByPosition"
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "8cf95331-ec1d-49ab-a27a-4188057b6e8a",
+      "name": "Is Trusted Pattern Known",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1648,
+        720
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "1a21d785-2c86-4a3b-accb-26b2dddef207",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ Boolean($json.error_type) && Number($json.occurrence_count || 0) >= Number($vars.cfg_recurring_error_threshold) && Number($json.confidence || 0) >= Number($vars.cfg_pattern_confidence_threshold) }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "ae3c653c-4359-4018-9a56-e8740cdb8c82",
+      "name": "Reuse Trusted Pattern Correction",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2016,
+        704
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "792226f7-73ed-46f9-8a18-2abbb4fbb877",
+              "name": "review_source",
+              "type": "string",
+              "value": "historical_pattern"
+            },
+            {
+              "id": "611c2d2f-e00d-49ef-9dfe-9a58a54f1f86",
+              "name": "known_pattern_matched",
+              "type": "boolean",
+              "value": true
+            },
+            {
+              "id": "77c4da6d-8a97-4efc-b07b-e21f2d0383c3",
+              "name": "historical_anomaly_detected",
+              "type": "boolean",
+              "value": true
+            },
+            {
+              "id": "88081fc4-b4f9-42ca-bb43-222ab0636448",
+              "name": "historical_issue",
+              "type": "object",
+              "value": "={{ { type: $json.error_type, incorrect_value: $json.incorrect_value, suggested_value: $json.suggested_value, reason: $json.reason, confidence: $json.confidence } }}"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "d94fdd06-d939-4fb9-b77c-6661d5c71b33",
+      "name": "Analyze Procurement Anomalies",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        1872,
+        896
+      ],
+      "parameters": {
+        "text": "=You are a procurement data-quality reviewer.\n\nReview the procurement record below only for semantic or contextual anomalies that deterministic validation may not catch.\n\nRecord:\n{{ JSON.stringify($json.record) }}\n\nDeterministic validation:\n{{ JSON.stringify($json.validation) }}\n\nReview for:\n- description versus category or coding mismatch\n- implausible item and unit-of-measure combinations\n- supplier, item, category, or unit inconsistencies visible from the supplied record\n- suspicious tax treatment that is contextual rather than mathematical\n- other procurement metadata combinations that appear internally inconsistent\n\nImportant rules:\n- Do not repeat mathematical or deterministic errors already listed in deterministic validation.\n- Do not invent supplier history, tax law, master data, policies, or facts not provided in the input.\n- Only report anomalies directly supported by the supplied record.\n- If evidence is insufficient, set \"anomaly_detected\" to false.\n- Confidence must be a number between 0 and 1.\n- Suggested corrections must be conservative and directly supported by the record.\n- Multiple anomalies may be returned.\n- If there are no anomalies, return an empty \"anomalies\" array and an empty \"suggested_corrections\" object.\n\nOUTPUT FORMAT REQUIREMENTS:\nReturn valid JSON only.\nDo not use Markdown.\nDo not wrap the response in ```json or ``` fences.\nDo not add comments or explanations before or after the JSON.\nUse the exact property names shown below.\nNever rename \"anomalies\" to \"findings\", \"issues\", \"errors\", or any other property name.\nNever rename \"suggested_corrections\".\nAlways include every top-level property.\n\nReturn exactly this structure:\n\n{\n  \"anomaly_detected\": true,\n  \"confidence\": 0.95,\n  \"anomalies\": [\n    {\n      \"field\": \"category\",\n      \"type\": \"CATEGORY_MISMATCH\",\n      \"issue\": \"Explain the anomaly clearly.\"\n    }\n  ],\n  \"suggested_corrections\": {\n    \"category\": \"Suggested corrected value\"\n  }\n}\n\nWhen no anomaly is found, return exactly this structure:\n\n{\n  \"anomaly_detected\": false,\n  \"confidence\": 0,\n  \"anomalies\": [],\n  \"suggested_corrections\": {}\n}\n\nFor every anomaly:\n- \"field\" must contain the affected input field name when identifiable.\n- \"type\" must be a short uppercase snake-case classification such as CATEGORY_MISMATCH, UOM_MISMATCH, CODING_MISMATCH, CONTEXTUAL_TAX_ANOMALY, or DATA_INCONSISTENCY.\n- \"issue\" must contain the explanation.\n- If a safe correction can be inferred, add it to \"suggested_corrections\" using the exact same field name as the key.\n- If no reliable correction can be inferred, do not add that field to \"suggested_corrections\".\n\nBefore returning the response, verify internally that:\n1. The output is valid JSON.\n2. The top-level keys are exactly:\n   anomaly_detected\n   confidence\n   anomalies\n   suggested_corrections\n3. \"anomalies\" is always an array.\n4. \"suggested_corrections\" is always an object.\n5. No additional top-level keys are present.",
+        "batching": {},
+        "promptType": "define"
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "id": "83f8845c-9296-42a6-b05a-c5de50a16b2f",
+      "name": "Merge Record With AI Review",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        2384,
+        912
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "combineBy": "combineByPosition"
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "ab605000-808a-4a00-8616-6e8c3dfefbf3",
+      "name": "Build Unified Error Decision",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2656,
+        704
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8f76732d-ec1b-4821-8910-65236370b653",
+              "name": "known_pattern_matched",
+              "type": "boolean",
+              "value": "={{ Boolean($json.known_pattern_matched) }}"
+            },
+            {
+              "id": "82731a9c-09e5-4639-8288-a2fe16916dcf",
+              "name": "ai_anomaly_detected",
+              "type": "boolean",
+              "value": "={{ (() => {\n  if (!$json.text) return false;\n\n  const parsed = JSON.parse(\n    $json.text.replace(/```json|```/g, '').trim()\n  );\n\n  return Boolean(parsed.anomaly_detected);\n})() }}"
+            },
+            {
+              "id": "0f1f41cb-f5c3-4794-8bf1-5f192fdb57ec",
+              "name": "has_detected_error",
+              "type": "boolean",
+              "value": "={{ (() => {\n  const deterministic = Boolean($json.validation?.has_errors);\n  const historical = Boolean($json.known_pattern_matched);\n\n  let aiDetected = false;\n  let aiConfidence = 0;\n\n  if ($json.text) {\n    const parsed = JSON.parse(\n      $json.text.replace(/```json|```/g, '').trim()\n    );\n\n    aiDetected = Boolean(parsed.anomaly_detected);\n    aiConfidence = Number(parsed.confidence || 0);\n  }\n\n  return deterministic\n    || historical\n    || (\n      aiDetected\n      && aiConfidence >= Number($vars.cfg_ai_confidence_threshold || 0.7)\n    );\n})() }}"
+            },
+            {
+              "id": "f66b4ef1-2dc1-4d9c-9043-874181a2f132",
+              "name": "review_source",
+              "type": "string",
+              "value": "={{ (() => {\n  if ($json.known_pattern_matched) {\n    return 'historical_pattern';\n  }\n\n  if ($json.text) {\n    const parsed = JSON.parse(\n      $json.text.replace(/```json|```/g, '').trim()\n    );\n\n    if (parsed.anomaly_detected) {\n      return 'gemini';\n    }\n  }\n\n  if ($json.validation?.has_errors) {\n    return 'deterministic_rule';\n  }\n\n  return 'none';\n})() }}"
+            },
+            {
+              "id": "fc5eae75-05a2-40e8-bedb-64894e2d6214",
+              "name": "decision_confidence",
+              "type": "number",
+              "value": "={{ (() => {\n  if ($json.known_pattern_matched) {\n    return Number($json.confidence || 0);\n  }\n\n  if ($json.text) {\n    const parsed = JSON.parse(\n      $json.text.replace(/```json|```/g, '').trim()\n    );\n\n    if (parsed.anomaly_detected) {\n      return Number(parsed.confidence || 0);\n    }\n  }\n\n  if ($json.validation?.has_errors) {\n    return 1;\n  }\n\n  return 0;\n})() }}"
+            },
+            {
+              "id": "459aec50-d485-4951-bd59-55b90b127a31",
+              "name": "detected_issues",
+              "type": "array",
+              "value": "={{ [\n  ...($json.validation?.errors || []),\n\n  ...(\n    $json.known_pattern_matched && $json.historical_issue\n      ? [$json.historical_issue]\n      : []\n  ),\n\n  ...(\n    $json.text\n      ? (() => {\n          const parsed = JSON.parse(\n            $json.text.replace(/```json|```/g, '').trim()\n          );\n\n          const corrections = parsed.suggested_corrections || {};\n\n          const out = (parsed.anomalies || []).map(anomaly => ({\n            field: anomaly.field || '',\n            type: 'AI_ANOMALY',\n            actual: $json.record?.[anomaly.field] ?? '',\n            suggested_value: corrections[anomaly.field] ?? '',\n            reason: anomaly.issue || '',\n            confidence: Number(parsed.confidence || 0),\n            source: 'gemini'\n          }));\n\n          return out;\n        })()\n      : []\n  )\n] }}"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "9ac8a820-76d1-40a6-9100-63d23f44d8b4",
+      "name": "Are Errors Detected",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2848,
+        704
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "10d7250e-5c76-4ff8-904b-b00a19d4c0de",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.has_detected_error }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "147ea4c6-0a86-4e4f-9b3b-0d75bbaa86af",
+      "name": "Prepare Learned Error Pattern",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3120,
+        688
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b3e46aa6-8315-4799-abc8-5f16a51ca28d",
+              "name": "pattern_key",
+              "type": "string",
+              "value": "={{ $json.pattern_key }}"
+            },
+            {
+              "id": "dc26b044-51b6-47d4-a307-4ac53d21cba9",
+              "name": "supplier",
+              "type": "string",
+              "value": "={{ $json.record.supplier }}"
+            },
+            {
+              "id": "049fd15d-2697-48f3-9830-6967360e687e",
+              "name": "item_code",
+              "type": "string",
+              "value": "={{ $json.record.item_code }}"
+            },
+            {
+              "id": "ada3dd97-6376-4455-9ef9-38c22d244730",
+              "name": "error_type",
+              "type": "string",
+              "value": "={{ $json.detected_issues.length > 1 ? 'MULTIPLE_ERRORS' : ($json.detected_issues[0]?.type || 'PROCUREMENT_ANOMALY') }}"
+            },
+            {
+              "id": "96fb31a6-bb71-4373-9de2-e7707082bf2f",
+              "name": "incorrect_value",
+              "type": "string",
+              "value": "={{ String($json.detected_issues[0]?.actual ?? $json.detected_issues[0]?.incorrect_value ?? '') }}"
+            },
+            {
+              "id": "071eec48-fd36-4fb7-9683-7b9dbfb5a068",
+              "name": "suggested_value",
+              "type": "string",
+              "value": "={{ String($json.detected_issues[0]?.expected ?? $json.detected_issues[0]?.suggested_value ?? '') }}"
+            },
+            {
+              "id": "e11eeb53-84f7-40d1-9ec0-bcb59d89a36a",
+              "name": "reason",
+              "type": "string",
+              "value": "={{ String($json.detected_issues[0]?.reason ?? '') }}"
+            },
+            {
+              "id": "800bb303-e4a0-4509-a721-aacf27eb1cbd",
+              "name": "occurrence_count",
+              "type": "number",
+              "value": "={{ Number($json.occurrence_count || 0) + 1 }}"
+            },
+            {
+              "id": "2dbacff1-cd42-4cbc-97f4-b52e8e312662",
+              "name": "confidence",
+              "type": "number",
+              "value": "={{ Number($json.decision_confidence || 0) }}"
+            },
+            {
+              "id": "a44092c3-c849-4a1a-8f2f-d70e32c85e78",
+              "name": "first_seen",
+              "type": "string",
+              "value": "={{ $json.first_seen || $now.toISO() }}"
+            },
+            {
+              "id": "74e1521c-4ba7-4c97-97e0-1668e7b719ab",
+              "name": "last_seen",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            },
+            {
+              "id": "42edb77f-35fa-464c-bdcf-1c49a7e87b63",
+              "name": "source",
+              "type": "string",
+              "value": "={{ $json.review_source }}"
+            },
+            {
+              "id": "da64596f-e48f-4090-a0de-eb6fef069efd",
+              "name": "issue_summary",
+              "type": "string",
+              "value": "={{ JSON.stringify($json.detected_issues) }}"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "f2107abe-7f74-461c-9f29-0d8c6f47b0d2",
+      "name": "Learn Recurring Error Pattern",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        3488,
+        688
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "reason": "={{ $json.reason }}",
+            "source": "={{ $json.source }}",
+            "supplier": "={{ $json.supplier }}",
+            "item_code": "={{ $json.item_code }}",
+            "last_seen": "={{ $json.last_seen }}",
+            "confidence": "={{ $json.confidence }}",
+            "error_type": "={{ $json.error_type }}",
+            "first_seen": "={{ $json.first_seen }}",
+            "pattern_key": "={{ $json.pattern_key }}",
+            "issue_summary": "={{ $json.issue_summary }}",
+            "incorrect_value": "={{ $json.incorrect_value }}",
+            "suggested_value": "={{ $json.suggested_value }}",
+            "occurrence_count": "={{ $json.occurrence_count }}"
+          },
+          "schema": [
+            {
+              "id": "pattern_key",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "pattern_key",
+              "defaultMatch": false
+            },
+            {
+              "id": "supplier",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "supplier",
+              "defaultMatch": false
+            },
+            {
+              "id": "item_code",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "item_code",
+              "defaultMatch": false
+            },
+            {
+              "id": "error_type",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "error_type",
+              "defaultMatch": false
+            },
+            {
+              "id": "incorrect_value",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "incorrect_value",
+              "defaultMatch": false
+            },
+            {
+              "id": "suggested_value",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "suggested_value",
+              "defaultMatch": false
+            },
+            {
+              "id": "reason",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "reason",
+              "defaultMatch": false
+            },
+            {
+              "id": "occurrence_count",
+              "type": "number",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "occurrence_count",
+              "defaultMatch": false
+            },
+            {
+              "id": "confidence",
+              "type": "number",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "confidence",
+              "defaultMatch": false
+            },
+            {
+              "id": "first_seen",
+              "type": "dateTime",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "first_seen",
+              "defaultMatch": false
+            },
+            {
+              "id": "last_seen",
+              "type": "dateTime",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "last_seen",
+              "defaultMatch": false
+            },
+            {
+              "id": "source",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "source",
+              "defaultMatch": false
+            },
+            {
+              "id": "issue_summary",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "issue_summary",
+              "defaultMatch": false
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": false
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "pattern_key",
+              "keyValue": "={{ $json.pattern_key }}"
+            }
+          ]
+        },
+        "options": {},
+        "matchType": "allConditions",
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "procurement_error_patterns"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "04623db5-ce64-4159-b537-e2c1743ede2b",
+      "name": "Notify User With Correction",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3712,
+        688
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e261bccd-0178-458d-942e-26f08e583fee",
+              "name": "accepted",
+              "type": "boolean",
+              "value": false
+            },
+            {
+              "id": "7b450610-0c19-4618-824b-29194e7a94a6",
+              "name": "status",
+              "type": "string",
+              "value": "validation_failed"
+            },
+            {
+              "id": "3649d36e-5ff2-4e1f-97b3-6aee12dd0516",
+              "name": "document_id",
+              "type": "string",
+              "value": "={{ $('Build Unified Error Decision').item.json.record.document_id }}"
+            },
+            {
+              "id": "b672048f-f423-406a-b9d8-b28ce2d348c0",
+              "name": "pattern_key",
+              "type": "string",
+              "value": "={{ $('Build Unified Error Decision').item.json.pattern_key }}"
+            },
+            {
+              "id": "fc5b0cb0-52b5-4df4-ae1c-ca0122183c68",
+              "name": "review_source",
+              "type": "string",
+              "value": "={{ $('Build Unified Error Decision').item.json.review_source }}"
+            },
+            {
+              "id": "c349ca08-dbc6-44cc-9f6d-1ba78fff9d42",
+              "name": "confidence",
+              "type": "number",
+              "value": "={{ $('Build Unified Error Decision').item.json.decision_confidence }}"
+            },
+            {
+              "id": "1f43dcfb-8fbd-4abd-b8de-0bb0e3e2d703",
+              "name": "errors",
+              "type": "array",
+              "value": "={{ $('Build Unified Error Decision').item.json.detected_issues }}"
+            },
+            {
+              "id": "7cc841ab-4ac3-41e7-aec4-76481f3bd34a",
+              "name": "message",
+              "type": "string",
+              "value": "Procurement data contains issues that should be corrected before submission."
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "75278276-6b87-441c-87a0-f00aa6f7e029",
+      "name": "Build Valid Record Response",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3488,
+        960
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a976faac-e4e3-466c-b015-8601595d5e7b",
+              "name": "accepted",
+              "type": "boolean",
+              "value": true
+            },
+            {
+              "id": "290ac85b-6b44-4fa8-90d1-9f9c57ba7d5e",
+              "name": "status",
+              "type": "string",
+              "value": "valid"
+            },
+            {
+              "id": "0aac9753-644f-48c1-9458-988324cd6fd1",
+              "name": "document_id",
+              "type": "string",
+              "value": "={{ $json.record.document_id }}"
+            },
+            {
+              "id": "c4d3728b-b06d-4f3d-ad55-c532cee2d920",
+              "name": "pattern_key",
+              "type": "string",
+              "value": "={{ $json.pattern_key }}"
+            },
+            {
+              "id": "ce799de8-2564-409a-a81d-00eb21fe51f9",
+              "name": "errors",
+              "type": "array",
+              "value": "={{ [] }}"
+            },
+            {
+              "id": "d9cc2bf5-0135-4dcb-9c44-4a47079748b6",
+              "name": "message",
+              "type": "string",
+              "value": "Procurement data passed deterministic, historical-pattern, and AI checks."
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "132a7b28-7b99-43ba-a375-a062e7214700",
+      "name": "Return Validation Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        4048,
+        688
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "f3d09a2c-be69-45ee-afdf-c4f6ba86d522",
+      "name": "Google Gemini Chat Model - procurement",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        1680,
+        1056
+      ],
+      "parameters": {
+        "options": {},
+        "modelName": "models/gemini-3.5-flash-lite"
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "33FrMvULTwg001u9",
+          "name": "Google Gemini (MaryPhelps) AiStudio Builder AWS"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "4a5bf949-42df-4c3d-b8f0-200c1ce4d90e",
+      "name": "Validation Section",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        368,
+        464
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 952,
+        "height": 688,
+        "content": "## Input & Deterministic Validation\n\nReceives procurement data, applies configurable validation rules, normalizes fields, checks pricing and tax consistency, and generates a reusable pattern signature. The resulting signature is checked against previously learned procurement error patterns."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "bcd6bcca-34e6-4c43-9ce2-c2750508806b",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1392,
+        464
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 816,
+        "height": 688,
+        "content": "## Pattern Decision & AI Review\n\nCombines historical pattern data with the current record. Trusted recurring patterns reuse previous corrections and skip AI. Unseen or insufficiently trusted records are reviewed by Gemini for semantic procurement anomalies such as category, coding, and unit mismatches."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8fc1da1e-6bee-44eb-ab42-ef48ed1e66da",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2272,
+        464
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1040,
+        "height": 688,
+        "content": "## Unified Decision & Learning\n\nCombines deterministic validation, historical matches, and Gemini findings into one decision. Detected issues are normalized into a common structure. Records requiring correction are prepared with pattern details, occurrence count, confidence, source, and correction information."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "84c57f88-4845-4307-8d99-f357d8520ae1",
+  "nodeGroups": [],
+  "connections": {
+    "Are Errors Detected": {
+      "main": [
+        [
+          {
+            "node": "Prepare Learned Error Pattern",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Valid Record Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Known Error Pattern": {
+      "main": [
+        [
+          {
+            "node": "Merge Record With Pattern",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Is Trusted Pattern Known": {
+      "main": [
+        [
+          {
+            "node": "Reuse Trusted Pattern Correction",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Analyze Procurement Anomalies",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Record With AI Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Record With Pattern": {
+      "main": [
+        [
+          {
+            "node": "Is Trusted Pattern Known",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure Validation Rules": {
+      "main": [
+        [
+          {
+            "node": "Normalize and Validate Procurement Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive Procurement Record": {
+      "main": [
+        [
+          {
+            "node": "Configure Validation Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Valid Record Response": {
+      "main": [
+        [
+          {
+            "node": "Return Validation Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Record With AI Review": {
+      "main": [
+        [
+          {
+            "node": "Build Unified Error Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify User With Correction": {
+      "main": [
+        [
+          {
+            "node": "Return Validation Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Unified Error Decision": {
+      "main": [
+        [
+          {
+            "node": "Are Errors Detected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Procurement Anomalies": {
+      "main": [
+        [
+          {
+            "node": "Merge Record With AI Review",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Learn Recurring Error Pattern": {
+      "main": [
+        [
+          {
+            "node": "Notify User With Correction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Learned Error Pattern": {
+      "main": [
+        [
+          {
+            "node": "Learn Recurring Error Pattern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reuse Trusted Pattern Correction": {
+      "main": [
+        [
+          {
+            "node": "Build Unified Error Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model - procurement": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analyze Procurement Anomalies",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize and Validate Procurement Record": {
+      "main": [
+        [
+          {
+            "node": "Find Known Error Pattern",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Record With Pattern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

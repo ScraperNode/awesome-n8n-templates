@@ -1,6 +1,6 @@
 # 🔬 Automate contract analysis & negotiation with GPT-4 & financial impact assessment
 
-> ⚡ **312 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **484 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

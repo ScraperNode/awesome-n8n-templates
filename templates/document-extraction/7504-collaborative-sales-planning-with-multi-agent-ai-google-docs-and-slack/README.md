@@ -1,6 +1,6 @@
 # 🔬 Collaborative sales planning with multi-agent AI, Google Docs, and Slack
 
-> ⚡ **1,071 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,407 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

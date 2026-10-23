@@ -1,6 +1,6 @@
 # ⚙️ Launch AWS EC2 instances from Google Sheets using Terraform
 
-> ⚡ **855 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **977 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

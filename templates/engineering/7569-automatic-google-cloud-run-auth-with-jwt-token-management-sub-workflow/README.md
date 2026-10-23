@@ -1,6 +1,6 @@
 # ⚒️ Automatic Google Cloud Run auth with JWT token management (sub-workflow)
 
-> ⚡ **445 views** · ⚒️ [Engineering](../)
+> ⚡ **505 views** · ⚒️ [Engineering](../)
 
 ## Description
 

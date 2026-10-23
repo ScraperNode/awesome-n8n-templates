@@ -1,6 +1,6 @@
 # 📊 Analyze and modernize university curricula with GPT-4o and employment data
 
-> ⚡ **77 views** · 📊 [Market Research & Insights](../)
+> ⚡ **156 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

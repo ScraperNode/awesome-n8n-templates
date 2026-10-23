@@ -1,6 +1,6 @@
 # 💬 Automated customer reservations via Telegram and PostgreSQL (Module "Booking")
 
-> ⚡ **1,551 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,606 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

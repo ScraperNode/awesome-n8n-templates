@@ -1,6 +1,6 @@
 # 💬 Automate NPS survey collection & response handling with GoHighLevel, Gmail & Notion
 
-> ⚡ **285 views** · 💬 [Support Chatbots](../)
+> ⚡ **437 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

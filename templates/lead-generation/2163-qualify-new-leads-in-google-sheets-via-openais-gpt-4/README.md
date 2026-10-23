@@ -1,6 +1,6 @@
 # 🎣 Qualify new leads in Google Sheets via OpenAI's GPT-4
 
-> ⚡ **29,539 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **30,095 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

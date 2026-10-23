@@ -1,6 +1,6 @@
 # 🔧 Handle GDPR data deletion requests with Slack
 
-> ⚡ **2,064 views** · 🔧 [Miscellaneous](../)
+> ⚡ **2,090 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

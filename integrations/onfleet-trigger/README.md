@@ -8,11 +8,11 @@
 
 | # | Template | Category | 👀 Views |
 |--:|----------|----------|-------:|
-| 🏆 1 | [Send a Whatsapp message via Twilio when a certain Onfleet event happens](../../templates/support-chatbot/1525-send-a-whatsapp-message-via-twilio-when-a-certain-onfleet-event-happens/) | 💬 Support Chatbots | 2,826 |
-| 🥇 2 | [Create a QuickBooks invoice on a new Onfleet task creation](../../templates/invoice-processing/1546-create-a-quickbooks-invoice-on-a-new-onfleet-task-creation/) | 🧾 Invoice Processing | 1,367 |
-| 🥈 3 | [Send a Discord message when a certain Onfleet event happens](../../templates/miscellaneous/1528-send-a-discord-message-when-a-certain-onfleet-event-happens/) | 🔧 Miscellaneous | 1,034 |
-| 🥉 4 | [Update Shopify order tags when a Onfleet event happens](../../templates/crm/1545-update-shopify-order-tags-when-a-onfleet-event-happens/) | 🤝 CRM & Sales Operations | 907 |
-| 5 | [Send Onfleet driver signup messages in Slack](../../templates/miscellaneous/1532-send-onfleet-driver-signup-messages-in-slack/) | 🔧 Miscellaneous | 476 |
+| 🏆 1 | [Send a Whatsapp message via Twilio when a certain Onfleet event happens](../../templates/support-chatbot/1525-send-a-whatsapp-message-via-twilio-when-a-certain-onfleet-event-happens/) | 💬 Support Chatbots | 2,914 |
+| 🥇 2 | [Create a QuickBooks invoice on a new Onfleet task creation](../../templates/invoice-processing/1546-create-a-quickbooks-invoice-on-a-new-onfleet-task-creation/) | 🧾 Invoice Processing | 1,368 |
+| 🥈 3 | [Send a Discord message when a certain Onfleet event happens](../../templates/miscellaneous/1528-send-a-discord-message-when-a-certain-onfleet-event-happens/) | 🔧 Miscellaneous | 1,077 |
+| 🥉 4 | [Update Shopify order tags when a Onfleet event happens](../../templates/crm/1545-update-shopify-order-tags-when-a-onfleet-event-happens/) | 🤝 CRM & Sales Operations | 913 |
+| 5 | [Send Onfleet driver signup messages in Slack](../../templates/miscellaneous/1532-send-onfleet-driver-signup-messages-in-slack/) | 🔧 Miscellaneous | 495 |
 
 ---
 

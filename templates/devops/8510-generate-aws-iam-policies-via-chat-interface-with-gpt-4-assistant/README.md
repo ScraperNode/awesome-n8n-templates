@@ -1,6 +1,6 @@
 # ⚙️ Generate AWS IAM policies via chat interface with GPT-4 assistant
 
-> ⚡ **124 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **144 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

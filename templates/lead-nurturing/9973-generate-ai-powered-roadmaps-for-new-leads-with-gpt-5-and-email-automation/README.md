@@ -1,6 +1,6 @@
 # 💬 Generate AI-powered roadmaps for new leads with GPT-5 and email automation
 
-> ⚡ **346 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **544 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

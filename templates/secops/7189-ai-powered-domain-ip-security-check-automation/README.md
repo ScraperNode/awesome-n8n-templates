@@ -1,6 +1,6 @@
 # 🔒 AI-powered domain & IP security check automation
 
-> ⚡ **1,363 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,737 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

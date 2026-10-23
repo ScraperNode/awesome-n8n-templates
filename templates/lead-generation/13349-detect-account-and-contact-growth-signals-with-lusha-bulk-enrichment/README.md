@@ -1,6 +1,6 @@
 # 🎣 Detect account and contact growth signals with Lusha bulk enrichment
 
-> ⚡ **2 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **60 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

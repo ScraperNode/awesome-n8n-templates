@@ -1,6 +1,6 @@
 # 📁 Detect and move duplicate Google Drive files with Supabase and Slack
 
-> ⚡ **5 views** · 📁 [File Management](../)
+> ⚡ **218 views** · 📁 [File Management](../)
 
 ## Description
 

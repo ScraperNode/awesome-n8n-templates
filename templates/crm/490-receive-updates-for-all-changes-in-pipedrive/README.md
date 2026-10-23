@@ -1,6 +1,6 @@
 # 🤝 Receive updates for all changes in Pipedrive
 
-> ⚡ **1,114 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,128 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

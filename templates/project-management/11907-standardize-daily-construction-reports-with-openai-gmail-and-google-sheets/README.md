@@ -1,6 +1,6 @@
 # 📋 Standardize daily construction reports with OpenAI, Gmail and Google Sheets
 
-> ⚡ **74 views** · 📋 [Project Management](../)
+> ⚡ **290 views** · 📋 [Project Management](../)
 
 ## Description
 

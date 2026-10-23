@@ -1,6 +1,6 @@
 # 🎫 Automated support ticket system with Gmail, Trello, and Slack notifications
 
-> ⚡ **755 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **948 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

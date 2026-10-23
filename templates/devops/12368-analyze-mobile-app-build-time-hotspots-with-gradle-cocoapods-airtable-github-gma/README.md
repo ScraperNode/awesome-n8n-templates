@@ -1,6 +1,6 @@
 # ⚙️ Analyze mobile app build-time hotspots with Gradle, CocoaPods, Airtable, GitHub, Gmail and GPT-4.1-mini
 
-> ⚡ **31 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **104 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

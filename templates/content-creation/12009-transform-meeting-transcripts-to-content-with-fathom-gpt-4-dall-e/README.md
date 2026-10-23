@@ -1,6 +1,6 @@
 # 🎬 Transform meeting transcripts to content with Fathom, GPT-4 & DALL-E
 
-> ⚡ **198 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **312 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

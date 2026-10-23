@@ -1,6 +1,6 @@
 # ⚙️ (De)activate n8n workflows using Telegram commands
 
-> ⚡ **2,822 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,834 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

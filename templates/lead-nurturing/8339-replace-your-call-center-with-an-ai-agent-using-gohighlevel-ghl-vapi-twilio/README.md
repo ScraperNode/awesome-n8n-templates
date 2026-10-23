@@ -1,6 +1,6 @@
 # 💬 Replace your call center with an AI agent using GoHighLevel (GHL), VAPI & Twilio
 
-> ⚡ **499 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **740 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

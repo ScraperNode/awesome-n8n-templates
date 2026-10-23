@@ -1,5 +1,7 @@
 import { defineConfig, passthroughImageService } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 
 // Remark plugin to convert local image references to plain text links.
 // Template READMEs reference images that don't exist locally
@@ -22,6 +24,22 @@ function remarkRemoveMissingImages() {
   };
 }
 
+// Template descriptions come from third-party authors and may contain raw HTML.
+// Astro only parses raw HTML after custom rehype plugins run, so parse it here
+// first, then strip anything active (scripts, iframes, event handlers,
+// javascript: URLs). The schema is GitHub's default plus the attributes Shiki
+// adds to highlighted code blocks and the <video> demos some templates embed.
+const sanitizeSchema = {
+  ...defaultSchema,
+  tagNames: [...(defaultSchema.tagNames ?? []), 'video'],
+  attributes: {
+    ...defaultSchema.attributes,
+    pre: [...(defaultSchema.attributes.pre ?? []), 'className', 'style', 'tabIndex', 'dataLanguage'],
+    span: [...(defaultSchema.attributes.span ?? []), 'className', 'style'],
+    video: ['src', 'controls', 'poster', 'width', 'height'],
+  },
+};
+
 export default defineConfig({
   site: 'https://scrapernode.github.io',
   base: '/awesome-n8n-templates/',
@@ -34,5 +52,6 @@ export default defineConfig({
   },
   markdown: {
     remarkPlugins: [remarkRemoveMissingImages],
+    rehypePlugins: [rehypeRaw, [rehypeSanitize, sanitizeSchema]],
   },
 });

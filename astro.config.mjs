@@ -1,7 +1,12 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig, passthroughImageService } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+import remarkSiteLinks from './src/plugins/remark-site-links.mjs';
+
+const BASE = '/awesome-n8n-templates/';
+const ROOT = fileURLToPath(new URL('.', import.meta.url));
 
 // Remark plugin to convert local image references to plain text links.
 // Template READMEs reference images that don't exist locally
@@ -42,8 +47,14 @@ const sanitizeSchema = {
 
 export default defineConfig({
   site: 'https://scrapernode.github.io',
-  base: '/awesome-n8n-templates/',
+  base: BASE,
   integrations: [sitemap()],
+  // Section indexes used to render at /{section}/index/. Sources are
+  // base-relative; destinations need the base spelled out.
+  redirects: {
+    '/use-cases/index': `${BASE}use-cases/`,
+    '/integrations/index': `${BASE}integrations/`,
+  },
   build: {
     format: 'directory',
   },
@@ -51,7 +62,7 @@ export default defineConfig({
     service: passthroughImageService(),
   },
   markdown: {
-    remarkPlugins: [remarkRemoveMissingImages],
+    remarkPlugins: [remarkRemoveMissingImages, [remarkSiteLinks, { root: ROOT, base: BASE }]],
     rehypePlugins: [rehypeRaw, [rehypeSanitize, sanitizeSchema]],
   },
 });

@@ -1,6 +1,6 @@
 # 🔬 Analyze contract risk from Google Drive with OpenAI and log to Gmail & Sheets
 
-> ⚡ **178 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **225 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

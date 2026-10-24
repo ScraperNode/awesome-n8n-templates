@@ -1,6 +1,6 @@
 # 💬 Medical symptom checker & health assistant with GPT-4-mini
 
-> ⚡ **2,968 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,631 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

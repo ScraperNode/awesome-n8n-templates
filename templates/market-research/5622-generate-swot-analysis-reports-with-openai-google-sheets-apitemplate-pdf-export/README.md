@@ -1,6 +1,6 @@
 # 📊 Generate SWOT analysis reports with OpenAI, Google Sheets & APITemplate PDF Export
 
-> ⚡ **2,389 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,717 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

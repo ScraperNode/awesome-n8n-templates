@@ -1,6 +1,6 @@
 # 🔧 Create eBay listing drafts with AI agents via MCP server
 
-> ⚡ **1,707 views** · 🔧 [Miscellaneous](../)
+> ⚡ **2,284 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

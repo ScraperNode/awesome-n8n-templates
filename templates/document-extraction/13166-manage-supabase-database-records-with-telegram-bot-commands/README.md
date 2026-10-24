@@ -1,6 +1,6 @@
 # 🔬 Manage Supabase database records with Telegram bot commands
 
-> ⚡ **26 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **125 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

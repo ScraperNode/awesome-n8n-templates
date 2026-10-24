@@ -1,6 +1,6 @@
 # 📁 🛠️ Change Binary MimeType/Extension
 
-> ⚡ **2,182 views** · 📁 [File Management](../)
+> ⚡ **2,594 views** · 📁 [File Management](../)
 
 ## Description
 

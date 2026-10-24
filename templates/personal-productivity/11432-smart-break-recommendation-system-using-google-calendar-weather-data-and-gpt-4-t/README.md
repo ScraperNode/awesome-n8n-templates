@@ -1,6 +1,6 @@
 # ⚡ Smart break recommendation system using Google Calendar, weather data, and GPT-4 to Slack
 
-> ⚡ **61 views** · ⚡ [Personal Productivity](../)
+> ⚡ **99 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

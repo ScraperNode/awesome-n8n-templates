@@ -1,16 +1,10 @@
 # 🔒 Monitor SSL certificate expiry dates with Google Sheets & Slack alerts
 
-> ⚡ **149 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **214 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 
-&gt; ⚠️ **Notice:**  
-&gt; Community nodes like **@custom-js/n8n-nodes-pdf-toolkit** can only be installed on self-hosted instances of n8n.  
-
----
-
-![Screenshot from 20250914 161153.png](fileId:2630)
-
+![image.png](fileId:5368)
 
 This n8n workflow illustrates how to **monitor and track SSL certificate expiration dates** for any domain using the **SSL Checker node** from [customJS](https://www.customjs.space). It automatically updates a Google Sheet with the number of days left until expiry and sends a Slack notification when certificates are about to expire.  
 
@@ -27,7 +21,6 @@ This n8n workflow illustrates how to **monitor and track SSL certificate expirat
 
 ## Requirements
 
-- **Self-hosted** n8n instance.  
 - **CustomJS API key** for SSL checking.  
 - **Google Sheets API credentials** for reading/updating domain data.  
 - **Slack API credentials** (optional, for notifications).  
@@ -42,7 +35,7 @@ This n8n workflow illustrates how to **monitor and track SSL certificate expirat
 2. **Google Sheets (Read Rows)**  
    - 📄 Retrieves the list of domains from your Google Sheet.  
 
-3. **SSL Checker (CustomJS node)**  
+3. **CustomJS - Check SSL**  
    - 🔐 Fetches SSL certificate details for each domain.  
    - Returns JSON output with fields such as `expires` and `daysLeft`.  
 

@@ -1,6 +1,6 @@
 # 🔬 Generate styled PDF or DOCX business reports from Markdown with Autype
 
-> ⚡ **26 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **200 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

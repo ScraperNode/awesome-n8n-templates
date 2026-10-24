@@ -1,6 +1,6 @@
 # 🎫 Send verified building visitor entry passes with Gmail, Slack and VerifiEmail
 
-> ⚡ **4 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **48 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 🎥 Gemini AI video analysis
 
-> ⚡ **3,743 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,262 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

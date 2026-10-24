@@ -1,6 +1,6 @@
 # ⚡ WhatsApp productivity assistant with OpenAI, Gmail, Calendar, Tasks & Expense tracking
 
-> ⚡ **1,828 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,688 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

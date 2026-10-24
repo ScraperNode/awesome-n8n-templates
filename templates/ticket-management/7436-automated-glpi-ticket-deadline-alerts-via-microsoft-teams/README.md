@@ -1,6 +1,6 @@
 # 🎫 Automated GLPI ticket deadline alerts via Microsoft Teams
 
-> ⚡ **1,406 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,753 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Summarize documents, images & spreadsheets with Gemma 3 on Ollama
 
-> ⚡ **637 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **791 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

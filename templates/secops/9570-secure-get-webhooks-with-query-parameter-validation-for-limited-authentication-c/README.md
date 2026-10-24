@@ -1,6 +1,6 @@
 # 🔒 Secure GET webhooks with query parameter validation for limited authentication cases
 
-> ⚡ **50 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **115 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

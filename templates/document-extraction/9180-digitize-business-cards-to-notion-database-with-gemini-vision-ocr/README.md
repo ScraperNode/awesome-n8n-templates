@@ -1,6 +1,6 @@
 # 🔬 Digitize business cards to Notion database with Gemini Vision OCR
 
-> ⚡ **167 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **301 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Daily business news briefings with NewsAPI & GPT-4 insights to Slack
 
-> ⚡ **3,317 views** · 📊 [Market Research & Insights](../)
+> ⚡ **3,765 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

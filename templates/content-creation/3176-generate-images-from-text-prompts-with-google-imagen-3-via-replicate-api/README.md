@@ -1,6 +1,6 @@
 # 🎬 Generate images from text prompts with Google Imagen 3 via Replicate API
 
-> ⚡ **1,822 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,930 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

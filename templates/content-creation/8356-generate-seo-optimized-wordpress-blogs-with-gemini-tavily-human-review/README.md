@@ -1,6 +1,6 @@
 # 🎬 Generate SEO-optimized WordPress blogs with Gemini, Tavily & human review
 
-> ⚡ **1,770 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,873 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

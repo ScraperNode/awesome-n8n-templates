@@ -1,6 +1,6 @@
 # 📱 Telegram giveaways among channel subscribers (Module "Giveaway")
 
-> ⚡ **260 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **286 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

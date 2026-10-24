@@ -1,6 +1,6 @@
 # 🎬 Write a WordPress post with AI (starting from a few keywords)
 
-> ⚡ **85,193 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **86,892 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

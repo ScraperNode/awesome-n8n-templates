@@ -1,6 +1,6 @@
 # 🎬 Automate SEO-Optimized blog creation with GPT-4o, Perplexity AI & multi-language support
 
-> ⚡ **133 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **171 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

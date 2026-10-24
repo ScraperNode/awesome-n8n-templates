@@ -1,6 +1,6 @@
 # 🎬 Generate SEO content and marketing copy with Claude, Serper, Sheets and SendGrid
 
-> ⚡ **27 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **391 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Automated upload & send a large file with TransferNow
 
-> ⚡ **385 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **459 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

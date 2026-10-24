@@ -1,0 +1,233 @@
+# 📱 Publish RSS articles to LinkedIn and Instagram using OpenAI and Gemini images
+
+> ⚡ **168 views** · 📱 [Social Media & Email Marketing](../)
+
+> 💡 **Pro Tip** — Heads up — if this workflow's Instagram scraping breaks (it happens whenever Meta updates their frontend), [ScraperNode](https://scrapernode.com/instagram) is a community node that handles [profiles](https://scrapernode.com/instagram/scrapers/profiles), [posts](https://scrapernode.com/instagram/scrapers/posts), [reels](https://scrapernode.com/instagram/scrapers/reels), and [comments](https://scrapernode.com/instagram/scrapers/comments) without any HTML parsing.
+>
+> <a href="https://scrapernode.com/instagram"><img src="https://img.shields.io/badge/View_All_Scrapers_%E2%86%92-ff6d5a?style=for-the-badge" alt="View All Scrapers" /></a>
+
+## Description
+
+This n8n workflow automatically converts new RSS feed articles into ready-to-publish social media posts for LinkedIn and Instagram.
+
+Whenever a new article is detected from the RSS feed, the workflow extracts the article title, link, description, and publish date. It then uses OpenAI to generate a professional LinkedIn post, a short Instagram caption, relevant hashtags, and an image prompt. After that, Google Gemini generates a custom image, UploadToURL converts the generated image into a public image URL, and the workflow publishes the final content to LinkedIn and Instagram.
+
+---
+
+## What This Workflow Does
+
+- Watches an RSS feed for new articles
+- Extracts article title, link, description, and publish date
+- Uses OpenAI to generate LinkedIn and Instagram content
+- Creates an AI-generated image using Google Gemini
+- Uploads the generated image to a public URL using UploadToURL
+- Publishes the AI-generated post to LinkedIn
+- Publishes the generated image and caption to Instagram
+
+---
+
+# Node-by-Node Explanation
+
+---
+
+## 1. Watch RSS Feed for New Articles
+
+### What this node does
+
+This node monitors an RSS feed and checks for new articles every hour.
+
+### How it works
+
+The RSS Feed Trigger runs automatically based on the configured polling schedule. In this workflow, it checks the RSS feed every hour.
+
+When a new article is found, the node outputs article data such as:
+
+- Title
+- Link
+- Publish date
+- Description
+- Content snippet
+
+### Why it is important
+
+This node starts the automation. Instead of manually checking a blog, news website, or company update page, the workflow automatically detects fresh content and begins the social media publishing process.
+
+---
+
+## 2. Extract Article Data
+
+### What this node does
+
+This node cleans and organizes the raw RSS feed data into simple fields that can be used in the next steps.
+
+### How it works
+
+It extracts the important article details and stores them in clean fields:
+
+- `article_title`
+- `article_link`
+- `article_description`
+- `published_date`
+
+---
+
+## 3. Generate Social Media Content
+
+### What this node does
+
+This node uses AI to create platform-ready social media content from the RSS article.
+
+### How it works
+
+It sends the article title, description, and link to the OpenAI model and asks it to return valid JSON only.
+
+The generated JSON includes:
+
+- `content_angle`
+- `linkedin_post`
+- `instagram_caption`
+- `instagram_image_prompt`
+- `hashtags`
+---
+
+## 4. Parse AI JSON Output
+
+### What this node does
+
+This node converts the AI-generated JSON text into clean structured fields.
+
+### How it works
+
+Sometimes AI returns JSON inside markdown code blocks. This node first removes unwanted formatting like:
+
+```text
+```json
+```
+```
+
+Then it parses the cleaned text using:
+
+```js
+JSON.parse()
+```
+
+After parsing, it returns these fields:
+
+- `content_angle`
+- `linkedin_post`
+- `instagram_caption`
+- `instagram_image_prompt`
+- `hashtags`
+- `hashtags_text`
+
+### Why it is important
+
+The next nodes need structured data, not raw AI text. This node makes sure the AI output becomes proper fields that can be used by the image generation, LinkedIn, and Instagram nodes.
+
+### Error handling
+
+If the AI output is not valid JSON, this node throws an error. This helps catch formatting issues before the workflow publishes anything.
+
+---
+
+## 5. Generate an Image
+
+### What this node does
+
+This node generates an AI image for the social media post.
+
+### How it works
+
+It uses Google Gemini image generation with the model:
+
+```text
+models/gemini-2.5-flash-image
+```
+
+The image prompt comes from the parsed AI output:
+
+```js
+$json.instagram_image_prompt
+```
+
+The prompt describes the visual concept, style, and layout for the image.
+
+### Why it is important
+
+This node creates a custom visual automatically, so the workflow can publish image-based posts instead of only text updates.
+
+---
+
+## 6. Upload a File
+
+### What this node does
+
+This node uploads the AI-generated image and converts it into a public image URL using **UploadToURL**.
+
+### How it works
+
+After the image is generated by Google Gemini, the file is passed to the **Upload a File** node.  
+UploadToURL receives the generated image file, uploads it, and returns a publicly accessible CDN URL.
+
+That public URL is then used by the Instagram node to publish the generated image.
+
+### Why it is important
+
+Many social media platforms and APIs require a public image URL before they can publish media.  
+This node solves that problem by converting the generated image file into a shareable public link automatically.
+[UploadToURL](https://uploadtourl.com/)
+
+---
+
+## 7. Publish LinkedIn Post
+
+### What this node does
+
+This node publishes the AI-generated LinkedIn post.
+
+### How it works
+
+It takes the LinkedIn post text from the **Parse AI JSON Output** node:
+
+```js
+$('Parse AI JSON Output').item.json.linkedin_post
+```
+
+The LinkedIn node is configured to publish a post using the generated content.
+
+---
+
+## 8. Publish Instagram Post
+
+### What this node does
+
+This node publishes the generated image and caption to Instagram.
+
+### How it works
+
+It uses the public image URL returned from the UploadToURL node:
+
+```js
+$json.url
+```
+
+It also uses the Instagram caption generated by AI:
+
+```js
+$('Parse AI JSON Output').item.json.instagram_caption
+```
+
+### Why it is important
+
+This node completes the Instagram publishing process by posting both the generated image and the AI-written caption automatically.
+
+## 🔗 Nodes Used
+
+LinkedIn, Basic LLM Chain, OpenAI Chat Model, RSS Feed Trigger, Google Gemini
+
+## 📥 Import
+
+Download [`workflow.json`](workflow.json) and import into n8n:
+**Workflow menu → Import from File**
+
+[📖 Importing guide](../../../docs/importing-templates.md) · [🔑 Credential setup](../../../docs/credential-setup.md)

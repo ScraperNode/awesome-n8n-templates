@@ -1,6 +1,6 @@
 # 🎣 Streamline data from an n8n form into Google Sheet, Airtable and Email Sending
 
-> ⚡ **6,071 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **6,359 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

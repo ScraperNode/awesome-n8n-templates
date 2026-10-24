@@ -1,6 +1,6 @@
 # 🔬 Convert markdown to formatted Notion pages with Mark2Notion
 
-> ⚡ **358 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **449 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

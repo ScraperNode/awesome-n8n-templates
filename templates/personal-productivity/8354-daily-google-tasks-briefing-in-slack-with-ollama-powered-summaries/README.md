@@ -1,6 +1,6 @@
 # ⚡ Daily Google Tasks briefing in Slack with Ollama-powered summaries
 
-> ⚡ **212 views** · ⚡ [Personal Productivity](../)
+> ⚡ **224 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

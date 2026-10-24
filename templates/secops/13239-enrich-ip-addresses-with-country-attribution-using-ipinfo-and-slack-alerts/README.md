@@ -1,6 +1,6 @@
 # 🔒 Enrich IP addresses with country attribution using IPinfo and Slack alerts
 
-> ⚡ **8 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **164 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

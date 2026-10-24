@@ -1,6 +1,6 @@
 # 👥 Weekly coffee chat (Mattermost version)
 
-> ⚡ **909 views** · 👥 [HR & Recruitment](../)
+> ⚡ **948 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

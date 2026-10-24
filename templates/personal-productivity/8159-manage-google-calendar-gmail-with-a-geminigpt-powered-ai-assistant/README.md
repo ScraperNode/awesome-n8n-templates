@@ -1,6 +1,6 @@
 # ⚡ Manage Google Calendar & Gmail with a Gemini/GPT powered AI assistant
 
-> ⚡ **863 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,193 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

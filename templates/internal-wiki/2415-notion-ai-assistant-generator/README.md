@@ -1,6 +1,6 @@
 # 📖 Notion AI assistant generator
 
-> ⚡ **48,744 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **50,208 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

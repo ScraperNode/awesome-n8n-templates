@@ -1,6 +1,6 @@
 # 💬 Auto-translate incoming Gmail emails to English with OpenAI GPT-3.5
 
-> ⚡ **167 views** · 💬 [Support Chatbots](../)
+> ⚡ **191 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

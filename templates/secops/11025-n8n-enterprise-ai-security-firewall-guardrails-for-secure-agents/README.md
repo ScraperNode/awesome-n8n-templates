@@ -1,6 +1,6 @@
 # 🔒 n8n enterprise AI security firewall — guardrails for secure agents
 
-> ⚡ **124 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **253 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Send personalized HTML welcome emails to new Xero contacts via SMTP
 
-> ⚡ **59 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **73 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

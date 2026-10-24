@@ -1,6 +1,6 @@
 # 🎣 Route event sales leads with Gmail, Google Gemini, Sheets and Salesforce
 
-> ⚡ **134 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **205 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

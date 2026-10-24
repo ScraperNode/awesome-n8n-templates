@@ -1,6 +1,6 @@
 # ⚒️ Get, create, upadte profiles 🛠️ Humantic AI tool MCP server
 
-> ⚡ **130 views** · ⚒️ [Engineering](../)
+> ⚡ **152 views** · ⚒️ [Engineering](../)
 
 ## Description
 

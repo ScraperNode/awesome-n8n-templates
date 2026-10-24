@@ -1,6 +1,6 @@
 # 🎫 Automatically create JIRA issues from Outlook email support requests
 
-> ⚡ **3,916 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **4,580 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

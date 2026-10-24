@@ -1,6 +1,6 @@
 # 🧾 Automated invoice payment reminders with Google Sheets and Gmail
 
-> ⚡ **832 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,084 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

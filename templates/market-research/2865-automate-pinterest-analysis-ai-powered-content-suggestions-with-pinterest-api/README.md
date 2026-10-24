@@ -1,6 +1,6 @@
 # 📊 Automate Pinterest analysis & AI-powered content suggestions with Pinterest API
 
-> ⚡ **5,254 views** · 📊 [Market Research & Insights](../)
+> ⚡ **5,679 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

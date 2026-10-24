@@ -1,6 +1,6 @@
 # ✨ Voice Creation, TTS, Sound Effects, Voicechanger & more! 🎧 Elevenlabs MCP Server
 
-> ⚡ **1,303 views** · ✨ [AI & LLMs](../)
+> ⚡ **1,331 views** · ✨ [AI & LLMs](../)
 
 ## Description
 

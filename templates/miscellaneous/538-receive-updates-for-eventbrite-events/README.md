@@ -1,6 +1,6 @@
 # 🔧 Receive updates for Eventbrite events
 
-> ⚡ **838 views** · 🔧 [Miscellaneous](../)
+> ⚡ **882 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

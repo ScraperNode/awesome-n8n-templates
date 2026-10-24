@@ -1,6 +1,6 @@
 # 🔒 Real-time security threat dashboard with Google Sheets, AI risk analysis & email alerts
 
-> ⚡ **158 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **215 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

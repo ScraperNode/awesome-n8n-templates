@@ -1,6 +1,6 @@
 # ⚡ Daily birthday reminders from Google Contacts to Slack
 
-> ⚡ **3,171 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,281 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

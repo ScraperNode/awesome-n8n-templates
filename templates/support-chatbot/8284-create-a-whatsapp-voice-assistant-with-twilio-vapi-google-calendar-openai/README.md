@@ -1,6 +1,6 @@
 # 💬 Create a WhatsApp voice assistant with Twilio, VAPI, Google Calendar & OpenAI
 
-> ⚡ **1,191 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,416 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

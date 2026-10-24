@@ -1,6 +1,6 @@
 # 🔧 🔐 Generate PIX payment QR codes for any Brazilian bank key
 
-> ⚡ **710 views** · 🔧 [Miscellaneous](../)
+> ⚡ **835 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

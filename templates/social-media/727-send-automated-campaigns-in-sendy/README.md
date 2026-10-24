@@ -1,6 +1,6 @@
 # 📱 Send automated campaigns in Sendy
 
-> ⚡ **756 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **779 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

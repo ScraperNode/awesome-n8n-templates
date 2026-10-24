@@ -1,6 +1,6 @@
 # 🎬 Generate images with OpenAI DALL-E via Telegram & log to Google Sheets
 
-> ⚡ **2,935 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,205 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Gamify fitness tracking with GPT-4o-mini multi-agents and Google Sheets
 
-> ⚡ **39 views** · ⚡ [Personal Productivity](../)
+> ⚡ **159 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

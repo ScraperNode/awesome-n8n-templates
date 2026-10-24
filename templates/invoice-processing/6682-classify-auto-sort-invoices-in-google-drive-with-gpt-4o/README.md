@@ -1,6 +1,6 @@
 # 🧾 Classify & auto-sort invoices in Google Drive with GPT-4o
 
-> ⚡ **732 views** · 🧾 [Invoice Processing](../)
+> ⚡ **783 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

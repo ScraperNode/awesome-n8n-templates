@@ -1,6 +1,6 @@
 # 📋 Retrieve a Monday.com row and all data in a single node
 
-> ⚡ **4,059 views** · 📋 [Project Management](../)
+> ⚡ **4,141 views** · 📋 [Project Management](../)
 
 ## Description
 

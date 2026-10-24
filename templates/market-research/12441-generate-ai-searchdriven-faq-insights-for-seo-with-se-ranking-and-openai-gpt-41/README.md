@@ -1,6 +1,6 @@
 # 📊 Generate AI search–driven FAQ insights for SEO with SE Ranking and OpenAI GPT-4.1-mini
 
-> ⚡ **390 views** · 📊 [Market Research & Insights](../)
+> ⚡ **664 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

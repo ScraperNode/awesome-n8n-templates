@@ -1,6 +1,6 @@
 # 🔧 Automate sports betting data with the Odds API
 
-> ⚡ **6,249 views** · 🔧 [Miscellaneous](../)
+> ⚡ **7,347 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

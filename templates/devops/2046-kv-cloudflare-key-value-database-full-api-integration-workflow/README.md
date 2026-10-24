@@ -1,6 +1,6 @@
 # ⚙️ KV - Cloudflare key-value database full API integration workflow
 
-> ⚡ **1,519 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,600 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

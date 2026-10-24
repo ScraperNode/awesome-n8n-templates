@@ -1,6 +1,6 @@
 # ⚡ Automate random chore assignments with Google Sheets and Gmail notifications
 
-> ⚡ **54 views** · ⚡ [Personal Productivity](../)
+> ⚡ **80 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

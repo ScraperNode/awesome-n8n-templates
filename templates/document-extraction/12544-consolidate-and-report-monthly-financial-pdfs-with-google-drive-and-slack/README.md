@@ -1,6 +1,6 @@
 # 🔬 Consolidate and report monthly financial PDFs with Google Drive and Slack
 
-> ⚡ **53 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **104 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

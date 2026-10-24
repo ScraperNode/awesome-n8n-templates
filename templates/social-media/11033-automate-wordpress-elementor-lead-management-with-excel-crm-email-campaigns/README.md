@@ -1,6 +1,6 @@
 # 📱 Automate WordPress Elementor lead management with Excel CRM & email campaigns
 
-> ⚡ **168 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **388 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

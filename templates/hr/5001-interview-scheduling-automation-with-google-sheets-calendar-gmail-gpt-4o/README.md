@@ -1,6 +1,6 @@
 # 👥 Interview Scheduling Automation with Google Sheets, Calendar, Gmail & GPT-4o'
 
-> ⚡ **12,296 views** · 👥 [HR & Recruitment](../)
+> ⚡ **14,079 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

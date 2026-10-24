@@ -1,6 +1,6 @@
 # ⚙️ Monitor workflow audits and failures with InfluxDB dashboard
 
-> ⚡ **582 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **637 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

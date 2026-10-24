@@ -1,6 +1,6 @@
 # 📖 AI-powered company documents Q&A assistant with Google Drive and GPT-4 mini
 
-> ⚡ **159 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **212 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

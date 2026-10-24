@@ -1,6 +1,6 @@
 # 💬 Re-engage HubSpot leads using Azure OpenAI GPT-4o, Gmail and Slack
 
-> ⚡ **64 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **135 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

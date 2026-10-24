@@ -1,6 +1,6 @@
 # ⚡ Rss feed reader that saves the feeds of the last 3 days in Google Sheets
 
-> ⚡ **1,515 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,609 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

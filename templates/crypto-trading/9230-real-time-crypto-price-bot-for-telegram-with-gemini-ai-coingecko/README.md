@@ -1,6 +1,6 @@
 # 📈 Real-time crypto price bot for Telegram with Gemini AI & CoinGecko
 
-> ⚡ **104 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **171 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

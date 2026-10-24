@@ -1,6 +1,6 @@
 # 🎫 Ai email auto-responder system- AI RAG agent for email inbox
 
-> ⚡ **922 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,045 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

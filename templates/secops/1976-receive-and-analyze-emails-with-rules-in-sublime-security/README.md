@@ -1,6 +1,6 @@
 # 🔒 Receive and analyze emails with rules in Sublime Security
 
-> ⚡ **2,271 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,369 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

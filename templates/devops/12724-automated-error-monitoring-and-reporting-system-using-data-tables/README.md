@@ -1,6 +1,6 @@
 # ⚙️ Automated error monitoring and reporting system using data tables
 
-> ⚡ **72 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **363 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Auto-generate product comparison pages with OpenAI & Google Sheets
 
-> ⚡ **1,151 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,270 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

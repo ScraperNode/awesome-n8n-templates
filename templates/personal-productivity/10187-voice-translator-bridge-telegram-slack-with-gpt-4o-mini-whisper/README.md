@@ -1,6 +1,6 @@
 # ⚡ Voice translator bridge (Telegram → Slack) with GPT-4o-mini + Whisper
 
-> ⚡ **297 views** · ⚡ [Personal Productivity](../)
+> ⚡ **397 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

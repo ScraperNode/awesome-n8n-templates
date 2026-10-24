@@ -1,6 +1,6 @@
-# 🤝 Manage creator sponsorship and brand deals with Gmail, OpenAI, Notion and Telegram
+# 🤝 Creator sponsorship and brand deals CRM
 
-> ⚡ **7 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **70 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

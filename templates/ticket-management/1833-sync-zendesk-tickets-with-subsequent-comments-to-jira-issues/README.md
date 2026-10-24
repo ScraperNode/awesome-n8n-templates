@@ -1,6 +1,6 @@
 # 🎫 Sync Zendesk tickets with subsequent comments to Jira issues
 
-> ⚡ **1,991 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **2,030 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

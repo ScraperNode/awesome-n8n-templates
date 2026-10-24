@@ -1,6 +1,6 @@
 # 📊 Research topics using OpenRouter AI agents with Serper search and Jina AI reports
 
-> ⚡ **72 views** · 📊 [Market Research & Insights](../)
+> ⚡ **264 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

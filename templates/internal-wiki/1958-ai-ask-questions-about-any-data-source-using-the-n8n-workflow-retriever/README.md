@@ -1,6 +1,6 @@
 # 📖 AI: Ask questions about any data source (using the n8n workflow retriever)
 
-> ⚡ **10,130 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **10,094 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎯 Automated Trello Board Summarization with GPT-5-Nano
 
-> ⚡ **495 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **530 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

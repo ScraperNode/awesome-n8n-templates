@@ -1,6 +1,6 @@
 # 🤝 Automated client onboarding system with Notion, email & CRM integration
 
-> ⚡ **312 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **447 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

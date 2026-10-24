@@ -1,6 +1,6 @@
 # ⚙️ Monitor multi-cloud costs and enforce policies with OpenAI and Slack alerts
 
-> ⚡ **28 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **50 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📁 Compress and archive old Google Drive PDFs to AWS S3 cold storage with Slack reports
 
-> ⚡ **3 views** · 📁 [File Management](../)
+> ⚡ **48 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 Send weather alerts to your mobile phone with OpenWeatherMap and SIGNL4
 
-> ⚡ **1,789 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,838 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

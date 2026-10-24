@@ -1,6 +1,6 @@
 # 🎬 Generate multiple profile picture avatars with free public APIs (no keys)
 
-> ⚡ **201 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **435 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

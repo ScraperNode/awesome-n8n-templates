@@ -1,6 +1,6 @@
 # ⚙️ Generate Weekly Workflow Analytics Reports with n8n API & Email Delivery
 
-> ⚡ **407 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **836 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

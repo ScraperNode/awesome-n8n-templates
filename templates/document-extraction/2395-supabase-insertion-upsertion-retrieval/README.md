@@ -1,6 +1,6 @@
 # 🔬 Supabase insertion & upsertion & retrieval
 
-> ⚡ **29,195 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **29,306 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

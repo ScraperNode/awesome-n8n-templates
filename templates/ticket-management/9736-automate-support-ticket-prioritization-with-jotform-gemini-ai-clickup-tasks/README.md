@@ -1,6 +1,6 @@
 # 🎫 Automate support ticket prioritization with Jotform, Gemini AI, ClickUp tasks
 
-> ⚡ **213 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **277 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

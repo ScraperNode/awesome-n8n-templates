@@ -1,6 +1,6 @@
 # ⚡ Start a Whereby video call from Mattermost
 
-> ⚡ **480 views** · ⚡ [Personal Productivity](../)
+> ⚡ **504 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Automate weekly Hollywood film briefing via Tavily and Gemini
 
-> ⚡ **3,212 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **4,289 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

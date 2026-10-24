@@ -1,6 +1,6 @@
 # 🔬 Google Maps reviews to Google Sheets sync using SerpApi
 
-> ⚡ **658 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **729 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

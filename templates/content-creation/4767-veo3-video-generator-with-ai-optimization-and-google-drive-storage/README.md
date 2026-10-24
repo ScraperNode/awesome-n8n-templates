@@ -1,6 +1,6 @@
 # 🎬 VEO3 video generator with AI optimization and Google Drive storage
 
-> ⚡ **20,972 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **24,773 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

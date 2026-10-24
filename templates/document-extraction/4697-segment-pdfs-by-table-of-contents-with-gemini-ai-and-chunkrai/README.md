@@ -1,6 +1,6 @@
 # 🔬 Segment PDFs by table of contents with Gemini AI and Chunkr.ai
 
-> ⚡ **662 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **749 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

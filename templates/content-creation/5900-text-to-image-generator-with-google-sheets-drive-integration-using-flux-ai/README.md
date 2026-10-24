@@ -1,6 +1,6 @@
 # 🎬 Text-to-image generator with Google Sheets & Drive integration using Flux AI
 
-> ⚡ **1,169 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,250 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

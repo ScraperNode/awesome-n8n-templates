@@ -1,6 +1,6 @@
 # 🎬 Generate AI images with Telegram bot & auto-publish to social media using Nano Banana PRO
 
-> ⚡ **1,334 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,271 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

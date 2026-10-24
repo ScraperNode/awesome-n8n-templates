@@ -1,6 +1,6 @@
 # 📱 Get daily exercise plan with Flex Message via LINE
 
-> ⚡ **2,481 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,268 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

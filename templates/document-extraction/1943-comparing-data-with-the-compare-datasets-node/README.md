@@ -1,6 +1,6 @@
 # 🔬 Comparing data with the Compare Datasets node
 
-> ⚡ **6,288 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **6,553 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Search hardware inventory with Supabase vector RAG and Google Gemini
 
-> ⚡ **104 views** · 💬 [Support Chatbots](../)
+> ⚡ **267 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Generate PDF documents from HTML with PDF Generator API, Gmail and Supabase
 
-> ⚡ **184 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **329 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

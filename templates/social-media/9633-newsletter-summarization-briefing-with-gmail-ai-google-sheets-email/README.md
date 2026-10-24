@@ -1,6 +1,6 @@
 # 📱 Newsletter summarization & briefing with Gmail, AI, Google Sheets & Email
 
-> ⚡ **1,891 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,599 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

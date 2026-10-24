@@ -1,6 +1,6 @@
 # 📖 Turn a YouTube channel into a second brain with Neo4j GraphRAG and GPT-4o-mini
 
-> ⚡ **199 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **772 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 > 💡 **Pro Tip** — YouTube's API quotas can be a bottleneck when you're pulling data at scale. [ScraperNode](https://scrapernode.com/youtube) is a community node with dedicated scrapers for [channels](https://scrapernode.com/youtube/scrapers/channels), [videos](https://scrapernode.com/youtube/scrapers/videos), and [comments](https://scrapernode.com/youtube/scrapers/comments) — no quota limits, just structured data.
 >

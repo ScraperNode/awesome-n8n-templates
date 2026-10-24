@@ -1,6 +1,6 @@
 # 👥 Match CVs to job descriptions with Gemini analysis & email reports
 
-> ⚡ **685 views** · 👥 [HR & Recruitment](../)
+> ⚡ **835 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

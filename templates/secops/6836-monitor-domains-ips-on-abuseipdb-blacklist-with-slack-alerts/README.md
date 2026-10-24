@@ -1,6 +1,6 @@
 # 🔒 Monitor domains & IPs on AbuseIPDB blacklist with Slack alerts
 
-> ⚡ **523 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **612 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

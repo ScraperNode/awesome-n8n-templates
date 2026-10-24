@@ -1,6 +1,6 @@
 # 🎬 Generate natural health remedies guides with Claude AI & auto quality assurance
 
-> ⚡ **42 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **88 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

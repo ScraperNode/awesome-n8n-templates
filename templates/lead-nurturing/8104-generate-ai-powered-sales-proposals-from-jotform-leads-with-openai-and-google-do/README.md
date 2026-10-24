@@ -1,6 +1,6 @@
 # 💬 Generate AI-powered sales proposals from JotForm leads with OpenAI and Google Docs
 
-> ⚡ **326 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **334 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

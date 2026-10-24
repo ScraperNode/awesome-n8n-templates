@@ -1,6 +1,6 @@
 # ⚡ Simple expense tracker with n8n chat, AI agent and Google Sheets
 
-> ⚡ **16,077 views** · ⚡ [Personal Productivity](../)
+> ⚡ **17,082 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

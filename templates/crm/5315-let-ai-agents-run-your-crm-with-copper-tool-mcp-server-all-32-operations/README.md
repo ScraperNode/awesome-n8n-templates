@@ -1,6 +1,6 @@
 # 🤝 Let AI agents run your CRM with Copper Tool MCP Server 💪 all 32 operations
 
-> ⚡ **193 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **238 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

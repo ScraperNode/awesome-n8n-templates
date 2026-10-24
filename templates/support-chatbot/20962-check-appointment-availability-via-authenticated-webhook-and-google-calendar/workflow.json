@@ -1,0 +1,306 @@
+{
+  "name": "Check appointment availability in Google Calendar",
+  "nodes": [
+    {
+      "id": "template-node-1",
+      "name": "Setup Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -1160
+      ],
+      "parameters": {
+        "width": 1280,
+        "height": 780,
+        "content": "## Check appointment availability in Google Calendar\n\nCheck a proposed appointment interval through an authenticated webhook. This workflow validates the requested times, reads Google Calendar availability, and returns a structured available or busy result. It suits booking forms, voice assistants, chat assistants, and internal scheduling tools that already have a proposed start and end time.\n\n### Setup\n1. Import the workflow and leave it inactive while configuring it.\n2. In Receive Request, create a Header Auth credential with your chosen header name and secret value. Set a unique webhook path. Keep the secret in credentials and in your calling application, never in the workflow JSON.\n3. In Check Calendar, connect your Google Calendar OAuth credential and replace YOUR_CALENDAR_ID with a calendar that credential can access. Start with a dedicated test calendar.\n4. Send Content-Type: application/json and the configured authentication header. The request body needs start and end, such as {\"start\":\"2030-01-15T14:00:00-06:00\",\"end\":\"2030-01-15T14:30:00-06:00\"}. Replace these example dates with a future interval you intend to test.\n5. Test one free interval and one busy interval. Test invalid times and a provider permission failure. Verify that a provider failure never returns an available result.\n6. Activate only after these checks, then use the production webhook URL shown by n8n.\n\nHTTP 200 returns status available or busy, a boolean available, and the normalized UTC start and end. HTTP 400 returns invalid_request and validation errors. HTTP 502 returns unavailable without claiming that the interval is free. This is a snapshot for one interval. It neither generates a slot catalogue nor holds or creates an appointment. Calendar state can change after the check. Successful, error, and manual execution saving are disabled in the export; review your instance logging and retention before using real requests. Prepared by Benian Technologies: https://benian.ai/integrations/n8n-automation"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "template-node-2",
+      "name": "Receive Request",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "template-calendar-availability-entry",
+      "parameters": {
+        "path": "template-calendar-availability",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "template-node-3",
+      "name": "Validate Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const b = $input.first().json.body || {};\nconst errors = [];\nconst parseInstant = value => {\n  if (typeof value !== 'string') return null;\n  const match = value.match(/^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{1,3}))?(Z|[+-]\\d{2}:\\d{2})$/);\n  if (!match) return null;\n  const [year,month,day,hour,minute,second] = match.slice(1,7).map(Number);\n  const leapYear = year%4===0 && (year%100!==0 || year%400===0);\n  const days = [31,leapYear ? 29 : 28,31,30,31,30,31,31,30,31,30,31];\n  if (month<1 || month>12 || day<1 || day>days[month-1] || hour>23 || minute>59 || second>59) return null;\n  const offset = match[8];\n  if (offset!=='Z' && (Number(offset.slice(1,3))>23 || Number(offset.slice(4,6))>59)) return null;\n  const parsed = new Date(value);\n  return Number.isFinite(parsed.getTime()) ? parsed : null;\n};\nconst start = parseInstant(b.start);\nconst end = parseInstant(b.end);\nif (!start || !end) errors.push('start and end must be real RFC3339 dates with seconds and an explicit offset');\nelse {\n  if (start <= new Date()) errors.push('start must be in the future');\n  if (end <= start || end-start > 24*60*60*1000) errors.push('The interval must be positive and at most one day');\n}\n\nreturn [{ json: { valid: errors.length===0, errors, request: { start: errors.length ? null : start.toISOString(), end: errors.length ? null : end.toISOString(),  } } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "template-node-4",
+      "name": "Request Is Valid",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "condition-valid",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "template-node-5",
+      "name": "Check Calendar",
+      "type": "n8n-nodes-base.googleCalendar",
+      "onError": "continueErrorOutput",
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "outputFormat": "availability"
+        },
+        "timeMax": "={{ $('Validate Request').first().json.request.end }}",
+        "timeMin": "={{ $('Validate Request').first().json.request.start }}",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_CALENDAR_ID"
+        },
+        "resource": "calendar",
+        "operation": "availability"
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "template-node-6",
+      "name": "Format Availability",
+      "type": "n8n-nodes-base.code",
+      "onError": "continueErrorOutput",
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "jsCode": "if (typeof $json.available !== 'boolean') throw new Error('No availability result');\nconst interval = $('Validate Request').first().json.request;\nreturn [{ json: { status: $json.available ? 'available' : 'busy', available: $json.available, start: interval.start, end: interval.end } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "template-node-7",
+      "name": "Return Availability",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        },
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "template-node-8",
+      "name": "Return Invalid",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        720,
+        260
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 400
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'invalid_request', errors: $json.errors } }}"
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "template-node-9",
+      "name": "Return Provider Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        960,
+        260
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 502
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'unavailable', message: 'The calendar could not be checked. No availability claim was made.' } }}"
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "public-guide-calendar-availability-1",
+      "name": "Validate the interval",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -320
+      ],
+      "parameters": {
+        "width": 600,
+        "height": 240,
+        "content": "## Validate the interval\n\nSend start and end in the JSON body. Use complete timestamps with seconds and Z or a numeric UTC offset. Start must be in the future; duration must be greater than zero and at most 24 hours. Invalid requests stop before Google Calendar."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "public-guide-calendar-availability-2",
+      "name": "Configure the calendar",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        680,
+        -320
+      ],
+      "parameters": {
+        "width": 600,
+        "height": 240,
+        "content": "## Configure the calendar\n\nSelect a Google Calendar OAuth credential and replace YOUR_CALENDAR_ID. Use a dedicated test calendar first. This node reads availability only; it does not reserve or create an event."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "public-guide-calendar-availability-3",
+      "name": "Interpret the response",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        680,
+        500
+      ],
+      "parameters": {
+        "width": 600,
+        "height": 260,
+        "content": "## Interpret the response\n\n200: available or busy with a boolean result.\n400: invalid_request.\n502: unavailable, with no availability claim.\n\nA free result is a snapshot. Recheck before booking and account for concurrent calendar changes."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "settings": {
+    "timezone": "UTC",
+    "executionOrder": "v1",
+    "saveManualExecutions": false,
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none"
+  },
+  "connections": {
+    "Check Calendar": {
+      "main": [
+        [
+          {
+            "node": "Format Availability",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Provider Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive Request": {
+      "main": [
+        [
+          {
+            "node": "Validate Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Check Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Request": {
+      "main": [
+        [
+          {
+            "node": "Request Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Availability": {
+      "main": [
+        [
+          {
+            "node": "Return Availability",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Provider Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

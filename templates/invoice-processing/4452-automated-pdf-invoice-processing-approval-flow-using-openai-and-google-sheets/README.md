@@ -1,6 +1,6 @@
 # 🧾 Automated PDF invoice processing & approval flow using OpenAI and Google Sheets
 
-> ⚡ **13,175 views** · 🧾 [Invoice Processing](../)
+> ⚡ **14,305 views** · 🧾 [Invoice Processing](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >

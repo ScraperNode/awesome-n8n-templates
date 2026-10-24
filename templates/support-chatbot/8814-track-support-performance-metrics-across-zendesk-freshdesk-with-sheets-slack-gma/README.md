@@ -1,6 +1,6 @@
 # 💬 Track support performance metrics across Zendesk & Freshdesk with Sheets, Slack & Gmail
 
-> ⚡ **300 views** · 💬 [Support Chatbots](../)
+> ⚡ **482 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

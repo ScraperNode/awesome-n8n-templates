@@ -1,6 +1,6 @@
 # 🤝 Verify mailing address deliverability of contacts in Keap/Infusionsoft using Lob
 
-> ⚡ **568 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **581 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

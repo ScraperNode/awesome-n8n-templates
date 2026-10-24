@@ -1,6 +1,6 @@
 # 🤝 Analyze sales deal outcomes with Azure OpenAI and Google Sheets reporting
 
-> ⚡ **61 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **81 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

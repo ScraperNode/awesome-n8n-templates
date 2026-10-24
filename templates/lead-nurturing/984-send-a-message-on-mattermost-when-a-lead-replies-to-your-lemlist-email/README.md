@@ -1,6 +1,6 @@
 # 💬 Send a message on Mattermost when a lead replies to your Lemlist email
 
-> ⚡ **648 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **659 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

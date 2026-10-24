@@ -1,6 +1,6 @@
 # 📋 Create Nextcloud Deck Card from IMAP email
 
-> ⚡ **2,116 views** · 📋 [Project Management](../)
+> ⚡ **2,176 views** · 📋 [Project Management](../)
 
 ## Description
 

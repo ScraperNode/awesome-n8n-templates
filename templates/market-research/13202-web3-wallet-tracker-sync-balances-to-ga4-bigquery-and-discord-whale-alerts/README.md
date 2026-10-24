@@ -1,6 +1,6 @@
 # 📊 Web3 Wallet Tracker: Sync Balances to GA4, BigQuery, and Discord Whale Alerts
 
-> ⚡ **15 views** · 📊 [Market Research & Insights](../)
+> ⚡ **110 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

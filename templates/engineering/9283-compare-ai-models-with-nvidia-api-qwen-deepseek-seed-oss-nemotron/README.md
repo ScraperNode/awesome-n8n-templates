@@ -1,6 +1,6 @@
 # ⚒️ Compare AI models with Nvidia API: Qwen, DeepSeek, Seed-OSS & Nemotron
 
-> ⚡ **345 views** · ⚒️ [Engineering](../)
+> ⚡ **640 views** · ⚒️ [Engineering](../)
 
 ## Description
 

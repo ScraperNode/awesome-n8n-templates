@@ -1,6 +1,6 @@
 # 📁 Synchronize Excel or Google Sheets with Postgres (bi-directional)
 
-> ⚡ **720 views** · 📁 [File Management](../)
+> ⚡ **856 views** · 📁 [File Management](../)
 
 ## Description
 

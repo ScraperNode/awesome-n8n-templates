@@ -1,6 +1,6 @@
 # 📊 Export search console results to Google Sheets
 
-> ⚡ **26,283 views** · 📊 [Market Research & Insights](../)
+> ⚡ **36,535 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

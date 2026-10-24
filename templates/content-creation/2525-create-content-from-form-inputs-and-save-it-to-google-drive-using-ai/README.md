@@ -1,6 +1,6 @@
 # 🎬 Create content from form inputs and save it to Google Drive using AI
 
-> ⚡ **11,619 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **12,090 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

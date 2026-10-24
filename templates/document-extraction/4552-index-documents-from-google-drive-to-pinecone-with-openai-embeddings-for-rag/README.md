@@ -1,6 +1,6 @@
 # 🔬 Index Documents from Google Drive to Pinecone with OpenAI Embeddings for RAG
 
-> ⚡ **3,780 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **3,940 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

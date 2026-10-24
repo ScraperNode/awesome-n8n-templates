@@ -1,6 +1,6 @@
 # 💬 Automated DHL shipment tracking bot for web forms and email inquiries
 
-> ⚡ **3,945 views** · 💬 [Support Chatbots](../)
+> ⚡ **4,251 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

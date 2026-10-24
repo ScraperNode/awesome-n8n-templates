@@ -1,6 +1,6 @@
 # 📊 Monitor customer risk and AI feedback using PostgreSQL, Gmail and Discord
 
-> ⚡ **20 views** · 📊 [Market Research & Insights](../)
+> ⚡ **45 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

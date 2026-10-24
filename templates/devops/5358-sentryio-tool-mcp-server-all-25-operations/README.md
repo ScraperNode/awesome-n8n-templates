@@ -1,6 +1,6 @@
 # ⚙️ 🛠️ Sentry.io tool MCP server 💪 all 25 operations
 
-> ⚡ **147 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **174 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

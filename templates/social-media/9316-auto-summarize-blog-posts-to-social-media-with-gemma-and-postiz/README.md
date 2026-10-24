@@ -1,6 +1,6 @@
 # 📱 Auto-summarize blog posts to social media with Gemma and Postiz
 
-> ⚡ **629 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **946 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

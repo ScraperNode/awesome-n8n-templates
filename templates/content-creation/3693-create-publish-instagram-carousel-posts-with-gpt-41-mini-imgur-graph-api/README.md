@@ -1,6 +1,6 @@
 # 🎬 Create & Publish Instagram Carousel Posts with GPT-4.1-mini, Imgur & Graph API
 
-> ⚡ **1,913 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,422 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

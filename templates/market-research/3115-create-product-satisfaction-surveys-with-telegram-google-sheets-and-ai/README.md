@@ -1,6 +1,6 @@
 # 📊 Create product satisfaction surveys with Telegram, Google Sheets and AI
 
-> ⚡ **6,562 views** · 📊 [Market Research & Insights](../)
+> ⚡ **6,884 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

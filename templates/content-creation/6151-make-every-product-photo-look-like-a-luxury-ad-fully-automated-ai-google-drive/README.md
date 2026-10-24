@@ -1,6 +1,6 @@
 # 🎬 Make every product photo look like a luxury ad fully automated AI + google drive
 
-> ⚡ **2,599 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,278 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

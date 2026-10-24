@@ -1,6 +1,6 @@
 # ⚡ Automate email & calendar management with Gmail, Google Calendar & GPT-4o AI
 
-> ⚡ **20,511 views** · ⚡ [Personal Productivity](../)
+> ⚡ **22,158 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

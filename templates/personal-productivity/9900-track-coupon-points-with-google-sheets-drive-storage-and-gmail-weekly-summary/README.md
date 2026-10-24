@@ -1,6 +1,6 @@
 # ⚡ Track coupon points with Google Sheets, Drive Storage, and Gmail weekly summary
 
-> ⚡ **74 views** · ⚡ [Personal Productivity](../)
+> ⚡ **92 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

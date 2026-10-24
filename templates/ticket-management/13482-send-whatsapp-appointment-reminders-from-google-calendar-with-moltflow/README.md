@@ -1,6 +1,6 @@
 # 🎫 Send WhatsApp appointment reminders from Google Calendar with MoltFlow
 
-> ⚡ **21 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **338 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

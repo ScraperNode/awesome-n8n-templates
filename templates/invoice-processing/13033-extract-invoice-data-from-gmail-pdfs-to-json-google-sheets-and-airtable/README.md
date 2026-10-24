@@ -1,6 +1,6 @@
 # 🧾 Extract invoice data from Gmail PDFs to JSON, Google Sheets and Airtable
 
-> ⚡ **53 views** · 🧾 [Invoice Processing](../)
+> ⚡ **155 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

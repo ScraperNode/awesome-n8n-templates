@@ -1,6 +1,6 @@
 # 🧾 Generate custom branded PDF invoices from QuickBooks and email to clients
 
-> ⚡ **40 views** · 🧾 [Invoice Processing](../)
+> ⚡ **59 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Automate ITSM ticket classification and resolution using Gemini, Qdrant and ServiceNow
 
-> ⚡ **2,054 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **3,876 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ 🛠️ Jina AI tool MCP server 💪 all 3 operations
 
-> ⚡ **308 views** · ⚒️ [Engineering](../)
+> ⚡ **336 views** · ⚒️ [Engineering](../)
 
 ## Description
 

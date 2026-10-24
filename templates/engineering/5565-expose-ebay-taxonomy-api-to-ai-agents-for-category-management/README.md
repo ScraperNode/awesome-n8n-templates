@@ -1,6 +1,6 @@
 # ⚒️ Expose eBay taxonomy API to AI agents for category management
 
-> ⚡ **135 views** · ⚒️ [Engineering](../)
+> ⚡ **147 views** · ⚒️ [Engineering](../)
 
 ## Description
 

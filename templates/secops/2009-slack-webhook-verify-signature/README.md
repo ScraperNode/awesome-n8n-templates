@@ -1,6 +1,6 @@
 # 🔒 Slack webhook - verify signature
 
-> ⚡ **2,035 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,141 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

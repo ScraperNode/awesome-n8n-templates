@@ -1,6 +1,6 @@
 # ⚡ Track meal nutrition from meal photos with LINE, Google Gemini and Google Sheets
 
-> ⚡ **190 views** · ⚡ [Personal Productivity](../)
+> ⚡ **285 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

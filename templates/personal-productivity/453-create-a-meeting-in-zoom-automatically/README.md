@@ -1,6 +1,6 @@
 # ⚡ Create a meeting in Zoom automatically
 
-> ⚡ **1,885 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,937 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

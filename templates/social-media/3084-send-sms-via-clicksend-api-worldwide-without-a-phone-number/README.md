@@ -1,6 +1,6 @@
 # 📱 Send SMS via ClickSend API worldwide without a phone number
 
-> ⚡ **2,517 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,785 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

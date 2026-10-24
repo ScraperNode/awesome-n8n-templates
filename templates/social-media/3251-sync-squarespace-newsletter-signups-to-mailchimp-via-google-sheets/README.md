@@ -1,6 +1,6 @@
 # 📱 Sync Squarespace newsletter signups to Mailchimp via Google Sheets
 
-> ⚡ **519 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **538 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Analyze & publish GCE O-Level Math predictions with Perplexity AI to WordPress & Slack
 
-> ⚡ **99 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **137 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

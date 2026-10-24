@@ -1,6 +1,6 @@
 # 🔒 Analyze email headers for IP reputation and spoofing detection - Outlook
 
-> ⚡ **5,361 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **5,653 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ WhatsApp expense tracker with multi-input (text, image & audio)
 
-> ⚡ **1,247 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,369 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

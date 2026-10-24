@@ -1,6 +1,6 @@
 # 👥 Automate job post expiry reminders with Google Sheets, HTTP checks & Gmail
 
-> ⚡ **260 views** · 👥 [HR & Recruitment](../)
+> ⚡ **321 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

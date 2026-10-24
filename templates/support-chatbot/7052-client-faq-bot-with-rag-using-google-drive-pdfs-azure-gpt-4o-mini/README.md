@@ -1,6 +1,6 @@
 # 💬 Client FAQ bot with RAG using Google Drive PDFs & Azure GPT-4o-mini
 
-> ⚡ **190 views** · 💬 [Support Chatbots](../)
+> ⚡ **212 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Enrich new Intercom users with contact details and more from ExactBuyer
 
-> ⚡ **1,053 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,087 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

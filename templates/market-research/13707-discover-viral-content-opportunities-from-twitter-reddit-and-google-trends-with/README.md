@@ -1,6 +1,6 @@
 # 📊 Discover viral content opportunities from Twitter, Reddit and Google Trends with Claude AI
 
-> ⚡ **34 views** · 📊 [Market Research & Insights](../)
+> ⚡ **363 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >

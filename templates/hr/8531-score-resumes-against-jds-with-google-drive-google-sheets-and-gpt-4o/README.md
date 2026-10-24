@@ -1,6 +1,6 @@
 # 👥 Score resumes against JDs with Google Drive, Google Sheets, and GPT-4o
 
-> ⚡ **204 views** · 👥 [HR & Recruitment](../)
+> ⚡ **218 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

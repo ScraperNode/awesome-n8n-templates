@@ -1,6 +1,6 @@
 # 📊 Collect conference feedback with Forms and log to Excel OneDrive with Outlook notifications
 
-> ⚡ **2,111 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,327 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

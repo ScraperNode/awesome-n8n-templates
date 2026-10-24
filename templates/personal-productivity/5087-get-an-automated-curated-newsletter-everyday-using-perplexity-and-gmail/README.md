@@ -1,6 +1,6 @@
 # ⚡ Get an automated, curated newsletter everyday using Perplexity and Gmail
 
-> ⚡ **2,350 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,435 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

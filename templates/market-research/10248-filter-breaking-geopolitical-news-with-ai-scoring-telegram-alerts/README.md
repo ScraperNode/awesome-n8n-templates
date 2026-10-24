@@ -1,6 +1,6 @@
 # 📊 Filter breaking geopolitical news with AI scoring & Telegram alerts
 
-> ⚡ **676 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,006 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

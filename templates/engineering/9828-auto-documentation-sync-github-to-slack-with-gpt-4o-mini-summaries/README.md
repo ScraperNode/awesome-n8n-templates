@@ -1,6 +1,6 @@
 # ⚒️ Auto documentation sync: GitHub to Slack with GPT-4o mini summaries
 
-> ⚡ **96 views** · ⚒️ [Engineering](../)
+> ⚡ **105 views** · ⚒️ [Engineering](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

@@ -1,6 +1,6 @@
 # 🎫 Auto-draft professional email replies with Gmail, AI, and Slack
 
-> ⚡ **52 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **81 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ n8n workflow backup management with Dropbox and Airtable
 
-> ⚡ **1,895 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,892 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

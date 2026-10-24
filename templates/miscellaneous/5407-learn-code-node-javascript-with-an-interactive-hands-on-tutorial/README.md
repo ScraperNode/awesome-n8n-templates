@@ -1,6 +1,6 @@
 # 🔧 🎓 Learn Code Node (JavaScript) with an Interactive Hands-On Tutorial
 
-> ⚡ **46,612 views** · 🔧 [Miscellaneous](../)
+> ⚡ **58,311 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

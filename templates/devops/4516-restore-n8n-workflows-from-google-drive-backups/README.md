@@ -1,6 +1,6 @@
 # ⚙️ Restore n8n workflows from Google Drive backups
 
-> ⚡ **1,103 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,282 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

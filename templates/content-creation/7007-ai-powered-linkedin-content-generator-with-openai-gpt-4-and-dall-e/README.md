@@ -1,6 +1,6 @@
 # 🎬 Ai-powered LinkedIn content generator with OpenAI GPT-4 and DALL-E
 
-> ⚡ **1,647 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,812 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Automate AI video ad generation with Google Veo 3, Gemini, and Airtable
 
-> ⚡ **5,424 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **6,583 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

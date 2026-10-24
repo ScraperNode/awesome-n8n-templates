@@ -1,6 +1,6 @@
 # 🔬 Convert HTML & PDF files to PNG images with CustomJS PDF Toolkit
 
-> ⚡ **4,490 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **5,097 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

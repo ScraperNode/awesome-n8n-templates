@@ -1,6 +1,6 @@
 # ⚒️ Using the merge node - merge by key
 
-> ⚡ **2,457 views** · ⚒️ [Engineering](../)
+> ⚡ **2,523 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Extract & classify invoices & receipts with Gmail, OpenAI and Google Drive
 
-> ⚡ **10,992 views** · 🧾 [Invoice Processing](../)
+> ⚡ **11,836 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

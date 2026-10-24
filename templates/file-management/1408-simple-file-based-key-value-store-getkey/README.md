@@ -1,6 +1,6 @@
 # 📁 Simple file based key value store (GetKey)
 
-> ⚡ **1,142 views** · 📁 [File Management](../)
+> ⚡ **1,161 views** · 📁 [File Management](../)
 
 ## Description
 

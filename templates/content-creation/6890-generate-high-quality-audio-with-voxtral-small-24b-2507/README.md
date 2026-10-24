@@ -1,6 +1,6 @@
 # 🎬 Generate high-quality audio with Voxtral Small 24B 2507
 
-> ⚡ **674 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **782 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

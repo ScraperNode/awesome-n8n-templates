@@ -1,6 +1,6 @@
 # 🤝 Extract meeting tasks from Google Docs to GoHighLevel CRM with GPT-4
 
-> ⚡ **37 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **66 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

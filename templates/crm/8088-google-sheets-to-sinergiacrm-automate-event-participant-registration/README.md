@@ -1,6 +1,6 @@
 # 🤝 Google Sheets to SinergiaCRM: automate event participant registration
 
-> ⚡ **95 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **118 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

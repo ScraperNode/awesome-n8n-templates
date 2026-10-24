@@ -1,6 +1,6 @@
 # 💬 Discord AI chatbot with GPT-4o-mini & Redis memory persistence
 
-> ⚡ **2,278 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,820 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

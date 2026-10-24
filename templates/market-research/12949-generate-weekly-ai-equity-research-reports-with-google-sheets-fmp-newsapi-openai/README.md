@@ -1,6 +1,6 @@
 # 📊 Generate weekly AI equity research reports with Google Sheets, FMP, NewsAPI, OpenAI, and Gmail
 
-> ⚡ **77 views** · 📊 [Market Research & Insights](../)
+> ⚡ **247 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

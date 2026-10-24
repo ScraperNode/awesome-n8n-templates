@@ -1,6 +1,6 @@
 # 🔬 Validate policy compliance and orchestrate approvals with GPT-4o and Slack
 
-> ⚡ **34 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **71 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

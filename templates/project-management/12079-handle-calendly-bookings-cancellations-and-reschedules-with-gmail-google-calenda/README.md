@@ -1,6 +1,6 @@
 # 📋 Handle Calendly bookings, cancellations and reschedules with Gmail, Google Calendar, Sheets and Slack
 
-> ⚡ **85 views** · 📋 [Project Management](../)
+> ⚡ **197 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 Forex & gold trading signal handler for MT5 using webhooks (telegram/discord)
 
-> ⚡ **437 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,043 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Automated execution cleanup system with n8n API and custom retention rules
 
-> ⚡ **973 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,507 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

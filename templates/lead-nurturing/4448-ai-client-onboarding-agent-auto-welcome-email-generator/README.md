@@ -1,6 +1,6 @@
 # 💬 AI client onboarding agent: auto welcome email generator
 
-> ⚡ **2,967 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **3,462 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Monitor asset health and predict maintenance with Anthropic Claude and Slack
 
-> ⚡ **31 views** · ⚒️ [Engineering](../)
+> ⚡ **279 views** · ⚒️ [Engineering](../)
 
 ## Description
 

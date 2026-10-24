@@ -1,6 +1,6 @@
 # 📱 Automate email marketing campaigns with NocoDB & Brevo
 
-> ⚡ **1,271 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,776 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

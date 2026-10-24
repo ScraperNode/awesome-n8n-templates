@@ -1,6 +1,6 @@
 # 📊 Get all members of a Discord server with a specific role
 
-> ⚡ **3,685 views** · 📊 [Market Research & Insights](../)
+> ⚡ **3,831 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

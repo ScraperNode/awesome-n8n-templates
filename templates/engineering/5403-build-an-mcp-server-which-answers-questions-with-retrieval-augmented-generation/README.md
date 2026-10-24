@@ -1,6 +1,6 @@
 # ⚒️ Build an MCP server which answers questions with retrieval augmented generation
 
-> ⚡ **4,338 views** · ⚒️ [Engineering](../)
+> ⚡ **4,996 views** · ⚒️ [Engineering](../)
 
 ## Description
 

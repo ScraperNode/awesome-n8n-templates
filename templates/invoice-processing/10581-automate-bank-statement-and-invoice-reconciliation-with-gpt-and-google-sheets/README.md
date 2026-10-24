@@ -1,6 +1,6 @@
 # 🧾 Automate bank statement and invoice reconciliation with GPT and Google Sheets
 
-> ⚡ **495 views** · 🧾 [Invoice Processing](../)
+> ⚡ **627 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

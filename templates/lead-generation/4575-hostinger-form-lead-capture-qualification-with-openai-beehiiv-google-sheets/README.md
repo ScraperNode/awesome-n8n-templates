@@ -1,6 +1,6 @@
 # 🎣 Hostinger form lead capture & qualification with OpenAI, Beehiiv & Google Sheets
 
-> ⚡ **675 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **770 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

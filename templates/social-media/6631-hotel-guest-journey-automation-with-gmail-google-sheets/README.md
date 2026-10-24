@@ -1,6 +1,6 @@
 # 📱 Hotel guest journey automation with Gmail & Google Sheets
 
-> ⚡ **1,362 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,729 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 AI secretary for scheduling with WhatsApp and Telegram
 
-> ⚡ **404 views** · 💬 [Support Chatbots](../)
+> ⚡ **676 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

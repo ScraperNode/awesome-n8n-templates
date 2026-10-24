@@ -1,6 +1,6 @@
 # 👥 Automate construction site attendance tracking with geofencing, Google Sheets & email alerts
 
-> ⚡ **704 views** · 👥 [HR & Recruitment](../)
+> ⚡ **912 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

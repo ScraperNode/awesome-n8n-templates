@@ -1,6 +1,6 @@
 # 📊 Summarize RSS news with Gemini AI and store in Google Sheets
 
-> ⚡ **958 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,224 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

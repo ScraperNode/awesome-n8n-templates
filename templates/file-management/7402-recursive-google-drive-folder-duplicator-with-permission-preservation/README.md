@@ -1,6 +1,6 @@
 # 📁 Recursive Google Drive folder duplicator with permission preservation
 
-> ⚡ **615 views** · 📁 [File Management](../)
+> ⚡ **727 views** · 📁 [File Management](../)
 
 ## Description
 

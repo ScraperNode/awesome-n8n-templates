@@ -1,6 +1,6 @@
 # 🎬 Create AI video ads from product descriptions using AI Agent and deAPI
 
-> ⚡ **0 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **554 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — Since TikTok doesn't have a public API, getting data usually means fragile HTTP scraping. [ScraperNode](https://scrapernode.com/tiktok) is a community node that gives you clean JSON for [TikTok profiles](https://scrapernode.com/tiktok/scrapers/profiles), [videos](https://scrapernode.com/tiktok/scrapers/posts), and [comments](https://scrapernode.com/tiktok/scrapers/comments) — drop it into your workflow and skip the parsing.
 >
@@ -31,15 +31,15 @@ Producing a video ad typically requires a designer for the visuals, a motion art
 
 ### Requirements
 
-- **Self-hosted n8n instance** (deAPI node is not yet available on n8n Cloud)
+- **n8n instance** (self-hosted or n8n Cloud)
 - [deAPI](https://deapi.ai) account for prompt boosting, image generation, and video generation
 - Anthropic account for the AI Agent
 - Gmail account for email delivery
 
 ### Installing the deAPI Node
 
-1. Go to **Settings** → **Community Nodes**
-2. Install `n8n-nodes-deapi`
+- **n8n Cloud**: Go to **Settings** → **Community Nodes** and toggle the "Verified Community Nodes" option
+- **Self-hosted**: Go to **Settings** → **Community Nodes** and install `n8n-nodes-deapi`
 
 ### Configuration
 

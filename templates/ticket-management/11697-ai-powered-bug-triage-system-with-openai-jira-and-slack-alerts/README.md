@@ -1,6 +1,6 @@
 # 🎫 AI-powered bug triage system with OpenAI, Jira and Slack alerts
 
-> ⚡ **59 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **135 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

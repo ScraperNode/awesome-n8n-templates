@@ -1,6 +1,6 @@
 # ⚒️ Import data from MySQL into Google Sheets
 
-> ⚡ **21,579 views** · ⚒️ [Engineering](../)
+> ⚡ **34,081 views** · ⚒️ [Engineering](../)
 
 ## Description
 

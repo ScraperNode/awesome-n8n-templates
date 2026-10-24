@@ -1,6 +1,6 @@
 # 🎫 AI-powered email replies with spam filtering & FAQ lookup using GPT-4o mini & Pinecone
 
-> ⚡ **1,849 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **2,187 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

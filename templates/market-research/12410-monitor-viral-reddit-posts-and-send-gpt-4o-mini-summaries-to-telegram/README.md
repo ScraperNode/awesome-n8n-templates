@@ -1,6 +1,6 @@
 # 📊 Monitor viral Reddit posts and send GPT-4o-mini summaries to Telegram
 
-> ⚡ **269 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,825 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
 >

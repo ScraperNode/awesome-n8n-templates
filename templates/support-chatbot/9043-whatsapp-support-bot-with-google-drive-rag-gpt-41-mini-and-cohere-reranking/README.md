@@ -1,6 +1,6 @@
 # 💬 WhatsApp support bot with Google Drive RAG, GPT-4.1-mini and Cohere reranking
 
-> ⚡ **889 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,263 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Inventory Tracking Automation for Airtable
 
-> ⚡ **136 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **228 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

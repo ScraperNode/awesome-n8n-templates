@@ -1,6 +1,6 @@
 # 🎫 Automated customer feedback triage with Gemini, Jotform, Google Sheets & Gmail replies
 
-> ⚡ **240 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **403 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

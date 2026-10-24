@@ -1,6 +1,6 @@
 # 🤖 Query Monday.com tasks with natural language using GPT-4o
 
-> ⚡ **502 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **532 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ AI agent to chat with Supabase/PostgreSQL DB
 
-> ⚡ **19,119 views** · ⚒️ [Engineering](../)
+> ⚡ **19,204 views** · ⚒️ [Engineering](../)
 
 ## Description
 

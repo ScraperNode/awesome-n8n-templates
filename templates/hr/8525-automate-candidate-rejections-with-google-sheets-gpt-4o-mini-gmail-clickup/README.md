@@ -1,6 +1,6 @@
 # 👥 Automate candidate rejections with Google Sheets, GPT-4o-mini, Gmail & ClickUp
 
-> ⚡ **56 views** · 👥 [HR & Recruitment](../)
+> ⚡ **79 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

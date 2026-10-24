@@ -1,6 +1,6 @@
 # 🤝 Sales CRM chatbot with GPT-4o-mini, Google Sheets lookup & memory
 
-> ⚡ **452 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **643 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

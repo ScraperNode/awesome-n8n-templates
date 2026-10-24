@@ -1,6 +1,6 @@
 # ⚒️ Avoid rate limiting by batching HTTP requests
 
-> ⚡ **4,497 views** · ⚒️ [Engineering](../)
+> ⚡ **4,529 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Send weekly WooCommerce sales KPIs to Slack and Google Sheets
 
-> ⚡ **6 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **47 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 👥 Automate employee onboarding and Google Workspace account creation with Gmail, Google Sheets, PDFBro and Google Gemini
 
-> ⚡ **50 views** · 👥 [HR & Recruitment](../)
+> ⚡ **163 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎯 Transcribe & analyze Telegram voice messages with AssemblyAI & GPT-4.1 to Gmail
 
-> ⚡ **321 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **409 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

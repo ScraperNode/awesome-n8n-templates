@@ -1,6 +1,6 @@
 # 🎬 Summarize YouTube videos with Gemini AI and send via Telegram
 
-> ⚡ **182 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **284 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — YouTube's API quotas can be a bottleneck when you're pulling data at scale. [ScraperNode](https://scrapernode.com/youtube) is a community node with dedicated scrapers for [channels](https://scrapernode.com/youtube/scrapers/channels), [videos](https://scrapernode.com/youtube/scrapers/videos), and [comments](https://scrapernode.com/youtube/scrapers/comments) — no quota limits, just structured data.
 >
@@ -8,28 +8,30 @@
 
 ## Description
 
-This automated TLDW (Too Long; Didn't Watch) generator using Decodo's scraping API to extract complete video transcripts and metadata, then uses Google Gemini 3 to create intelligent summaries with key points, chapters breakdown, tools mentioned, and actionable takeaways—eliminating hours of manual note-taking and video watching.
+Turn any YouTube video into a 5-minute read. This TLDW (Too Long; Didn't Watch) generator pulls full transcripts and metadata with Decodo's scraping API, then has Google Gemini write intelligent summaries with key points, chapter breakdowns, tools mentioned, and actionable takeaways. No more hours of note-taking.
+
+*Last updated: September 2026.*
 
 ## Why Use This Workflow?
 
-**Time Savings:** Convert a 2-hour video into a readable 5-minute summary, reducing research time by 95%  
-**Comprehensive Coverage:** Captures key points, chapters, tools, quotes, and actionable steps that manual notes often miss  
-**Instant Accessibility:** Receive structured summaries directly in Telegram within 30-60 seconds of sharing a link  
-**Multi-Language Support:** Process transcripts in multiple languages supported by YouTube's auto-caption system  
+**Time Savings:** A 2-hour video becomes a 5-minute summary. Research time down 95%.  
+**Comprehensive Coverage:** Key points, chapters, tools, quotes, and actionable steps that manual notes miss.  
+**Instant Accessibility:** Structured summaries in Telegram within 30-60 seconds of sharing a link.  
+**Multi-Language Support:** Transcripts in multiple languages via YouTube's auto-caption system.  
 
 ## Ideal For
 
-- **Content Creators & Researchers:** Quickly extract insights from competitor videos, educational content, or industry talks without watching hours of footage
-- **Students & Educators:** Generate study notes from lecture recordings, online courses, or tutorial videos with chapter-based breakdowns
-- **Marketing Teams:** Analyze competitor content strategies, extract tools and techniques mentioned, and identify trending topics across multiple videos
-- **Busy Professionals:** Stay updated with conference talks, webinars, or industry updates by reading summaries instead of watching full recordings
+- **Content Creators & Researchers:** Extract insights from competitor videos, educational content, or industry talks without watching hours of footage.
+- **Students & Educators:** Study notes from lectures, online courses, or tutorials with chapter breakdowns.
+- **Marketing Teams:** Competitor strategies, tools and techniques mentioned, trending topics across videos.
+- **Busy Professionals:** Conference talks, webinars, and industry updates as readable summaries.
 
 ## How It Works
 
 1. **Trigger:** User sends any YouTube URL (youtube.com or youtu.be) to a configured Telegram bot
 2. **Data Collection:** Workflow extracts video ID and simultaneously fetches full transcript and metadata (title, channel, views, duration, chapters, tags) via Decodo API
-3. **Processing:** Raw transcript data is extracted and cleaned, while metadata is parsed into structured fields including formatted statistics and chapter timestamps
-4. **AI Processing:** Google Gemini Flash analyzes the transcript to generate a structured summary covering one-line overview, key points, main topics by chapter, tools mentioned, target audience, practical takeaways, and notable quotes
+3. **Processing:** Raw transcript extracted and cleaned, metadata parsed into structured fields with formatted statistics and chapter timestamps
+4. **AI Processing:** Google Gemini Flash analyzes the transcript into a structured summary: one-line overview, key points, main topics by chapter, tools mentioned, target audience, practical takeaways, and notable quotes
 
 ## Setup Guide
 
@@ -37,18 +39,18 @@ This automated TLDW (Too Long; Didn't Watch) generator using Decodo's scraping A
 
 | Requirement | Type | Purpose |
 |-------------|------|---------|
-| [n8n instance](https://n8n.partnerlinks.io/khmuhtadin) | Essential | Workflow execution platform |
-| Telegram Bot API | Essential | Receives video links and delivers summaries |
+| [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin) | Essential | Workflow execution platform |
+| Telegram Bot API | Essential | Receives video links and delivers summaries ([tutorial](https://core.telegram.org/bots/tutorial)) |
 | Decodo Scraper API | Essential | Extracts YouTube transcripts and metadata |
 | Google Gemini API | Essential | AI-powered summary generation |
 
 ### Installation Steps
 
-1. Import the JSON file to your [n8n instance](https://n8n.partnerlinks.io/khmuhtadin)
+1. Import the JSON file to your [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin)
 2. **Configure credentials:**
-   - **Telegram Bot API**: Create a bot via [@BotFather](https://t.me/botfather) on Telegram, obtain the API token, and configure in n8n Telegram credentials
+   - **Telegram Bot API**: Create a bot via [@BotFather](https://t.me/botfather) on Telegram, obtain the API token, and configure in [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) Telegram credentials
    - **Decodo API**: Sign up at [Decodo Dashboard](https://dashboard.decodo.com/web-scraping-api/scraper?target=youtube_transcript), get your API key, create HTTP Header Auth credential with header name "Authorization" and value "Basic [YOUR_API_KEY]"
-   - **Google Gemini API**: Obtain API key from [Google AI Studio](https://makersuite.google.com/app/apikey), configure in n8n Google Palm API credentials
+   - **Google Gemini API**: Obtain API key from [Google AI Studio](https://makersuite.google.com/app/apikey), configure in [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) Google Palm API credentials
 3. **Update environment-specific values:**
    - In the "Alert Admin" node, replace `YOUR_CHAT_ID` with your personal Telegram user ID for error notifications
    - Optionally adjust the `languageCode` in "Set: Video ID & Config" node (default: "en")
@@ -86,9 +88,9 @@ Error handling is isolated on a separate branch triggered by any node failure, f
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| "Not a YouTube URL" error | URL format not recognized | Ensure UR sent contains youtube.com or youtu.be |
+| "Not a YouTube URL" error | URL format not recognized | Ensure URL sent contains youtube.com or youtu.be |
 | No transcript available | Video lacks captions or wrong language | Check video has auto-generated or manual captions change `languageCode` to match available options |
-| Decodo API 401/403 error | Invalid or expired API key | Verify API key in HTTP Header Auth credential. regenerate if needed from Decodo dashboard ||
+| Decodo API 401/403 error | Invalid or expired API key | Verify API key in HTTP Header Auth credential. regenerate if needed from Decodo dashboard |
 | Error notifications not received | Wrong chat ID in Alert Admin node | Get your Telegram user ID from @userinfobot and update the node |
 
 ## Use Case Examples
@@ -100,13 +102,24 @@ Error handling is isolated on a separate branch triggered by any node failure, f
 
 ---
 
-**Created by:** [Khaisa Studio](https://khaisa.studio)  
+### Quick Answers
+**Which languages work?**  
+Any language YouTube captions support. Set `languageCode` (default "en") in the config node.  
+**How long are the chunks?**  
+`maxCharsPerChunk` is 4000 by default. Adjust it to taste.  
+**What if it errors?**  
+Failures go to an isolated branch that alerts the admin without breaking the main flow.  
+
+**Made by:** [khmuhtadin](https://khmuhtadin.com)  
 **Category:** AI-Powered Automation
 **Tags:** YouTube, AI, Telegram, Summarization, Content Analysis, Decodo, Gemini  
-**Need custom workflows?** [Contact us](https://khaisa.studio/contact)
+**Need custom workflows?** [Contact me](https://khmuhtadin.com/contact)
 
 **Connect with the creator:**  
 [Portfolio](https://khmuhtadin.com) • [Workflows](https://khaisa.studio/products/) • [LinkedIn](https://www.linkedin.com/in/khmuhtadin/) • [Medium](https://medium.com/@khaisastudio) • [Threads](https://www.threads.com/@khmuhtadin)
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

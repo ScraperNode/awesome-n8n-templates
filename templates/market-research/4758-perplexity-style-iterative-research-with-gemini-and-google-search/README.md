@@ -1,6 +1,6 @@
 # 📊 Perplexity-style iterative research with Gemini and Google Search
 
-> ⚡ **1,449 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,628 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

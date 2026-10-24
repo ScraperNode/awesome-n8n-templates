@@ -1,6 +1,6 @@
 # 📁 Read multiple files from disk
 
-> ⚡ **4,512 views** · 📁 [File Management](../)
+> ⚡ **4,755 views** · 📁 [File Management](../)
 
 ## Description
 

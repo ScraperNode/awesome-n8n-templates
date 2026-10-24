@@ -1,31 +1,35 @@
 # 🧾  Extract Details from Receipts via Telegram with Tesseract and Llama
 
-> ⚡ **2,390 views** · 🧾 [Invoice Processing](../)
+> ⚡ **2,660 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 
 # Tesseract - Money Mate Workflow Description
 ![Screenshot 20250527 at 14.20.42.png](fileId:1383)
-**Disclaimer**: This template requires the `n8n-nodes-tesseractjs` community node, which is only available on self-hosted n8n instances. You’ll need a self-hosted n8n setup to use this workflow.
+**Disclaimer**: This template requires the `n8n-nodes-tesseractjs` community node, which is only available on self-hosted [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instances. You’ll need a self-hosted [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) setup to use this workflow.
+
+Snap a receipt, get a clean expense summary back. This Telegram-based workflow reads receipt photos with Tesseract OCR, understands text messages directly, and uses AI (LLaMA via OpenRouter) to categorize spending and reply with a structured recap. Free tools only, no tech skills needed.
+
+*Last updated: September 2026.*
 
 ## Who is this for?
-This workflow is designed for individuals, freelancers, or small business owners who want an easy way to track expenses using Telegram. It’s ideal for anyone looking to digitize receipts—whether from photos or text messages—using free tools, without needing advanced technical skills.
+Individuals, freelancers, or small business owners who want an easy way to track expenses over Telegram. Ideal if you want to digitize receipts, from photos or text messages, using free tools and without advanced technical skills.
 
 ## What problem does this workflow solve?
-Manually entering receipt details into a spreadsheet or app is time-consuming and prone to mistakes. This workflow automates the process by extracting information from receipt images or text messages sent via Telegram, categorizing expenses, and sending back a clear, formatted summary. It saves time, reduces errors, and makes expense tracking effortless.
+Typing receipt details into a spreadsheet is slow and error-prone. This workflow extracts the info from receipt images or text messages sent via Telegram, categorizes the expense, and sends back a clear summary. Less time, fewer errors, effortless expense tracking.
 
 ## What this workflow does
-The workflow listens for messages sent to a Telegram bot, which can be either text descriptions of expenses or photos of receipts. If a photo is sent, Tesseract (an open-source text recognition tool) extracts the text. If text is sent, it’s processed directly. An AI model (LLaMA via OpenRouter) analyzes the input, categorizes it into expense types (e.g., Food & Beverages, Household, Transport), and creates a structured summary including store name, date, items, total, and category. The summary is then sent back to the user’s Telegram chat.
+The workflow listens for messages sent to a Telegram bot, either text descriptions of expenses or photos of receipts. Photos go through Tesseract (an open-source text recognition tool); text is processed directly. An AI model (LLaMA via OpenRouter) analyzes the input, categorizes it (e.g., Food & Beverages, Household, Transport), and builds a structured summary with store name, date, items, total, and category, sent back to your Telegram chat.
 
 ## Setup Instructions
-Follow these step-by-step instructions to set up the workflow. No advanced technical knowledge is required, but you’ll need a self-hosted n8n instance.
+Follow these step-by-step instructions to set up the workflow. No advanced technical knowledge is required, but you’ll need a self-hosted [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance.
 
-1. **Set Up a Self-Hosted [n8n Instance](https://n8n.partnerlinks.io/khaisastudio)**:
-   - If you don’t have n8n installed, follow the [n8n self-hosting guide](https://docs.n8n.io/hosting/installation/self-hosting/) to set it up. You can use platforms like Docker or a cloud provider (e.g., DigitalOcean, AWS).
-   - Ensure your n8n instance is running and accessible via a web browser.
+1. **Set Up a Self-Hosted [n8n Instance](https://n8n.partnerlinks.io/creator-khmuhtadin)**:
+   - If you don’t have [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) installed, follow the [n8n self-hosting guide](https://docs.n8n.io/hosting/installation/self-hosting/) to set it up. You can use platforms like Docker or a cloud provider (e.g., DigitalOcean, AWS).
+   - Ensure your [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance is running and accessible via a web browser.
 
 2. **Install the Tesseract Community Node**:
-   - In your n8n instance, go to **Settings &gt; Community Nodes** in the sidebar.
+   - In your [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance, go to **Settings &gt; Community Nodes** in the sidebar.
    - Click **Install a Community Node**, then enter `n8n-nodes-tesseractjs` in the search bar.
    - Click **Install** and wait for confirmation. This node enables receipt image processing.
    - If you encounter issues, check the [n8n community nodes documentation](https://docs.n8n.io/integrations/community-nodes/) for troubleshooting.
@@ -35,31 +39,31 @@ Follow these step-by-step instructions to set up the workflow. No advanced techn
    - Send `/start` to BotFather, then `/newbot` to create your bot.
    - Follow the prompts to name your bot (e.g., “MoneyMateBot”).
    - BotFather will provide a **Bot Token** (e.g., `23872837287:ExampleExampleExample`). Copy this token.
-   - In n8n, go to **Credentials &gt; Add Credential**, select **Telegram API**, and paste the token. Name the credential (e.g., “MoneyMateBot”) and save.
+   - In [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin), go to **Credentials &gt; Add Credential**, select **Telegram API**, and paste the token. Name the credential (e.g., “MoneyMateBot”) and save.
 
 4. **Set Up OpenRouter for AI Processing**:
    - Sign up for a free account at [OpenRouter](https://openrouter.ai/).
    - In your OpenRouter dashboard, generate an **API Key** under the API section.
-   - In n8n, go to **Credentials &gt; Add Credential**, select **OpenRouter API**, and paste the API key. Name it (e.g., “OpenRouter Account”) and save.
+   - In [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin), go to **Credentials &gt; Add Credential**, select **OpenRouter API**, and paste the API key. Name it (e.g., “OpenRouter Account”) and save.
    - The free tier of OpenRouter’s LLaMA model is sufficient for this workflow.
 
 5. **Import and Configure the Workflow**:
    - Download the workflow JSON file (provided separately or copy from the source).
-   - In n8n, go to **Workflows &gt; Import Workflow** and upload the JSON file.
+   - In [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin), go to **Workflows &gt; Import Workflow** and upload the JSON file.
    - Open the imported workflow (“Tesseract - Money Mate”).
    - Ensure the **Telegram Trigger** and **Send Expense Summary** nodes use the Telegram credential you created.
    - Ensure the **AI Analyzer** node uses the OpenRouter credential.
    - Save the workflow.
 
 6. **Test the Workflow**:
-   - Activate the workflow by toggling the **Active** switch in n8n.
+   - Activate the workflow by toggling the **Active** switch in [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin).
    - In Telegram, find your bot (e.g., @MoneyMateBot) and send `/start`.
    - Test with a sample input (see “Example Inputs” below).
-   - Check the n8n workflow execution panel to ensure data flows correctly.
+   - Check the [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) workflow execution panel to ensure data flows correctly.
    - If errors occur, double-check credentials and node connections.
 
 7. **Activate for Continuous Use**:
-   - Once tested, keep the workflow active in n8n.
+   - Once tested, keep the workflow active in [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin).
    - Your bot will now process any text or image sent to it via Telegram.
 
 ## Example Inputs/Formats
@@ -127,8 +131,19 @@ This workflow is 100% free! It leverages:
 
 Enjoy automating your expense tracking without any cost!
 
-*Made by: [khmuhtadin](khmuhtadin.com)*
-**Need a custom?** contact me on **[LinkedIn](https://www.linkedin.com/in/khmuhtadin/)** or **[Web](khmuhtadin.com)**
+### Quick Answers
+**Is it really free?**  
+Yes. Telegram Bot API is free, Tesseract is open-source, and the LLaMA model on OpenRouter has a free tier.  
+**Do I need coding skills?**  
+No. Setup is all clicking through settings, credentials, and import.  
+**Does it run on n8n Cloud?**  
+No. The Tesseract community node needs a self-hosted n8n instance.  
+
+*Made by: [khmuhtadin](https://khmuhtadin.com)*
+**Need a custom?** contact me on **[LinkedIn](https://www.linkedin.com/in/khmuhtadin/)** or **[Web](https://khmuhtadin.com)**
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

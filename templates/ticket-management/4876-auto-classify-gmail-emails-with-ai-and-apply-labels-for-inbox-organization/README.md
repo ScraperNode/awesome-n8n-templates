@@ -1,6 +1,6 @@
 # 🎫 Auto-classify Gmail emails with AI and apply labels for inbox organization
 
-> ⚡ **3,407 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **4,039 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

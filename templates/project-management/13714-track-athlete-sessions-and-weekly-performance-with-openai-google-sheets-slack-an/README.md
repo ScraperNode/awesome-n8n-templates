@@ -1,6 +1,6 @@
 # 📋 Track athlete sessions and weekly performance with OpenAI, Google Sheets, Slack, and email
 
-> ⚡ **18 views** · 📋 [Project Management](../)
+> ⚡ **70 views** · 📋 [Project Management](../)
 
 ## Description
 

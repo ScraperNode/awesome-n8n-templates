@@ -1,6 +1,6 @@
 # 🤝 Get all orders in Shopify
 
-> ⚡ **4,231 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **4,378 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

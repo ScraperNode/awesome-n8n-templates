@@ -1,6 +1,6 @@
 # 🔌 HubSpot Trigger
 
-> **23 templates** using **HubSpot Trigger** in n8n workflows.
+> **31 templates** using **HubSpot Trigger** in n8n workflows.
 
 [⬅️ Back to main index](../../README.md) · [📂 Browse by category](../../templates/)
 
@@ -8,29 +8,37 @@
 
 | # | Template | Category | 👀 Views |
 |--:|----------|----------|-------:|
-| 🏆 1 | [Automate new customer onboarding with HubSpot, Google Calendar, and AI-powered Gmail](../../templates/crm/3958-automate-new-customer-onboarding-with-hubspot-google-calendar-and-ai-powered-gma/) | 🤝 CRM & Sales Operations | 5,380 |
-| 🥇 2 | [AI-powered lead enrichment with Bright Data MCP and Google Sheets](../../templates/lead-generation/4589-ai-powered-lead-enrichment-with-bright-data-mcp-and-google-sheets/) | 🎣 Lead Generation & Enrichment | 5,280 |
-| 🥈 3 | [Validate email of new contacts in Hubspot](../../templates/crm/1461-validate-email-of-new-contacts-in-hubspot/) | 🤝 CRM & Sales Operations | 3,525 |
-| 🥉 4 | [Automate employee onboarding with Slack, Jira, and Google Workspace integration](../../templates/hr/3860-automate-employee-onboarding-with-slack-jira-and-google-workspace-integration/) | 👥 HR & Recruitment | 2,620 |
-| 5 | [Enrich contact information with HubSpot and ClearBit](../../templates/lead-generation/1296-enrich-contact-information-with-hubspot-and-clearbit/) | 🎣 Lead Generation & Enrichment | 2,531 |
-| 6 | [Export new deals from HubSpot to Slack and Airtable](../../templates/crm/1225-export-new-deals-from-hubspot-to-slack-and-airtable/) | 🤝 CRM & Sales Operations | 1,845 |
-| 7 | [Enrich new Hubspot contacts with contact and company data from ExactBuyer](../../templates/lead-generation/2111-enrich-new-hubspot-contacts-with-contact-and-company-data-from-exactbuyer/) | 🎣 Lead Generation & Enrichment | 1,814 |
-| 8 | [Validate website of new companies in HubSpot](../../templates/crm/1463-validate-website-of-new-companies-in-hubspot/) | 🤝 CRM & Sales Operations | 1,505 |
-| 9 | [Receive updates from HubSpot on a new contact creation](../../templates/crm/628-receive-updates-from-hubspot-on-a-new-contact-creation/) | 🤝 CRM & Sales Operations | 1,391 |
-| 10 | [Enrich CRM contact data with LinkedIn profiles using GPT & multi-CRM support](../../templates/lead-generation/4242-enrich-crm-contact-data-with-linkedin-profiles-using-gpt-multi-crm-support/) | 🎣 Lead Generation & Enrichment | 1,091 |
-| 11 | [Automated AI lead enrichment: Hubspot to Explorium for enhanced prospect data](../../templates/lead-generation/4839-automated-ai-lead-enrichment-hubspot-to-explorium-for-enhanced-prospect-data/) | 🎣 Lead Generation & Enrichment | 1,003 |
-| 12 | [Automate HubSpot to Salesforce lead creation with Explorium AI enrichment](../../templates/lead-generation/4836-automate-hubspot-to-salesforce-lead-creation-with-explorium-ai-enrichment/) | 🎣 Lead Generation & Enrichment | 758 |
-| 13 | [Enrich HubSpot companies with Polish CEIDG data using NIP identifiers](../../templates/lead-generation/10125-enrich-hubspot-companies-with-polish-ceidg-data-using-nip-identifiers/) | 🎣 Lead Generation & Enrichment | 372 |
-| 14 | [Automated customer onboarding with HubSpot, Gmail, and AI-powered scheduling](../../templates/lead-nurturing/9036-automated-customer-onboarding-with-hubspot-gmail-and-ai-powered-scheduling/) | 💬 Lead Nurturing & AI Sales Agents | 266 |
-| 15 | [Automatically discover & enrich HubSpot buying groups with Surfe and Google Sheets](../../templates/lead-generation/7258-automatically-discover-enrich-hubspot-buying-groups-with-surfe-and-google-sheets/) | 🎣 Lead Generation & Enrichment | 247 |
-| 16 | [Enrich HubSpot contacts with LinkedIn profiles using SerpAPI, Google Docs and AI](../../templates/lead-generation/8434-enrich-hubspot-contacts-with-linkedin-profiles-using-serpapi-google-docs-and-ai/) | 🎣 Lead Generation & Enrichment | 189 |
-| 17 | [Dynamic Hubspot lead routing with GPT-4 and Airtable sales team distribution](../../templates/crm/10102-dynamic-hubspot-lead-routing-with-gpt-4-and-airtable-sales-team-distribution/) | 🤝 CRM & Sales Operations | 149 |
-| 18 | [Smart CSM assignment & AI welcome emails for HubSpot deal wins with Gmail](../../templates/crm/10398-smart-csm-assignment-ai-welcome-emails-for-hubspot-deal-wins-with-gmail/) | 🤝 CRM & Sales Operations | 139 |
-| 19 | [Send AI revenue forecast alerts from HubSpot via Gmail, Slack and Sheets](../../templates/crm/12674-send-ai-revenue-forecast-alerts-from-hubspot-via-gmail-slack-and-sheets/) | 🤝 CRM & Sales Operations | 46 |
-| 20 | [Personalize creator onboarding in HubSpot with influencers.club and GPT-4](../../templates/lead-generation/13302-personalize-creator-onboarding-in-hubspot-with-influencersclub-and-gpt-4/) | 🎣 Lead Generation & Enrichment | 10 |
-| 21 | [Discover SaaS creators from HubSpot with influencers.club and Gmail/SendGrid](../../templates/lead-generation/13336-discover-saas-creators-from-hubspot-with-influencersclub-and-gmailsendgrid/) | 🎣 Lead Generation & Enrichment | 8 |
-| 22 | [Enrich HubSpot sales sequence contacts with Lusha and route to outreach](../../templates/lead-generation/13346-enrich-hubspot-sales-sequence-contacts-with-lusha-and-route-to-outreach/) | 🎣 Lead Generation & Enrichment | 1 |
-| 23 | [Enrich new HubSpot contacts with Lusha and alert reps in Slack](../../templates/lead-generation/13344-enrich-new-hubspot-contacts-with-lusha-and-alert-reps-in-slack/) | 🎣 Lead Generation & Enrichment | 1 |
+| 🏆 1 | [AI-powered lead enrichment with Bright Data MCP and Google Sheets](../../templates/lead-generation/4589-ai-powered-lead-enrichment-with-bright-data-mcp-and-google-sheets/) | 🎣 Lead Generation & Enrichment | 5,894 |
+| 🥇 2 | [Automate new customer onboarding with HubSpot, Google Calendar, and AI-powered Gmail](../../templates/crm/3958-automate-new-customer-onboarding-with-hubspot-google-calendar-and-ai-powered-gma/) | 🤝 CRM & Sales Operations | 5,754 |
+| 🥈 3 | [Validate email of new contacts in Hubspot](../../templates/crm/1461-validate-email-of-new-contacts-in-hubspot/) | 🤝 CRM & Sales Operations | 3,549 |
+| 🥉 4 | [Automate employee onboarding with Slack, Jira, and Google Workspace integration](../../templates/hr/3860-automate-employee-onboarding-with-slack-jira-and-google-workspace-integration/) | 👥 HR & Recruitment | 2,805 |
+| 5 | [Enrich contact information with HubSpot and ClearBit](../../templates/lead-generation/1296-enrich-contact-information-with-hubspot-and-clearbit/) | 🎣 Lead Generation & Enrichment | 2,650 |
+| 6 | [Export new deals from HubSpot to Slack and Airtable](../../templates/crm/1225-export-new-deals-from-hubspot-to-slack-and-airtable/) | 🤝 CRM & Sales Operations | 1,868 |
+| 7 | [Enrich new Hubspot contacts with contact and company data from ExactBuyer](../../templates/lead-generation/2111-enrich-new-hubspot-contacts-with-contact-and-company-data-from-exactbuyer/) | 🎣 Lead Generation & Enrichment | 1,849 |
+| 8 | [Validate website of new companies in HubSpot](../../templates/crm/1463-validate-website-of-new-companies-in-hubspot/) | 🤝 CRM & Sales Operations | 1,524 |
+| 9 | [Receive updates from HubSpot on a new contact creation](../../templates/crm/628-receive-updates-from-hubspot-on-a-new-contact-creation/) | 🤝 CRM & Sales Operations | 1,422 |
+| 10 | [Enrich CRM contact data with LinkedIn profiles using GPT & multi-CRM support](../../templates/lead-generation/4242-enrich-crm-contact-data-with-linkedin-profiles-using-gpt-multi-crm-support/) | 🎣 Lead Generation & Enrichment | 1,163 |
+| 11 | [Automated AI lead enrichment: Hubspot to Explorium for enhanced prospect data](../../templates/lead-generation/4839-automated-ai-lead-enrichment-hubspot-to-explorium-for-enhanced-prospect-data/) | 🎣 Lead Generation & Enrichment | 1,096 |
+| 12 | [Enrich HubSpot companies with Polish CEIDG data using NIP identifiers](../../templates/lead-generation/10125-enrich-hubspot-companies-with-polish-ceidg-data-using-nip-identifiers/) | 🎣 Lead Generation & Enrichment | 896 |
+| 13 | [Automate HubSpot to Salesforce lead creation with Explorium AI enrichment](../../templates/lead-generation/4836-automate-hubspot-to-salesforce-lead-creation-with-explorium-ai-enrichment/) | 🎣 Lead Generation & Enrichment | 820 |
+| 14 | [Automated customer onboarding with HubSpot, Gmail, and AI-powered scheduling](../../templates/lead-nurturing/9036-automated-customer-onboarding-with-hubspot-gmail-and-ai-powered-scheduling/) | 💬 Lead Nurturing & AI Sales Agents | 342 |
+| 15 | [Automatically discover & enrich HubSpot buying groups with Surfe and Google Sheets](../../templates/lead-generation/7258-automatically-discover-enrich-hubspot-buying-groups-with-surfe-and-google-sheets/) | 🎣 Lead Generation & Enrichment | 302 |
+| 16 | [Smart CSM assignment & AI welcome emails for HubSpot deal wins with Gmail](../../templates/crm/10398-smart-csm-assignment-ai-welcome-emails-for-hubspot-deal-wins-with-gmail/) | 🤝 CRM & Sales Operations | 218 |
+| 17 | [Dynamic Hubspot lead routing with GPT-4 and Airtable sales team distribution](../../templates/crm/10102-dynamic-hubspot-lead-routing-with-gpt-4-and-airtable-sales-team-distribution/) | 🤝 CRM & Sales Operations | 209 |
+| 18 | [Enrich HubSpot contacts with LinkedIn profiles using SerpAPI, Google Docs and AI](../../templates/lead-generation/8434-enrich-hubspot-contacts-with-linkedin-profiles-using-serpapi-google-docs-and-ai/) | 🎣 Lead Generation & Enrichment | 199 |
+| 19 | [Notify HubSpot deal stage changes with OpenAI, Slack and Gmail](../../templates/crm/16076-notify-hubspot-deal-stage-changes-with-openai-slack-and-gmail/) | 🤝 CRM & Sales Operations | 110 |
+| 20 | [Enrich HubSpot companies with multi-source B2B data from Coresignal](../../templates/lead-generation/15041-enrich-hubspot-companies-with-multi-source-b2b-data-from-coresignal/) | 🎣 Lead Generation & Enrichment | 99 |
+| 21 | [Generate and track invoices with HubSpot, Gmail, Slack, Sheets, and Notion](../../templates/invoice-processing/14289-generate-and-track-invoices-with-hubspot-gmail-slack-sheets-and-notion/) | 🧾 Invoice Processing | 91 |
+| 22 | [Send AI revenue forecast alerts from HubSpot via Gmail, Slack and Sheets](../../templates/crm/12674-send-ai-revenue-forecast-alerts-from-hubspot-via-gmail-slack-and-sheets/) | 🤝 CRM & Sales Operations | 57 |
+| 23 | [Discover SaaS creators from HubSpot with influencers.club and Gmail/SendGrid](../../templates/lead-generation/13336-discover-saas-creators-from-hubspot-with-influencersclub-and-gmailsendgrid/) | 🎣 Lead Generation & Enrichment | 49 |
+| 24 | [Trigger AI outbound calls from HubSpot and log call results with Vapi](../../templates/lead-nurturing/16048-trigger-ai-outbound-calls-from-hubspot-and-log-call-results-with-vapi/) | 💬 Lead Nurturing & AI Sales Agents | 48 |
+| 25 | [Find and add lookalike influencers to HubSpot with influencers.club and GPT-4o-mini](../../templates/lead-generation/13514-find-and-add-lookalike-influencers-to-hubspot-with-influencersclub-and-gpt-4o-mi/) | 🎣 Lead Generation & Enrichment | 35 |
+| 26 | [Enrich HubSpot sales sequence contacts with Lusha and route to outreach](../../templates/lead-generation/13346-enrich-hubspot-sales-sequence-contacts-with-lusha-and-route-to-outreach/) | 🎣 Lead Generation & Enrichment | 30 |
+| 27 | [Enrich new HubSpot contacts with Lusha and alert reps in Slack](../../templates/lead-generation/13344-enrich-new-hubspot-contacts-with-lusha-and-alert-reps-in-slack/) | 🎣 Lead Generation & Enrichment | 28 |
+| 28 | [Send HubSpot deal follow-ups with Gmail, Slack, and Google Sheets](../../templates/lead-nurturing/16004-send-hubspot-deal-follow-ups-with-gmail-slack-and-google-sheets/) | 💬 Lead Nurturing & AI Sales Agents | 27 |
+| 29 | [Score and nurture HubSpot leads with Clearbit and Gemini AI](../../templates/lead-generation/13979-score-and-nurture-hubspot-leads-with-clearbit-and-gemini-ai/) | 🎣 Lead Generation & Enrichment | 25 |
+| 30 | [Personalize creator onboarding in HubSpot with influencers.club and GPT-4](../../templates/lead-generation/13302-personalize-creator-onboarding-in-hubspot-with-influencersclub-and-gpt-4/) | 🎣 Lead Generation & Enrichment | 18 |
+| 31 | [Create blameless win/loss retro prompts from closed-lost HubSpot deals with OpenAI and TeamRetro](../../templates/crm/18993-create-blameless-winloss-retro-prompts-from-closed-lost-hubspot-deals-with-opena/) | 🤝 CRM & Sales Operations | 1 |
 
 ---
 

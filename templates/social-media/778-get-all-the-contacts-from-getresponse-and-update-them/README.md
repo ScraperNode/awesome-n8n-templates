@@ -1,6 +1,6 @@
 # 📱 Get all the contacts from GetResponse and update them
 
-> ⚡ **624 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **633 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

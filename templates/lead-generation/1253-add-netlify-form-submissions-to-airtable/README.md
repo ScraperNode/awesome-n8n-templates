@@ -1,6 +1,6 @@
 # 🎣 Add Netlify form submissions to Airtable
 
-> ⚡ **1,080 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,191 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

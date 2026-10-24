@@ -1,6 +1,6 @@
 # 👥 Handling job application submissions with AI and n8n forms
 
-> ⚡ **13,129 views** · 👥 [HR & Recruitment](../)
+> ⚡ **13,684 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

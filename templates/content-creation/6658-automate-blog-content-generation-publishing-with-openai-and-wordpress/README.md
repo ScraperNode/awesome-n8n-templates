@@ -1,6 +1,6 @@
 # 🎬 Automate Blog Content Generation & Publishing with OpenAI and WordPress
 
-> ⚡ **1,967 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,264 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

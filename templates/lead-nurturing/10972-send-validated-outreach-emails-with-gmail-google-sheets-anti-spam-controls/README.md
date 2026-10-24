@@ -1,6 +1,6 @@
 # 💬 Send validated outreach emails with Gmail & Google Sheets anti-spam controls
 
-> ⚡ **64 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **220 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

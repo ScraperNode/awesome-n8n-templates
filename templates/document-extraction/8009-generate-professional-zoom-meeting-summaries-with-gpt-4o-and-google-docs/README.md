@@ -1,6 +1,6 @@
 # 🔬 Generate professional Zoom meeting summaries with GPT-4O and Google Docs
 
-> ⚡ **275 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **380 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Inserting Brevo contact reports into NocoDB
 
-> ⚡ **71 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **83 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

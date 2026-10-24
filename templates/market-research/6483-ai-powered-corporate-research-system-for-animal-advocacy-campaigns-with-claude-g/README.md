@@ -1,6 +1,6 @@
 # 📊 AI-powered corporate research system for animal advocacy campaigns with Claude & Gemini
 
-> ⚡ **331 views** · 📊 [Market Research & Insights](../)
+> ⚡ **385 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Email news briefing by keyword from Bright Data with AI summary
 
-> ⚡ **974 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,066 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

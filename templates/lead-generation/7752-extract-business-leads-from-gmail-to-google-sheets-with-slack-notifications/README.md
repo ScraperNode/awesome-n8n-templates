@@ -1,6 +1,6 @@
 # 🎣 Extract business leads from Gmail to Google Sheets with Slack notifications
 
-> ⚡ **230 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **268 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

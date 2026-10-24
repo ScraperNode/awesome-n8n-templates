@@ -1,6 +1,6 @@
 # 📱 Send personalized emails from Google Sheets via SMTP
 
-> ⚡ **113 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **231 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

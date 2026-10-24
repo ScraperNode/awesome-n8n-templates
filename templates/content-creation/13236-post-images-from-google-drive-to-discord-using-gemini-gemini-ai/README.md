@@ -1,6 +1,6 @@
 # 🎬 Post images from Google Drive to Discord using Gemini Gemini AI
 
-> ⚡ **18 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **36 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

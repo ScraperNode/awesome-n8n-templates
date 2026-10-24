@@ -1,6 +1,6 @@
 # 🎫 Ai-powered email inbox manager with GPT-4, Gmail, and Slack integration
 
-> ⚡ **1,747 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,887 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

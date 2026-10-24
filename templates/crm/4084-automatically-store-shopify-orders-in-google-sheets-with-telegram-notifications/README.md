@@ -1,6 +1,6 @@
 # 🤝 Automatically store Shopify orders in Google Sheets with Telegram notifications
 
-> ⚡ **779 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **883 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

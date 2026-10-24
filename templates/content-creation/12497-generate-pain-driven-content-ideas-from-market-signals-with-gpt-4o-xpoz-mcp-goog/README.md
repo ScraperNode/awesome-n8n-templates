@@ -1,6 +1,6 @@
 # 🎬 Generate pain-driven content ideas from market signals with GPT-4o, Xpoz MCP, Google Sheets, ClickUp, and Slack
 
-> ⚡ **400 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **625 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

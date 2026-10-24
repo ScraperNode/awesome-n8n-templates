@@ -1,6 +1,6 @@
 # ⚙️ 🛠️ Splunk tool MCP server 💪 all 16 operations
 
-> ⚡ **239 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **293 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

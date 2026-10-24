@@ -1,6 +1,6 @@
 # ⚙️ 🛠️ Google Cloud Storage tool MCP server 💪 all 10 operations
 
-> ⚡ **131 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **155 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

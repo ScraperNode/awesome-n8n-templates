@@ -1,6 +1,6 @@
 # 🎬 Generate custom AI images with OpenAI GPT-Image-1 model
 
-> ⚡ **13,393 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **14,169 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

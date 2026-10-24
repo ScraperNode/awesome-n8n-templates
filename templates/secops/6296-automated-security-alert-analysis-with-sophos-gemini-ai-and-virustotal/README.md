@@ -1,6 +1,6 @@
 # 🔒 Automated security alert analysis with Sophos, Gemini AI, and VirusTotal
 
-> ⚡ **975 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,235 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

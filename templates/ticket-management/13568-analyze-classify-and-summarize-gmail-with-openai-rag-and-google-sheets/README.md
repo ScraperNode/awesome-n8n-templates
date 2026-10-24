@@ -1,6 +1,6 @@
 # 🎫 Analyze, classify, and summarize Gmail with OpenAI RAG and Google Sheets
 
-> ⚡ **33 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **156 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

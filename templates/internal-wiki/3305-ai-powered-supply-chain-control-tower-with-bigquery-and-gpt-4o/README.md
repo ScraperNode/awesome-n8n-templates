@@ -1,6 +1,6 @@
 # 📖 🗼 AI powered supply chain control tower with BigQuery and GPT-4o
 
-> ⚡ **7,913 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **8,289 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

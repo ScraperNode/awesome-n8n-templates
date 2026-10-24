@@ -1,6 +1,6 @@
 # 🧾 Automate employee trip expense processing with Jotform, OpenAI and Google Sheets
 
-> ⚡ **60 views** · 🧾 [Invoice Processing](../)
+> ⚡ **70 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

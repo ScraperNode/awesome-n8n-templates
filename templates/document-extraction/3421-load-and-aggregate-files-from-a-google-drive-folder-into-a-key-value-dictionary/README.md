@@ -1,6 +1,6 @@
 # 🔬 Load and aggregate files from a Google Drive folder into a key-value dictionary
 
-> ⚡ **1,846 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,018 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate and publish Instagram Reels with Gemini and Veo
 
-> ⚡ **311 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,020 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

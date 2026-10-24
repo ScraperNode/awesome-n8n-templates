@@ -1,0 +1,1084 @@
+{
+  "id": "at4FfnUz5k8af9Nd",
+  "meta": {
+    "instanceId": "9f24379abd1ca05a3f590fdaa874ca82fbc5e1188798d609d51d2a8f6bacb662"
+  },
+  "name": "DeFi Liquidation Risk Monitor",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "03770812-5dee-4b5c-ab2d-20be4bd62cbf",
+      "name": "Schedule Monitoring Cycle",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        672,
+        384
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "4bc94aa0-3261-4e4c-b103-e9a3d4260780",
+      "name": "Fetch Lending Position",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1168,
+        384
+      ],
+      "parameters": {
+        "url": "={{ $json.position_api_url }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "decd9bc2-9f4f-4669-b24a-5f3ab4fc7729",
+      "name": "Fetch Live Asset Price",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1760,
+        368
+      ],
+      "parameters": {
+        "url": "={{ $('Load Monitor Configuration').item.json.price_api_url }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "ffa710b5-55d2-4849-87e5-3dc43c06275d",
+      "name": "Calculate Risk Metrics",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2352,
+        384
+      ],
+      "parameters": {
+        "jsCode": "const position = $('Fetch Lending Position').item.json;\nconst priceData = $('Fetch Live Asset Price').item.json;\n\nconst price = Number(priceData.price_usd);\nconst collateralAmount = Number(position.collateral_amount);\nconst debtAmount = Number(position.debt_amount);\nconst liquidationThreshold = Number(position.liquidation_threshold);\n\nconst collateralValue = collateralAmount * price;\nconst debtValue = debtAmount;\nconst healthFactor = debtValue > 0 ? (collateralValue * liquidationThreshold) / debtValue : 0;\nconst liquidationPrice = collateralAmount > 0 ? debtValue / (collateralAmount * liquidationThreshold) : 0;\nconst distanceUsd = price - liquidationPrice;\nconst distancePercent = price > 0 ? (distanceUsd / price) * 100 : 0;\n\nreturn [{\n  json: {\n    timestamp: new Date().toISOString(),\n    position_id: position.position_id,\n    wallet_address: position.wallet_address,\n    protocol: position.protocol,\n    chain: position.chain,\n    collateral_asset: position.collateral_asset,\n    collateral_amount: collateralAmount,\n    collateral_price_usd: price,\n    collateral_value_usd: Number(collateralValue.toFixed(2)),\n    debt_asset: position.debt_asset,\n    debt_amount: debtAmount,\n    debt_value_usd: Number(debtValue.toFixed(2)),\n    liquidation_threshold: liquidationThreshold,\n    health_factor: Number(healthFactor.toFixed(4)),\n    liquidation_price_usd: Number(liquidationPrice.toFixed(2)),\n    distance_to_liquidation_usd: Number(distanceUsd.toFixed(2)),\n    distance_to_liquidation_percent: Number(distancePercent.toFixed(2)),\n    price_source: priceData.source || 'dummy_market_data',\n    position_source: position.source || 'dummy_lending_protocol'\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cd1f709a-3421-458d-86f1-5e9cb5f788cb",
+      "name": "Classify Liquidation Risk",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2640,
+        384
+      ],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst state = $getWorkflowStaticData('global');\nconst previousRisk = state.lastRiskLevel || 'UNKNOWN';\nconst healthFactor = Number(data.health_factor);\n\nlet riskLevel = 'SAFE';\n\nif (healthFactor <= 1) {\n  riskLevel = 'LIQUIDATION_BREACHED';\n} else if (healthFactor < 1.1) {\n  riskLevel = 'URGENT';\n} else if (healthFactor < 1.2) {\n  riskLevel = 'CRITICAL';\n} else if (healthFactor <= 1.5) {\n  riskLevel = 'WARNING';\n}\n\nconst severity = {\n  SAFE: 0,\n  WARNING: 1,\n  CRITICAL: 2,\n  URGENT: 3,\n  LIQUIDATION_BREACHED: 4\n};\n\nconst previousSeverity = severity[previousRisk] === undefined ? -1 : severity[previousRisk];\nconst currentSeverity = severity[riskLevel];\nconst stateChanged = previousRisk !== riskLevel;\nconst escalated = currentSeverity > previousSeverity;\nconst alertRequired = riskLevel !== 'SAFE' && (stateChanged || escalated);\n\nstate.lastRiskLevel = riskLevel;\nstate.lastHealthFactor = data.health_factor;\nstate.lastCheckedAt = data.timestamp;\n\nreturn [{\n  json: {\n    ...data,\n    previous_risk_level: previousRisk,\n    risk_level: riskLevel,\n    risk_state_changed: stateChanged,\n    risk_escalated: escalated,\n    alert_required: alertRequired\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "fe35714f-2bb4-40ce-9b37-8fe032e84075",
+      "name": "Log Monitoring Result",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2944,
+        384
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "timestamp": "={{ $json.timestamp }}"
+          },
+          "schema": [
+            {
+              "id": "alert_timestamp",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "alert_timestamp",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "position_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "position_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "wallet_address",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "wallet_address",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "protocol",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "protocol",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "asset",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "asset",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "health_factor",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "health_factor",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "risk_level",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "risk_level",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "collateral_price_usd",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "collateral_price_usd",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "liquidation_price_usd",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "liquidation_price_usd",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "distance_to_liquidation_percent",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "distance_to_liquidation_percent",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "previous_risk_level",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "previous_risk_level",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "alert_channel",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "alert_channel",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "alert_status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "alert_status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ai_message",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "ai_message",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "collateral_value_usd",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "collateral_value_usd",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "debt_asset",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "debt_asset",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "debt_amount",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "debt_amount",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "debt_value_usd",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "debt_value_usd",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "liquidation_threshold",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "liquidation_threshold",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "distance_to_liquidation_usd",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "distance_to_liquidation_usd",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price_source",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "price_source",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "position_source",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "position_source",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "risk_state_changed",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "risk_state_changed",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "risk_escalated",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "risk_escalated",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "alert_required",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "alert_required",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "timestamp",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "timestamp",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "chain",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "chain",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "collateral_asset",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "collateral_asset",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "collateral_amount",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "collateral_amount",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 788693129,
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19zJo3qyBTTKhBKCl4nE_HfnuPu41n62noy7xzJ1cFi0/edit#gid=788693129",
+          "cachedResultName": "Monitoring History"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "19zJo3qyBTTKhBKCl4nE_HfnuPu41n62noy7xzJ1cFi0",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19zJo3qyBTTKhBKCl4nE_HfnuPu41n62noy7xzJ1cFi0/edit?usp=drivesdk",
+          "cachedResultName": "n8n-workflow-testing"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "3b12df1e-f450-4fec-a49e-35bc1898fb70",
+      "name": "Check Alert Required",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3168,
+        384
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "1+1234567890",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.alert_required }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "64939109-f24c-4084-9705-2a075249151b",
+      "name": "Generate Risk Alert Message",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        3488,
+        368
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-nano",
+          "cachedResultName": "GPT-4.1-NANO"
+        },
+        "options": {
+          "temperature": 0.2
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Create a concise DeFi lending risk alert using only the supplied data. Do not invent values. State the protocol, collateral asset, health factor, risk level, current price, estimated liquidation price, distance to liquidation, and general actions to consider such as adding collateral or repaying debt. Do not provide personalized financial advice. Do not claim liquidation is certain. Tell the reader to verify the position directly in the lending protocol. Supplied data: \n{{ JSON.stringify($json) }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "credential-id",
+          "name": "OpenAI (PAID) (AI-ML Team)"
+        }
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "2ea9cf42-5b37-4bbb-8210-8d600daf252b",
+      "name": "Send Liquidation Alert",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        4160,
+        368
+      ],
+      "webhookId": "81af7722-09c9-4d87-8f3f-fab36d5c2d86",
+      "parameters": {
+        "text": "=DeFi Liquidation Risk Alert\n\nPosition: {{ $('Classify Liquidation Risk').item.json.position_id }}\nProtocol: {{ $('Classify Liquidation Risk').item.json.protocol }}\nAsset: {{ $('Classify Liquidation Risk').item.json.collateral_asset }}\nRisk Level: {{ $('Classify Liquidation Risk').item.json.risk_level }}\nHealth Factor: {{ $('Classify Liquidation Risk').item.json.health_factor }}\nCurrent Price: ${{ $('Classify Liquidation Risk').item.json.collateral_price_usd }}\nEstimated Liquidation Price: ${{ $('Classify Liquidation Risk').item.json.liquidation_price_usd }}\nDistance to Liquidation: {{ $('Classify Liquidation Risk').item.json.distance_to_liquidation_percent }}%\n\nAI Risk Summary:\n{{ $('Generate Risk Alert Message').item.json.content || $('Generate Risk Alert Message').item.json.text || JSON.stringify($('Generate Risk Alert Message').item.json) }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "C0B1LNY15GW",
+          "cachedResultName": "n8n-workflow-testing"
+        },
+        "otherOptions": {}
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "d2085aa9-63a3-4cd6-b7b4-de547635b926",
+      "name": "Log Alert History",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        4304,
+        544
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [
+            {
+              "id": "alert_timestamp",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "alert_timestamp",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "position_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "position_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "wallet_address",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "wallet_address",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "protocol",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "protocol",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "asset",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "asset",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "health_factor",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "health_factor",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "risk_level",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "risk_level",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "collateral_price_usd",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "collateral_price_usd",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "liquidation_price_usd",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "liquidation_price_usd",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "distance_to_liquidation_percent",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "distance_to_liquidation_percent",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "previous_risk_level",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "previous_risk_level",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "alert_channel",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "alert_channel",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "alert_status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "alert_status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ai_message",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "ai_message",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 528423558,
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19zJo3qyBTTKhBKCl4nE_HfnuPu41n62noy7xzJ1cFi0/edit#gid=528423558",
+          "cachedResultName": "Alert History"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "19zJo3qyBTTKhBKCl4nE_HfnuPu41n62noy7xzJ1cFi0",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19zJo3qyBTTKhBKCl4nE_HfnuPu41n62noy7xzJ1cFi0/edit?usp=drivesdk",
+          "cachedResultName": "n8n-workflow-testing"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "6a692111-6b2c-43ef-89b3-db48e8711a3c",
+      "name": "Sticky Note - Schedule and Configuration Intake",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        592,
+        112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 468,
+        "height": 596,
+        "content": "## Schedule and Configuration Intake\nThis section starts the liquidation monitoring cycle every ten minutes and loads the runtime configuration. It sets the lending position API endpoint, the market price API endpoint, and the warning, critical, and urgent health factor thresholds used across the rest of the workflow."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "eb403e22-db21-4a71-9e51-822c70426bd3",
+      "name": "Sticky Note - Lending Position Retrieval",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1088,
+        112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 564,
+        "height": 596,
+        "content": "## Lending Position Retrieval\nThis section calls the production lending position API and confirms the response is usable. It verifies that collateral amount, debt amount, and liquidation threshold are all greater than zero before any health factor calculations begin."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "749c365a-e60b-45d8-92c6-a79052f4ae68",
+      "name": "Sticky Note - Market Price Retrieval",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1680,
+        112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 564,
+        "height": 596,
+        "content": "## Market Price Retrieval\nThis section retrieves the current collateral asset price from the production market data API and validates that the returned USD price is greater than zero. Valid price data is required before collateral value and liquidation distance can be calculated reliably."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "61c82178-72b3-48b3-b628-21244e49f346",
+      "name": "Sticky Note - Risk Metrics Calculation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2272,
+        112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 548,
+        "height": 600,
+        "content": "## Risk Metrics Calculation\nThis section converts position and market data into actionable risk metrics. It calculates collateral value, health factor, estimated liquidation price, and distance to liquidation, then classifies the position as SAFE, WARNING, CRITICAL, URGENT, or LIQUIDATION_BREACHED using the configured thresholds."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "616beb9d-75dd-4cbd-a6a1-3d7f2be58ec1",
+      "name": "Sticky Note - Monitoring History and Alert Gate",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2848,
+        112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 564,
+        "height": 600,
+        "content": "## Monitoring History and Alert Gate\nThis section appends every monitoring cycle to the Monitoring History sheet for auditability. It then checks whether an alert is required based on risk state changes or escalation so repeated notifications are avoided when the risk level stays unchanged."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8652ee53-863a-4f10-b5c8-6fff70b5aeea",
+      "name": "Sticky Note - AI Alert Generation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3440,
+        112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 564,
+        "height": 596,
+        "content": "## AI Alert Generation\nThis section turns calculated risk metrics into a concise operational alert using the configured AI model. It then normalizes the AI response into structured fields so Slack delivery and alert history logging receive consistent message content and metadata."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "70a35377-53c1-4edb-a717-0f3ad2568b3f",
+      "name": "Sticky Note - Alert Delivery and Audit",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4032,
+        112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 452,
+        "height": 596,
+        "content": "## Alert Delivery and Audit\nThis section delivers the liquidation risk alert to the configured Slack channel and records the alert outcome in the Alert History sheet. Teams receive timely notification while the workflow preserves a durable record for later review and incident follow up."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a4e29c3a-a46e-4fb1-88ee-86bbc3885ebc",
+      "name": "Sticky Note - Workflow Documentation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -160,
+        112
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 720,
+        "height": 588,
+        "content": "# DeFi Liquidation Risk Monitor\n\nThis workflow runs every ten minutes to monitor a DeFi lending position for liquidation risk. It loads API endpoints and health factor thresholds, fetches the live lending position and collateral market price, then validates both responses. It calculates health factor, liquidation price, and distance to liquidation, and classifies risk using warning 1.5, critical 1.2, and urgent 1.1 thresholds. Every cycle is logged to Google Sheets. Alerts fire only on risk state change or escalation, are summarized by AI, sent to Slack, and stored in alert history.\n\n## Setup Steps:\n\n1. Set the schedule interval for the monitoring cycle, defaulting to every ten minutes.\n2. Configure the production lending position API endpoint and the production market price API endpoint in the monitor configuration node, including warning 1.5, critical 1.2, and urgent 1.1 thresholds.\n3. Connect Google Sheets credentials and select the Monitoring History and Alert History sheets used for cycle logging and alert auditing.\n4. Connect OpenAI credentials and select the production model used to generate risk alert summaries.\n5. Connect Slack credentials and select the channel that should receive liquidation risk alerts.\n6. Activate the workflow and confirm the first successful monitoring cycle writes to Monitoring History before relying on production alerts."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "73f2cfcd-dfea-4946-b30b-8c786f06d2fb",
+      "name": "Load Monitor Configuration",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        896,
+        384
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1+1234567890",
+              "name": "position_api_url",
+              "type": "string",
+              "value": "http://192.168.101.63:5678/webhook-test/demo-defi-position"
+            },
+            {
+              "id": "1+1234567890",
+              "name": "price_api_url",
+              "type": "string",
+              "value": "http://192.168.101.63:5678/webhook-test/demo-asset-price"
+            },
+            {
+              "id": "1+1234567890",
+              "name": "warning_threshold",
+              "type": "number",
+              "value": 1.5
+            },
+            {
+              "id": "1+1234567890",
+              "name": "critical_threshold",
+              "type": "number",
+              "value": 1.2
+            },
+            {
+              "id": "1+1234567890",
+              "name": "urgent_threshold",
+              "type": "number",
+              "value": 1.1
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "f9334927-f939-4921-9730-bb419d5653c0",
+      "name": "Validate Lending Position",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1424,
+        384
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "1+1234567890",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ Number($json.collateral_amount) }}",
+              "rightValue": 0
+            },
+            {
+              "id": "1+1234567890",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ Number($json.debt_amount) }}",
+              "rightValue": 0
+            },
+            {
+              "id": "1+1234567890",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ Number($json.liquidation_threshold) }}",
+              "rightValue": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "a82d030c-3596-4193-87d5-c232200fd703",
+      "name": "Validate Market Price",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2032,
+        368
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "1+1234567890",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ Number($json.price_usd) }}",
+              "rightValue": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "8c9025c2-2b8d-482f-9820-f6bff21e48c4",
+      "name": "Normalize AI Risk Alert",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3840,
+        368
+      ],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst content =\n  input.message?.content ||\n  input.content ||\n  input.text ||\n  '';\n\nif (!content || typeof content !== 'string') {\n  throw new Error('AI response content is missing or is not a string');\n}\n\nfunction extract(pattern, fallback = '') {\n  const match = content.match(pattern);\n  return match ? match[1].trim() : fallback;\n}\n\nfunction extractNumber(pattern, fallback = null) {\n  const value = extract(pattern, '');\n  if (value === '') {\n    return fallback;\n  }\n\n  const number = Number(value.replace(/[$,%]/g, '').replace(/,/g, ''));\n  return Number.isFinite(number) ? number : fallback;\n}\n\nconst protocol = extract(/Protocol:\\s*(.+)/i);\nconst collateralAsset = extract(/Collateral Asset:\\s*(.+)/i);\nconst collateralAmount = extractNumber(/Collateral Amount:\\s*([\\d,.]+)\\s*ETH/i);\nconst currentPrice = extractNumber(/Current Price:\\s*\\$([\\d,.]+)/i);\nconst collateralValue = extractNumber(/Collateral Value:\\s*\\$([\\d,.]+)/i);\n\nconst debtAsset = extract(/Debt Asset:\\s*(.+)/i);\nconst debtAmount = extractNumber(/Debt Amount:\\s*\\$([\\d,.]+)/i);\nconst debtValue = extractNumber(/Debt Value:\\s*\\$([\\d,.]+)/i);\n\nconst healthFactor = extractNumber(/Health Factor:\\s*([\\d.]+)/i);\nconst liquidationPrice = extractNumber(/Liquidation Price:\\s*\\$([\\d,.]+)/i);\n\nconst liquidationDistanceMatch = content.match(\n  /Distance to Liquidation:\\s*\\$([\\d,.]+)\\s*USD\\s*\\(([\\d.]+)%\\)/i\n);\n\nconst distanceToLiquidationUsd = liquidationDistanceMatch\n  ? Number(liquidationDistanceMatch[1].replace(/,/g, ''))\n  : null;\n\nconst distanceToLiquidationPercent = liquidationDistanceMatch\n  ? Number(liquidationDistanceMatch[2])\n  : null;\n\nconst riskMatch = content.match(\n  /Risk Level:\\s*([A-Z_]+)(?:\\s*\\(([^)]+)\\))?/i\n);\n\nconst riskLevel = riskMatch\n  ? riskMatch[1].toUpperCase()\n  : '';\n\nconst riskContext = riskMatch?.[2]\n  ? riskMatch[2].trim()\n  : '';\n\nconst positionId = extract(/Position ID:\\s*(.+)/i);\n\nconst lines = content.split('\\n').map(line => line.trim());\n\nconst actionMessageIndex = lines.findIndex(line =>\n  /Please verify your position directly/i.test(line)\n);\n\nconst aiRiskSummary =\n  actionMessageIndex >= 0\n    ? lines\n        .slice(actionMessageIndex)\n        .join(' ')\n        .trim()\n    : content;\n\nreturn [\n  {\n    json: {\n      ai_normalized: true,\n      ai_generated_at: new Date().toISOString(),\n\n      protocol,\n      collateral_asset: collateralAsset,\n      collateral_amount: collateralAmount,\n\n      current_price_usd: currentPrice,\n      collateral_value_usd: collateralValue,\n\n      debt_asset: debtAsset,\n      debt_amount_usd: debtAmount,\n      debt_value_usd: debtValue,\n\n      health_factor: healthFactor,\n      liquidation_price_usd: liquidationPrice,\n\n      distance_to_liquidation_usd: distanceToLiquidationUsd,\n      distance_to_liquidation_percent: distanceToLiquidationPercent,\n\n      risk_level: riskLevel,\n      risk_context: riskContext,\n\n      position_id: positionId,\n\n      ai_risk_summary: aiRiskSummary,\n\n      ai_raw_message: content\n    }\n  }\n];"
+      },
+      "typeVersion": 2
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "b6fcfd25-9f69-4cbd-8f4d-443b5dc04d49",
+  "nodeGroups": [],
+  "connections": {
+    "Check Alert Required": {
+      "main": [
+        [
+          {
+            "node": "Generate Risk Alert Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Monitoring Result": {
+      "main": [
+        [
+          {
+            "node": "Check Alert Required",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Market Price": {
+      "main": [
+        [
+          {
+            "node": "Calculate Risk Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Risk Metrics": {
+      "main": [
+        [
+          {
+            "node": "Classify Liquidation Risk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Lending Position": {
+      "main": [
+        [
+          {
+            "node": "Validate Lending Position",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Live Asset Price": {
+      "main": [
+        [
+          {
+            "node": "Validate Market Price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize AI Risk Alert": {
+      "main": [
+        [
+          {
+            "node": "Send Liquidation Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Alert History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Liquidation Risk": {
+      "main": [
+        [
+          {
+            "node": "Log Monitoring Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Monitoring Cycle": {
+      "main": [
+        [
+          {
+            "node": "Load Monitor Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Lending Position": {
+      "main": [
+        [
+          {
+            "node": "Fetch Live Asset Price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Monitor Configuration": {
+      "main": [
+        [
+          {
+            "node": "Fetch Lending Position",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Risk Alert Message": {
+      "main": [
+        [
+          {
+            "node": "Normalize AI Risk Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

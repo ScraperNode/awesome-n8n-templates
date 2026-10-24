@@ -1,6 +1,6 @@
 # 🎬 Generate AI avatar videos from scripts using ElevenLabs and HeyGen
 
-> ⚡ **100 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **158 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 🔔 Meta Ads Low Balance Alert – Auto Notification via WhatsApp or Email
 
-> ⚡ **608 views** · 🔧 [Miscellaneous](../)
+> ⚡ **696 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

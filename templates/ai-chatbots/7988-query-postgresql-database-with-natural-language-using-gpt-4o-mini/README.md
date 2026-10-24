@@ -1,6 +1,6 @@
 # 🤖 Query PostgreSQL database with natural language using GPT-4o-mini
 
-> ⚡ **624 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **857 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

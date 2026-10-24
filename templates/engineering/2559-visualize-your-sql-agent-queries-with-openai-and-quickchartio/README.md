@@ -1,6 +1,6 @@
 # ⚒️ Visualize your SQL Agent queries with OpenAI and Quickchart.io
 
-> ⚡ **16,437 views** · ⚒️ [Engineering](../)
+> ⚡ **16,425 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate AI News LinkedIn Posts with GPT-4o-mini, NewsAPI, and Qdrant
 
-> ⚡ **481 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **611 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

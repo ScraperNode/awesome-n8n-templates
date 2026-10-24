@@ -1,6 +1,6 @@
 # 👥 Automate end-to-end hiring with Keka, Google Sheets, Gmail and GPT-4
 
-> ⚡ **66 views** · 👥 [HR & Recruitment](../)
+> ⚡ **419 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

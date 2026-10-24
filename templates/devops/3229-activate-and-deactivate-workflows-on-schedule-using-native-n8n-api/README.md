@@ -1,6 +1,6 @@
 # ⚙️ Activate and deactivate workflows on schedule using native n8n API
 
-> ⚡ **1,661 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,840 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

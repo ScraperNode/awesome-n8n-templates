@@ -1,6 +1,6 @@
 # 📈 Tesla quant technical indicators webhooks tool
 
-> ⚡ **942 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **990 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

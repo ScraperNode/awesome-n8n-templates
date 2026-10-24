@@ -1,6 +1,6 @@
 # 🎬 Transform RSS feeds into content with GPT-4o for Medium, LinkedIn & Instagram
 
-> ⚡ **2,328 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,764 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

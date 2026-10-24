@@ -1,6 +1,6 @@
 # 📱 Reddit bot automation: AI auto-reply & post monitor with GPT-4 + Google Sheets
 
-> ⚡ **1,005 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,305 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

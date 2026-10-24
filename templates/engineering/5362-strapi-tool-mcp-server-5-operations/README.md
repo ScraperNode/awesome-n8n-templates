@@ -1,6 +1,6 @@
 # ⚒️ 🛠️ Strapi tool MCP server 💪 5 operations
 
-> ⚡ **385 views** · ⚒️ [Engineering](../)
+> ⚡ **396 views** · ⚒️ [Engineering](../)
 
 ## Description
 

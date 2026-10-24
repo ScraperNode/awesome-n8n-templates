@@ -1,6 +1,6 @@
 # 📊 Narrative threat / opportunity detection (AskRally)
 
-> ⚡ **344 views** · 📊 [Market Research & Insights](../)
+> ⚡ **388 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

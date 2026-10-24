@@ -1,6 +1,6 @@
 # 🔬 Translate documents to multiple languages with Google Drive and DeepL
 
-> ⚡ **508 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **864 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

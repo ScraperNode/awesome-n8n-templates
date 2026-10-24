@@ -1,6 +1,6 @@
 # 📈 Forex AI trading assistant for Telegram using chatGPT-4o (with Position Sizing)
 
-> ⚡ **139 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **240 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

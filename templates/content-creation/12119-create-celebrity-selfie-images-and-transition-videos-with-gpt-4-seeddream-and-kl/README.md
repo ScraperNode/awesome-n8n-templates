@@ -1,6 +1,6 @@
 # 🎬 Create celebrity selfie images and transition videos with GPT-4, SeedDream, and Kling
 
-> ⚡ **73 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **152 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

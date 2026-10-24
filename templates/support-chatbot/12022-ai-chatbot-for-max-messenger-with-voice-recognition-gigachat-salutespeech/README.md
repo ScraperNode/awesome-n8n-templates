@@ -1,6 +1,6 @@
 # 💬 AI chatbot for Max Messenger with voice recognition (GigaChat +SaluteSpeech)
 
-> ⚡ **805 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,215 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

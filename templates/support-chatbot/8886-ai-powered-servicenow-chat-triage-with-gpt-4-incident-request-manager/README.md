@@ -1,6 +1,6 @@
 # 💬 AI-powered ServiceNow chat triage with GPT-4 — incident & request manager
 
-> ⚡ **557 views** · 💬 [Support Chatbots](../)
+> ⚡ **774 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

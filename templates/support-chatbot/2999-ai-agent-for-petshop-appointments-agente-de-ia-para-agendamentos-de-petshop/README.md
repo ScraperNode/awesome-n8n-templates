@@ -1,6 +1,6 @@
 # 💬 🐶 AI agent for PetShop appointments (Agente de IA para agendamentos de PetShop)
 
-> ⚡ **6,389 views** · 💬 [Support Chatbots](../)
+> ⚡ **6,971 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

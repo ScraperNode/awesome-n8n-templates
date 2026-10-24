@@ -1,6 +1,6 @@
 # ⚒️ Simulate debates between AI agents using Mistral to optimize answers
 
-> ⚡ **2,144 views** · ⚒️ [Engineering](../)
+> ⚡ **2,763 views** · ⚒️ [Engineering](../)
 
 ## Description
 

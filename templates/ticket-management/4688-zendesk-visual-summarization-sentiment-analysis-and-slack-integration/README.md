@@ -1,6 +1,6 @@
 # 🎫 Zendesk: visual summarization, sentiment analysis, and Slack integration
 
-> ⚡ **896 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **982 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

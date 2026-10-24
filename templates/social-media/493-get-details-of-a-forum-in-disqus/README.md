@@ -1,6 +1,6 @@
 # 📱 Get details of a forum in Disqus
 
-> ⚡ **375 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **387 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

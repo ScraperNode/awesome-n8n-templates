@@ -1,6 +1,6 @@
 # 📖 IT ops AI SlackBot workflow - chat with your knowledge base
 
-> ⚡ **40,753 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **40,988 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

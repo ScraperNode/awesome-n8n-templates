@@ -1,6 +1,6 @@
 # 🎬 Generate multilingual audio content with OpenAI, ElevenLabs, Google Drive and Slack
 
-> ⚡ **56 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **73 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

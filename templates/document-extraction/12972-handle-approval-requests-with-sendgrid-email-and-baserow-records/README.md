@@ -1,6 +1,6 @@
 # 🔬 Handle approval requests with SendGrid email and Baserow records
 
-> ⚡ **36 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **55 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

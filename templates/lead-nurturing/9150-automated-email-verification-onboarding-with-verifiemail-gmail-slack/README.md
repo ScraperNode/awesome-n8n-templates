@@ -1,6 +1,6 @@
 # 💬 Automated email verification & onboarding with VerifiEmail, Gmail & Slack
 
-> ⚡ **238 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **294 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

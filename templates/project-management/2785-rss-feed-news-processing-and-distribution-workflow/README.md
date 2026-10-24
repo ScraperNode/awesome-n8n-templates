@@ -1,6 +1,6 @@
 # 📋 Rss feed news processing and distribution workflow
 
-> ⚡ **14,454 views** · 📋 [Project Management](../)
+> ⚡ **15,275 views** · 📋 [Project Management](../)
 
 ## Description
 

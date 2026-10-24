@@ -1,6 +1,6 @@
 # ⚡ 2-way sync Notion and Google Calendar
 
-> ⚡ **3,103 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,191 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Health check websites with Google Sheets & Telegram alerts
 
-> ⚡ **3,751 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **3,992 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

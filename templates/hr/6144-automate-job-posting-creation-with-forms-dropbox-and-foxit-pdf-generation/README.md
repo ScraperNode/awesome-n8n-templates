@@ -1,6 +1,6 @@
 # 👥 Automate job posting creation with Forms, Dropbox, and Foxit PDF generation
 
-> ⚡ **491 views** · 👥 [HR & Recruitment](../)
+> ⚡ **516 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

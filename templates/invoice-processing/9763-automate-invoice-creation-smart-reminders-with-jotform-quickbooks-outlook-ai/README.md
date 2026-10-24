@@ -1,6 +1,6 @@
 # 🧾 Automate invoice creation & smart reminders with Jotform, QuickBooks & Outlook AI
 
-> ⚡ **120 views** · 🧾 [Invoice Processing](../)
+> ⚡ **267 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

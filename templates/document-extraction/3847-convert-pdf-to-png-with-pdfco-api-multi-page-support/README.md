@@ -1,6 +1,6 @@
 # 🔬 Convert PDF to PNG with PDF.co API (multi-page support)
 
-> ⚡ **1,135 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,247 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

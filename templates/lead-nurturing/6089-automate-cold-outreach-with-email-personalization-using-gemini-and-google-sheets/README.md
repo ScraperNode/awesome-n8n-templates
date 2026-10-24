@@ -1,6 +1,6 @@
 # 💬 Automate cold outreach with email personalization using Gemini and Google Sheets
 
-> ⚡ **3,484 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **4,081 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Automated invoice creation & customer communication with Jotform, Xero, Outlook & Telegram
 
-> ⚡ **482 views** · 🧾 [Invoice Processing](../)
+> ⚡ **733 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

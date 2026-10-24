@@ -1,6 +1,6 @@
 # 🔬 Extract and organize contract details from PDFs with Slack, GPT-4o, and Google Sheets
 
-> ⚡ **407 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **482 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

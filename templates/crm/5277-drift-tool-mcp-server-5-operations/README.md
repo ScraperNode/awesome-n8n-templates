@@ -1,6 +1,6 @@
 # 🤝 🛠️ Drift Tool MCP Server 💪 5 operations
 
-> ⚡ **131 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **150 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

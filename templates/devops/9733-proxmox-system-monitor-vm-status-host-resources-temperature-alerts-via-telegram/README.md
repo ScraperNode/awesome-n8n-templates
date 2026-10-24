@@ -1,6 +1,6 @@
 # ⚙️ Proxmox system monitor - VM status, host resources & temperature alerts via Telegram
 
-> ⚡ **1,727 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,525 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

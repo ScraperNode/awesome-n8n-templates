@@ -1,6 +1,6 @@
 # 🤖 Voice-to-task manager with Telegram, GPT-4o & Notion database
 
-> ⚡ **856 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **918 views** · 🤖 [AI Chatbots & Agents](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

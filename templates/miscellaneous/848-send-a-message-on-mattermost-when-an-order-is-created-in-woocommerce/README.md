@@ -1,6 +1,6 @@
 # 🔧 Send a message on Mattermost when an order is created in WooCommerce
 
-> ⚡ **1,253 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,276 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Email management: Auto-delete marketing emails & generate AI replies with Gemini
 
-> ⚡ **563 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **701 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

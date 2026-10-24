@@ -1,6 +1,6 @@
 # ⚡ Submit iOS meeting notes to Obsidian using local AI transcription
 
-> ⚡ **218 views** · ⚡ [Personal Productivity](../)
+> ⚡ **369 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

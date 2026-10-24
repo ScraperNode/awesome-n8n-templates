@@ -1,6 +1,6 @@
 # 🎬 Create AI videos from prompts with OpenAI script, TTS & Pexels B-roll assembly
 
-> ⚡ **1,294 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,268 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

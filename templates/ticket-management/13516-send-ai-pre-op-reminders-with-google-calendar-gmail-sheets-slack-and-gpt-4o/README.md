@@ -1,6 +1,6 @@
 # 🎫 Send AI pre-op reminders with Google Calendar, Gmail, Sheets, Slack and GPT-4o
 
-> ⚡ **146 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,327 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

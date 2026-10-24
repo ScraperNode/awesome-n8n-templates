@@ -1,6 +1,6 @@
 # 🔬 Sanitize Google Drive markdown text with a local Ollama model
 
-> ⚡ **11 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **77 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

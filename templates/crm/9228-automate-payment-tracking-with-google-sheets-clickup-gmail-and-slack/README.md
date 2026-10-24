@@ -1,6 +1,6 @@
 # 🤝 Automate payment tracking with Google Sheets, ClickUp, Gmail and Slack
 
-> ⚡ **194 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **233 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

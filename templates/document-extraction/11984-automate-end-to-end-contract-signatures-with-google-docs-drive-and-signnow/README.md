@@ -1,6 +1,6 @@
 # 🔬 Automate end-to-end contract signatures with Google Docs, Drive and SignNow
 
-> ⚡ **55 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **90 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

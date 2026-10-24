@@ -1,6 +1,6 @@
 # 📊 Generate AI reports for Meta Ads campaigns with Claude & Pipeboard MCP via Slack
 
-> ⚡ **1,437 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,846 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

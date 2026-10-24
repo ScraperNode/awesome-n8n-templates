@@ -1,6 +1,6 @@
 # 💬 Voice AI customer support for WooCommerce using VAPI, GPT-4o & Gemini with RAG
 
-> ⚡ **1,185 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,603 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

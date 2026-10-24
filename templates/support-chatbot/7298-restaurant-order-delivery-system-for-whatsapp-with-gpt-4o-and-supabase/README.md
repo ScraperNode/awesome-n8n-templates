@@ -1,6 +1,6 @@
 # 💬 Restaurant order & delivery system for WhatsApp with GPT-4o and Supabase
 
-> ⚡ **6,256 views** · 💬 [Support Chatbots](../)
+> ⚡ **8,623 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

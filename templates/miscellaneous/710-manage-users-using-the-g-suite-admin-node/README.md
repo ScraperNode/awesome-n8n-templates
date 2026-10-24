@@ -1,6 +1,6 @@
 # 🔧 Manage users using the G Suite Admin node
 
-> ⚡ **3,007 views** · 🔧 [Miscellaneous](../)
+> ⚡ **3,081 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

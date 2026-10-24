@@ -1,6 +1,6 @@
 # ⚙️ Backup n8n workflows with versioning and Notion tracking
 
-> ⚡ **765 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **888 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

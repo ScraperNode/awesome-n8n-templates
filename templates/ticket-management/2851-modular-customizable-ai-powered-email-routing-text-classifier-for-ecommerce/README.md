@@ -1,6 +1,6 @@
 # 🎫 Modular & customizable AI-powered email routing: text classifier for eCommerce
 
-> ⚡ **4,671 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **4,757 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

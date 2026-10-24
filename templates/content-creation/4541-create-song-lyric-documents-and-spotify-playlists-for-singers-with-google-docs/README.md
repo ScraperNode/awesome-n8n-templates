@@ -1,6 +1,6 @@
 # 🎬 Create song lyric documents and Spotify playlists for singers with Google Docs
 
-> ⚡ **591 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **712 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

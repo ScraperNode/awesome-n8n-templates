@@ -1,6 +1,6 @@
 # 🎬 Generate images from text with IBM Granite Vision 3.3 2B AI model
 
-> ⚡ **1,011 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,020 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

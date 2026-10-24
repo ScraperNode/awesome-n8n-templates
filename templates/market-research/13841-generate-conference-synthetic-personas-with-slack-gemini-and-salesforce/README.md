@@ -1,6 +1,6 @@
 # 📊 Generate conference synthetic personas with Slack, Gemini and Salesforce
 
-> ⚡ **6 views** · 📊 [Market Research & Insights](../)
+> ⚡ **21 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

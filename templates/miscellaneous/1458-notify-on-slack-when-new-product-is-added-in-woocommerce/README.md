@@ -1,6 +1,6 @@
 # 🔧 Notify on Slack when new product is added in WooCommerce
 
-> ⚡ **1,153 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,258 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

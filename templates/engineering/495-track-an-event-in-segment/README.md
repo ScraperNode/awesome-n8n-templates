@@ -1,6 +1,6 @@
 # ⚒️ Track an event in Segment
 
-> ⚡ **457 views** · ⚒️ [Engineering](../)
+> ⚡ **471 views** · ⚒️ [Engineering](../)
 
 ## Description
 

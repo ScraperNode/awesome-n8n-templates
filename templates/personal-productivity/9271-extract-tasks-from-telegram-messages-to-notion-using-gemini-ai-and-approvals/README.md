@@ -1,6 +1,6 @@
 # ⚡ Extract tasks from Telegram messages to Notion using Gemini AI and Approvals
 
-> ⚡ **264 views** · ⚡ [Personal Productivity](../)
+> ⚡ **388 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Sync Shopify and WooCommerce sales into a Google Sheets accounting ledger
 
-> ⚡ **17 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **209 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

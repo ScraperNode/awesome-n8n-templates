@@ -1,6 +1,6 @@
 # ⚒️ Query bicycle incident data with BikeWise API through MCP server
 
-> ⚡ **256 views** · ⚒️ [Engineering](../)
+> ⚡ **263 views** · ⚒️ [Engineering](../)
 
 ## Description
 

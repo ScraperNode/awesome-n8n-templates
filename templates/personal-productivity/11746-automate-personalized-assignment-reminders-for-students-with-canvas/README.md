@@ -1,6 +1,6 @@
 # ⚡ Automate personalized assignment reminders for students with Canvas
 
-> ⚡ **244 views** · ⚡ [Personal Productivity](../)
+> ⚡ **424 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

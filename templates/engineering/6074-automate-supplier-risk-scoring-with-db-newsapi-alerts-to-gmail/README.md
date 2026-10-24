@@ -1,6 +1,6 @@
 # ⚒️ Automate supplier risk scoring with D&B, NewsAPI & alerts to Gmail
 
-> ⚡ **725 views** · ⚒️ [Engineering](../)
+> ⚡ **808 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Create a new customer in Chargebee
 
-> ⚡ **462 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **475 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate multiple AI images with DALL·E 2 and upload to Google Drive
 
-> ⚡ **1,072 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,407 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

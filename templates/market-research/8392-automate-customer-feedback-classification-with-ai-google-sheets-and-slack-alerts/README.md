@@ -1,6 +1,6 @@
 # 📊 Automate customer feedback classification with AI, Google Sheets, and Slack alerts
 
-> ⚡ **195 views** · 📊 [Market Research & Insights](../)
+> ⚡ **309 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 🛠️ Microsoft Dynamics CRM tool MCP server 💪 all 5 operations
 
-> ⚡ **183 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **223 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

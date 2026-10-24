@@ -1,6 +1,6 @@
 # ⚒️ AI agents can retrieve assetts with 🛠️ Contentful tool MCP server 💪
 
-> ⚡ **138 views** · ⚒️ [Engineering](../)
+> ⚡ **148 views** · ⚒️ [Engineering](../)
 
 ## Description
 

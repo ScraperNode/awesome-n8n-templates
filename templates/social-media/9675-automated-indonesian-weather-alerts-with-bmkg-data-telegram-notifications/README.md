@@ -1,6 +1,6 @@
 # 📱 Automated Indonesian weather alerts with BMKG data & Telegram notifications
 
-> ⚡ **66 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **136 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

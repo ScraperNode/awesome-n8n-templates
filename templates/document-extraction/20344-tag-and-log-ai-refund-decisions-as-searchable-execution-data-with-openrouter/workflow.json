@@ -1,0 +1,363 @@
+{
+  "name": "Tag AI refund decisions as searchable execution data with OpenRouter",
+  "nodes": [
+    {
+      "name": "Webhook - Support Request",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -120,
+        300
+      ],
+      "parameters": {
+        "path": "audit-searchable-executions",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "name": "Order Lookup",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        120,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Simulated order database. In production this would be a Postgres or\n// HTTP Request node querying your order service.\nconst ORDERS = {\n  \"ORD-1001\": { orderId: \"ORD-1001\", customer: \"A. Rivera\", chargedOn: \"2026-04-15\", amount: 49.99, currency: \"USD\", duplicateOf: \"ORD-1000\", status: \"settled\" },\n  \"ORD-1002\": { orderId: \"ORD-1002\", customer: \"M. Chen\", chargedOn: \"2026-04-02\", amount: 129.00, currency: \"USD\", duplicateOf: null, status: \"settled\" },\n  \"ORD-1003\": { orderId: \"ORD-1003\", customer: \"S. Okafor\", chargedOn: \"2026-03-27\", amount: 18.50, currency: \"USD\", duplicateOf: null, status: \"refunded\" },\n  // ORD-1004 comes back from the index but the billing join failed, so the\n  // amount and currency are missing. The record is present and incomplete.\n  \"ORD-1004\": { orderId: \"ORD-1004\", customer: \"L. Duarte\", chargedOn: \"2026-04-11\", amount: null, currency: null, duplicateOf: \"ORD-1003\", status: \"settled\" }\n};\n\nconst body = $json.body || $json;\nconst orderId = body.orderId || \"\";\nconst message = body.message || \"\";\n\n// The lookup returns an ARRAY. An unknown id returns an empty array, not an\n// error. This lets the exercise demonstrate a successful execution with\n// missing business data.\nconst orders = ORDERS[orderId] ? [ORDERS[orderId]] : [];\n\nreturn [{\n  json: {\n    orderId,\n    message,\n    orders,\n    orderCount: orders.length,\n    // A lookup is only usable if a record came back AND the fields the agent\n    // is about to reason over are actually populated.\n    lookupComplete: orders.length > 0 && Number.isFinite(orders[0].amount) && orders[0].amount > 0 && typeof orders[0].currency === \"string\" && orders[0].currency.length === 3,\n    orderBlock: orders.length ? JSON.stringify(orders[0], null, 2) : \"\"\n  }\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "name": "Refund Support Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1080,
+        220
+      ],
+      "parameters": {
+        "text": "=Customer message:\n{{ $json.message }}\n\nORDER RECORD:\n{{ $json.orderBlock }}\n\nPOLICY DECISION:\n{{ $json.policyDecision }}\n\nPOLICY REASON:\n{{ $json.policyReason }}",
+        "options": {
+          "systemMessage": "Write a short support reply explaining the supplied POLICY DECISION and POLICY REASON. The workflow has already selected that decision using its demo policy; do not change it based on the customer message.\nFor refund_approved, state that the duplicate qualifies for a refund under the demo policy and include the amount and currency from the record. For refund_declined, explain the supplied reason. For needs_human_review, explain that a support specialist must check the record. Never invent missing facts or claim a payment has been processed.\nReturn plain text in two or three sentences."
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 1.7
+    },
+    {
+      "name": "OpenRouter - Support",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "position": [
+        1080,
+        440
+      ],
+      "parameters": {
+        "model": "openai/gpt-4.1-mini",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "name": "Respond to Customer",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1820,
+        220
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ caseId: $('Order Lookup').item.json.orderId, decision: $json.decision, reply: $json.reply }) }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "name": "Template Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -740,
+        20
+      ],
+      "parameters": {
+        "width": 560,
+        "height": 720,
+        "content": "## Tag AI refund decisions as searchable execution data with OpenRouter\n\n### Quick overview\nThis workflow applies a demo refund policy, asks an AI agent to explain the decision, and saves the case and the final decision as custom execution data so you can find the run later. It is the Exercise 2 template from the n8n Production AI Playbook post on Audit & Trace. All order records are synthetic and no payment is processed.\n\n### How it works\n1. Receives a POST webhook request with an orderId, customerTier and message.\n2. Order Lookup returns a simulated order record.\n3. Policy Decision (Edit Fields) selects refund_approved, refund_declined or needs_human_review from the record.\n4. Check Tag Length (If) sends values over 255 characters to Reject Oversized Tag (Stop and Error).\n5. Tag Execution (Execution Data) saves the case details as custom data.\n6. Refund Support Agent explains the decision using an OpenRouter chat model.\n7. Record Decision saves the final decision as custom data, and Build Reply returns the response.\n\n### Setup\n1. Add an OpenRouter API credential to OpenRouter - Support.\n2. Select Execute workflow and POST `{\"orderId\":\"ORD-1001\",\"customerTier\":\"gold\",\"message\":\"Please refund this order.\"}` to the Webhook Test URL. Repeat with ORD-1002 and ORD-9999.\n3. Open the saved executions to inspect the custom data. Filtering executions by custom data requires n8n Cloud Pro or Enterprise."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "92c61e98-55af-49ad-ab0e-d308b94c9359",
+      "name": "Policy Decision",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        360,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "303f6f80-d0fd-4f55-b883-8751fc0cad1c",
+              "name": "policyDecision",
+              "type": "string",
+              "value": "={{ $json.lookupComplete && $json.orders[0]?.status === 'settled' ? ($json.orders[0].duplicateOf ? 'refund_approved' : 'refund_declined') : ($json.lookupComplete && $json.orders[0]?.status === 'refunded' ? 'refund_declined' : 'needs_human_review') }}"
+            },
+            {
+              "id": "de219ff5-02e3-4466-b094-25b6b6cae41f",
+              "name": "policyReason",
+              "type": "string",
+              "value": "={{ $json.lookupComplete && $json.orders[0]?.status === 'settled' ? ($json.orders[0].duplicateOf ? 'The settled charge is marked as a duplicate in the demo order record.' : 'The demo order record does not mark this charge as a duplicate.') : ($json.lookupComplete && $json.orders[0]?.status === 'refunded' ? 'This order has already been refunded.' : 'The order record is missing or incomplete.') }}"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "0e2e8f09-e1dd-45b7-a04f-fa51f4c83ea4",
+      "name": "Check Tag Length",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        600,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c4704396-e68c-41dd-9f9a-b206e239c90e",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ String($json.orderId || 'unknown').length <= 255 && String($('Webhook - Support Request').first().json.body.customerTier || 'standard').length <= 255 }}",
+              "rightValue": true
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "2a9f2f46-75d2-4e18-8113-1e982f46f798",
+      "name": "Reject Oversized Tag",
+      "type": "n8n-nodes-base.stopAndError",
+      "position": [
+        840,
+        520
+      ],
+      "parameters": {
+        "errorMessage": "caseId and customerTier must fit the 255-character custom-data limit"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2f5e6395-8c45-4db6-ae51-fa6340f48188",
+      "name": "Tag Execution",
+      "type": "n8n-nodes-base.executionData",
+      "position": [
+        840,
+        300
+      ],
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "caseId",
+              "value": "={{ String($json.orderId || 'unknown') }}"
+            },
+            {
+              "key": "customerTier",
+              "value": "={{ String($('Webhook - Support Request').first().json.body.customerTier || 'standard') }}"
+            },
+            {
+              "key": "environment",
+              "value": "demo"
+            },
+            {
+              "key": "decision",
+              "value": "pending"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "246941d8-d161-4419-a902-e6c61dd3b11e",
+      "name": "Record Decision",
+      "type": "n8n-nodes-base.executionData",
+      "position": [
+        1340,
+        220
+      ],
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "decision",
+              "value": "={{ $('Policy Decision').first().json.policyDecision }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1f0d812a-b985-4b17-b96a-7f6e2e7f2314",
+      "name": "Build Reply",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1580,
+        220
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "aae66b15-706d-46a4-b5e9-cc8433f5958c",
+              "name": "reply",
+              "type": "string",
+              "value": "={{ String($json.output || '') }}"
+            },
+            {
+              "id": "58efc93f-abb2-468d-be6a-5ed8c811c0c1",
+              "name": "decision",
+              "type": "string",
+              "value": "={{ $('Policy Decision').first().json.policyDecision }}"
+            }
+          ]
+        },
+        "includeOtherFields": false
+      },
+      "typeVersion": 3.4
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "connections": {
+    "Build Reply": {
+      "main": [
+        [
+          {
+            "node": "Respond to Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order Lookup": {
+      "main": [
+        [
+          {
+            "node": "Policy Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tag Execution": {
+      "main": [
+        [
+          {
+            "node": "Refund Support Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Policy Decision": {
+      "main": [
+        [
+          {
+            "node": "Check Tag Length",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Decision": {
+      "main": [
+        [
+          {
+            "node": "Build Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Tag Length": {
+      "main": [
+        [
+          {
+            "node": "Tag Execution",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Oversized Tag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter - Support": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Refund Support Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refund Support Agent": {
+      "main": [
+        [
+          {
+            "node": "Record Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Support Request": {
+      "main": [
+        [
+          {
+            "node": "Order Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

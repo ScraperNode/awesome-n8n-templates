@@ -1,6 +1,6 @@
 # 🎬 Generate & publish professional COE blogs with Gemini AI and Google Drive
 
-> ⚡ **1,286 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,365 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

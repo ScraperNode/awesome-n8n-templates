@@ -1,6 +1,6 @@
 # 🤝 Notify on Telegram when a new order is created in WooCommerce 📦
 
-> ⚡ **3,481 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **3,501 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

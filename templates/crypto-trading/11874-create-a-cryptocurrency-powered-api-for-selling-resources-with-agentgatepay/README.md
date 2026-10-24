@@ -1,6 +1,6 @@
 # 📈 Create a cryptocurrency-powered API for selling resources with AgentGatePay
 
-> ⚡ **52 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **90 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

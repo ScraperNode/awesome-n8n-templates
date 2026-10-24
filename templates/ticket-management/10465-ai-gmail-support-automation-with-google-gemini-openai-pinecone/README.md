@@ -1,6 +1,6 @@
 # 🎫 AI Gmail support automation with Google Gemini, OpenAI & Pinecone
 
-> ⚡ **305 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **503 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

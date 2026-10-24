@@ -1,6 +1,6 @@
 # 📱 RSS to social: automated content generation with Llama 3 & GetLate Publishing
 
-> ⚡ **263 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **345 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

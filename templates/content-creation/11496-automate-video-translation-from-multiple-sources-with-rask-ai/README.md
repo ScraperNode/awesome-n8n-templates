@@ -1,6 +1,6 @@
 # 🎬 Automate video translation from multiple sources with Rask AI
 
-> ⚡ **58 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **182 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

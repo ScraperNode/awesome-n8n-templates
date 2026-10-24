@@ -1,6 +1,6 @@
 # 📖 KB tool - Confluence knowledge base
 
-> ⚡ **8,360 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **8,560 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

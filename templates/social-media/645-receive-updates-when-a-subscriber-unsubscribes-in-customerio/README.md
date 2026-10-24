@@ -1,6 +1,6 @@
 # 📱 Receive updates when a subscriber unsubscribes in Customer.io
 
-> ⚡ **611 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **637 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Lead outreach automation with Google Sheets, Gmail, and n8n workflow
 
-> ⚡ **1,614 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,916 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

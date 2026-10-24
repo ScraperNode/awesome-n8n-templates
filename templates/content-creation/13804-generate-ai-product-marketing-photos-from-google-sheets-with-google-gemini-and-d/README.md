@@ -1,6 +1,6 @@
 # 🎬 Generate AI product marketing photos from Google Sheets with Google Gemini and Drive
 
-> ⚡ **15 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **153 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Grade PDF assignments with Google Gemini and upload reports to Google Drive
 
-> ⚡ **29 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **254 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

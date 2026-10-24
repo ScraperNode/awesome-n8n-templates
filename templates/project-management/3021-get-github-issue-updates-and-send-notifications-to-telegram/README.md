@@ -1,6 +1,6 @@
 # 📋 Get GitHub issue updates and send notifications to Telegram
 
-> ⚡ **2,046 views** · 📋 [Project Management](../)
+> ⚡ **2,135 views** · 📋 [Project Management](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

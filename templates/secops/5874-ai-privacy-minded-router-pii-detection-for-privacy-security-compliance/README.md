@@ -1,6 +1,6 @@
 # 🔒 AI privacy-minded router: PII detection for privacy, security, & compliance
 
-> ⚡ **2,042 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,652 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

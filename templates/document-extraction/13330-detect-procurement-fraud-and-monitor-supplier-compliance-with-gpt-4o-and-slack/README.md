@@ -1,6 +1,6 @@
 # 🔬 Detect procurement fraud and monitor supplier compliance with GPT-4o and Slack
 
-> ⚡ **72 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **217 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

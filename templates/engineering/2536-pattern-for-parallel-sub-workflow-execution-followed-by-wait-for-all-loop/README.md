@@ -1,6 +1,6 @@
 # ⚒️ Pattern for parallel sub-workflow execution followed by wait-for-all loop
 
-> ⚡ **11,899 views** · ⚒️ [Engineering](../)
+> ⚡ **12,423 views** · ⚒️ [Engineering](../)
 
 ## Description
 

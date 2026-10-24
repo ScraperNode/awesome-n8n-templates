@@ -1,6 +1,6 @@
 # 📱 Generate and schedule AI discussion posts for Reddit with GPT-4 and Airtable
 
-> ⚡ **448 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **501 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

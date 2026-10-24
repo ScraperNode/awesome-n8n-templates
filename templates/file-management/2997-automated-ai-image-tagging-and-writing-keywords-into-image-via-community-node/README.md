@@ -1,6 +1,6 @@
 # 📁 Automated AI image tagging and writing keywords into image (via community node)
 
-> ⚡ **1,647 views** · 📁 [File Management](../)
+> ⚡ **1,713 views** · 📁 [File Management](../)
 
 ## Description
 

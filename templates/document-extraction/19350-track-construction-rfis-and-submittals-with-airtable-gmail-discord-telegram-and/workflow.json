@@ -1,0 +1,2312 @@
+{
+  "id": "wRC56olvNWzVOskw",
+  "meta": {
+    "instanceId": "c2650793f644091dc80fb900fe63448ad1f4b774008de9608064d67294f8307c"
+  },
+  "name": "track construction RFIs and submittals with AI",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "e6c64a7d-0a14-4407-b64c-95b0b8cb3708",
+      "name": "When an RFI Arrives",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -1088,
+        256
+      ],
+      "webhookId": "98cf1b27-ccbb-4e95-a04d-6660103e8d3e",
+      "parameters": {
+        "path": "rfi/intake",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "07623844-7f3d-443a-8c87-cc491b7ea3a5",
+      "name": "Normalize RFI Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -864,
+        256
+      ],
+      "parameters": {
+        "jsCode": "// Extract and normalize the RFI intake payload.\nconst first = $input.first().json;\nconst body = first.body && typeof first.body === 'object' ? first.body : first;\nconst now = new Date();\nconst pad = (n) => String(n).padStart(2, '0');\nconst dateStr = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());\nconst ts = dateStr + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());\nconst rfi_id = String(body.rfi_id || ('RFI-' + dateStr.replace(/-/g, '') + '-' + Math.random().toString(36).slice(2, 6).toUpperCase()));\nreturn [{\n  json: {\n    rfi_id: rfi_id,\n    project_name: String(body.project_name || '').trim(),\n    discipline: String(body.discipline || '').trim(),\n    submitter: String(body.submitter || '').trim(),\n    submitter_email: String(body.submitter_email || '').trim(),\n    question: String(body.question || '').trim(),\n    due_date: String(body.due_date || '').trim(),\n    status: 'open',\n    received_at: ts\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "4e25db73-ba63-47a8-b030-473213a381b4",
+      "name": "Validate RFI",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -640,
+        256
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "f1",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.project_name }}",
+              "rightValue": ""
+            },
+            {
+              "id": "f2",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.submitter_email }}",
+              "rightValue": ""
+            },
+            {
+              "id": "f3",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.question }}",
+              "rightValue": ""
+            },
+            {
+              "id": "f4",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.due_date }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "957d8271-89b2-45b6-ac1b-467d73c7d37c",
+      "name": "Compute RFI Urgency",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -416,
+        112
+      ],
+      "parameters": {
+        "jsCode": "// Deterministic urgency + discipline hint. No AI arithmetic.\nconst it = $input.first().json;\nconst now = new Date();\nconst parse = (s) => { const d = new Date(String(s)); return isNaN(d.getTime()) ? null : d; };\nconst due = parse(it.due_date);\nlet days = null;\nif (due) days = Math.floor((due.getTime() - now.getTime()) / 86400000 + 0.000001);\nconst q = String(it.question || '').toLowerCase();\nconst kw = {\n  structural: ['structural', 'beam', 'column', 'slab', 'foundation', 'concrete', 'steel', 'rebar', 'shoring'],\n  mechanical: ['mechanical', 'hvac', 'duct', 'chiller', 'pump', 'ventilation', 'exhaust'],\n  electrical: ['electrical', 'cable', 'panel', 'conduit', 'lighting', 'breaker', 'power', 'switchgear'],\n  architectural: ['architect', 'finish', 'door', 'window', 'ceiling', 'wall', 'tile', 'facade', 'millwork']\n};\nlet discipline = '';\nfor (const [k, words] of Object.entries(kw)) {\n  if (words.some((w) => q.includes(w))) { discipline = k; break; }\n}\nlet priority = 'low';\nif (days !== null && days <= 2) priority = 'high';\nelse if (days !== null && days <= 5) priority = 'medium';\nif (q.includes('critical path') || q.includes('stop work') || q.includes('shutdown')) priority = 'high';\nconst urgent = priority === 'high';\nreturn [{\n  json: {\n    ...it,\n    days_until_due: days,\n    priority: priority,\n    discipline: it.discipline || discipline,\n    urgent: urgent,\n    urgency_reason: urgent ? 'Due within 2 days or high impact wording' : 'Normal timeline'\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "99e18db0-4dfb-4d0b-8583-7ea437231be4",
+      "name": "AI Draft RFI Ack",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -192,
+        0
+      ],
+      "parameters": {
+        "text": "={{ 'Project: ' + $json.project_name + '. Discipline: ' + $json.discipline + '. Submitter: ' + $json.submitter + ' (' + $json.submitter_email + '). Question: ' + $json.question + '. Due date: ' + $json.due_date + '. Priority: ' + $json.priority + '. Days until due: ' + $json.days_until_due }}",
+        "options": {
+          "systemMessage": "You are the project coordinator assistant for a general contractor. Categorize the RFI below and write a short, warm acknowledgment email to the subcontractor who submitted it. Return ONLY valid JSON with these keys: question_type (one of: design clarification, constructability, conflict between documents, missing information, other), needs_engineer (true or false, whether this question must go to the design engineer or architect before the team can answer), ack_subject, ack_body. Keep ack_body under 90 words, friendly and specific, name the next step, no em dashes, no corporate filler, no markdown, no code fences."
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 3.1
+    },
+    {
+      "id": "49f024b3-6ee8-4911-a881-52f9b6995b23",
+      "name": "RFI Ack Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        -120,
+        232
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-6-luna",
+          "cachedResultName": "gpt-6-luna"
+        },
+        "options": {
+          "temperature": 0.4
+        },
+        "builtInTools": {}
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "credential-id",
+          "name": "jonathan"
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "b25a5f6f-4fc1-4390-acce-dc807291637b",
+      "name": "Parse RFI Ack",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        160,
+        112
+      ],
+      "parameters": {
+        "jsCode": "// Parse the AI ack draft; fall back to a deterministic ack.\nconst it = $input.first().json;\nlet raw = String(it.output != null ? it.output : '').trim();\nraw = raw.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();\nlet p = {};\nconst m = raw.match(/\\{[\\s\\S]*\\}/);\nif (m) { try { p = JSON.parse(m[0]); } catch (e) { try { p = JSON.parse(m[0].replace(/'/g, '\"')); } catch (e2) {} } }\nlet ctx = it;\ntry { ctx = $('Compute RFI Urgency').first().json; } catch (e) {}\nconst clean = (s) => String(s || '').replace(/[\\u2014\\u2013]/g, '-');\nconst fallbackSubj = 'RFI ' + ctx.rfi_id + ' received: ' + String(ctx.question || '').slice(0, 60);\nconst fallbackBody = 'Hi ' + (ctx.submitter || 'there') + ',\\n\\nThank you for your RFI on ' + ctx.project_name + ' (' + ctx.discipline + '). We received it and it is being reviewed.\\n\\nQuestion: ' + ctx.question + '\\n\\nLook for a response before ' + ctx.due_date + '.\\n\\nProject coordination team';\nreturn [{\n  json: {\n    rfi_id: ctx.rfi_id, project_name: ctx.project_name, discipline: ctx.discipline,\n    submitter: ctx.submitter, submitter_email: ctx.submitter_email, question: ctx.question,\n    due_date: ctx.due_date, priority: ctx.priority, days_until_due: ctx.days_until_due,\n    urgent: ctx.urgent === true,\n    question_type: clean(p.question_type || 'other'),\n    needs_engineer: p.needs_engineer === true || p.needs_engineer === 'true' || ctx.urgent === true,\n    ack_subject: clean(p.ack_subject || fallbackSubj),\n    ack_body: clean(p.ack_body || fallbackBody),\n    received_at: ctx.received_at\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a97f4e14-6255-47cb-850b-c4199b571f64",
+      "name": "Log RFI to Register",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        384,
+        112
+      ],
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "appTGcnO2nvOQC86I"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "name",
+          "value": "RFI Register"
+        },
+        "columns": {
+          "value": {
+            "rfi_id": "={{ $('Parse RFI Ack').item.json.rfi_id }}",
+            "status": "open",
+            "due_date": "={{ $('Parse RFI Ack').item.json.due_date }}",
+            "priority": "={{ $('Parse RFI Ack').item.json.priority }}",
+            "question": "={{ $('Parse RFI Ack').item.json.question }}",
+            "submitter": "={{ $('Parse RFI Ack').item.json.submitter }}",
+            "discipline": "={{ $('Parse RFI Ack').item.json.discipline }}",
+            "received_at": "={{ $('Parse RFI Ack').item.json.received_at }}",
+            "project_name": "={{ $('Parse RFI Ack').item.json.project_name }}",
+            "question_type": "={{ $('Parse RFI Ack').item.json.question_type }}",
+            "needs_engineer": "={{ $('Parse RFI Ack').item.json.needs_engineer ? 'true' : 'false' }}",
+            "submitter_email": "={{ $('Parse RFI Ack').item.json.submitter_email }}"
+          },
+          "schema": [
+            {
+              "id": "rfi_id",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "rfi_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "project_name",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "project_name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "discipline",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "discipline",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "submitter",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "submitter",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "submitter_email",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "submitter_email",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "question",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "question",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "due_date",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "due_date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priority",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "priority",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "question_type",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "question_type",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "needs_engineer",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "needs_engineer",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "received_at",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "received_at",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "options": {
+          "typecast": true
+        },
+        "operation": "create"
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "credential-id",
+          "name": "contactmuhtadin"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "0e5c622f-dda0-4776-a0f0-1eaf15fb0188",
+      "name": "Gmail Ack to Submitter",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        608,
+        112
+      ],
+      "webhookId": "6a31ccc8-5902-4bcf-b277-f33cd032a94b",
+      "parameters": {
+        "sendTo": "={{ $('Parse RFI Ack').item.json.submitter_email }}",
+        "message": "={{ $('Parse RFI Ack').item.json.ack_body }}",
+        "options": {},
+        "subject": "={{ $('Parse RFI Ack').item.json.ack_subject }}",
+        "emailType": "text"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Fresh Sep05"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "5cef3ced-51ee-4523-8edd-95afe6ce90b0",
+      "name": "Discord RFI Logged",
+      "type": "n8n-nodes-base.discord",
+      "position": [
+        832,
+        112
+      ],
+      "webhookId": "57f4b936-b8d6-479e-84c2-b409ae829809",
+      "parameters": {
+        "content": "={{ '\\u2705 New RFI ' + $('Parse RFI Ack').item.json.rfi_id + '\\nProject: ' + $('Parse RFI Ack').item.json.project_name + '\\nDiscipline: ' + $('Parse RFI Ack').item.json.discipline + '\\nSubmitter: ' + $('Parse RFI Ack').item.json.submitter + '\\nPriority: ' + $('Parse RFI Ack').item.json.priority + '\\nDue: ' + $('Parse RFI Ack').item.json.due_date }}",
+        "guildId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061244454965312",
+          "cachedResultName": "Jakserver"
+        },
+        "options": {},
+        "resource": "message",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061827827994645",
+          "cachedResultName": "form-contact"
+        }
+      },
+      "credentials": {
+        "discordBotApi": {
+          "id": "credential-id",
+          "name": "Brands Bot"
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a3942def-5417-4f7b-bd65-483d51d2b391",
+      "name": "RFI Is Urgent",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1056,
+        112
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "f1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $('Parse RFI Ack').item.json.needs_engineer }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "071cc550-818c-4572-be4c-1262ab91713a",
+      "name": "Discord Urgent RFI",
+      "type": "n8n-nodes-base.discord",
+      "position": [
+        1280,
+        112
+      ],
+      "webhookId": "8d1dff62-0671-4495-9f4a-6b6aea289e44",
+      "parameters": {
+        "content": "={{ '\\u26a0\\ufe0f URGENT RFI ' + $('Parse RFI Ack').item.json.rfi_id + '\\nProject: ' + $('Parse RFI Ack').item.json.project_name + '\\nQuestion: ' + $('Parse RFI Ack').item.json.question + '\\nDue: ' + $('Parse RFI Ack').item.json.due_date + '\\nEngineering review needed: ' + $('Parse RFI Ack').item.json.needs_engineer }}",
+        "guildId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061244454965312",
+          "cachedResultName": "Jakserver"
+        },
+        "options": {},
+        "resource": "message",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061827827994645",
+          "cachedResultName": "form-contact"
+        }
+      },
+      "credentials": {
+        "discordBotApi": {
+          "id": "credential-id",
+          "name": "Brands Bot"
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ab736138-2d2f-49db-8634-063865e109f8",
+      "name": "Telegram Urgent RFI",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1504,
+        112
+      ],
+      "webhookId": "b06ce17c-4f04-405c-8686-ca449a5ad07a",
+      "parameters": {
+        "text": "={{ 'RFI ' + $('Parse RFI Ack').item.json.rfi_id + ' needs attention (' + $('Parse RFI Ack').item.json.project_name + '). ' + $('Parse RFI Ack').item.json.question + ' Due ' + $('Parse RFI Ack').item.json.due_date }}",
+        "chatId": "123456789",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "credential-id",
+          "name": "CF Openai Bot"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "7d514db1-2bb0-43cf-a3b0-1882e3efd3ad",
+      "name": "Gmail Urgent RFI to Engineer",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1728,
+        112
+      ],
+      "webhookId": "e9ca3620-f9e4-40be-9b6e-a972b3128d9c",
+      "parameters": {
+        "sendTo": "user@example.com",
+        "message": "={{ 'RFI ' + $('Parse RFI Ack').item.json.rfi_id + ' on ' + $('Parse RFI Ack').item.json.project_name + ' (' + $('Parse RFI Ack').item.json.discipline + ') needs engineering review before we can respond.\\n\\nQuestion: ' + $('Parse RFI Ack').item.json.question + '\\n\\nSubmitter: ' + $('Parse RFI Ack').item.json.submitter + '\\nDue: ' + $('Parse RFI Ack').item.json.due_date }}",
+        "options": {},
+        "subject": "={{ 'URGENT RFI ' + $('Parse RFI Ack').item.json.rfi_id + ' needs engineering input' }}",
+        "emailType": "text"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Fresh Sep05"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "f7b98f38-77b7-47ab-876f-cab4cc1558d5",
+      "name": "Build RFI Invalid Notice",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -416,
+        400
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "subject",
+              "type": "string",
+              "value": "RFI Request Rejected: missing required fields"
+            },
+            {
+              "id": "a1",
+              "name": "message",
+              "type": "string",
+              "value": "A new RFI request was rejected because one or more required fields were empty. Required: project_name, submitter_email, question, due_date."
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "b59132ea-d5a9-488c-ac47-3aedc56d6e88",
+      "name": "Discord RFI Invalid",
+      "type": "n8n-nodes-base.discord",
+      "position": [
+        -128,
+        400
+      ],
+      "webhookId": "691f36ee-dbda-4ec6-bec4-4fa4ef776c3e",
+      "parameters": {
+        "content": "={{ '\\u274c Invalid RFI rejected\\nMissing required fields (project_name, submitter_email, question, due_date). Received: ' + JSON.stringify($json.body || $json) }}",
+        "guildId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061244454965312",
+          "cachedResultName": "Jakserver"
+        },
+        "options": {},
+        "resource": "message",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061827827994645",
+          "cachedResultName": "form-contact"
+        }
+      },
+      "credentials": {
+        "discordBotApi": {
+          "id": "credential-id",
+          "name": "Brands Bot"
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "323a64f3-c255-41b9-b0b5-85390afaf288",
+      "name": "Gmail RFI Invalid to Office",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        160,
+        400
+      ],
+      "webhookId": "cc8e358c-76d7-4acc-9e73-0c1f35ee7f2d",
+      "parameters": {
+        "sendTo": "user@example.com",
+        "message": "={{ 'A new RFI request was rejected because required fields were empty. Required: project_name, submitter_email, question, due_date. Review the request and resubmit.' }}",
+        "options": {},
+        "subject": "={{ 'RFI Request Rejected: missing fields' }}",
+        "emailType": "text"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Fresh Sep05"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "8d8b83f8-4ca3-4a61-9061-3c1d3db94348",
+      "name": "When an Answer Arrives",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -1088,
+        1000.75
+      ],
+      "webhookId": "1706fdc9-b18b-4b0a-8e66-8d83dba71d67",
+      "parameters": {
+        "path": "rfi/answer",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7ba15dc0-e988-490f-acd2-060c6c6c4f9e",
+      "name": "Normalize Answer",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -864,
+        1000.75
+      ],
+      "parameters": {
+        "jsCode": "// Normalize the RFI answer payload.\nconst first = $input.first().json;\nconst body = first.body && typeof first.body === 'object' ? first.body : first;\nreturn [{\n  json: {\n    rfi_id: String(body.rfi_id || '').trim().toUpperCase(),\n    answer_text: String(body.answer_text || '').trim(),\n    answered_by: String(body.answered_by || '').trim()\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "6ea5f318-a102-4169-a489-9d6da62f8b11",
+      "name": "Validate Answer",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -640,
+        1000.75
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "f1",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.rfi_id }}",
+              "rightValue": ""
+            },
+            {
+              "id": "f2",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.answer_text }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "4d910b75-d32b-4d44-abf5-52bc995f4cba",
+      "name": "Find RFI Record",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        -416,
+        904.75
+      ],
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "appTGcnO2nvOQC86I"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "name",
+          "value": "RFI Register"
+        },
+        "options": {},
+        "operation": "search"
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "credential-id",
+          "name": "contactmuhtadin"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "66771126-1a65-47d0-ab3f-407af825aaca",
+      "name": "Match RFI in Code",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -192,
+        904.75
+      ],
+      "parameters": {
+        "jsCode": "// Match the answer rfi_id against the RFI Register.\nconst rows = $input.all().map((i) => i.json);\nconst ctx = $('Normalize Answer').first().json;\nconst rid = String(ctx.rfi_id || '').trim().toUpperCase();\nconst rec = rows.map((r) => r.fields || r).find((r) => String(r.rfi_id || '').trim().toUpperCase() === rid);\nif (!rec) return [{ json: { found: false, rfi_id: rid, answer_text: ctx.answer_text, answered_by: ctx.answered_by } }];\nreturn [{\n  json: {\n    found: true,\n    record_id: rec.id,\n    rfi_id: rid,\n    answer_text: ctx.answer_text,\n    answered_by: ctx.answered_by,\n    submitter_email: String(rec.submitter_email || ''),\n    submitter: String(rec.submitter || ''),\n    project_name: String(rec.project_name || ''),\n    question: String(rec.question || ''),\n    answered_at: (() => { const n = new Date(); const p = (x) => String(x).padStart(2, '0'); return n.getFullYear() + '-' + p(n.getMonth() + 1) + '-' + p(n.getDate()) + ' ' + p(n.getHours()) + ':' + p(n.getMinutes()); })()\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9b9ff308-1ce0-4edc-8297-575b238489dc",
+      "name": "RFI Found",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        32,
+        904.75
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "f1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.found }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "27c89fd6-aa8f-4bcb-813e-098daf82bb8a",
+      "name": "Update RFI Answered",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        256,
+        808.75
+      ],
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "appTGcnO2nvOQC86I"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "name",
+          "value": "RFI Register"
+        },
+        "columns": {
+          "value": {
+            "rfi_id": "={{ $('Match RFI in Code').item.json.rfi_id }}",
+            "status": "answered",
+            "answer_text": "={{ $('Match RFI in Code').item.json.answer_text }}",
+            "answered_at": "={{ $('Match RFI in Code').item.json.answered_at }}",
+            "answered_by": "={{ $('Match RFI in Code').item.json.answered_by }}"
+          },
+          "schema": [
+            {
+              "id": "rfi_id",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "rfi_id",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "answer_text",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "answer_text",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "answered_by",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "answered_by",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "answered_at",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "answered_at",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "rfi_id"
+          ]
+        },
+        "options": {
+          "typecast": true
+        },
+        "operation": "update"
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "credential-id",
+          "name": "contactmuhtadin"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "cab293c5-593d-4dc4-bff9-c6d9fbd032b4",
+      "name": "Gmail Answer to Submitter",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        480,
+        808.75
+      ],
+      "webhookId": "7ef44f12-4c07-45b8-8bdc-1315abf279b7",
+      "parameters": {
+        "sendTo": "={{ $('Match RFI in Code').item.json.submitter_email }}",
+        "message": "={{ 'Hi ' + $('Match RFI in Code').item.json.submitter + ',\\n\\nHere is the response to your RFI ' + $('Match RFI in Code').item.json.rfi_id + '.\\n\\n' + $('Match RFI in Code').item.json.answer_text + '\\n\\nAnswered by: ' + $('Match RFI in Code').item.json.answered_by }}",
+        "options": {},
+        "subject": "={{ 'Response to ' + $('Match RFI in Code').item.json.rfi_id + ' (' + $('Match RFI in Code').item.json.project_name + ')' }}",
+        "emailType": "text"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Fresh Sep05"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "3c9204ac-00b0-4b67-973a-4b43c7fb44cd",
+      "name": "Discord Answer Logged",
+      "type": "n8n-nodes-base.discord",
+      "position": [
+        704,
+        808.75
+      ],
+      "webhookId": "663403e8-d712-4786-87d1-5e5c82099b4c",
+      "parameters": {
+        "content": "={{ '\\u2705 RFI ' + $('Match RFI in Code').item.json.rfi_id + ' answered by ' + $('Match RFI in Code').item.json.answered_by + '\\n' + String($('Match RFI in Code').item.json.answer_text).slice(0, 200) }}",
+        "guildId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061244454965312",
+          "cachedResultName": "Jakserver"
+        },
+        "options": {},
+        "resource": "message",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061827827994645",
+          "cachedResultName": "form-contact"
+        }
+      },
+      "credentials": {
+        "discordBotApi": {
+          "id": "credential-id",
+          "name": "Brands Bot"
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f5eb09cb-e16c-4cbc-95b6-7ab850d0df7e",
+      "name": "Build Answer Invalid Notice",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -416,
+        1096.75
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "subject",
+              "type": "string",
+              "value": "RFI Answer Rejected: missing rfi_id or answer"
+            },
+            {
+              "id": "a1",
+              "name": "message",
+              "type": "string",
+              "value": "An RFI answer update was rejected because rfi_id or answer_text was empty."
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "d8eea3f8-96e0-4ce1-b6ff-0728eb03b080",
+      "name": "Discord Answer Invalid",
+      "type": "n8n-nodes-base.discord",
+      "position": [
+        -192,
+        1096.75
+      ],
+      "webhookId": "2fd3f2cb-0ebb-4dd1-99b9-d1bea9f05f6d",
+      "parameters": {
+        "content": "={{ '\\u274c Invalid RFI answer rejected (missing rfi_id or answer_text)' }}",
+        "guildId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061244454965312",
+          "cachedResultName": "Jakserver"
+        },
+        "options": {},
+        "resource": "message",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061827827994645",
+          "cachedResultName": "form-contact"
+        }
+      },
+      "credentials": {
+        "discordBotApi": {
+          "id": "credential-id",
+          "name": "Brands Bot"
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "3d4a0f6a-f777-440e-9bfd-8d8e4732c923",
+      "name": "Gmail Answer Invalid",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        32,
+        1096.75
+      ],
+      "webhookId": "bb16302c-cce5-40ca-b00d-c97291934d77",
+      "parameters": {
+        "sendTo": "user@example.com",
+        "message": "={{ 'An RFI answer update was rejected because rfi_id or answer_text was empty.' }}",
+        "options": {},
+        "subject": "={{ 'RFI Answer Rejected: missing fields' }}",
+        "emailType": "text"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Fresh Sep05"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "af1eb888-2090-47d1-a1f9-f3825da512c6",
+      "name": "Discord Answer No Match",
+      "type": "n8n-nodes-base.discord",
+      "position": [
+        256,
+        1000.75
+      ],
+      "webhookId": "cc6f754a-972d-4ee4-aee7-7693b2cbe57a",
+      "parameters": {
+        "content": "={{ '\\u2753 Answer for RFI ' + $json.rfi_id + ' did not match any open RFI in the register' }}",
+        "guildId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061244454965312",
+          "cachedResultName": "Jakserver"
+        },
+        "options": {},
+        "resource": "message",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061827827994645",
+          "cachedResultName": "form-contact"
+        }
+      },
+      "credentials": {
+        "discordBotApi": {
+          "id": "credential-id",
+          "name": "Brands Bot"
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "3883219f-c6da-4929-bb40-b98c6f7fd1c6",
+      "name": "Gmail Answer No Match",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        480,
+        1000.75
+      ],
+      "webhookId": "94b561a7-3e05-4673-a495-77391470e6e2",
+      "parameters": {
+        "sendTo": "user@example.com",
+        "message": "={{ 'An answer was submitted but no matching record was found in the RFI Register. Check the rfi_id and resubmit.' }}",
+        "options": {},
+        "subject": "={{ 'RFI Answer did not match' }}",
+        "emailType": "text"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Fresh Sep05"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "2ae0fa0d-3dd1-40cc-a6d6-2aac8c52de92",
+      "name": "When a Submittal Arrives",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -1088,
+        1761.5
+      ],
+      "webhookId": "dd7a52a1-c00a-4f7a-a27f-3de14982661b",
+      "parameters": {
+        "path": "subm/intake",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "98998c7e-3a41-4a8d-a234-5e589d2a6bec",
+      "name": "Normalize Submittal",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -864,
+        1761.5
+      ],
+      "parameters": {
+        "jsCode": "// Extract and normalize the submittal intake payload.\nconst first = $input.first().json;\nconst body = first.body && typeof first.body === 'object' ? first.body : first;\nconst now = new Date();\nconst pad = (n) => String(n).padStart(2, '0');\nconst dateStr = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());\nconst ts = dateStr + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());\nconst sub_id = String(body.sub_id || ('SUB-' + dateStr.replace(/-/g, '') + '-' + Math.random().toString(36).slice(2, 6).toUpperCase()));\nreturn [{\n  json: {\n    sub_id: sub_id,\n    project_name: String(body.project_name || '').trim(),\n    item_name: String(body.item_name || '').trim(),\n    spec_section: String(body.spec_section || '').trim(),\n    submitter: String(body.submitter || '').trim(),\n    submitter_email: String(body.submitter_email || '').trim(),\n    due_date: String(body.due_date || '').trim(),\n    status: 'submitted',\n    received_at: ts\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "283d393a-22e7-4bff-b22e-4a7c14e783d2",
+      "name": "Validate Submittal",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -640,
+        1761.5
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "f1",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.project_name }}",
+              "rightValue": ""
+            },
+            {
+              "id": "f2",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.item_name }}",
+              "rightValue": ""
+            },
+            {
+              "id": "f3",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.submitter_email }}",
+              "rightValue": ""
+            },
+            {
+              "id": "f4",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.due_date }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "27e3e7a8-0b19-44ca-8bd6-f2c56d8c8ed5",
+      "name": "AI Classify Submittal",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -416,
+        1505.5
+      ],
+      "parameters": {
+        "text": "={{ 'Project: ' + $json.project_name + '. Item: ' + $json.item_name + '. Spec section: ' + $json.spec_section + '. Submitter: ' + $json.submitter + ' (' + $json.submitter_email + '). Due date: ' + $json.due_date }}",
+        "options": {
+          "systemMessage": "You are the document control assistant for a general contractor. Classify the construction submittal below and write a short, warm acknowledgment email to the party who submitted it. Return ONLY valid JSON with these keys: sub_type (one of: shop drawing, material, product data, sample, other), reviewer (one of: architect, structural engineer, mechanical engineer, electrical engineer, project manager), ack_subject, ack_body. Keep ack_body under 80 words, friendly and clear, state the review next step, no em dashes, no corporate filler, no markdown, no code fences."
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 3.1
+    },
+    {
+      "id": "040bd39a-6579-4112-827d-6f1a10646e0e",
+      "name": "Submittal Classify Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        -344,
+        1737.5
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-6-luna",
+          "cachedResultName": "gpt-6-luna"
+        },
+        "options": {
+          "temperature": 0.4
+        },
+        "builtInTools": {}
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "credential-id",
+          "name": "jonathan"
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "d3bd500e-2d4e-4cdb-abc3-08d5edbbdfb1",
+      "name": "Parse Submittal Classify",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -64,
+        1617.5
+      ],
+      "parameters": {
+        "jsCode": "// Parse the AI submittal classification; fall back to defaults.\nconst it = $input.first().json;\nlet raw = String(it.output != null ? it.output : '').trim();\nraw = raw.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();\nlet p = {};\nconst m = raw.match(/\\{[\\s\\S]*\\}/);\nif (m) { try { p = JSON.parse(m[0]); } catch (e) { try { p = JSON.parse(m[0].replace(/'/g, '\"')); } catch (e2) {} } }\nlet ctx = it;\ntry { ctx = $('Normalize Submittal').first().json; } catch (e) {}\nconst clean = (s) => String(s || '').replace(/[\\u2014\\u2013]/g, '-');\nconst fallbackSubj = 'Submittal ' + ctx.sub_id + ' received: ' + String(ctx.item_name || '').slice(0, 60);\nconst fallbackBody = 'Hi ' + (ctx.submitter || 'there') + ',\\n\\nWe received your submittal for ' + ctx.item_name + ' on ' + ctx.project_name + '. It is being routed for review.\\n\\nLook for a decision before ' + ctx.due_date + '.\\n\\nDocument control team';\nreturn [{\n  json: {\n    sub_id: ctx.sub_id, project_name: ctx.project_name, item_name: ctx.item_name,\n    spec_section: ctx.spec_section, submitter: ctx.submitter, submitter_email: ctx.submitter_email,\n    due_date: ctx.due_date, received_at: ctx.received_at,\n    sub_type: clean(p.sub_type || 'other'),\n    reviewer: clean(p.reviewer || 'project manager'),\n    ack_subject: clean(p.ack_subject || fallbackSubj),\n    ack_body: clean(p.ack_body || fallbackBody)\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c471f828-e433-4ada-86c2-5568b987ae8b",
+      "name": "Log Submittal to Log",
+      "type": "n8n-nodes-base.airtable",
+      "position": [
+        160,
+        1617.5
+      ],
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "appTGcnO2nvOQC86I"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Submittal Log"
+        },
+        "columns": {
+          "value": {
+            "status": "submitted",
+            "sub_id": "={{ $('Parse Submittal Classify').item.json.sub_id }}",
+            "due_date": "={{ $('Parse Submittal Classify').item.json.due_date }}",
+            "reviewer": "={{ $('Parse Submittal Classify').item.json.reviewer }}",
+            "sub_type": "={{ $('Parse Submittal Classify').item.json.sub_type }}",
+            "item_name": "={{ $('Parse Submittal Classify').item.json.item_name }}",
+            "received_at": "={{ $('Parse Submittal Classify').item.json.received_at }}",
+            "project_name": "={{ $('Parse Submittal Classify').item.json.project_name }}",
+            "spec_section": "={{ $('Parse Submittal Classify').item.json.spec_section }}",
+            "submitter_email": "={{ $('Parse Submittal Classify').item.json.submitter_email }}"
+          },
+          "schema": [
+            {
+              "id": "sub_id",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "sub_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "project_name",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "project_name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "item_name",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "item_name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "spec_section",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "spec_section",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sub_type",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "sub_type",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reviewer",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "reviewer",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "submitter_email",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "submitter_email",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "due_date",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "due_date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "received_at",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "received_at",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "options": {
+          "typecast": true
+        },
+        "operation": "create"
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "credential-id",
+          "name": "contactmuhtadin"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "0a06b06f-ee19-423e-a02b-a8805100e10d",
+      "name": "Gmail Submittal Ack",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        384,
+        1617.5
+      ],
+      "webhookId": "3d6290af-a14f-4e24-aa72-0e587c1767ef",
+      "parameters": {
+        "sendTo": "={{ $('Parse Submittal Classify').item.json.submitter_email }}",
+        "message": "={{ $('Parse Submittal Classify').item.json.ack_body }}",
+        "options": {},
+        "subject": "={{ $('Parse Submittal Classify').item.json.ack_subject }}",
+        "emailType": "text"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Fresh Sep05"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "d4cae4ff-c929-4b4e-9567-bba372b28655",
+      "name": "Discord Submittal Logged",
+      "type": "n8n-nodes-base.discord",
+      "position": [
+        608,
+        1617.5
+      ],
+      "webhookId": "78f5ea8d-3899-46db-ae46-4bec99f0e766",
+      "parameters": {
+        "content": "={{ '\\ud83d\\udcdd Submittal ' + $('Parse Submittal Classify').item.json.sub_id + '\\nItem: ' + $('Parse Submittal Classify').item.json.item_name + '\\nType: ' + $('Parse Submittal Classify').item.json.sub_type + '\\nReviewer: ' + $('Parse Submittal Classify').item.json.reviewer + '\\nDue: ' + $('Parse Submittal Classify').item.json.due_date }}",
+        "guildId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061244454965312",
+          "cachedResultName": "Jakserver"
+        },
+        "options": {},
+        "resource": "message",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061827827994645",
+          "cachedResultName": "form-contact"
+        }
+      },
+      "credentials": {
+        "discordBotApi": {
+          "id": "credential-id",
+          "name": "Brands Bot"
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "799e0f0e-a2e8-4b46-adae-530d17279fc9",
+      "name": "Build Submittal Invalid Notice",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -352,
+        1905.5
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "subject",
+              "type": "string",
+              "value": "Submittal Rejected: missing required fields"
+            },
+            {
+              "id": "a1",
+              "name": "message",
+              "type": "string",
+              "value": "A submittal was rejected because required fields were empty. Required: project_name, item_name, submitter_email, due_date."
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "7cf94147-d31d-4bcf-b708-4df966734836",
+      "name": "Discord Submittal Invalid",
+      "type": "n8n-nodes-base.discord",
+      "position": [
+        -64,
+        1905.5
+      ],
+      "webhookId": "17f63f33-41e2-497f-905a-91fda12f3c77",
+      "parameters": {
+        "content": "={{ '\\u274c Invalid submittal rejected (missing project_name, item_name, submitter_email, or due_date)' }}",
+        "guildId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061244454965312",
+          "cachedResultName": "Jakserver"
+        },
+        "options": {},
+        "resource": "message",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061827827994645",
+          "cachedResultName": "form-contact"
+        }
+      },
+      "credentials": {
+        "discordBotApi": {
+          "id": "credential-id",
+          "name": "Brands Bot"
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1af64bdc-298e-4278-b60e-46bee9617b4e",
+      "name": "Gmail Submittal Invalid",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        160,
+        1905.5
+      ],
+      "webhookId": "32dc62dd-cab6-4273-91b9-0f64aefc969b",
+      "parameters": {
+        "sendTo": "user@example.com",
+        "message": "={{ 'A submittal was rejected because required fields were empty. Required: project_name, item_name, submitter_email, due_date.' }}",
+        "options": {},
+        "subject": "={{ 'Submittal Rejected: missing fields' }}",
+        "emailType": "text"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Fresh Sep05"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "84c89e4d-1648-4bfb-9b67-dfb932c15dec",
+      "name": "Schedule Daily Sweep",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -1088,
+        2410.25
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "32a6b13d-b971-4b32-bfea-540bcafb143e",
+      "name": "Fetch Open RFIs",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -864,
+        2410.25
+      ],
+      "parameters": {
+        "url": "https://api.airtable.com/v0/appTGcnO2nvOQC86I/RFI%20Register",
+        "options": {},
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableTokenApi"
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "credential-id",
+          "name": "contactmuhtadin"
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "70a64b88-fc6e-4e38-b165-12ea41bf42f3",
+      "name": "Fetch Open Submittals",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -640,
+        2410.25
+      ],
+      "parameters": {
+        "url": "https://api.airtable.com/v0/appTGcnO2nvOQC86I/Submittal%20Log",
+        "options": {},
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableTokenApi"
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "credential-id",
+          "name": "contactmuhtadin"
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "04dab02b-f5fa-4b90-b21d-4fc36ebd3e30",
+      "name": "Compute Sweep Summary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -416,
+        2410.25
+      ],
+      "parameters": {
+        "jsCode": "// Combine open RFIs + submitted submittals into a daily summary.\nconst subsJson = $input.first().json.records || [];\nlet rfisJson = [];\ntry { rfisJson = $('Fetch Open RFIs').first().json.records || []; } catch (e) {}\nconst subs = subsJson;\nconst rfis = rfisJson;\nconst now = new Date();\nconst parse = (s) => { const d = new Date(String(s)); return isNaN(d.getTime()) ? null : d; };\nconst dayDiff = (s) => { const d = parse(s); if (!d) return null; return Math.floor((d.getTime() - now.getTime()) / 86400000 + 0.000001); };\nconst lines = [];\nlet openRfi = 0, openSub = 0, dueToday = 0, overdue = 0;\nconst seenR = new Set();\nfor (const r of rfis.map((r) => r.fields || r)) {\n  if (String(r.status || 'open') !== 'answered') {\n    if (seenR.has(String(r.rfi_id))) continue;\n    seenR.add(String(r.rfi_id));\n    openRfi++;\n    const dd = dayDiff(r.due_date);\n    if (dd !== null && dd < 0) { overdue++; lines.push('OVERDUE RFI ' + r.rfi_id + ' (' + r.project_name + ') due ' + r.due_date); }\n    else if (dd === 0) { dueToday++; lines.push('RFI ' + r.rfi_id + ' due TODAY (' + r.project_name + ')'); }\n    else if (dd !== null && dd <= 2) { lines.push('RFI ' + r.rfi_id + ' due in ' + dd + 'd (' + r.project_name + ')'); }\n  }\n}\nconst seenS = new Set();\nfor (const s of subs.map((s) => s.fields || s)) {\n  if (String(s.status || 'submitted') === 'submitted') {\n    if (seenS.has(String(s.sub_id))) continue;\n    seenS.add(String(s.sub_id));\n    openSub++;\n    const dd = dayDiff(s.due_date);\n    if (dd !== null && dd < 0) { overdue++; lines.push('OVERDUE submittal ' + s.sub_id + ' (' + s.item_name + ')'); }\n    else if (dd === 0) { dueToday++; lines.push('Submittal ' + s.sub_id + ' due TODAY (' + s.item_name + ')'); }\n    else if (dd !== null && dd <= 2) { lines.push('Submittal ' + s.sub_id + ' due in ' + dd + 'd (' + s.item_name + ')'); }\n  }\n}\nconst hasItems = lines.length > 0;\nreturn [{\n  json: {\n    has_items: hasItems,\n    open_rfis: openRfi,\n    open_submittals: openSub,\n    due_today: dueToday,\n    overdue: overdue,\n    detail: lines.join('\\n') || 'All clear',\n    summary_text: 'Daily construction document sweep\\n\\nOpen RFIs: ' + openRfi + '\\nOpen submittals: ' + openSub + '\\nDue today: ' + dueToday + '\\nOverdue: ' + overdue + '\\n\\n' + (lines.length ? lines.join('\\n') : 'All clear, nothing due.')\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "59d19e9b-c135-402c-a75c-134038b22fa5",
+      "name": "Sweep Has Items",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -192,
+        2410.25
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "f1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.has_items }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "da65366b-c37e-4746-bab3-91f9c2144ca8",
+      "name": "Gmail Sweep Summary",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        32,
+        2314.25
+      ],
+      "webhookId": "02c1d36d-a434-4f29-a816-0177e4574a62",
+      "parameters": {
+        "sendTo": "user@example.com",
+        "message": "={{ $json.summary_text }}",
+        "options": {},
+        "subject": "={{ 'Daily RFI and submittal sweep: ' + $json.overdue + ' overdue, ' + $json.due_today + ' due today' }}",
+        "emailType": "text"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Fresh Sep05"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "3fc2589e-8f9e-4ce7-82b0-c9b22d0a0932",
+      "name": "Discord Sweep Summary",
+      "type": "n8n-nodes-base.discord",
+      "position": [
+        256,
+        2314.25
+      ],
+      "webhookId": "f91f937d-d852-4e19-89a6-2a6269ba98d8",
+      "parameters": {
+        "content": "={{ '\\ud83d\\udd14 Daily sweep\\n' + $json.summary_text }}",
+        "guildId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061244454965312",
+          "cachedResultName": "Jakserver"
+        },
+        "options": {},
+        "resource": "message",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061827827994645",
+          "cachedResultName": "form-contact"
+        }
+      },
+      "credentials": {
+        "discordBotApi": {
+          "id": "credential-id",
+          "name": "Brands Bot"
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "257027e9-4bed-4c69-9b6e-b52be1a70440",
+      "name": "Discord Sweep All Clear",
+      "type": "n8n-nodes-base.discord",
+      "position": [
+        32,
+        2506.25
+      ],
+      "webhookId": "ed152dc1-97e0-4daa-b79b-0ee445cc1785",
+      "parameters": {
+        "content": "={{ '\\u2705 Daily sweep: all clear, nothing due or overdue' }}",
+        "guildId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061244454965312",
+          "cachedResultName": "Jakserver"
+        },
+        "options": {},
+        "resource": "message",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1409061827827994645",
+          "cachedResultName": "form-contact"
+        }
+      },
+      "credentials": {
+        "discordBotApi": {
+          "id": "credential-id",
+          "name": "Brands Bot"
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "362195f4-d93c-4f63-90af-89f95a7f9a52",
+      "name": "Gmail Sweep All Clear",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        256,
+        2506.25
+      ],
+      "webhookId": "1a650412-ee28-4fb4-8de9-89f87bd4c30a",
+      "parameters": {
+        "sendTo": "user@example.com",
+        "message": "={{ 'No RFIs or submittals are due today or overdue. Nothing to chase.' }}",
+        "options": {},
+        "subject": "={{ 'Daily RFI and submittal sweep: all clear' }}",
+        "emailType": "text"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Fresh Sep05"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "sn-350-0",
+      "name": "Sticky Note: RFI intake",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1168,
+        -148.75
+      ],
+      "parameters": {
+        "color": "7",
+        "width": 3136,
+        "height": 728.75,
+        "content": "## RFI intake, AI acknowledgment and escalation\n\nNew RFIs are validated, logged to Airtable, acknowledged by email and announced on Discord. Urgent items escalate to Telegram and the engineer inbox."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sn-350-1",
+      "name": "Sticky Note: RFI answers",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1168,
+        660
+      ],
+      "parameters": {
+        "color": "7",
+        "width": 2112,
+        "height": 616.75,
+        "content": "## RFI answers\n\nAnswers are matched to the register by RFI ID, the record is marked answered, and the submitter is notified. Unmatched answers get an explanatory notice."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sn-350-2",
+      "name": "Sticky Note: Submittals",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1168,
+        1356.75
+      ],
+      "parameters": {
+        "color": "7",
+        "width": 2016,
+        "height": 728.75,
+        "content": "## Submittal packages\n\nSubmittals are validated, classified by a gpt-6-luna agent, logged to the submittal log, acknowledged by email and announced on Discord."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sn-350-3",
+      "name": "Sticky Note: Daily sweep",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1168,
+        2165.5
+      ],
+      "parameters": {
+        "color": "7",
+        "width": 1664,
+        "height": 520.75,
+        "content": "## Daily overdue sweep\n\nEvery weekday morning open RFIs and submittals are summarized, emailed and posted on Discord, with an all clear when nothing needs chasing."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sn-main-350",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1778,
+        -148.75
+      ],
+      "parameters": {
+        "width": 570,
+        "height": 640,
+        "content": "## Track construction RFIs and submittals with Airtable, Gmail, Discord, Telegram and gpt-6-luna\n\n### How it works\n\n1. An RFI arrives on a webhook, is validated, and a gpt-6-luna agent drafts the acknowledgment.\n2. The RFI is logged to Airtable, the submitter is emailed, and the team is notified on Discord.\n3. Urgent RFIs are escalated to Discord, Telegram and the engineer's inbox.\n4. Answers arrive on a webhook, are matched to the register by RFI ID, and the record is marked answered.\n5. Submittal packages are validated and classified by a gpt-6-luna agent before being logged and acknowledged.\n6. Every weekday morning a sweep emails and posts what is due or overdue, and sends an all clear when nothing is pending.\n\n### Setup steps\n\n- [ ] Connect your Airtable credential and select the RFI register, submittal log and project tables\n- [ ] Connect OpenAI, Gmail, Discord and Telegram credentials\n- [ ] Replace the placeholder Gmail recipients, Discord channel and Telegram chat with your own office contacts\n- [ ] Copy the webhook URLs (rfi/intake, rfi/answer, submittal/intake) into your project forms or app\n- [ ] Move the daily sweep schedule to your local morning\n\n### Customization\n\nChange the urgency thresholds, add more submittal disciplines, or swap Discord and Telegram for the channels your team already uses."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "timezone": "Asia/Jakarta",
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "versionId": "ff40c555-149e-4844-9fe9-c18bcdb644de",
+  "nodeGroups": [],
+  "connections": {
+    "RFI Found": {
+      "main": [
+        [
+          {
+            "node": "Update RFI Answered",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Discord Answer No Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate RFI": {
+      "main": [
+        [
+          {
+            "node": "Compute RFI Urgency",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build RFI Invalid Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse RFI Ack": {
+      "main": [
+        [
+          {
+            "node": "Log RFI to Register",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RFI Ack Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Draft RFI Ack",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RFI Is Urgent": {
+      "main": [
+        [
+          {
+            "node": "Discord Urgent RFI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Fetch Open RFIs": {
+      "main": [
+        [
+          {
+            "node": "Fetch Open Submittals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find RFI Record": {
+      "main": [
+        [
+          {
+            "node": "Match RFI in Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sweep Has Items": {
+      "main": [
+        [
+          {
+            "node": "Gmail Sweep Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Discord Sweep All Clear",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Answer": {
+      "main": [
+        [
+          {
+            "node": "Find RFI Record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Answer Invalid Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Draft RFI Ack": {
+      "main": [
+        [
+          {
+            "node": "Parse RFI Ack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Answer": {
+      "main": [
+        [
+          {
+            "node": "Validate Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match RFI in Code": {
+      "main": [
+        [
+          {
+            "node": "RFI Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord RFI Logged": {
+      "main": [
+        [
+          {
+            "node": "RFI Is Urgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord Urgent RFI": {
+      "main": [
+        [
+          {
+            "node": "Telegram Urgent RFI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Submittal": {
+      "main": [
+        [
+          {
+            "node": "AI Classify Submittal",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Submittal Invalid Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute RFI Urgency": {
+      "main": [
+        [
+          {
+            "node": "AI Draft RFI Ack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord RFI Invalid": {
+      "main": [
+        [
+          {
+            "node": "Gmail RFI Invalid to Office",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Submittal Ack": {
+      "main": [
+        [
+          {
+            "node": "Discord Submittal Logged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Sweep Summary": {
+      "main": [
+        [
+          {
+            "node": "Discord Sweep Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log RFI to Register": {
+      "main": [
+        [
+          {
+            "node": "Gmail Ack to Submitter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Submittal": {
+      "main": [
+        [
+          {
+            "node": "Validate Submittal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Urgent RFI": {
+      "main": [
+        [
+          {
+            "node": "Gmail Urgent RFI to Engineer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update RFI Answered": {
+      "main": [
+        [
+          {
+            "node": "Gmail Answer to Submitter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When an RFI Arrives": {
+      "main": [
+        [
+          {
+            "node": "Normalize RFI Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Submittal to Log": {
+      "main": [
+        [
+          {
+            "node": "Gmail Submittal Ack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Daily Sweep": {
+      "main": [
+        [
+          {
+            "node": "Fetch Open RFIs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Classify Submittal": {
+      "main": [
+        [
+          {
+            "node": "Parse Submittal Classify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Sweep Summary": {
+      "main": [
+        [
+          {
+            "node": "Sweep Has Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Open Submittals": {
+      "main": [
+        [
+          {
+            "node": "Compute Sweep Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize RFI Request": {
+      "main": [
+        [
+          {
+            "node": "Validate RFI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord Answer Invalid": {
+      "main": [
+        [
+          {
+            "node": "Gmail Answer Invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Ack to Submitter": {
+      "main": [
+        [
+          {
+            "node": "Discord RFI Logged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When an Answer Arrives": {
+      "main": [
+        [
+          {
+            "node": "Normalize Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord Answer No Match": {
+      "main": [
+        [
+          {
+            "node": "Gmail Answer No Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord Sweep All Clear": {
+      "main": [
+        [
+          {
+            "node": "Gmail Sweep All Clear",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build RFI Invalid Notice": {
+      "main": [
+        [
+          {
+            "node": "Discord RFI Invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Submittal Classify": {
+      "main": [
+        [
+          {
+            "node": "Log Submittal to Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submittal Classify Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Classify Submittal",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When a Submittal Arrives": {
+      "main": [
+        [
+          {
+            "node": "Normalize Submittal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord Submittal Invalid": {
+      "main": [
+        [
+          {
+            "node": "Gmail Submittal Invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Answer to Submitter": {
+      "main": [
+        [
+          {
+            "node": "Discord Answer Logged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Answer Invalid Notice": {
+      "main": [
+        [
+          {
+            "node": "Discord Answer Invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Submittal Invalid Notice": {
+      "main": [
+        [
+          {
+            "node": "Discord Submittal Invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

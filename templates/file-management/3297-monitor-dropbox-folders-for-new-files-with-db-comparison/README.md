@@ -1,6 +1,6 @@
 # 📁 Monitor Dropbox folders for new files with DB comparison
 
-> ⚡ **1,639 views** · 📁 [File Management](../)
+> ⚡ **1,758 views** · 📁 [File Management](../)
 
 ## Description
 

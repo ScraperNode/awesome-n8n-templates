@@ -1,6 +1,6 @@
 # 📋 Automate medical rep visit workflow with Google Sheets, Gmail & OpenAI summaries
 
-> ⚡ **180 views** · 📋 [Project Management](../)
+> ⚡ **210 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 AI data analyst agent and visualization agent for large spreadsheets
 
-> ⚡ **6,292 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **6,228 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

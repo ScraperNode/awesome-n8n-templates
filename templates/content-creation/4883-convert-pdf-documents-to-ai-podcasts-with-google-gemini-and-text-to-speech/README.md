@@ -1,6 +1,6 @@
 # 🎬 Convert PDF documents to AI podcasts with Google Gemini and text-to-speech
 
-> ⚡ **4,141 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,526 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

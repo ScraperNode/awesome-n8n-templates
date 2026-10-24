@@ -1,6 +1,6 @@
 # 🎬 Research & generate blog posts from keywords with Dumpling AI and GPT-4 to WordPress
 
-> ⚡ **804 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **887 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

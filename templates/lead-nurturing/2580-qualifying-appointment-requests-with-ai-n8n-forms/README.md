@@ -1,6 +1,6 @@
 # 💬 Qualifying appointment requests with AI & n8n forms
 
-> ⚡ **17,190 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **18,155 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

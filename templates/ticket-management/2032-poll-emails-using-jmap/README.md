@@ -1,6 +1,6 @@
 # 🎫 Poll emails using JMAP
 
-> ⚡ **1,012 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,137 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Send an email using Mailjet
 
-> ⚡ **1,029 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,051 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

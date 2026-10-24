@@ -1,6 +1,6 @@
 # 🤝 Analyze high-priority tenders from Airtable to Slack for Go/No-Go approval
 
-> ⚡ **224 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **449 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

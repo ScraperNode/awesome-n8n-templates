@@ -1,6 +1,6 @@
 # 🎣 Real-time lead routing in Webflow
 
-> ⚡ **2,589 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **2,660 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

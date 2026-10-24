@@ -1,6 +1,6 @@
 # 👥 Process resumes from Google Drive to ClickUp using GPT-4o and Google Sheets
 
-> ⚡ **209 views** · 👥 [HR & Recruitment](../)
+> ⚡ **268 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

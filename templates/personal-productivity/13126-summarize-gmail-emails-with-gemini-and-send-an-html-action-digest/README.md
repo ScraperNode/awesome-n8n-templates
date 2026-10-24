@@ -1,6 +1,6 @@
 # ⚡ Summarize Gmail emails with Gemini and send an HTML action digest
 
-> ⚡ **81 views** · ⚡ [Personal Productivity](../)
+> ⚡ **326 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

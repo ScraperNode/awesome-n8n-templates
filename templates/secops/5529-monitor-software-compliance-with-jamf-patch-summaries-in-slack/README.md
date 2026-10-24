@@ -1,6 +1,6 @@
 # 🔒 Monitor software compliance with Jamf patch summaries in Slack
 
-> ⚡ **1,673 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,429 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

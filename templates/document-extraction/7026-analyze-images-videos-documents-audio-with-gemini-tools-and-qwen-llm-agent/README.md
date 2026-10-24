@@ -1,6 +1,6 @@
 # 🔬 Analyze images, videos, documents & audio with Gemini Tools and Qwen LLM Agent
 
-> ⚡ **4,379 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,912 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

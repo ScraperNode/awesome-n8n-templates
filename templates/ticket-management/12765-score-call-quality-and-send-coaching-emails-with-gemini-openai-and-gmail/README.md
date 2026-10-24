@@ -1,6 +1,6 @@
 # 🎫 Score call quality and send coaching emails with Gemini, OpenAI, and Gmail
 
-> ⚡ **20 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **113 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

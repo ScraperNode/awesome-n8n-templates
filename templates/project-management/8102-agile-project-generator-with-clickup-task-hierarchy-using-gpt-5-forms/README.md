@@ -1,6 +1,6 @@
 # 📋 Agile project generator with ClickUp task hierarchy using GPT-5 & forms
 
-> ⚡ **481 views** · 📋 [Project Management](../)
+> ⚡ **542 views** · 📋 [Project Management](../)
 
 ## Description
 

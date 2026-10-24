@@ -1,6 +1,6 @@
 # 💬 Send a message on Mattermost when you get a reply in Emelia
 
-> ⚡ **603 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **669 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

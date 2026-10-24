@@ -1,6 +1,6 @@
 # 👥 Automate candidate analysis & ranking with Jotform and Gemini AI
 
-> ⚡ **46 views** · 👥 [HR & Recruitment](../)
+> ⚡ **63 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

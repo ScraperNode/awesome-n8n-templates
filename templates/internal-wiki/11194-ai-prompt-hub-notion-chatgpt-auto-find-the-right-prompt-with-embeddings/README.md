@@ -1,6 +1,6 @@
 # 📖 AI prompt hub (Notion + ChatGPT): auto-find the right prompt with embeddings
 
-> ⚡ **232 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **307 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Search and compare flights with DeepSeek AI and Google Flights API
 
-> ⚡ **2,295 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,673 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

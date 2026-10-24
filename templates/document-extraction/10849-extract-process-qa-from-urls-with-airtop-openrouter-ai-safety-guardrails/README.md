@@ -1,6 +1,6 @@
 # 🔬 Extract & process Q&A from URLs with Airtop, OpenRouter AI & Safety Guardrails
 
-> ⚡ **85 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **117 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

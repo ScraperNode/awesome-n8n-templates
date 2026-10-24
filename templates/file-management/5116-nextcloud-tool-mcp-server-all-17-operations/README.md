@@ -1,6 +1,6 @@
 # 📁 🛠️ Nextcloud tool MCP server 💪 all 17 operations
 
-> ⚡ **223 views** · 📁 [File Management](../)
+> ⚡ **286 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate AI songs + music videos using Suno API, Flux, Runway and Creatomate
 
-> ⚡ **2,801 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,065 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

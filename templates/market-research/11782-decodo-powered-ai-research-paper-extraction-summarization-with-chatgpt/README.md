@@ -1,6 +1,6 @@
 # 📊 Decodo-powered AI research paper extraction & summarization with ChatGPT
 
-> ⚡ **59 views** · 📊 [Market Research & Insights](../)
+> ⚡ **143 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

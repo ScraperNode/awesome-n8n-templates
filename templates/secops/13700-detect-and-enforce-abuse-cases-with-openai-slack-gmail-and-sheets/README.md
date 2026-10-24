@@ -1,6 +1,6 @@
 # 🔒 Detect and enforce abuse cases with OpenAI, Slack, Gmail and Sheets
 
-> ⚡ **1 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **60 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

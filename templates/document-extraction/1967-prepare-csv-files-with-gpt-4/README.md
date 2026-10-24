@@ -1,6 +1,6 @@
 # 🔬 Prepare CSV files with GPT-4
 
-> ⚡ **7,683 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **7,745 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

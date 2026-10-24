@@ -1,6 +1,6 @@
 # ⚒️ Extract meeting details with GPT-4.1-mini and evaluate accuracy in Google Sheets
 
-> ⚡ **34 views** · ⚒️ [Engineering](../)
+> ⚡ **75 views** · ⚒️ [Engineering](../)
 
 ## Description
 

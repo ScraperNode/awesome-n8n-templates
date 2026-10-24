@@ -1,6 +1,6 @@
 # 🎬 English vocabulary bot for Telegram with Gemini & random word API
 
-> ⚡ **915 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,086 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

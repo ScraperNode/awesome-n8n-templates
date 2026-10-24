@@ -1,6 +1,6 @@
 # 🎬 Telegram interior design studio with furniture cataloging & Gemini AI design generation
 
-> ⚡ **1,177 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,727 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎯 Auto-label Gmail messages with custom categories using GPT-4o-mini
 
-> ⚡ **86 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **90 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

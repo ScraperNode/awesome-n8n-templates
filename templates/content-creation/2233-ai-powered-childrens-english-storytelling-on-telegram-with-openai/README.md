@@ -1,6 +1,6 @@
 # 🎬 AI-Powered Children's English Storytelling on Telegram with OpenAI
 
-> ⚡ **9,396 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **9,570 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

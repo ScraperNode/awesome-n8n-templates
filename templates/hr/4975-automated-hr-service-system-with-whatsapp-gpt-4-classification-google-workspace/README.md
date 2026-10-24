@@ -1,6 +1,6 @@
 # 👥 Automated HR Service System with WhatsApp, GPT-4 Classification & Google Workspace
 
-> ⚡ **17,865 views** · 👥 [HR & Recruitment](../)
+> ⚡ **22,612 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

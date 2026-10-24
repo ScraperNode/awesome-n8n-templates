@@ -1,6 +1,6 @@
 # 🎣 Find domain-based Gmail addresses for outreach with EmailListVerify & Google Sheet
 
-> ⚡ **90 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **121 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

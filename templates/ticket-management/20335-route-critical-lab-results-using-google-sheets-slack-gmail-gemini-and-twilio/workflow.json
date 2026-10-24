@@ -1,0 +1,1223 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "name": "Route critical lab results from LIS to physicians with n8n",
+  "nodes": [
+    {
+      "id": "0637c190-29f4-4f13-a316-786101a9cb82",
+      "name": "Receive result",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -1152,
+        432
+      ],
+      "parameters": {
+        "path": "lab-result",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "34d5c471-4393-4a6b-8a68-cab291e9e89b",
+      "name": "Read limits",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        -864,
+        432
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Limits"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": ""
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.7,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "5285cfe0-193b-4533-b53e-611568b5c5ac",
+      "name": "Read doctors",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        -592,
+        432
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Doctors"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": ""
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.7,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "b2004c73-6b5f-4793-9219-23747990122f",
+      "name": "Read log",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        -336,
+        432
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Log"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": ""
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.7,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "1b730847-8316-4de7-aa49-45831417cca8",
+      "name": "Prepare result",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -64,
+        544
+      ],
+      "parameters": {
+        "jsCode": "const webhookRan = $('Receive result').isExecuted;\nconst pollRan = $('Fetch LIS results').isExecuted;\nconst incomingItems = webhookRan ? $('Receive result').all() : (pollRan ? $('Fetch LIS results').all() : []);\n\nfunction sheetRows(nodeName) {\n  return $(nodeName).all().map((item) => item.json).filter((row) => {\n    if (!row || typeof row !== 'object') return false;\n    return Object.keys(row).some((key) => {\n      const value = row[key];\n      return value !== undefined && value !== null && String(value).trim() !== '';\n    });\n  });\n}\n\nfunction blank(value) {\n  return value === undefined || value === null || String(value).trim() === '';\n}\n\nfunction asNumber(value) {\n  if (blank(value)) return null;\n  const parsed = Number(String(value).trim().split(',').join(''));\n  return Number.isFinite(parsed) ? parsed : null;\n}\n\nfunction stripSpaces(value) {\n  return String(value).split('').filter((ch) => ch !== ' ' && ch.charCodeAt(0) !== 9).join('');\n}\n\nfunction normalizeUnit(unit) {\n  const raw = String(unit ?? '').trim();\n  const compact = stripSpaces(raw).toLowerCase().split('\u00b5').join('\u03bc');\n  if (compact === 'mg/dl') return 'mg/dL';\n  if (compact === 'mmol/l') return 'mmol/L';\n  if (compact === 'umol/l' || compact === '\u03bcmol/l') return '\u03bcmol/L';\n  if (compact === 'g/dl') return 'g/dL';\n  return raw;\n}\n\nfunction roundValue(value) {\n  return Math.round(value * 10000) / 10000;\n}\n\nfunction component(field, index) {\n  return String(field || '').split('^')[index] || '';\n}\n\nfunction formatRange(low, high, raw) {\n  if (!blank(raw)) return String(raw).trim();\n  const hasLow = !blank(low);\n  const hasHigh = !blank(high);\n  if (hasLow && hasHigh) return String(low).trim() + '-' + String(high).trim();\n  if (hasHigh) return '<' + String(high).trim();\n  if (hasLow) return '>' + String(low).trim();\n  return '';\n}\n\nfunction linesOf(raw) {\n  const text = String(raw);\n  const out = [];\n  let current = '';\n  for (let i = 0; i < text.length; i++) {\n    const code = text.charCodeAt(i);\n    if (code === 13 || code === 10) {\n      if (current.trim()) out.push(current.trim());\n      current = '';\n    } else {\n      current += text[i];\n    }\n  }\n  if (current.trim()) out.push(current.trim());\n  return out;\n}\n\nfunction shortDoctor(fields) {\n  if (!fields || fields.length >= 17) return '';\n  for (let i = fields.length - 1; i >= 8; i--) {\n    const candidate = component(fields[i], 0).trim();\n    if (!candidate || /^\\d{8,14}$/.test(candidate)) continue;\n    return candidate;\n  }\n  return '';\n}\n\nfunction parseOru(raw) {\n  const segments = linesOf(raw);\n  if (!segments.length || !segments[0].startsWith('MSH')) return null;\n  let patientId = '';\n  let doctorId = '';\n  let fillerId = '';\n  let abbreviatedDoctor = '';\n  const observations = [];\n  for (const segment of segments) {\n    const fields = segment.split('|');\n    const kind = fields[0];\n    if (kind === 'PID') patientId = component(fields[3], 0);\n    if (kind === 'ORC') {\n      if (!fillerId) fillerId = component(fields[3], 0) || component(fields[2], 0);\n      if (!doctorId) doctorId = component(fields[12], 0);\n    }\n    if (kind === 'OBR') {\n      fillerId = component(fields[3], 0) || component(fields[2], 0) || fillerId;\n      if (!doctorId) doctorId = component(fields[16], 0);\n      if (!abbreviatedDoctor) abbreviatedDoctor = shortDoctor(fields);\n    }\n    if (kind === 'OBX') {\n      observations.push({\n        setId: fields[1] || String(observations.length + 1),\n        testCode: component(fields[3], 0),\n        value: fields[5] || '',\n        unit: component(fields[6], 0),\n        referenceRange: fields[7] || '',\n      });\n    }\n  }\n  if (!doctorId) doctorId = abbreviatedDoctor;\n  if (!observations.length) {\n    return [{\n      result_id: fillerId,\n      patient_id: patientId,\n      doctor_id: doctorId,\n      test_code: '',\n      value: '',\n      unit: '',\n      reference_range: '',\n      source: 'hl7',\n      parse_error: 'HL7 ORU has no OBX segment.',\n    }];\n  }\n  return observations.map((row) => ({\n    result_id: (fillerId || 'ORU') + '-' + (row.testCode || 'TEST') + '-' + row.setId,\n    patient_id: patientId,\n    doctor_id: doctorId,\n    test_code: row.testCode,\n    value: component(row.value, 0) || row.value,\n    unit: row.unit,\n    reference_range: row.referenceRange,\n    source: 'hl7',\n  }));\n}\n\nfunction parseJsonMaybe(text) {\n  const trimmed = String(text).trim();\n  if (!trimmed || (trimmed[0] !== '{' && trimmed[0] !== '[')) return null;\n  try {\n    return JSON.parse(trimmed);\n  } catch (error) {\n    return null;\n  }\n}\n\nfunction expand(value) {\n  if (value === undefined || value === null || value === '') return [];\n  if (typeof value === 'string') {\n    const trimmed = value.trim();\n    if (!trimmed) return [];\n    if (trimmed.startsWith('MSH')) return parseOru(trimmed) || [];\n    const parsed = parseJsonMaybe(trimmed);\n    return parsed === null ? [] : expand(parsed);\n  }\n  if (Array.isArray(value)) return value.flatMap(expand);\n  if (typeof value !== 'object') return [];\n  if (!blank(value.hl7)) return parseOru(value.hl7) || [];\n  if (!blank(value.HL7)) return parseOru(value.HL7) || [];\n  if (Array.isArray(value.results)) return value.results.flatMap(expand);\n  if (Array.isArray(value.data)) return value.data.flatMap(expand);\n  if (typeof value.data === 'string') return expand(value.data);\n  if (value.body !== undefined && (value.headers || value.webhookUrl || value.executionMode)) return expand(value.body);\n  return [{\n    result_id: value.result_id,\n    patient_id: value.patient_id,\n    doctor_id: value.doctor_id,\n    test_code: value.test_code,\n    value: value.value,\n    unit: value.unit,\n    reference_range: formatRange(value.reference_low, value.reference_high, value.reference_range || value.referenceRange),\n    source: value.source || 'rest',\n  }];\n}\n\nfunction payloadsFrom(items) {\n  return items.flatMap((item) => {\n    const json = item.json || {};\n    if (typeof json.data === 'string') return expand(json.data);\n    if (json.body !== undefined) return expand(json.body);\n    if (!blank(json.hl7) || !blank(json.HL7)) return expand(json);\n    return expand(json);\n  });\n}\n\nconst limits = sheetRows('Read limits');\nconst doctors = sheetRows('Read doctors');\nconst logRows = sheetRows('Read log');\nconst payloads = payloadsFrom(incomingItems);\n\nif (!payloads.length) {\n  if (!webhookRan && pollRan) return [];\n  return [{\n    json: {\n      when: new Date().toISOString(),\n      result_id: '',\n      patient_id: '',\n      doctor_id: '',\n      test_code: '',\n      value: '',\n      unit: '',\n      reference_range: '',\n      severity: '',\n      route: 'lab',\n      what_happened: 'Needs review',\n      message: 'No lab result in the request. Send generic JSON or an HL7 ORU message.',\n      execution_id: $execution.id,\n      doctor_slack: '',\n      doctor_email: '',\n      backup_slack: '',\n      doctor_phone: '',\n      doctor_name: '',\n      test_name: '',\n      limit_hit: '',\n      limit_side: '',\n      fallback_note: '',\n      conversion_note: '',\n      source: webhookRan ? 'rest' : 'poll',\n    },\n  }];\n}\n\nconst notified = new Set([\n  'Processing',\n  'Waiting for acknowledgment',\n  'Acknowledged',\n  'Backup notified',\n  'Emailed doctor',\n]);\n\nfunction classify(payload) {\n  const resultId = blank(payload.result_id) ? '' : String(payload.result_id).trim();\n  const patientId = blank(payload.patient_id) ? '' : String(payload.patient_id).trim();\n  const doctorId = blank(payload.doctor_id) ? '' : String(payload.doctor_id).trim();\n  const testCode = blank(payload.test_code) ? '' : String(payload.test_code).trim().toUpperCase();\n  const rawUnit = blank(payload.unit) ? '' : normalizeUnit(payload.unit);\n  const rawValue = asNumber(payload.value);\n  const referenceRange = blank(payload.reference_range) ? '' : String(payload.reference_range).trim();\n  const base = {\n    when: new Date().toISOString(),\n    result_id: resultId,\n    patient_id: patientId,\n    doctor_id: doctorId,\n    test_code: testCode,\n    value: rawValue === null ? (payload.value ?? '') : rawValue,\n    unit: rawUnit,\n    reference_range: referenceRange,\n    severity: '',\n    what_happened: '',\n    message: '',\n    execution_id: $execution.id,\n    route: 'lab',\n    doctor_slack: '',\n    doctor_email: '',\n    backup_slack: '',\n    doctor_phone: '',\n    doctor_name: '',\n    test_name: '',\n    limit_hit: '',\n    limit_side: '',\n    fallback_note: '',\n    conversion_note: '',\n    source: payload.source || 'rest',\n  };\n  const done = (overrides) => ({ ...base, ...overrides });\n\n  if (payload.parse_error) {\n    return done({ route: 'lab', what_happened: 'Needs review', message: payload.parse_error });\n  }\n  if (!resultId || !patientId || !doctorId || !testCode || !rawUnit || rawValue === null || !referenceRange) {\n    return done({\n      route: 'lab',\n      what_happened: 'Needs review',\n      message: 'Missing result_id, patient_id, doctor_id, test_code, unit, a numeric value, or reference range.',\n    });\n  }\n  const duplicate = logRows.some((row) => String(row.result_id ?? '').trim() === resultId && notified.has(String(row.what_happened ?? '').trim()));\n  if (duplicate) {\n    return done({\n      route: 'duplicate',\n      what_happened: 'Already notified \u2014 skipped',\n      message: 'This result_id already has a notified log row. Skipped.',\n    });\n  }\n  const limit = limits.find((row) => String(row.test_code ?? '').trim().toUpperCase() === testCode);\n  const limitKeys = ['critical_low', 'abnormal_low', 'abnormal_high', 'critical_high'];\n  const hasAnyLimit = Boolean(limit) && limitKeys.some((key) => asNumber(limit[key]) !== null);\n  if (!limit || !hasAnyLimit) {\n    return done({\n      route: 'lab',\n      what_happened: 'Needs review',\n      message: !limit ? 'Test code ' + testCode + ' is not in Limits.' : 'Test code ' + testCode + ' has no limits set.',\n      test_name: limit ? String(limit.test_name ?? '') : '',\n    });\n  }\n  const limitUnit = normalizeUnit(limit.unit);\n  const testName = blank(limit.test_name) ? testCode : String(limit.test_name).trim();\n  const nameLower = testName.toLowerCase();\n  const isGlucose = testCode === 'GLU' || nameLower.includes('glucose');\n  const isCreatinine = ['CREAT', 'CREATININE', 'CRE', 'CR'].includes(testCode) || nameLower.includes('creatinine');\n  let value = rawValue;\n  let unit = rawUnit;\n  let conversionNote = '';\n  if (rawUnit !== limitUnit) {\n    if (isGlucose && rawUnit === 'mmol/L' && limitUnit === 'mg/dL') {\n      value = roundValue(rawValue * 18.0182);\n      unit = limitUnit;\n      conversionNote = 'Converted from ' + rawValue + ' mmol/L.';\n    } else if (isCreatinine && rawUnit === '\u03bcmol/L' && limitUnit === 'mg/dL') {\n      value = roundValue(rawValue / 88.4);\n      unit = limitUnit;\n      conversionNote = 'Converted from ' + rawValue + ' \u03bcmol/L.';\n    } else {\n      return done({\n        route: 'lab',\n        what_happened: 'Needs review',\n        message: 'Unit ' + rawUnit + ' does not match Limits unit ' + limitUnit + ' and is not a supported conversion.',\n        test_name: testName,\n      });\n    }\n  }\n  const doctor = doctors.find((row) => String(row.doctor_id ?? '').trim() === doctorId);\n  if (!doctor) {\n    return done({\n      route: 'lab',\n      what_happened: 'Needs review',\n      message: 'Doctor ' + doctorId + ' is not in Doctors.',\n      value,\n      unit,\n      test_name: testName,\n      conversion_note: conversionNote,\n    });\n  }\n  const doctorSlack = blank(doctor.slack_id) ? '' : String(doctor.slack_id).trim();\n  const doctorEmail = blank(doctor.email) ? '' : String(doctor.email).trim();\n  const backupSlack = blank(doctor.backup_slack_id) ? '' : String(doctor.backup_slack_id).trim();\n  const doctorPhone = [doctor.phone, doctor.sms, doctor.mobile].map((entry) => (blank(entry) ? '' : String(entry).trim())).find(Boolean) || '';\n  const doctorName = blank(doctor.name) ? '' : String(doctor.name).trim();\n  const criticalLow = asNumber(limit.critical_low);\n  const criticalHigh = asNumber(limit.critical_high);\n  const abnormalLow = asNumber(limit.abnormal_low);\n  const abnormalHigh = asNumber(limit.abnormal_high);\n  let severity = 'normal';\n  let limitHit = '';\n  let limitSide = '';\n  if (criticalLow !== null && value <= criticalLow) {\n    severity = 'critical';\n    limitHit = String(criticalLow);\n    limitSide = 'at or below';\n  } else if (criticalHigh !== null && value >= criticalHigh) {\n    severity = 'critical';\n    limitHit = String(criticalHigh);\n    limitSide = 'at or above';\n  } else if (abnormalLow !== null && value <= abnormalLow) {\n    severity = 'abnormal';\n    limitHit = String(abnormalLow);\n    limitSide = 'at or below';\n  } else if (abnormalHigh !== null && value >= abnormalHigh) {\n    severity = 'abnormal';\n    limitHit = String(abnormalHigh);\n    limitSide = 'at or above';\n  }\n  const shared = {\n    value,\n    unit,\n    severity,\n    test_name: testName,\n    doctor_slack: doctorSlack,\n    doctor_email: doctorEmail,\n    backup_slack: backupSlack,\n    doctor_phone: doctorPhone,\n    doctor_name: doctorName,\n    limit_hit: limitHit,\n    limit_side: limitSide,\n    conversion_note: conversionNote,\n  };\n  function fallbackNote(action) {\n    const title = severity.charAt(0).toUpperCase() + severity.slice(1);\n    return title + ' result: ' + testName + ' is ' + value + ' ' + unit + ' (' + limitSide + ' ' + limitHit + '). ' + action;\n  }\n  if (severity === 'critical') {\n    if (!doctorSlack) {\n      return done({\n        ...shared,\n        route: 'lab',\n        what_happened: 'Needs review',\n        message: 'Critical result but the doctor has no Slack id.',\n      });\n    }\n    const fallback = fallbackNote('Please review and acknowledge.');\n    return done({ ...shared, route: 'critical', message: fallback, fallback_note: fallback });\n  }\n  if (severity === 'abnormal') {\n    if (!doctorEmail) {\n      return done({\n        ...shared,\n        route: 'lab',\n        what_happened: 'Needs review',\n        message: 'Abnormal result but the doctor has no email.',\n      });\n    }\n    const fallback = fallbackNote('Please review.');\n    return done({ ...shared, route: 'abnormal', message: fallback, fallback_note: fallback });\n  }\n  return done({\n    ...shared,\n    route: 'normal',\n    what_happened: 'Normal \u2014 logged only',\n    message: 'Within limits. Logged only.',\n  });\n}\n\nreturn payloads.map((payload) => ({ json: classify(payload) }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a077de4c-2219-4f9c-946e-0a91a8e9b5b6",
+      "name": "Route",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        224,
+        512
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "critical",
+              "conditions": {
+                "options": {
+                  "version": 3,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "02a4ef42-4684-4f66-9b5e-33d4b2d0b56a",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "critical"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "abnormal",
+              "conditions": {
+                "options": {
+                  "version": 3,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "fd778841-8f2c-41c2-be5d-28c1891bc7a3",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "abnormal"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "lab",
+              "conditions": {
+                "options": {
+                  "version": 3,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "bb4ed20e-634a-4664-bad9-daa1f939a073",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "lab"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "duplicate",
+              "conditions": {
+                "options": {
+                  "version": 3,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "c2f48f8d-07a0-411c-96f2-5947f3971917",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "duplicate"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "normal",
+              "conditions": {
+                "options": {
+                  "version": 3,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "469fec83-7e55-4e92-924b-989abb0f8399",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "normal"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "2"
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "2aefbdb8-3fac-4c86-8259-b561b082830c",
+      "name": "Critical?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        992,
+        512
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.severity }}",
+              "rightValue": "critical"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "9b98e77c-5b8a-4cbc-b5b4-4226af6b1fc5",
+      "name": "Message the doctor",
+      "type": "n8n-nodes-base.slack",
+      "onError": "continueErrorOutput",
+      "position": [
+        1232,
+        624
+      ],
+      "parameters": {
+        "text": "={{ ($json.doctor_note || $json.fallback_note) + '\\n\\n' + $json.test_code + ' ' + $json.value + ' ' + $json.unit + '\\nReference: ' + ($json.reference_range || '') + '\\nResult reference: ' + $json.result_id + '\\nPlease open the secure EHR system to review patient details.\\nAcknowledge: ' + $execution.resumeUrl + '?action=acknowledge' }}",
+        "user": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.doctor_slack || $('Prepare result').first().json.doctor_slack }}"
+        },
+        "select": "user",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "e8993b02-8461-497f-8a8c-58e2cd178319",
+      "name": "Wait for acknowledgment",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        1648,
+        608
+      ],
+      "parameters": {
+        "resume": "webhook",
+        "options": {},
+        "resumeUnit": "minutes",
+        "resumeAmount": 15,
+        "limitWaitTime": true
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "1b1636bd-62f8-4122-ba22-e734081717d6",
+      "name": "Message the backup",
+      "type": "n8n-nodes-base.slack",
+      "onError": "continueErrorOutput",
+      "position": [
+        1856,
+        1408
+      ],
+      "parameters": {
+        "text": "={{ ($('Apply doctor note').item.json.doctor_note || $('Prepare result').item.json.fallback_note) + '\\n\\nOrdering doctor did not acknowledge in time.\\n' + $('Prepare result').item.json.test_code + ' ' + $('Prepare result').item.json.value + ' ' + $('Prepare result').item.json.unit + '\\nReference: ' + ($('Prepare result').item.json.reference_range || '') + '\\nResult reference: ' + $('Prepare result').item.json.result_id + '\\nPlease open the secure EHR system to review patient details.' }}",
+        "user": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Apply doctor note').item.json.backup_slack || $('Prepare result').item.json.backup_slack }}"
+        },
+        "select": "user",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "a8b6b8a6-9c34-490c-bce5-72d3ec0a416b",
+      "name": "Email the doctor",
+      "type": "n8n-nodes-base.gmail",
+      "onError": "continueErrorOutput",
+      "position": [
+        1232,
+        816
+      ],
+      "parameters": {
+        "sendTo": "={{ $json.doctor_email || $('Prepare result').first().json.doctor_email }}",
+        "message": "={{ ($json.doctor_note || $json.fallback_note) + '\\n\\n' + $json.test_code + ' ' + $json.value + ' ' + $json.unit + '\\nReference: ' + ($json.reference_range || '') + '\\nResult reference: ' + $json.result_id + '\\nPlease open the secure EHR system to review patient details.' }}",
+        "options": {
+          "appendAttribution": false
+        },
+        "subject": "={{ 'Abnormal lab result \u2014 ' + $json.test_code + ' ' + $json.result_id }}",
+        "emailType": "text",
+        "authentication": "serviceAccount"
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "84e2c6a2-d363-46a2-a6ab-41c299a658b9",
+      "name": "Notify the lab",
+      "type": "n8n-nodes-base.slack",
+      "onError": "continueRegularOutput",
+      "position": [
+        1424,
+        1296
+      ],
+      "parameters": {
+        "text": "={{ 'Result ' + $('Prepare result').item.json.result_id + ' needs lab review.\\nPatient ' + $('Prepare result').item.json.patient_id + '\\n' + $('Prepare result').item.json.test_code + ' ' + $('Prepare result').item.json.value + ' ' + $('Prepare result').item.json.unit + '\\nReference: ' + ($('Prepare result').item.json.reference_range || '') + '\\nReason: ' + ($('Prepare result').item.json.route === 'lab' ? $('Prepare result').item.json.message : ('Delivery failed. ' + (($json.error && ($json.error.message || $json.error.description)) || 'Send to the doctor, SMS, or backup failed.'))) }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": ""
+        },
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "d3d84ec0-afab-45f5-9d69-6f9cc25294a4",
+      "name": "Save to log",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2272,
+        1136
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "unit": "={{ $('Prepare result').item.json.unit }}",
+            "when": "={{ $now.toISO() }}",
+            "value": "={{ $('Prepare result').item.json.value }}",
+            "message": "={{ ($prevNode.name === 'Notify the lab' && $('Prepare result').item.json.route === 'lab') ? $('Prepare result').item.json.message : ($prevNode.name === 'Notify the lab' ? ('Delivery failed. ' + (($json.error && ($json.error.message || $json.error.description)) || 'Send to the doctor or backup failed.')) : (($prevNode.name === 'Message the doctor' || $prevNode.name === 'Email the doctor' || $prevNode.name === 'Message the backup' || $prevNode.name === 'Link opened?') ? ($('Apply doctor note').item.json.doctor_note || $('Prepare result').item.json.fallback_note || $('Prepare result').item.json.message) : $('Prepare result').item.json.message)) }}",
+            "severity": "={{ $('Prepare result').item.json.severity }}",
+            "doctor_id": "={{ $('Prepare result').item.json.doctor_id }}",
+            "result_id": "={{ $('Prepare result').item.json.result_id }}",
+            "test_code": "={{ $('Prepare result').item.json.test_code }}",
+            "patient_id": "={{ $('Prepare result').item.json.patient_id }}",
+            "execution_id": "={{ $execution.id }}",
+            "what_happened": "={{ $prevNode.name === 'Message the doctor' ? 'Waiting for acknowledgment' : $prevNode.name === 'Link opened?' ? 'Acknowledged' : $prevNode.name === 'Message the backup' ? 'Backup notified' : $prevNode.name === 'Email the doctor' ? 'Emailed doctor' : $prevNode.name === 'Notify the lab' ? ($('Prepare result').item.json.route === 'lab' ? 'Needs review' : 'Delivery failed') : $('Prepare result').item.json.what_happened }}"
+          },
+          "schema": [
+            {
+              "id": "when",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "when",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "result_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "result_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "patient_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "patient_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "doctor_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "doctor_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "test_code",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "test_code",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "value",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "value",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "unit",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "unit",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "severity",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "severity",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "what_happened",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "what_happened",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "message",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "message",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "execution_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "execution_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "options": {
+          "useAppend": true,
+          "cellFormat": "RAW"
+        },
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Log"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": ""
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "43e8c419-faca-4a19-8787-fd1ff6b3edc8",
+      "name": "Write doctor note",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "onError": "continueRegularOutput",
+      "position": [
+        512,
+        512
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "models/gemini-2.5-flash",
+          "cachedResultName": "gemini-2.5-flash"
+        },
+        "options": {
+          "temperature": 0.2,
+          "systemMessage": "You only restate the severity, test, value, unit, limit, and reference range the workflow already decided. Do not diagnose, prescribe, or say a critical or abnormal result is fine. Return JSON only, with keys severity, test, value, unit, limit, reference_range, headline, action, and note. headline is one short sentence that includes the severity, the test name, the numeric value, the unit, and the limit exactly as given. If severity is critical, action must be exactly: Please review and acknowledge. Otherwise action must be exactly: Please review. note must be exactly the headline sentence, then a space, then the action sentence. The note must include the numeric value and the unit. Do not write a generic message.",
+          "thinkingBudget": 0,
+          "maxOutputTokens": 300,
+          "includeMergedResponse": true
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ 'Severity: ' + $('Prepare result').item.json.severity + '\\nTest: ' + $('Prepare result').item.json.test_name + ' (' + $('Prepare result').item.json.test_code + ')\\nValue: ' + $('Prepare result').item.json.value + ' ' + $('Prepare result').item.json.unit + '\\nLimit: ' + $('Prepare result').item.json.limit_side + ' ' + $('Prepare result').item.json.limit_hit + '\\nReference range: ' + ($('Prepare result').item.json.reference_range || '') + '\\nResult id: ' + $('Prepare result').item.json.result_id + '\\nPatient id: ' + $('Prepare result').item.json.patient_id }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "2cfebda4-f1db-4111-ae9a-48b687c0fb58",
+      "name": "Apply doctor note",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        800,
+        512
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const prepared = $('Prepare result').item.json;\nconst ai = $input.item.json || {};\nfunction pick(obj) {\n  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;\n  const headline = typeof obj.headline === 'string' ? obj.headline.trim() : '';\n  const action = typeof obj.action === 'string' ? obj.action.trim() : '';\n  const note = typeof obj.note === 'string' ? obj.note.trim() : '';\n  if (!headline && !action && !note) return null;\n  return { note: note, headline: headline, action: action };\n}\nfunction parseText(text) {\n  if (typeof text !== 'string') return null;\n  const trimmed = text.trim();\n  if (!trimmed.startsWith('{')) return null;\n  try { return pick(JSON.parse(trimmed)); } catch (error) { return null; }\n}\nlet chosen = pick(ai) || parseText(ai.mergedResponse) || parseText(ai.text) || parseText(ai.output);\nif (!chosen && ai.content && Array.isArray(ai.content.parts)) {\n  chosen = parseText(ai.content.parts.map(function (part) { return part && part.text ? part.text : ''; }).join(''));\n}\nif (!chosen && typeof ai.mergedResponse === 'string' && ai.mergedResponse.trim() && ai.mergedResponse.trim().charAt(0) !== '{') {\n  chosen = { note: ai.mergedResponse.trim(), headline: '', action: '' };\n}\nconst fallback = prepared.fallback_note || prepared.message || '';\nconst requiredAction = prepared.severity === 'critical' ? 'Please review and acknowledge.' : 'Please review.';\nconst valueText = prepared.value === undefined || prepared.value === null ? '' : String(prepared.value);\nconst unitText = prepared.unit ? String(prepared.unit) : '';\nfunction restates(text) {\n  if (!text) return false;\n  if (valueText && text.indexOf(valueText) === -1) return false;\n  if (unitText && text.indexOf(unitText) === -1) return false;\n  if (text.indexOf(requiredAction) === -1) return false;\n  return true;\n}\nlet note = '';\nif (chosen) {\n  const built = [chosen.headline, chosen.action].filter(Boolean).join(' ');\n  if (restates(built)) note = built;\n  else if (restates(chosen.note)) note = chosen.note;\n}\nif (!note) note = fallback;\nreturn { json: Object.assign({}, prepared, { doctor_note: note, note_headline: chosen ? chosen.headline : '', note_action: chosen ? chosen.action : '' }) };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9aa04dd5-b8b0-48ea-8da0-002524397d0d",
+      "name": "Has phone?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        400
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              },
+              "leftValue": "={{ $json.doctor_phone }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "0b66360e-a587-4c06-943d-1242c9fe07c3",
+      "name": "Send SMS",
+      "type": "n8n-nodes-base.twilio",
+      "notes": "Replace from with the lab Twilio number. SMS does not start a second wait. A failed SMS still goes to Notify the lab.",
+      "onError": "continueErrorOutput",
+      "position": [
+        1424,
+        368
+      ],
+      "parameters": {
+        "to": "={{ $json.doctor_phone }}",
+        "from": "+1234567890",
+        "message": "={{ ($json.doctor_note || $json.fallback_note) + '\\n' + $json.test_code + ' ' + $json.value + ' ' + $json.unit + '\\nReference: ' + ($json.reference_range || '') + '\\nResult reference: ' + $json.result_id + '\\nPlease open the secure EHR system to review patient details.\\nAcknowledge: ' + $execution.resumeUrl + '?action=acknowledge' }}",
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "67c44b20-bdc1-4f3d-8270-a35fd5698ec3",
+      "name": "Poll LIS",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "notes": "Disabled until Fetch LIS results has a real URL. Then enable this node before turning the workflow on.",
+      "disabled": true,
+      "position": [
+        -1152,
+        672
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "7668fc18-e968-452a-bcd9-af8be5dd9d88",
+      "name": "Fetch LIS results",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Replace the URL with the LIS endpoint. Expects generic JSON or an HL7 ORU message as text.",
+      "position": [
+        -848,
+        672
+      ],
+      "parameters": {
+        "url": "https://lis.example/api/results",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "d00d0a2e-da4a-426f-b3bb-3e43d96a71d3",
+      "name": "Link opened?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1840,
+        672
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "86f00582-0e1d-4b24-8b5f-7bfe0c279359",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ (($json.query && $json.query.action === 'acknowledge') || ($json.body && $json.body.action === 'acknowledge') || $json.action === 'acknowledge') ? 'opened' : 'timeout' }}",
+              "rightValue": "opened"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "67fe8c17-3258-4dcb-adce-2218997e81da",
+      "name": "Intake contract",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1680,
+        176
+      ],
+      "parameters": {
+        "width": 452,
+        "height": 1228,
+        "content": "## Lab Result Routing Engine\n\nRoutes incoming lab results by severity using sheet thresholds, notifies physicians, handles escalation, and logs outcomes.\n\n### Scope\n\nThis workflow is **LIS-to-physician routing and escalation only**. It is **not** an active EHR/FHIR integration \u2014 physicians must open the secure EHR to review patient details.\n\n### Cutoffs\n\nIncoming payload `reference_range` values are **informational only**. Routing severity (Critical / Abnormal / Normal) is **strictly governed by the Limits sheet** thresholds (`critical_low`, `abnormal_low`, `abnormal_high`, `critical_high`).\n\n### PHI Notice\n\n**Warning:** External alert channels (Slack, SMS, Gmail) must **never** carry direct patient identifiers. Messages use `result_id` as a reference only; patient details stay in the EHR.\n\n### How it works\n\n1. Ingest results via Webhook or LIS poll\n2. Load limits, doctors, and log history from Google Sheets\n3. Validate, convert units, and suppress duplicate records\n4. Classify severity: Critical, Abnormal, or Normal (from Limits sheet)\n5. Gemini drafts a 2-sentence note (no diagnosing)\n6. **Critical**: Send Slack DM + acknowledge link (15-min timeout)\n7. Escalate to backup physician if unacknowledged\n8. **Abnormal**: Send email summary to ordering doctor\n9. Log every status update to Google Sheets\n10. Send delivery failures and unroutable items to lab Slack\n\n### Setup\n\n- [ ] Google Sheets: Connect `Limits`, `Doctors`, and `Log` tabs\n- [ ] Connect Gemini on `Write doctor note`\n- [ ] Connect Slack on alert and lab channel nodes\n- [ ] Connect Gmail on `Email the doctor`"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8c300805-2f98-409e-a8f6-7c11382f206d",
+      "name": "Log waiting",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1472,
+        608
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "unit": "={{ $('Prepare result').item.json.unit }}",
+            "when": "={{ $now.toISO() }}",
+            "value": "={{ $('Prepare result').item.json.value }}",
+            "message": "={{ $('Apply doctor note').item.json.doctor_note || $('Prepare result').item.json.fallback_note }}",
+            "severity": "={{ $('Prepare result').item.json.severity }}",
+            "doctor_id": "={{ $('Prepare result').item.json.doctor_id }}",
+            "result_id": "={{ $('Prepare result').item.json.result_id }}",
+            "test_code": "={{ $('Prepare result').item.json.test_code }}",
+            "patient_id": "={{ $('Prepare result').item.json.patient_id }}",
+            "execution_id": "={{ $execution.id }}",
+            "what_happened": "Waiting for acknowledgment"
+          },
+          "schema": [
+            {
+              "id": "when",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "when",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "result_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "result_id",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "patient_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "patient_id",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "doctor_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "doctor_id",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "test_code",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "test_code",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "value",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "value",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "unit",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "unit",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "severity",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "severity",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "what_happened",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "what_happened",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "message",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "message",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "execution_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "execution_id",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "options": {
+          "useAppend": true,
+          "cellFormat": "RAW"
+        },
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Log"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": ""
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "397d314c-4f55-43a5-9d79-6acfe0dbe47c",
+      "name": "Stage 1: Intake & Reference Lookup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1200,
+        176
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1040,
+        "height": 696,
+        "content": "## 1. Intake & Reference Lookup\n* **Sources**: Ingests lab results via Webhook or scheduled LIS poll.\n* **Lookups (Google Sheets)**:\n  * Limits: Clinical cutoffs for severity classification.\n  * Doctors: Contact and backup routing details.\n  * Log: Prior records to prevent duplicate notifications.\n* **Safety**: Empty sheets will not break the flow (`alwaysOutputData: true`).\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c0d71c1f-178f-43cb-aba6-92924aeca0cd",
+      "name": "Stage 2: Data Normalization, Duplicate Check & Routing",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -128,
+        176
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 552,
+        "height": 696,
+        "content": "## 2. Business Logic & Routing\n* **Code (`Prepare result`)**: Validates fields, converts units (GLU/CREAT), drops duplicates, and classifies severity (`critical`, `abnormal`, `normal`, `lab`).\n* **Switch (`Route`)**: Sends critical/abnormal to AI, normal/duplicate to Log, and failures to Lab."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "49d06a73-52ff-4eeb-9db5-31b9e1924e5f",
+      "name": "Stage 3: AI Clinical Note & Physician Dispatch",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        480,
+        176
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1912,
+        "height": 888,
+        "content": "## 3. Physician Alert & Escalation\n* **AI Note**: Gemini writes a 2-sentence summary (strictly no diagnosing or prescribing)[cite: 1, 2, 3].\n* **Critical**: Sends Slack DM + acknowledge link (and SMS if phone exists), waits 15 min, then auto-escalates to backup doctor on timeout[cite: 1, 2, 3].\n* **Abnormal**: Sends email summary directly to ordering physician via Gmail[cite: 1, 2, 3]."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0afdb9ab-7c33-4434-9359-02394fe05055",
+      "name": "Stage 4: Audit Logging & Lab Error Escalation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        480,
+        1104
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1952,
+        "height": 556,
+        "content": "## 4. Audit Trail & Failure Handling\n* **Notify the lab**: Posts to Slack when data is invalid, unroutable, or any notification fails (`continueOnFail`)[cite: 1, 3].\n* **Save to log**: Appends every outcome status and execution ID to Google Sheets for a complete audit trail[cite: 1, 3]."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Route": {
+      "main": [
+        [
+          {
+            "node": "Write doctor note",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write doctor note",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify the lab",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save to log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save to log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll LIS": {
+      "main": [
+        [
+          {
+            "node": "Fetch LIS results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read log": {
+      "main": [
+        [
+          {
+            "node": "Prepare result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send SMS": {
+      "main": [
+        null,
+        [
+          {
+            "node": "Notify the lab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Critical?": {
+      "main": [
+        [
+          {
+            "node": "Message the doctor",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Has phone?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email the doctor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has phone?": {
+      "main": [
+        [
+          {
+            "node": "Send SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log waiting": {
+      "main": [
+        [
+          {
+            "node": "Wait for acknowledgment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read limits": {
+      "main": [
+        [
+          {
+            "node": "Read doctors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Link opened?": {
+      "main": [
+        [
+          {
+            "node": "Save to log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Message the backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read doctors": {
+      "main": [
+        [
+          {
+            "node": "Read log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify the lab": {
+      "main": [
+        [
+          {
+            "node": "Save to log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare result": {
+      "main": [
+        [
+          {
+            "node": "Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive result": {
+      "main": [
+        [
+          {
+            "node": "Read limits",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email the doctor": {
+      "main": [
+        [
+          {
+            "node": "Save to log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify the lab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply doctor note": {
+      "main": [
+        [
+          {
+            "node": "Critical?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch LIS results": {
+      "main": [
+        [
+          {
+            "node": "Read limits",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write doctor note": {
+      "main": [
+        [
+          {
+            "node": "Apply doctor note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message the backup": {
+      "main": [
+        [
+          {
+            "node": "Save to log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify the lab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message the doctor": {
+      "main": [
+        [
+          {
+            "node": "Log waiting",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify the lab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for acknowledgment": {
+      "main": [
+        [
+          {
+            "node": "Link opened?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

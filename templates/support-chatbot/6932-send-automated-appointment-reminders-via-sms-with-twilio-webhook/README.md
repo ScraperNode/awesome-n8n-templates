@@ -1,6 +1,6 @@
 # 💬 Send automated appointment reminders via SMS with Twilio webhook
 
-> ⚡ **788 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,009 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

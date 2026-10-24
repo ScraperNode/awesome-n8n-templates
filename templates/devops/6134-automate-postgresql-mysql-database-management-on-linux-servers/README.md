@@ -1,6 +1,6 @@
 # ⚙️ Automate PostgreSQL & MySQL database management on Linux servers
 
-> ⚡ **434 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **506 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

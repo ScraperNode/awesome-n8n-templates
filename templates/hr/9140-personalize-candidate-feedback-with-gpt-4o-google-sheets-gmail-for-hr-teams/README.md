@@ -1,6 +1,6 @@
 # 👥 Personalize candidate feedback with GPT-4o, Google Sheets & Gmail for HR teams
 
-> ⚡ **176 views** · 👥 [HR & Recruitment](../)
+> ⚡ **189 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

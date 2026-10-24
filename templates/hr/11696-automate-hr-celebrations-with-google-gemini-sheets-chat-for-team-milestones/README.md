@@ -1,6 +1,6 @@
 # 👥 Automate HR celebrations with Google Gemini, Sheets & Chat for team milestones
 
-> ⚡ **118 views** · 👥 [HR & Recruitment](../)
+> ⚡ **179 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

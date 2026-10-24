@@ -1,6 +1,6 @@
 # 🔬 Replace data in Google Docs from n8n form
 
-> ⚡ **8,086 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **8,412 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

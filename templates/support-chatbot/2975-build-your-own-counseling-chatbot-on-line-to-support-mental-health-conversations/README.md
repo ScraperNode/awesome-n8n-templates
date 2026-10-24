@@ -1,6 +1,6 @@
 # 💬 Build your own counseling chatbot on LINE to support mental health conversations
 
-> ⚡ **6,875 views** · 💬 [Support Chatbots](../)
+> ⚡ **7,138 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

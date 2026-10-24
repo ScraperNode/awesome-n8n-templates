@@ -1,6 +1,6 @@
 # 💬 Ask a human for help when the AI doesn't know the answer
 
-> ⚡ **9,765 views** · 💬 [Support Chatbots](../)
+> ⚡ **9,865 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Real-time uptime alerts to Jira with smart Slack on-call routing
 
-> ⚡ **13 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **25 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate images with GPT-image-1 and store in Google Drive with cost tracking
 
-> ⚡ **3,570 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,788 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Weather forecast email - receive automated weather forecasts daily
 
-> ⚡ **727 views** · ⚡ [Personal Productivity](../)
+> ⚡ **937 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

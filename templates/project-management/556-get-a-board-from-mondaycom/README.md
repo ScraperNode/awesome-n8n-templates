@@ -1,6 +1,6 @@
 # 📋 Get a board from monday.com
 
-> ⚡ **1,818 views** · 📋 [Project Management](../)
+> ⚡ **1,839 views** · 📋 [Project Management](../)
 
 ## Description
 

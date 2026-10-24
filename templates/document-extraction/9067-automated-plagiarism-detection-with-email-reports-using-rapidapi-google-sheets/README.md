@@ -1,6 +1,6 @@
 # 🔬 Automated plagiarism detection with email reports using RapidAPI & Google Sheets
 
-> ⚡ **150 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **196 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -8,7 +8,7 @@
 
 | Template | Description | 🔗 Key Nodes | 👀 Views |
 |----------|-------------|:-------------|-------:|
-| [🏆 Error monitor: AI-powered resolution [Context7, Supabase]](11219-error-monitor-ai-powered-resolution-context7-supabase/) | Automatically capture, analyze, and debug n8n workflow errors using Claude Sonnet 4 with real-time documentation lookup via Context7 MCP server. | Send Email, Supabase, n8n, AI Agent, OpenRouter Chat Model, MCP Client Tool | 77 |
+| [🏆 Error monitor: AI-powered resolution [Context7, Supabase]](11219-error-monitor-ai-powered-resolution-context7-supabase/) | Automatically capture, analyze, and debug n8n workflow errors using Claude Sonnet 4 with real-time documentation lookup via Context7 MCP server. | Send Email, Supabase, n8n, AI Agent, OpenRouter Chat Model, MCP Client Tool | 86 |
 
 ---
 

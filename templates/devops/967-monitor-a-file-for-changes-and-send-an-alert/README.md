@@ -1,6 +1,6 @@
 # ⚙️ Monitor a file for changes and send an alert
 
-> ⚡ **3,487 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **3,533 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

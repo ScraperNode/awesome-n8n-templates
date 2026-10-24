@@ -1,6 +1,6 @@
 # 🎬 Wikipedia podcast generator - AI-powered voice content creator via Telegram
 
-> ⚡ **1,819 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,031 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

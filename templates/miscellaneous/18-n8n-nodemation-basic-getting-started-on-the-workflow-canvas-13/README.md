@@ -1,6 +1,6 @@
 # 🔧 n8n nodemation basic - getting started on the workflow canvas (1/3)
 
-> ⚡ **1,884 views** · 🔧 [Miscellaneous](../)
+> ⚡ **2,225 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

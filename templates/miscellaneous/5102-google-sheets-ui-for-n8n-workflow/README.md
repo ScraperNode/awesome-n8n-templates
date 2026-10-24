@@ -1,6 +1,6 @@
 # 🔧 Google Sheets UI for n8n Workflow
 
-> ⚡ **414 views** · 🔧 [Miscellaneous](../)
+> ⚡ **494 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

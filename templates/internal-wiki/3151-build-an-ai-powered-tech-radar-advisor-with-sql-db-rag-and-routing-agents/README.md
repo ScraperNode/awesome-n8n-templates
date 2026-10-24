@@ -1,6 +1,6 @@
 # 📖 Build an AI-powered tech radar advisor with SQL DB, RAG, and routing agents
 
-> ⚡ **14,947 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **15,682 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

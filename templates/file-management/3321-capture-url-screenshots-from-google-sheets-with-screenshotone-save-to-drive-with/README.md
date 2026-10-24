@@ -1,6 +1,6 @@
 # 📁 Capture URL screenshots from Google Sheets with ScreenshotOne & save to Drive with Gmail alerts
 
-> ⚡ **1,826 views** · 📁 [File Management](../)
+> ⚡ **1,884 views** · 📁 [File Management](../)
 
 ## Description
 

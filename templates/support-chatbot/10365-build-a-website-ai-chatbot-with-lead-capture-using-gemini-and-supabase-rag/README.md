@@ -1,6 +1,6 @@
 # 💬 Build a website AI chatbot with lead capture using Gemini and Supabase RAG
 
-> ⚡ **556 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,251 views** · 💬 [Support Chatbots](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

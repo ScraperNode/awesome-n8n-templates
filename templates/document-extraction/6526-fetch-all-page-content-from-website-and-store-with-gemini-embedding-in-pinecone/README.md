@@ -1,6 +1,6 @@
 # 🔬 Fetch all page content from website and store with Gemini embedding in Pinecone
 
-> ⚡ **379 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **460 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

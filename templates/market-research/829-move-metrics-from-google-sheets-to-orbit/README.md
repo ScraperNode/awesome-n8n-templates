@@ -1,6 +1,6 @@
 # 📊 Move metrics from Google Sheets to Orbit
 
-> ⚡ **603 views** · 📊 [Market Research & Insights](../)
+> ⚡ **631 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

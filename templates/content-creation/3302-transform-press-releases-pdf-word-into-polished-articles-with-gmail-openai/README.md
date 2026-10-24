@@ -1,6 +1,6 @@
 # 🎬 Transform press releases (PDF & Word) into polished articles with Gmail & OpenAI
 
-> ⚡ **2,988 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,147 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

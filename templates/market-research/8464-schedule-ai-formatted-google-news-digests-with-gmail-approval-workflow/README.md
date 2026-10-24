@@ -1,6 +1,6 @@
 # 📊 Schedule AI-formatted Google News digests with Gmail approval workflow
 
-> ⚡ **70 views** · 📊 [Market Research & Insights](../)
+> ⚡ **122 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

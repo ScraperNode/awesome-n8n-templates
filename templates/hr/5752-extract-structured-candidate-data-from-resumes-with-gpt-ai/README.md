@@ -1,6 +1,6 @@
 # 👥 Extract structured candidate data from resumes with GPT AI
 
-> ⚡ **2,001 views** · 👥 [HR & Recruitment](../)
+> ⚡ **2,128 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

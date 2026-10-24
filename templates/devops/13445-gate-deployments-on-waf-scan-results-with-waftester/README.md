@@ -1,6 +1,6 @@
 # ⚙️ Gate deployments on WAF scan results with WAFtester
 
-> ⚡ **3 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **19 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

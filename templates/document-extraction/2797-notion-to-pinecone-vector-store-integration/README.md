@@ -1,6 +1,6 @@
 # 🔬 Notion to Pinecone vector store integration
 
-> ⚡ **4,288 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,282 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Automatic Squarespace order fulfillment process
 
-> ⚡ **613 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **658 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

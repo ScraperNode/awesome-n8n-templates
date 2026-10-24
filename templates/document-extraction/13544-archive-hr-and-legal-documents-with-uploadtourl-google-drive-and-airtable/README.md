@@ -1,6 +1,6 @@
 # 🔬 Archive HR and legal documents with UploadToURL, Google Drive and Airtable
 
-> ⚡ **226 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,253 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

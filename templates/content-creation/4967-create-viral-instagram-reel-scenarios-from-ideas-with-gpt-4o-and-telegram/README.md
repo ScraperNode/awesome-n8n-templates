@@ -1,6 +1,6 @@
 # 🎬 Create viral Instagram reel scenarios from ideas with GPT-4o and Telegram
 
-> ⚡ **13,187 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **14,610 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

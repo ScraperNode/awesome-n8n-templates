@@ -1,0 +1,1718 @@
+{
+  "id": "",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "name": "Auto-post top Reddit content to Telegram - Free Template",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "519e7efa-5b20-46e9-bb74-2d0631810921",
+      "name": "Trigger - Cron1",
+      "type": "n8n-nodes-base.cron",
+      "onError": "continueErrorOutput",
+      "position": [
+        -976,
+        368
+      ],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": 10,
+              "mode": "everyWeek"
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "7c1c87ce-662b-4c2a-9405-f9c1f91e032a",
+      "name": "Normalized Fields",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        32,
+        528
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Normalize url/title/publishedAt (ISO). Handles Reddit permalinks and \"x hours ago\".\nfunction toIso(raw) {\n  if (!raw) return null;\n  const s = String(raw).toLowerCase();\n  const m = s.match(/(\\d+(?:\\.\\d+)?)\\s*(minute|hour|day|week|month|year)s?\\s*ago/);\n  if (m) {\n    const n = parseFloat(m[1]);\n    const unit = m[2];\n    const mult = { minute: 60000, hour: 3600000, day: 86400000, week: 604800000, month: 2592000000, year: 31536000000 }[unit] || 86400000;\n    return new Date(Date.now() - n * mult).toISOString();\n  }\n  const d = new Date(s);\n  return isNaN(d) ? null : d.toISOString();\n}\n\nconst j = item.json || {};\nlet url = j.url || j.link || j.permalink || j.permalink_url || '';\nif (url && String(url).startsWith('/r/')) url = 'https://www.reddit.com' + url;\n\nconst title = (j.title || j.headline || j.full_title || j.text || '').toString().trim();\nconst publishedRaw = j.publishedAt || j.published_at || j.pubDate || j.isoDate || j.date || j.created_at || j.time;\n\nitem.json = {\n  ...j,\n  url,\n  title,\n  publishedAt: toIso(publishedRaw)\n};\nreturn item;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "75b0406f-894a-42c3-9769-77e9e0e38199",
+      "name": "Deduplicate (url \u2192 title)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        368,
+        528
+      ],
+      "parameters": {
+        "jsCode": "function normUrl(u){\n  if (!u) return '';\n  try { return new URL(String(u)).toString(); }\n  catch { return String(u).trim(); }\n}\nfunction keyify(v){ return String(v||'').trim().toLowerCase(); }\n\nconst byUrl = [];\nconst seenUrl = new Set();\nfor (const it of items) {\n  const u = keyify(normUrl(it.json.url));\n  if (u && !seenUrl.has(u)) {\n    seenUrl.add(u);\n    byUrl.push(it);\n  }\n}\n\nconst finalOut = [];\nconst seenTitle = new Set();\nfor (const it of byUrl) {\n  const t = keyify(it.json.title);\n  if (!t || !seenTitle.has(t)) {\n    seenTitle.add(t);\n    finalOut.push(it);\n  }\n}\n\nreturn finalOut;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "5107d752-6cdd-4547-ae3d-4cd80ae7c45f",
+      "name": "Score & Compose",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        944,
+        576
+      ],
+      "parameters": {
+        "jsCode": "// Collect all Reddit posts from input\nconst posts = $input.all().map(item => item.json);\n\n// Normalize - prefer the Reddit permalink so links point to the discussion,\n// not the external image/article URL\nconst normalized = posts.map(p => ({\n  title: p.title || '',\n  url: p.permalink\n    ? `https://www.reddit.com${p.permalink}`\n    : (p.url || ''),\n  externalUrl: p.url || '',          // kept for reference if you ever need it\n  ups: p.ups || 0,\n  upvote_ratio: p.upvote_ratio || 0,\n  num_comments: p.num_comments || 0,\n  created_utc: p.created_utc ? new Date(p.created_utc * 1000) : null\n}));\n\n// Pick highest scorer (ups x upvote_ratio)\nconst winner = normalized.sort((a, b) =>\n  (b.ups * b.upvote_ratio) - (a.ups * a.upvote_ratio)\n)[0] || null;\n\n// Output\nreturn [{\n  json: {\n    winner,\n    candidates: normalized.slice(0, 10),\n    post: winner ? {\n      text: `\ud83d\udd25 ${winner.title}\\n\ud83d\udd17 ${winner.url}\\n\ud83d\udc4d ${winner.ups} | \u2b06\ufe0f ${(winner.upvote_ratio*100).toFixed(1)}%`\n    } : null\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "75dab4ec-2eb6-4269-8af4-973d06624c20",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1312,
+        800
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.4,
+          "responseFormat": "text"
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAi account"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "dc5ca6b3-d060-41c6-9e9b-3f503ddbda56",
+      "name": "Social Posts Generator",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1328,
+        592
+      ],
+      "parameters": {
+        "text": "=You are a skilled social content creator. You receive a JSON list of candidate Reddit posts. Each item has: title, url, ups, upvote_ratio, num_comments, created_utc.\n\nYour job is to craft ONE Telegram post based on the strongest item in the list.\n\nTasks:\n1. Pick the single best story from the candidates list.\n   - If the input contains a \"previously_chosen\" field, that story was just \n     declined by the reviewer. DO NOT pick it again - choose a different \n     candidate from the list.\n   - Otherwise, if items are similar, prefer the newer one or the one with \n     higher engagement (ups x upvote_ratio).\n2. Write the Telegram post: 2-3 sentences, clear and informative, 1-3 emojis.\n3. End the post with: Read more: <url>\n4. Append 4-6 relevant hashtags on a new line at the end, mixing general ones (#AI, #Automation) and topic-specific ones.\n5. Do not invent facts - use only the provided items.\n\nCRITICAL FORMATTING RULE - READ CAREFULLY:\nThe telegram field MUST be plain text only. Telegram will reject the message if you use any markdown.\nFORBIDDEN characters and patterns:\n- No asterisks anywhere: not *word*, not **word**, not lists with *\n- No underscores around words: not _word_, not __word__\n- No backticks: not `word`\n- No markdown links: NEVER write [text](url). Always write the URL as plain text like https://example.com\n- No square brackets [ ] around anything\n- No pipe characters |\n\nALLOWED:\n- Plain URLs: https://www.reddit.com/r/...\n- Hashtags: #AI #Automation (plain text, no formatting around them)\n- Emojis\n- Regular punctuation: . , : ; ! ? -\n\nInput items:\n{{ JSON.stringify($json.candidates || [$json.winner] || [$json]) }}\n\nOutput (must be valid JSON):\n{\n  \"chosen\": { \"title\": \"...\", \"url\": \"...\", \"ups\": 0, \"upvote_ratio\": 0 },\n  \"posts\": {\n    \"telegram\": \"string\"\n  }\n}\n\nReviewer feedback: {{ $json.feedback || \"Approved - continue as planned.\" }}",
+        "options": {},
+        "promptType": "define",
+        "hasOutputParser": true
+      },
+      "retryOnFail": true,
+      "typeVersion": 1.7
+    },
+    {
+      "id": "5d275ed1-8ab1-4c6a-8cf9-c4e989985332",
+      "name": "Log Fetched Reddit Posts",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        752,
+        816
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [
+            {
+              "id": "subreddit",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "subreddit",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "selftext",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "selftext",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "title",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "upvote_ratio",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "upvote_ratio",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ups",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "ups",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "permalink",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "permalink",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "approved_at_utc",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "approved_at_utc",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author_fullname",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "author_fullname",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "saved",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "saved",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mod_reason_title",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "mod_reason_title",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gilded",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "gilded",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "clicked",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "clicked",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "link_flair_richtext",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "link_flair_richtext",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subreddit_name_prefixed",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "subreddit_name_prefixed",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "hidden",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "hidden",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pwls",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "pwls",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "link_flair_css_class",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "link_flair_css_class",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "downs",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "downs",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "thumbnail_height",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "thumbnail_height",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "top_awarded_type",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "top_awarded_type",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "hide_score",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "hide_score",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "quarantine",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "quarantine",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "link_flair_text_color",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "link_flair_text_color",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author_flair_background_color",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "author_flair_background_color",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "total_awards_received",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "total_awards_received",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "media_embed",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "media_embed",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "thumbnail_width",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "thumbnail_width",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author_flair_template_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "author_flair_template_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "is_original_content",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "is_original_content",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "user_reports",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "user_reports",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "secure_media",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "secure_media",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "is_reddit_media_domain",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "is_reddit_media_domain",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "is_meta",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "is_meta",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "category",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "secure_media_embed",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "secure_media_embed",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "link_flair_text",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "link_flair_text",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "can_mod_post",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "can_mod_post",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "score",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "approved_by",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "approved_by",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "is_created_from_ads_ui",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "is_created_from_ads_ui",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author_premium",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "author_premium",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "thumbnail",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "thumbnail",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "edited",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "edited",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author_flair_css_class",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "author_flair_css_class",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author_flair_richtext",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "author_flair_richtext",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gildings",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "gildings",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "post_hint",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "post_hint",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content_categories",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "content_categories",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "is_self",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "is_self",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subreddit_type",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "subreddit_type",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "created",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "link_flair_type",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "link_flair_type",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "wls",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "wls",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "removed_by_category",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "removed_by_category",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "banned_by",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "banned_by",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author_flair_type",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "author_flair_type",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "domain",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "domain",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "allow_live_comments",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "allow_live_comments",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "selftext_html",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "selftext_html",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "likes",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "likes",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "suggested_sort",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "suggested_sort",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "banned_at_utc",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "banned_at_utc",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url_overridden_by_dest",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "url_overridden_by_dest",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "view_count",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "view_count",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "archived",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "archived",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "no_follow",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "no_follow",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "is_crosspostable",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "is_crosspostable",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pinned",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "pinned",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "over_18",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "over_18",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "preview",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "preview",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "all_awardings",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "all_awardings",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "awarders",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "awarders",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "media_only",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "media_only",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "link_flair_template_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "link_flair_template_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "can_gild",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "can_gild",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "spoiler",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "spoiler",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "locked",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "locked",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author_flair_text",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "author_flair_text",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "treatment_tags",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "treatment_tags",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "visited",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "visited",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "removed_by",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "removed_by",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mod_note",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "mod_note",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "distinguished",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "distinguished",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subreddit_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "subreddit_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author_is_blocked",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "author_is_blocked",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mod_reason_by",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "mod_reason_by",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "num_reports",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "num_reports",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "removal_reason",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "removal_reason",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "link_flair_background_color",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "link_flair_background_color",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "id",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "id",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "is_robot_indexable",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "is_robot_indexable",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "report_reasons",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "report_reasons",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "author",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "discussion_type",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "discussion_type",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "num_comments",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "num_comments",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "send_replies",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "send_replies",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "contest_mode",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "contest_mode",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mod_reports",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "mod_reports",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author_patreon_flair",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "author_patreon_flair",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author_flair_text_color",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "author_flair_text_color",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "stickied",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "stickied",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "url",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subreddit_subscribers",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "subreddit_subscribers",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_utc",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "created_utc",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "num_crossposts",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "num_crossposts",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "media",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "media",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "is_video",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "is_video",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "publishedAt",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "publishedAt",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "is_gallery",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "is_gallery",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "media_metadata",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "media_metadata",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gallery_data",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "gallery_data",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author_cakeday",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "author_cakeday",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [
+            "id"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultUrl": "",
+          "cachedResultName": ""
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultUrl": "",
+          "cachedResultName": ""
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "92a1b627-9167-4a3c-84d1-f62cfc8bd1b2",
+      "name": "Send Approval Email",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1824,
+        752
+      ],
+      "webhookId": "4384ff17-f371-4606-aad6-ec7a8ddbdd56",
+      "parameters": {
+        "sendTo": "you@example.com",
+        "message": "=Social media post approval needed.\n\nHere are the proposed draft:\n\n--- Telegram ---\n{{ JSON.parse($json.output).posts.telegram }}\n\n---\nClick APPROVE to publish all three, or DECLINE to ask the agent to regenerate from a different trending topic.\n",
+        "options": {
+          "limitWaitTime": {
+            "values": {
+              "resumeAmount": 3
+            }
+          }
+        },
+        "subject": "\ud83d\udea8Approval needed: Telegram post draft\ud83d\udea8",
+        "operation": "sendAndWait",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double"
+          }
+        }
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail account 2"
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "bc6082de-59e3-474a-9579-ffe5abb2260c",
+      "name": "Is Content Approved?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2048,
+        880
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "approval-check-0001",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.data?.approved ?? $json.approved ?? false }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "31719cb2-dbff-4f1b-bdf8-4eb330b2d0e1",
+      "name": "Feedback for decline",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1648,
+        1184
+      ],
+      "parameters": {
+        "mode": "raw",
+        "options": {},
+        "jsonOutput": "={\n  \"feedback\": \"Reviewer declined the previous draft. Pick a DIFFERENT story from the candidates list below - do not repeat the previously chosen one.\",\n  \"previously_chosen\": {{ JSON.stringify($('Score & Compose').item.json.winner) }},\n  \"candidates\": {{ JSON.stringify($('Score & Compose').item.json.candidates) }},\n  \"winner\": {{ JSON.stringify($('Score & Compose').item.json.winner) }}\n}\n"
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "e4cfe77b-4f01-4d94-8e15-9665a0e33062",
+      "name": "Fetch Reddit Posts",
+      "type": "n8n-nodes-base.reddit",
+      "onError": "continueErrorOutput",
+      "position": [
+        -448,
+        352
+      ],
+      "parameters": {
+        "limit": 25,
+        "filters": {
+          "category": "top"
+        },
+        "operation": "getAll",
+        "subreddit": "={{ $json.subreddits || 'AI_Agents+OpenAI+MachineLearning+ArtificialIntelligence' }}"
+      },
+      "credentials": {
+        "redditOAuth2Api": {
+          "id": "",
+          "name": "Reddit account"
+        }
+      },
+      "notesInFlow": true,
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "9ea088f7-4de7-459f-bc44-b9b3a088e7ea",
+      "name": "Post to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        2864,
+        608
+      ],
+      "webhookId": "cf4a3390-401a-4549-afa2-b690823ba596",
+      "parameters": {
+        "text": "={{ JSON.parse($('Social Posts Generator').item.json.output).posts.telegram.replace(/[\\*_`\\[\\]()~>+=|{}!\\\\]/g, '').replace(/\\s*#\\w+/g, '').replace(/\\s+$/, '') }}",
+        "chatId": "@your_telegram_channel",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account 2"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "f894adcb-576f-45e4-893c-da8b0adc8ecb",
+      "name": "Log Telegram Post",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3296,
+        608
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "URL": "=https://t.me/{{ $json.result.chat.username }}/{{ $json.result.message_id }}",
+            "Date ": "={{ DateTime.fromSeconds($json.result.date).setZone('Europe/Rome').toFormat('dd/MM/yyyy HH:mm') }}",
+            "Text ": "={{ $json.result.text }}",
+            "Channel ": "={{ '@' + $json.result.chat.username }}"
+          },
+          "schema": [
+            {
+              "id": "Date ",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Date ",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Channel ",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Channel ",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Text ",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Text ",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "URL",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "URL",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultUrl": "",
+          "cachedResultName": ""
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultUrl": "",
+          "cachedResultName": ""
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4.7,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "a3ab899a-5ff8-4183-904a-0cd78289d965",
+      "name": "Sticky Note 0001",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2448,
+        240
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1400,
+        "height": 700,
+        "content": "## Reddit -> Telegram AI content pipeline\n\nAuto-generate platform-specific posts for Telegram from the top Reddit content, on a weekly schedule, with a human approval step before anything goes live.\n\n### Pipeline\n1. Weekly cron fires -> Reddit node fetches top posts from your chosen subreddits\n2. Posts are normalised and deduplicated by URL + title\n3. A scoring step picks the strongest candidate based on `ups x upvote_ratio`\n4. GPT-4 writes three platform-specific drafts in one call (Telegram 2-3 sentences)\n5. All three drafts are emailed to you for **APPROVE / DECLINE**\n6. On APPROVE: the Gate node fans out to Telegram. Each result is logged to its own Google Sheet tab\n7. On DECLINE: the agent retries with reviewer feedback and picks a different story\n\n### Credentials required\n- **Reddit OAuth2** - to fetch subreddit posts\n- **OpenAI API** - for GPT-4.1-mini (swap to any model you like)\n- **Gmail OAuth2** - to send the approval email\n- **Telegram Bot API** - to send to a channel your bot is admin of\n- **Google Sheets OAuth2** - for the four log tabs\n\n### Setup (15-20 min)\n1. Connect the seven credentials above\n2. In **Fetch Reddit Posts**, edit the default subreddit list to match your niche\n3. In **Send Approval Email**, set `sendTo` to your own email address\n4. In **Post to Telegram**, replace `@your_telegram_channel` with your channel handle (your bot must be an admin)\n5. In Google Sheets nodes, select your spreadsheet and the right tabs (see the \"Sheet schema\" sticky note)\n6. Optional: tweak the GPT prompt in **Social Posts Generator** to match your voice\n7. Activate and wait for the weekly run (or execute manually to test)\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cc70bb44-dc96-4f46-a540-d3941acbac06",
+      "name": "Sticky Note 0002",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1008,
+        144
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 200,
+        "height": 172,
+        "content": "## Step 1 - Trigger\n\nWeekly cron, Mondays at 10:00. Change the schedule to whatever fits your posting cadence."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c0fa4d6d-1dff-40c2-8f65-6a9467aa965b",
+      "name": "Sticky Note 0003",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -528,
+        32
+      ],
+      "parameters": {
+        "color": 3,
+        "height": 292,
+        "content": "## Step 2 - Fetch Reddit\n\nPulls the top posts from a `+`-separated list of subreddits. Default list is AI-themed; edit it in the node to match your niche.\n\nThe Reddit node needs an OAuth2 Reddit credential (create one in your Reddit account's \"prefs/apps\" page)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c84a5c69-bde1-42f5-ac81-fbae2f529a72",
+      "name": "Sticky Note 0004",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        112,
+        0
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 260,
+        "height": 356,
+        "content": "## Step 3 - Normalise & deduplicate\n\n**Normalized Fields** builds a consistent `{url, title, publishedAt}` shape while preserving Reddit-specific fields (`ups`, `upvote_ratio`, `num_comments`).\n\n**Deduplicate (url -> title)** drops duplicate posts - first by normalised URL, then by lowercase title."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9a18679c-d565-4cfe-9406-22be69f66ad7",
+      "name": "Sticky Note 0005",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        896,
+        320
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 260,
+        "height": 208,
+        "content": "## Step 4 - Score & pick a winner\n\nRanks candidates by `ups x upvote_ratio` and passes both the winner and the top-10 candidates onward so the AI can choose if you want.\n\n\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "67b176f0-d808-417e-9403-b59618dc0909",
+      "name": "Sticky Note 0006",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1296,
+        304
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 300,
+        "height": 240,
+        "content": "## Step 5 - GPT writes Telegram posts\n\n**OpenAI Chat Model** (gpt-4.1-mini by default) drives **Social Posts Generator**.\n\n\nEdit the system prompt inside the agent node to match your tone, hashtags, and audience per platform."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6bd5b9bd-2d11-4941-9468-59a8a1c378db",
+      "name": "Sticky Note 0007",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1968,
+        224
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 300,
+        "height": 300,
+        "content": "## Step 6 - Human approval (Gmail)\n\nSends you an email with all three drafts and APPROVE / DECLINE buttons (sendAndWait with double-confirm).\n\n- **APPROVE** -> Gate on Approval fires -> fan-out to Telegram\n- **DECLINE** -> Feedback node injects `feedback` into a new agent run so the AI picks a different topic\n\nSet `sendTo` in the node to your real address before activating."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "00685d04-4e09-49ac-bec8-fd59ffdcfd45",
+      "name": "Sticky Note 0008",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2736,
+        224
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 320,
+        "height": 300,
+        "content": "## Step 7 - Post to Telegram platform+ log\n\n**Gate on Approval** fans out to three branches that run in parallel:\n\n- **Post to Telegram** -> Log Telegram Post. Your Telegram bot must be an admin of the target channel; set the channel handle in the node."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f92efef2-be3a-45f8-be1f-9ae613bdc16d",
+      "name": "Sticky Note 0009",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3248,
+        208
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 340,
+        "height": 300,
+        "content": "## Sheet schema\n\nCreate ONE Google Sheet with four tabs:\n\n### Tab 1 - Fetched Reddit posts\nColumns: `subreddit`, `title`, `selftext`, `permalink`, `ups`, `upvote_ratio`\n\n\n### Tab 2 - Telegram log\nColumns: `Date` , `Channel` , `Text` , `URL`\n\nAfter importing, open each of the 2 Google Sheets nodes and pick the spreadsheet + the matching tab."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "332fcee6-f998-4941-84f1-1f1a4c092bc0",
+      "name": "Shape Reddit Log Row",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        512,
+        816
+      ],
+      "parameters": {
+        "mode": "raw",
+        "options": {},
+        "jsonOutput": "={\n  \"subreddit\": \"{{ $json.subreddit || '' }}\",\n  \"title\":     \"{{ ($json.title || '').replace(/\\\"/g, \"'\") }}\",\n  \"selftext\":  \"{{ ($json.selftext || '').toString().slice(0, 500).replace(/\\\"/g, \"'\") }}\",\n  \"permalink\": \"{{ $json.permalink ? 'https://www.reddit.com' + $json.permalink : ($json.url || '') }}\",\n  \"ups\":       {{ Number($json.ups) || 0 }},\n  \"upvote_ratio\": {{ Number($json.upvote_ratio) || 0 }}\n}"
+      },
+      "typeVersion": 3.4
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "versionId": "",
+  "connections": {
+    "Score & Compose": {
+      "main": [
+        [
+          {
+            "node": "Social Posts Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger - Cron1": {
+      "main": [
+        [
+          {
+            "node": "Fetch Reddit Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to Telegram": {
+      "main": [
+        [
+          {
+            "node": "Log Telegram Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalized Fields": {
+      "main": [
+        [
+          {
+            "node": "Deduplicate (url \u2192 title)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Social Posts Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Reddit Posts": {
+      "main": [
+        [
+          {
+            "node": "Normalized Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Approval Email": {
+      "main": [
+        [
+          {
+            "node": "Is Content Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Feedback for decline": {
+      "main": [
+        [
+          {
+            "node": "Social Posts Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Content Approved?": {
+      "main": [
+        [
+          {
+            "node": "Post to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Feedback for decline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Reddit Log Row": {
+      "main": [
+        [
+          {
+            "node": "Log Fetched Reddit Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Social Posts Generator": {
+      "main": [
+        [
+          {
+            "node": "Send Approval Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deduplicate (url \u2192 title)": {
+      "main": [
+        [
+          {
+            "node": "Score & Compose",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Shape Reddit Log Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

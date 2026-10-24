@@ -1,6 +1,6 @@
 # 🤝 Update Airtable CRM with telli call event data and appointment status
 
-> ⚡ **380 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **419 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

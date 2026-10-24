@@ -1,6 +1,6 @@
 # 📊 Retrieve and filter Kagi News by category
 
-> ⚡ **113 views** · 📊 [Market Research & Insights](../)
+> ⚡ **142 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

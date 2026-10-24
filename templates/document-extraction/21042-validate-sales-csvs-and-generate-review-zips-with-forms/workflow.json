@@ -1,0 +1,1088 @@
+{
+  "meta": {
+    "templateVersion": "2.0.1"
+  },
+  "name": "Validate sales CSVs and generate review ZIPs with n8n forms",
+  "nodes": [
+    {
+      "id": "e67a17ff-c9f1-4757-ab94-e5b8c12c3247",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -48,
+        -112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1440,
+        "height": 272,
+        "content": "## Upload and validate sales CSV\nAuthenticated users upload one UTF-8 CSV. Required headers: order_id,order_date,amount,currency. Preserve extra fields; hold invalid rows and conflicting duplicate groups. Max 1,000 rows per upload."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d906077e-de25-4f8f-9ce1-27dab3e0c118",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1456,
+        -112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1936,
+        "height": 272,
+        "content": "## Compare history and save exact review\nRead one release registry. Exclude identical previously released orders and hold historical conflicts. Save an immutable batch snapshot and review hash. Batch IDs must be unique; serialize intake."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8acbcd13-95b3-48a6-b292-5fcfdd0d0bfc",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -48,
+        512
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 2192,
+        "height": 272,
+        "content": "## Review the saved batch\nUse batch_id and exact review_hash. Download, approve accepted rows or reject. Approval needs RELEASE ACCEPTED ROWS. Commit ledger and receipt atomically with a conditional update; same-decision replays do not release twice."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "436f7cfd-a402-4577-a426-323dcd55c0a9",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1456,
+        1136
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1696,
+        "height": 272,
+        "content": "## Download the result ZIP\nContains report.json, issues.csv, audit.json and draft-sales.csv or released-sales.csv. Rejection returns an empty draft CSV. JSON preserves canonical values; CSV escapes formula prefixes. Demo never saves or releases records."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e77fbce3-999d-4b1c-9388-4edbc45eaace",
+      "name": "Upload sales CSV for review",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "ff691ef1-6f1e-4281-b685-b44dcbc98745",
+      "parameters": {
+        "options": {
+          "buttonLabel": "Create review package",
+          "appendAttribution": true,
+          "includeUserInOutput": true
+        },
+        "formTitle": "Validate sales CSV and save review",
+        "formFields": {
+          "values": [
+            {
+              "fieldName": "batch_id",
+              "fieldLabel": "Unique batch ID",
+              "requiredField": true
+            },
+            {
+              "fieldName": "sales_file",
+              "fieldType": "file",
+              "fieldLabel": "Sales CSV",
+              "multipleFiles": false,
+              "requiredField": true,
+              "acceptFileTypes": ".csv"
+            },
+            {
+              "fieldName": "delimiter",
+              "fieldType": "dropdown",
+              "fieldLabel": "CSV delimiter",
+              "defaultValue": "Comma",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Comma"
+                  },
+                  {
+                    "option": "Semicolon"
+                  },
+                  {
+                    "option": "Tab"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "onReceived",
+        "authentication": "n8nUserAuth",
+        "formDescription": "Internal review only. Release accepted rows explicitly in the separate decision form."
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "39a21c37-07bc-4a41-a66a-410de50c2f4d",
+      "name": "Configure intake and authenticate",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        250,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const j = $input.first().json, config = { \"stateTableId\": \"REPLACE_WITH_TABLE_ID\", \"allowedReviewers\": [\"user@example.com\"], \"approvalTtlHours\": 24 };\n    if (!j.user || typeof j.user.email !== 'string')\n        throw Error('Authenticated n8n user required');\n    const actor = j.user.email.toLowerCase();\n    if (!config.allowedReviewers.some(function (e) {\n        return e.toLowerCase() === actor;\n    }))\n        throw Error('User is not allowlisted');\n    if (config.stateTableId === 'REPLACE_WITH_TABLE_ID')\n        throw Error('Configure stateTableId first');\n    const batch_id = String(j.batch_id || '').trim();\n    if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/.test(batch_id) || ['__proto__', 'constructor', 'prototype'].includes(batch_id))\n        throw Error('Use a unique safe batch ID');\n    return [{ json: { ...j, config, actor, batch_id, flow: 'intake' }, binary: $input.first().binary }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "72fe4025-1cbd-4380-b59f-15c5fc846d72",
+      "name": "Read uploaded CSV",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        500,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "var _a;\n    // Read only the declared upload fields through n8n's binary-data helper.\n    const item = $input.first();\n    const required = ['sales_file'];\n    const result = { delimiter: { Comma: ',', Semicolon: ';', Tab: '\\t' }[item.json.delimiter], uploadErrors: [] };\n    function validUtf8(b) {\n        for (let i = 0; i < b.length;) {\n            const c = b[i++];\n            if (c <= 0x7f)\n                continue;\n            let count, lo = 0x80, hi = 0xbf;\n            if (c >= 0xc2 && c <= 0xdf)\n                count = 1;\n            else if (c >= 0xe0 && c <= 0xef) {\n                count = 2;\n                if (c === 0xe0)\n                    lo = 0xa0;\n                if (c === 0xed)\n                    hi = 0x9f;\n            }\n            else if (c >= 0xf0 && c <= 0xf4) {\n                count = 3;\n                if (c === 0xf0)\n                    lo = 0x90;\n                if (c === 0xf4)\n                    hi = 0x8f;\n            }\n            else\n                return false;\n            if (i + count > b.length || b[i] < lo || b[i] > hi)\n                return false;\n            i++;\n            for (let j = 1; j < count; j++, i++)\n                if (b[i] < 0x80 || b[i] > 0xbf)\n                    return false;\n        }\n        return true;\n    }\n    const actual = Object.keys(item.binary || {}).sort();\n    if (actual.length !== required.length || required.some(function (f) {\n        return !actual.includes(f);\n    }))\n        result.uploadErrors.push('Upload exactly one CSV file for each required field.');\n    for (const field of required) {\n        result[field + 'Text'] = null;\n        if (!((_a = item.binary) === null || _a === void 0 ? void 0 : _a[field])) {\n            result.uploadErrors.push('Missing upload: ' + field);\n            continue;\n        }\n        if (!/\\.csv$/i.test(item.binary[field].fileName || '')) {\n            result.uploadErrors.push(field + ': use a .csv file.');\n            continue;\n        }\n        const bytes = await this.helpers.getBinaryDataBuffer(0, field);\n        if (bytes.length > 4000000) {\n            result.uploadErrors.push(field + ': exceeds 4,000,000 bytes.');\n            continue;\n        }\n        if (!validUtf8(bytes)) {\n            result.uploadErrors.push(field + ': file is not valid UTF-8.');\n            continue;\n        }\n        result[field + 'Text'] = bytes.toString('utf8');\n    }\n    result.uploadError = result.uploadErrors.join(' ');\n    result.csvText = result.sales_fileText;\n    return [{ json: result }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9fb4ebce-6122-434e-9a81-fd7077ad5d66",
+      "name": "Parse CSV and check headers",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        750,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Strict CSV parsing keeps empty input and schema failures visible downstream.\n    const cfg = $input.first().json;\n    const out = { headers: [], rows: [], issues: [], fatal: false, input_records: 0 };\n    function fail(code, message) { out.fatal = true; out.issues.push({ record: 0, code, message }); }\n    const text = typeof cfg.csvText === 'string' ? cfg.csvText.replace(/^\\uFEFF/, '') : null;\n    const delimiter = cfg.delimiter;\n    if (cfg.uploadError)\n        fail('upload_invalid', cfg.uploadError);\n    else if (text === null)\n        fail('input_type', 'csvText must be a string.');\n    else if (![',', ';', '\\t'].includes(delimiter))\n        fail('delimiter', 'Choose comma, semicolon, or tab.');\n    else if (text.length > 1000000)\n        fail('input_limit', 'Input exceeds 1,000,000 characters. Split the file.');\n    else if (!text.trim()) { /* Empty input is a documented result. */ }\n    else {\n        try {\n            const records = [];\n            let row = [], value = '', state = 'start';\n            function endCell() { row.push(value); value = ''; state = 'start'; }\n            function endRow() { endCell(); if (!(row.length === 1 && !row[0].trim()))\n                records.push(row); row = []; if (records.length > 10001)\n                throw new Error('More than 10,000 data records. Split the file.'); }\n            for (let i = 0; i < text.length; i++) {\n                const c = text[i];\n                if (state === 'quoted') {\n                    if (c === '\"') {\n                        if (text[i + 1] === '\"') {\n                            value += '\"';\n                            i++;\n                        }\n                        else\n                            state = 'closed';\n                    }\n                    else\n                        value += c;\n                }\n                else if (c === delimiter)\n                    endCell();\n                else if (c === '\\n' || c === '\\r') {\n                    if (c === '\\r' && text[i + 1] === '\\n')\n                        i++;\n                    endRow();\n                }\n                else if (c === '\"' && state === 'start')\n                    state = 'quoted';\n                else if (state === 'closed')\n                    throw new Error('Unexpected character after a closing quote.');\n                else if (c === '\"')\n                    throw new Error('Quote inside an unquoted field.');\n                else {\n                    value += c;\n                    state = 'plain';\n                }\n            }\n            if (state === 'quoted')\n                throw new Error('Unclosed quoted field.');\n            if (value.length || row.length || state !== 'start')\n                endRow();\n            if (records.length) {\n                out.headers = records.shift().map(function (h) {\n                    return h.trim();\n                });\n                if (out.headers.some(function (h) {\n                    return !h;\n                }))\n                    fail('header_empty', 'Every column needs a name.');\n                if (new Set(out.headers).size !== out.headers.length)\n                    fail('header_duplicate', 'Column names must be unique after trimming.');\n                if (out.headers.some(function (h) {\n                    return ['__proto__', 'constructor', 'prototype'].includes(h);\n                }))\n                    fail('header_reserved', 'Rename reserved column names.');\n                const missing = ['order_id', 'order_date', 'amount', 'currency'].filter(function (h) {\n                    return !out.headers.includes(h);\n                });\n                if (missing.length)\n                    fail('header_missing', 'Missing required columns: ' + missing.join(', '));\n                out.input_records = records.length;\n                if (!out.fatal)\n                    out.rows = records.map(function (cells, index) {\n                        const raw = Object.fromEntries(out.headers.map(function (h, j) {\n                            var _a;\n                            return [h, (_a = cells[j]) !== null && _a !== void 0 ? _a : ''];\n                        }));\n                        return { record: index + 2, raw, cells, width_ok: cells.length === out.headers.length };\n                    });\n            }\n        }\n        catch (e) {\n            fail('csv_parse', e.message);\n            out.rows = [];\n        }\n    }\n    return [{ json: out }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7fe934e8-34a2-43cd-9b3a-89630fa40eff",
+      "name": "Validate sale fields",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1000,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const data = $input.first().json;\n    // Declared precision is part of this template's schema, not exchange-rate data.\n    const decimals = { USD: 2, EUR: 2, GBP: 2, THB: 2, JPY: 0, KWD: 3 };\n    function dateValid(s) {\n        if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(s))\n            return false;\n        const [y, m, d] = s.split('-').map(Number);\n        const leap = y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0);\n        return y >= 1 && m >= 1 && m <= 12 && d >= 1 && d <= [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1];\n    }\n    data.rows = data.rows.map(function (row) {\n        const errors = [];\n        const normalized = { ...row.raw };\n        for (const k of ['order_id', 'order_date', 'amount', 'currency'])\n            normalized[k] = normalized[k].trim();\n        normalized.currency = normalized.currency.toUpperCase();\n        if (!row.width_ok)\n            errors.push('column_count');\n        if (!normalized.order_id)\n            errors.push('order_id_required');\n        if (!dateValid(normalized.order_date))\n            errors.push('order_date_invalid');\n        const currency = normalized.currency;\n        const dp = Object.hasOwn(decimals, currency) ? decimals[currency] : null;\n        if (dp === null)\n            errors.push('currency_unsupported');\n        let minor = null;\n        if (!/^\\d+(?:\\.\\d+)?$/.test(normalized.amount) || normalized.amount.length > 24)\n            errors.push('amount_invalid');\n        else if (dp !== null) {\n            const [whole, fraction = ''] = normalized.amount.split('.');\n            if (fraction.length > dp)\n                errors.push('amount_precision');\n            else {\n                minor = BigInt(whole + fraction.padEnd(dp, '0')).toString();\n                if (BigInt(minor) > 9+1234567890n) {\n                    errors.push('amount_too_large');\n                    minor = null;\n                }\n                else\n                    normalized.amount = BigInt(whole).toString() + (dp ? '.' + fraction.padEnd(dp, '0') : '');\n            }\n        }\n        return { ...row, normalized, minor, errors };\n    });\n    return [{ json: data }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "95ac4890-a4fb-4ead-8357-08407b1a8c78",
+      "name": "Resolve duplicate order IDs",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1250,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const data = $input.first().json;\n    const groups = new Map();\n    const accepted = [];\n    const issues = [...data.issues];\n    for (const row of data.rows) {\n        const id = row.normalized.order_id;\n        if (!id) {\n            issues.push({ record: row.record, code: 'invalid_row', message: row.errors.join(', '), raw: row.raw, cells: row.cells });\n            continue;\n        }\n        if (!groups.has(id))\n            groups.set(id, []);\n        groups.get(id).push(row);\n    }\n    for (const group of groups.values()) {\n        const hasInvalid = group.some(function (r) {\n            return r.errors.length;\n        });\n        const variants = new Set(group.map(function (r) {\n            return JSON.stringify(r.normalized);\n        }));\n        if (group.length > 1 && (hasInvalid || variants.size > 1)) {\n            for (const r of group)\n                issues.push({ record: r.record, code: 'duplicate_conflict', message: 'Review every record for this order_id; no record in this group was accepted.' + (r.errors.length ? ' Row errors: ' + r.errors.join(', ') : ''), raw: r.raw, cells: r.cells });\n        }\n        else if (hasInvalid) {\n            const r = group[0];\n            issues.push({ record: r.record, code: 'invalid_row', message: r.errors.join(', '), raw: r.raw, cells: r.cells });\n        }\n        else {\n            accepted.push(group[0]);\n            for (const r of group.slice(1))\n                issues.push({ record: r.record, code: 'duplicate_identical', message: 'Repeated normalized record; kept record ' + group[0].record + '.', raw: r.raw, cells: r.cells });\n        }\n    }\n    accepted.sort(function (a, b) {\n        return a.record - b.record;\n    });\n    issues.sort(function (a, b) {\n        return a.record - b.record;\n    });\n    return [{ json: { headers: data.headers, input_records: data.input_records, fatal: data.fatal, accepted, issues } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "28453405-0597-4169-aef0-20c8ce96ee69",
+      "name": "Build review files",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1500,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const data = $input.first().json;\n    const decimals = { USD: 2, EUR: 2, GBP: 2, THB: 2, JPY: 0, KWD: 3 };\n    const sums = new Map();\n    for (const r of data.accepted)\n        sums.set(r.normalized.currency, (sums.get(r.normalized.currency) || 0n) + BigInt(r.minor));\n    function format(n, dp) { const s = n.toString().padStart(dp + 1, '0'); return dp ? s.slice(0, -dp) + '.' + s.slice(-dp) : s; }\n    const totals = Object.fromEntries([...sums.entries()].sort().map(function ([c, n]) {\n        return [c, format(n, decimals[c])];\n    }));\n    const report = { schema_version: 1, status: data.fatal ? 'invalid_file' : data.issues.length ? 'needs_review' : data.accepted.length ? 'ready' : 'empty', summary: { input_records: data.input_records, accepted_records: data.accepted.length, issue_records: data.issues.length, totals_by_currency: totals }, headers: data.headers, accepted_records: data.accepted.map(function (r) {\n            return ({ record: r.record, data: r.normalized });\n        }), issues: data.issues, policy: { duplicate_key: 'trimmed case-sensitive order_id within this run', conflicts: 'quarantine entire ID group', dates: 'Gregorian calendar dates; no timezone conversion', csv_export: 'spreadsheet formula prefixes escaped with apostrophe; JSON retains canonical values' } };\n    // CSV is a spreadsheet-facing export. JSON remains the canonical lossless output.\n    function csvCell(v) { let s = String(v !== null && v !== void 0 ? v : ''); if (/^[\\s]*[=+@-]/.test(s) || /^[\\t\\r]/.test(s))\n        s = \"'\" + s; return '\"' + s.replace(/\"/g, '\"\"') + '\"'; }\n    function csv(headers, rows) { return [headers, ...rows].map(function (r) {\n        return r.map(csvCell).join(',');\n    }).join('\\r\\n') + '\\r\\n'; }\n    const clean = csv(data.headers.length ? data.headers : ['order_id', 'order_date', 'amount', 'currency'], data.accepted.map(function (r) {\n        return data.headers.map(function (h) {\n            return r.normalized[h];\n        });\n    }));\n    const errors = csv(['record', 'code', 'message', 'raw_json', 'cells_json'], data.issues.map(function (r) {\n        var _a, _b;\n        return [r.record, r.code, r.message, JSON.stringify((_a = r.raw) !== null && _a !== void 0 ? _a : {}), JSON.stringify((_b = r.cells) !== null && _b !== void 0 ? _b : [])];\n    }));\n    return [{ json: { fileName: 'report.json', content: JSON.stringify(report, null, 2) + '\\n', summary: report.summary, status: report.status } }, { json: { fileName: 'clean-sales.csv', content: clean } }, { json: { fileName: 'issues.csv', content: errors } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "4affa860-9603-477e-bb7c-5d00d6315d12",
+      "name": "Read canonical validation report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1750,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const c = $('Configure intake and authenticate').first().json;\n    const item = $input.all().find(function (i) {\n        return i.json.fileName === 'report.json';\n    });\n    if (!item)\n        throw Error('Missing canonical report');\n    const report = JSON.parse(item.json.content);\n    if (report.summary.input_records > 1000)\n        throw Error('Split uploads to at most 1000 rows');\n    return [{ json: { ...c, report } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "d11d87c6-a371-4cd0-8457-983a3fe8b2ad",
+      "name": "Read release registry for intake",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        2000,
+        0
+      ],
+      "parameters": {
+        "limit": 2,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "record_key",
+              "keyValue": "registry",
+              "condition": "eq"
+            }
+          ]
+        },
+        "resource": "row",
+        "matchType": "allConditions",
+        "operation": "get",
+        "returnAll": false,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.config.stateTableId }}"
+        }
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "a9dc714e-7297-4d1c-b1cd-800a52970bbf",
+      "name": "Read history and preserve input",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2250,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(function (i) {\n        return i.json;\n    }).filter(function (r) {\n        return r.id;\n    });\n    if (rows.length !== 1 || rows[0].kind !== 'registry')\n        throw Error('Run setup once; registry must be unique');\n    const registry = JSON.parse(rows[0].payload_json);\n    if (!registry || !Array.isArray(registry.orders) || !registry.decisions || typeof registry.decisions !== 'object' || Array.isArray(registry.decisions) || !Number.isSafeInteger(registry.revision))\n        throw Error('Invalid registry');\n    if (registry.orders.length > 5000 || Object.keys(registry.decisions).length > 1000 || JSON.stringify(registry).length > 4000000)\n        throw Error('Registry exceeds supported limits');\n    const c = $('Read canonical validation report').first().json;\n    return [{ json: { ...c, registry, registryRow: rows[0] } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a32bf785-51ec-4ddc-ab82-446a68ef246a",
+      "name": "Check unique batch ID",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        2500,
+        0
+      ],
+      "parameters": {
+        "limit": 2,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "record_key",
+              "keyValue": "={{ 'batch:' + $json.batch_id }}",
+              "condition": "eq"
+            }
+          ]
+        },
+        "resource": "row",
+        "matchType": "allConditions",
+        "operation": "get",
+        "returnAll": false,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.config.stateTableId }}"
+        }
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "af1c9420-5711-4048-b968-1eb71755c6f2",
+      "name": "Build immutable history-aware review",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2750,
+        0
+      ],
+      "parameters": {
+        "jsCode": "/* Pure helpers embedded in native n8n Code nodes. No runtime imports. */\n    function canonical(value) {\n        if (Array.isArray(value))\n            return '[' + value.map(canonical).join(',') + ']';\n        if (value && typeof value === 'object')\n            return '{' + Object.keys(value).sort().map(function (k) {\n                return JSON.stringify(k) + ':' + canonical(value[k]);\n            }).join(',') + '}';\n        return JSON.stringify(value);\n    }\n    function utf8(value) {\n        const out = [];\n        for (const ch of value) {\n            const c = ch.codePointAt(0);\n            if (c < 128)\n                out.push(c);\n            else if (c < 2048)\n                out.push(192 | c >> 6, 128 | c & 63);\n            else if (c < 65536)\n                out.push(224 | c >> 12, 128 | c >> 6 & 63, 128 | c & 63);\n            else\n                out.push(240 | c >> 18, 128 | c >> 12 & 63, 128 | c >> 6 & 63, 128 | c & 63);\n        }\n        return out;\n    }\n    function sha256Bytes(bytes) {\n        const k = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];\n        const h = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];\n        const data = Array.from(bytes), bitlen = data.length * 8;\n        data.push(128);\n        while (data.length % 64 !== 56)\n            data.push(0);\n        const high = Math.floor(bitlen / 4294967296), low = bitlen >>> 0;\n        for (const v of [high, low])\n            data.push(v >>> 24, v >>> 16 & 255, v >>> 8 & 255, v & 255);\n        const rr = function (v, n) {\n            return v >>> n | v << 32 - n;\n        };\n        for (let offset = 0; offset < data.length; offset += 64) {\n            const w = [];\n            for (let i = 0; i < 16; i++)\n                w[i] = data[offset + i * 4] << 24 | data[offset + i * 4 + 1] << 16 | data[offset + i * 4 + 2] << 8 | data[offset + i * 4 + 3];\n            for (let i = 16; i < 64; i++) {\n                const a = w[i - 15], b = w[i - 2];\n                w[i] = (w[i - 16] + (rr(a, 7) ^ rr(a, 18) ^ a >>> 3) + w[i - 7] + (rr(b, 17) ^ rr(b, 19) ^ b >>> 10)) | 0;\n            }\n            let [a, b, c, d, e, f, g, j] = h;\n            for (let i = 0; i < 64; i++) {\n                const t = (j + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25)) + ((e & f) ^ (~e & g)) + k[i] + w[i]) | 0, u = ((rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;\n                j = g;\n                g = f;\n                f = e;\n                e = d + t | 0;\n                d = c;\n                c = b;\n                b = a;\n                a = t + u | 0;\n            }\n            [a, b, c, d, e, f, g, j].forEach(function (v, i) {\n                return h[i] = h[i] + v | 0;\n            });\n        }\n        return h.map(function (v) {\n            return (v >>> 0).toString(16).padStart(8, '0');\n        }).join('');\n    }\n    function sha256(value) { return sha256Bytes(utf8(value)); }\n    const PRECISION = { USD: 2, EUR: 2, GBP: 2, THB: 2, JPY: 0, KWD: 3 };\n    const MAX_HISTORY = 5000, MAX_BATCH = 1000;\n    function demand(ok, message) { if (!ok)\n        throw new Error(message); }\n    function clone(value) { return JSON.parse(JSON.stringify(value)); }\n    function textValue(value, label, max = 1000) {\n        demand(typeof value === 'string' && value.length <= max && !/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/.test(value), label + ' must be bounded text');\n        return value;\n    }\n    function identity(actor) {\n        textValue(actor, 'actor', 254);\n        demand(/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(actor) && actor === actor.trim(), 'actor must be an email');\n        return actor.toLowerCase();\n    }\n    function instant(now) {\n        demand(typeof now === 'string' && /^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$/.test(now) && Number.isFinite(Date.parse(now)) && new Date(now).toISOString() === now, 'now must be an ISO UTC instant');\n        return now;\n    }\n    function rowCheck(data) {\n        demand(data && typeof data === 'object' && !Array.isArray(data), 'row data must be an object');\n        const keys = Object.keys(data);\n        demand(keys.length >= 4 && keys.length <= 200, 'row field limit exceeded');\n        for (const key of keys) {\n            demand(!['__proto__', 'prototype', 'constructor'].includes(key) && key.length > 0 && key.length <= 1000, 'invalid source header');\n            textValue(data[key], 'row value', 1000000);\n        }\n        demand(typeof data.order_id === 'string' && data.order_id.length > 0 && data.order_id.length <= 1000 && data.order_id === data.order_id.trim() && !['__proto__', 'constructor', 'prototype'].includes(data.order_id), 'invalid order_id');\n        demand(/^\\d{4}-\\d\\d-\\d\\d$/.test(data.order_date), 'invalid canonical order_date');\n        const date = new Date(data.order_date + 'T00:00:00.000Z');\n        demand(Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === data.order_date && data.order_date.slice(0, 4) !== '0000', 'invalid canonical date');\n        demand(Object.prototype.hasOwnProperty.call(PRECISION, data.currency), 'invalid currency');\n        const p = PRECISION[data.currency], pattern = p ? new RegExp('^(0|[1-9][0-9]*)\\\\.[0-9]{' + p + '}$') : /^(0|[1-9][0-9]*)$/;\n        demand(typeof data.amount === 'string' && pattern.test(data.amount), 'amount must have canonical currency precision');\n        const minor = BigInt(data.amount.replace('.', ''));\n        demand(minor <= 9+1234567890n, 'amount limit exceeded');\n        return minor;\n    }\n    function historyCheck(history) {\n        demand(Array.isArray(history) && history.length <= MAX_HISTORY, 'release registry limit exceeded');\n        const byId = new Map();\n        for (const entry of history) {\n            demand(entry && typeof entry === 'object' && !Array.isArray(entry), 'invalid release registry entry');\n            rowCheck(entry.data);\n            demand(entry.order_id === entry.data.order_id, 'registry ID does not match row');\n            demand(!byId.has(entry.order_id), 'duplicate order ID in release registry');\n            textValue(entry.batch_id, 'registry batch_id', 160);\n            instant(entry.released_at);\n            identity(entry.released_by);\n            byId.set(entry.order_id, entry);\n        }\n        return byId;\n    }\n    function totals(rows) {\n        const sums = {};\n        for (const row of rows) {\n            const minor = rowCheck(row.data), currency = row.data.currency;\n            sums[currency] = (sums[currency] || 0n) + minor;\n        }\n        const out = {};\n        for (const currency of Object.keys(sums).sort()) {\n            const p = PRECISION[currency], n = sums[currency].toString().padStart(p + 1, '0');\n            out[currency] = p ? n.slice(0, -p) + '.' + n.slice(-p) : n;\n        }\n        return out;\n    }\n    function hashBody(snapshot) {\n        return { version: snapshot.version, batch_id: snapshot.batch_id, created_by: snapshot.created_by, created_at: snapshot.created_at, history_revision_hash: snapshot.history_revision_hash, report: snapshot.report };\n    }\n    function enrichReport(baseReport, history, batchId, actor, now) {\n        const creator = identity(actor), createdAt = instant(now);\n        demand(typeof batchId === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,159}$/.test(batchId) && !['__proto__', 'constructor', 'prototype'].includes(batchId), 'invalid batch ID');\n        const previous = historyCheck(history);\n        demand(baseReport && baseReport.schema_version === 1 && Array.isArray(baseReport.headers) && Array.isArray(baseReport.accepted_records) && Array.isArray(baseReport.issues) && baseReport.summary && Number.isInteger(baseReport.summary.input_records) && baseReport.summary.input_records >= 0, 'invalid base report');\n        demand(['ready', 'empty', 'needs_review', 'invalid_file'].includes(baseReport.status), 'unknown base status');\n        demand(baseReport.accepted_records.length <= MAX_BATCH, 'batch has more than 1000 accepted rows');\n        demand(baseReport.issues.length <= 20000, 'too many issue records');\n        const report = clone(baseReport), accepted = [], seen = new Set();\n        let repeats = 0, conflicts = 0;\n        for (const row of report.accepted_records) {\n            demand(row && Number.isInteger(row.record) && row.record >= 2, 'invalid source record');\n            rowCheck(row.data);\n            demand(!seen.has(row.data.order_id), 'duplicate accepted ID');\n            seen.add(row.data.order_id);\n            demand(canonical(Object.keys(row.data).sort()) === canonical([...report.headers].sort()), 'source fields do not match headers');\n            const past = previous.get(row.data.order_id);\n            if (!past) {\n                accepted.push(row);\n                continue;\n            }\n            const equal = canonical(past.data) === canonical(row.data), code = equal ? 'already_released' : 'historical_conflict';\n            if (equal)\n                repeats++;\n            else\n                conflicts++;\n            report.issues.push({ record: row.record, code, message: equal ? 'Identical order was released in an earlier approved batch; excluded from this draft.' : 'This order ID differs from an earlier released order; held for manual review.', raw: clone(row.data), cells: report.headers.map(function (h) {\n                    return row.data[h];\n                }), previous_batch_id: past.batch_id });\n        }\n        report.accepted_records = accepted;\n        report.summary = { ...report.summary, accepted_records: accepted.length, issue_records: report.issues.length, totals_by_currency: totals(accepted), already_released_records: repeats, historical_conflict_records: conflicts };\n        report.status = report.status === 'invalid_file' ? 'invalid_file' : report.issues.length ? 'needs_review' : accepted.length ? 'ready' : 'empty';\n        report.policy = { ...(report.policy || {}), historical_duplicate_key: 'case-sensitive order_id from previously released batches', historical_identical: 'excluded as already_released', historical_conflict: 'held; no release of conflicting order', release_scope: 'human approval authorizes a manual import file; no external system import is performed' };\n        const snapshot = { version: 1, batch_id: batchId, created_by: creator, created_at: createdAt, status: 'pending', history_revision_hash: sha256(canonical(history)), report };\n        snapshot.review_hash = sha256(canonical(hashBody(snapshot)));\n        return snapshot;\n    }\n    const c = $('Read history and preserve input').first().json;\n    if ($input.all().some(function (i) {\n        return i.json.id;\n    }))\n        throw Error('Batch ID exists; use decision/download form or choose a new ID');\n    if (Object.hasOwn(c.registry.decisions, c.batch_id))\n        throw Error('Batch ID already decided');\n    const snapshot = enrichReport(c.report, c.registry.orders, c.batch_id, c.actor, new Date().toISOString());\n    return [{ json: { ...c, snapshot } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "aeb03bf4-8272-4391-96fc-741174a84191",
+      "name": "Save immutable batch snapshot",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        3000,
+        0
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "kind": "batch",
+            "record_key": "={{ 'batch:' + $json.batch_id }}",
+            "updated_at": "={{ new Date().toISOString() }}",
+            "owner_token": "",
+            "payload_json": "={{ JSON.stringify($json.snapshot) }}"
+          },
+          "mappingMode": "defineBelow"
+        },
+        "options": {},
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.config.stateTableId }}"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "3feab8a3-5d0f-4fc9-9bdd-aad50d8ceb48",
+      "name": "Verify saved review",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3250,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const c = $('Build immutable history-aware review').first().json;\n    const rows = $input.all().map(function (i) {\n        return i.json;\n    }).filter(function (r) {\n        return r.id;\n    });\n    if (rows.length !== 1 || rows[0].payload_json !== JSON.stringify(c.snapshot))\n        throw Error('Review persistence not confirmed');\n    return [{ json: { ...c, decision: null } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "00ee5b71-0a8f-47f5-b35e-24e2fbd2c5f2",
+      "name": "Review or download a saved batch",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        0,
+        620
+      ],
+      "webhookId": "f2f93158-9ee1-4b51-a874-bd751690dda9",
+      "parameters": {
+        "options": {
+          "buttonLabel": "Process exact batch",
+          "appendAttribution": true,
+          "includeUserInOutput": true
+        },
+        "formTitle": "Review exact sales batch",
+        "formFields": {
+          "values": [
+            {
+              "fieldName": "batch_id",
+              "fieldLabel": "Saved batch ID",
+              "requiredField": true
+            },
+            {
+              "fieldName": "review_hash",
+              "fieldLabel": "Exact hash from report.json",
+              "requiredField": true
+            },
+            {
+              "fieldName": "action",
+              "fieldType": "dropdown",
+              "fieldLabel": "Action",
+              "defaultValue": "download",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "download"
+                  },
+                  {
+                    "option": "approve"
+                  },
+                  {
+                    "option": "reject"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldName": "confirmation",
+              "fieldLabel": "For approve only: type RELEASE ACCEPTED ROWS",
+              "requiredField": false
+            }
+          ]
+        },
+        "responseMode": "onReceived",
+        "authentication": "n8nUserAuth",
+        "formDescription": "Download, approve accepted rows, or reject. Approval records a release; it does not import into an external system."
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "6b373c8e-3492-408d-af9a-d6d69c94ace2",
+      "name": "Configure review and authenticate",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        250,
+        620
+      ],
+      "parameters": {
+        "jsCode": "const j = $input.first().json, config = { \"stateTableId\": \"REPLACE_WITH_TABLE_ID\", \"allowedReviewers\": [\"user@example.com\"], \"approvalTtlHours\": 24 };\n    if (!j.user || typeof j.user.email !== 'string')\n        throw Error('Authenticated n8n user required');\n    const actor = j.user.email.toLowerCase();\n    if (!config.allowedReviewers.some(function (e) {\n        return e.toLowerCase() === actor;\n    }))\n        throw Error('User is not allowlisted');\n    if (config.stateTableId === 'REPLACE_WITH_TABLE_ID')\n        throw Error('Configure stateTableId first');\n    const batch_id = String(j.batch_id || '').trim();\n    if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/.test(batch_id) || ['__proto__', 'constructor', 'prototype'].includes(batch_id))\n        throw Error('Use a unique safe batch ID');\n    if (!['download', 'approve', 'reject'].includes(j.action))\n        throw Error('Invalid decision');\n    if (typeof j.review_hash !== 'string' || !/^[a-f0-9]{64}$/.test(j.review_hash))\n        throw Error('Exact review hash required');\n    if (j.action === 'approve' && j.confirmation !== 'RELEASE ACCEPTED ROWS')\n        throw Error('Explicit release confirmation required');\n    return [{ json: { ...j, config, actor, batch_id, flow: 'review' } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "684d6768-91d8-4118-bef2-4e3335c88766",
+      "name": "Read exact saved batch",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        500,
+        620
+      ],
+      "parameters": {
+        "limit": 2,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "record_key",
+              "keyValue": "={{ 'batch:' + $json.batch_id }}",
+              "condition": "eq"
+            }
+          ]
+        },
+        "resource": "row",
+        "matchType": "allConditions",
+        "operation": "get",
+        "returnAll": false,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.config.stateTableId }}"
+        }
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "297d81e2-b03f-4da9-bb47-97c0e0d344c1",
+      "name": "Verify immutable review hash",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        750,
+        620
+      ],
+      "parameters": {
+        "jsCode": "/* Pure helpers embedded in native n8n Code nodes. No runtime imports. */\n    function canonical(value) {\n        if (Array.isArray(value))\n            return '[' + value.map(canonical).join(',') + ']';\n        if (value && typeof value === 'object')\n            return '{' + Object.keys(value).sort().map(function (k) {\n                return JSON.stringify(k) + ':' + canonical(value[k]);\n            }).join(',') + '}';\n        return JSON.stringify(value);\n    }\n    function utf8(value) {\n        const out = [];\n        for (const ch of value) {\n            const c = ch.codePointAt(0);\n            if (c < 128)\n                out.push(c);\n            else if (c < 2048)\n                out.push(192 | c >> 6, 128 | c & 63);\n            else if (c < 65536)\n                out.push(224 | c >> 12, 128 | c >> 6 & 63, 128 | c & 63);\n            else\n                out.push(240 | c >> 18, 128 | c >> 12 & 63, 128 | c >> 6 & 63, 128 | c & 63);\n        }\n        return out;\n    }\n    function sha256Bytes(bytes) {\n        const k = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];\n        const h = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];\n        const data = Array.from(bytes), bitlen = data.length * 8;\n        data.push(128);\n        while (data.length % 64 !== 56)\n            data.push(0);\n        const high = Math.floor(bitlen / 4294967296), low = bitlen >>> 0;\n        for (const v of [high, low])\n            data.push(v >>> 24, v >>> 16 & 255, v >>> 8 & 255, v & 255);\n        const rr = function (v, n) {\n            return v >>> n | v << 32 - n;\n        };\n        for (let offset = 0; offset < data.length; offset += 64) {\n            const w = [];\n            for (let i = 0; i < 16; i++)\n                w[i] = data[offset + i * 4] << 24 | data[offset + i * 4 + 1] << 16 | data[offset + i * 4 + 2] << 8 | data[offset + i * 4 + 3];\n            for (let i = 16; i < 64; i++) {\n                const a = w[i - 15], b = w[i - 2];\n                w[i] = (w[i - 16] + (rr(a, 7) ^ rr(a, 18) ^ a >>> 3) + w[i - 7] + (rr(b, 17) ^ rr(b, 19) ^ b >>> 10)) | 0;\n            }\n            let [a, b, c, d, e, f, g, j] = h;\n            for (let i = 0; i < 64; i++) {\n                const t = (j + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25)) + ((e & f) ^ (~e & g)) + k[i] + w[i]) | 0, u = ((rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;\n                j = g;\n                g = f;\n                f = e;\n                e = d + t | 0;\n                d = c;\n                c = b;\n                b = a;\n                a = t + u | 0;\n            }\n            [a, b, c, d, e, f, g, j].forEach(function (v, i) {\n                return h[i] = h[i] + v | 0;\n            });\n        }\n        return h.map(function (v) {\n            return (v >>> 0).toString(16).padStart(8, '0');\n        }).join('');\n    }\n    function sha256(value) { return sha256Bytes(utf8(value)); }\n    const PRECISION = { USD: 2, EUR: 2, GBP: 2, THB: 2, JPY: 0, KWD: 3 };\n    const MAX_HISTORY = 5000, MAX_BATCH = 1000;\n    function demand(ok, message) { if (!ok)\n        throw new Error(message); }\n    function textValue(value, label, max = 1000) {\n        demand(typeof value === 'string' && value.length <= max && !/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/.test(value), label + ' must be bounded text');\n        return value;\n    }\n    function identity(actor) {\n        textValue(actor, 'actor', 254);\n        demand(/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(actor) && actor === actor.trim(), 'actor must be an email');\n        return actor.toLowerCase();\n    }\n    function instant(now) {\n        demand(typeof now === 'string' && /^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$/.test(now) && Number.isFinite(Date.parse(now)) && new Date(now).toISOString() === now, 'now must be an ISO UTC instant');\n        return now;\n    }\n    function rowCheck(data) {\n        demand(data && typeof data === 'object' && !Array.isArray(data), 'row data must be an object');\n        const keys = Object.keys(data);\n        demand(keys.length >= 4 && keys.length <= 200, 'row field limit exceeded');\n        for (const key of keys) {\n            demand(!['__proto__', 'prototype', 'constructor'].includes(key) && key.length > 0 && key.length <= 1000, 'invalid source header');\n            textValue(data[key], 'row value', 1000000);\n        }\n        demand(typeof data.order_id === 'string' && data.order_id.length > 0 && data.order_id.length <= 1000 && data.order_id === data.order_id.trim() && !['__proto__', 'constructor', 'prototype'].includes(data.order_id), 'invalid order_id');\n        demand(/^\\d{4}-\\d\\d-\\d\\d$/.test(data.order_date), 'invalid canonical order_date');\n        const date = new Date(data.order_date + 'T00:00:00.000Z');\n        demand(Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === data.order_date && data.order_date.slice(0, 4) !== '0000', 'invalid canonical date');\n        demand(Object.prototype.hasOwnProperty.call(PRECISION, data.currency), 'invalid currency');\n        const p = PRECISION[data.currency], pattern = p ? new RegExp('^(0|[1-9][0-9]*)\\\\.[0-9]{' + p + '}$') : /^(0|[1-9][0-9]*)$/;\n        demand(typeof data.amount === 'string' && pattern.test(data.amount), 'amount must have canonical currency precision');\n        const minor = BigInt(data.amount.replace('.', ''));\n        demand(minor <= 9+1234567890n, 'amount limit exceeded');\n        return minor;\n    }\n    function totals(rows) {\n        const sums = {};\n        for (const row of rows) {\n            const minor = rowCheck(row.data), currency = row.data.currency;\n            sums[currency] = (sums[currency] || 0n) + minor;\n        }\n        const out = {};\n        for (const currency of Object.keys(sums).sort()) {\n            const p = PRECISION[currency], n = sums[currency].toString().padStart(p + 1, '0');\n            out[currency] = p ? n.slice(0, -p) + '.' + n.slice(-p) : n;\n        }\n        return out;\n    }\n    function hashBody(snapshot) {\n        return { version: snapshot.version, batch_id: snapshot.batch_id, created_by: snapshot.created_by, created_at: snapshot.created_at, history_revision_hash: snapshot.history_revision_hash, report: snapshot.report };\n    }\n    function verifySnapshot(snapshot) {\n        demand(snapshot && snapshot.version === 1 && ['pending', 'approved', 'rejected'].includes(snapshot.status), 'invalid snapshot');\n        demand(typeof snapshot.batch_id === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,159}$/.test(snapshot.batch_id) && !['__proto__', 'constructor', 'prototype'].includes(snapshot.batch_id), 'invalid batch ID');\n        identity(snapshot.created_by);\n        instant(snapshot.created_at);\n        demand(typeof snapshot.history_revision_hash === 'string' && /^[0-9a-f]{64}$/.test(snapshot.history_revision_hash), 'invalid history hash');\n        demand(typeof snapshot.review_hash === 'string' && /^[0-9a-f]{64}$/.test(snapshot.review_hash) && sha256(canonical(hashBody(snapshot))) === snapshot.review_hash, 'snapshot integrity check failed');\n        demand(snapshot.report && Array.isArray(snapshot.report.accepted_records) && snapshot.report.accepted_records.length <= MAX_BATCH, 'invalid snapshot rows');\n        for (const row of snapshot.report.accepted_records)\n            rowCheck(row.data);\n        demand(canonical(totals(snapshot.report.accepted_records)) === canonical(snapshot.report.summary.totals_by_currency), 'snapshot totals do not match rows');\n        return true;\n    }\n    const c = $('Configure review and authenticate').first().json;\n    const rows = $input.all().map(function (i) {\n        return i.json;\n    }).filter(function (r) {\n        return r.id;\n    });\n    if (rows.length !== 1 || rows[0].kind !== 'batch')\n        throw Error('Batch missing or ambiguous');\n    const snapshot = JSON.parse(rows[0].payload_json);\n    verifySnapshot(snapshot);\n    if (snapshot.batch_id !== c.batch_id || snapshot.review_hash !== c.review_hash)\n        throw Error('Stale or mismatched review');\n    return [{ json: { ...c, snapshot } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1f0bc39a-2a9b-4cdc-a097-6d5f5f401d45",
+      "name": "Read current release registry",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        1000,
+        620
+      ],
+      "parameters": {
+        "limit": 2,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "record_key",
+              "keyValue": "registry",
+              "condition": "eq"
+            }
+          ]
+        },
+        "resource": "row",
+        "matchType": "allConditions",
+        "operation": "get",
+        "returnAll": false,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.config.stateTableId }}"
+        }
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "50bbb088-7ce7-4b52-883a-69700ef00cb6",
+      "name": "Plan exact decision against current history",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1250,
+        620
+      ],
+      "parameters": {
+        "jsCode": "/* Pure helpers embedded in native n8n Code nodes. No runtime imports. */\n    function canonical(value) {\n        if (Array.isArray(value))\n            return '[' + value.map(canonical).join(',') + ']';\n        if (value && typeof value === 'object')\n            return '{' + Object.keys(value).sort().map(function (k) {\n                return JSON.stringify(k) + ':' + canonical(value[k]);\n            }).join(',') + '}';\n        return JSON.stringify(value);\n    }\n    function utf8(value) {\n        const out = [];\n        for (const ch of value) {\n            const c = ch.codePointAt(0);\n            if (c < 128)\n                out.push(c);\n            else if (c < 2048)\n                out.push(192 | c >> 6, 128 | c & 63);\n            else if (c < 65536)\n                out.push(224 | c >> 12, 128 | c >> 6 & 63, 128 | c & 63);\n            else\n                out.push(240 | c >> 18, 128 | c >> 12 & 63, 128 | c >> 6 & 63, 128 | c & 63);\n        }\n        return out;\n    }\n    function sha256Bytes(bytes) {\n        const k = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];\n        const h = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];\n        const data = Array.from(bytes), bitlen = data.length * 8;\n        data.push(128);\n        while (data.length % 64 !== 56)\n            data.push(0);\n        const high = Math.floor(bitlen / 4294967296), low = bitlen >>> 0;\n        for (const v of [high, low])\n            data.push(v >>> 24, v >>> 16 & 255, v >>> 8 & 255, v & 255);\n        const rr = function (v, n) {\n            return v >>> n | v << 32 - n;\n        };\n        for (let offset = 0; offset < data.length; offset += 64) {\n            const w = [];\n            for (let i = 0; i < 16; i++)\n                w[i] = data[offset + i * 4] << 24 | data[offset + i * 4 + 1] << 16 | data[offset + i * 4 + 2] << 8 | data[offset + i * 4 + 3];\n            for (let i = 16; i < 64; i++) {\n                const a = w[i - 15], b = w[i - 2];\n                w[i] = (w[i - 16] + (rr(a, 7) ^ rr(a, 18) ^ a >>> 3) + w[i - 7] + (rr(b, 17) ^ rr(b, 19) ^ b >>> 10)) | 0;\n            }\n            let [a, b, c, d, e, f, g, j] = h;\n            for (let i = 0; i < 64; i++) {\n                const t = (j + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25)) + ((e & f) ^ (~e & g)) + k[i] + w[i]) | 0, u = ((rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;\n                j = g;\n                g = f;\n                f = e;\n                e = d + t | 0;\n                d = c;\n                c = b;\n                b = a;\n                a = t + u | 0;\n            }\n            [a, b, c, d, e, f, g, j].forEach(function (v, i) {\n                return h[i] = h[i] + v | 0;\n            });\n        }\n        return h.map(function (v) {\n            return (v >>> 0).toString(16).padStart(8, '0');\n        }).join('');\n    }\n    function sha256(value) { return sha256Bytes(utf8(value)); }\n    const PRECISION = { USD: 2, EUR: 2, GBP: 2, THB: 2, JPY: 0, KWD: 3 };\n    const MAX_HISTORY = 5000, MAX_BATCH = 1000;\n    function demand(ok, message) { if (!ok)\n        throw new Error(message); }\n    function clone(value) { return JSON.parse(JSON.stringify(value)); }\n    function textValue(value, label, max = 1000) {\n        demand(typeof value === 'string' && value.length <= max && !/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/.test(value), label + ' must be bounded text');\n        return value;\n    }\n    function identity(actor) {\n        textValue(actor, 'actor', 254);\n        demand(/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(actor) && actor === actor.trim(), 'actor must be an email');\n        return actor.toLowerCase();\n    }\n    function instant(now) {\n        demand(typeof now === 'string' && /^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$/.test(now) && Number.isFinite(Date.parse(now)) && new Date(now).toISOString() === now, 'now must be an ISO UTC instant');\n        return now;\n    }\n    function rowCheck(data) {\n        demand(data && typeof data === 'object' && !Array.isArray(data), 'row data must be an object');\n        const keys = Object.keys(data);\n        demand(keys.length >= 4 && keys.length <= 200, 'row field limit exceeded');\n        for (const key of keys) {\n            demand(!['__proto__', 'prototype', 'constructor'].includes(key) && key.length > 0 && key.length <= 1000, 'invalid source header');\n            textValue(data[key], 'row value', 1000000);\n        }\n        demand(typeof data.order_id === 'string' && data.order_id.length > 0 && data.order_id.length <= 1000 && data.order_id === data.order_id.trim() && !['__proto__', 'constructor', 'prototype'].includes(data.order_id), 'invalid order_id');\n        demand(/^\\d{4}-\\d\\d-\\d\\d$/.test(data.order_date), 'invalid canonical order_date');\n        const date = new Date(data.order_date + 'T00:00:00.000Z');\n        demand(Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === data.order_date && data.order_date.slice(0, 4) !== '0000', 'invalid canonical date');\n        demand(Object.prototype.hasOwnProperty.call(PRECISION, data.currency), 'invalid currency');\n        const p = PRECISION[data.currency], pattern = p ? new RegExp('^(0|[1-9][0-9]*)\\\\.[0-9]{' + p + '}$') : /^(0|[1-9][0-9]*)$/;\n        demand(typeof data.amount === 'string' && pattern.test(data.amount), 'amount must have canonical currency precision');\n        const minor = BigInt(data.amount.replace('.', ''));\n        demand(minor <= 9+1234567890n, 'amount limit exceeded');\n        return minor;\n    }\n    function historyCheck(history) {\n        demand(Array.isArray(history) && history.length <= MAX_HISTORY, 'release registry limit exceeded');\n        const byId = new Map();\n        for (const entry of history) {\n            demand(entry && typeof entry === 'object' && !Array.isArray(entry), 'invalid release registry entry');\n            rowCheck(entry.data);\n            demand(entry.order_id === entry.data.order_id, 'registry ID does not match row');\n            demand(!byId.has(entry.order_id), 'duplicate order ID in release registry');\n            textValue(entry.batch_id, 'registry batch_id', 160);\n            instant(entry.released_at);\n            identity(entry.released_by);\n            byId.set(entry.order_id, entry);\n        }\n        return byId;\n    }\n    function totals(rows) {\n        const sums = {};\n        for (const row of rows) {\n            const minor = rowCheck(row.data), currency = row.data.currency;\n            sums[currency] = (sums[currency] || 0n) + minor;\n        }\n        const out = {};\n        for (const currency of Object.keys(sums).sort()) {\n            const p = PRECISION[currency], n = sums[currency].toString().padStart(p + 1, '0');\n            out[currency] = p ? n.slice(0, -p) + '.' + n.slice(-p) : n;\n        }\n        return out;\n    }\n    function hashBody(snapshot) {\n        return { version: snapshot.version, batch_id: snapshot.batch_id, created_by: snapshot.created_by, created_at: snapshot.created_at, history_revision_hash: snapshot.history_revision_hash, report: snapshot.report };\n    }\n    function verifySnapshot(snapshot) {\n        demand(snapshot && snapshot.version === 1 && ['pending', 'approved', 'rejected'].includes(snapshot.status), 'invalid snapshot');\n        demand(typeof snapshot.batch_id === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,159}$/.test(snapshot.batch_id) && !['__proto__', 'constructor', 'prototype'].includes(snapshot.batch_id), 'invalid batch ID');\n        identity(snapshot.created_by);\n        instant(snapshot.created_at);\n        demand(typeof snapshot.history_revision_hash === 'string' && /^[0-9a-f]{64}$/.test(snapshot.history_revision_hash), 'invalid history hash');\n        demand(typeof snapshot.review_hash === 'string' && /^[0-9a-f]{64}$/.test(snapshot.review_hash) && sha256(canonical(hashBody(snapshot))) === snapshot.review_hash, 'snapshot integrity check failed');\n        demand(snapshot.report && Array.isArray(snapshot.report.accepted_records) && snapshot.report.accepted_records.length <= MAX_BATCH, 'invalid snapshot rows');\n        for (const row of snapshot.report.accepted_records)\n            rowCheck(row.data);\n        demand(canonical(totals(snapshot.report.accepted_records)) === canonical(snapshot.report.summary.totals_by_currency), 'snapshot totals do not match rows');\n        return true;\n    }\n    function decide(snapshot, action, actor, cfg, currentHistory, now) {\n        const reviewer = identity(actor), decidedAt = instant(now);\n        demand(cfg && Array.isArray(cfg.allowedReviewers) && cfg.allowedReviewers.map(identity).includes(reviewer), 'reviewer is not authorized');\n        demand(snapshot && snapshot.version === 1 && snapshot.status === 'pending', 'batch is not pending');\n        demand(action && ['approve', 'reject'].includes(action.decision), 'decision must be approve or reject');\n        verifySnapshot(snapshot);\n        demand(action.review_hash === snapshot.review_hash, 'review hash does not match exact snapshot');\n        const age = Date.parse(decidedAt) - Date.parse(instant(snapshot.created_at)), ttl = cfg.approvalTtlHours == null ? 24 : cfg.approvalTtlHours;\n        demand(typeof ttl === 'number' && ttl > 0 && ttl <= 168 && age >= 0 && age <= ttl * 3600000, 'review expired or timestamp invalid');\n        historyCheck(currentHistory);\n        const next = clone(snapshot), history = clone(currentHistory);\n        let added = [];\n        if (action.decision === 'approve') {\n            demand(sha256(canonical(currentHistory)) === snapshot.history_revision_hash, 'release registry changed; regenerate the review');\n            demand(snapshot.report && snapshot.report.status !== 'invalid_file' && Array.isArray(snapshot.report.accepted_records) && snapshot.report.accepted_records.length > 0 && snapshot.report.accepted_records.length <= MAX_BATCH, 'cannot approve an empty or invalid batch');\n            demand(history.length + snapshot.report.accepted_records.length <= MAX_HISTORY, 'release registry capacity exceeded');\n            const ids = new Set(history.map(function (x) {\n                return x.order_id;\n            }));\n            for (const row of snapshot.report.accepted_records) {\n                rowCheck(row.data);\n                demand(!ids.has(row.data.order_id), 'order was already released');\n                ids.add(row.data.order_id);\n                added.push({ order_id: row.data.order_id, data: clone(row.data), batch_id: snapshot.batch_id, released_at: decidedAt, released_by: reviewer });\n            }\n            history.push(...added);\n        }\n        next.status = action.decision === 'approve' ? 'approved' : 'rejected';\n        next.decision = { action: action.decision, by: reviewer, at: decidedAt, review_hash: snapshot.review_hash };\n        return { snapshot: next, history, added_orders: added, decision: next.decision };\n    }\n    const rows = $input.all().map(function (i) {\n        return i.json;\n    }).filter(function (r) {\n        return r.id;\n    });\n    if (rows.length !== 1 || rows[0].kind !== 'registry')\n        throw Error('Run setup once; registry must be unique');\n    const registry = JSON.parse(rows[0].payload_json);\n    if (!registry || !Array.isArray(registry.orders) || !registry.decisions || typeof registry.decisions !== 'object' || Array.isArray(registry.decisions) || !Number.isSafeInteger(registry.revision))\n        throw Error('Invalid registry');\n    if (registry.orders.length > 5000 || Object.keys(registry.decisions).length > 1000 || JSON.stringify(registry).length > 4000000)\n        throw Error('Registry exceeds supported limits');\n    const c = $('Verify immutable review hash').first().json;\n    const receipt = Object.hasOwn(registry.decisions, c.batch_id) ? registry.decisions[c.batch_id] : null;\n    if (receipt && receipt.review_hash !== c.review_hash)\n        throw Error('Stored decision hash mismatch');\n    if (c.action === 'download')\n        return [{ json: { ...c, decision: receipt, needsCommit: false } }];\n    if (receipt) {\n        if (receipt.action !== c.action)\n            throw Error('Batch already has a different final decision');\n        return [{ json: { ...c, decision: receipt, needsCommit: false } }];\n    }\n    if (Object.keys(registry.decisions).length >= 1000)\n        throw Error('Archive registry before further decisions');\n    const result = decide(c.snapshot, { decision: c.action, review_hash: c.review_hash }, c.actor, c.config, registry.orders, new Date().toISOString());\n    const next = { orders: result.history, decisions: { ...registry.decisions, [c.batch_id]: result.decision }, revision: registry.revision + 1 };\n    if (JSON.stringify(next).length > 4000000)\n        throw Error('Registry size limit');\n    return [{ json: { ...c, decision: result.decision, needsCommit: true, registryRow: rows[0], nextRegistry: next, claimToken: String($execution.id) } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7978b78b-2038-4755-94fe-f1edc276524c",
+      "name": "Decision needs a commit?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1500,
+        620
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "433d4722-9f28-4286-9470-186dce78934d",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.needsCommit }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "34ba4c9d-2608-428e-88c1-b884122080a5",
+      "name": "Commit decision and release ledger atomically",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        1750,
+        620
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "updated_at": "={{ new Date().toISOString() }}",
+            "owner_token": "={{ $json.claimToken }}",
+            "payload_json": "={{ JSON.stringify($json.nextRegistry) }}"
+          },
+          "mappingMode": "defineBelow"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $json.registryRow.id }}",
+              "condition": "eq"
+            },
+            {
+              "keyName": "owner_token",
+              "keyValue": "={{ $json.registryRow.owner_token }}",
+              "condition": "eq"
+            }
+          ]
+        },
+        "options": {},
+        "resource": "row",
+        "matchType": "allConditions",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.config.stateTableId }}"
+        }
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "f228aaad-a778-4b52-b1a0-ae7c663ee91c",
+      "name": "Verify owned decision result",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2000,
+        620
+      ],
+      "parameters": {
+        "jsCode": "const c = $('Plan exact decision against current history').first().json;\n    const rows = $input.all().map(function (i) {\n        return i.json;\n    }).filter(function (r) {\n        return r.id;\n    });\n    if (rows.length !== 1 || rows[0].owner_token !== c.claimToken || rows[0].payload_json !== JSON.stringify(c.nextRegistry))\n        throw Error('Registry changed concurrently; retry the same review request');\n    return [{ json: c }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "602067b4-968c-4842-a3b1-39d496ac3e3c",
+      "name": "Run credential-free demo",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        1500,
+        1250
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "42fdf339-2aed-4eaf-a55a-a0ce2df178e8",
+      "name": "Build unsaved sample review",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1750,
+        1250
+      ],
+      "parameters": {
+        "jsCode": "/* Pure helpers embedded in native n8n Code nodes. No runtime imports. */\n    function canonical(value) {\n        if (Array.isArray(value))\n            return '[' + value.map(canonical).join(',') + ']';\n        if (value && typeof value === 'object')\n            return '{' + Object.keys(value).sort().map(function (k) {\n                return JSON.stringify(k) + ':' + canonical(value[k]);\n            }).join(',') + '}';\n        return JSON.stringify(value);\n    }\n    function utf8(value) {\n        const out = [];\n        for (const ch of value) {\n            const c = ch.codePointAt(0);\n            if (c < 128)\n                out.push(c);\n            else if (c < 2048)\n                out.push(192 | c >> 6, 128 | c & 63);\n            else if (c < 65536)\n                out.push(224 | c >> 12, 128 | c >> 6 & 63, 128 | c & 63);\n            else\n                out.push(240 | c >> 18, 128 | c >> 12 & 63, 128 | c >> 6 & 63, 128 | c & 63);\n        }\n        return out;\n    }\n    function sha256Bytes(bytes) {\n        const k = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];\n        const h = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];\n        const data = Array.from(bytes), bitlen = data.length * 8;\n        data.push(128);\n        while (data.length % 64 !== 56)\n            data.push(0);\n        const high = Math.floor(bitlen / 4294967296), low = bitlen >>> 0;\n        for (const v of [high, low])\n            data.push(v >>> 24, v >>> 16 & 255, v >>> 8 & 255, v & 255);\n        const rr = function (v, n) {\n            return v >>> n | v << 32 - n;\n        };\n        for (let offset = 0; offset < data.length; offset += 64) {\n            const w = [];\n            for (let i = 0; i < 16; i++)\n                w[i] = data[offset + i * 4] << 24 | data[offset + i * 4 + 1] << 16 | data[offset + i * 4 + 2] << 8 | data[offset + i * 4 + 3];\n            for (let i = 16; i < 64; i++) {\n                const a = w[i - 15], b = w[i - 2];\n                w[i] = (w[i - 16] + (rr(a, 7) ^ rr(a, 18) ^ a >>> 3) + w[i - 7] + (rr(b, 17) ^ rr(b, 19) ^ b >>> 10)) | 0;\n            }\n            let [a, b, c, d, e, f, g, j] = h;\n            for (let i = 0; i < 64; i++) {\n                const t = (j + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25)) + ((e & f) ^ (~e & g)) + k[i] + w[i]) | 0, u = ((rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;\n                j = g;\n                g = f;\n                f = e;\n                e = d + t | 0;\n                d = c;\n                c = b;\n                b = a;\n                a = t + u | 0;\n            }\n            [a, b, c, d, e, f, g, j].forEach(function (v, i) {\n                return h[i] = h[i] + v | 0;\n            });\n        }\n        return h.map(function (v) {\n            return (v >>> 0).toString(16).padStart(8, '0');\n        }).join('');\n    }\n    function sha256(value) { return sha256Bytes(utf8(value)); }\n    const PRECISION = { USD: 2, EUR: 2, GBP: 2, THB: 2, JPY: 0, KWD: 3 };\n    const MAX_HISTORY = 5000, MAX_BATCH = 1000;\n    function demand(ok, message) { if (!ok)\n        throw new Error(message); }\n    function clone(value) { return JSON.parse(JSON.stringify(value)); }\n    function textValue(value, label, max = 1000) {\n        demand(typeof value === 'string' && value.length <= max && !/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/.test(value), label + ' must be bounded text');\n        return value;\n    }\n    function identity(actor) {\n        textValue(actor, 'actor', 254);\n        demand(/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(actor) && actor === actor.trim(), 'actor must be an email');\n        return actor.toLowerCase();\n    }\n    function instant(now) {\n        demand(typeof now === 'string' && /^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$/.test(now) && Number.isFinite(Date.parse(now)) && new Date(now).toISOString() === now, 'now must be an ISO UTC instant');\n        return now;\n    }\n    function rowCheck(data) {\n        demand(data && typeof data === 'object' && !Array.isArray(data), 'row data must be an object');\n        const keys = Object.keys(data);\n        demand(keys.length >= 4 && keys.length <= 200, 'row field limit exceeded');\n        for (const key of keys) {\n            demand(!['__proto__', 'prototype', 'constructor'].includes(key) && key.length > 0 && key.length <= 1000, 'invalid source header');\n            textValue(data[key], 'row value', 1000000);\n        }\n        demand(typeof data.order_id === 'string' && data.order_id.length > 0 && data.order_id.length <= 1000 && data.order_id === data.order_id.trim() && !['__proto__', 'constructor', 'prototype'].includes(data.order_id), 'invalid order_id');\n        demand(/^\\d{4}-\\d\\d-\\d\\d$/.test(data.order_date), 'invalid canonical order_date');\n        const date = new Date(data.order_date + 'T00:00:00.000Z');\n        demand(Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === data.order_date && data.order_date.slice(0, 4) !== '0000', 'invalid canonical date');\n        demand(Object.prototype.hasOwnProperty.call(PRECISION, data.currency), 'invalid currency');\n        const p = PRECISION[data.currency], pattern = p ? new RegExp('^(0|[1-9][0-9]*)\\\\.[0-9]{' + p + '}$') : /^(0|[1-9][0-9]*)$/;\n        demand(typeof data.amount === 'string' && pattern.test(data.amount), 'amount must have canonical currency precision');\n        const minor = BigInt(data.amount.replace('.', ''));\n        demand(minor <= 9+1234567890n, 'amount limit exceeded');\n        return minor;\n    }\n    function historyCheck(history) {\n        demand(Array.isArray(history) && history.length <= MAX_HISTORY, 'release registry limit exceeded');\n        const byId = new Map();\n        for (const entry of history) {\n            demand(entry && typeof entry === 'object' && !Array.isArray(entry), 'invalid release registry entry');\n            rowCheck(entry.data);\n            demand(entry.order_id === entry.data.order_id, 'registry ID does not match row');\n            demand(!byId.has(entry.order_id), 'duplicate order ID in release registry');\n            textValue(entry.batch_id, 'registry batch_id', 160);\n            instant(entry.released_at);\n            identity(entry.released_by);\n            byId.set(entry.order_id, entry);\n        }\n        return byId;\n    }\n    function totals(rows) {\n        const sums = {};\n        for (const row of rows) {\n            const minor = rowCheck(row.data), currency = row.data.currency;\n            sums[currency] = (sums[currency] || 0n) + minor;\n        }\n        const out = {};\n        for (const currency of Object.keys(sums).sort()) {\n            const p = PRECISION[currency], n = sums[currency].toString().padStart(p + 1, '0');\n            out[currency] = p ? n.slice(0, -p) + '.' + n.slice(-p) : n;\n        }\n        return out;\n    }\n    function hashBody(snapshot) {\n        return { version: snapshot.version, batch_id: snapshot.batch_id, created_by: snapshot.created_by, created_at: snapshot.created_at, history_revision_hash: snapshot.history_revision_hash, report: snapshot.report };\n    }\n    function enrichReport(baseReport, history, batchId, actor, now) {\n        const creator = identity(actor), createdAt = instant(now);\n        demand(typeof batchId === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,159}$/.test(batchId) && !['__proto__', 'constructor', 'prototype'].includes(batchId), 'invalid batch ID');\n        const previous = historyCheck(history);\n        demand(baseReport && baseReport.schema_version === 1 && Array.isArray(baseReport.headers) && Array.isArray(baseReport.accepted_records) && Array.isArray(baseReport.issues) && baseReport.summary && Number.isInteger(baseReport.summary.input_records) && baseReport.summary.input_records >= 0, 'invalid base report');\n        demand(['ready', 'empty', 'needs_review', 'invalid_file'].includes(baseReport.status), 'unknown base status');\n        demand(baseReport.accepted_records.length <= MAX_BATCH, 'batch has more than 1000 accepted rows');\n        demand(baseReport.issues.length <= 20000, 'too many issue records');\n        const report = clone(baseReport), accepted = [], seen = new Set();\n        let repeats = 0, conflicts = 0;\n        for (const row of report.accepted_records) {\n            demand(row && Number.isInteger(row.record) && row.record >= 2, 'invalid source record');\n            rowCheck(row.data);\n            demand(!seen.has(row.data.order_id), 'duplicate accepted ID');\n            seen.add(row.data.order_id);\n            demand(canonical(Object.keys(row.data).sort()) === canonical([...report.headers].sort()), 'source fields do not match headers');\n            const past = previous.get(row.data.order_id);\n            if (!past) {\n                accepted.push(row);\n                continue;\n            }\n            const equal = canonical(past.data) === canonical(row.data), code = equal ? 'already_released' : 'historical_conflict';\n            if (equal)\n                repeats++;\n            else\n                conflicts++;\n            report.issues.push({ record: row.record, code, message: equal ? 'Identical order was released in an earlier approved batch; excluded from this draft.' : 'This order ID differs from an earlier released order; held for manual review.', raw: clone(row.data), cells: report.headers.map(function (h) {\n                    return row.data[h];\n                }), previous_batch_id: past.batch_id });\n        }\n        report.accepted_records = accepted;\n        report.summary = { ...report.summary, accepted_records: accepted.length, issue_records: report.issues.length, totals_by_currency: totals(accepted), already_released_records: repeats, historical_conflict_records: conflicts };\n        report.status = report.status === 'invalid_file' ? 'invalid_file' : report.issues.length ? 'needs_review' : accepted.length ? 'ready' : 'empty';\n        report.policy = { ...(report.policy || {}), historical_duplicate_key: 'case-sensitive order_id from previously released batches', historical_identical: 'excluded as already_released', historical_conflict: 'held; no release of conflicting order', release_scope: 'human approval authorizes a manual import file; no external system import is performed' };\n        const snapshot = { version: 1, batch_id: batchId, created_by: creator, created_at: createdAt, status: 'pending', history_revision_hash: sha256(canonical(history)), report };\n        snapshot.review_hash = sha256(canonical(hashBody(snapshot)));\n        return snapshot;\n    }\n    const report = { schema_version: 1, status: 'ready', summary: { input_records: 2, accepted_records: 2, issue_records: 0, totals_by_currency: { EUR: '29.90' } }, headers: ['order_id', 'order_date', 'amount', 'currency'], accepted_records: [{ record: 2, data: { order_id: 'DEMO-01', order_date: '2026-10-01', amount: '19.90', currency: 'EUR' } }, { record: 3, data: { order_id: 'DEMO-02', order_date: '2026-10-02', amount: '10.00', currency: 'EUR' } }], issues: [], policy: { scope: 'synthetic demonstration only' } };\n    return [{ json: { flow: 'demo', snapshot: enrichReport(report, [], 'DEMO-BATCH', 'user@example.com', new Date().toISOString()), decision: null } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e82150cb-7c97-411c-b47c-8c5f6446a337",
+      "name": "Build exact sales review files",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2000,
+        1250
+      ],
+      "parameters": {
+        "jsCode": "const c = $input.first().json, s = c.snapshot, receipt = c.decision;\n    const approved = receipt && receipt.action === 'approve', status = receipt ? (approved ? 'approved' : 'rejected') : 'pending';\n    function cell(v) { let s = String(v !== null && v !== void 0 ? v : ''); if (/^[\\s]*[=+@-]/.test(s) || /^[\\t\\r]/.test(s))\n        s = \"'\" + s; return '\"' + s.replace(/\"/g, '\"\"') + '\"'; }\n    function csv(headers, rows) { return [headers, ...rows].map(function (row) {\n        return row.map(cell).join(',');\n    }).join('\\r\\n') + '\\r\\n'; }\n    const report = { ...s, decision: receipt, status, release_scope: 'Accepted rows only. No external import was executed.' };\n    const headers = s.report.headers.length ? s.report.headers : ['order_id', 'order_date', 'amount', 'currency'];\n    const csvRows = status === 'rejected' ? [] : s.report.accepted_records.map(function (r) {\n        return headers.map(function (h) {\n            return r.data[h];\n        });\n    });\n    const files = [['report.json', JSON.stringify(report, null, 2)], [(approved ? 'released-sales.csv' : 'draft-sales.csv'), csv(headers, csvRows)], ['issues.csv', csv(['record', 'code', 'message', 'raw_json'], s.report.issues.map(function (r) {\n                return [r.record, r.code, r.message, JSON.stringify(r.raw || {})];\n            }))], ['audit.json', JSON.stringify({ batch_id: s.batch_id, review_hash: s.review_hash, status, created_by: s.created_by, created_at: s.created_at, decision: receipt, flow: c.flow, demo: c.flow === 'demo' }, null, 2)]];\n    const binary = {};\n    for (let i = 0; i < files.length; i++)\n        binary['file' + i] = await this.helpers.prepareBinaryData(Buffer.from(files[i][1], 'utf8'), files[i][0], files[i][0].endsWith('.csv') ? 'text/csv' : 'application/json');\n    return [{ json: { flow: c.flow, batch_id: s.batch_id, status, review_hash: s.review_hash, accepted: s.report.accepted_records.length, issues: s.report.issues.length }, binary }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "2db3bdff-6931-41db-a560-dff34084830c",
+      "name": "Compress exact sales review ZIP",
+      "type": "n8n-nodes-base.compression",
+      "position": [
+        2250,
+        1250
+      ],
+      "parameters": {
+        "fileName": "={{ $json.batch_id + \"-sales-review.zip\" }}",
+        "operation": "compress",
+        "outputFormat": "zip",
+        "binaryPropertyName": "file0,file1,file2,file3",
+        "binaryPropertyOutput": "data"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "c05f7120-6b20-4460-a2eb-67d284daf518",
+      "name": "Return authenticated form result?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2500,
+        1250
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c2a1232e-a00c-4083-b6bf-18a7fde73585",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.flow }}",
+              "rightValue": "demo"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "55eb1f00-c5d1-4a36-b507-9eeca0668670",
+      "name": "Download saved sales review ZIP",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        2750,
+        1250
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "completion",
+        "respondWith": "returnBinary",
+        "completionTitle": "Sales CSV review result",
+        "completionMessage": "={{ \"Batch \" + $json.batch_id + \"; status: \" + $json.status + \". Accepted: \" + $json.accepted + \"; issues: \" + $json.issues + \". Inspect report.json before using the CSV.\" }}",
+        "inputDataFieldName": "data"
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "d7d22b8c-ccb0-40a1-883d-9ce100760df3",
+      "name": "Inspect demo ZIP in editor",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        3000,
+        1250
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "2a7444e3-9954-411f-911f-68ca93be036c",
+      "name": "Sales CSV overview and exact setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -100,
+        -900
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 1600,
+        "height": 710,
+        "content": "## Validate sales CSVs and generate review ZIPs with n8n forms\n\nReview recurring sales exports before a manual import. Upload one UTF-8 CSV, validate orders, compare them with previously released batches, and save an exact review. An authenticated reviewer can download, approve the accepted subset or reject it. Each result is returned as an audit ZIP.\n\n### How it works\nChecks required columns, calendar dates, currency precision and duplicate groups. An n8n Data Table stores immutable batch snapshots and one authoritative release registry. Approval binds to the review hash and commits the release plus decision in one conditional update. Identical historical orders and conflicting IDs are excluded. No shop or accounting import is executed.\n\n### Setup\nRun the separate setup utility once. Copy stateTableId and actual reviewer emails into both Configure nodes. Keep n8n User Auth and Include User in Output enabled on both forms. Run the credential-free demo, then upload examples/sample.csv with a unique batch ID. Copy batch_id and review_hash from report.json into the decision form. Approve requires typing RELEASE ACCEPTED ROWS.\n\n### Requirements and limits\nTested on n8n 2.28.6; Data Tables and n8n-user Forms required. Built-in nodes; no service credentials for this workflow. Required headers: order_id,order_date,amount,currency. One order per row, max 1,000 rows per upload. Run one intake at a time. Registry limits: 5,000 released orders, 1,000 decisions, 4,000,000 serialized characters. Decisions expire after 24 hours by default. Re-upload with a new batch ID if release history changes. Customize limits only with tests."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a994b257-f94f-4b38-a89d-8ab49c9edaba",
+      "name": "Exact release and concurrency rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2100,
+        820
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1000,
+        "height": 210,
+        "content": "## Exact release, not external import\nApproval releases accepted rows only. Existing history changes invalidate pending approvals. Concurrent decisions use a conditional registry update; retry a failed request. Never edit stored registry JSON. Archive deliberately at capacity. CSV formula prefixes are escaped; report.json retains original canonical values."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Read uploaded CSV": {
+      "main": [
+        [
+          {
+            "node": "Parse CSV and check headers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build review files": {
+      "main": [
+        [
+          {
+            "node": "Read canonical validation report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify saved review": {
+      "main": [
+        [
+          {
+            "node": "Build exact sales review files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate sale fields": {
+      "main": [
+        [
+          {
+            "node": "Resolve duplicate order IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check unique batch ID": {
+      "main": [
+        [
+          {
+            "node": "Build immutable history-aware review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read exact saved batch": {
+      "main": [
+        [
+          {
+            "node": "Verify immutable review hash",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision needs a commit?": {
+      "main": [
+        [
+          {
+            "node": "Commit decision and release ledger atomically",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build exact sales review files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run credential-free demo": {
+      "main": [
+        [
+          {
+            "node": "Build unsaved sample review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build unsaved sample review": {
+      "main": [
+        [
+          {
+            "node": "Build exact sales review files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse CSV and check headers": {
+      "main": [
+        [
+          {
+            "node": "Validate sale fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve duplicate order IDs": {
+      "main": [
+        [
+          {
+            "node": "Build review files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload sales CSV for review": {
+      "main": [
+        [
+          {
+            "node": "Configure intake and authenticate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify immutable review hash": {
+      "main": [
+        [
+          {
+            "node": "Read current release registry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify owned decision result": {
+      "main": [
+        [
+          {
+            "node": "Build exact sales review files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read current release registry": {
+      "main": [
+        [
+          {
+            "node": "Plan exact decision against current history",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save immutable batch snapshot": {
+      "main": [
+        [
+          {
+            "node": "Verify saved review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build exact sales review files": {
+      "main": [
+        [
+          {
+            "node": "Compress exact sales review ZIP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compress exact sales review ZIP": {
+      "main": [
+        [
+          {
+            "node": "Return authenticated form result?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read history and preserve input": {
+      "main": [
+        [
+          {
+            "node": "Check unique batch ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read canonical validation report": {
+      "main": [
+        [
+          {
+            "node": "Read release registry for intake",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read release registry for intake": {
+      "main": [
+        [
+          {
+            "node": "Read history and preserve input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review or download a saved batch": {
+      "main": [
+        [
+          {
+            "node": "Configure review and authenticate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure intake and authenticate": {
+      "main": [
+        [
+          {
+            "node": "Read uploaded CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure review and authenticate": {
+      "main": [
+        [
+          {
+            "node": "Read exact saved batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return authenticated form result?": {
+      "main": [
+        [
+          {
+            "node": "Download saved sales review ZIP",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Inspect demo ZIP in editor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build immutable history-aware review": {
+      "main": [
+        [
+          {
+            "node": "Save immutable batch snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan exact decision against current history": {
+      "main": [
+        [
+          {
+            "node": "Decision needs a commit?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Commit decision and release ledger atomically": {
+      "main": [
+        [
+          {
+            "node": "Verify owned decision result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

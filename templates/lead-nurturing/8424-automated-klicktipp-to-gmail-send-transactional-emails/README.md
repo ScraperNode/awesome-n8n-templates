@@ -1,6 +1,6 @@
 # 💬 Automated KlickTipp to Gmail: send transactional emails
 
-> ⚡ **119 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **130 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

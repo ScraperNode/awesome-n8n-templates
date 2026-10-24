@@ -1,6 +1,6 @@
 # ⚒️ Notion API MCP server
 
-> ⚡ **392 views** · ⚒️ [Engineering](../)
+> ⚡ **482 views** · ⚒️ [Engineering](../)
 
 ## Description
 

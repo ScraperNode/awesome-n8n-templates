@@ -1,6 +1,6 @@
 # 💬 lemlist <> GPT-3: Supercharge your sales workflows
 
-> ⚡ **3,469 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **3,501 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

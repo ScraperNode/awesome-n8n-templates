@@ -1,6 +1,6 @@
 # ⚙️ Auto workflow backup to Google Drive – automated export of all your workflows
 
-> ⚡ **4,075 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **4,620 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

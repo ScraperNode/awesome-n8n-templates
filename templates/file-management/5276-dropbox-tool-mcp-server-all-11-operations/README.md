@@ -1,6 +1,6 @@
 # 📁 🛠️ Dropbox tool MCP server 💪 all 11 operations
 
-> ⚡ **149 views** · 📁 [File Management](../)
+> ⚡ **158 views** · 📁 [File Management](../)
 
 ## Description
 

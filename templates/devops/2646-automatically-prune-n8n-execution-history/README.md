@@ -1,6 +1,6 @@
 # ⚙️ Automatically prune n8n execution history
 
-> ⚡ **1,775 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,090 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 AI testimonial extractor agent: feedback to marketing gold
 
-> ⚡ **713 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **747 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

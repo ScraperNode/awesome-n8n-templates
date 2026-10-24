@@ -1,6 +1,6 @@
 # 💬 Line Message API : push message & reply
 
-> ⚡ **10,339 views** · 💬 [Support Chatbots](../)
+> ⚡ **11,177 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

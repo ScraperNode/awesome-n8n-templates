@@ -1,6 +1,6 @@
 # ⚒️ Create OpenAI-compatible API using GitHub models for free AI access
 
-> ⚡ **6,016 views** · ⚒️ [Engineering](../)
+> ⚡ **7,298 views** · ⚒️ [Engineering](../)
 
 ## Description
 

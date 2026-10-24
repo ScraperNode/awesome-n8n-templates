@@ -1,6 +1,6 @@
 # 💬 Automate lead meeting scheduling with Zoho CRM, Google Calendar & Gemini AI
 
-> ⚡ **1,503 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,825 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

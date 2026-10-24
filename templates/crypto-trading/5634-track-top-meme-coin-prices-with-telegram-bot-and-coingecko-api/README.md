@@ -1,6 +1,6 @@
 # 📈 Track top meme coin prices with Telegram Bot and CoinGecko API
 
-> ⚡ **1,334 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,757 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Monitor solar energy production & send alerts with Gmail, Google Sheets, and Slack
 
-> ⚡ **807 views** · ⚒️ [Engineering](../)
+> ⚡ **1,014 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Automate cancellation feedback collection with Stripe and Google Sheets
 
-> ⚡ **56 views** · 📊 [Market Research & Insights](../)
+> ⚡ **87 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

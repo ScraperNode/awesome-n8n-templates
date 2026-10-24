@@ -1,6 +1,6 @@
 # 📈 Binance SM 4hour indicators tool
 
-> ⚡ **3,900 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **4,040 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

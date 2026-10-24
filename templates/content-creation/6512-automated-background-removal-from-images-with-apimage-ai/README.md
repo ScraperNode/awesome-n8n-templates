@@ -1,6 +1,6 @@
 # 🎬 Automated background removal from images with APImage AI
 
-> ⚡ **1,133 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,329 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

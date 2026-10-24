@@ -1,6 +1,6 @@
 # 💬 Telegram AI chatbot with document-based answers using OpenAI and PGVector RAG
 
-> ⚡ **1,011 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,100 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

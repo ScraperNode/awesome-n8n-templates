@@ -1,6 +1,6 @@
 # 🔒 Intelligent real-time financial fraud detection and risk scoring engine
 
-> ⚡ **370 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **704 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

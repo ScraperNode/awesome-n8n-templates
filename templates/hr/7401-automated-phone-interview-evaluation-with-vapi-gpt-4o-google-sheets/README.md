@@ -1,6 +1,6 @@
 # 👥 Automated phone interview evaluation with Vapi, GPT-4o & Google Sheets
 
-> ⚡ **1,662 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,881 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Switch between work and personal contexts with GPT-4.1 and iPhone automation
 
-> ⚡ **390 views** · ⚡ [Personal Productivity](../)
+> ⚡ **411 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

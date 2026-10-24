@@ -1,6 +1,6 @@
-# 📊 Monitor competitor SEO changes with CustomJS Scraper, Google Sheets & Slack alerts
+# 📊 Monitor competitor SEO changes with CustomJS Scraper, Sheets & Slack alerts
 
-> ⚡ **237 views** · 📊 [Market Research & Insights](../)
+> ⚡ **272 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -8,12 +8,7 @@
 
 ## Description
 
-&gt; ⚠️ **Notice:**  
-&gt; Community nodes like **@custom-js/n8n-nodes-pdf-toolkit** can only be installed on self-hosted instances of n8n.  
-
----
-
-![Screenshot from 20250911 001042.png](fileId:2349) 
+![image.png](fileId:5366)
 
 This n8n workflow demonstrates how to **monitor competitor websites for SEO changes** by scraping content and updating a Google Sheet. It uses the **Scraper node from [customjs.space](https://www.customjs.space)** to extract HTML content and parse key SEO elements like `title`, `<h1>`, `<h2>`, and meta description.  
 
@@ -36,7 +31,6 @@ This n8n workflow demonstrates how to **monitor competitor websites for SEO chan
 
 ## Requirements
 
-- Self-hosted n8n instance.  
 - CustomJS API key for the Scraper node.  
 - A Google Sheet containing competitor website URLs.  
 - Slack workspace (optional, for notifications).  
@@ -51,7 +45,7 @@ This n8n workflow demonstrates how to **monitor competitor websites for SEO chan
 2. **Google Sheets – Get Competitor URLs**  
    Reads competitor website URLs from the configured sheet.  
 
-3. **CustomJS Scraper – Fetch HTML**  
+3. **CustomJS Scrape – Website**  
    - Inputs each website URL.  
    - Returns raw HTML text for analysis.  
 

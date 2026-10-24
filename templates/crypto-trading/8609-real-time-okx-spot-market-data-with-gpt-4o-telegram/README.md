@@ -1,6 +1,6 @@
 # 📈 Real-time OKX spot market data with GPT-4o & Telegram
 
-> ⚡ **516 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **601 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

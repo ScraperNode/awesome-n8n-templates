@@ -1,6 +1,6 @@
 # 📱 Capture Gumroad sales, add buyer to MailerLite group, log to Google Sheets CRM
 
-> ⚡ **509 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **551 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

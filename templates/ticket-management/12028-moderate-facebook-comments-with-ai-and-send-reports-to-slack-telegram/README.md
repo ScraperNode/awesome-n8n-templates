@@ -1,6 +1,6 @@
 # 🎫 Moderate Facebook comments with AI and send reports to Slack & Telegram
 
-> ⚡ **154 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **283 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

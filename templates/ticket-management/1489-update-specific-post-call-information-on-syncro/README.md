@@ -1,6 +1,6 @@
 # 🎫 Update specific post-call information on Syncro
 
-> ⚡ **1,179 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,285 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

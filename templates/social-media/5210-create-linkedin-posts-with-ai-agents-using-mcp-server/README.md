@@ -1,6 +1,6 @@
 # 📱 Create LinkedIn posts with AI agents using MCP server
 
-> ⚡ **1,797 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,963 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 Document Q&A chatbot with Google Drive, GPT-4-mini & Telegram (RAG system)
 
-> ⚡ **870 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **904 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

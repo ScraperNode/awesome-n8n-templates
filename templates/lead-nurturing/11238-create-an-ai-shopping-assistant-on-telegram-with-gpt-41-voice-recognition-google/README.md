@@ -1,6 +1,6 @@
 # 💬 Create an AI shopping assistant on Telegram with GPT-4.1, voice recognition & Google Sheets
 
-> ⚡ **326 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **591 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

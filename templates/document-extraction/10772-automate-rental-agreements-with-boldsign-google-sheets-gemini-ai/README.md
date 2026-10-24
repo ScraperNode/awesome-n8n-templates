@@ -1,6 +1,6 @@
 # 🔬 Automate rental agreements with BoldSign, Google Sheets & Gemini AI
 
-> ⚡ **97 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **128 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

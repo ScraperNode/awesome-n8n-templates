@@ -1,6 +1,6 @@
 # 📋 Write all Linear tickets to Google Sheets
 
-> ⚡ **1,300 views** · 📋 [Project Management](../)
+> ⚡ **1,309 views** · 📋 [Project Management](../)
 
 ## Description
 

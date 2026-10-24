@@ -1,6 +1,6 @@
 # ⚒️ Batch process data with Redis-powered debouncing system
 
-> ⚡ **92 views** · ⚒️ [Engineering](../)
+> ⚡ **156 views** · ⚒️ [Engineering](../)
 
 ## Description
 

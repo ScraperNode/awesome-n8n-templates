@@ -1,6 +1,6 @@
 # 🔬 Track legal case deadlines and exceptions with Anthropic, court APIs, Gmail and Slack
 
-> ⚡ **61 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **146 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

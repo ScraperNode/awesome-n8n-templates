@@ -1,6 +1,6 @@
 # 🎫 Real-time Vtiger support tickets to Telegram with auto status updates
 
-> ⚡ **731 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **839 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

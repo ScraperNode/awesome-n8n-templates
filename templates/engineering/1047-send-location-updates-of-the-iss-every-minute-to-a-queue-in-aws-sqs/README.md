@@ -1,6 +1,6 @@
 # ⚒️ Send location updates of the ISS every minute to a queue in AWS SQS
 
-> ⚡ **811 views** · ⚒️ [Engineering](../)
+> ⚡ **831 views** · ⚒️ [Engineering](../)
 
 ## Description
 

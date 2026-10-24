@@ -1,6 +1,6 @@
 # 🎫 Classify new bugs in Linear with OpenAI's GPT-4 and move them to the right team
 
-> ⚡ **2,161 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **2,183 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

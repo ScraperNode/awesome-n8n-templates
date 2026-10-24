@@ -1,6 +1,6 @@
 # 👥 Orchestrate AI-driven hiring analytics and candidate assessment with GPT-4, Claude, Google Sheets, Gmail and Slack
 
-> ⚡ **37 views** · 👥 [HR & Recruitment](../)
+> ⚡ **108 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

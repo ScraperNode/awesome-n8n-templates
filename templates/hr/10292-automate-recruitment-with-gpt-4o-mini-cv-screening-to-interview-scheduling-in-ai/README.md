@@ -1,6 +1,6 @@
 # 👥 Automate recruitment with GPT-4o-mini: CV screening to interview scheduling in Airtable
 
-> ⚡ **1,033 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,996 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Predict customer churn risk & create interventions with GPT-4, Zendesk & HubSpot
 
-> ⚡ **588 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **694 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

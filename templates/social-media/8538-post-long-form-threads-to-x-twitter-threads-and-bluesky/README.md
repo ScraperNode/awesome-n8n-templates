@@ -1,6 +1,6 @@
 # 📱 Post long-form threads to X / Twitter, Threads, and Bluesky
 
-> ⚡ **368 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **501 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

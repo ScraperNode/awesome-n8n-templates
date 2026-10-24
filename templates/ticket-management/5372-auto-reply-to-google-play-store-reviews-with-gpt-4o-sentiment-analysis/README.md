@@ -1,6 +1,6 @@
 # 🎫 Auto-reply to Google Play Store reviews with GPT-4o & sentiment analysis
 
-> ⚡ **883 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **936 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

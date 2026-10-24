@@ -1,6 +1,6 @@
 # 🧾 Sync AWS billing invoices with FreeAgent and PostgreSQL tracking
 
-> ⚡ **14 views** · 🧾 [Invoice Processing](../)
+> ⚡ **66 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

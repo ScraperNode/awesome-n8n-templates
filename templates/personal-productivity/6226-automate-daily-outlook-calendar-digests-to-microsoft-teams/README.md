@@ -1,6 +1,6 @@
 # ⚡ Automate daily Outlook calendar digests to Microsoft Teams
 
-> ⚡ **1,736 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,092 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

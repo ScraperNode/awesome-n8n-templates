@@ -1,6 +1,6 @@
 # 📈 CoinMarketCap telegram price bot
 
-> ⚡ **6,546 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **6,719 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

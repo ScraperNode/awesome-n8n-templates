@@ -1,6 +1,6 @@
 # 🤝 Create client onboarding projects, contracts and Slack channels from form data
 
-> ⚡ **102 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **191 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

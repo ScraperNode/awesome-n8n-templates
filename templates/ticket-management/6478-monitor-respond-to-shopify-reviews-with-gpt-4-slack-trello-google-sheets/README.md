@@ -1,6 +1,6 @@
 # 🎫 Monitor & respond to Shopify reviews with GPT-4, Slack, Trello & Google Sheets
 
-> ⚡ **102 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **114 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

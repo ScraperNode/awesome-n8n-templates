@@ -1,6 +1,6 @@
 # 🎫 Automate IT support with Telegram voice to JIRA tickets using Whisper & GPT-4.1 Mini
 
-> ⚡ **909 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **969 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

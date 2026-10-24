@@ -1,6 +1,6 @@
 # 🤖 Smart email manager with Gmail, GPT-4 classification & auto-responses
 
-> ⚡ **1,111 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **1,440 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

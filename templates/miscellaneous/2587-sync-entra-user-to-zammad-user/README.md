@@ -1,6 +1,6 @@
 # 🔧 Sync Entra user to Zammad user
 
-> ⚡ **832 views** · 🔧 [Miscellaneous](../)
+> ⚡ **887 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

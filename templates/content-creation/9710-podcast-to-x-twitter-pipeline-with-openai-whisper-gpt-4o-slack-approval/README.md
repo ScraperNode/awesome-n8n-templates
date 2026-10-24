@@ -1,6 +1,6 @@
 # 🎬 Podcast to X (Twitter) pipeline with OpenAI Whisper, GPT-4o & Slack approval
 
-> ⚡ **292 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **396 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >

@@ -1,6 +1,6 @@
 # 🔧 Receive updates on events in JotForm
 
-> ⚡ **1,690 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,794 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

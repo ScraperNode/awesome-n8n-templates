@@ -1,6 +1,6 @@
 # 🧾 Create Stripe invoices from Airtable orders with Google Sheets logging
 
-> ⚡ **158 views** · 🧾 [Invoice Processing](../)
+> ⚡ **177 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

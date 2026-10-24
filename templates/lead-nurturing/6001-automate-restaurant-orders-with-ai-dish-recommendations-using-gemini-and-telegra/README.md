@@ -1,6 +1,6 @@
 # 💬 Automate restaurant orders with AI dish recommendations using Gemini and Telegram
 
-> ⚡ **2,291 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,772 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

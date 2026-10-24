@@ -1,6 +1,6 @@
 # 🎬 Transform Instagram reels into viral content with Mistral AI, AssemblyAI & Sheets
 
-> ⚡ **1,525 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,789 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

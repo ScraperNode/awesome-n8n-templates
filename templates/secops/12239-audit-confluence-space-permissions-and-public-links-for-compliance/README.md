@@ -1,6 +1,6 @@
 # 🔒 Audit Confluence space permissions and public links for compliance
 
-> ⚡ **31 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **132 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Create snapshot of Contabo VPS instances on a daily basis
 
-> ⚡ **2,505 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,613 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

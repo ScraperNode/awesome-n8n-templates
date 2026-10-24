@@ -1,6 +1,6 @@
 # 🔬 Automate UX research planning with Gemini AI, Google Docs, and human feedback
 
-> ⚡ **561 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **894 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

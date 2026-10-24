@@ -1,6 +1,6 @@
 # 📱 Automate Instagram & Facebook posting with Meta Graph API & System User Tokens
 
-> ⚡ **7,908 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **11,452 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

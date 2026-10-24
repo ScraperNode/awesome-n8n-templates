@@ -1,6 +1,6 @@
 # 🎬 Article to LinkedIn post generator with Telegram, GPT-4 & Google Sheets
 
-> ⚡ **393 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **711 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

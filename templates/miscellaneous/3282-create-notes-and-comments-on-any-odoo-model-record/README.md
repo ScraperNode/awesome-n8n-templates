@@ -1,6 +1,6 @@
 # 🔧 Create notes and comments on any Odoo model record
 
-> ⚡ **1,385 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,616 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

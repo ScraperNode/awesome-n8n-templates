@@ -1,6 +1,6 @@
 # ⚙️ Multi-channel website downtime alerts with UptimeRobot, Slack, WhatsApp & Notion
 
-> ⚡ **247 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **317 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

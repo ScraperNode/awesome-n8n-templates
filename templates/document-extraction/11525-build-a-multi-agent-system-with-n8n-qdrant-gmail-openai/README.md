@@ -1,6 +1,6 @@
 # 🔬 Build a multi-agent system with n8n, Qdrant, Gmail & OpenAI
 
-> ⚡ **958 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,901 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

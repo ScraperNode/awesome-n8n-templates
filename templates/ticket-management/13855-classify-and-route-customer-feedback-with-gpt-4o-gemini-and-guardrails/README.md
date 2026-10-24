@@ -1,6 +1,6 @@
-# 🎫 Classify and route customer feedback with GPT-4o, Gemini, and guardrails
+# 🎫 Production AI Playbook: Deterministic Steps & AI Steps (5 of 5)
 
-> ⚡ **0 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **228 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 
@@ -23,6 +23,10 @@ The full end-to-end workflow that chains all patterns together. This template pr
 
 **Why it matters**
 This is the complete picture. Individual patterns are useful on their own, but the real power comes from combining them into a pipeline where AI handles the judgment calls and everything else follows explicit, testable rules. Import this template as your starting point and connect your own integrations.
+
+This template is a learning companion to the Production AI Playbook, a series that explores strategies, shares best practices, and provides practical examples for building reliable AI systems in n8n.  
+
+[https://go.n8n.io/PAP-D&A-Blog](https://go.n8n.io/PAP-D&A-Blog)
 
 ## 🔗 Nodes Used
 

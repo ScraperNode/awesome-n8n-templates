@@ -1,6 +1,6 @@
 # 🎣 Qualify insurance leads using Vapi, GPT-4 proposals and Airtable
 
-> ⚡ **343 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **549 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

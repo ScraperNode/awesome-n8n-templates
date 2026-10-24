@@ -1,6 +1,6 @@
 # 📱 Create evergreen content with GitHub dynamic images & URL redirects
 
-> ⚡ **649 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **807 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

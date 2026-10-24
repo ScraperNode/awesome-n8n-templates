@@ -1,6 +1,6 @@
 # 🔬 Host a static HTML KPI dashboard from Google Sheets with CustomJS
 
-> ⚡ **819 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,647 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

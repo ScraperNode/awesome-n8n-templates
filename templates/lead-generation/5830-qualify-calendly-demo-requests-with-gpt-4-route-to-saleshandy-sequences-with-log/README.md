@@ -1,6 +1,6 @@
 # 🎣 Qualify Calendly demo requests with GPT-4 & route to Saleshandy sequences with logs
 
-> ⚡ **285 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **323 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

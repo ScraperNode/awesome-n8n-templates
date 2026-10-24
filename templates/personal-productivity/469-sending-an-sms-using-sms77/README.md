@@ -1,6 +1,6 @@
 # ⚡ Sending an SMS using sms77
 
-> ⚡ **584 views** · ⚡ [Personal Productivity](../)
+> ⚡ **602 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

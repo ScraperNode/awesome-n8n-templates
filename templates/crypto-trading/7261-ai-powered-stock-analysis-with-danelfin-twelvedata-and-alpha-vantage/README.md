@@ -1,6 +1,6 @@
 # 📈 AI-powered stock analysis with Danelfin, TwelveData and Alpha Vantage
 
-> ⚡ **218 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **273 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

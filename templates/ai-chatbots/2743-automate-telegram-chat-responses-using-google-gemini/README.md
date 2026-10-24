@@ -1,6 +1,6 @@
 # 🤖 Automate Telegram chat responses using Google Gemini
 
-> ⚡ **2,109 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **2,786 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

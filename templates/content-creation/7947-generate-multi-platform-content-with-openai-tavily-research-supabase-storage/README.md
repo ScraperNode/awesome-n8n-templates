@@ -1,6 +1,6 @@
 # 🎬 Generate multi-platform content with OpenAI, Tavily Research & Supabase Storage
 
-> ⚡ **390 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **444 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

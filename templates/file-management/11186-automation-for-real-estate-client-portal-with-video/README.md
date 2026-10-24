@@ -1,6 +1,6 @@
 # 📁 Automation for Real Estate Client Portal (with video)
 
-> ⚡ **216 views** · 📁 [File Management](../)
+> ⚡ **272 views** · 📁 [File Management](../)
 
 ## Description
 

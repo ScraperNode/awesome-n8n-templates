@@ -1,6 +1,6 @@
 # 💬 Customer support ticket system for SMEs with Google Sheets and auto-emails
 
-> ⚡ **373 views** · 💬 [Support Chatbots](../)
+> ⚡ **515 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

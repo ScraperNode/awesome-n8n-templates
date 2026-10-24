@@ -1,6 +1,6 @@
 # ⚙️ Dependency update risk analysis with GPT-4o, Slack, Jira & Google Sheets
 
-> ⚡ **150 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **168 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

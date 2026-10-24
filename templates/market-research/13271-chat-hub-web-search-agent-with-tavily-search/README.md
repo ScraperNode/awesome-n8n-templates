@@ -1,6 +1,6 @@
 # 📊 Chat Hub Web Search Agent with Tavily Search
 
-> ⚡ **1,346 views** · 📊 [Market Research & Insights](../)
+> ⚡ **6,677 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

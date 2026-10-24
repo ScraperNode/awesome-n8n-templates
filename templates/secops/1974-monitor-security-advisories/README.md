@@ -1,6 +1,6 @@
 # 🔒 Monitor security advisories
 
-> ⚡ **6,726 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **6,879 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Auto-post WordPress articles to social media with Gemini AI & Blotato
 
-> ⚡ **858 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,028 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

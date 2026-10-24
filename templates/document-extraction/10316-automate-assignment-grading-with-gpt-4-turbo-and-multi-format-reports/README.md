@@ -1,6 +1,6 @@
 # 🔬 Automate assignment grading with GPT-4-Turbo and multi-format reports
 
-> ⚡ **374 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **534 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

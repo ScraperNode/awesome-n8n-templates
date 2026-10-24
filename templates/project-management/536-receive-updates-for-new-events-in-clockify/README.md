@@ -1,6 +1,6 @@
 # 📋 Receive updates for new events in Clockify
 
-> ⚡ **693 views** · 📋 [Project Management](../)
+> ⚡ **703 views** · 📋 [Project Management](../)
 
 ## Description
 

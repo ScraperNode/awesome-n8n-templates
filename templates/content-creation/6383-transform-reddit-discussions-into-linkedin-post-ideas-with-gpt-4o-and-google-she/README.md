@@ -1,6 +1,6 @@
 # 🎬 Transform Reddit discussions into LinkedIn post ideas with GPT-4o and Google Sheets
 
-> ⚡ **1,050 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,183 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

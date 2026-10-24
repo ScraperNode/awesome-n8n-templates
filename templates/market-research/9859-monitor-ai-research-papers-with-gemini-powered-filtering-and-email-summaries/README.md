@@ -1,6 +1,6 @@
 # 📊 Monitor AI research papers with Gemini-powered filtering and email summaries
 
-> ⚡ **801 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,039 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

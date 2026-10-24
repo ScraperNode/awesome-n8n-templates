@@ -1,6 +1,6 @@
 # 🎣 Discover company data by name with uProc
 
-> ⚡ **1,042 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,052 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Enviar miembros del CMS Ghost hacia Newsletter Sendy
 
-> ⚡ **587 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **579 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Snooze Todoist tasks until 3 days before due date
 
-> ⚡ **848 views** · ⚡ [Personal Productivity](../)
+> ⚡ **919 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

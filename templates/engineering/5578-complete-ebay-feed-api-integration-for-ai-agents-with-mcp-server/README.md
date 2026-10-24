@@ -1,6 +1,6 @@
 # ⚒️ Complete eBay feed API integration for AI agents with MCP server
 
-> ⚡ **157 views** · ⚒️ [Engineering](../)
+> ⚡ **190 views** · ⚒️ [Engineering](../)
 
 ## Description
 

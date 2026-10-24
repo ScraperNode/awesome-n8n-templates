@@ -1,6 +1,6 @@
 # ⚡ Ai-powered Telegram task manager with MCP server
 
-> ⚡ **20,265 views** · ⚡ [Personal Productivity](../)
+> ⚡ **21,037 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

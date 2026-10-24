@@ -1,6 +1,6 @@
 # 👥 Track employee attendance with analytics, email reports & Slack alerts using Google Sheets
 
-> ⚡ **303 views** · 👥 [HR & Recruitment](../)
+> ⚡ **413 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Automate SEO-Optimized WordPress posts with AI & Google Sheets
 
-> ⚡ **56,231 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **61,103 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

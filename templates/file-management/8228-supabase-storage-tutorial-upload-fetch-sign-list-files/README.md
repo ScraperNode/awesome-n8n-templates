@@ -1,6 +1,6 @@
 # 📁 Supabase storage tutorial: Upload, fetch, sign & list files
 
-> ⚡ **903 views** · 📁 [File Management](../)
+> ⚡ **1,061 views** · 📁 [File Management](../)
 
 ## Description
 

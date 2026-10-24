@@ -1,6 +1,6 @@
 # ⚒️ Validate workflows: GPT-4o with Drive, Slack & Gmail
 
-> ⚡ **79 views** · ⚒️ [Engineering](../)
+> ⚡ **120 views** · ⚒️ [Engineering](../)
 
 ## Description
 

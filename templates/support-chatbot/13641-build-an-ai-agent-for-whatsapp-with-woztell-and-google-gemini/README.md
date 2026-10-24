@@ -1,6 +1,6 @@
 # 💬 Build an AI agent for WhatsApp with WOZTELL and Google Gemini
 
-> ⚡ **51 views** · 💬 [Support Chatbots](../)
+> ⚡ **707 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

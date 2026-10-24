@@ -1,6 +1,6 @@
 # 🎬 Generate & auto-post tech news AI avatar videos to social media with Heygen and Blotato
 
-> ⚡ **998 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,252 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

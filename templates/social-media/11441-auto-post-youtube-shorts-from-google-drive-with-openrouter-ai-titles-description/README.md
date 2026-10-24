@@ -1,6 +1,6 @@
 # 📱 Auto-post YouTube Shorts from Google Drive with OpenRouter AI titles & descriptions
 
-> ⚡ **905 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,606 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

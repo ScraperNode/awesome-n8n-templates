@@ -1,6 +1,6 @@
 # 🎬 Create AI dream videos with analysis using Veo3 and Telegram
 
-> ⚡ **262 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **380 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

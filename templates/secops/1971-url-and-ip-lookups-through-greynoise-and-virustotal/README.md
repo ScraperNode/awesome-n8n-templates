@@ -1,6 +1,6 @@
 # 🔒 URL and IP lookups through Greynoise and VirusTotal
 
-> ⚡ **9,811 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **9,972 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

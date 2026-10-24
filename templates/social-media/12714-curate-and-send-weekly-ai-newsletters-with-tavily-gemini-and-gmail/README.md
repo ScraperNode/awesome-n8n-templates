@@ -1,6 +1,6 @@
 # 📱 Curate and send weekly AI newsletters with Tavily, Gemini, and Gmail
 
-> ⚡ **68 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **132 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Automated hazard analysis for ISO 26262 compliance using GPT-4
 
-> ⚡ **561 views** · ⚒️ [Engineering](../)
+> ⚡ **682 views** · ⚒️ [Engineering](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

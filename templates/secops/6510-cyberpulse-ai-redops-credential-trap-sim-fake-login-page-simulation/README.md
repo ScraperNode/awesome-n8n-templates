@@ -1,6 +1,6 @@
 # 🔒 CYBERPULSE AI redOps: credential trap sim: fake login page simulation
 
-> ⚡ **86 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **99 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Real estate chatbot with AI property matching and automated calendar scheduling
 
-> ⚡ **3,316 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **4,337 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

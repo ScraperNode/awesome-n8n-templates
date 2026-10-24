@@ -1,6 +1,6 @@
 # 🎬 Create UGC style product ad video via Telegram + Gemini + Kie.ai’s Veo3.1 API
 
-> ⚡ **1,521 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,863 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

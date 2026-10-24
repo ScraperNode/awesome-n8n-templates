@@ -1,6 +1,6 @@
 # 📋 Creates a time tracking project from Syncro to Clockify
 
-> ⚡ **1,169 views** · 📋 [Project Management](../)
+> ⚡ **1,255 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 ✍️ AI agent to create Linkedin posts for blog promotion with GPT-4o
 
-> ⚡ **5,091 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,406 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

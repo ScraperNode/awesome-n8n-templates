@@ -1,6 +1,6 @@
 # 🔬 Automate Actions After PDF Generation with PDFMonkey
 
-> ⚡ **918 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **935 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

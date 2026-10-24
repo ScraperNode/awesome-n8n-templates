@@ -1,6 +1,6 @@
 # 📈 AI-powered crypto analysis using OpenRouter, Gemini, and SerpAPI
 
-> ⚡ **3,813 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **3,476 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

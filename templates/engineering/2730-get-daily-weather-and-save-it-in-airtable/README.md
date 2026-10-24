@@ -1,6 +1,6 @@
 # ⚒️ Get daily weather and save it in Airtable
 
-> ⚡ **1,249 views** · ⚒️ [Engineering](../)
+> ⚡ **1,299 views** · ⚒️ [Engineering](../)
 
 ## Description
 

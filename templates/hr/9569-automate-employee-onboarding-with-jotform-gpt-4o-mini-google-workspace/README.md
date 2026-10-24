@@ -1,6 +1,6 @@
 # 👥 Automate employee onboarding with Jotform, GPT-4o-mini & Google Workspace
 
-> ⚡ **258 views** · 👥 [HR & Recruitment](../)
+> ⚡ **297 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

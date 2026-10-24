@@ -1,6 +1,6 @@
 # 🎬 Generate social media hashtags from Twitter & YouTube trends with Mistral AI
 
-> ⚡ **908 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **976 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >

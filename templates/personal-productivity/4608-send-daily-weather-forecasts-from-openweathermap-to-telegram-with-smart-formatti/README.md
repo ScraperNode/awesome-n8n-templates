@@ -1,6 +1,6 @@
 # ⚡ Send daily weather forecasts from OpenWeatherMap to Telegram with smart formatting
 
-> ⚡ **2,321 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,839 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

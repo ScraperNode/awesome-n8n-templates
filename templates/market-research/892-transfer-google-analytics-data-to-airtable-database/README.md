@@ -1,6 +1,6 @@
 # 📊 Transfer Google Analytics data to Airtable database
 
-> ⚡ **3,040 views** · 📊 [Market Research & Insights](../)
+> ⚡ **3,069 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

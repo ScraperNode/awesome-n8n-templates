@@ -1,6 +1,6 @@
 # 📖 AI-powered chatbot workflow with MySQL database integration
 
-> ⚡ **6,820 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **6,433 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

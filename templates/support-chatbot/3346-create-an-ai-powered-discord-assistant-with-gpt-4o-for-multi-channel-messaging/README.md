@@ -1,6 +1,6 @@
 # 💬 Create an AI-powered Discord assistant with GPT-4o for multi-channel messaging
 
-> ⚡ **751 views** · 💬 [Support Chatbots](../)
+> ⚡ **920 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

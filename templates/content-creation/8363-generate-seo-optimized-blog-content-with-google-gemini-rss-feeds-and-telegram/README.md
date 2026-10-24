@@ -1,6 +1,6 @@
 # 🎬 Generate SEO-optimized blog content with Google Gemini, RSS feeds and Telegram
 
-> ⚡ **682 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **856 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

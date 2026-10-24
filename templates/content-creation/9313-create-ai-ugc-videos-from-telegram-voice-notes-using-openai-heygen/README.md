@@ -1,6 +1,6 @@
 # 🎬 Create AI UGC videos from Telegram voice notes using OpenAI & HeyGen
 
-> ⚡ **131 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **156 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

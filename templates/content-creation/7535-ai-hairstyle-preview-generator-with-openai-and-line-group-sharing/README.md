@@ -1,6 +1,6 @@
 # 🎬 AI hairstyle preview generator with OpenAI and LINE group sharing
 
-> ⚡ **468 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **509 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

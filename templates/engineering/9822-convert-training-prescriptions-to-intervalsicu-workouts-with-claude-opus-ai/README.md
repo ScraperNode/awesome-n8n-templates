@@ -1,6 +1,6 @@
 # ⚒️ Convert training prescriptions to Intervals.icu workouts with Claude Opus AI
 
-> ⚡ **401 views** · ⚒️ [Engineering](../)
+> ⚡ **646 views** · ⚒️ [Engineering](../)
 
 ## Description
 

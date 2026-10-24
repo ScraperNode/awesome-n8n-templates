@@ -1,6 +1,6 @@
 # 📊 Generate comprehensive client brief reports with Llama 3 AI & Google Workspace
 
-> ⚡ **209 views** · 📊 [Market Research & Insights](../)
+> ⚡ **260 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

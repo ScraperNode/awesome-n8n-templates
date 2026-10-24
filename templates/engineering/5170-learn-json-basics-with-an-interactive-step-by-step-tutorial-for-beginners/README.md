@@ -1,6 +1,6 @@
 # ⚒️ 🎓 Learn JSON basics with an interactive step-by-step tutorial for beginners
 
-> ⚡ **130,880 views** · ⚒️ [Engineering](../)
+> ⚡ **151,976 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Summarize the new documents from Google Drive and save summary in Google Sheet
 
-> ⚡ **7,451 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **7,693 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

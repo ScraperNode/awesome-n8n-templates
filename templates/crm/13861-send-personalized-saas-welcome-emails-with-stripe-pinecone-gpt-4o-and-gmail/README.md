@@ -1,6 +1,6 @@
 # 🤝 Send personalized SaaS welcome emails with Stripe, Pinecone, GPT-4o, and Gmail
 
-> ⚡ **170 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,943 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

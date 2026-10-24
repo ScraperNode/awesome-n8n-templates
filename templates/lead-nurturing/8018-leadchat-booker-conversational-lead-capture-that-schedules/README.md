@@ -1,6 +1,6 @@
 # 💬 LeadChat Booker — conversational lead capture that schedules
 
-> ⚡ **121 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **173 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

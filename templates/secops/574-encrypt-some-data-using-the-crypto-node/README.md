@@ -1,6 +1,6 @@
 # 🔒 Encrypt some data using the crypto node
 
-> ⚡ **2,025 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,091 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

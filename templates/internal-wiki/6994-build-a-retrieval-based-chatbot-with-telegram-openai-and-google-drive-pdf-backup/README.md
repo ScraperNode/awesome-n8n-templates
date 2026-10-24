@@ -1,6 +1,6 @@
 # 📖 Build a retrieval-based chatbot with Telegram, OpenAI and Google Drive PDF backup
 
-> ⚡ **1,619 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **1,984 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

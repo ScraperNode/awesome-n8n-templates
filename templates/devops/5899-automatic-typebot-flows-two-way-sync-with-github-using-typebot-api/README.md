@@ -1,6 +1,6 @@
 # ⚙️ Automatic Typebot flows two-way sync with GitHub using Typebot API
 
-> ⚡ **442 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **559 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

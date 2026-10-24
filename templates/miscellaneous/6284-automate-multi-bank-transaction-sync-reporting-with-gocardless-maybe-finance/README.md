@@ -1,6 +1,6 @@
 # 🔧 Automate multi-bank transaction sync & reporting with GoCardless & Maybe Finance
 
-> ⚡ **1,122 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,430 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

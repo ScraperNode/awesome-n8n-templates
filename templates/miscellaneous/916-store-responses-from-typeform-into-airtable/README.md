@@ -1,6 +1,6 @@
 # 🔧 Store responses from Typeform into Airtable
 
-> ⚡ **719 views** · 🔧 [Miscellaneous](../)
+> ⚡ **722 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Postgres data freshness monitoring with email alerts
 
-> ⚡ **58 views** · ⚒️ [Engineering](../)
+> ⚡ **82 views** · ⚒️ [Engineering](../)
 
 ## Description
 

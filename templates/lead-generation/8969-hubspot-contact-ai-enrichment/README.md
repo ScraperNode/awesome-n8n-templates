@@ -1,6 +1,6 @@
 # 🎣 HubSpot contact AI enrichment
 
-> ⚡ **1,422 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,634 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

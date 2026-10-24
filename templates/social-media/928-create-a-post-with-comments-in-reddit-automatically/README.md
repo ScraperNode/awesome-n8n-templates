@@ -1,6 +1,6 @@
 # 📱 Create a post with comments in Reddit automatically
 
-> ⚡ **4,164 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **4,306 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

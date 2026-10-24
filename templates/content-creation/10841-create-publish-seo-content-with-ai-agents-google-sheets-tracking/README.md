@@ -1,6 +1,6 @@
 # 🎬 Create & publish SEO content with AI agents & Google Sheets tracking
 
-> ⚡ **283 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **554 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

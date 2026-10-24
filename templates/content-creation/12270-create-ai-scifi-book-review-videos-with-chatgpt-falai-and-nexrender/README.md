@@ -1,6 +1,6 @@
 # 🎬 Create AI sci‑fi book review videos with ChatGPT, Fal.ai and Nexrender
 
-> ⚡ **65 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **120 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

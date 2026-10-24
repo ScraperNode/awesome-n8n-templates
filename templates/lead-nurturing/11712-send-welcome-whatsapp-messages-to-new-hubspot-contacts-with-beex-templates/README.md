@@ -1,6 +1,6 @@
 # 💬 Send welcome WhatsApp messages to new HubSpot contacts with Beex templates
 
-> ⚡ **80 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **157 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

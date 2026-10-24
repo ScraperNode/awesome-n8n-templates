@@ -1,6 +1,6 @@
 # 🎬 Build a ServiceNow knowledge chatbot with OpenAI and Qdrant RAG
 
-> ⚡ **1,219 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,503 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

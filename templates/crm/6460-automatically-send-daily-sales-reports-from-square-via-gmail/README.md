@@ -1,6 +1,6 @@
 # 🤝 Automatically send daily sales reports from Square via Gmail
 
-> ⚡ **232 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **271 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

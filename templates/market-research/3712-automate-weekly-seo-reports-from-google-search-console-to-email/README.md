@@ -1,6 +1,6 @@
 # 📊 Automate weekly SEO reports from Google Search Console to email
 
-> ⚡ **4,433 views** · 📊 [Market Research & Insights](../)
+> ⚡ **4,854 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Automate LinkedIn engagement with Phantombuster, OpenAI GPT & Google Sheets tracking
 
-> ⚡ **1,271 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,346 views** · 📱 [Social Media & Email Marketing](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >

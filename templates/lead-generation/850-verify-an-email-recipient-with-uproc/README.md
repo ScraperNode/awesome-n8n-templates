@@ -1,6 +1,6 @@
 # 🎣 Verify an email recipient with uProc
 
-> ⚡ **1,049 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,127 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

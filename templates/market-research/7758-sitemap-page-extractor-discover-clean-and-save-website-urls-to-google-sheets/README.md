@@ -1,6 +1,6 @@
 # 📊 Sitemap page extractor: Discover, clean, and save website URLs to Google Sheets
 
-> ⚡ **1,048 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,239 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

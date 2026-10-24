@@ -1,6 +1,6 @@
 # ⚒️ Send updates about the position of the ISS every minute to a topic in RabbitMQ
 
-> ⚡ **1,672 views** · ⚒️ [Engineering](../)
+> ⚡ **1,699 views** · ⚒️ [Engineering](../)
 
 ## Description
 

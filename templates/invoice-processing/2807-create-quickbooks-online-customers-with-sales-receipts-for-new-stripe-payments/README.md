@@ -1,6 +1,6 @@
 # 🧾 Create QuickBooks Online customers with sales receipts for new Stripe payments
 
-> ⚡ **2,846 views** · 🧾 [Invoice Processing](../)
+> ⚡ **2,910 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

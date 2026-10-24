@@ -1,6 +1,6 @@
 # 👥 Classify job applicants from CVs using Claude, PDF.co, Google Docs and Gmail
 
-> ⚡ **4 views** · 👥 [HR & Recruitment](../)
+> ⚡ **18 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

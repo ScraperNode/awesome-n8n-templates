@@ -1,6 +1,6 @@
 # 📊 Automate monthly Google Ads performance analysis with GPT-4o, Sheets & Slack
 
-> ⚡ **494 views** · 📊 [Market Research & Insights](../)
+> ⚡ **608 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

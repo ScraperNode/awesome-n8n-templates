@@ -1,6 +1,6 @@
 # 💬 Voice appointment booking & confirmation system with Vapi, Gemini & Google Calendar
 
-> ⚡ **1,846 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,807 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Manage contacts in Automizy
 
-> ⚡ **648 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **656 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

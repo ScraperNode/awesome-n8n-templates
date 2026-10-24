@@ -1,6 +1,6 @@
 # 🎣 Identify buying-intent leads on Twitter and Instagram with Slack and Notion CRM
 
-> ⚡ **317 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **730 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

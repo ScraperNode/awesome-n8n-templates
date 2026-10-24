@@ -1,6 +1,6 @@
 # 🎬 Transform image to Lego style using line and Dall-E
 
-> ⚡ **1,943 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,979 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

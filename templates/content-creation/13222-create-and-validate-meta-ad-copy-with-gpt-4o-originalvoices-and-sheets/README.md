@@ -1,6 +1,6 @@
 # 🎬 Create and validate Meta ad copy with GPT-4o, OriginalVoices, and Sheets
 
-> ⚡ **64 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **156 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

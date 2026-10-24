@@ -1,6 +1,6 @@
 # ⚙️ Deploy Docker n8n, API backend for WHMCS/WISECP
 
-> ⚡ **783 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **883 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

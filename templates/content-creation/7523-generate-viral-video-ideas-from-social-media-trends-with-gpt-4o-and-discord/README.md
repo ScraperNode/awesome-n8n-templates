@@ -1,6 +1,6 @@
 # 🎬 Generate viral video ideas from social media trends with GPT-4o and Discord
 
-> ⚡ **2,683 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,054 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — Since TikTok doesn't have a public API, getting data usually means fragile HTTP scraping. [ScraperNode](https://scrapernode.com/tiktok) is a community node that gives you clean JSON for [TikTok profiles](https://scrapernode.com/tiktok/scrapers/profiles), [videos](https://scrapernode.com/tiktok/scrapers/posts), and [comments](https://scrapernode.com/tiktok/scrapers/comments) — drop it into your workflow and skip the parsing.
 >

@@ -1,6 +1,6 @@
 # 👥 Automated HR screening with VAPI AI calls, Gemini analysis & Google Sheets
 
-> ⚡ **2,571 views** · 👥 [HR & Recruitment](../)
+> ⚡ **2,916 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 🛠️ HighLevel tool MCP server 💪 all 17 operations
 
-> ⚡ **296 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **339 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

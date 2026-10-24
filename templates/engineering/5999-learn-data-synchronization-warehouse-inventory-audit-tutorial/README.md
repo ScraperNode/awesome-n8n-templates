@@ -1,6 +1,6 @@
 # ⚒️ 🎓 Learn Data Synchronization: Warehouse Inventory Audit Tutorial
 
-> ⚡ **2,326 views** · ⚒️ [Engineering](../)
+> ⚡ **2,595 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Automate content requests from Telegram to Notion with Gemini AI
 
-> ⚡ **204 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **224 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Qualify real estate leads automatically with OpenAI, Gmail & Airtable CRM
 
-> ⚡ **7,993 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **10,595 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

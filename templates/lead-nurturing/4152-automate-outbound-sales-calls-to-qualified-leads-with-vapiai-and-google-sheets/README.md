@@ -1,6 +1,6 @@
 # 💬 Automate outbound sales calls to qualified leads with VAPI.ai and Google Sheets
 
-> ⚡ **1,840 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,932 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

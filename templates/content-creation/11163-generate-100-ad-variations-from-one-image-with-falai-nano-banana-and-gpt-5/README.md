@@ -1,6 +1,6 @@
 # 🎬 Generate 100+ ad variations from one image with Fal.AI Nano Banana and GPT-5
 
-> ⚡ **1,119 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,549 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

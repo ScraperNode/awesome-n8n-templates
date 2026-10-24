@@ -1,6 +1,6 @@
 # 🔬 Extract structured data from Gmail attachments to Google Sheets, GPT vision
 
-> ⚡ **96 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **171 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

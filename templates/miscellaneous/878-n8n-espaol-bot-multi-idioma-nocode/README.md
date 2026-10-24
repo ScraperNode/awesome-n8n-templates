@@ -1,6 +1,6 @@
 # 🔧 N8N español - bot multi idioma NoCode
 
-> ⚡ **1,772 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,970 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

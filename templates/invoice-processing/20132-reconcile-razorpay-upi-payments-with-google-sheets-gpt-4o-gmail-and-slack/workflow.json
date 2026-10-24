@@ -1,0 +1,2504 @@
+{
+  "id": "d2E7yA22Y3XGxQHy",
+  "meta": {
+    "instanceId": "8443f10082278c46aa5cf3acf8ff0f70061a2c58bce76efac814b16290845177"
+  },
+  "name": "Razorpay/UPI Payment Reconciliation - Settlement & Bank Matching with Failed-Payment Recovery",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "f63d9588-7eb4-4979-83a9-a01e1bc3310d",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -4384,
+        0
+      ],
+      "parameters": {
+        "width": 888,
+        "height": 900,
+        "content": "# Razorpay / UPI Payment Reconciliation with Settlement Matching and Failed-Payment Recovery\n\nRazorpay tells you a payment was captured, a different report tells you when it was settled, and your bank statement tells you when the money actually arrived. Finance teams stitch these together by hand, and failed UPI payments quietly become unpaid invoices. This workflow does the full chain every morning: **invoice -> payment -> settlement -> bank credit**, and recovers failed payments with a fresh payment link.\n\n## How it works\n1. **Load state.** Reads Invoices, Bank Credits, the Payments Ledger and open Exceptions from Google Sheets.\n2. **Fetch from Razorpay.** Pulls payments for the lookback window, the settlement recon report per day and the settlements list, all with pagination.\n3. **Match.** Each payment is matched to an invoice by manual override, invoice reference in notes or order receipt, then Razorpay order ID. Unreferenced payments with a strong customer + amount match become Probable Matches; the rest go to GPT for a suggested invoice, which is only ever a suggestion.\n4. **Reconcile.** Handles partial, over and duplicate payments and refunds. Rolls payments into settlements, confirms each settlement UTR against your bank credits, checks fees against your plan, and flags delayed settlements, holds and uncaptured authorizations.\n5. **Recover failed payments.** Failures are categorised (cancelled, insufficient funds, UPI limit, wrong PIN/VPA, timeout, bank down). After a retry grace period, a new Razorpay payment link is created, the old one is cancelled, and GPT writes a reminder matched to the failure reason. Up to 3 attempts, then escalation.\n6. **Report.** Receipts go to customers who just paid. Finance gets an HTML report and Slack gets a digest with success rate by method and high-severity exceptions.\n\n## Setup steps\n1. Create a Google Sheet with tabs **Invoices, Payments Ledger, Settlements, Exceptions, Bank Credits** (headers in the section notes) and paste the ID into every Sheets node.\n2. Create an **HTTP Basic Auth** credential with your Razorpay Key ID as user and Key Secret as password, and select it in the four Razorpay nodes. Start with test keys.\n3. Connect Google Sheets, Gmail, OpenAI and Slack.\n4. Fill in company details, emails and your fee rates in **Set Recon Rules**.\n5. When you create orders or links elsewhere, put the invoice ID in the order receipt or in notes.invoice_id so matching is exact."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e20e4cbb-13fa-455e-9595-24e149385cb2",
+      "name": "Section - Schedule & Rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3328,
+        336
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 528,
+        "height": 560,
+        "content": "## 1. Schedule & rules\nRuns at 7:30 AM daily. **Set Recon Rules** holds lookback windows, tolerances, settlement and bank SLAs, retry grace period, chase limits, link expiry and expected fee % per method (JSON). Settlements usually arrive T+2 working days, so reconDays of 5 catches them."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "80006185-c02b-4437-b306-8128b0c2e5dc",
+      "name": "Section - Load State",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2768,
+        336
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1012,
+        "height": 644,
+        "content": "## 2. Load state from Sheets\n**Invoices:** Invoice ID, Customer Name, Customer Email, Customer Phone, Amount, Currency, Due Date, Status, Razorpay Order ID, Paid Amount, Balance Due, Payment IDs, Payment Method, Paid On, Settlement ID, UTR, Settled On, Fee, GST on Fee, Net Received, Recon Status, Last Recon Run, Payment Link ID, Payment Link URL, Link Expires, Chase Count, Last Chase Date, Last Chase Stage, Last Failure Reason\n**Bank Credits:** Date, Amount, UTR, Reference, Narration (paste or export from your bank)\nReference tabs are read once per run and tolerate being empty."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a88c0da7-9995-45c2-9458-74661626c1c2",
+      "name": "Section - Fetch Razorpay",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1696,
+        368
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1164,
+        "height": 580,
+        "content": "## 3. Fetch from Razorpay\nPayments (`/v1/payments`), settlement recon per day (`/v1/settlements/recon/combined`) and settlements (`/v1/settlements`). Each call pages with `skip` until a short page, with retries and a small delay between requests."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d1589c31-5eb9-475c-a3dc-10f09382de69",
+      "name": "Section - Reconcile",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -496,
+        208
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 520,
+        "height": 932,
+        "content": "## 4. Reconciliation engine\nOne Code node produces every record type: invoice updates, ledger rows, settlements, exceptions, receipts, link cancellations, chases and the summary. Resolved or Ignored exceptions in the sheet are never re-raised. The router sends each type to its branch; the AI branch runs first so the report can include its suggestions."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c1db4967-4b5d-4aa5-9f79-2ed368c0e8be",
+      "name": "Section - AI Match Suggestions",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        144,
+        -624
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1000,
+        "height": 380,
+        "content": "## 5. AI match suggestions\nPayments with no invoice reference but some candidate invoices are sent to GPT with up to 15 candidates. The pick is validated against the candidate list and written to Exceptions. It is never applied automatically: confirm by typing the ID into **Manual Invoice ID** on the Payments Ledger."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "35cb2ee0-3642-4cd9-ab57-1a678e6b1681",
+      "name": "Section - Ledger & Sheets",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        176,
+        -32
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1000,
+        "height": 1156,
+        "content": "## 6. Ledgers & exceptions\n**Payments Ledger:** Payment ID, Created At, Status, Method, Amount, Refunded, Fee, GST on Fee, Customer Email, Customer Contact, VPA, Invoice ID, Match Method, Order ID, Settlement ID, UTR, Settled At, Error Code, Error Reason, Failure Category, Recon Note, Updated On, Manual Invoice ID\n**Settlements:** Settlement ID, Created On, Amount, Fees, GST on Fees, UTR, Razorpay Status, Payments, Bank Status, Bank Date, Updated On\n**Exceptions:** Exception Key, Type, Severity, Entity ID, Invoice ID, Customer, Amount, Detail, Suggested Action, First Detected, Last Seen, Status (set Resolved or Ignored to silence)"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "68365019-2564-41af-83aa-8cfd66f35266",
+      "name": "Section - Customer Comms",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        176,
+        1152
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 2152,
+        "height": 824,
+        "content": "## 7. Receipts, links & failed-payment recovery\nNewly paid invoices get a receipt. Links for paid or replaced invoices are cancelled so nobody pays twice. For failures, a fresh link is created and GPT writes a reminder specific to the failure reason and attempt number. Attempt 3 or high-value balances alert Slack. A failed send does not count as an attempt."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9bba7c58-dcec-448a-8644-5edc3d101acf",
+      "name": "Section - Report",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        176,
+        2016
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1192,
+        "height": 436,
+        "content": "## 8. Daily report\nHTML report to finance and a Slack digest: captured, fees, settled, bank-confirmed, success rate by method, failure mix, and exceptions ranked by severity."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "86c566b6-6550-4f9c-b9fe-77609457853b",
+      "name": "Credentials & Security",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1200,
+        -592
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 440,
+        "height": 320,
+        "content": "## Credentials & security\nRazorpay keys live in an n8n HTTP Basic Auth credential, never in the workflow. Google, Gmail and Slack use OAuth2, OpenAI an API key. Only unmatched-payment details and failure reasons are sent to OpenAI, never card or bank data. Keep the sheet restricted: it holds customer contacts and payment data."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2f62bdf3-9592-415d-a635-b10ea2aff7db",
+      "name": "Every Day at 7:30 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -3200,
+        672
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 7 * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "a44398ad-c4d7-4718-9495-c505c1422402",
+      "name": "Set Recon Rules",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -2976,
+        672
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0702178d-636d-4136-96f4-4423710007e4",
+              "name": "companyName",
+              "type": "string",
+              "value": "Your Company Pvt Ltd"
+            },
+            {
+              "id": "31b5c5e8-04a9-4b5c-bee4-7ea373fe6f2e",
+              "name": "financeEmail",
+              "type": "string",
+              "value": "user@example.com"
+            },
+            {
+              "id": "a94923fe-8c92-48a8-b563-813ac24e2a83",
+              "name": "supportContact",
+              "type": "string",
+              "value": "user@example.com / +1234567890"
+            },
+            {
+              "id": "ce0541da-375e-43b1-882e-65b4d8441643",
+              "name": "lookbackDays",
+              "type": "number",
+              "value": 7
+            },
+            {
+              "id": "19d156d7-32de-4a06-8364-48b87a357de9",
+              "name": "reconDays",
+              "type": "number",
+              "value": 5
+            },
+            {
+              "id": "7c9f835b-7a69-4c69-af38-98e83f6c90ab",
+              "name": "amountTolerance",
+              "type": "number",
+              "value": 1
+            },
+            {
+              "id": "685f849c-4e8b-4aaf-a51e-876d9c8dcd2f",
+              "name": "settlementSlaDays",
+              "type": "number",
+              "value": 4
+            },
+            {
+              "id": "7baedeb8-3115-4453-94df-0a72b9d78dda",
+              "name": "bankCreditSlaDays",
+              "type": "number",
+              "value": 2
+            },
+            {
+              "id": "5187e241-b3b1-4536-9f82-03dfc6b06fc0",
+              "name": "retryGraceMinutes",
+              "type": "number",
+              "value": 60
+            },
+            {
+              "id": "b7f5eb01-077a-402f-ae16-b3ca280c067c",
+              "name": "minHoursBetweenChases",
+              "type": "number",
+              "value": 20
+            },
+            {
+              "id": "062f8a36-50fa-4d28-a0c7-012e8bd53741",
+              "name": "chaseIntervalDays",
+              "type": "number",
+              "value": 2
+            },
+            {
+              "id": "8cebb7f2-8645-48d7-a1da-ca8fc64dcb87",
+              "name": "maxChaseAttempts",
+              "type": "number",
+              "value": 3
+            },
+            {
+              "id": "7dce10ab-277d-4b87-9006-8af8833ae28c",
+              "name": "linkExpiryDays",
+              "type": "number",
+              "value": 7
+            },
+            {
+              "id": "f784830a-9080-497d-9f66-851a31aca85f",
+              "name": "highValueAmount",
+              "type": "number",
+              "value": 50000
+            },
+            {
+              "id": "181641f6-9d57-4500-ae6d-ea79648e9c00",
+              "name": "checkFees",
+              "type": "boolean",
+              "value": true
+            },
+            {
+              "id": "498b28f9-45e8-4f3e-b6df-de764fe8f330",
+              "name": "expectedFeePct",
+              "type": "string",
+              "value": "{\"upi\": 2, \"card\": 2, \"netbanking\": 2, \"wallet\": 2, \"emi\": 2}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "419546f8-bb80-4be7-9fce-e826f6f857f5",
+      "name": "Read Invoices",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        -2656,
+        672
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Invoices"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "executeOnce": true,
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "04ae25ad-37f0-4c26-b40e-3267c02be489",
+      "name": "Read Bank Credits",
+      "type": "n8n-nodes-base.googleSheets",
+      "onError": "continueRegularOutput",
+      "position": [
+        -2432,
+        672
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Bank Credits"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Automation.ai"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "e96781cb-a39c-4d47-ae85-06548286690f",
+      "name": "Read Payments Ledger",
+      "type": "n8n-nodes-base.googleSheets",
+      "onError": "continueRegularOutput",
+      "position": [
+        -2192,
+        672
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Payments Ledger"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "5f56417d-cd5a-4be9-ac4e-8d1f51570791",
+      "name": "Read Exceptions",
+      "type": "n8n-nodes-base.googleSheets",
+      "onError": "continueRegularOutput",
+      "position": [
+        -1936,
+        672
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Exceptions"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "b1681eab-dfa6-4808-b280-6b95f935b089",
+      "name": "Build Fetch Window",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1648,
+        592
+      ],
+      "parameters": {
+        "jsCode": "// Build the fetch window: payments for the last N days, settlement recon per day\nconst cfg = $('Set Recon Rules').first().json;\nconst lookback = Number(cfg.lookbackDays) || 7;\nconst reconDays = Number(cfg.reconDays) || 5;\nconst days = [];\nfor (let i = 0; i < reconDays; i++) {\n  const d = $today.minus({ days: i });\n  days.push({ year: d.year, month: d.month, day: d.day, date: d.toISODate() });\n}\nreturn [{\n  json: {\n    fromTs: Math.floor($today.minus({ days: lookback }).toSeconds()),\n    toTs: Math.floor($now.toSeconds()),\n    settlementFromTs: Math.floor($today.minus({ days: lookback + 7 }).toSeconds()),\n    days,\n  },\n}];"
+      },
+      "executeOnce": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "a96f3036-f68f-4435-bcd2-2c5a9933e11e",
+      "name": "Fetch Razorpay Payments",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 3,
+      "position": [
+        -1424,
+        592
+      ],
+      "parameters": {
+        "url": "https://api.razorpay.com/v1/payments",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "skip",
+                    "value": "={{ $pageCount * 100 }}"
+                  }
+                ]
+              },
+              "maxRequests": 30,
+              "requestInterval": 300,
+              "limitPagesFetched": true,
+              "completeExpression": "={{ ($response.body.items || []).length < 100 }}",
+              "paginationCompleteWhen": "other"
+            }
+          }
+        },
+        "sendQuery": true,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "={{ $('Build Fetch Window').first().json.fromTs }}"
+            },
+            {
+              "name": "to",
+              "value": "={{ $('Build Fetch Window').first().json.toTs }}"
+            },
+            {
+              "name": "count",
+              "value": "100"
+            }
+          ]
+        }
+      },
+      "executeOnce": true,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "c19367b4-6816-4009-9695-7f4b749b9f7e",
+      "name": "Split Recon Days",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1216,
+        592
+      ],
+      "parameters": {
+        "jsCode": "// One item per day for the settlement recon endpoint\nreturn $('Build Fetch Window').first().json.days.map(d => ({ json: d }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "dc96d17c-6af1-46ba-ab92-f1ff86d66e74",
+      "name": "Fetch Settlement Recon",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        -992,
+        592
+      ],
+      "parameters": {
+        "url": "https://api.razorpay.com/v1/settlements/recon/combined",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "skip",
+                    "value": "={{ $pageCount * 1000 }}"
+                  }
+                ]
+              },
+              "maxRequests": 30,
+              "requestInterval": 300,
+              "limitPagesFetched": true,
+              "completeExpression": "={{ ($response.body.items || []).length < 1000 }}",
+              "paginationCompleteWhen": "other"
+            }
+          }
+        },
+        "sendQuery": true,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "year",
+              "value": "={{ $json.year }}"
+            },
+            {
+              "name": "month",
+              "value": "={{ $json.month }}"
+            },
+            {
+              "name": "day",
+              "value": "={{ $json.day }}"
+            },
+            {
+              "name": "count",
+              "value": "1000"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "919580b6-9104-44d1-876f-fa2e8923b084",
+      "name": "Fetch Settlements",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 3,
+      "position": [
+        -768,
+        592
+      ],
+      "parameters": {
+        "url": "https://api.razorpay.com/v1/settlements",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "skip",
+                    "value": "={{ $pageCount * 100 }}"
+                  }
+                ]
+              },
+              "maxRequests": 30,
+              "requestInterval": 300,
+              "limitPagesFetched": true,
+              "completeExpression": "={{ ($response.body.items || []).length < 100 }}",
+              "paginationCompleteWhen": "other"
+            }
+          }
+        },
+        "sendQuery": true,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "={{ $('Build Fetch Window').first().json.settlementFromTs }}"
+            },
+            {
+              "name": "to",
+              "value": "={{ $('Build Fetch Window').first().json.toTs }}"
+            },
+            {
+              "name": "count",
+              "value": "100"
+            }
+          ]
+        }
+      },
+      "executeOnce": true,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "08bcca29-125e-4f8b-bb7d-0790f86772de",
+      "name": "Reconcile Payments & Settlements",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -432,
+        672
+      ],
+      "parameters": {
+        "jsCode": "// Core engine: match payments to invoices, roll payments into settlements,\n// confirm settlements against bank credits, raise exceptions and plan failed-payment chases.\n// Every output item has a `kind` that the router uses.\nconst cfg = $('Set Recon Rules').first().json;\nconst nowMs = Date.now();\nconst todayISO = $today.toISODate();\nconst nowISO = $now.toISO();\nconst tol = Number(cfg.amountTolerance) || 1;\nconst r2 = n => Math.round((Number(n) || 0) * 100) / 100;\nconst num = v => { const n = parseFloat(String(v ?? '').replace(/[^0-9.\\-]/g, '')); return isNaN(n) ? 0 : n; };\nconst rupees = paise => r2((Number(paise) || 0) / 100);\nconst tsISO = s => (s ? new Date(s * 1000).toISOString() : '');\nconst daysAgo = s => (nowMs - s * 1000) / 86400000;\nconst digits = s => String(s || '').replace(/\\D/g, '').slice(-10);\nconst lower = s => String(s || '').trim().toLowerCase();\nconst pages = name => { try { return $(name).all().flatMap(i => (Array.isArray(i.json.items) ? i.json.items : [])); } catch (e) { return []; } };\nconst uniq = (list, key) => Object.values(Object.fromEntries(list.filter(x => x && x[key]).map(x => [x[key], x])));\nconst FEE_PCT = (() => { try { return JSON.parse(cfg.expectedFeePct || '{}'); } catch (e) { return {}; } })();\n\n// ---------- Inputs ----------\nconst payments = uniq(pages('Fetch Razorpay Payments'), 'id');\nconst recon = pages('Fetch Settlement Recon');\nconst settlements = uniq($input.all().flatMap(i => (Array.isArray(i.json.items) ? i.json.items : [])), 'id');\nconst invoices = $('Read Invoices').all().map(i => i.json).filter(r => r['Invoice ID']);\nconst bank = $('Read Bank Credits').all().map(i => i.json).filter(r => r['Amount']);\nconst ledgerPrev = Object.fromEntries($('Read Payments Ledger').all().map(i => i.json).filter(r => r['Payment ID']).map(r => [String(r['Payment ID']), r]));\nconst excPrev = Object.fromEntries($('Read Exceptions').all().map(i => i.json).filter(r => r['Exception Key']).map(r => [String(r['Exception Key']), r]));\n\n// ---------- Invoice index ----------\nconst CLOSED = ['void', 'cancelled', 'canceled', 'written off'];\nconst inv = {};\nconst byOrder = {};\nfor (const r of invoices) {\n  const id = String(r['Invoice ID']).trim();\n  inv[id] = {\n    id, row: r,\n    name: r['Customer Name'] || '', email: lower(r['Customer Email']), phone: digits(r['Customer Phone']),\n    amount: num(r['Amount']), currency: r['Currency'] || 'INR', dueDate: r['Due Date'] || '',\n    closed: CLOSED.includes(lower(r['Status'])),\n    prevRecon: String(r['Recon Status'] || ''),\n    linkId: String(r['Payment Link ID'] || ''),\n    chaseCount: parseInt(r['Chase Count'], 10) || 0,\n    lastChaseAt: r['Last Chase Date'] || '',\n    captured: [], failed: [], authorized: [],\n  };\n  if (r['Razorpay Order ID']) byOrder[String(r['Razorpay Order ID']).trim()] = inv[id];\n}\n\n// ---------- Recon lines by payment ----------\nconst reconByEntity = {};\nconst receiptByPayment = {};\nconst settlementPayments = {};\nfor (const l of recon) {\n  if (l.type === 'payment' && l.entity_id) {\n    reconByEntity[l.entity_id] = l;\n    if (l.order_receipt) receiptByPayment[l.entity_id] = String(l.order_receipt);\n    if (l.settlement_id) (settlementPayments[l.settlement_id] = settlementPayments[l.settlement_id] || []).push(l.entity_id);\n  }\n}\n\n// ---------- Match each payment to an invoice ----------\nconst matchOf = p => {\n  const manual = ledgerPrev[p.id] && String(ledgerPrev[p.id]['Manual Invoice ID'] || '').trim();\n  if (manual && inv[manual]) return { invoice: inv[manual], method: 'Manual' };\n  const notes = p.notes && !Array.isArray(p.notes) ? p.notes : {};\n  for (const ref of [notes.invoice_id, notes.invoice, notes.invoiceId, notes.reference_id, receiptByPayment[p.id], p.description]) {\n    const k = String(ref || '').trim();\n    if (k && inv[k]) return { invoice: inv[k], method: 'Invoice reference' };\n  }\n  if (p.order_id && byOrder[p.order_id]) return { invoice: byOrder[p.order_id], method: 'Razorpay order' };\n  return null;\n};\nconst fuzzyCandidates = p => {\n  const amt = rupees(p.amount), e = lower(p.email), ph = digits(p.contact);\n  return Object.values(inv)\n    .filter(v => !v.closed)\n    .map(v => {\n      const balance = v.amount - v.captured.reduce((s, x) => s + x.net, 0);\n      let score = 0;\n      if (e && v.email && e === v.email) score += 3;\n      if (ph && v.phone && ph === v.phone) score += 3;\n      if (Math.abs(balance - amt) <= tol) score += 2;\n      else if (Math.abs(balance - amt) / Math.max(balance, 1) <= 0.05) score += 1;\n      return { v, balance: r2(balance), score };\n    })\n    .filter(c => c.score > 0)\n    .sort((a, b) => b.score - a.score);\n};\n\nconst out = [];\nconst exceptions = [];\nconst raise = (type, severity, entity, fields) => {\n  const key = `${type}|${entity}`;\n  const prev = excPrev[key];\n  if (prev && ['resolved', 'ignored'].includes(lower(prev['Status']))) return;\n  exceptions.push({\n    'Exception Key': key, 'Type': type, 'Severity': severity, 'Entity ID': entity,\n    'Invoice ID': fields.invoiceId || '', 'Customer': fields.customer || '', 'Amount': fields.amount ?? '',\n    'Detail': fields.detail || '', 'Suggested Action': fields.action || '',\n    'First Detected': (prev && prev['First Detected']) || todayISO, 'Last Seen': todayISO,\n    'Status': (prev && prev['Status']) || 'Open',\n  });\n};\n\nconst categorize = p => {\n  const t = `${p.error_reason || ''} ${p.error_description || ''} ${p.error_code || ''}`.toLowerCase();\n  if (/cancel|abandon|closed the|declined by (the )?(customer|user)|rejected by (the )?(customer|user)/.test(t)) return 'cancelled';\n  if (/insufficient|balance/.test(t)) return 'insufficient_funds';\n  if (/limit|exceed/.test(t)) return 'limit_exceeded';\n  if (/pin|otp|authenticat|incorrect|invalid (vpa|upi)|vpa.*invalid|expired card|card.*invalid/.test(t)) return 'details_incorrect';\n  if (/timed? ?out|timeout|expired/.test(t)) return 'timeout';\n  if (/bank|server|technical|gateway|down|unavailable|network/.test(t) || ['bank', 'gateway'].includes(p.error_source)) return 'bank_issue';\n  return 'other';\n};\n\nconst methodStats = {};\nconst ledgerRows = [];\nconst unmatchedForAI = [];\nlet gross = 0, fees = 0, taxes = 0;\n\nfor (const p of payments) {\n  const method = p.method || 'unknown';\n  const ms = methodStats[method] || (methodStats[method] = { captured: 0, failed: 0 });\n  const m = matchOf(p);\n  const rl = reconByEntity[p.id];\n  const net = rupees(p.amount - (p.amount_refunded || 0));\n  let note = '', failureCategory = '';\n\n  if (p.status === 'captured' || p.status === 'refunded') {\n    ms.captured++;\n    gross += rupees(p.amount); fees += rupees(p.fee); taxes += rupees(p.tax);\n    const rec = { id: p.id, net, method, created: p.created_at, settled: !!(rl && rl.settled), settlementId: rl ? rl.settlement_id : '',\n      utr: rl ? rl.settlement_utr : '', settledAt: rl && rl.settled_at ? tsISO(rl.settled_at) : '', fee: rupees(p.fee), tax: rupees(p.tax),\n      onHold: !!(rl && rl.on_hold) };\n    if (m) { m.invoice.captured.push(rec); note = `Matched by ${m.method}`; }\n    else {\n      const cands = fuzzyCandidates(p);\n      const strong = cands.filter(c => c.score >= 5);\n      if (strong.length === 1) {\n        note = 'Probable match, needs confirmation';\n        raise('Probable Match', 'Medium', p.id, { invoiceId: strong[0].v.id, customer: strong[0].v.name, amount: net,\n          detail: `Same customer and amount as open invoice ${strong[0].v.id}, but no invoice reference on the payment`,\n          action: `Confirm and type ${strong[0].v.id} in \"Manual Invoice ID\" on the Payments Ledger row` });\n      } else if (cands.length) {\n        note = 'Unmatched, sent for AI suggestion';\n        unmatchedForAI.push({ kind: 'unmatched', paymentId: p.id, amount: net, currency: p.currency, method, email: p.email || '',\n          contact: p.contact || '', vpa: p.vpa || (p.upi && p.upi.vpa) || '', description: p.description || '',\n          notes: JSON.stringify(p.notes || {}), createdAt: tsISO(p.created_at),\n          candidates: cands.slice(0, 15).map(c => ({ invoiceId: c.v.id, customer: c.v.name, email: c.v.email, balance: c.balance, dueDate: c.v.dueDate })),\n          exceptionKey: `Unmatched Payment|${p.id}`,\n          prevStatus: excPrev[`Unmatched Payment|${p.id}`] ? excPrev[`Unmatched Payment|${p.id}`]['Status'] : '',\n          firstDetected: excPrev[`Unmatched Payment|${p.id}`] ? excPrev[`Unmatched Payment|${p.id}`]['First Detected'] : todayISO });\n      } else {\n        note = 'Unmatched, no candidate invoice';\n        raise('Unmatched Payment', net >= cfg.highValueAmount ? 'High' : 'Medium', p.id, { customer: p.email || p.contact, amount: net,\n          detail: `${method} payment with no invoice reference and no similar open invoice`, action: 'Identify the customer and add the invoice ID in \"Manual Invoice ID\"' });\n      }\n    }\n    // Settlement checks\n    if (rec.onHold) raise('Payment On Hold', 'High', p.id, { invoiceId: m ? m.invoice.id : '', amount: net, detail: 'Razorpay has put this payment on hold', action: 'Check the Razorpay dashboard or contact support' });\n    else if (!rec.settled && daysAgo(p.created_at) > cfg.settlementSlaDays)\n      raise('Settlement Delayed', 'Medium', p.id, { invoiceId: m ? m.invoice.id : '', amount: net,\n        detail: `Captured ${Math.floor(daysAgo(p.created_at))} days ago and not settled yet`, action: 'Check settlement schedule or raise a ticket with Razorpay' });\n    // Fee check (Razorpay fee includes GST; compare the pre-tax part)\n    const pct = FEE_PCT[method];\n    if (cfg.checkFees && pct !== undefined && p.fee) {\n      const expected = rupees(p.amount) * pct / 100;\n      const actual = rupees(p.fee - (p.tax || 0));\n      if (actual > expected * 1.05 + 1)\n        raise('Fee Above Expected', 'Low', p.id, { invoiceId: m ? m.invoice.id : '', amount: net,\n          detail: `Fee Rs. ${actual} vs expected Rs. ${r2(expected)} at ${pct}% for ${method}`, action: 'Compare against your Razorpay pricing plan' });\n    }\n  } else if (p.status === 'failed') {\n    ms.failed++;\n    failureCategory = categorize(p);\n    if (m) m.invoice.failed.push({ ...p, failureCategory });\n    note = m ? `Failed (${failureCategory})` : `Failed (${failureCategory}), no invoice reference`;\n  } else if (p.status === 'authorized') {\n    if (m) m.invoice.authorized.push(p);\n    if (daysAgo(p.created_at) > 1)\n      raise('Authorized Not Captured', 'High', p.id, { invoiceId: m ? m.invoice.id : '', amount: rupees(p.amount),\n        detail: 'Payment authorized but not captured; Razorpay auto-refunds uncaptured payments', action: 'Capture it in Razorpay or enable auto-capture' });\n  }\n\n  ledgerRows.push({\n    kind: 'ledger',\n    'Payment ID': p.id, 'Created At': tsISO(p.created_at), 'Status': p.status, 'Method': method,\n    'Amount': rupees(p.amount), 'Refunded': rupees(p.amount_refunded), 'Fee': rupees(p.fee), 'GST on Fee': rupees(p.tax),\n    'Customer Email': p.email || '', 'Customer Contact': p.contact || '', 'VPA': p.vpa || (p.upi && p.upi.vpa) || '',\n    'Invoice ID': m ? m.invoice.id : '', 'Match Method': m ? m.method : '', 'Order ID': p.order_id || '',\n    'Settlement ID': rl ? rl.settlement_id || '' : '', 'UTR': rl ? rl.settlement_utr || '' : '',\n    'Settled At': rl && rl.settled_at ? tsISO(rl.settled_at) : '',\n    'Error Code': p.error_code || '', 'Error Reason': p.error_reason || p.error_description || '',\n    'Failure Category': failureCategory, 'Recon Note': note, 'Updated On': nowISO,\n  });\n}\n\n// ---------- Settlements vs bank credits ----------\nconst bankRows = bank.map(b => ({ amount: num(b['Amount']), text: `${b['UTR'] || ''} ${b['Reference'] || ''} ${b['Narration'] || ''}`.toUpperCase(), date: b['Date'] || '' }));\nconst bankStatus = {};\nconst settlementRows = [];\nfor (const s of settlements) {\n  const amt = rupees(s.amount);\n  let status = 'Bank check skipped', bankDate = '';\n  if (s.status === 'failed') {\n    status = 'Settlement failed';\n    raise('Settlement Failed', 'High', s.id, { amount: amt, detail: 'Razorpay could not transfer this settlement', action: 'Check the bank account on Razorpay and contact support' });\n  } else if (bankRows.length && s.status === 'processed') {\n    const hit = bankRows.find(b => s.utr && b.text.includes(String(s.utr).toUpperCase()) && Math.abs(b.amount - amt) <= tol)\n      || bankRows.find(b => s.utr && b.text.includes(String(s.utr).toUpperCase()));\n    if (hit && Math.abs(hit.amount - amt) <= tol) { status = 'Bank confirmed'; bankDate = hit.date; }\n    else if (hit) {\n      status = 'Amount differs in bank';\n      raise('Bank Amount Mismatch', 'High', s.id, { amount: amt, detail: `Bank shows ${hit.amount} for UTR ${s.utr}, Razorpay settled ${amt}`, action: 'Check for bank charges or a partial credit' });\n    } else if (daysAgo(s.created_at) > cfg.bankCreditSlaDays) {\n      status = 'Not found in bank';\n      raise('Settlement Not in Bank', 'High', s.id, { amount: amt, detail: `UTR ${s.utr || '(none)'} not found in Bank Credits ${Math.floor(daysAgo(s.created_at))} days after settlement`, action: 'Update the Bank Credits tab or ask the bank to trace the UTR' });\n    } else status = 'Awaiting bank credit';\n  } else if (s.status !== 'processed') status = `Razorpay status: ${s.status}`;\n  bankStatus[s.id] = status;\n  settlementRows.push({\n    kind: 'settlement', 'Settlement ID': s.id, 'Created On': tsISO(s.created_at), 'Amount': amt,\n    'Fees': rupees(s.fees), 'GST on Fees': rupees(s.tax), 'UTR': s.utr || '', 'Razorpay Status': s.status,\n    'Payments': (settlementPayments[s.id] || []).length, 'Bank Status': status, 'Bank Date': bankDate, 'Updated On': nowISO,\n  });\n}\n\n// ---------- Invoice outcomes, receipts, link cancels, chases ----------\nconst invoiceRows = [], receipts = [], cancels = [], chases = [];\nconst PAID = ['Reconciled', 'Settled - awaiting bank', 'Paid - awaiting settlement', 'Overpaid'];\nconst counts = { paidToday: 0, partial: 0, overpaid: 0, chases: 0 };\n\nfor (const v of Object.values(inv)) {\n  if (v.closed) continue;\n  const paid = r2(v.captured.reduce((s, x) => s + x.net, 0));\n  const balance = r2(v.amount - paid);\n  const touched = v.captured.length || v.failed.length || v.authorized.length;\n  if (!touched) continue;\n\n  let recon = 'Open';\n  if (paid > 0) {\n    const allSettled = v.captured.every(x => x.settled);\n    const allBank = allSettled && v.captured.every(x => bankStatus[x.settlementId] === 'Bank confirmed');\n    if (balance < -tol) recon = 'Overpaid';\n    else if (balance > tol) recon = 'Partially Paid';\n    else recon = allBank ? 'Reconciled' : allSettled ? 'Settled - awaiting bank' : 'Paid - awaiting settlement';\n    if (recon === 'Overpaid') {\n      counts.overpaid++;\n      raise('Overpaid', 'Medium', v.id, { invoiceId: v.id, customer: v.name, amount: -balance, detail: `Received ${paid} against ${v.amount}`, action: 'Refund the excess or apply it as credit' });\n    }\n    const full = v.captured.filter(x => x.net >= v.amount - tol);\n    if (full.length >= 2)\n      raise('Duplicate Payment', 'High', v.id, { invoiceId: v.id, customer: v.name, amount: r2(full.slice(1).reduce((s, x) => s + x.net, 0)),\n        detail: `${full.length} full payments: ${full.map(x => x.id).join(', ')}`, action: 'Refund the duplicate payment from Razorpay' });\n    if (recon === 'Partially Paid') counts.partial++;\n  } else if (v.failed.length) recon = 'Payment Failed';\n\n  const nowPaid = PAID.includes(recon) && !PAID.includes(v.prevRecon);\n  if (nowPaid) counts.paidToday++;\n  const last = v.captured.slice().sort((a, b) => b.created - a.created)[0];\n  const settledDates = v.captured.map(x => x.settledAt).filter(Boolean).sort();\n\n  invoiceRows.push({\n    kind: 'invoice', 'Invoice ID': v.id,\n    'Status': PAID.includes(recon) ? 'Paid' : recon === 'Partially Paid' ? 'Partially Paid' : v.row['Status'] || 'Open',\n    'Paid Amount': paid, 'Balance Due': Math.max(balance, 0),\n    'Payment IDs': v.captured.map(x => x.id).join(', '),\n    'Payment Method': [...new Set(v.captured.map(x => x.method))].join(', '),\n    'Paid On': last ? tsISO(last.created).slice(0, 10) : '',\n    'Settlement ID': [...new Set(v.captured.map(x => x.settlementId).filter(Boolean))].join(', '),\n    'UTR': [...new Set(v.captured.map(x => x.utr).filter(Boolean))].join(', '),\n    'Settled On': settledDates.length ? settledDates[settledDates.length - 1].slice(0, 10) : '',\n    'Fee': r2(v.captured.reduce((s, x) => s + x.fee, 0)), 'GST on Fee': r2(v.captured.reduce((s, x) => s + x.tax, 0)),\n    'Net Received': r2(paid - v.captured.reduce((s, x) => s + x.fee, 0)),\n    'Recon Status': recon, 'Last Recon Run': nowISO,\n  });\n\n  if (nowPaid && v.email && last) receipts.push({ kind: 'receipt', invoiceId: v.id, customerName: v.name, email: v.email, amount: paid,\n    currency: v.currency, paymentId: last.id, method: last.method, paidOn: tsISO(last.created).slice(0, 10) });\n  if (PAID.includes(recon) && v.linkId) cancels.push({ kind: 'cancel_link', linkId: v.linkId, invoiceId: v.id, reason: 'Invoice paid' });\n\n  // Failed-payment chase\n  if (balance > tol && v.failed.length) {\n    const lastFail = v.failed.slice().sort((a, b) => b.created_at - a.created_at)[0];\n    const lastSuccess = last ? last.created : 0;\n    const lastChaseMs = v.lastChaseAt ? new Date(v.lastChaseAt).getTime() || 0 : 0;\n    const hoursSinceChase = lastChaseMs ? (nowMs - lastChaseMs) / 3600000 : Infinity;\n    const failMs = lastFail.created_at * 1000;\n    const graceOver = (nowMs - failMs) / 60000 >= cfg.retryGraceMinutes;\n    const newFailure = failMs > lastChaseMs;\n    const followUpDue = v.chaseCount > 0 && hoursSinceChase >= cfg.chaseIntervalDays * 24;\n    const eligible = lastFail.created_at > lastSuccess && graceOver && hoursSinceChase >= cfg.minHoursBetweenChases && (newFailure || followUpDue);\n    if (eligible && v.chaseCount >= cfg.maxChaseAttempts) {\n      raise('Chase Exhausted', 'High', v.id, { invoiceId: v.id, customer: v.name, amount: balance,\n        detail: `${v.chaseCount} payment-failure reminders sent, still unpaid. Last failure: ${lastFail.error_description || lastFail.failureCategory}`, action: 'Call the customer or offer bank transfer' });\n    } else if (eligible && v.email) {\n      counts.chases++;\n      const attempt = v.chaseCount + 1;\n      if (v.linkId) cancels.push({ kind: 'cancel_link', linkId: v.linkId, invoiceId: v.id, reason: 'Replaced by a new link' });\n      const customer = { name: v.name || 'Customer', email: v.email };\n      if (v.phone) customer.contact = v.phone;\n      chases.push({\n        kind: 'chase', invoiceId: v.id, prevChaseAt: v.lastChaseAt, customerName: v.name, email: v.email, balance, currency: v.currency, dueDate: v.dueDate,\n        attempt, failureCategory: lastFail.failureCategory, failureText: lastFail.error_description || lastFail.error_reason || '',\n        failedMethod: lastFail.method || '', failedAttempts: v.failed.length, prevLinkId: v.linkId,\n        escalate: attempt >= cfg.maxChaseAttempts || balance >= cfg.highValueAmount,\n        linkPayload: {\n          amount: Math.round(balance * 100), currency: v.currency || 'INR', accept_partial: false,\n          description: `Payment for invoice ${v.id}`.slice(0, 2048),\n          reference_id: `${v.id}-R${attempt}-${nowMs.toString(36)}`.slice(0, 40),\n          expire_by: Math.floor(nowMs / 1000) + (Number(cfg.linkExpiryDays) || 7) * 86400,\n          customer, notify: { sms: false, email: false }, reminder_enable: false,\n          notes: { invoice_id: v.id, chase_attempt: String(attempt), source: 'n8n-reconciler' },\n        },\n      });\n    }\n  }\n}\n\nconst summary = {\n  kind: 'summary', runAt: nowISO, periodDays: cfg.lookbackDays,\n  payments: payments.length, gross: r2(gross), fees: r2(fees), taxes: r2(taxes),\n  settlements: settlements.length, settledAmount: r2(settlements.reduce((s, x) => s + rupees(x.amount), 0)),\n  bankConfirmed: Object.values(bankStatus).filter(s => s === 'Bank confirmed').length,\n  invoicesTouched: invoiceRows.length, ...counts,\n  unmatchedForAI: unmatchedForAI.length,\n  methodStats,\n  failureMix: payments.filter(p => p.status === 'failed').reduce((m, p) => { const c = categorize(p); m[c] = (m[c] || 0) + 1; return m; }, {}),\n  exceptions: exceptions.filter(e => e.Status === 'Open'),\n};\n\nreturn [\n  ...unmatchedForAI,\n  ...exceptions.map(e => ({ kind: 'exception', ...e })),\n  ...ledgerRows, ...settlementRows, ...invoiceRows, ...receipts,\n  ...uniq(cancels, 'linkId'), ...chases, summary,\n].map(j => ({ json: j }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "3624fedc-3da2-491c-a8bb-accf1a9a12a7",
+      "name": "Route by Record Type",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        -192,
+        672
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "AI suggestion",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "0d03501b-6d51-4678-a1e0-ad926e117e53",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "unmatched"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Exception",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "ba9ccd1a-917f-45d6-93c7-170ab1170616",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "exception"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Ledger",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "a2b5b8d6-b68e-41dc-85cb-01f41e3650af",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "ledger"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Settlement",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "20a94da5-a77c-4eaa-a6b1-593828998e79",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "settlement"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Invoice",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "11bfc072-9d8f-46e5-a054-fce851942c3a",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "invoice"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Receipt",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "e7f51116-2f36-43e9-bd80-53753198f840",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "receipt"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Cancel link",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "29c2f8a0-aabe-4186-ad65-71a757bf0cd6",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "cancel_link"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Chase",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "48e955be-bcae-454b-8d1f-45d3200ecbb3",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "chase"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Summary",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "27a11fed-ac9b-4d14-a019-27b3623fe832",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "summary"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "63373b31-7d79-496b-8dd0-f61951477f76",
+      "name": "Suggest Invoice for Payment",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        288,
+        -432
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "options": {
+          "temperature": 0
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You help an Indian finance team match a Razorpay payment that has no invoice reference to one of their open invoices. Use the payer email, phone, UPI VPA (the handle often contains the payer's name or business), description, notes and amount. Only pick an invoice from the candidate list. Amount equal to the balance is strong evidence; a different customer with the same amount is weak evidence. If nothing is convincing, return null. Return only JSON: {\"invoiceId\": \"...\" or null, \"confidence\": 0-1, \"reason\": \"one short sentence\"}"
+            },
+            {
+              "content": "=Payment: {{ $json.paymentId }}, {{ $json.currency }} {{ $json.amount }} via {{ $json.method }} on {{ $json.createdAt }}\nPayer email: {{ $json.email || 'none' }}\nPayer phone: {{ $json.contact || 'none' }}\nUPI VPA: {{ $json.vpa || 'none' }}\nDescription: {{ $json.description || 'none' }}\nNotes: {{ $json.notes }}\n\nCandidate open invoices:\n{{ $json.candidates.map(c => c.invoiceId + ' | ' + c.customer + ' | ' + c.email + ' | balance ' + c.balance + ' | due ' + c.dueDate).join('\\n') }}"
+            }
+          ]
+        },
+        "jsonOutput": true
+      },
+      "retryOnFail": true,
+      "typeVersion": 1.8,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "bd224d7b-27b2-4739-83ff-8935c529a910",
+      "name": "Attach AI Match Suggestions",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        672,
+        -432
+      ],
+      "parameters": {
+        "jsCode": "// Validate the AI suggestion; it is only ever a suggestion written to Exceptions\nconst out = [];\n$input.all().forEach((item, i) => {\n  const u = $('Reconcile Payments & Settlements').itemMatching(i).json;\n  if (['resolved', 'ignored'].includes(String(u.prevStatus || '').toLowerCase())) return;\n  let f = item.json.message && item.json.message.content;\n  if (typeof f === 'string') { try { f = JSON.parse(f); } catch (e) { f = null; } }\n  const valid = new Set(u.candidates.map(c => c.invoiceId));\n  const pick = f && valid.has(String(f.invoiceId)) ? String(f.invoiceId) : '';\n  const conf = f ? Number(f.confidence) || 0 : 0;\n  const cand = u.candidates.find(c => c.invoiceId === pick);\n  out.push({\n    json: {\n      'Exception Key': u.exceptionKey, 'Type': 'Unmatched Payment', 'Severity': u.amount >= $('Set Recon Rules').first().json.highValueAmount ? 'High' : 'Medium',\n      'Entity ID': u.paymentId, 'Invoice ID': pick, 'Customer': u.email || u.contact || u.vpa, 'Amount': u.amount,\n      'Detail': `${u.method} payment on ${u.createdAt.slice(0, 10)} with no invoice reference` + (pick ? `. AI suggests ${pick} (${cand.customer}, balance ${cand.balance}), confidence ${conf}: ${f.reason || ''}` : '. AI found no confident match.'),\n      'Suggested Action': pick && conf >= 0.8 ? `Verify, then type ${pick} in \"Manual Invoice ID\" on the Payments Ledger row` : 'Identify the customer and add the invoice ID in \"Manual Invoice ID\"',\n      'First Detected': u.firstDetected || $today.toISODate(), 'Last Seen': $today.toISODate(), 'Status': u.prevStatus || 'Open',\n      aiPick: pick, aiConfidence: conf,\n    },\n    pairedItem: { item: i },\n  });\n});\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cfe7ff2f-b1e2-4c2d-86aa-e27528cecb7d",
+      "name": "Log AI Suggestions to Exceptions",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        896,
+        -432
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Type": "={{ $json['Type'] }}",
+            "Amount": "={{ $json['Amount'] }}",
+            "Detail": "={{ $json['Detail'] }}",
+            "Status": "={{ $json['Status'] }}",
+            "Customer": "={{ $json['Customer'] }}",
+            "Severity": "={{ $json['Severity'] }}",
+            "Entity ID": "={{ $json['Entity ID'] }}",
+            "Last Seen": "={{ $json['Last Seen'] }}",
+            "Invoice ID": "={{ $json['Invoice ID'] }}",
+            "Exception Key": "={{ $json['Exception Key'] }}",
+            "First Detected": "={{ $json['First Detected'] }}",
+            "Suggested Action": "={{ $json['Suggested Action'] }}"
+          },
+          "schema": [
+            {
+              "id": "Exception Key",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Exception Key",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Type",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Type",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Severity",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Severity",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Entity ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Entity ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Invoice ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Invoice ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Customer",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Amount",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Detail",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Detail",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Suggested Action",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Suggested Action",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "First Detected",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "First Detected",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Seen",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Last Seen",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Exception Key"
+          ]
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Exceptions"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "fe83a44c-4338-4e34-a854-7f6f76e3bfd5",
+      "name": "Upsert Exceptions",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        624,
+        288
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Type": "={{ $json['Type'] }}",
+            "Amount": "={{ $json['Amount'] }}",
+            "Detail": "={{ $json['Detail'] }}",
+            "Status": "={{ $json['Status'] }}",
+            "Customer": "={{ $json['Customer'] }}",
+            "Severity": "={{ $json['Severity'] }}",
+            "Entity ID": "={{ $json['Entity ID'] }}",
+            "Last Seen": "={{ $json['Last Seen'] }}",
+            "Invoice ID": "={{ $json['Invoice ID'] }}",
+            "Exception Key": "={{ $json['Exception Key'] }}",
+            "First Detected": "={{ $json['First Detected'] }}",
+            "Suggested Action": "={{ $json['Suggested Action'] }}"
+          },
+          "schema": [
+            {
+              "id": "Exception Key",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Exception Key",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Type",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Type",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Severity",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Severity",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Entity ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Entity ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Invoice ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Invoice ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Customer",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Amount",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Detail",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Detail",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Suggested Action",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Suggested Action",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "First Detected",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "First Detected",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Seen",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Last Seen",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Exception Key"
+          ]
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Exceptions"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "a4480688-f7ea-49e0-b75d-2ebb3d7193f0",
+      "name": "Upsert Payments Ledger",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        624,
+        480
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Fee": "={{ $json['Fee'] }}",
+            "UTR": "={{ $json['UTR'] }}",
+            "VPA": "={{ $json['VPA'] }}",
+            "Amount": "={{ $json['Amount'] }}",
+            "Method": "={{ $json['Method'] }}",
+            "Status": "={{ $json['Status'] }}",
+            "Order ID": "={{ $json['Order ID'] }}",
+            "Refunded": "={{ $json['Refunded'] }}",
+            "Created At": "={{ $json['Created At'] }}",
+            "Error Code": "={{ $json['Error Code'] }}",
+            "GST on Fee": "={{ $json['GST on Fee'] }}",
+            "Invoice ID": "={{ $json['Invoice ID'] }}",
+            "Payment ID": "={{ $json['Payment ID'] }}",
+            "Recon Note": "={{ $json['Recon Note'] }}",
+            "Settled At": "={{ $json['Settled At'] }}",
+            "Updated On": "={{ $json['Updated On'] }}",
+            "Error Reason": "={{ $json['Error Reason'] }}",
+            "Match Method": "={{ $json['Match Method'] }}",
+            "Settlement ID": "={{ $json['Settlement ID'] }}",
+            "Customer Email": "={{ $json['Customer Email'] }}",
+            "Customer Contact": "={{ $json['Customer Contact'] }}",
+            "Failure Category": "={{ $json['Failure Category'] }}"
+          },
+          "schema": [
+            {
+              "id": "Payment ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Payment ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created At",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Created At",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Method",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Method",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Amount",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Refunded",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Refunded",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Fee",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Fee",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "GST on Fee",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "GST on Fee",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer Email",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Customer Email",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer Contact",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Customer Contact",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VPA",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "VPA",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Invoice ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Invoice ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Match Method",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Match Method",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Order ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Order ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Settlement ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Settlement ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "UTR",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "UTR",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Settled At",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Settled At",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error Code",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Error Code",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error Reason",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Error Reason",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Failure Category",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Failure Category",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recon Note",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Recon Note",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Updated On",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Updated On",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Payment ID"
+          ]
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Payments Ledger"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "5a3b2ba6-21d9-4804-b0f2-0fe7e316ac1f",
+      "name": "Upsert Settlements",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        624,
+        688
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "UTR": "={{ $json['UTR'] }}",
+            "Fees": "={{ $json['Fees'] }}",
+            "Amount": "={{ $json['Amount'] }}",
+            "Payments": "={{ $json['Payments'] }}",
+            "Bank Date": "={{ $json['Bank Date'] }}",
+            "Created On": "={{ $json['Created On'] }}",
+            "Updated On": "={{ $json['Updated On'] }}",
+            "Bank Status": "={{ $json['Bank Status'] }}",
+            "GST on Fees": "={{ $json['GST on Fees'] }}",
+            "Settlement ID": "={{ $json['Settlement ID'] }}",
+            "Razorpay Status": "={{ $json['Razorpay Status'] }}"
+          },
+          "schema": [
+            {
+              "id": "Settlement ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Settlement ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created On",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Created On",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Amount",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Fees",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Fees",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "GST on Fees",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "GST on Fees",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "UTR",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "UTR",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Razorpay Status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Razorpay Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payments",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Payments",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Bank Status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Bank Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Bank Date",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Bank Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Updated On",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Updated On",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Settlement ID"
+          ]
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Settlements"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "5742f16d-4b00-4c1a-b871-36b5aff6f7ed",
+      "name": "Update Invoice Payment Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        656,
+        928
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Fee": "={{ $json['Fee'] }}",
+            "UTR": "={{ $json['UTR'] }}",
+            "Status": "={{ $json['Status'] }}",
+            "Paid On": "={{ $json['Paid On'] }}",
+            "GST on Fee": "={{ $json['GST on Fee'] }}",
+            "Invoice ID": "={{ $json['Invoice ID'] }}",
+            "Settled On": "={{ $json['Settled On'] }}",
+            "Balance Due": "={{ $json['Balance Due'] }}",
+            "Paid Amount": "={{ $json['Paid Amount'] }}",
+            "Payment IDs": "={{ $json['Payment IDs'] }}",
+            "Net Received": "={{ $json['Net Received'] }}",
+            "Recon Status": "={{ $json['Recon Status'] }}",
+            "Settlement ID": "={{ $json['Settlement ID'] }}",
+            "Last Recon Run": "={{ $json['Last Recon Run'] }}",
+            "Payment Method": "={{ $json['Payment Method'] }}"
+          },
+          "schema": [
+            {
+              "id": "Invoice ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Invoice ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Paid Amount",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Paid Amount",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Balance Due",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Balance Due",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment IDs",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Payment IDs",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment Method",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Payment Method",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Paid On",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Paid On",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Settlement ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Settlement ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "UTR",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "UTR",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Settled On",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Settled On",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Fee",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Fee",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "GST on Fee",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "GST on Fee",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Net Received",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Net Received",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recon Status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Recon Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Recon Run",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Last Recon Run",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Invoice ID"
+          ]
+        },
+        "options": {},
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Invoices"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "be0f8729-fee3-4fb8-8e16-e1247918a498",
+      "name": "Send Payment Receipt",
+      "type": "n8n-nodes-base.gmail",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        528,
+        1328
+      ],
+      "webhookId": "ed767572-98e5-421a-9670-785485d2fc29",
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "message": "=Hi {{ $json.customerName || 'there' }},\n\nThank you. We have received {{ $json.currency }} {{ $json.amount }} for invoice {{ $json.invoiceId }} on {{ $json.paidOn }} via {{ $json.method.toUpperCase() }}.\nPayment reference: {{ $json.paymentId }}\n\nNo further action is needed. For any questions reply to this email or contact {{ $('Set Recon Rules').first().json.supportContact }}.\n\nAccounts Team\n{{ $('Set Recon Rules').first().json.companyName }}",
+        "options": {
+          "appendAttribution": false
+        },
+        "subject": "=Payment received for invoice {{ $json.invoiceId }}",
+        "emailType": "text"
+      },
+      "retryOnFail": true,
+      "typeVersion": 2.1,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "594dde85-f4b1-43f9-83fd-2c41e5e76267",
+      "name": "Cancel Stale Payment Link",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        480,
+        1536
+      ],
+      "parameters": {
+        "url": "=https://api.razorpay.com/v1/payment_links/{{ $json.linkId }}/cancel",
+        "method": "POST",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "d581bcc3-0fc2-49e7-ab39-f92633af4b5b",
+      "name": "Create Payment Link",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        464,
+        1760
+      ],
+      "parameters": {
+        "url": "https://api.razorpay.com/v1/payment_links",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{ JSON.stringify($json.linkPayload) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "10d110b9-86f9-4f0c-9bb3-6d7860dad9e3",
+      "name": "Draft Recovery Email",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "maxTries": 3,
+      "position": [
+        704,
+        1760
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "options": {
+          "temperature": 0.3
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You write short payment-recovery emails for an Indian business whose customer's online payment failed. Be warm and practical, never blame the customer. Tailor the advice to the failure category: cancelled = maybe they closed the app by mistake, here is a fresh link; insufficient_funds = gentle, suggest another account or card, no mention of balance amounts; limit_exceeded = UPI daily or per-transaction limit, suggest net banking, card, or paying from another UPI app or account; details_incorrect = check UPI PIN, OTP or UPI ID; timeout = the approval request expired, approve within a few minutes next time; bank_issue = the bank had a temporary problem, not their fault, please retry; other = something went wrong, please retry. Attempt 1 is a friendly heads-up, attempt 2 a polite follow-up, attempt 3 mentions this is the last automated reminder and that someone from the team will call. Always include the payment link on its own line and the support contact. Under 120 words, plain text, no bracketed placeholders, sign off as 'Accounts Team' followed by the company name. Return only JSON: {\"subject\": \"...\", \"body\": \"...\"}"
+            },
+            {
+              "content": "=Customer: {{ $('Reconcile Payments & Settlements').item.json.customerName }}\nInvoice: {{ $('Reconcile Payments & Settlements').item.json.invoiceId }} due {{ $('Reconcile Payments & Settlements').item.json.dueDate }}\nAmount due: {{ $('Reconcile Payments & Settlements').item.json.currency }} {{ $('Reconcile Payments & Settlements').item.json.balance }}\nFailed method: {{ $('Reconcile Payments & Settlements').item.json.failedMethod }}\nFailure category: {{ $('Reconcile Payments & Settlements').item.json.failureCategory }}\nBank/gateway message: {{ $('Reconcile Payments & Settlements').item.json.failureText }}\nFailed attempts so far: {{ $('Reconcile Payments & Settlements').item.json.failedAttempts }}\nReminder attempt: {{ $('Reconcile Payments & Settlements').item.json.attempt }}\nPayment link: {{ $json.short_url || 'reply to this email for a payment link' }}\nSupport: {{ $('Set Recon Rules').first().json.supportContact }}\nCompany: {{ $('Set Recon Rules').first().json.companyName }}"
+            }
+          ]
+        },
+        "jsonOutput": true
+      },
+      "retryOnFail": true,
+      "typeVersion": 1.8,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "456dde91-abba-47b0-8fd5-a5aa0349498a",
+      "name": "Send Recovery Email",
+      "type": "n8n-nodes-base.gmail",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        1024,
+        1760
+      ],
+      "webhookId": "9d0b9c68-a483-44ce-ac9b-0b6a7e645e00",
+      "parameters": {
+        "sendTo": "={{ $('Reconcile Payments & Settlements').item.json.email }}",
+        "message": "={{ $json.message.content.body }}",
+        "options": {
+          "replyTo": "={{ $('Set Recon Rules').first().json.financeEmail }}",
+          "appendAttribution": false
+        },
+        "subject": "={{ $json.message.content.subject }}",
+        "emailType": "text"
+      },
+      "retryOnFail": true,
+      "typeVersion": 2.1,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "87bea4f0-7a24-4ecc-94ae-116046a99dbf",
+      "name": "Prepare Chase Log",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1264,
+        1760
+      ],
+      "parameters": {
+        "jsCode": "// Record what happened for each chase. A failed send does not count as an attempt.\nconst nowISO = $now.toISO();\nconst out = [];\n$input.all().forEach((item, i) => {\n  const c = $('Reconcile Payments & Settlements').itemMatching(i).json;\n  const link = $('Create Payment Link').itemMatching(i).json;\n  const sent = !item.json.error;\n  out.push({\n    json: {\n      invoiceId: c.invoiceId, customerName: c.customerName, email: c.email, balance: c.balance, currency: c.currency,\n      attempt: c.attempt, failureCategory: c.failureCategory, failureText: c.failureText,\n      chaseCount: sent ? c.attempt : c.attempt - 1,\n      lastChaseAt: sent ? nowISO : (c.prevChaseAt || ''),\n      stage: sent ? `Failure reminder ${c.attempt}` : `Reminder ${c.attempt} failed to send`,\n      linkId: link.id || c.prevLinkId || '', linkUrl: link.short_url || '',\n      linkExpires: link.expire_by ? new Date(link.expire_by * 1000).toISOString().slice(0, 10) : '',\n      sent, escalate: sent && c.escalate,\n    },\n    pairedItem: { item: i },\n  });\n});\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8fa52505-86c6-4a92-81b1-e07d7e156f83",
+      "name": "Update Invoice Chase Fields",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        1504,
+        1760
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Invoice ID": "={{ $json.invoiceId }}",
+            "Chase Count": "={{ $json.chaseCount }}",
+            "Link Expires": "={{ $json.linkExpires }}",
+            "Last Chase Date": "={{ $json.lastChaseAt }}",
+            "Payment Link ID": "={{ $json.linkId }}",
+            "Last Chase Stage": "={{ $json.stage }}",
+            "Payment Link URL": "={{ $json.linkUrl }}",
+            "Last Failure Reason": "={{ $json.failureCategory }}: {{ $json.failureText }}"
+          },
+          "schema": [
+            {
+              "id": "Invoice ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Invoice ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Chase Count",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Chase Count",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Chase Date",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Last Chase Date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Chase Stage",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Last Chase Stage",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment Link ID",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Payment Link ID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment Link URL",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Payment Link URL",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Link Expires",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Link Expires",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Failure Reason",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Last Failure Reason",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Invoice ID"
+          ]
+        },
+        "options": {},
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Invoices"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "5f952442-311f-4df8-9197-475a32da4d5f",
+      "name": "Needs Escalation?",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        1744,
+        1760
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "a6616aa5-dc4d-478e-bddc-b032119a31c8",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Prepare Chase Log').item.json.escalate }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "8258867a-33c3-4cfd-bd1a-f703f971caa3",
+      "name": "Alert Finance on Slack",
+      "type": "n8n-nodes-base.slack",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        1984,
+        1760
+      ],
+      "webhookId": "cfea8916-dbf2-4359-9282-8b9c56ab148b",
+      "parameters": {
+        "text": "=:rotating_light: *Failed payment needs a human* - {{ $('Prepare Chase Log').item.json.customerName }} ({{ $('Prepare Chase Log').item.json.email }})\nInvoice {{ $('Prepare Chase Log').item.json.invoiceId }}, {{ $('Prepare Chase Log').item.json.currency }} {{ $('Prepare Chase Log').item.json.balance }} due\nReminder {{ $('Prepare Chase Log').item.json.attempt }} sent. Last failure: {{ $('Prepare Chase Log').item.json.failureCategory }} - {{ $('Prepare Chase Log').item.json.failureText }}\nNew link: {{ $('Prepare Chase Log').item.json.linkUrl || 'not created' }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#finance-recon"
+        },
+        "otherOptions": {}
+      },
+      "retryOnFail": true,
+      "typeVersion": 2.3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "6ab99cd6-6654-45e5-a112-165894cc618b",
+      "name": "Build Recon Report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        320,
+        2208
+      ],
+      "parameters": {
+        "jsCode": "// Daily reconciliation report (email) and a short Slack digest\nconst cfg = $('Set Recon Rules').first().json;\nconst s = $input.first().json;\nlet ai = [], chases = [];\ntry { ai = $('Attach AI Match Suggestions').all().map(i => i.json); } catch (e) {}\ntry { chases = $('Prepare Chase Log').all().map(i => i.json); } catch (e) {}\nconst inr = n => 'Rs. ' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });\nconst esc = x => String(x ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst td = 'style=\"padding:6px 8px;border-bottom:1px solid #eee;vertical-align:top\"';\nconst SEV = { High: 0, Medium: 1, Low: 2 };\nconst exc = s.exceptions.slice().sort((a, b) => SEV[a.Severity] - SEV[b.Severity] || (b.Amount || 0) - (a.Amount || 0));\nconst high = exc.filter(e => e.Severity === 'High');\nconst rate = m => { const t = m.captured + m.failed; return t ? Math.round((m.captured / t) * 100) + '%' : '-'; };\nconst methods = Object.entries(s.methodStats).map(([k, m]) => `<tr><td ${td}>${esc(k)}</td><td ${td}>${m.captured}</td><td ${td}>${m.failed}</td><td ${td}>${rate(m)}</td></tr>`).join('');\nconst sent = chases.filter(c => c.sent);\nconst aiHits = ai.filter(a => a.aiPick && a.aiConfidence >= 0.8);\n\nconst html = `<div style=\"font-family:Arial,sans-serif;max-width:760px;color:#222\">\n<h2 style=\"margin-bottom:4px\">Razorpay reconciliation - ${$today.toFormat('d LLL yyyy')}</h2>\n<p style=\"color:#777;margin-top:0\">Last ${s.periodDays} days of payments</p>\n<p><b>${inr(s.gross)}</b> captured across ${s.payments} payment attempt(s). Fees ${inr(s.fees)} (incl. GST ${inr(s.taxes)}).\n${s.settlements} settlement(s) worth ${inr(s.settledAmount)}, ${s.bankConfirmed} confirmed in the bank.</p>\n<p>${s.paidToday} invoice(s) newly paid, ${s.partial} partially paid, ${s.overpaid} overpaid.\n${sent.length} failed-payment reminder(s) sent with fresh payment links. ${aiHits.length} unmatched payment(s) have a confident AI match suggestion.</p>\n${high.length ? `<p style=\"color:#b91c1c\"><b>${high.length} high-severity exception(s) need attention today.</b></p>` : ''}\n<h3>Success rate by method</h3>\n<table style=\"border-collapse:collapse\"><tr style=\"background:#f5f5f5\"><th align=\"left\" ${td}>Method</th><th align=\"left\" ${td}>Captured</th><th align=\"left\" ${td}>Failed</th><th align=\"left\" ${td}>Success</th></tr>${methods}</table>\n<p style=\"font-size:13px\">Failure mix: ${Object.entries(s.failureMix).map(([k, v]) => `${esc(k.replace(/_/g, ' '))} ${v}`).join(', ') || 'none'}</p>\n<h3>Open exceptions</h3>\n${exc.length ? `<table style=\"border-collapse:collapse;width:100%\"><tr style=\"background:#f5f5f5\"><th align=\"left\" ${td}>Severity</th><th align=\"left\" ${td}>Type</th><th align=\"left\" ${td}>Reference</th><th align=\"left\" ${td}>Detail / action</th><th align=\"right\" ${td}>Amount</th></tr>\n${exc.slice(0, 40).map(e => `<tr><td ${td}>${esc(e.Severity)}</td><td ${td}>${esc(e.Type)}</td><td ${td}>${esc(e['Invoice ID'] || e['Entity ID'])}</td><td ${td}>${esc(e.Detail)}<br><span style=\"color:#777;font-size:12px\">${esc(e['Suggested Action'])}</span></td><td ${td} align=\"right\">${e.Amount === '' ? '' : inr(e.Amount)}</td></tr>`).join('')}</table>` : '<p>None.</p>'}\n<p style=\"color:#777;font-size:12px\">Details: Payments Ledger, Settlements and Exceptions tabs. Unmatched-payment AI suggestions are listed in Exceptions.</p></div>`;\n\nconst slack = [\n  `:bank: *Razorpay recon - ${$today.toFormat('d LLL')}*`,\n  `Captured ${inr(s.gross)} | Settled ${inr(s.settledAmount)} (${s.bankConfirmed}/${s.settlements} bank-confirmed) | Fees ${inr(s.fees)}`,\n  `Paid today: ${s.paidToday} | Partial: ${s.partial} | Failure reminders sent: ${sent.length}`,\n  `UPI success rate: ${s.methodStats.upi ? rate(s.methodStats.upi) : 'n/a'}`,\n  high.length ? `:rotating_light: *${high.length} high-severity exception(s):*\\n${high.slice(0, 8).map(e => `- ${e.Type}: ${e['Invoice ID'] || e['Entity ID']} ${e.Amount === '' ? '' : inr(e.Amount)}`).join('\\n')}` : ':white_check_mark: No high-severity exceptions',\n].join('\\n');\n\nreturn [{ json: { subject: `Razorpay recon ${$today.toFormat('d LLL')}: ${inr(s.gross)} captured, ${exc.length} open exception(s)`, html, slack } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7291e356-53af-4887-8c54-4a31b11dfcf9",
+      "name": "Email Report to Finance",
+      "type": "n8n-nodes-base.gmail",
+      "maxTries": 3,
+      "position": [
+        560,
+        2208
+      ],
+      "webhookId": "ef0116ae-a680-4c1a-a52f-7745b14d9f89",
+      "parameters": {
+        "sendTo": "={{ $('Set Recon Rules').first().json.financeEmail }}",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        },
+        "subject": "={{ $json.subject }}"
+      },
+      "retryOnFail": true,
+      "typeVersion": 2.1,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "c86606ad-acf7-4f8b-8a42-e67b3923933e",
+      "name": "Post Slack Digest",
+      "type": "n8n-nodes-base.slack",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        800,
+        2208
+      ],
+      "webhookId": "c64c4b01-d7c4-46e5-98eb-7f9026ba2860",
+      "parameters": {
+        "text": "={{ $('Build Recon Report').item.json.slack }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#finance-recon"
+        },
+        "otherOptions": {}
+      },
+      "retryOnFail": true,
+      "typeVersion": 2.3,
+      "waitBetweenTries": 5000
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "versionId": "33ac60bf-bf8a-4f84-a1d5-26b946e814b0",
+  "nodeGroups": [],
+  "connections": {
+    "Read Invoices": {
+      "main": [
+        [
+          {
+            "node": "Read Bank Credits",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Exceptions": {
+      "main": [
+        [
+          {
+            "node": "Build Fetch Window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Recon Rules": {
+      "main": [
+        [
+          {
+            "node": "Read Invoices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Recon Days": {
+      "main": [
+        [
+          {
+            "node": "Fetch Settlement Recon",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Settlements": {
+      "main": [
+        [
+          {
+            "node": "Reconcile Payments & Settlements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Escalation?": {
+      "main": [
+        [
+          {
+            "node": "Alert Finance on Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Chase Log": {
+      "main": [
+        [
+          {
+            "node": "Update Invoice Chase Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Bank Credits": {
+      "main": [
+        [
+          {
+            "node": "Read Payments Ledger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Fetch Window": {
+      "main": [
+        [
+          {
+            "node": "Fetch Razorpay Payments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Recon Report": {
+      "main": [
+        [
+          {
+            "node": "Email Report to Finance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Payment Link": {
+      "main": [
+        [
+          {
+            "node": "Draft Recovery Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Recovery Email": {
+      "main": [
+        [
+          {
+            "node": "Prepare Chase Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Recovery Email": {
+      "main": [
+        [
+          {
+            "node": "Send Recovery Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Day at 7:30 AM": {
+      "main": [
+        [
+          {
+            "node": "Set Recon Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Payments Ledger": {
+      "main": [
+        [
+          {
+            "node": "Read Exceptions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Record Type": {
+      "main": [
+        [
+          {
+            "node": "Suggest Invoice for Payment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert Exceptions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert Payments Ledger",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert Settlements",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Invoice Payment Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Payment Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cancel Stale Payment Link",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Payment Link",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Recon Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Settlement Recon": {
+      "main": [
+        [
+          {
+            "node": "Fetch Settlements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Report to Finance": {
+      "main": [
+        [
+          {
+            "node": "Post Slack Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Razorpay Payments": {
+      "main": [
+        [
+          {
+            "node": "Split Recon Days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach AI Match Suggestions": {
+      "main": [
+        [
+          {
+            "node": "Log AI Suggestions to Exceptions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Suggest Invoice for Payment": {
+      "main": [
+        [
+          {
+            "node": "Attach AI Match Suggestions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Invoice Chase Fields": {
+      "main": [
+        [
+          {
+            "node": "Needs Escalation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reconcile Payments & Settlements": {
+      "main": [
+        [
+          {
+            "node": "Route by Record Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

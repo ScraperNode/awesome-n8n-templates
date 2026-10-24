@@ -1,6 +1,6 @@
 # 💬 AI-powered WhatsApp customer support for Shopify brands with LLM agents
 
-> ⚡ **1,274 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,982 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

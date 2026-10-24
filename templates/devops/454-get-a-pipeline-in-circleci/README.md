@@ -1,6 +1,6 @@
 # ⚙️ Get a pipeline in CircleCI
 
-> ⚡ **759 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **769 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

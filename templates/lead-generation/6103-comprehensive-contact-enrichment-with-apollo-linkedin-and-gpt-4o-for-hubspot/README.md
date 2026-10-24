@@ -1,6 +1,6 @@
 # 🎣 Comprehensive contact enrichment with Apollo, LinkedIn, and GPT-4o for HubSpot
 
-> ⚡ **959 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,070 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 Slack AI ChatBot : context-aware, replies to mentions AND also DMs
 
-> ⚡ **245 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **282 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

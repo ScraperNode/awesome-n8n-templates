@@ -1,6 +1,6 @@
 # 👥 Automated Interview Tracker with Google Calendar, Sheets & Gmail Alerts
 
-> ⚡ **147 views** · 👥 [HR & Recruitment](../)
+> ⚡ **211 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

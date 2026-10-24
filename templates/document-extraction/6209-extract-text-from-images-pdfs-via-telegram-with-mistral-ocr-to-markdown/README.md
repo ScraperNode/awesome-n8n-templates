@@ -1,6 +1,6 @@
 # 🔬 Extract text from images & PDFs via Telegram with Mistral OCR to Markdown
 
-> ⚡ **2,556 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,909 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

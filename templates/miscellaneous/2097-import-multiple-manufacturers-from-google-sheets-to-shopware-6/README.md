@@ -1,6 +1,6 @@
 # 🔧 Import multiple manufacturers from Google Sheets to Shopware 6
 
-> ⚡ **1,270 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,292 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

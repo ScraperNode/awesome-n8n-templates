@@ -1,6 +1,6 @@
 # 🤝 Sync Shopify customer order data to Airtable with auto-updates
 
-> ⚡ **240 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **274 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

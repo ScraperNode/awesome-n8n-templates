@@ -1,6 +1,6 @@
 # 🎫 Auto-respond to Gmail inquiries using OpenAI, Google Sheet & AI agent
 
-> ⚡ **2,688 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **3,079 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

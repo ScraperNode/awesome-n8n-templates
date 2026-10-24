@@ -1,6 +1,6 @@
 # 🎫 ✉️ Automated email sorting & drafting for customer support - with AI 🤖
 
-> ⚡ **245 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **326 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

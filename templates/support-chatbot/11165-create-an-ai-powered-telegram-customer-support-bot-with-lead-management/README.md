@@ -1,6 +1,6 @@
 # 💬 Create an AI-powered Telegram customer support bot with lead management
 
-> ⚡ **751 views** · 💬 [Support Chatbots](../)
+> ⚡ **885 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

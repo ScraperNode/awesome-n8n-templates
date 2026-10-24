@@ -1,6 +1,6 @@
 # 🤝 Automated Shopify abandoned cart alerts from Razorpay to Telegram
 
-> ⚡ **93 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **129 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

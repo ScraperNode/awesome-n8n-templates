@@ -1,6 +1,6 @@
 # 💬 WhatsApp AI assistant for Google Calendar & Gmail management with Gemini/GPT
 
-> ⚡ **982 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,650 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

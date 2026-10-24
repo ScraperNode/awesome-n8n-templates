@@ -1,6 +1,6 @@
 # 🔬 Transcribe & summarize audio with Whisper and GPT, from Google Drive to Notion
 
-> ⚡ **3,337 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,114 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

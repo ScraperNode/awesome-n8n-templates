@@ -1,6 +1,6 @@
 # ⚒️ Rate limiting and waiting for external events
 
-> ⚡ **6,686 views** · ⚒️ [Engineering](../)
+> ⚡ **6,837 views** · ⚒️ [Engineering](../)
 
 ## Description
 

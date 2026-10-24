@@ -1,6 +1,6 @@
 # 📊 Monitor ad performance drops with Meta & Google Ads + multi-channel alerts
 
-> ⚡ **1,250 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,843 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

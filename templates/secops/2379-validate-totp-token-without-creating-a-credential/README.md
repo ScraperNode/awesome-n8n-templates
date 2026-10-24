@@ -1,6 +1,6 @@
 # 🔒 Validate TOTP token (without creating a credential)
 
-> ⚡ **629 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **660 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

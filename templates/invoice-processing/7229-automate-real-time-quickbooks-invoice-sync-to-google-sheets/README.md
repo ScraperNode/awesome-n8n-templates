@@ -1,6 +1,6 @@
 # 🧾 Automate real-time QuickBooks invoice sync to Google Sheets
 
-> ⚡ **1,074 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,176 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

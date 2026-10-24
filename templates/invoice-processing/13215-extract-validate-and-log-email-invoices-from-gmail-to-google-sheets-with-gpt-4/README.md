@@ -1,6 +1,6 @@
 # 🧾 Extract, validate, and log email invoices from Gmail to Google Sheets with GPT-4
 
-> ⚡ **58 views** · 🧾 [Invoice Processing](../)
+> ⚡ **146 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

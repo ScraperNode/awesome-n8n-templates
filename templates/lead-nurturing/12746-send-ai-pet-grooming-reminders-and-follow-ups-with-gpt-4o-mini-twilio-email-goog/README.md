@@ -1,6 +1,6 @@
 # 💬 Send AI pet grooming reminders and follow-ups with GPT-4o mini, Twilio, email, Google Sheets and Slack
 
-> ⚡ **19 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **60 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

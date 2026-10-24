@@ -1,6 +1,6 @@
 # 🔒 Analyze suspicious email contents with ChatGPT Vision
 
-> ⚡ **4,718 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **4,826 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

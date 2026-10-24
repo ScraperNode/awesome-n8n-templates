@@ -1,0 +1,1143 @@
+{
+  "id": "a7ldLty8xYKwUCqw",
+  "meta": {
+    "instanceId": "dd69efaf8212c74ad206700d104739d3329588a6f3f8381a46a481f34c9cc281",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Route LLM requests with Anthropic, OpenAI, Gemini, Postgres and Slack",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "98b50ee1-fc1a-4a82-862a-d7b4e506de9f",
+      "name": "Sticky Note - Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        928,
+        -992
+      ],
+      "parameters": {
+        "width": 1380,
+        "height": 1680,
+        "content": "## \ud83d\udd00 LLM Fallback Chain\n\nSends one prompt through an ordered chain of LLM providers (Anthropic \u2192 OpenAI \u2192 Gemini). Every response is validated in code. On failure the workflow retries, switches provider, or falls back to a stale cached answer / static degraded message. Every attempt is logged to Postgres.\n\n### Pipeline\n```\nRequest \u2192 Config \u2192 Normalize \u2192 Circuit breaker \u2192 Provider loop\n  \u2192 Call \u2192 Validate \u2192 Log + update health\n  \u2192 valid? \u2192 success | retry / switch / degrade\n\u2192 Save result \u2192 Slack (only on fallback) \u2192 Respond\n```\n\n### Resilience features\n1. Ordered provider chain + optional `preferredProvider`\n2. Circuit breaker (skip after N failures, cooldown, half-open probe)\n3. Error classification (429 / 5xx / timeout = retryable; 4xx = switch)\n4. Deterministic response validation (empty, truncation, safety, refusal, length, keywords, JSON schema)\n5. Repair retry (invalid output \u2192 validation issues added to prompt)\n6. Degraded modes: stale cache \u2192 static 503 message\n7. Full audit trail in Postgres\n\n### Setup checklist\n1. Import workflow\n2. Run `llm_fallback_schema.sql`\n3. Create 3 Header Auth credentials and attach to the matching HTTP nodes:\n   - Anthropic (`x-api-key`)\n   - OpenAI (`Authorization: Bearer \u2026`)\n   - Gemini (`x-goog-api-key`)\n4. Attach Postgres + Slack credentials\n5. Edit **Set - Fallback Config** (order, models, limits, channel)\n6. Test with Manual Trigger, then activate for the webhook\n\n### Webhook payload (all optional)\n```json\n{\n  \"requestId\": \"\u2026\",\n  \"prompt\": \"\u2026\",\n  \"systemPrompt\": \"\u2026\",\n  \"expectJson\": true,\n  \"schema\": { \"key\": \"string|number|boolean|array|object|enum:a|b\" },\n  \"maxTokens\": 1024,\n  \"temperature\": 0.2,\n  \"preferredProvider\": \"anthropic\",\n  \"minChars\": 2,\n  \"maxChars\": 8000,\n  \"mustContain\": [],\n  \"mustNotContain\": []\n}\n```\n\n### Response shape\n```json\n{\n  \"requestId\": \"\u2026\",\n  \"status\": \"success | success_after_fallback | degraded_cached | degraded_static\",\n  \"provider\": \"\u2026\", \"model\": \"\u2026\", \"text\": \"\u2026\", \"parsed\": {},\n  \"stale\": false, \"fallbackUsed\": false,\n  \"attemptCount\": 1, \"totalLatencyMs\": 0,\n  \"skippedProviders\": [], \"trace\": []\n}\n```"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1f07cd10-fc4b-46ff-861e-33b7c7ea79d2",
+      "name": "Sticky Note - Intake & Circuit Breaker",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2480,
+        -784
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 964,
+        "height": 992,
+        "content": "## 1. Intake, Config & Circuit Breaker\n\n**Purpose**  \nAccept the request (manual or webhook), apply the shared policy, normalize the payload, and build the provider chain while respecting the circuit breaker.\n\n**Key nodes**\n- Manual Trigger - Start Request\n- Webhook - LLM Request\n- Set - Fallback Config\n- JS - Normalize Request  \n  (merges defaults, coerces types, computes prompt hash)\n- Postgres - Read Provider Health\n- JS - Build Provider Chain  \n  (preferred provider first, skip open circuits, fall back to all-providers if every circuit is open)"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0e654db7-b9a6-41b8-9d3d-dc5f231a7cdd",
+      "name": "Sticky Note - Provider Loop & Validation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3488,
+        -912
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 1668,
+        "height": 1196,
+        "content": "## 2. Provider Loop, Validation & Attempt Logging\n\n**Purpose**  \nSelect the current provider, call it, normalize the response, run deterministic validators, log the attempt and update the circuit-breaker state.\n\n**Key nodes**\n- JS - Select Provider  \n  (builds Anthropic / OpenAI / Gemini request body; appends repair hint on retries)\n- Switch - Provider Router\n- HTTP Request - Anthropic / OpenAI / Gemini  \n  (`neverError` + full response so status codes & Retry-After are available)\n- JS - Normalize & Validate  \n  (extract text/usage, classify errors, length / keyword / JSON-schema checks)\n- Postgres - Log Attempt & Health  \n  (atomic insert into llm_attempts + upsert of llm_provider_health)\n- JS - Restore Attempt State"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e6a1f4b4-6562-49ec-8fba-5262bfa7d0c5",
+      "name": "Sticky Note - Retry, Switch & Degrade",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        5216,
+        -992
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 1164,
+        "height": 1428,
+        "content": "## 3. Retry / Switch / Degrade Planning\n\n**Purpose**  \nDecide whether to retry the same provider (with backoff or repair hint), switch to the next provider, or degrade when the chain is exhausted.\n\n**Key nodes**\n- IF - Response Valid?\n- JS - Plan Next Step  \n  (retry same / switch / exhausted; exponential backoff + jitter; honour Retry-After)\n- IF - Chain Exhausted?\n- IF - Backoff Needed? \u2192 Wait - Backoff\n- Postgres - Lookup Stale Cache\n- JS - Build Degraded Response  \n  (`degraded_cached` or `degraded_static` with HTTP 503)"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2a2af596-93fe-4abe-be8e-fc423f0fbeb3",
+      "name": "Sticky Note - Finalization & Observability",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        6432,
+        -832
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 1240,
+        "height": 1136,
+        "content": "## 4. Finalization & Observability\n\n**Purpose**  \nPersist the final result, optionally alert Slack when a fallback or degraded mode was used, and return the JSON response to the caller.\n\n**Key nodes**\n- JS - Build Success Response\n- Postgres - Save Result  \n  (upsert; only successful answers become cache text)\n- JS - Restore Final Result\n- IF - Alert Needed?\n- Slack - Post Alert  \n  (only on fallback / degraded)\n- Respond to Webhook - Result  \n  (HTTP 200 or 503)"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b0d1e3f2-e3e7-4325-86a1-2ecd0e82404c",
+      "name": "Manual Trigger - Start Request",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        2576,
+        -304
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "7ed548aa-a04a-4980-92d2-3c4deb281d2a",
+      "name": "Webhook - LLM Request",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        2576,
+        -80
+      ],
+      "webhookId": "e3eff9c0-cf44-4d3f-89e7-d15f17362f25",
+      "parameters": {
+        "path": "llm-fallback-chain",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e6209dd4-5473-49fc-9c0e-98094633c5b3",
+      "name": "Set - Fallback Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2816,
+        -208
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "73f778aa-f6fa-4db8-a56a-bd72fb710734",
+              "name": "providerOrder",
+              "type": "string",
+              "value": "anthropic,openai,gemini"
+            },
+            {
+              "id": "a66b0d38-9d95-447e-bd29-9753a7677796",
+              "name": "anthropicModel",
+              "type": "string",
+              "value": "claude-sonnet-4-6"
+            },
+            {
+              "id": "d4ea65d0-03d7-4684-9f85-58a628518867",
+              "name": "openaiModel",
+              "type": "string",
+              "value": "gpt-4o"
+            },
+            {
+              "id": "09208a65-0f3e-4dd3-902b-938b8743feb6",
+              "name": "geminiModel",
+              "type": "string",
+              "value": "gemini-2.5-flash"
+            },
+            {
+              "id": "99809225-3def-4a38-a12b-2b8f30b17d0b",
+              "name": "maxAttemptsPerProvider",
+              "type": "number",
+              "value": 2
+            },
+            {
+              "id": "5387f613-76c4-48ae-8732-1cc007b37e14",
+              "name": "requestTimeoutMs",
+              "type": "number",
+              "value": 30000
+            },
+            {
+              "id": "320094ea-d7a9-4ded-9749-1e2370c6a5b8",
+              "name": "backoffBaseSeconds",
+              "type": "number",
+              "value": 2
+            },
+            {
+              "id": "4b4d8474-a3ea-484d-bbd0-334684e55160",
+              "name": "maxBackoffSeconds",
+              "type": "number",
+              "value": 20
+            },
+            {
+              "id": "15c1d2df-a996-4aef-812d-0ea67ff12229",
+              "name": "breakerFailureThreshold",
+              "type": "number",
+              "value": 3
+            },
+            {
+              "id": "6822a6b2-4735-4f1c-a7a1-149075139237",
+              "name": "breakerCooldownMinutes",
+              "type": "number",
+              "value": 5
+            },
+            {
+              "id": "ee82ec3f-fee5-45b2-8d1f-e1daff666589",
+              "name": "staleCacheMaxHours",
+              "type": "number",
+              "value": 72
+            },
+            {
+              "id": "4105cca7-b533-42fc-954c-d2aad7185dda",
+              "name": "rejectRefusals",
+              "type": "boolean",
+              "value": true
+            },
+            {
+              "id": "834c687a-3acb-4266-820b-a2c250b601fc",
+              "name": "slackChannel",
+              "type": "string",
+              "value": "#llm-alerts"
+            },
+            {
+              "id": "902a174f-11fa-4ac0-879d-d25a49fe85b0",
+              "name": "degradedMessage",
+              "type": "string",
+              "value": "The AI service is temporarily unavailable. Your request was recorded; please retry shortly."
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "e5b535d4-62c1-4d3a-b3e2-ceae84af3111",
+      "name": "JS - Normalize Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3056,
+        -208
+      ],
+      "parameters": {
+        "jsCode": "const cfgIn = $input.first().json;\nconst body = (cfgIn.body && typeof cfgIn.body === 'object') ? cfgIn.body : {};\n\nconst defaults = {\n  requestId: 'LLM-' + Date.now(),\n  systemPrompt: 'You are a support-ticket triage assistant. Respond with ONLY a JSON object, no prose and no markdown fences.',\n  prompt: 'Classify this ticket and return category, priority and a one-sentence summary. Ticket: \"My invoice for March shows two charges for the same subscription and I need one refunded urgently.\"',\n  expectJson: true,\n  schema: { category: 'enum:billing|technical|account|other', priority: 'enum:low|medium|high|urgent', summary: 'string' },\n  maxTokens: 1024,\n  temperature: 0.2,\n  preferredProvider: '',\n  minChars: 2,\n  maxChars: 8000,\n  mustContain: [],\n  mustNotContain: []\n};\n\nconst req = { ...defaults, ...body };\nreq.requestId = String(req.requestId);\nreq.prompt = String(req.prompt || defaults.prompt);\nreq.systemPrompt = String(req.systemPrompt || defaults.systemPrompt);\nreq.expectJson = (req.expectJson === true || req.expectJson === 'true');\nreq.maxTokens = Math.max(16, Number(req.maxTokens) || defaults.maxTokens);\nconst t = Number(req.temperature);\nreq.temperature = Number.isFinite(t) ? Math.min(Math.max(t, 0), 1) : defaults.temperature;\nreq.minChars = Math.max(0, Number(req.minChars) || 0);\nreq.maxChars = Number(req.maxChars) > 0 ? Number(req.maxChars) : defaults.maxChars;\nif (!req.schema || typeof req.schema !== 'object' || Array.isArray(req.schema)) req.schema = {};\n['mustContain', 'mustNotContain'].forEach(k => {\n  req[k] = Array.isArray(req[k]) ? req[k].map(String) : [];\n});\n\n// cyrb53 hash: stable key for the stale-cache fallback\nfunction cyrb53(str, seed = 0) {\n  let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;\n  for (let i = 0; i < str.length; i++) {\n    const ch = str.charCodeAt(i);\n    h1 = Math.imul(h1 ^ ch, 2654435761);\n    h2 = Math.imul(h2 ^ ch, 1597334677);\n  }\n  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);\n  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);\n  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);\n}\nconst promptHash = cyrb53(req.systemPrompt + '\\n' + req.prompt + '\\n' + req.expectJson);\n\nconst config = {\n  providerOrder: String(cfgIn.providerOrder || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),\n  models: { anthropic: cfgIn.anthropicModel, openai: cfgIn.openaiModel, gemini: cfgIn.geminiModel },\n  maxAttemptsPerProvider: Math.max(1, Number(cfgIn.maxAttemptsPerProvider) || 2),\n  requestTimeoutMs: Number(cfgIn.requestTimeoutMs) || 30000,\n  backoffBaseSeconds: Number(cfgIn.backoffBaseSeconds) || 2,\n  maxBackoffSeconds: Number(cfgIn.maxBackoffSeconds) || 20,\n  breakerFailureThreshold: Math.max(1, Number(cfgIn.breakerFailureThreshold) || 3),\n  breakerCooldownMinutes: Math.max(1, Number(cfgIn.breakerCooldownMinutes) || 5),\n  staleCacheMaxHours: Math.max(1, Number(cfgIn.staleCacheMaxHours) || 72),\n  rejectRefusals: cfgIn.rejectRefusals === true,\n  slackChannel: cfgIn.slackChannel,\n  degradedMessage: cfgIn.degradedMessage\n};\n\nreturn [{ json: { request: req, promptHash, config, startedAt: Date.now() } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "fef57411-2099-4ef2-8a52-e2b2c8496107",
+      "name": "Postgres - Read Provider Health",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        3296,
+        -208
+      ],
+      "parameters": {
+        "query": "SELECT provider, consecutive_failures, circuit_open_until, last_error FROM llm_provider_health;",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5,
+      "continueOnFail": true,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "3ec02b47-cbd8-4510-a4f4-475268153aca",
+      "name": "JS - Build Provider Chain",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3536,
+        -208
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) { try { return $(name).item.json; } catch (e) { return $(name).first().json; } }\nconst base = ref('JS - Normalize Request');\nconst rows = $input.all().map(i => i.json).filter(r => r && r.provider);\nconst { request: req, config } = base;\nconst KNOWN = ['anthropic', 'openai', 'gemini'];\n\nlet order = config.providerOrder.filter(p => KNOWN.includes(p));\nif (!order.length) order = [...KNOWN];\nconst pref = String(req.preferredProvider || '').toLowerCase();\nif (pref && order.includes(pref)) order = [pref, ...order.filter(p => p !== pref)];\n\nconst now = Date.now();\nconst health = {};\nrows.forEach(r => { health[r.provider] = r; });\n\n// Circuit breaker: skip providers whose circuit is still open\nconst skipped = [];\nlet chain = [];\nfor (const p of order) {\n  const h = health[p];\n  const openUntil = h && h.circuit_open_until ? new Date(h.circuit_open_until).getTime() : 0;\n  if (openUntil > now) {\n    skipped.push({ provider: p, reason: 'circuit_open', openUntil: new Date(openUntil).toISOString(), lastError: h.last_error || null });\n  } else {\n    chain.push({ provider: p, model: config.models[p] });\n  }\n}\n\n// If every circuit is open, try them all anyway instead of failing without a single call\nlet allCircuitsOpen = false;\nif (!chain.length) {\n  allCircuitsOpen = true;\n  chain = order.map(p => ({ provider: p, model: config.models[p] }));\n}\n\nreturn [{\n  json: {\n    requestId: req.requestId,\n    request: req,\n    config,\n    promptHash: base.promptHash,\n    startedAt: base.startedAt,\n    primaryProvider: order[0],\n    chain,\n    skipped,\n    allCircuitsOpen,\n    providerIndex: 0,\n    attemptOnProvider: 0,\n    totalAttempts: 0,\n    repairHint: '',\n    attempts: []\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "49f1d537-f873-4adb-be7b-8c3b388b8890",
+      "name": "JS - Select Provider",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3776,
+        -208
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nconst step = s.chain[s.providerIndex];\nconst r = s.request;\n\nconst userPrompt = s.repairHint ? r.prompt + '\\n\\n' + s.repairHint : r.prompt;\nlet system = r.systemPrompt;\nif (r.expectJson && !/json/i.test(system)) system += '\\nReturn ONLY a valid JSON object. No markdown fences, no commentary.';\n\nlet reqBody;\nif (step.provider === 'anthropic') {\n  reqBody = {\n    model: step.model, max_tokens: r.maxTokens, temperature: r.temperature, system,\n    messages: [{ role: 'user', content: userPrompt }]\n  };\n} else if (step.provider === 'openai') {\n  reqBody = {\n    model: step.model, max_tokens: r.maxTokens, temperature: r.temperature,\n    messages: [{ role: 'system', content: system }, { role: 'user', content: userPrompt }]\n  };\n  if (r.expectJson) reqBody.response_format = { type: 'json_object' };\n} else {\n  reqBody = {\n    systemInstruction: { parts: [{ text: system }] },\n    contents: [{ role: 'user', parts: [{ text: userPrompt }] }],\n    generationConfig: { maxOutputTokens: r.maxTokens, temperature: r.temperature }\n  };\n  if (r.expectJson) reqBody.generationConfig.responseMimeType = 'application/json';\n  // Gemini 2.5 Flash \"thinking\" tokens count against maxOutputTokens, so disable them to avoid truncation\n  if (/2\\.5-flash/.test(step.model)) reqBody.generationConfig.thinkingConfig = { thinkingBudget: 0 };\n}\n\nreturn [{\n  json: {\n    ...s,\n    provider: step.provider,\n    model: step.model,\n    attemptOnProvider: s.attemptOnProvider + 1,\n    totalAttempts: s.totalAttempts + 1,\n    attemptStartedAt: Date.now(),\n    reqBody\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "98ca3d84-21fa-463f-bc2e-fa8d27ca9677",
+      "name": "Switch - Provider Router",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        4016,
+        -208
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "anthropic",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "6b77730f-65bd-4acb-b57a-6a1dfaf8cda9",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.provider }}",
+                    "rightValue": "anthropic"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "openai",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "32d03fdd-a123-4501-90f5-380e12b2a414",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.provider }}",
+                    "rightValue": "openai"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "gemini",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "563e9bed-4510-4358-acc6-d8f2c74c7ccf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.provider }}",
+                    "rightValue": "gemini"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "c1c9ade0-827f-462d-8ba2-05d989039011",
+      "name": "HTTP Request - Anthropic",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        4288,
+        -384
+      ],
+      "parameters": {
+        "url": "https://api.anthropic.com/v1/messages",
+        "method": "POST",
+        "options": {
+          "timeout": "={{ $json.config.requestTimeoutMs }}",
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify($json.reqBody) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2,
+      "continueOnFail": true
+    },
+    {
+      "id": "5582ba10-600d-4650-82c7-adb369c40c49",
+      "name": "HTTP Request - OpenAI",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        4288,
+        -208
+      ],
+      "parameters": {
+        "url": "https://api.openai.com/v1/chat/completions",
+        "method": "POST",
+        "options": {
+          "timeout": "={{ $json.config.requestTimeoutMs }}",
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify($json.reqBody) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2,
+      "continueOnFail": true
+    },
+    {
+      "id": "b92e5fa8-7572-4227-b45d-d3e3a787c8e2",
+      "name": "HTTP Request - Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        4288,
+        -16
+      ],
+      "parameters": {
+        "url": "={{ 'https://generativelanguage.googleapis.com/v1beta/models/' + $json.model + ':generateContent' }}",
+        "method": "POST",
+        "options": {
+          "timeout": "={{ $json.config.requestTimeoutMs }}",
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify($json.reqBody) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "nodeCredentialType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2,
+      "continueOnFail": true
+    },
+    {
+      "id": "9e4b124b-e788-4b10-9933-12f6e2a45ad2",
+      "name": "JS - Normalize & Validate",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4544,
+        -208
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) { try { return $(name).item.json; } catch (e) { return $(name).first().json; } }\nconst s = ref('JS - Select Provider');\nconst resp = $input.first().json;\nconst r = s.request, cfg = s.config;\nconst latencyMs = Date.now() - s.attemptStartedAt;\n\nconst statusCode = Number(resp.statusCode) || 0;\nlet body = resp.body;\nif (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { body = {}; } }\nif (!body || typeof body !== 'object') body = {};\n\n// ---- 1. Extract text / usage per provider ----\nlet text = '', finishReason = '', inTok = null, outTok = null, providerError = '', refusalFlag = false;\nif (s.provider === 'anthropic') {\n  const block = (body.content || []).find(b => b.type === 'text');\n  text = block ? block.text : '';\n  finishReason = body.stop_reason || '';\n  inTok = body.usage?.input_tokens ?? null;\n  outTok = body.usage?.output_tokens ?? null;\n  providerError = body.error?.message || '';\n  if (finishReason === 'refusal') refusalFlag = true;\n} else if (s.provider === 'openai') {\n  const c = (body.choices || [])[0] || {};\n  text = c.message?.content || '';\n  finishReason = c.finish_reason || '';\n  inTok = body.usage?.prompt_tokens ?? null;\n  outTok = body.usage?.completion_tokens ?? null;\n  providerError = body.error?.message || '';\n  if (c.message?.refusal) refusalFlag = true;\n} else {\n  const c = (body.candidates || [])[0] || {};\n  text = (c.content?.parts || []).map(p => p.text || '').join('');\n  finishReason = c.finishReason || (body.promptFeedback?.blockReason ? 'BLOCKED_' + body.promptFeedback.blockReason : '');\n  inTok = body.usageMetadata?.promptTokenCount ?? null;\n  outTok = body.usageMetadata?.candidatesTokenCount ?? null;\n  providerError = body.error?.message || '';\n}\n\n// ---- 2. Classify transport / HTTP errors ----\nconst issues = [];\nlet errorType = null, retryable = false, retryAfterMs = 0;\nconst ra = resp.headers ? resp.headers['retry-after'] : null;\nif (ra && isFinite(Number(ra))) retryAfterMs = Number(ra) * 1000;\n\nif (resp.error && !statusCode) {\n  const em = typeof resp.error === 'string' ? resp.error : (resp.error.message || 'unknown error');\n  errorType = 'network_or_timeout'; retryable = true;\n  issues.push('Request failed: ' + String(em).slice(0, 200));\n} else if (statusCode === 429) {\n  errorType = 'rate_limited'; retryable = true;\n} else if (statusCode === 408 || statusCode >= 500) {\n  errorType = 'provider_error'; retryable = true;\n} else if (statusCode >= 400) {\n  errorType = 'client_error'; retryable = false;\n} else if (statusCode === 0) {\n  errorType = 'network_or_timeout'; retryable = true;\n  issues.push('No HTTP status returned');\n}\nif (errorType) {\n  issues.push('HTTP ' + statusCode + (providerError ? ': ' + String(providerError).slice(0, 200) : ''));\n}\n\n// ---- 3. Validate the response content (deterministic) ----\nfunction extractJson(t) {\n  const cleaned = t.replace(/```json|```/gi, '').trim();\n  try { return JSON.parse(cleaned); } catch (e) {}\n  const a = cleaned.indexOf('{'), b = cleaned.lastIndexOf('}');\n  if (a !== -1 && b > a) { try { return JSON.parse(cleaned.slice(a, b + 1)); } catch (e) {} }\n  return null;\n}\n\nlet parsed = null;\nif (!errorType) {\n  const t = (text || '').trim();\n  if (/^(length|max_tokens|MAX_TOKENS)$/.test(finishReason)) issues.push('Response truncated (finish reason: ' + finishReason + ')');\n  if (/^(content_filter|SAFETY|RECITATION|PROHIBITED_CONTENT|BLOCKLIST|SPII)$/i.test(finishReason) || finishReason.startsWith('BLOCKED_')) {\n    issues.push('Response blocked by provider safety filter (' + finishReason + ')');\n  }\n  if (cfg.rejectRefusals && refusalFlag) issues.push('Provider reported a refusal');\n\n  if (!t) {\n    issues.push('Empty response');\n  } else {\n    if (t.length < r.minChars) issues.push('Response shorter than ' + r.minChars + ' characters');\n    if (t.length > r.maxChars) issues.push('Response longer than ' + r.maxChars + ' characters');\n    if (cfg.rejectRefusals && /^\\s*(i['\u2019]m sorry,? but |sorry,? but |i am sorry,? but )?i (can(?:not|['\u2019]t)|am (?:unable|not able) to) (help|assist|comply|provide|fulfil)/i.test(t)) {\n      issues.push('Response looks like a refusal');\n    }\n    const lower = t.toLowerCase();\n    for (const kw of r.mustContain) if (!lower.includes(kw.toLowerCase())) issues.push('Missing required text: ' + kw);\n    for (const kw of r.mustNotContain) if (lower.includes(kw.toLowerCase())) issues.push('Contains forbidden text: ' + kw);\n\n    if (r.expectJson) {\n      parsed = extractJson(t);\n      if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {\n        issues.push('Response is not a valid JSON object');\n        parsed = null;\n      } else {\n        for (const [key, rule] of Object.entries(r.schema || {})) {\n          const v = parsed[key];\n          if (v === undefined || v === null) { issues.push('Missing required key: ' + key); continue; }\n          const rl = String(rule);\n          if (rl.startsWith('enum:')) {\n            const allowed = rl.slice(5).split('|');\n            if (!allowed.includes(String(v))) issues.push('Key \"' + key + '\" must be one of ' + allowed.join('/'));\n          } else {\n            const type = Array.isArray(v) ? 'array' : typeof v;\n            if (type !== rl) issues.push('Key \"' + key + '\" must be of type ' + rl);\n            else if (rl === 'string' && !String(v).trim()) issues.push('Key \"' + key + '\" must not be empty');\n          }\n        }\n      }\n    }\n  }\n}\n\nconst valid = !errorType && issues.length === 0;\nconst failureKind = errorType || (valid ? null : 'invalid_output');\n\nconst attempt = {\n  attemptNo: s.totalAttempts, provider: s.provider, model: s.model, success: valid,\n  statusCode, errorType: failureKind, issues, latencyMs,\n  inputTokens: inTok, outputTokens: outTok, responseChars: (text || '').length, finishReason\n};\n\nconst { reqBody, ...rest } = s;\nreturn [{\n  json: {\n    ...rest,\n    attempts: [...s.attempts, attempt],\n    lastAttempt: attempt,\n    valid,\n    errorType: failureKind,\n    retryable: errorType ? retryable : true,\n    retryAfterMs,\n    issues,\n    text: valid ? text.trim() : '',\n    parsed: valid ? parsed : null\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b005e45f-d837-49e4-a408-21662ff505c5",
+      "name": "Postgres - Log Attempt & Health",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        4784,
+        -208
+      ],
+      "parameters": {
+        "query": "WITH log AS (\n  INSERT INTO llm_attempts (request_id, attempt_no, provider, model, success, status_code, error_type, issues, latency_ms, input_tokens, output_tokens, response_chars, created_at)\n  VALUES ($1, $2::int, $3, $4, $5::boolean, $6::int, $7, $8::jsonb, $9::int, $10::int, $11::int, $12::int, NOW())\n  RETURNING id\n)\nINSERT INTO llm_provider_health (provider, consecutive_failures, total_successes, total_failures, last_error, last_success_at, last_failure_at, circuit_open_until, updated_at)\nVALUES (\n  $3,\n  CASE WHEN $5::boolean THEN 0 ELSE 1 END,\n  CASE WHEN $5::boolean THEN 1 ELSE 0 END,\n  CASE WHEN $5::boolean THEN 0 ELSE 1 END,\n  $15,\n  CASE WHEN $5::boolean THEN NOW() ELSE NULL END,\n  CASE WHEN $5::boolean THEN NULL ELSE NOW() END,\n  CASE WHEN NOT $5::boolean AND 1 >= $13::int THEN NOW() + ($14::int * INTERVAL '1 minute') ELSE NULL END,\n  NOW()\n)\nON CONFLICT (provider) DO UPDATE SET\n  consecutive_failures = CASE WHEN $5::boolean THEN 0 ELSE llm_provider_health.consecutive_failures + 1 END,\n  total_successes = llm_provider_health.total_successes + CASE WHEN $5::boolean THEN 1 ELSE 0 END,\n  total_failures = llm_provider_health.total_failures + CASE WHEN $5::boolean THEN 0 ELSE 1 END,\n  last_error = CASE WHEN $5::boolean THEN llm_provider_health.last_error ELSE $15 END,\n  last_success_at = CASE WHEN $5::boolean THEN NOW() ELSE llm_provider_health.last_success_at END,\n  last_failure_at = CASE WHEN $5::boolean THEN llm_provider_health.last_failure_at ELSE NOW() END,\n  circuit_open_until = CASE\n    WHEN $5::boolean THEN NULL\n    WHEN llm_provider_health.consecutive_failures + 1 >= $13::int THEN NOW() + ($14::int * INTERVAL '1 minute')\n    ELSE llm_provider_health.circuit_open_until END,\n  updated_at = NOW()\nRETURNING provider, consecutive_failures, circuit_open_until;",
+        "options": {
+          "queryReplacement": "={{ [ $json.requestId, $json.lastAttempt.attemptNo, $json.provider, $json.model, $json.valid, $json.lastAttempt.statusCode || null, $json.lastAttempt.errorType, JSON.stringify($json.lastAttempt.issues), $json.lastAttempt.latencyMs, $json.lastAttempt.inputTokens, $json.lastAttempt.outputTokens, $json.lastAttempt.responseChars, $json.config.breakerFailureThreshold, $json.config.breakerCooldownMinutes, $json.valid ? null : ($json.lastAttempt.issues.join('; ').slice(0, 500) || null) ] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5,
+      "continueOnFail": true
+    },
+    {
+      "id": "97fff38a-8dd4-4334-901d-fcb05ffb63f7",
+      "name": "JS - Restore Attempt State",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5024,
+        -208
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) { try { return $(name).item.json; } catch (e) { return $(name).first().json; } }\n// The Postgres node replaces the item with its query result, so put the full state back.\nreturn [{ json: ref('JS - Normalize & Validate') }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "549a4361-263b-4933-99b9-49415b5bba38",
+      "name": "IF - Response Valid?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        5264,
+        -208
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "623d8eb7-a4ca-43b2-ab52-b08d21870f0b",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "24018a9e-2079-455e-8b34-5c7d0cc2411c",
+      "name": "JS - Build Success Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5520,
+        -384
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nconst totalLatencyMs = Date.now() - s.startedAt;\nconst fallbackUsed = s.provider !== s.primaryProvider;\nconst status = fallbackUsed ? 'success_after_fallback' : 'success';\nconst trace = s.attempts.map(a => ({\n  attempt: a.attemptNo, provider: a.provider, model: a.model, success: a.success,\n  error: a.errorType, statusCode: a.statusCode, latencyMs: a.latencyMs, issues: a.issues\n}));\n\nconst response = {\n  requestId: s.requestId, status, provider: s.provider, model: s.model,\n  text: s.text, parsed: s.parsed, stale: false, fallbackUsed,\n  attemptCount: s.attempts.length, totalLatencyMs, skippedProviders: s.skipped, trace\n};\n\nreturn [{\n  json: {\n    requestId: s.requestId, status, provider: s.provider, model: s.model, fallbackUsed,\n    attemptCount: s.attempts.length, totalLatencyMs, promptHash: s.promptHash,\n    cacheText: s.text, httpStatus: 200, response, config: s.config\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "34c385ec-11d2-4575-b927-cc82adecd1c8",
+      "name": "JS - Plan Next Step",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5520,
+        -16
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nconst cfg = s.config;\n\nlet providerIndex = s.providerIndex;\nlet attemptOnProvider = s.attemptOnProvider;\nlet repairHint = '';\nlet backoffSeconds = 0;\nlet action;\n\n// A long rate-limit window is not worth waiting for: switch provider instead.\nconst longRateLimit = s.errorType === 'rate_limited' && (s.retryAfterMs / 1000) > cfg.maxBackoffSeconds;\nconst canRetrySame = s.retryable && !longRateLimit && s.attemptOnProvider < cfg.maxAttemptsPerProvider;\n\nif (canRetrySame) {\n  action = 'retry_same_provider';\n  if (s.errorType === 'invalid_output') {\n    // Repair retry: tell the model exactly what was wrong with its last answer.\n    repairHint = 'IMPORTANT: your previous reply was rejected for these reasons: ' + s.issues.join('; ') +\n      '. Fix every problem and reply again, following the original instructions exactly.';\n  } else {\n    const exp = cfg.backoffBaseSeconds * Math.pow(2, s.attemptOnProvider - 1);\n    const jitter = Math.random() * cfg.backoffBaseSeconds;\n    backoffSeconds = Math.min(cfg.maxBackoffSeconds, Math.max(exp + jitter, s.retryAfterMs / 1000));\n    backoffSeconds = Math.round(backoffSeconds * 10) / 10;\n  }\n} else {\n  action = 'switch_provider';\n  providerIndex = s.providerIndex + 1;\n  attemptOnProvider = 0;\n}\n\nconst exhausted = providerIndex >= s.chain.length;\n\nreturn [{\n  json: {\n    ...s,\n    providerIndex,\n    attemptOnProvider,\n    repairHint,\n    backoffSeconds,\n    nextAction: exhausted ? 'exhausted' : action,\n    exhausted\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "86bc6678-7c40-4621-81ca-f8fa2d31de09",
+      "name": "IF - Chain Exhausted?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        5760,
+        -16
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "050684bf-e286-452c-bf76-9e374ddc74c8",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.exhausted }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "82a90b84-48ee-48ae-ac07-ca532b11cb49",
+      "name": "IF - Backoff Needed?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        6000,
+        -144
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "93b3a3d9-a44f-476a-9a1d-e24edab871d5",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $json.backoffSeconds }}",
+              "rightValue": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "ac8d464e-3f17-4ea1-8545-248a0a1adc65",
+      "name": "Wait - Backoff",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        6240,
+        -208
+      ],
+      "webhookId": "027385c9-421e-4a60-b108-e02236971e1b",
+      "parameters": {
+        "amount": "={{ $json.backoffSeconds }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "7c34a325-cdd2-4435-9833-20a1f13831b7",
+      "name": "Postgres - Lookup Stale Cache",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        6000,
+        112
+      ],
+      "parameters": {
+        "query": "SELECT response_text, provider, model, created_at FROM llm_requests WHERE prompt_hash = $1 AND status IN ('success', 'success_after_fallback') AND response_text IS NOT NULL AND created_at > NOW() - ($2::int * INTERVAL '1 hour') ORDER BY created_at DESC LIMIT 1;",
+        "options": {
+          "queryReplacement": "={{ [ $json.promptHash, $json.config.staleCacheMaxHours ] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5,
+      "continueOnFail": true,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "5ca9bbf9-4e45-4676-a4f4-087643d21f04",
+      "name": "JS - Build Degraded Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        6240,
+        112
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) { try { return $(name).item.json; } catch (e) { return $(name).first().json; } }\nconst s = ref('JS - Plan Next Step');\nconst row = $input.first().json;\nconst cached = (row && row.response_text) ? row : null;\nconst totalLatencyMs = Date.now() - s.startedAt;\n\nlet status, text, parsed = null, httpStatus, provider, model = null, extra = {};\nif (cached) {\n  status = 'degraded_cached';\n  httpStatus = 200;\n  text = cached.response_text;\n  provider = 'stale_cache';\n  model = cached.model || null;\n  extra = { originalProvider: cached.provider, cachedAt: cached.created_at };\n  if (s.request.expectJson) {\n    try { parsed = JSON.parse(text.replace(/```json|```/gi, '').trim()); } catch (e) { parsed = null; }\n  }\n} else {\n  status = 'degraded_static';\n  httpStatus = 503;\n  text = s.config.degradedMessage;\n  provider = 'none';\n}\n\nconst trace = s.attempts.map(a => ({\n  attempt: a.attemptNo, provider: a.provider, model: a.model, success: a.success,\n  error: a.errorType, statusCode: a.statusCode, latencyMs: a.latencyMs, issues: a.issues\n}));\n\nconst response = {\n  requestId: s.requestId, status, provider, model, text, parsed, stale: !!cached,\n  fallbackUsed: true, attemptCount: s.attempts.length, totalLatencyMs,\n  skippedProviders: s.skipped, trace, ...extra\n};\n\nreturn [{\n  json: {\n    requestId: s.requestId, status, provider, model, fallbackUsed: true,\n    attemptCount: s.attempts.length, totalLatencyMs, promptHash: s.promptHash,\n    cacheText: null, // never store degraded output as cache text\n    httpStatus, response, config: s.config\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "3681df8f-c36e-48f4-b9a5-74c94e107030",
+      "name": "Postgres - Save Result",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        6480,
+        -96
+      ],
+      "parameters": {
+        "query": "INSERT INTO llm_requests (request_id, status, provider, model, attempt_count, fallback_used, total_latency_ms, prompt_hash, response_text, trace, created_at)\nVALUES ($1, $2, $3, $4, $5::int, $6::boolean, $7::int, $8, $9, $10::jsonb, NOW())\nON CONFLICT (request_id) DO UPDATE SET\n  status = EXCLUDED.status,\n  provider = EXCLUDED.provider,\n  model = EXCLUDED.model,\n  attempt_count = EXCLUDED.attempt_count,\n  fallback_used = EXCLUDED.fallback_used,\n  total_latency_ms = EXCLUDED.total_latency_ms,\n  prompt_hash = EXCLUDED.prompt_hash,\n  response_text = EXCLUDED.response_text,\n  trace = EXCLUDED.trace,\n  created_at = NOW()\nRETURNING request_id, status;",
+        "options": {
+          "queryReplacement": "={{ [ $json.requestId, $json.status, $json.provider, $json.model, $json.attemptCount, $json.fallbackUsed, $json.totalLatencyMs, $json.promptHash, $json.cacheText, JSON.stringify($json.response.trace) ] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5,
+      "continueOnFail": true
+    },
+    {
+      "id": "b7826618-535d-492f-ba2d-c261db9e9b8d",
+      "name": "JS - Restore Final Result",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        6720,
+        -96
+      ],
+      "parameters": {
+        "jsCode": "function tryRef(n) {\n  try { const x = $(n).first().json; return (x && x.requestId) ? x : null; } catch (e) { return null; }\n}\n// Only one of the two builders ran in this execution.\nconst r = tryRef('JS - Build Success Response') || tryRef('JS - Build Degraded Response');\nif (!r) throw new Error('No final response was built');\n\nconst saved = $input.first().json;\nconst alertNeeded = r.fallbackUsed === true || String(r.status).startsWith('degraded');\n\nreturn [{ json: { ...r, alertNeeded, persisted: !!(saved && saved.request_id) } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "3aa2a5fb-d1e9-44c2-be75-f813c6c7270d",
+      "name": "IF - Alert Needed?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        6960,
+        -96
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "d5157e9d-7bd5-4ee6-9657-68e0f589d99a",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.alertNeeded }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "832f7ade-1266-4acd-9b66-4b620528a32b",
+      "name": "Slack - Post Alert",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        7200,
+        -208
+      ],
+      "webhookId": "4f91540c-2775-4991-a093-1ed42ecdcc0a",
+      "parameters": {
+        "text": "={{ $json.status.startsWith('degraded') ? '\ud83d\udea8 *LLM chain degraded*' : '\u26a0\ufe0f *LLM fallback used*' }} \u2014 {{ $json.requestId }}\nStatus: *{{ $json.status }}* | Served by: {{ $json.provider }} {{ $json.model || '' }}\nAttempts: {{ $json.attemptCount }} | Latency: {{ $json.totalLatencyMs }} ms\nCircuit-open providers skipped: {{ $json.response.skippedProviders.map(p => p.provider).join(', ') || 'none' }}\nAttempt trace:\n{{ $json.response.trace.map(t => t.attempt + '. ' + t.provider + ' \u2192 ' + (t.success ? 'ok' : (t.error || 'failed')) + ' (' + t.latencyMs + ' ms)').join('\\n') }}\n\nAudit trail: llm_requests, llm_attempts and llm_provider_health in Postgres.",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $json.config.slackChannel }}"
+        },
+        "otherOptions": {}
+      },
+      "typeVersion": 2.3,
+      "continueOnFail": true
+    },
+    {
+      "id": "dc306aa6-854a-4534-b53d-a8ebe5d83bf0",
+      "name": "Respond to Webhook - Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        7440,
+        -96
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": "={{ $('JS - Restore Final Result').first().json.httpStatus }}"
+        },
+        "respondWith": "json",
+        "responseBody": "={{ $('JS - Restore Final Result').first().json.response }}"
+      },
+      "typeVersion": 1.1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "27a03e0a-e4a3-46b0-b1fa-276d1051d7a0",
+  "nodeGroups": [],
+  "connections": {
+    "Wait - Backoff": {
+      "main": [
+        [
+          {
+            "node": "JS - Select Provider",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Alert Needed?": {
+      "main": [
+        [
+          {
+            "node": "Slack - Post Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook - Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Post Alert": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook - Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Plan Next Step": {
+      "main": [
+        [
+          {
+            "node": "IF - Chain Exhausted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Backoff Needed?": {
+      "main": [
+        [
+          {
+            "node": "Wait - Backoff",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "JS - Select Provider",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Response Valid?": {
+      "main": [
+        [
+          {
+            "node": "JS - Build Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "JS - Plan Next Step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Select Provider": {
+      "main": [
+        [
+          {
+            "node": "Switch - Provider Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Gemini": {
+      "main": [
+        [
+          {
+            "node": "JS - Normalize & Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - OpenAI": {
+      "main": [
+        [
+          {
+            "node": "JS - Normalize & Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Chain Exhausted?": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Lookup Stale Cache",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF - Backoff Needed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Fallback Config": {
+      "main": [
+        [
+          {
+            "node": "JS - Normalize Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - LLM Request": {
+      "main": [
+        [
+          {
+            "node": "Set - Fallback Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Normalize Request": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Read Provider Health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Save Result": {
+      "main": [
+        [
+          {
+            "node": "JS - Restore Final Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Anthropic": {
+      "main": [
+        [
+          {
+            "node": "JS - Normalize & Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Provider Router": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Anthropic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request - OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request - Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Build Provider Chain": {
+      "main": [
+        [
+          {
+            "node": "JS - Select Provider",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Normalize & Validate": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Log Attempt & Health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Restore Final Result": {
+      "main": [
+        [
+          {
+            "node": "IF - Alert Needed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Restore Attempt State": {
+      "main": [
+        [
+          {
+            "node": "IF - Response Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Build Success Response": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Save Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Build Degraded Response": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Save Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Lookup Stale Cache": {
+      "main": [
+        [
+          {
+            "node": "JS - Build Degraded Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger - Start Request": {
+      "main": [
+        [
+          {
+            "node": "Set - Fallback Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Log Attempt & Health": {
+      "main": [
+        [
+          {
+            "node": "JS - Restore Attempt State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Read Provider Health": {
+      "main": [
+        [
+          {
+            "node": "JS - Build Provider Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

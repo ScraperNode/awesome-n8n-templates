@@ -1,6 +1,6 @@
 # 📱 Synchronize events & attendees between KlickTipp and Google Calendar
 
-> ⚡ **61 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **81 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

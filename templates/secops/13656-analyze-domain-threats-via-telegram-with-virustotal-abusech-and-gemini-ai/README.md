@@ -1,6 +1,6 @@
 # 🔒 Analyze domain threats via Telegram with VirusTotal, AbuseCH, and Gemini AI
 
-> ⚡ **17 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **330 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

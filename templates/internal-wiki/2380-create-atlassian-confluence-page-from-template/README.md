@@ -1,6 +1,6 @@
 # 📖 Create Atlassian Confluence page from template
 
-> ⚡ **5,026 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **5,349 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ AI email classifier & auto-delete for Gmail (SPAM/OFFER cleaner)
 
-> ⚡ **3,678 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,464 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

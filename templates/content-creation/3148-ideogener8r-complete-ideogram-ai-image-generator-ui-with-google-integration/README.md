@@ -1,6 +1,6 @@
 # 🎬 ✨ ideoGener8r –  complete Ideogram AI image generator UI with Google integration
 
-> ⚡ **1,336 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,363 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

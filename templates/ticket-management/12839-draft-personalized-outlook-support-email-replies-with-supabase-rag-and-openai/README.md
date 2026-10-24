@@ -1,6 +1,6 @@
 # 🎫 Draft personalized Outlook support email replies with Supabase RAG and OpenAI
 
-> ⚡ **62 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **380 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

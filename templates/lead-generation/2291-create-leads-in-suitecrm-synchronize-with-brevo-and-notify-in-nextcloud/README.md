@@ -1,6 +1,6 @@
 # 🎣 Create Leads in SuiteCRM, synchronize with Brevo and notify in NextCloud
 
-> ⚡ **1,833 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,904 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

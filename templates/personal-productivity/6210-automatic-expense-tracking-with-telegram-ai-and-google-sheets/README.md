@@ -1,6 +1,6 @@
 # ⚡ Automatic expense tracking with Telegram, AI, and Google Sheets
 
-> ⚡ **2,265 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,940 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

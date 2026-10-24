@@ -1,6 +1,6 @@
 # 📊 Analyze feedback using AWS Comprehend and send it to a Mattermost channel
 
-> ⚡ **747 views** · 📊 [Market Research & Insights](../)
+> ⚡ **769 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

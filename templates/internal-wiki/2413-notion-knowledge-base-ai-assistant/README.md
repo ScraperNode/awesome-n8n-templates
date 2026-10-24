@@ -1,6 +1,6 @@
 # 📖 Notion knowledge base AI assistant
 
-> ⚡ **50,406 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **51,064 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

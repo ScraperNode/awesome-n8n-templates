@@ -1,6 +1,6 @@
 # 🎬 Generate AI images in bulk with Freepik, Google Sheets & Drive
 
-> ⚡ **3,925 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,168 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

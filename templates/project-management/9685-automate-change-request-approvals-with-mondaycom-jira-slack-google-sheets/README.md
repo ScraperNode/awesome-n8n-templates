@@ -1,6 +1,6 @@
 # 📋 Automate change request approvals with Monday.com, Jira, Slack & Google Sheets
 
-> ⚡ **125 views** · 📋 [Project Management](../)
+> ⚡ **187 views** · 📋 [Project Management](../)
 
 ## Description
 

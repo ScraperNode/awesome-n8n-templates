@@ -1,6 +1,6 @@
 # 🎬 AI blog automation: Publish hourly SEO articles to WordPress & Twitter v3
 
-> ⚡ **1,152 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,273 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >
@@ -16,6 +16,9 @@ ChatGPT 5, Inbound Links, Verified Outbound Links,YOAST seo integration, Company
 📝 Read the [New Articles published by Content Farming v4](https://articles.emp0.com/tag/v4/)
 
 🛒 View the [updated and improved v4 workflow](https://0emp0.gumroad.com/l/content-farming-v4)
+
+👻 No technical experience ? use [Ghost.Blog](https://ghost.blog)
+
 
 # AI Powered Blog Automation Workflow for Wordpress and Twitter - v3 
 
@@ -138,7 +141,7 @@ Need to customize this workflow for your niche? Or need some help setting it up?
 
 ⭐ Read [Customer Reviews](https://0emp0.gumroad.com/l/content-farming-v3) and how they scaled their blog traffic using this workflow
 ✍️ Write to us via [Email: tool@emp0.com](tools@emp0.com)
-💬 Chat with us: [Discord @jym.god](https://discord.com/users/jym.god) 
+💬 Chat with us: [Discord @jay.ai.automation](https://discord.com/users/jay.ai.automation) 
 
 --- 
 
@@ -218,7 +221,7 @@ Here is the visual difference of the content length and visual components
 ``` markdown
 ✍️ Written by Emp0.com
 🧠 AI Workflows on GitHub: github.com/Jharilela
-💬 Chat with us: Discord @jym.god
+💬 Chat with us: Discord @jay.ai.automation
 ```
 
 ## 🔗 Nodes Used

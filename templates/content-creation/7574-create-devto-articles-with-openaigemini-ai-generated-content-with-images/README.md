@@ -1,6 +1,6 @@
 # 🎬 Create Dev.to articles with OpenAI/Gemini - AI-generated content with images
 
-> ⚡ **114 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **136 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

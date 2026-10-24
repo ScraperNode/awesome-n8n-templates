@@ -1,6 +1,6 @@
 # ⚙️ 🛠️ Netlify tool MCP server 💪 all 7 operations
 
-> ⚡ **132 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **150 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

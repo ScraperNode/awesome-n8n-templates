@@ -1,6 +1,6 @@
 # 🔧 Build custom AI agent with LangChain & Gemini (self-hosted)
 
-> ⚡ **5,873 views** · 🔧 [Miscellaneous](../)
+> ⚡ **6,184 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

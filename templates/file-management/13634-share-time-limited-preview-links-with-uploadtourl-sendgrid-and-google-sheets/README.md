@@ -1,6 +1,6 @@
 # 📁 Share time-limited preview links with UploadToURL, SendGrid, and Google Sheets
 
-> ⚡ **16 views** · 📁 [File Management](../)
+> ⚡ **32 views** · 📁 [File Management](../)
 
 ## Description
 

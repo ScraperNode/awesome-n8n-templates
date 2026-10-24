@@ -1,6 +1,6 @@
 # ⚙️ Error handling: Send email via Gmail on execution or trigger-level errors
 
-> ⚡ **2,340 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,507 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

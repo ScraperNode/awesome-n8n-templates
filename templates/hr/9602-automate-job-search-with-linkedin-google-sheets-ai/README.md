@@ -1,6 +1,6 @@
 # 👥 Automate job search with LinkedIn, Google Sheets & AI
 
-> ⚡ **3,394 views** · 👥 [HR & Recruitment](../)
+> ⚡ **6,461 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

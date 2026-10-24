@@ -1,6 +1,6 @@
 # 🎣 HubSpot contact email validation with Hunter.io
 
-> ⚡ **566 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **617 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

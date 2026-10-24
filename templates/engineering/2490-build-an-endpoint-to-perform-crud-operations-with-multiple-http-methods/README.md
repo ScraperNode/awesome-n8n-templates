@@ -1,6 +1,6 @@
 # ⚒️ Build an endpoint to perform CRUD operations with multiple HTTP methods
 
-> ⚡ **4,680 views** · ⚒️ [Engineering](../)
+> ⚡ **5,022 views** · ⚒️ [Engineering](../)
 
 ## Description
 

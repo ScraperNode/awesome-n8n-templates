@@ -1,6 +1,6 @@
 # ⚙️ Monitor Docker host health via SSH with GPT-4o-mini and alerts to Discord
 
-> ⚡ **21 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **181 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

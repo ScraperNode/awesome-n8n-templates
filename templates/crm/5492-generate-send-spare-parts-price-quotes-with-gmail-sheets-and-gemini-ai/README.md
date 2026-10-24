@@ -1,6 +1,6 @@
 # 🤝 Generate & send spare parts price quotes with Gmail, Sheets and Gemini AI
 
-> ⚡ **9,152 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **9,543 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Transform meeting transcripts into LinkedIn content with AI and Google Docs
 
-> ⚡ **521 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **539 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
-# 🔬 Turn YouTube meeting recordings into Notion notes with Claude, deAPI, and Slack alerts
+# 🔬 Turn YouTube meeting recordings into Notion notes with AI Agent, deAPI & Slack
 
-> ⚡ **0 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **503 views** · 🔬 [Document Extraction & Analysis](../)
 
 > 💡 **Pro Tip** — YouTube's API quotas can be a bottleneck when you're pulling data at scale. [ScraperNode](https://scrapernode.com/youtube) is a community node with dedicated scrapers for [channels](https://scrapernode.com/youtube/scrapers/channels), [videos](https://scrapernode.com/youtube/scrapers/videos), and [comments](https://scrapernode.com/youtube/scrapers/comments) — no quota limits, just structured data.
 >
@@ -31,7 +31,7 @@ Meeting notes are either rushed, incomplete, or never written at all. This workf
 
 ### Requirements
 
-- **Self-hosted n8n instance** (deAPI node is not yet available on n8n Cloud)
+- **n8n instance** (self-hosted or n8n Cloud)
 - [deAPI](https://deapi.ai) account for video transcription
 - Anthropic account for the AI Agent
 - Notion workspace with a meeting notes database
@@ -39,8 +39,8 @@ Meeting notes are either rushed, incomplete, or never written at all. This workf
 
 ### Installing the deAPI Node
 
-1. Go to **Settings** → **Community Nodes**
-2. Install `n8n-nodes-deapi`
+- **n8n Cloud**: Go to **Settings** → **Community Nodes** and toggle the "Verified Community Nodes" option
+- **Self-hosted**: Go to **Settings** → **Community Nodes** and install `n8n-nodes-deapi`
 
 ### Configuration
 

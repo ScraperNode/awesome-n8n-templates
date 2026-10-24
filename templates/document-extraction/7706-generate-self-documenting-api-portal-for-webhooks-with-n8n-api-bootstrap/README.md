@@ -1,6 +1,6 @@
 # 🔬 Generate self-documenting API portal for webhooks with n8n API & Bootstrap
 
-> ⚡ **218 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **274 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

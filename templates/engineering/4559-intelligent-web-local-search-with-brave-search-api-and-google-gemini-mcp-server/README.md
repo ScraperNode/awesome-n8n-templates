@@ -1,6 +1,6 @@
 # ⚒️ Intelligent web & local search with Brave Search API and Google Gemini MCP Server
 
-> ⚡ **1,867 views** · ⚒️ [Engineering](../)
+> ⚡ **2,072 views** · ⚒️ [Engineering](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

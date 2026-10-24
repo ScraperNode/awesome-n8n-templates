@@ -1,6 +1,6 @@
 # 👥 Screen and score job candidates with GPT-4o, Gmail and Google Calendar
 
-> ⚡ **9 views** · 👥 [HR & Recruitment](../)
+> ⚡ **48 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 AI blog post generator with scheduled or prompt-based content for WordPress
 
-> ⚡ **1,637 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,208 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

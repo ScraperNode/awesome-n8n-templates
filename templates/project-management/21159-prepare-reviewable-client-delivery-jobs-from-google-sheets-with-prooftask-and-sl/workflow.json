@@ -1,0 +1,1302 @@
+{
+  "name": "Prepare client delivery reviews from Google Sheets with Prooftask and Slack",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "pt-queue-0",
+      "name": "Run delivery handover",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "pt-queue-1",
+      "name": "Configuration",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Only non-secret configuration. Configure credentials on their respective nodes.\nconst configuration = {spreadsheetId:'REPLACE_SPREADSHEET_ID',sheetId:'0',slackChannelId:'REPLACE_SLACK_CHANNEL_ID'};\nif (!/^[a-zA-Z0-9_-]{20,}$/.test(configuration.spreadsheetId) || configuration.spreadsheetId.startsWith('REPLACE') || !/^\\d+$/.test(configuration.sheetId) || !/^[CG][A-Z0-9]+$/.test(configuration.slackChannelId)) throw new Error('Set spreadsheetId, numeric sheetId and the authorized Slack channel ID in Configuration.');\nreturn [{json:configuration}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pt-queue-2",
+      "name": "Read delivery queue",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "resource": "sheet",
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuration').first().json.sheetId }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuration').first().json.spreadsheetId }}"
+        },
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "pt-queue-3",
+      "name": "Select queued deliveries",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const run = function selectQueue(items) {\n  const rows = items.map(i => i.json);\n  const ids = new Set();\n  for (const row of rows) {\n    const id = String(row.task_id || '').trim();\n    if (!id || !/^[A-Za-z0-9:_-]{1,100}$/.test(id) || ids.has(id)) {\n      throw new Error('Every populated row needs a unique task_id (letters, digits, colon, underscore or hyphen). No rows were changed.');\n    }\n    ids.add(id);\n  }\n  if (rows.length > 200) throw new Error('Use a queue of at most 200 rows per manual run.');\n  return items.flatMap((item, i) => String(item.json.ready_for_review).trim().toUpperCase() === 'YES'\n    && !(item.json.job_id && item.json.notified_job_id === item.json.job_id)\n    ? [{ json: item.json, pairedItem: { item: i } }] : []);\n};\nreturn run($input.all());"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pt-queue-4",
+      "name": "One delivery at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        880,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "batchSize": 1
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "pt-queue-5",
+      "name": "Candidate request ID",
+      "type": "n8n-nodes-base.crypto",
+      "position": [
+        1100,
+        400
+      ],
+      "parameters": {
+        "action": "generate",
+        "encodingType": "uuid",
+        "dataPropertyName": "candidate_request_id"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pt-queue-6",
+      "name": "Inspect delivery",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1320,
+        400
+      ],
+      "parameters": {
+        "jsCode": "const run = function inspectDelivery(input) {\n  const text = key => String(input[key] ?? '').trim();\n  const row = { task_id: text('task_id'), project_id: text('project_id'), request_id: text('request_id'),\n    request_json: text('request_json'), job_id: text('job_id'), notified_job_id: text('notified_job_id'),\n    prepared_at: text('prepared_at'), kind: 'invalid', handover_state: 'NEEDS_INPUT', handover_note: '' };\n  const invalid = message => ({ ...row, handover_note: message });\n  const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;\n  if (!/^delivery_[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(row.project_id)) return invalid('Set the exact authorized project_id.');\n  const summary = text('summary');\n  if (summary.length < 10 || summary.length > 4000) return invalid('summary must contain 10\u20134000 characters describing this delivery.');\n  let raw;\n  try { raw = JSON.parse(text('materials_json')); } catch { return invalid('materials_json must be a JSON array. See the sample queue.'); }\n  if (!Array.isArray(raw) || raw.length < 1 || raw.length > 20) return invalid('Provide 1\u201320 material items, one per agreed criterion.');\n  const ids = new Set(), materials = [];\n  for (const item of raw) {\n    if (!item || typeof item !== 'object' || Array.isArray(item) || Object.keys(item).some(k => !['criterionId', 'summary', 'references', 'files'].includes(k))) return invalid('Use only criterionId, summary, references and files in each material item.');\n    if (typeof item.criterionId !== 'string' || !item.criterionId.trim() || item.criterionId.length > 64 || ids.has(item.criterionId)) return invalid('Each material needs a distinct agreed criterionId, up to 64 characters.');\n    ids.add(item.criterionId);\n    if (typeof item.summary !== 'string' || item.summary.trim().length < 10 || item.summary.length > 4000) return invalid('Each material summary must contain 10\u20134000 characters.');\n    if (!Array.isArray(item.references) || item.references.length < 1 || item.references.length > 5 || new Set(item.references).size !== item.references.length || item.references.some(r => typeof r !== 'string' || !/^https:\\/\\/[^\\s]+$/.test(r))) return invalid('Provide 1\u20135 distinct original material references per criterion, using HTTPS. Links are not fetched or quality-checked.');\n    if (!Array.isArray(item.files) || item.files.length !== item.references.length || new Set(item.files.map(f => f?.reference)).size !== item.references.length) return invalid('Each original material reference needs matching actual file metadata: reference, name, size and sha256.');\n    for (const file of item.files) {\n      if (!file || typeof file !== 'object' || Object.keys(file).some(k => !['reference','name','size','sha256'].includes(k)) || !item.references.includes(file.reference) || typeof file.name !== 'string' || !file.name.trim() || file.name.length > 255 || !Number.isSafeInteger(file.size) || file.size < 0 || file.size > 2 * 1024 * 1024 * 1024 || !/^[a-f0-9]{64}$/.test(file.sha256 || '')) return invalid('File metadata must describe the actual original: matching reference, name, byte size up to 2 GiB and lowercase SHA-256 digest.');\n    }\n    materials.push({ criterionId: item.criterionId, summary: item.summary, references: item.references, files: item.files });\n  }\n  if (row.job_id && !/^job_[a-f0-9]{64}$/.test(row.job_id)) return invalid('job_id is invalid. Preserve the original identity and reconcile it before retrying.');\n  if ((row.request_id || row.request_json || row.job_id) && !(row.request_id && row.request_json)) return invalid('Incomplete retry identity. Recover request_id AND request_json; do not generate a replacement for an uncertain request.');\n  const requestId = row.request_id || input.candidate_request_id;\n  if (!uuid.test(requestId || '')) return invalid('A valid UUID v4 request ID is required.');\n  const body = { requestId, projectId: row.project_id, workflowReference: 'sheet:' + row.task_id, summary, materials };\n  const serialized = JSON.stringify(body);\n  if (serialized.length > 40000) return invalid('The saved request exceeds the 40,000 character queue-cell limit.');\n  if (row.request_json && row.request_json !== serialized) return invalid('The source differs from the saved request. Restore it to retry; use a new task row for a deliberate new delivery revision.');\n  return { ...row, request_id: requestId, request_json: serialized, kind: row.job_id ? 'resume' : 'prepare', handover_state: 'PREPARING', handover_note: 'Preparing only. No delivery has been submitted or accepted.' };\n};\nreturn [{json:run($input.first().json),pairedItem: {item:0}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pt-queue-7",
+      "name": "Input is complete",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1540,
+        400
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "Input-is-complete",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.kind }}",
+              "rightValue": "invalid"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "pt-queue-8",
+      "name": "Read agreed project",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select Header Auth: Authorization = Bearer <project-scoped Agent token>. Errors are handled explicitly; never paste credentials into inputs.",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        1760,
+        300
+      ],
+      "parameters": {
+        "url": "={{ 'https://prooftask.com/api/agents/v1/projects/' + encodeURIComponent($json.project_id) }}",
+        "method": "GET",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "maxRedirects": 0,
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          },
+          "allowUnauthorizedCerts": false
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "notesInFlow": true,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "pt-queue-9",
+      "name": "Check agreed criteria",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1980,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const run = function checkProject(row, response) {\n  const fail = message => ({ ...row, kind: 'invalid', handover_state: 'NEEDS_OWNER', handover_note: message });\n  if (response.statusCode !== 200 || !response.body?.project) return fail('Authorized project read failed. Check the scoped credential and project access; no preparation was attempted.');\n  const view = response.body, project = view.project;\n  if (project.taskId !== row.project_id) return fail('The API returned a different project. Stop and check configuration.');\n  if (row.kind === 'prepare' && (view.automation?.mode !== 'AGENT' || !view.availableActions?.includes('SUBMIT_MATERIALS'))) return fail('This project does not currently permit this Agent to prepare delivery. The owner must review its authorization.');\n  const criteria = project.agreement?.criteria;\n  const materials = JSON.parse(row.request_json).materials;\n  if (!Array.isArray(criteria) || criteria.length !== materials.length || criteria.some(c => !materials.some(m => m.criterionId === c.id))) return fail('Map material items to every CURRENT agreed criterion exactly once. Completeness is not buyer acceptance.');\n  const rawUrl = view.humanUrl;\n  const humanUrl = typeof rawUrl === 'string' && rawUrl.startsWith('/') && !rawUrl.startsWith('//')\n    ? 'https://prooftask.com' + rawUrl : typeof rawUrl === 'string' && rawUrl.startsWith('https://prooftask.com/') ? rawUrl : '';\n  return { ...row, human_url: humanUrl };\n};\nreturn [{json:run($('Inspect delivery').item.json,$input.first().json),pairedItem: {item:0}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pt-queue-10",
+      "name": "Project permits handover",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2200,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "Project-permits-handover",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.kind }}",
+              "rightValue": "invalid"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "pt-queue-11",
+      "name": "Saved job exists",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2420,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "Saved-job-exists",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.kind }}",
+              "rightValue": "resume"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "pt-queue-12",
+      "name": "Read saved job",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select Header Auth: Authorization = Bearer <project-scoped Agent token>. Errors are handled explicitly; never paste credentials into inputs.",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        2640,
+        240
+      ],
+      "parameters": {
+        "url": "={{ 'https://prooftask.com/api/agents/v1/jobs/' + $json.job_id }}",
+        "method": "GET",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "maxRedirects": 0,
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          },
+          "allowUnauthorizedCerts": false
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "notesInFlow": true,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "pt-queue-13",
+      "name": "Assess saved job",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2860,
+        240
+      ],
+      "parameters": {
+        "jsCode": "const run = function assessJob(row, response, mode, now) {\n  const result = { task_id: row.task_id, request_id: row.request_id, job_id: row.job_id, prepared_at: row.prepared_at,\n    handover_state: 'RETRY_SAME_REQUEST', handover_note: '', notify: false, human_url: row.human_url || '' };\n  const status = response.statusCode;\n  const failed = message => ({ ...result, handover_note: message });\n  if (!Number.isInteger(status)) return failed('Request outcome is uncertain. Retry with the SAME saved request or job ID; never clear its identity.');\n  if (status < 200 || status >= 300) return failed('Prooftask returned HTTP ' + status + '. Resolve access, input or service errors, then retry the same saved identity. No acceptance is inferred.');\n  const value = response.body;\n  if (!value || !/^job_[a-f0-9]{64}$/.test(value.id || '') || value.workflowReference !== 'sheet:' + row.task_id) return failed('Unexpected job response. Reconcile the same request before continuing.');\n  if (mode === 'prepare' && (value.prepared?.projectId !== row.project_id || value.prepared?.envelope?.input?.requestId !== row.request_id)) return failed('Prepared request identity did not match. Stop and reconcile the saved request.');\n  if (mode === 'resume' && (value.id !== row.job_id || value.requestId !== row.request_id || value.current?.projectId !== row.project_id)) return failed('Saved job identity did not match. Stop and reconcile the original task.');\n  if (typeof value.submitted !== 'boolean') return failed('Missing explicit submission state. Stop and reconcile the saved request.');\n  if (value.submitted) return { ...result, job_id: value.id, handover_state: 'ALREADY_SUBMITTED', handover_note: 'This job was already submitted separately. Read its actual buyer decision in Prooftask; no new submission was made.' };\n  return { ...result, job_id: value.id, prepared_at: row.prepared_at || now, handover_state: 'PREPARED',\n    handover_note: 'Saved for authorized human review. Submission and buyer acceptance remain separate.', notify: row.notified_job_id !== value.id };\n};\nreturn [{json:run($('Check agreed criteria').item.json,$input.first().json,'resume',new Date().toISOString()),pairedItem: {item:0}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pt-queue-14",
+      "name": "Persist retry identity",
+      "type": "n8n-nodes-base.googleSheets",
+      "notes": "Select the same Google Sheets credential. Update an existing unique task_id; do not append new rows.",
+      "position": [
+        2640,
+        640
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "task_id": "={{ $json.task_id }}",
+            "request_id": "={{ $json.request_id }}",
+            "request_json": "={{ $json.request_json }}",
+            "handover_note": "={{ $json.handover_note }}",
+            "handover_state": "={{ $json.handover_state }}"
+          },
+          "schema": [
+            {
+              "id": "task_id",
+              "type": "string",
+              "required": false,
+              "displayName": "task_id",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "request_id",
+              "type": "string",
+              "required": false,
+              "displayName": "request_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "request_json",
+              "type": "string",
+              "required": false,
+              "displayName": "request_json",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "handover_state",
+              "type": "string",
+              "required": false,
+              "displayName": "handover_state",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "handover_note",
+              "type": "string",
+              "required": false,
+              "displayName": "handover_note",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "task_id"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        },
+        "resource": "sheet",
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuration').first().json.sheetId }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuration').first().json.spreadsheetId }}"
+        },
+        "authentication": "oAuth2"
+      },
+      "notesInFlow": true,
+      "typeVersion": 4.7
+    },
+    {
+      "id": "pt-queue-15",
+      "name": "Read persisted request",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2860,
+        640
+      ],
+      "parameters": {
+        "options": {},
+        "resource": "sheet",
+        "filtersUI": {
+          "values": [
+            {
+              "lookupValue": "={{ $json.task_id }}",
+              "lookupColumn": "task_id"
+            }
+          ]
+        },
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuration').first().json.sheetId }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuration').first().json.spreadsheetId }}"
+        },
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "pt-queue-16",
+      "name": "Confirm persisted request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3080,
+        640
+      ],
+      "parameters": {
+        "jsCode": "const run = function confirmSnapshot(expected, items) {\n  if (items.length !== 1) throw new Error('Expected exactly one task row on readback. No preparation was attempted.');\n  const saved = items[0].json;\n  if (saved.task_id !== expected.task_id || saved.request_id !== expected.request_id || saved.request_json !== expected.request_json || saved.job_id) {\n    throw new Error('Durable request readback did not match, or a job already exists. Stop concurrent runs and reconcile the queue before continuing.');\n  }\n  return expected;\n};\nreturn [{json:run($('Check agreed criteria').item.json,$input.all()),pairedItem: {item:0}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pt-queue-17",
+      "name": "Prepare saved delivery",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Select Header Auth: Authorization = Bearer <project-scoped Agent token>. Errors are handled explicitly; never paste credentials into inputs.",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        3300,
+        640
+      ],
+      "parameters": {
+        "url": "https://prooftask.com/api/agents/v1/jobs",
+        "method": "POST",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "maxRedirects": 0,
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          },
+          "allowUnauthorizedCerts": false
+        },
+        "jsonBody": "={{ $json.request_json }}",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "notesInFlow": true,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "pt-queue-18",
+      "name": "Assess preparation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3520,
+        640
+      ],
+      "parameters": {
+        "jsCode": "const run = function assessJob(row, response, mode, now) {\n  const result = { task_id: row.task_id, request_id: row.request_id, job_id: row.job_id, prepared_at: row.prepared_at,\n    handover_state: 'RETRY_SAME_REQUEST', handover_note: '', notify: false, human_url: row.human_url || '' };\n  const status = response.statusCode;\n  const failed = message => ({ ...result, handover_note: message });\n  if (!Number.isInteger(status)) return failed('Request outcome is uncertain. Retry with the SAME saved request or job ID; never clear its identity.');\n  if (status < 200 || status >= 300) return failed('Prooftask returned HTTP ' + status + '. Resolve access, input or service errors, then retry the same saved identity. No acceptance is inferred.');\n  const value = response.body;\n  if (!value || !/^job_[a-f0-9]{64}$/.test(value.id || '') || value.workflowReference !== 'sheet:' + row.task_id) return failed('Unexpected job response. Reconcile the same request before continuing.');\n  if (mode === 'prepare' && (value.prepared?.projectId !== row.project_id || value.prepared?.envelope?.input?.requestId !== row.request_id)) return failed('Prepared request identity did not match. Stop and reconcile the saved request.');\n  if (mode === 'resume' && (value.id !== row.job_id || value.requestId !== row.request_id || value.current?.projectId !== row.project_id)) return failed('Saved job identity did not match. Stop and reconcile the original task.');\n  if (typeof value.submitted !== 'boolean') return failed('Missing explicit submission state. Stop and reconcile the saved request.');\n  if (value.submitted) return { ...result, job_id: value.id, handover_state: 'ALREADY_SUBMITTED', handover_note: 'This job was already submitted separately. Read its actual buyer decision in Prooftask; no new submission was made.' };\n  return { ...result, job_id: value.id, prepared_at: row.prepared_at || now, handover_state: 'PREPARED',\n    handover_note: 'Saved for authorized human review. Submission and buyer acceptance remain separate.', notify: row.notified_job_id !== value.id };\n};\nreturn [{json:run($('Check agreed criteria').item.json,$input.first().json,'prepare',new Date().toISOString()),pairedItem: {item:0}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pt-queue-19",
+      "name": "Write handover result",
+      "type": "n8n-nodes-base.googleSheets",
+      "notes": "Select the same Google Sheets credential. Update an existing unique task_id; do not append new rows.",
+      "position": [
+        3740,
+        300
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "job_id": "={{ $json.job_id }}",
+            "task_id": "={{ $json.task_id }}",
+            "prepared_at": "={{ $json.prepared_at }}",
+            "handover_note": "={{ $json.handover_note }}",
+            "handover_state": "={{ $json.handover_state }}"
+          },
+          "schema": [
+            {
+              "id": "task_id",
+              "type": "string",
+              "required": false,
+              "displayName": "task_id",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_id",
+              "type": "string",
+              "required": false,
+              "displayName": "job_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "prepared_at",
+              "type": "string",
+              "required": false,
+              "displayName": "prepared_at",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "handover_state",
+              "type": "string",
+              "required": false,
+              "displayName": "handover_state",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "handover_note",
+              "type": "string",
+              "required": false,
+              "displayName": "handover_note",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "task_id"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        },
+        "resource": "sheet",
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuration').first().json.sheetId }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuration').first().json.spreadsheetId }}"
+        },
+        "authentication": "oAuth2"
+      },
+      "notesInFlow": true,
+      "typeVersion": 4.7
+    },
+    {
+      "id": "pt-queue-20",
+      "name": "Restore review context",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3960,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const source = $('Check agreed criteria').item.json; const saved=$input.first().json;\nif(saved.task_id!==source.task_id)throw new Error('Sheet write returned a different task.');\nreturn [{json:{...saved,request_id:source.request_id,notified_job_id:source.notified_job_id,human_url:source.human_url||''},pairedItem: {item:0}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pt-queue-21",
+      "name": "Ready for owner reminder",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4180,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "Ready-for-owner-reminder",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.handover_state === 'PREPARED' && $json.notified_job_id !== $json.job_id ? 'YES' : 'NO' }}",
+              "rightValue": "YES"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "pt-queue-22",
+      "name": "Build owner reminder",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4400,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const run = function notificationText(result, config) {\n  return ['Delivery ready for owner review: ' + result.task_id, 'Saved Prooftask job: ' + result.job_id,\n    result.human_url ? 'Authorized project: ' + result.human_url : 'Open the corresponding authorized project in Prooftask.',\n    'Queue: https://docs.google.com/spreadsheets/d/' + config.spreadsheetId + '/edit#gid=' + config.sheetId,\n    'PREPARED only. Review the exact saved materials before a separate deliberate submission. Buyer acceptance and payment have not been recorded.'].join('\\n');\n};\nreturn [{json:{...$input.first().json,text:run($input.first().json,$('Configuration').first().json)},pairedItem: {item:0}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pt-queue-23",
+      "name": "Notify responsible team",
+      "type": "n8n-nodes-base.slack",
+      "notes": "Select a Slack credential authorized for this channel. Only task/job IDs and review links are sent, never original material contents. A failed reminder stops here; a rerun resumes the saved job.",
+      "position": [
+        4620,
+        300
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "select": "channel",
+        "resource": "message",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuration').first().json.slackChannelId }}"
+        },
+        "operation": "post",
+        "messageType": "text",
+        "otherOptions": {
+          "mrkdwn": false,
+          "link_names": false,
+          "unfurl_links": false,
+          "unfurl_media": false,
+          "includeLinkToWorkflow": false
+        },
+        "authentication": "accessToken"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2.3
+    },
+    {
+      "id": "pt-queue-24",
+      "name": "Remember successful reminder",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4840,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const reminder=$('Build owner reminder').item.json; const response=$input.first().json; if(!response.ts || response.error || response.ok===false)throw new Error('Slack did not confirm the reminder. Preserve the saved job and reconcile notification delivery.');return [{json:{task_id:reminder.task_id,notified_job_id:reminder.job_id,handover_note:'Owner reminder delivered. Await deliberate submission; buyer acceptance is separate.'},pairedItem: {item:0}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pt-queue-25",
+      "name": "Mark reminder delivered",
+      "type": "n8n-nodes-base.googleSheets",
+      "notes": "Select the same Google Sheets credential. Update an existing unique task_id; do not append new rows.",
+      "position": [
+        5060,
+        300
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "task_id": "={{ $json.task_id }}",
+            "handover_note": "={{ $json.handover_note }}",
+            "notified_job_id": "={{ $json.notified_job_id }}"
+          },
+          "schema": [
+            {
+              "id": "task_id",
+              "type": "string",
+              "required": false,
+              "displayName": "task_id",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notified_job_id",
+              "type": "string",
+              "required": false,
+              "displayName": "notified_job_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "handover_note",
+              "type": "string",
+              "required": false,
+              "displayName": "handover_note",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "task_id"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        },
+        "resource": "sheet",
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuration').first().json.sheetId }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuration').first().json.spreadsheetId }}"
+        },
+        "authentication": "oAuth2"
+      },
+      "notesInFlow": true,
+      "typeVersion": 4.7
+    },
+    {
+      "id": "pt-queue-26",
+      "name": "Write actionable feedback",
+      "type": "n8n-nodes-base.googleSheets",
+      "notes": "Select the same Google Sheets credential. Update an existing unique task_id; do not append new rows.",
+      "position": [
+        1980,
+        760
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "task_id": "={{ $json.task_id }}",
+            "handover_note": "={{ $json.handover_note }}",
+            "handover_state": "={{ $json.handover_state }}"
+          },
+          "schema": [
+            {
+              "id": "task_id",
+              "type": "string",
+              "required": false,
+              "displayName": "task_id",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "handover_state",
+              "type": "string",
+              "required": false,
+              "displayName": "handover_state",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "handover_note",
+              "type": "string",
+              "required": false,
+              "displayName": "handover_note",
+              "defaultMatch": false,
+              "canBeUsedToMatch": false
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "task_id"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        },
+        "resource": "sheet",
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuration').first().json.sheetId }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuration').first().json.spreadsheetId }}"
+        },
+        "authentication": "oAuth2"
+      },
+      "notesInFlow": true,
+      "typeVersion": 4.7
+    },
+    {
+      "id": "pt-queue-27",
+      "name": "Queue run complete",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        880,
+        580
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "pt-queue-28",
+      "name": "Overview and setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -680,
+        -80
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 600,
+        "height": 1140,
+        "content": "## Prepare client deliveries for review\n\nFor automation consultants who track completed client work in Google Sheets and need a clear handoff to their reviewer.\n\n### How it works\n1. Read rows marked `ready_for_review=YES` and process one delivery at a time.\n2. Check material references, file metadata and the current Prooftask agreement.\n3. Save the request before preparing a delivery job, so retries reuse its identity.\n4. Write the result back and send the responsible team a Slack reminder.\n\nA prepared job is ready for internal review. Submission requires a separate deliberate step; buyer acceptance, signing and payment remain separate.\n\n### Setup\n1. Import the [sample queue](https://github.com/cognitive-emergence/prooftask-integrations/blob/main/n8n/delivery-queue-example.csv) into Google Sheets. Replace fictional IDs and materials with your actual project data.\n2. In **Configuration**, set `spreadsheetId`, numeric `sheetId` and `slackChannelId`.\n3. Select the same Google Sheets OAuth2 credential on all Sheet nodes.\n4. On all three HTTP nodes, select Header Auth: `Authorization: Bearer \u2026`. Use an existing project-scoped Agent grant with `SUBMIT_MATERIALS`.\n5. Select a Slack credential with `chat:write` and add its bot to the review channel.\n6. Mark a ready row **YES** and run manually. Allow only one execution per queue at a time.\n\nRequires an agreed Prooftask project, Google Sheets and Slack; service pricing applies. No community nodes are needed. See the [setup and recovery guide](https://github.com/cognitive-emergence/prooftask-integrations/blob/main/n8n/DELIVERY_QUEUE.md)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pt-queue-29",
+      "name": "Section 1 \u2014 delivery queue",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1060,
+        "height": 800,
+        "content": "## 1. Load the delivery queue\n\nRead ready rows and skip jobs already notified. Duplicate task IDs stop the run before writes."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pt-queue-30",
+      "name": "Section 2 \u2014 material checks",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1040,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 620,
+        "height": 800,
+        "content": "## 2. Check delivery materials\n\nRequire actual references and matching file metadata for every agreed criterion. Incomplete rows go to actionable feedback."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pt-queue-31",
+      "name": "Section 3 \u2014 agreement and feedback",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1700,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 660,
+        "height": 1060,
+        "content": "## 3. Check access and agreement\n\nRead the authorized project and compare its current criteria. Write missing-input or owner-action feedback to the queue."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pt-queue-32",
+      "name": "Section 4 \u2014 save or resume",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2380,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1260,
+        "height": 1060,
+        "content": "## 4. Resume a job or prepare one\n\nTop: verify an existing saved job. Bottom: persist and read back the exact request before preparing. Preserve saved IDs and request data when retrying."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pt-queue-33",
+      "name": "Section 5 \u2014 result",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3680,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 660,
+        "height": 800,
+        "content": "## 5. Save the handover result\n\nWrite the verified job ID and operational state back to the same task row. Only a prepared, unnotified job continues."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "pt-queue-34",
+      "name": "Section 6 \u2014 reviewer reminder",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4380,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 860,
+        "height": 800,
+        "content": "## 6. Remind the responsible team\n\nSend internal review references, then mark the confirmed reminder. Normal reruns skip it; an uncertain Slack result may duplicate the reminder."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": false,
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none"
+  },
+  "connections": {
+    "Configuration": {
+      "main": [
+        [
+          {
+            "node": "Read delivery queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read saved job": {
+      "main": [
+        [
+          {
+            "node": "Assess saved job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assess saved job": {
+      "main": [
+        [
+          {
+            "node": "Write handover result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect delivery": {
+      "main": [
+        [
+          {
+            "node": "Input is complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Saved job exists": {
+      "main": [
+        [
+          {
+            "node": "Read saved job",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Persist retry identity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input is complete": {
+      "main": [
+        [
+          {
+            "node": "Read agreed project",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write actionable feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assess preparation": {
+      "main": [
+        [
+          {
+            "node": "Write handover result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read agreed project": {
+      "main": [
+        [
+          {
+            "node": "Check agreed criteria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read delivery queue": {
+      "main": [
+        [
+          {
+            "node": "Select queued deliveries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build owner reminder": {
+      "main": [
+        [
+          {
+            "node": "Notify responsible team",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Candidate request ID": {
+      "main": [
+        [
+          {
+            "node": "Inspect delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check agreed criteria": {
+      "main": [
+        [
+          {
+            "node": "Project permits handover",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run delivery handover": {
+      "main": [
+        [
+          {
+            "node": "Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write handover result": {
+      "main": [
+        [
+          {
+            "node": "Restore review context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One delivery at a time": {
+      "main": [
+        [
+          {
+            "node": "Queue run complete",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Candidate request ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist retry identity": {
+      "main": [
+        [
+          {
+            "node": "Read persisted request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare saved delivery": {
+      "main": [
+        [
+          {
+            "node": "Assess preparation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read persisted request": {
+      "main": [
+        [
+          {
+            "node": "Confirm persisted request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore review context": {
+      "main": [
+        [
+          {
+            "node": "Ready for owner reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark reminder delivered": {
+      "main": [
+        [
+          {
+            "node": "One delivery at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify responsible team": {
+      "main": [
+        [
+          {
+            "node": "Remember successful reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Project permits handover": {
+      "main": [
+        [
+          {
+            "node": "Saved job exists",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write actionable feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ready for owner reminder": {
+      "main": [
+        [
+          {
+            "node": "Build owner reminder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "One delivery at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select queued deliveries": {
+      "main": [
+        [
+          {
+            "node": "One delivery at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm persisted request": {
+      "main": [
+        [
+          {
+            "node": "Prepare saved delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write actionable feedback": {
+      "main": [
+        [
+          {
+            "node": "One delivery at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remember successful reminder": {
+      "main": [
+        [
+          {
+            "node": "Mark reminder delivered",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

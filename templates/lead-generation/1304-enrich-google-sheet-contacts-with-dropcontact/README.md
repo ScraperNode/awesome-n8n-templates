@@ -1,6 +1,6 @@
 # 🎣 Enrich Google Sheet contacts with Dropcontact
 
-> ⚡ **1,692 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,720 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

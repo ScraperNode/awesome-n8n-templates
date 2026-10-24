@@ -1,6 +1,6 @@
 # 📊 Analyze customer review sentiment automatically with Google Sheets
 
-> ⚡ **749 views** · 📊 [Market Research & Insights](../)
+> ⚡ **799 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

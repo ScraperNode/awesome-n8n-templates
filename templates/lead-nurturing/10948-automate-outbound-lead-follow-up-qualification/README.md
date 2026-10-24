@@ -1,6 +1,6 @@
 # 💬 Automate outbound lead follow-up & qualification
 
-> ⚡ **592 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,355 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

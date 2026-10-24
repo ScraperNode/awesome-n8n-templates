@@ -1,6 +1,6 @@
 # 🔬 Create automatic pivot tables in Google Sheets with n8n
 
-> ⚡ **229 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **398 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

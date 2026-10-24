@@ -1,6 +1,6 @@
 # 📊 Track weekly keyword rankings with Google SERP, Serper API, and Google Sheets
 
-> ⚡ **275 views** · 📊 [Market Research & Insights](../)
+> ⚡ **411 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Auto-notify on new major n8n releases via RSS, email & telegram
 
-> ⚡ **1,823 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,120 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

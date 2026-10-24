@@ -1,6 +1,6 @@
 # 💬 AI voice chatbot with ElevenLabs & OpenAI for customer service and restaurants
 
-> ⚡ **67,189 views** · 💬 [Support Chatbots](../)
+> ⚡ **69,246 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

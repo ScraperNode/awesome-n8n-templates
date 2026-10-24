@@ -1,6 +1,6 @@
 # 👥 Automatic job listings extraction and publishing template
 
-> ⚡ **1,291 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,509 views** · 👥 [HR & Recruitment](../)
 
 > 💡 **Pro Tip** — Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.
 >
@@ -8,42 +8,42 @@
 
 ## Description
 
-Automatically extract job listings from any website URL, format them with AI, and publish directly to WordPress. Just send a URL via Telegram, and watch as the workflow scrapes the job details, enhances the content with GPT, and creates a polished post on your site.
+Turn any job ad URL into a polished WordPress post. Send a link via Telegram and this workflow scrapes the job details, enhances the content with GPT, and publishes a clean post on your site. No copy-paste, no typos slipping through.
 
-## 💡 Why Use Job Repost?
+*Last updated: September 2026.*
 
-### ⏰ **Save countless hours**
-Automatically extract, process, and publish job offers from any website, freeing your time from repetitive tasks.
+## Why Use Job Repost?
 
-### ✅ **Eliminate human errors**
-Say goodbye to typos and missed fields — every job post is validated before going live.
+### **Save countless hours**
+Extract, process, and publish job offers from any website automatically. Repetitive work disappears.
 
-### 📈 **Boost engagement**
-Fresh, well-structured job listings attract more candidates, improving your site's reach and authority.
+### **Eliminate human errors**
+Typos and missed fields become history. Every job post is validated before going live.
 
-### 🚀 **Stay ahead**
-Leveraging AI with GPT means your content is not just automated but polished and SEO-friendly — the digital assistant you never knew you needed.
+### **Boost engagement**
+Fresh, well-structured listings attract more candidates and grow your site's reach and authority.
 
-## ⚡ Perfect For
+### **Stay ahead**
+AI-polished, SEO-friendly content on autopilot. The assistant you never knew you needed.
 
-- **Job board managers:** Want to aggregate listings from multiple sources with minimal effort
-- **Recruiters & HR teams:** Who need to streamline job posting workflows without technical hassles
-- **Content creators & marketers:** Looking to automate publishing while maintaining style and SEO standards
+## Perfect For
 
-## 🔧 How It Works
+- **Job board managers:** Aggregate listings from multiple sources with minimal effort.
+- **Recruiters & HR teams:** Streamline job posting without technical hassles.
+- **Content creators & marketers:** Automate publishing while keeping style and SEO standards.
 
-| Step | Process | Description |
-|------|---------|-------------|
-| 📱 | **Trigger** | Send a job URL via Telegram bot to initiate the process |
-| 🔥 | **Extract** | Firecrawl API scrapes and extracts clean content from the provided URL |
-| 📎 | **Process** | Job data is extracted via AI, text split and cleaned, job categories and types mapped to your system |
-| 🤖 | **Smart Logic** | GPT crafts formatted job posts, intelligent validation ensures all key data is present, default values fill in the blanks if necessary |
-| 💌 | **Output** | Posts automatically published to WordPress with company logos uploaded, and success or error notifications sent via Telegram |
-| 🗂 | **Storage** | Uses Supabase vector store for managing document embeddings, ensuring quick lookup and reference compliance |
+## How It Works
 
-## 🔐 Quick Setup
+* **Trigger:** Send a job URL via Telegram bot to start the process.
+* **Extract:** Firecrawl API scrapes clean content from the provided URL.
+* **Process:** AI extracts the job data, text is split and cleaned, categories and types are mapped to your system.
+* **Smart Logic:** GPT crafts formatted job posts, validation checks that key data is present, defaults fill the blanks if needed.
+* **Output:** Posts publish to WordPress automatically with company logos uploaded, plus success or error notifications via Telegram.
+* **Storage:** Supabase vector store manages document embeddings for quick lookup and reference.
 
-1. **Import** the provided JSON file into your [n8n instances](https://n8n.partnerlinks.io/khmuhtadin)
+## Quick Setup
+
+1. **Import** the provided JSON file into your [n8n instances](https://n8n.partnerlinks.io/creator-khmuhtadin)
 2. **Add credentials:**
    - Firecrawl API key
    - Google Drive OAuth2 (for RAG storage)
@@ -58,26 +58,26 @@ Leveraging AI with GPT means your content is not just automated but polished and
 4. **Update:** URLs and API tokens where placeholders are used
 5. **Test:** Send a job URL to your Telegram bot to verify accurate extraction and posting
 
-## 🧩 You'll Need
+## You'll Need
 
-- ✅ Active [n8n instances](https://n8n.partnerlinks.io/khmuhtadin)
-- ✅ [Firecrawl](https://firecrawl.dev) account with API access
-- ✅ Google Drive account for RAG document storage
-- ✅ OpenAI account with GPT API access
-- ✅ WordPress site with autojob plugin and API enabled
-- ✅ Telegram bot for URL submission and notifications
-- ✅ Supabase account for vector store management
+- Active [n8n instances](https://n8n.partnerlinks.io/creator-khmuhtadin)
+- [Firecrawl](https://firecrawl.dev) account with API access
+- Google Drive account for RAG document storage
+- OpenAI account with GPT API access
+- WordPress site with autojob plugin and API enabled
+- Telegram bot for URL submission and notifications
+- Supabase account for vector store management ([docs](https://supabase.com/docs))
 
-## 🛠️ Level Up Ideas
+## Level Up Ideas
 
-- 🌍 Add multi-language support to expand global reach
-- 🔗 Support batch URL processing for multiple jobs at once
-- 💬 Integrate Slack or email notifications for wider team alerts
-- 🎯 Use more AI nodes to summarize or rate job offers for quality control
-- 🔄 Schedule periodic cleanup of vector store for performance optimization
-- 📊 Add analytics tracking for published jobs performance
+- Add multi-language support to expand global reach
+- Support batch URL processing for multiple jobs at once
+- Integrate Slack or email notifications for wider team alerts
+- Use more AI nodes to summarize or rate job offers for quality control
+- Schedule periodic cleanup of vector store for performance optimization
+- Add analytics tracking for published jobs performance
 
-## 🧠 Nodes Used
+## Nodes Used
 
 ### Core Components:
 - **Firecrawl HTTP Request** (Web scraping and content extraction)
@@ -88,12 +88,23 @@ Leveraging AI with GPT means your content is not just automated but polished and
 - **Telegram Trigger & Message**
 - **HTTP Request** (for WordPress API and image uploads)
 
+### Quick Answers
+**How do I submit a job?**  
+Send the job ad URL to your Telegram bot. Extraction and publishing run automatically.  
+**Where does the post go?**  
+Straight to WordPress with company logo uploaded, plus a Telegram notification on success or error.  
+**Where is the data kept?**  
+Document embeddings live in your Supabase vector store for quick lookup.  
+
 ---
 
-**Made by:** [Khaisa Studio](https://khaisa.studio)  
+**Made by:** [khmuhtadin](https://khmuhtadin.com)  
 **Tags:** `automation` `recruitment` `job-posting` `wordpress` `AI` `web-scraping` `firecrawl`  
-**Category:** Human Resources, Recruitment, Wordpress, Scrapping  
-**Need a custom?** contact me on **[LinkedIn](https://www.linkedin.com/in/khmuhtadin/)** or **[Web](khmuhtadin.com)**
+**Category:** Human Resources, Recruitment, Wordpress, Scraping  
+**Need a custom?** contact me on **[LinkedIn](https://www.linkedin.com/in/khmuhtadin/)** or **[Web](https://khmuhtadin.com)**
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

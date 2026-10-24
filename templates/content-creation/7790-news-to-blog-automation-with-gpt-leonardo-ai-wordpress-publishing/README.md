@@ -1,6 +1,6 @@
 # 🎬 News-to-blog automation with GPT, Leonardo AI & WordPress publishing
 
-> ⚡ **579 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **667 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

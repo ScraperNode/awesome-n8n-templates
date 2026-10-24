@@ -1,6 +1,6 @@
 # 🎫 Automated Jira ticket responses with GPT-4 and Pinecone knowledge base
 
-> ⚡ **279 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **415 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

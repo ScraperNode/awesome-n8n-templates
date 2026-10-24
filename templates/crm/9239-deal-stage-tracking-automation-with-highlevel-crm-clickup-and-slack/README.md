@@ -1,6 +1,6 @@
 # 🤝 Deal stage tracking automation with HighLevel CRM, ClickUp, and Slack
 
-> ⚡ **251 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **363 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

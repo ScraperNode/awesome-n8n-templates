@@ -1,6 +1,6 @@
 # 👥 Automate Calendly user onboarding & offboarding with Google Sheets and human approval
 
-> ⚡ **146 views** · 👥 [HR & Recruitment](../)
+> ⚡ **264 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

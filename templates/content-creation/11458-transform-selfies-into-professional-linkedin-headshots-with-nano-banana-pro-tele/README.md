@@ -1,6 +1,6 @@
 # 🎬 Transform selfies into professional LinkedIn headshots with Nano Banana Pro & Telegram
 
-> ⚡ **478 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **589 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

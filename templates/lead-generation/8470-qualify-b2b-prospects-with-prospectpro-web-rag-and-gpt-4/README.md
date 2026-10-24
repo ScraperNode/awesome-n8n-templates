@@ -1,6 +1,6 @@
 # 🎣 Qualify B2B prospects with ProspectPro, Web RAG and GPT-4
 
-> ⚡ **181 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **232 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔒 Verify property ownership with blockchain, GPT-4 fraud detection, and compliance tracking
 
-> ⚡ **68 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **104 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 🛠️ Pipedrive tool MCP server 💪 all 45 operations
 
-> ⚡ **1,723 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,740 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

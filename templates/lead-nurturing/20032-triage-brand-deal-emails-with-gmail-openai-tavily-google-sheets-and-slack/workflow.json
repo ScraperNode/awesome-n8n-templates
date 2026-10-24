@@ -1,0 +1,850 @@
+{
+  "id": "yyUzqRbKAYOI330x",
+  "meta": {
+    "instanceId": "8443f10082278c46aa5cf3acf8ff0f70061a2c58bce76efac814b16290845177"
+  },
+  "name": "Brand Deal Inbox Manager",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "b4982f5a-f081-4e0d-ba88-82287f7dadfd",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        -384,
+        0
+      ],
+      "parameters": {
+        "simple": false,
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ],
+          "readStatus": "unread"
+        },
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "unit": "minutes",
+              "value": 5
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "11e42d9b-35a6-45b6-8433-e046f0384ba6",
+      "name": "Normalize Email",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -160,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Flatten the raw Gmail payload into clean fields used by every later node\nconst e = $json;\nconst fromObj = (e.from && e.from.value && e.from.value[0]) || {};\nconst address = (fromObj.address || '').toLowerCase();\nconst body = (e.text || e.snippet || '').toString();\n\nreturn {\n  json: {\n    message_id: e.id,\n    thread_id: e.threadId,\n    from_email: address,\n    from_name: fromObj.name || '',\n    sender_domain: address.split('@')[1] || '',\n    subject: e.subject || '(no subject)',\n    body: body.replace(/\\n{3,}/g, '\\n\\n').slice(0, 6000),\n    received_at: e.date || new Date().toISOString()\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1980ddd9-e7d0-4e3d-aaaf-7e149597ea28",
+      "name": "AI: Classify Email",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        64,
+        0
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "options": {
+          "temperature": 0.1
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are the inbox triage assistant for a content creator. Decide whether an email is a brand partnership / sponsorship opportunity and extract the deal terms.\n\nReturn ONLY a JSON object with exactly these keys:\n{\n  \"is_sponsorship\": boolean,\n  \"deal_type\": \"paid_sponsorship\" | \"affiliate\" | \"gifted_product\" | \"ugc\" | \"event\" | \"not_a_deal\",\n  \"confidence\": number between 0 and 1,\n  \"brand_name\": string,\n  \"brand_website\": string or \"\",\n  \"contact_name\": string (first name of the sender if known, else \"\"),\n  \"offered_amount\": number or null (total cash offered, no currency symbols),\n  \"currency\": ISO code like \"USD\" or \"INR\" (default \"USD\"),\n  \"deliverables\": [ { \"platform\": \"youtube\"|\"instagram\"|\"tiktok\"|\"linkedin\"|\"x\"|\"newsletter\"|\"podcast\"|\"other\", \"format\": \"dedicated_video\"|\"integration\"|\"short\"|\"reel\"|\"story\"|\"post\"|\"newsletter\"|\"livestream\"|\"other\", \"quantity\": number } ],\n  \"usage_rights_requested\": boolean,\n  \"usage_rights_days\": number or null,\n  \"exclusivity_requested\": boolean,\n  \"deadline\": \"YYYY-MM-DD\" or \"\",\n  \"scam_signals\": [ string ],\n  \"summary\": one sentence describing the ask\n}\n\nRules:\n- Newsletters, invoices, cold SaaS sales pitches, PR blasts without a concrete ask, and platform notifications are \"not_a_deal\".\n- Affiliate-only and gifted-product offers ARE deals (is_sponsorship true) but set offered_amount to null.\n- scam_signals: fake-brand patterns (free-mail sender claiming a big brand, requests to download/run files, pay-to-join, crypto payment only, urgency pressure)."
+            },
+            {
+              "content": "=Classify this email.\n\nFROM: {{ $json.from_name }} <{{ $json.from_email }}>\nSENDER DOMAIN: {{ $json.sender_domain }}\nSUBJECT: {{ $json.subject }}\n\nBODY:\n{{ $json.body }}"
+            }
+          ]
+        },
+        "jsonOutput": true
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "0b3b15b3-0f6b-490d-bb80-6b9224e80c9b",
+      "name": "Parse Classification",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        432,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = $json.message?.content ?? $json.content ?? $json.text ?? '';\nlet parsed = raw;\nif (typeof raw === 'string') {\n  const cleaned = raw.replace(/```json|```/g, '').trim();\n  try { parsed = JSON.parse(cleaned); } catch (err) { parsed = { __parse_error: cleaned.slice(0, 300) }; }\n}\n\nconst c = parsed || {};\nconst email = $('Normalize Email').item.json;\nconst freeMail = ['gmail.com','yahoo.com','outlook.com','hotmail.com','icloud.com','proton.me','protonmail.com','live.com','aol.com'];\nconst corporateDomain = email.sender_domain && !freeMail.includes(email.sender_domain);\nconst deliverables = Array.isArray(c.deliverables) && c.deliverables.length\n  ? c.deliverables.map(d => ({ platform: d.platform || 'youtube', format: d.format || 'integration', quantity: Number(d.quantity) || 1 }))\n  : [];\nconst scam = Array.isArray(c.scam_signals) ? c.scam_signals : [];\nif (!corporateDomain && c.brand_name) scam.push('Sender uses a free email domain');\n\nreturn {\n  json: {\n    ...email,\n    is_sponsorship: c.is_sponsorship === true,\n    deal_type: c.deal_type || 'not_a_deal',\n    confidence: Number(c.confidence) || 0,\n    brand_name: c.brand_name || email.from_name || email.sender_domain,\n    brand_website: c.brand_website || (corporateDomain ? 'https://' + email.sender_domain : ''),\n    contact_name: c.contact_name || (email.from_name || '').split(' ')[0] || '',\n    offered_amount: (c.offered_amount === null || c.offered_amount === undefined || c.offered_amount === '') ? null : Number(c.offered_amount),\n    offer_currency: c.currency || 'USD',\n    deliverables,\n    deliverables_text: deliverables.length ? deliverables.map(d => `${d.quantity}x ${d.platform} ${d.format}`).join(', ') : 'not specified',\n    usage_rights_requested: c.usage_rights_requested === true,\n    usage_rights_days: Number(c.usage_rights_days) || null,\n    exclusivity_requested: c.exclusivity_requested === true,\n    deadline: c.deadline || '',\n    scam_signals: scam,\n    summary: c.summary || '',\n    classification_error: c.__parse_error || ''\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "33debd04-3e5a-4fa1-a579-915664075945",
+      "name": "Is Sponsorship?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        640,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "5995e870-eced-4d09-82f8-bb7f67b90b56",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.is_sponsorship }}",
+              "rightValue": ""
+            },
+            {
+              "id": "cf92cc63-d6ac-4fb9-98f0-4098493f9d55",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "leftValue": "={{ $json.confidence }}",
+              "rightValue": 0.6
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "bd3f9a62-9e52-470c-8445-dfefcd7e6e8a",
+      "name": "Not a Deal \u2014 Skip",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1104,
+        656
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "3319271e-3424-4fde-901a-2a04d3e13bc2",
+      "name": "Label: Brand Deals",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1024,
+        -16
+      ],
+      "webhookId": "357d8808-940d-42e4-94f9-fb642ae6eccb",
+      "parameters": {
+        "labelIds": [
+          "REPLACE_WITH_BRAND_DEALS_LABEL_ID"
+        ],
+        "messageId": "={{ $json.message_id }}",
+        "operation": "addLabels"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "98b4dd91-4a55-4c8b-8c49-866f041dc2ec",
+      "name": "Research: Funding",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        1248,
+        -16
+      ],
+      "parameters": {
+        "url": "https://api.tavily.com/search",
+        "method": "POST",
+        "options": {
+          "timeout": 30000
+        },
+        "jsonBody": "={{ JSON.stringify({ query: $('Parse Classification').item.json.brand_name + ' company funding round investors valuation revenue', search_depth: 'advanced', max_results: 5, include_answer: true }) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "a987b7e2-36ce-4e97-a490-02914163cdac",
+      "name": "Research: Past Campaigns",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        1472,
+        -16
+      ],
+      "parameters": {
+        "url": "https://api.tavily.com/search",
+        "method": "POST",
+        "options": {
+          "timeout": 30000
+        },
+        "jsonBody": "={{ JSON.stringify({ query: $('Parse Classification').item.json.brand_name + ' influencer marketing campaign creator sponsorship YouTube Instagram', search_depth: 'advanced', max_results: 5, include_answer: true }) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "d7116872-9c0a-4773-b169-db6e427dbd0f",
+      "name": "Compile Research",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1680,
+        -16
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Turn both Tavily responses into compact text blocks for the AI\nconst safe = (name) => { try { return $(name).item.json || {}; } catch (e) { return {}; } };\nconst fmt = (r) => {\n  if (r.error) return 'Search failed: ' + (r.error.message || JSON.stringify(r.error)).slice(0, 200);\n  const res = Array.isArray(r.results) ? r.results : [];\n  const answer = r.answer ? 'Summary: ' + r.answer + '\\n\\n' : '';\n  const list = res.slice(0, 5).map((x, i) => `[${i + 1}] ${x.title} (${x.url})\\n${(x.content || '').slice(0, 500)}`).join('\\n\\n');\n  return (answer + list).trim() || 'No results found';\n};\n\nconst deal = $('Parse Classification').item.json;\nreturn {\n  json: {\n    ...deal,\n    research_funding: fmt(safe('Research: Funding')),\n    research_campaigns: fmt(safe('Research: Past Campaigns'))\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "51e3b9e0-c8a9-41cc-81fc-0d90d39a4981",
+      "name": "AI: Brand Profile",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        1904,
+        -16
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "options": {
+          "temperature": 0.2
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a brand-partnerships analyst for a content creator. Using ONLY the research provided, build a short profile of the brand so the creator can price the deal. Do not invent facts; use \"unknown\" or null when the research is silent.\n\nReturn ONLY a JSON object:\n{\n  \"funding_stage\": \"bootstrapped\"|\"seed\"|\"series_a\"|\"series_b_plus\"|\"public\"|\"enterprise\"|\"unknown\",\n  \"total_funding_usd\": number or null,\n  \"last_round\": string (e.g. \"Series B, $40M, Mar 2025\") or \"\",\n  \"brand_tier\": \"startup\"|\"growth\"|\"established\"|\"enterprise\"|\"unknown\",\n  \"past_creator_campaigns\": [ short strings naming creators/campaigns found ],\n  \"creator_budget_signal\": \"low\"|\"medium\"|\"high\"|\"unknown\",\n  \"legitimacy_score\": integer 0-100 (how confident you are this is a real, reputable company),\n  \"red_flags\": [ strings ],\n  \"one_line_summary\": string\n}"
+            },
+            {
+              "content": "=Brand: {{ $json.brand_name }}\nWebsite: {{ $json.brand_website }}\nWhat they asked for: {{ $json.summary }}\nScam signals from the email: {{ $json.scam_signals.join('; ') || 'none' }}\n\n=== FUNDING RESEARCH ===\n{{ $json.research_funding }}\n\n=== PAST CREATOR CAMPAIGN RESEARCH ===\n{{ $json.research_campaigns }}"
+            }
+          ]
+        },
+        "jsonOutput": true
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "94faa76f-1bd0-421f-9788-4bbef5010947",
+      "name": "Parse Brand Profile",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2256,
+        -16
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = $json.message?.content ?? $json.content ?? $json.text ?? '';\nlet parsed = raw;\nif (typeof raw === 'string') {\n  const cleaned = raw.replace(/```json|```/g, '').trim();\n  try { parsed = JSON.parse(cleaned); } catch (err) { parsed = { __parse_error: cleaned.slice(0, 300) }; }\n}\n\nconst p = parsed || {};\nconst deal = $('Compile Research').item.json;\nreturn {\n  json: {\n    ...deal,\n    funding_stage: p.funding_stage || 'unknown',\n    total_funding_usd: p.total_funding_usd ?? null,\n    last_round: p.last_round || '',\n    brand_tier: p.brand_tier || 'unknown',\n    past_creator_campaigns: Array.isArray(p.past_creator_campaigns) ? p.past_creator_campaigns : [],\n    creator_budget_signal: p.creator_budget_signal || 'unknown',\n    legitimacy_score: Number.isFinite(Number(p.legitimacy_score)) ? Number(p.legitimacy_score) : 50,\n    red_flags: Array.isArray(p.red_flags) ? p.red_flags : [],\n    brand_summary: p.one_line_summary || ''\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9862c0a3-8230-44f1-96fc-bd7bd77ff2ea",
+      "name": "Creator Rate Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2672,
+        -16
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1578ebb0-ed24-442b-9827-37db3d49ebcd",
+              "name": "creator_name",
+              "type": "string",
+              "value": "Your Name"
+            },
+            {
+              "id": "de863283-2b11-4bfd-96c5-2db4526a592c",
+              "name": "niche",
+              "type": "string",
+              "value": "AI & Automation"
+            },
+            {
+              "id": "e35e1aca-ba59-45d7-a22b-7368780ec219",
+              "name": "youtube_subscribers",
+              "type": "number",
+              "value": 120000
+            },
+            {
+              "id": "405ed4cf-3309-46a6-b7a8-6e02e77eacc6",
+              "name": "youtube_avg_views",
+              "type": "number",
+              "value": 25000
+            },
+            {
+              "id": "07479bbd-f793-48bc-b7ac-540270784a18",
+              "name": "instagram_followers",
+              "type": "number",
+              "value": 80000
+            },
+            {
+              "id": "eeedcc11-93a8-4f24-a849-5c55e2bb6b81",
+              "name": "instagram_avg_reel_views",
+              "type": "number",
+              "value": 30000
+            },
+            {
+              "id": "941a3994-ad24-4ed9-8d30-cfa729d2ed30",
+              "name": "linkedin_followers",
+              "type": "number",
+              "value": 40000
+            },
+            {
+              "id": "b895b846-262b-4dd4-878d-7f7413a56f8b",
+              "name": "newsletter_subscribers",
+              "type": "number",
+              "value": 15000
+            },
+            {
+              "id": "399370ad-e862-422c-955d-b029994fb33e",
+              "name": "engagement_rate_pct",
+              "type": "number",
+              "value": 4.5
+            },
+            {
+              "id": "7f695e82-b9cb-4fb9-8c46-3c5404e218a9",
+              "name": "base_cpm",
+              "type": "number",
+              "value": 25
+            },
+            {
+              "id": "7a00ca30-5e0b-459b-99e3-ab67e5e01f10",
+              "name": "min_deal_rate",
+              "type": "number",
+              "value": 500
+            },
+            {
+              "id": "9497750c-49d0-4220-a58e-5216df3a9d08",
+              "name": "currency",
+              "type": "string",
+              "value": "USD"
+            },
+            {
+              "id": "8bb6439a-2398-4575-a4cb-02db08bd5d08",
+              "name": "media_kit_url",
+              "type": "string",
+              "value": "https://your-media-kit-link.com"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "2bb26c1b-cdd5-4497-bd64-9b3e538ee4f4",
+      "name": "Rate Calculator",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2960,
+        -16
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Deterministic pricing engine: audience size x CPM x format x brand/usage multipliers\nconst d = $json;\nconst round50 = (n) => Math.max(50, Math.round(n / 50) * 50);\n\n// Average impressions per platform\nconst reach = {\n  youtube: d.youtube_avg_views,\n  instagram: d.instagram_avg_reel_views,\n  tiktok: d.instagram_avg_reel_views,\n  linkedin: Math.round(d.linkedin_followers * 0.15),\n  x: Math.round(d.linkedin_followers * 0.1),\n  newsletter: Math.round(d.newsletter_subscribers * 0.45),\n  podcast: Math.round(d.youtube_avg_views * 0.4),\n  other: d.youtube_avg_views\n};\n// Relative value of each format vs a dedicated video\nconst formatMult = { dedicated_video: 1.0, integration: 0.6, livestream: 0.8, newsletter: 0.5, reel: 0.45, short: 0.35, post: 0.3, story: 0.15, other: 0.5 };\n\nconst deliverables = d.deliverables.length ? d.deliverables : [{ platform: 'youtube', format: 'integration', quantity: 1 }];\nconst breakdown = [];\nlet base = 0;\nfor (const del of deliverables) {\n  const views = reach[del.platform] ?? reach.other;\n  const line = (views / 1000) * d.base_cpm * (formatMult[del.format] ?? 0.5) * del.quantity;\n  base += line;\n  breakdown.push(`${del.quantity}x ${del.platform} ${del.format}: ~${views.toLocaleString()} views -> ${Math.round(line)}`);\n}\n\n// Multipliers\nconst er = d.engagement_rate_pct;\nconst erMult = er >= 6 ? 1.25 : er >= 3 ? 1.1 : er >= 1.5 ? 1.0 : 0.9;\nconst tierMult = { enterprise: 1.4, established: 1.25, growth: 1.1, startup: 0.9, unknown: 1.0 }[d.brand_tier] ?? 1.0;\nconst fundingBoost = ['series_b_plus', 'public', 'enterprise'].includes(d.funding_stage) ? 0.1 : 0;\nconst usageMult = d.usage_rights_requested ? 1 + Math.min(1, Math.max(0.2, ((d.usage_rights_days || 30) / 30) * 0.1)) : 1;\nconst exclMult = d.exclusivity_requested ? 1.2 : 1;\nlet rushMult = 1;\nif (d.deadline) {\n  const days = (new Date(d.deadline) - new Date()) / 86400000;\n  if (!isNaN(days) && days < 7) rushMult = 1.15;\n}\n\nconst total = base * erMult * (tierMult + fundingBoost) * usageMult * exclMult * rushMult;\nconst suggested = round50(Math.max(total, d.min_deal_rate));\nconst counterAsk = round50(suggested * 1.15);\nconst walkAway = round50(Math.max(d.min_deal_rate, suggested * 0.8));\n\n// Negotiation strategy\nconst offered = d.offered_amount;\nconst riskyBrand = d.legitimacy_score < 40 || d.scam_signals.length >= 2;\nlet strategy, counter, upsell = '';\nif (riskyBrand) { strategy = 'verify_first'; counter = suggested; }\nelse if (d.deal_type === 'affiliate' || d.deal_type === 'gifted_product') { strategy = 'convert_to_paid'; counter = suggested; }\nelse if (offered === null || isNaN(offered)) { strategy = 'quote_rate'; counter = counterAsk; }\nelse if (offered >= suggested) { strategy = 'accept_with_upsell'; counter = offered; upsell = 'Add a short-form cut-down (Short/Reel) for an extra ' + round50(suggested * 0.25) + ' ' + d.currency; }\nelse if (offered >= walkAway) { strategy = 'counter_meet_near'; counter = suggested; }\nelse { strategy = 'counter_anchor'; counter = counterAsk; upsell = 'Offer a lighter package (fewer deliverables) if budget is fixed'; }\n\nreturn {\n  json: {\n    ...d,\n    suggested_rate: suggested,\n    counter_ask: counterAsk,\n    walk_away_floor: walkAway,\n    counter_amount: counter,\n    strategy,\n    upsell_idea: upsell,\n    currency_mismatch: d.offer_currency && d.offer_currency !== d.currency,\n    rate_breakdown: breakdown.join(' | ') + ` | multipliers: engagement ${erMult}, brand ${(tierMult + fundingBoost).toFixed(2)}, usage ${usageMult.toFixed(2)}, exclusivity ${exclMult}, rush ${rushMult}`,\n    audience_proof: `${d.youtube_subscribers.toLocaleString()} YouTube subs (~${d.youtube_avg_views.toLocaleString()} avg views), ${d.instagram_followers.toLocaleString()} Instagram followers, ${er}% engagement. Media kit: ${d.media_kit_url}`\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "2d9d7d88-63e0-404c-99db-07d740c7a8b9",
+      "name": "AI: Draft Counter-Offer",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        3200,
+        -16
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "options": {
+          "temperature": 0.5
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You write brand-deal reply emails on behalf of a content creator. Tone: warm, confident, professional, concise (120-200 words). No emojis, no hype, no apologising for the price. Never mention a \"walk-away\" number or any internal pricing logic.\n\nFollow the NEGOTIATION STRATEGY exactly:\n- quote_rate: thank them, confirm interest, quote the COUNTER FIGURE for the requested deliverables, ask to confirm scope and timeline.\n- accept_with_upsell: happily accept their offer, confirm deliverables, and propose the optional add-on.\n- counter_meet_near: appreciate the offer, explain value briefly with audience proof, propose the COUNTER FIGURE.\n- counter_anchor: appreciate the offer, explain value with audience proof, propose the COUNTER FIGURE, and offer the lighter-package alternative.\n- convert_to_paid: thank them for the product/affiliate offer, explain you prioritise paid partnerships, propose the COUNTER FIGURE as a flat fee (affiliate can be added on top).\n- verify_first: stay polite but do NOT quote a price. Ask for official company email, website, campaign brief, and payment terms before proceeding.\n\nAlways (except verify_first) mention: usage rights terms if requested, 50% upfront / 50% on delivery, and a link to the media kit. Sign off with the creator's name.\n\nReturn ONLY JSON: { \"subject\": string, \"body\": string } where body is plain text with \\n line breaks."
+            },
+            {
+              "content": "=Creator: {{ $json.creator_name }} ({{ $json.niche }})\nBrand: {{ $json.brand_name }} \u2014 {{ $json.brand_summary }}\nContact first name: {{ $json.contact_name || 'there' }}\nOriginal subject: {{ $json.subject }}\nDeal type: {{ $json.deal_type }}\nTheir offer: {{ $json.offered_amount ?? 'not stated' }} {{ $json.offer_currency }}\nRequested deliverables: {{ $json.deliverables_text }}\nUsage rights requested: {{ $json.usage_rights_requested ? ($json.usage_rights_days || 'unspecified') + ' days' : 'no' }}\nExclusivity requested: {{ $json.exclusivity_requested }}\nDeadline: {{ $json.deadline || 'not stated' }}\n\nNEGOTIATION STRATEGY: {{ $json.strategy }}\nCOUNTER FIGURE: {{ $json.counter_amount }} {{ $json.currency }}\nOptional add-on / alternative: {{ $json.upsell_idea || 'none' }}\nAudience proof: {{ $json.audience_proof }}\n\nTheir original email:\n{{ $json.body }}"
+            }
+          ]
+        },
+        "jsonOutput": true
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "a645cd96-69c6-49f2-a1f2-7b32c23067e0",
+      "name": "Parse Draft",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3520,
+        -16
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = $json.message?.content ?? $json.content ?? $json.text ?? '';\nlet parsed = raw;\nif (typeof raw === 'string') {\n  const cleaned = raw.replace(/```json|```/g, '').trim();\n  try { parsed = JSON.parse(cleaned); } catch (err) { parsed = { __parse_error: cleaned.slice(0, 300) }; }\n}\n\nconst p = parsed || {};\nconst deal = $('Rate Calculator').item.json;\nconst subject = p.subject || ('Re: ' + deal.subject);\nreturn {\n  json: {\n    ...deal,\n    draft_subject: subject.toLowerCase().startsWith('re:') ? subject : 'Re: ' + deal.subject,\n    draft_body: (p.body || 'Draft generation failed \u2014 please write this reply manually.').replace(/\\\\n/g, '\\n')\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "23252f4f-ce4e-46f3-9155-5cef32e3e7b7",
+      "name": "Gmail: Create Draft Reply",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        3744,
+        -16
+      ],
+      "webhookId": "22e1765b-ce18-47db-8e4f-4fc59b937006",
+      "parameters": {
+        "message": "={{ $json.draft_body }}",
+        "options": {
+          "sendTo": "={{ $json.from_email }}",
+          "threadId": "={{ $json.thread_id }}"
+        },
+        "subject": "={{ $json.draft_subject }}",
+        "resource": "draft"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "29370674-c578-4843-ac63-6dd2a50b18ff",
+      "name": "Build Log Row",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3968,
+        -16
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const d = $('Parse Draft').item.json;\nreturn {\n  json: {\n    'Received At': d.received_at,\n    'Brand': d.brand_name,\n    'Deal Type': d.deal_type,\n    'Contact': `${d.from_name} <${d.from_email}>`,\n    'Subject': d.subject,\n    'Deliverables': d.deliverables_text,\n    'Offered': d.offered_amount === null ? '' : `${d.offered_amount} ${d.offer_currency}`,\n    'Suggested Rate': `${d.suggested_rate} ${d.currency}`,\n    'Counter Sent': `${d.counter_amount} ${d.currency}`,\n    'Walk-away Floor': `${d.walk_away_floor} ${d.currency}`,\n    'Strategy': d.strategy,\n    'Funding Stage': d.funding_stage,\n    'Last Round': d.last_round,\n    'Brand Tier': d.brand_tier,\n    'Legitimacy Score': d.legitimacy_score,\n    'Past Creator Campaigns': d.past_creator_campaigns.join('; '),\n    'Red Flags': [...d.scam_signals, ...d.red_flags].join('; '),\n    'Currency Mismatch': d.currency_mismatch ? 'YES' : '',\n    'Rate Breakdown': d.rate_breakdown,\n    'Gmail Thread': `https://mail.google.com/mail/u/0/#inbox/${d.thread_id}`,\n    'Draft ID': $json.id || '',\n    'Status': 'Draft ready'\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "03356732-3331-4338-b916-81926ad074d0",
+      "name": "Log to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        4176,
+        -16
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": []
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultName": "Brand Deals"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REPLACE_WITH_SPREADSHEET_ID"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "2eec4516-da18-4ce9-ad53-076d25b9581f",
+      "name": "Slack: Notify",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        4400,
+        -16
+      ],
+      "webhookId": "7957fbd8-3990-4665-af53-3e461c351a4d",
+      "parameters": {
+        "text": "=:handshake: *New brand deal \u2014 {{ $('Parse Draft').item.json.brand_name }}*\n{{ $('Parse Draft').item.json.brand_summary }}\n\n\u2022 Type: {{ $('Parse Draft').item.json.deal_type }} | Deliverables: {{ $('Parse Draft').item.json.deliverables_text }}\n\u2022 Offered: {{ $('Parse Draft').item.json.offered_amount ?? 'not stated' }} {{ $('Parse Draft').item.json.offer_currency }}\n\u2022 Suggested: {{ $('Parse Draft').item.json.suggested_rate }} | Counter: {{ $('Parse Draft').item.json.counter_amount }} | Floor: {{ $('Parse Draft').item.json.walk_away_floor }} {{ $('Parse Draft').item.json.currency }}\n\u2022 Strategy: `{{ $('Parse Draft').item.json.strategy }}` | Legitimacy: {{ $('Parse Draft').item.json.legitimacy_score }}/100\n{{ ($('Parse Draft').item.json.scam_signals.concat($('Parse Draft').item.json.red_flags)).length ? ':warning: Flags: ' + $('Parse Draft').item.json.scam_signals.concat($('Parse Draft').item.json.red_flags).join('; ') : '' }}\n\n:email: Draft reply is waiting in Gmail: https://mail.google.com/mail/u/0/#inbox/{{ $('Parse Draft').item.json.thread_id }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#brand-deals"
+        },
+        "otherOptions": {}
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "694d8157-ea05-44b7-bca3-87a1075ee012",
+      "name": "Sticky Note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1248,
+        -608
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 784,
+        "height": 960,
+        "content": "# \ud83e\udd1d Brand Deal Inbox Manager\n\nWatches your inbox, spots sponsorship emails, researches the brand (funding + past creator campaigns), prices the deal from your audience size, and leaves a **counter-offer draft** in Gmail. Nothing is ever sent automatically.\n\n## \u2699\ufe0f Setup checklist\n1. **Gmail OAuth2** \u2192 Trigger, Label, Draft nodes\n2. **OpenAI** \u2192 the 3 \"AI:\" nodes (gpt-4o-mini)\n3. **Tavily** \u2192 create *Header Auth* credential\n   Name: `Authorization`  Value: `Bearer tvly-XXXX`\n   (free key at tavily.com) \u2192 both Research nodes\n4. Create Gmail label **Brand Deals** \u2192 pick it in *Label: Brand Deals*\n5. **Google Sheet** with tab *Brand Deals* \u2192 paste ID in *Log to Google Sheets* (headers auto-map from *Build Log Row*)\n6. **Slack** \u2192 set channel in *Slack: Notify* (or delete node)\n7. \u270f\ufe0f Edit **Creator Rate Config** with YOUR numbers\n\n## \ud83d\udd01 Flow\nGmail \u2192 Classify \u2192 Label \u2192 Research \u2192 Profile \u2192 Price \u2192 Draft \u2192 Log \u2192 Notify\n\n## \ud83d\udee1\ufe0f Safety\n\u2022 Drafts only \u2014 you review & hit send\n\u2022 Walk-away floor is never shown to the AI drafter\n\u2022 Suspicious brands get a *verify_first* reply (no price quoted)"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a2973ed9-a070-4397-9b21-0d787f883560",
+      "name": "Sticky Note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -432,
+        -448
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1368,
+        "height": 692,
+        "content": "## 1\ufe0f\u20e3 Intake & Classification\nPolls **unread INBOX** every 5 min.\n**Normalize Email** flattens the Gmail payload.\n**AI: Classify Email** decides if it's a deal and extracts: brand, offer amount, deliverables, usage rights, exclusivity, deadline and scam signals.\n**Is Sponsorship?** passes only deals with confidence \u2265 0.6 \u2014 everything else is skipped untouched."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "7e130263-a4a4-4dec-b9fb-50b816ed88e7",
+      "name": "Sticky Note 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        960,
+        -416
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1460,
+        "height": 660,
+        "content": "## 2\ufe0f\u20e3 Sort & Brand Research\n**Label: Brand Deals** tags the email so your inbox stays sorted.\nTwo **Tavily** searches run: \ud83d\udcb0 funding / investors / valuation and \ud83d\udce3 past influencer & creator campaigns.\nResearch nodes are set to *continue on error*, so a failed search never breaks the run.\n**AI: Brand Profile** turns the research into: funding stage, brand tier, budget signal, legitimacy score (0\u2013100) and red flags."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "74447355-100b-40f9-99e5-86069dc2f107",
+      "name": "Sticky Note 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2448,
+        -416
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 680,
+        "height": 676,
+        "content": "## 3\ufe0f\u20e3 Pricing Engine\n**Creator Rate Config** \u2190 edit your stats, CPM, minimum rate & currency here.\n**Rate Calculator** (pure JS, no AI):\nviews \u00f7 1000 \u00d7 CPM \u00d7 format weight\n\u00d7 engagement \u00d7 brand tier/funding\n\u00d7 usage rights \u00d7 exclusivity \u00d7 rush\nOutputs **suggested rate**, **counter ask** (+15%), **walk-away floor** (\u221220%) and picks a strategy."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5df92cbf-f015-4f0c-b096-320d6066bd2f",
+      "name": "Sticky Note 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3152,
+        -352
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1480,
+        "height": 580,
+        "content": "## 4\ufe0f\u20e3 Draft, Log & Notify\n**AI: Draft Counter-Offer** writes the reply using the chosen strategy:\n`quote_rate` \u00b7 `accept_with_upsell` \u00b7 `counter_meet_near` \u00b7 `counter_anchor` \u00b7 `convert_to_paid` \u00b7 `verify_first`\n**Gmail: Create Draft Reply** saves it *inside the same thread* \u2014 review, tweak, send.\n**Build Log Row \u2192 Google Sheets** keeps a deal pipeline (brand, offer, counter, floor, flags, thread link).\n**Slack: Notify** pings you with the summary + Gmail link."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "49915925-446a-470a-b89c-8d3703f41259",
+      "name": "Sticky Note 6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        880,
+        336
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 428,
+        "height": 532,
+        "content": "### \u23ed\ufe0f Skipped\nNon-deal emails end here and stay unread in your inbox."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "4ac46ed8-2cef-49f7-80c5-501a17abf7e4",
+      "name": "\ud83d\udd11 Credentials & Configuration",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4672,
+        -80
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 400,
+        "height": 302,
+        "content": "## \ud83d\udd11 Credentials Required\n- **Gmail OAuth2** \u2014 email trigger + label + draft reply\n- **OpenAI API** \u2014 email classifier + brand profile + counter-offer draft\n- **Tavily API** \u2192 key in HTTP Request auth headers\n- **Google Sheets OAuth2** \u2014 deal log sheet\n- **Slack OAuth2** \u2014 deal alert notification"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "b49dc4f3-0145-4365-ba9f-477ea2a6d399",
+  "nodeGroups": [],
+  "connections": {
+    "Parse Draft": {
+      "main": [
+        [
+          {
+            "node": "Gmail: Create Draft Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Log Row": {
+      "main": [
+        [
+          {
+            "node": "Log to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Sponsorship?": {
+      "main": [
+        [
+          {
+            "node": "Label: Brand Deals",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not a Deal \u2014 Skip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Email": {
+      "main": [
+        [
+          {
+            "node": "AI: Classify Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Calculator": {
+      "main": [
+        [
+          {
+            "node": "AI: Draft Counter-Offer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile Research": {
+      "main": [
+        [
+          {
+            "node": "AI: Brand Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Brand Profile": {
+      "main": [
+        [
+          {
+            "node": "Parse Brand Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research: Funding": {
+      "main": [
+        [
+          {
+            "node": "Research: Past Campaigns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Classify Email": {
+      "main": [
+        [
+          {
+            "node": "Parse Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Label: Brand Deals": {
+      "main": [
+        [
+          {
+            "node": "Research: Funding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creator Rate Config": {
+      "main": [
+        [
+          {
+            "node": "Rate Calculator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Brand Profile": {
+      "main": [
+        [
+          {
+            "node": "Creator Rate Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Slack: Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Classification": {
+      "main": [
+        [
+          {
+            "node": "Is Sponsorship?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Draft Counter-Offer": {
+      "main": [
+        [
+          {
+            "node": "Parse Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research: Past Campaigns": {
+      "main": [
+        [
+          {
+            "node": "Compile Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Create Draft Reply": {
+      "main": [
+        [
+          {
+            "node": "Build Log Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # 🤝 Generate pro construction quotes from jotform to email with Supabase CRM
 
-> ⚡ **273 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **322 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

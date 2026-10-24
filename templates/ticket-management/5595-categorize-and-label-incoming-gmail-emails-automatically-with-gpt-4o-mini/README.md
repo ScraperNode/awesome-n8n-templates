@@ -1,6 +1,6 @@
 # 🎫 Categorize and label incoming Gmail emails automatically with GPT-4o mini
 
-> ⚡ **5,128 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **5,887 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

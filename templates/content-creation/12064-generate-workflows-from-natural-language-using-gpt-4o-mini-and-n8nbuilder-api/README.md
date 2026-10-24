@@ -1,6 +1,6 @@
 # 🎬 Generate workflows from natural language using GPT-4o Mini and n8nBuilder API
 
-> ⚡ **141 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **306 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

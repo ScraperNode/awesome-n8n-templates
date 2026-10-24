@@ -1,6 +1,6 @@
 # 📊 Monitor German company register & financial events with Implisense API & notifications
 
-> ⚡ **55 views** · 📊 [Market Research & Insights](../)
+> ⚡ **97 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

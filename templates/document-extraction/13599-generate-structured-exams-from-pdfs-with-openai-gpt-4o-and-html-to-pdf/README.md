@@ -1,6 +1,6 @@
 # 🔬 Generate structured exams from PDFs with OpenAI GPT-4o and HTML to PDF
 
-> ⚡ **123 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **406 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Generate & explain Excel/Google Sheets formulas with DeepSeek AI
 
-> ⚡ **78 views** · ⚡ [Personal Productivity](../)
+> ⚡ **107 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

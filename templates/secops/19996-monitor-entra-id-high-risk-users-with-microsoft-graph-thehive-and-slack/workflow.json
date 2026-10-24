@@ -1,0 +1,685 @@
+{
+  "id": "YvpBLURqKcclI1c2",
+  "meta": {
+    "instanceId": "42c0b5c37c48aace9df095d2e2928e122856cd7060936db3fbc6c2014d98572d"
+  },
+  "name": "Entra ID High-Risk User Alerts",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "8b45de6f-a22d-41b9-901d-2b2351655189",
+      "name": "Query Risk Detections",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        256,
+        0
+      ],
+      "parameters": {
+        "url": "https://graph.microsoft.com/v1.0/identityProtection/riskDetections",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "nextURL": "={{ $response.body[\"@odata.nextLink\"] }}",
+              "paginationMode": "responseContainsNextURL",
+              "completeExpression": "={{ $response.body[\"@odata.nextLink\"] === undefined }}",
+              "paginationCompleteWhen": "other"
+            }
+          }
+        },
+        "sendQuery": true,
+        "authentication": "predefinedCredentialType",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "$filter",
+              "value": "=riskLevel eq 'high' and detectedDateTime ge {{ $now.minus({ minutes: 20 }).toUTC().toISO() }}"
+            }
+          ]
+        },
+        "nodeCredentialType": "microsoftEntraOAuth2Api"
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "37cfbf65-cf9d-4c0b-b08f-1614f6206072",
+      "name": "Group & Aggregate Per User",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        544,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const LF = String.fromCharCode(10);\nconst items = $input.all();\nconst detections = [];\nfor (const it of items) {\n  const v = it.json && it.json.value;\n  if (Array.isArray(v)) { detections.push(...v); }\n  else if (it.json && it.json.id) { detections.push(it.json); }\n}\nconst high = detections.filter(d => String(d.riskLevel || '').toLowerCase() === 'high');\nconst byUser = {};\nfor (const d of high) {\n  const key = d.userPrincipalName || d.userDisplayName || d.userId || 'unknown';\n  if (!byUser[key]) {\n    byUser[key] = { user: key, userDisplayName: d.userDisplayName || '', userPrincipalName: d.userPrincipalName || '', userId: d.userId || '', detections: [] };\n  }\n  byUser[key].detections.push(d);\n}\nconst uniq = (arr) => [...new Set(arr.filter(Boolean))];\nconst results = [];\nfor (const key of Object.keys(byUser)) {\n  const g = byUser[key];\n  const ds = g.detections;\n  const riskLevels = uniq(ds.map(d => d.riskLevel));\n  const riskStates = uniq(ds.map(d => d.riskState));\n  const detectionTypes = uniq(ds.map(d => d.riskEventType || d.riskType));\n  const ips = uniq(ds.map(d => d.ipAddress));\n  const countries = uniq(ds.map(d => (d.location || {}).countryOrRegion));\n  const locations = uniq(ds.map(d => { const l = d.location || {}; return [l.city, l.state, l.countryOrRegion].filter(Boolean).join(', '); }));\n  const detectedTimes = ds.map(d => d.detectedDateTime).filter(Boolean).sort();\n  results.push({\n    json: {\n      user: g.userDisplayName || g.user,\n      userPrincipalName: g.userPrincipalName || g.user,\n      userId: g.userId,\n      detectionCount: ds.length,\n      riskLevels, riskStates, detectionTypes, ips, countries, locations,\n      firstDetected: detectedTimes[0] || '',\n      lastDetected: detectedTimes[detectedTimes.length - 1] || '',\n      detections: ds,\n    },\n  });\n}\nreturn results;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b6ab4402-5a30-420d-a815-c9ae6f488d98",
+      "name": "Enrich Risky User",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "url": "=https://graph.microsoft.com/v1.0/identityProtection/riskyUsers/{{ $json.userId }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "microsoftEntraOAuth2Api"
+      },
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "3e3ffddf-fc7f-4e8d-9df1-628011f080a7",
+      "name": "Enrich Recent Sign-Ins",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1104,
+        0
+      ],
+      "parameters": {
+        "url": "https://graph.microsoft.com/v1.0/auditLogs/signIns",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "authentication": "predefinedCredentialType",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "$filter",
+              "value": "=userId eq '{{ $json.id }}'"
+            },
+            {
+              "name": "$top",
+              "value": "5"
+            },
+            {
+              "name": "$orderby",
+              "value": "createdDateTime desc"
+            }
+          ]
+        },
+        "nodeCredentialType": "microsoftEntraOAuth2Api"
+      },
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "1081e454-ff10-4d41-b86c-e3419881a10f",
+      "name": "Assess, Correlate & Build Incident",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1440,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const LF = String.fromCharCode(10);\nconst users = $('Group & Aggregate Per User').all().map(i => i.json);\nconst risky = $('Enrich Risky User').all().map(i => i.json);\nconst signinItems = $('Enrich Recent Sign-Ins').all().map(i => i.json);\n\nconst riskyById = {};\nfor (const r of risky) { if (r && r.id) riskyById[r.id] = r; }\nconst signinsById = {};\nfor (const s of signinItems) {\n  const arr = Array.isArray(s.value) ? s.value : [];\n  const uid = s._userId || (arr[0] && arr[0].userId);\n  if (uid) signinsById[uid] = arr;\n}\n\nconst explainType = (t) => {\n  const m = {\n    unfamiliarFeatures: 'sign-in with unfamiliar properties for this user',\n    anonymizedIPAddress: 'sign-in from an anonymized IP (e.g. Tor/VPN)',\n    maliciousIPAddress: 'sign-in from a known malicious IP',\n    malwareInfectedIPAddress: 'sign-in from a malware-infected IP',\n    suspiciousIPAddress: 'sign-in from a suspicious IP',\n    leakedCredentials: 'credentials found leaked publicly',\n    impossibleTravel: 'impossible travel between sign-ins',\n    newCountry: 'sign-in from a new country',\n    passwordSpray: 'password-spray pattern detected',\n  };\n  return m[t] || t;\n};\n\nconst results = [];\nfor (const u of users) {\n  const r = riskyById[u.userId] || {};\n  const signins = signinsById[u.userId] || [];\n  const roles = Array.isArray(r.assignedRoles) ? r.assignedRoles : [];\n  const rolesText = roles.join(', ');\n  const isPrivileged = /admin|administrator|global|security|privileged/i.test((r.jobTitle || '') + ' ' + rolesText);\n\n  // ---- deterministic correlation signals ----\n  const reasons = [];\n  if (u.detectionCount > 1) reasons.push('Multiple high-risk detections (' + u.detectionCount + ') for the same user');\n  if ((u.ips || []).length > 1) reasons.push('Multiple source IPs (' + u.ips.join(', ') + ')');\n  if ((u.countries || []).length > 1) reasons.push('Sign-ins from multiple countries (' + u.countries.join(', ') + ') \u2014 possible impossible travel');\n  if ((u.detectionTypes || []).length > 1) reasons.push('Multiple distinct detection types (' + u.detectionTypes.join(', ') + ')');\n  if ((u.riskStates || []).includes('confirmedCompromised')) reasons.push('Risk state confirmedCompromised');\n  if (isPrivileged) reasons.push('Privileged/admin account (' + (r.jobTitle || rolesText || 'elevated role') + ')');\n  const anyDevNonCompliant = signins.some(s => s.deviceDetail && s.deviceDetail.isCompliant === false);\n  if (anyDevNonCompliant) reasons.push('Sign-in from a non-compliant device');\n\n  // ---- deterministic escalation decision ----\n  const especiallySuspicious = isPrivileged\n    || (u.riskStates || []).includes('confirmedCompromised')\n    || (u.countries || []).length > 1\n    || reasons.length >= 3;\n  const decision = especiallySuspicious ? 'ESPECIALLY SUSPICIOUS' : 'STANDARD HIGH-RISK';\n  const severity = especiallySuspicious ? 4 : 3;\n  const severityLabel = especiallySuspicious ? 'CRITICAL' : 'HIGH';\n\n  // ---- enrichment lines ----\n  const enrich = [];\n  enrich.push('Account enabled: ' + (r.accountEnabled === undefined ? 'unknown' : r.accountEnabled));\n  enrich.push('Job title: ' + (r.jobTitle || 'unknown') + (r.department ? (' | Dept: ' + r.department) : ''));\n  enrich.push('Directory roles: ' + (rolesText || 'none'));\n  enrich.push('Risky-user state: ' + (r.riskState || 'n/a') + ' (updated ' + (r.riskLastUpdatedDateTime || 'n/a') + ')');\n  if (signins.length) {\n    const s0 = signins[0];\n    const dev = s0.deviceDetail || {};\n    const loc = s0.location || {};\n    enrich.push('Latest sign-in: ' + (s0.appDisplayName || 'app?') + ' from ' + (s0.ipAddress || 'ip?') + ' [' + [loc.city, loc.countryOrRegion].filter(Boolean).join(', ') + ']');\n    enrich.push('Device: ' + [dev.browser, dev.operatingSystem].filter(Boolean).join(' / ') + (dev.isCompliant === false ? ' (non-compliant)' : ''));\n  } else {\n    enrich.push('Recent sign-ins: none returned');\n  }\n\n  // ---- short \"why flagged\" explanation ----\n  const whyFlagged = (u.detectionTypes || []).map(explainType).join('; ');\n\n  // ---- investigation summary ----\n  const summary = 'User ' + u.user + ' (' + u.userPrincipalName + ') generated ' + u.detectionCount\n    + ' high-risk Entra ID detection(s) between ' + (u.firstDetected || '?') + ' and ' + (u.lastDetected || '?')\n    + ' from ' + (u.ips || []).length + ' IP(s) across ' + (u.countries || []).join('/') + '. Classified ' + decision + '.';\n\n  // ---- full TheHive description ----\n  const L = [];\n  L.push('## Entra ID High-Risk User Incident');\n  L.push('Classification: ' + decision + ' (severity ' + severityLabel + ')');\n  L.push('');\n  L.push('### WHO');\n  L.push('User: ' + u.user + ' (' + u.userPrincipalName + ')');\n  L.push('User ID: ' + (u.userId || 'n/a'));\n  L.push('Privileged: ' + (isPrivileged ? 'YES' : 'no'));\n  L.push('');\n  L.push('### WHAT');\n  L.push('High-risk detections: ' + u.detectionCount);\n  L.push('Risk level(s): ' + (u.riskLevels || []).join(', '));\n  L.push('Risk state(s): ' + (u.riskStates || []).join(', '));\n  L.push('Detection type(s): ' + (u.detectionTypes || []).join(', '));\n  L.push('Why flagged: ' + whyFlagged);\n  L.push('');\n  L.push('### WHERE');\n  L.push('IP address(es): ' + ((u.ips || []).join(', ') || 'n/a'));\n  L.push('Location(s): ' + ((u.locations || []).join(' | ') || 'n/a'));\n  L.push('');\n  L.push('### WHEN');\n  L.push('First detected: ' + (u.firstDetected || 'n/a'));\n  L.push('Last detected: ' + (u.lastDetected || 'n/a'));\n  L.push('');\n  L.push('### ENRICHMENT');\n  for (const e of enrich) L.push('- ' + e);\n  L.push('');\n  L.push('### CORRELATION / ESCALATION REASONS');\n  if (reasons.length) { for (const rr of reasons) L.push('- ' + rr); } else { L.push('- Single isolated high-risk detection'); }\n  L.push('');\n  L.push('### INVESTIGATION SUMMARY');\n  L.push(summary);\n  L.push('');\n  L.push('### PER-DETECTION DETAIL');\n  (u.detections || []).forEach((d, i) => {\n    const l = d.location || {};\n    const loc = [l.city, l.state, l.countryOrRegion].filter(Boolean).join(', ');\n    L.push('  ' + (i + 1) + '. ' + (d.riskEventType || d.riskType || 'unknown') + ' | state=' + (d.riskState || 'n/a') + ' | ip=' + (d.ipAddress || 'n/a') + ' | loc=' + (loc || 'n/a') + ' | detected=' + (d.detectedDateTime || 'n/a'));\n  });\n\n  const description = L.join(LF);\n  const sourceRef = 'entra-highrisk-' + u.userPrincipalName; // stable per ongoing incident (enables dedup)\n\n  results.push({ json: {\n    user: u.user, userPrincipalName: u.userPrincipalName, userId: u.userId,\n    detectionCount: u.detectionCount, riskLevels: u.riskLevels, riskStates: u.riskStates,\n    detectionTypes: u.detectionTypes, ips: u.ips, locations: u.locations, countries: u.countries,\n    firstDetected: u.firstDetected, lastDetected: u.lastDetected,\n    primaryIp: (u.ips || [])[0] || '',\n    isPrivileged, decision, especiallySuspicious, severity, severityLabel,\n    whyFlagged, reasons, summary, description, sourceRef,\n  }});\n}\nreturn results;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f6ca5847-42d7-40c8-b9fd-6598959071b5",
+      "name": "Query Open TheHive Alerts",
+      "type": "n8n-nodes-base.theHiveProject",
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "resource": "query",
+        "queryJson": "[{\"_name\":\"listAlert\"},{\"_name\":\"filter\",\"_and\":[{\"_field\":\"type\",\"_value\":\"entra-id-risk\"},{\"_field\":\"status\",\"_value\":\"New\"}]},{\"_name\":\"page\",\"from\":0,\"to\":200}]"
+      },
+      "executeOnce": true,
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "8744d5a9-f9ec-4dda-a7aa-7d681edd9450",
+      "name": "Deduplication Decision",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2000,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const users = $('Assess, Correlate & Build Incident').all().map(i => i.json);\nconst openAlerts = $('Query Open TheHive Alerts').all().map(i => i.json).filter(a => a && a.sourceRef);\nconst bySourceRef = {};\nfor (const a of openAlerts) { bySourceRef[a.sourceRef] = a; }\nreturn users.map(u => {\n  const existing = bySourceRef[u.sourceRef];\n  return { json: Object.assign({}, u, {\n    alertExists: !!existing,\n    existingAlertId: existing ? (existing._id || existing.id || '') : '',\n  }) };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "36adc0ba-c94f-41bc-9be4-02d39c3ff2bc",
+      "name": "Alert Already Open?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2224,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "exists",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.alertExists }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "64dd541b-1bf3-4524-b671-cff47de0ac06",
+      "name": "Update TheHive Alert",
+      "type": "n8n-nodes-base.theHiveProject",
+      "position": [
+        2480,
+        -96
+      ],
+      "parameters": {
+        "operation": "update",
+        "alertUpdateFields": {
+          "value": {
+            "severity": "={{ $json.severity }}",
+            "description": "={{ $json.description }}"
+          },
+          "schema": [
+            {
+              "id": "description",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "description",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "severity",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "displayName": "severity",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": []
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "43ba3db0-af5b-4e2c-b97f-209bd9e0cc47",
+      "name": "Merge Alert Paths",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        2736,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 3.2
+    },
+    {
+      "id": "e51ee4f4-b649-40d1-91be-3640368c32b5",
+      "name": "Create TheHive Alert",
+      "type": "n8n-nodes-base.theHiveProject",
+      "position": [
+        2496,
+        96
+      ],
+      "parameters": {
+        "alertFields": {
+          "value": {
+            "type": "entra-id-risk",
+            "title": "=Entra ID high-risk user detected: {{ $json.user }}",
+            "source": "Microsoft Entra ID Protection",
+            "severity": "={{ $json.severity }}",
+            "sourceRef": "={{ $json.sourceRef }}",
+            "description": "={{ $json.description }}"
+          },
+          "schema": [
+            {
+              "id": "title",
+              "type": "string",
+              "display": true,
+              "required": true,
+              "displayName": "title",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "type": "string",
+              "display": true,
+              "required": true,
+              "displayName": "description",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "type",
+              "type": "string",
+              "display": true,
+              "required": true,
+              "displayName": "type",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source",
+              "type": "string",
+              "display": true,
+              "required": true,
+              "displayName": "source",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sourceRef",
+              "type": "string",
+              "display": true,
+              "required": true,
+              "displayName": "sourceRef",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "severity",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "displayName": "severity",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "sourceRef"
+          ]
+        },
+        "observableUi": {
+          "values": [
+            {
+              "data": "={{ $json.userPrincipalName }}",
+              "tags": "entra,user",
+              "message": "Affected user (UPN)",
+              "dataType": "mail"
+            },
+            {
+              "data": "={{ $json.primaryIp }}",
+              "tags": "entra,signin",
+              "message": "Primary source IP",
+              "dataType": "ip"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "35314542-8226-434a-ae29-48889b942785",
+      "name": "Build Slack Notification",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2992,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const LF = String.fromCharCode(10);\nconst resp = $json || {};\nconst ctx = $('Deduplication Decision').item.json;\nconst alertId = resp._id || ctx.existingAlertId || 'unknown';\nconst action = ctx.alertExists ? 'UPDATED' : 'CREATED';\nconst emoji = ctx.especiallySuspicious ? ':rotating_light:' : ':warning:';\n\nconst lines = [];\nlines.push(emoji + ' *Entra ID high-risk user ' + (ctx.especiallySuspicious ? '(ESPECIALLY SUSPICIOUS)' : '') + '*');\nlines.push('*User:* ' + ctx.user + ' (' + ctx.userPrincipalName + ')');\nlines.push('*Risk level:* ' + (ctx.riskLevels || []).join(', ') + '  |  *State:* ' + (ctx.riskStates || []).join(', '));\nlines.push('*Detection types:* ' + (ctx.detectionTypes || []).join(', '));\nlines.push('*IP(s):* ' + ((ctx.ips || []).join(', ') || 'n/a'));\nlines.push('*Location(s):* ' + ((ctx.locations || []).join(' | ') || 'n/a'));\nlines.push('*First seen:* ' + (ctx.firstDetected || 'n/a') + '  |  *Last seen:* ' + (ctx.lastDetected || 'n/a'));\nlines.push('*Why flagged:* ' + (ctx.whyFlagged || 'n/a'));\nlines.push('*TheHive alert:* ' + action + ' \u2014 ref `' + ctx.sourceRef + '` (id: ' + alertId + ')');\nconst slackText = lines.join(LF);\nreturn { json: Object.assign({}, ctx, { alertId, action, slackText }) };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c439cb09-4753-40f4-8f78-287e387694ce",
+      "name": "Post to Security Channel",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        3216,
+        0
+      ],
+      "webhookId": "d9f44e11-88f6-4398-a8c2-ab3896d8a43c",
+      "parameters": {
+        "text": "={{ $json.slackText }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Select SOC / security channel"
+        },
+        "otherOptions": {
+          "mrkdwn": true,
+          "includeLinkToWorkflow": false
+        },
+        "authentication": "oAuth2"
+      },
+      "typeVersion": 2.7
+    },
+    {
+      "id": "a3370e2c-70f3-41cf-a545-003d3bca3eb1",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -768,
+        -320
+      ],
+      "parameters": {
+        "width": 636,
+        "height": 844,
+        "content": "# Monitor Entra ID High-Risk Users with TheHive + Slack\n\nAutomatically monitors Microsoft Entra ID Protection for high-risk identity detections, groups detections per user, enriches each user with identity and recent sign-in context, correlates deterministic risk signals, prevents duplicate TheHive alerts, and notifies the SOC in Slack.\n\n### How it works\n\n1. Runs every 30 minutes and checks Microsoft Graph for high-risk detections from the recent lookback window.\n2. Groups multiple detections for the same user into one investigation item.\n3. Enriches the user with risky-user details, roles, and recent sign-in/device context.\n4. Applies deterministic correlation rules to classify the event as HIGH or CRITICAL.\n5. Checks TheHive for an existing active alert using a stable per-user source reference.\n6. Creates or updates the TheHive alert and sends a Slack notification only for a new or materially changed alert.\n\n### Setup\n\n1. Connect a Microsoft Entra OAuth2 credential with access to:\n   - IdentityRiskEvent.Read.All\n   - IdentityRiskyUser.Read.All\n   - AuditLog.Read.All\n2. Connect a TheHive 5 credential with permission to query, create, and update alerts.\n3. Connect Slack and select the SOC/security channel.\n4. Review the lookback window, severity rules, and TheHive URL placeholder before activation.\n5. Test with controlled Entra risk events before enabling in production.\n\n### Security design\n\nDetection, enrichment, correlation, alerting, and notification only.\n\nNo destructive remediation is performed automatically.\n\n### Customization\n\nAdjust the polling interval, detection lookback, correlation rules, severity thresholds, TheHive alert fields, observable handling, and Slack message format to match your environment."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2074b39a-c775-4a7e-a9c5-39cf45aebbc0",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -80,
+        -160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 480,
+        "height": 368,
+        "content": "## Detect high-risk activity\n\nRuns every **30 minutes** and queries Microsoft Graph for high-risk Entra ID risk detections from the recent lookback window.\n\nPagination follows Microsoft Graph `@odata.nextLink`."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "606ac399-05a3-4532-9765-82c3a7191003",
+      "name": "Every 30 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "c9c94ab4-907d-4604-95ae-179000185a61",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        432,
+        -160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 320,
+        "height": 368,
+        "content": "## Group by user\n\nCombines multiple high-risk detections into one investigation item per user.\n\nCollects detection count, risk state, detection types, IPs, locations, and detection times."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a8052538-46c2-4f23-9543-59335794a0cf",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        800,
+        -160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 480,
+        "height": 368,
+        "content": "## Enrich context\n\nRetrieves risky-user status, account details, roles, recent sign-ins, IP/location, device information, and compliance status.\n\nMissing enrichment data does not stop the workflow.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "25f0ce7b-707a-4892-aac8-18414505fd33",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1328,
+        -272
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 304,
+        "height": 480,
+        "content": "## Correlate risk\n\nDeterministic signals include:\n\n* Multiple detections\n* Multiple IPs/countries\n* Multiple detection types\n* Confirmed compromise\n* Privileged accounts\n* Non-compliant devices\n\n**HIGH:** severity 3\n**CRITICAL:** severity 4"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "60df70a3-86ac-4804-85c3-59ba98a2ba14",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1680,
+        -176
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 688,
+        "height": 384,
+        "content": "## Prevent duplicate alerts\n\nSearches active TheHive alerts using a stable per-user `sourceRef`.\n\nExisting alert \u2192 **UPDATE**\nNo existing alert \u2192 **CREATE**\n\nOverlapping polling windows therefore do not create duplicate investigations.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "21cfc992-454b-496c-bb39-cafa84ecc45d",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2400,
+        -240
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 480,
+        "height": 496,
+        "content": "## Create or update\n\nCreates a TheHive alert with investigation details, severity, source reference, and observables.\n\nExisting alerts are updated with the latest description and severity.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5921bea6-0f17-4e2d-aeb0-ab552b8319a2",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2912,
+        -176
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 480,
+        "height": 432,
+        "content": "## Notify the SOC\n\nPosts a concise Slack summary with:\n\nUser \u2022 risk \u2022 detections \u2022 IPs \u2022 locations \u2022 timestamps \u2022 why flagged \u2022 TheHive reference\n\nNotify on **creation or meaningful change**, not every polling cycle."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "versionId": "a2748250-9dce-4aca-b299-aa82d03c0a40",
+  "nodeGroups": [],
+  "connections": {
+    "Every 30 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Query Risk Detections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich Risky User": {
+      "main": [
+        [
+          {
+            "node": "Enrich Recent Sign-Ins",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Alert Paths": {
+      "main": [
+        [
+          {
+            "node": "Build Slack Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert Already Open?": {
+      "main": [
+        [
+          {
+            "node": "Update TheHive Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create TheHive Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create TheHive Alert": {
+      "main": [
+        [
+          {
+            "node": "Merge Alert Paths",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Update TheHive Alert": {
+      "main": [
+        [
+          {
+            "node": "Merge Alert Paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Risk Detections": {
+      "main": [
+        [
+          {
+            "node": "Group & Aggregate Per User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deduplication Decision": {
+      "main": [
+        [
+          {
+            "node": "Alert Already Open?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich Recent Sign-Ins": {
+      "main": [
+        [
+          {
+            "node": "Assess, Correlate & Build Incident",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Slack Notification": {
+      "main": [
+        [
+          {
+            "node": "Post to Security Channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Open TheHive Alerts": {
+      "main": [
+        [
+          {
+            "node": "Deduplication Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Group & Aggregate Per User": {
+      "main": [
+        [
+          {
+            "node": "Enrich Risky User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assess, Correlate & Build Incident": {
+      "main": [
+        [
+          {
+            "node": "Query Open TheHive Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

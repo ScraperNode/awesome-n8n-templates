@@ -1,6 +1,6 @@
 # ⚒️ Paginate Shopify products with GraphQL cursor-based navigation
 
-> ⚡ **560 views** · ⚒️ [Engineering](../)
+> ⚡ **632 views** · ⚒️ [Engineering](../)
 
 ## Description
 

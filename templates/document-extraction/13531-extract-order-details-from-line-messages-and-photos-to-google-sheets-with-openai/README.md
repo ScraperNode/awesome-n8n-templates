@@ -1,6 +1,6 @@
 # 🔬 Extract order details from LINE messages and photos to Google Sheets with OpenAI
 
-> ⚡ **30 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **65 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

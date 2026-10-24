@@ -1,6 +1,6 @@
 # ⚒️ PostgreSQL conversational agent with Claude & DeepSeek (Multi-KPI, Secure)
 
-> ⚡ **1,002 views** · ⚒️ [Engineering](../)
+> ⚡ **1,042 views** · ⚒️ [Engineering](../)
 
 ## Description
 

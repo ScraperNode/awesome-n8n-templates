@@ -1,6 +1,6 @@
 # 🔬 Convert Fathom meeting transcripts to formatted Google Docs with AI summaries
 
-> ⚡ **1,135 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,495 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

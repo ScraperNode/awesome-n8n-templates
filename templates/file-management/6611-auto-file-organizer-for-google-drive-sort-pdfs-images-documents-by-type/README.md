@@ -1,6 +1,6 @@
 # 📁 Auto file organizer for Google Drive: sort PDFs, images & documents by type
 
-> ⚡ **1,267 views** · 📁 [File Management](../)
+> ⚡ **1,786 views** · 📁 [File Management](../)
 
 ## Description
 

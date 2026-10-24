@@ -1,6 +1,6 @@
 # 🔬 AI-powered Loom video Q&A with Gemini-2.5 and Slack notifications
 
-> ⚡ **999 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,070 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

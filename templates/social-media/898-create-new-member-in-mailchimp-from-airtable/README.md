@@ -1,6 +1,6 @@
 # 📱 Create new member in Mailchimp from Airtable
 
-> ⚡ **513 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **538 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

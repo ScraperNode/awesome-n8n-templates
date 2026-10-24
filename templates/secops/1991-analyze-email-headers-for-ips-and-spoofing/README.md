@@ -1,6 +1,6 @@
 # 🔒 Analyze email headers for IPs and spoofing
 
-> ⚡ **5,071 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **5,174 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

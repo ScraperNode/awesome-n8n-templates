@@ -1,6 +1,6 @@
 # 🧾 Automate client invoicing & payments with Stripe, Google Sheets, Drive and Gmail
 
-> ⚡ **296 views** · 🧾 [Invoice Processing](../)
+> ⚡ **449 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

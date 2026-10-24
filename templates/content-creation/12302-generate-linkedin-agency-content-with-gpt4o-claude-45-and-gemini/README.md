@@ -1,6 +1,6 @@
 # 🎬 Generate LinkedIn agency content with GPT‑4o, Claude 4.5 and Gemini
 
-> ⚡ **434 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **549 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

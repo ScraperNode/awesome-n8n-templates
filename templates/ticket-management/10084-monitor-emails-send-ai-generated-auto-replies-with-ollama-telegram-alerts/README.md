@@ -1,6 +1,6 @@
 # 🎫 Monitor emails & send AI-generated auto-replies with Ollama & Telegram alerts
 
-> ⚡ **426 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **689 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

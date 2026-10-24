@@ -1,6 +1,6 @@
 # 🎬 Transcribe & translate audio between languages with OpenAI & S3 storage
 
-> ⚡ **728 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **792 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

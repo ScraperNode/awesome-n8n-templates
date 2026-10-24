@@ -1,6 +1,6 @@
 # 🔧 🛠️ Mattermost tool MCP server 💪 all 19 operations
 
-> ⚡ **162 views** · 🔧 [Miscellaneous](../)
+> ⚡ **178 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

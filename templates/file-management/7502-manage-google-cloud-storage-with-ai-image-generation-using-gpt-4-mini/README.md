@@ -1,6 +1,6 @@
 # 📁 Manage Google Cloud Storage with AI image generation using GPT-4 Mini
 
-> ⚡ **724 views** · 📁 [File Management](../)
+> ⚡ **890 views** · 📁 [File Management](../)
 
 ## Description
 

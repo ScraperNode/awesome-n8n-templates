@@ -1,0 +1,792 @@
+{
+  "id": "C0c5QycTqby2SnqG",
+  "meta": {
+    "instanceId": "c5149ed7e2007ac340e439b05e976b61552a26979d66e6115121d99b78dab252",
+    "builderVariant": "mcp",
+    "aiBuilderAssisted": true
+  },
+  "name": "Send policies to sign automatically at onboarding with Probo",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "9e9a2301-bea7-4bdb-9bd0-eb9f2cd2642f",
+      "name": "Set User Configurations",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        256,
+        400
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-wait",
+              "name": "cfg_wait_hours",
+              "type": "number",
+              "value": 2
+            },
+            {
+              "id": "cfg-domains",
+              "name": "cfg_allowed_email_domains",
+              "type": "string",
+              "value": ""
+            },
+            {
+              "id": "cfg-scim",
+              "name": "cfg_only_scim_users",
+              "type": "boolean",
+              "value": true
+            },
+            {
+              "id": "cfg-words",
+              "name": "cfg_blocked_email_words",
+              "type": "string",
+              "value": "test,testing,demo,sample,example,dummy,fake,sandbox,staging,qa,temp,placeholder,noreply,no-reply,donotreply,admin,support,info,contact,hello,billing,security,it,ops,bot,service"
+            },
+            {
+              "id": "cfg-slack",
+              "name": "cfg_slack_channel",
+              "type": "string",
+              "value": "#onboarding"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.5
+    },
+    {
+      "id": "914ec01b-ed33-4688-af9f-f3c5d60428ba",
+      "name": "Verify User Authenticity",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        512,
+        400
+      ],
+      "parameters": {
+        "jsCode": "// Normalize the Probo USER_CREATED payload and decide if this looks like a real new hire.\nconst src = $input.first().json;\nconst body = src.body || src;\nconst d = body.data || body.user || body;\n\nconst cfg = src;\nconst orgId = body.organizationId || d.organizationId || $('When New User in Probo').params.organizationId || null;\n\nconst email = String(d.emailAddress || d.email || '').trim().toLowerCase();\nconst at = email.lastIndexOf('@');\nconst local = at >= 0 ? email.slice(0, at).split('+')[0] : '';\nconst domain = at >= 0 ? email.slice(at + 1) : '';\nconst source = String(d.source || '').toUpperCase();\nconst kind = String(d.kind || '').toUpperCase();\n\nconst csv = s => String(s || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);\nconst allowedDomains = csv(cfg.cfg_allowed_email_domains);\nconst blockedWords = new Set(csv(cfg.cfg_blocked_email_words));\n\nconst reasons = [];\nif (!d.id) reasons.push('missing profile id');\nif (!email || at < 1) reasons.push('missing or invalid email');\nif (allowedDomains.length && !allowedDomains.includes(domain)) reasons.push('email domain ' + domain + ' is not in the allowed list');\nif (cfg.cfg_only_scim_users && source && source !== 'SCIM') reasons.push('profile was not provisioned by SCIM (source ' + source + ')');\nconst tokens = [local, ...local.split(/[.\\-_]/)].filter(Boolean);\nconst hit = tokens.find(t => blockedWords.has(t));\nif (hit) reasons.push('email looks like a test or shared mailbox (' + hit + ')');\nif (!String(d.fullName || '').trim()) reasons.push('missing full name');\n\nreturn [{ json: {\n  person_id: d.id || null,\n  name: d.fullName || '',\n  email,\n  job_title: d.position || '',\n  kind,\n  source,\n  org_id: orgId,\n  wait_hours: Number(cfg.cfg_wait_hours) >= 0 ? Number(cfg.cfg_wait_hours) : 2,\n  is_legit: reasons.length === 0,\n  reject_reasons: reasons\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c0c640df-38be-43a1-becd-575e26c2c69b",
+      "name": "If Legitimate New Hire",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        752,
+        400
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.is_legit }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "597948cc-f5b7-4754-b761-2eb33f1aedd5",
+      "name": "Wait for Profile Completion",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        1008,
+        304
+      ],
+      "webhookId": "df79d4b1-7f44-4a62-af23-32f68cd2d1d1",
+      "parameters": {
+        "unit": "hours",
+        "amount": "={{ $json.wait_hours }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "9e73413c-757a-4250-87ba-b38889e0f3f7",
+      "name": "Merge Active User Profiles",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1504,
+        304
+      ],
+      "parameters": {
+        "jsCode": "// Merge the fresh profile with the snapshot taken before the wait.\n// Stop here if the user was deactivated or removed in the meantime.\nconst snap = $('Verify User Authenticity').first().json;\nconst raw = $input.first().json || {};\nconst fresh = raw.data || raw.user || raw.profile || raw;\n\nconst state = String(fresh.state || fresh.membership?.state || 'ACTIVE').toUpperCase();\nif (state !== 'ACTIVE') return [];\n\nconst jobTitle = String(fresh.position || snap.job_title || '').trim();\nreturn [{ json: {\n  ...snap,\n  name: fresh.fullName || snap.name,\n  email: String(fresh.emailAddress || snap.email || '').toLowerCase(),\n  kind: String(fresh.kind || snap.kind || '').toUpperCase(),\n  job_title: jobTitle,\n  has_job_title: jobTitle !== ''\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cfd2c1d6-bfb2-4d26-ad7f-4d79788a6c81",
+      "name": "Compile User and Policy Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2256,
+        304
+      ],
+      "parameters": {
+        "jsCode": "// One item out: the user + every policy (latest published version, plain text excerpt).\nconst person = $('Merge Active User Profiles').first().json;\nconst MAX_CHARS = 4000;\n\nconst toText = c => {\n  if (!c) return '';\n  let doc = c;\n  if (typeof c === 'string') {\n    try { doc = JSON.parse(c); } catch (e) { return c; }\n  }\n  const out = [];\n  const walk = n => {\n    if (!n) return;\n    if (Array.isArray(n)) return n.forEach(walk);\n    if (typeof n.text === 'string') out.push(n.text);\n    if (n.content) walk(n.content);\n    if (['paragraph', 'heading', 'listItem'].includes(n.type)) out.push('\\n');\n  };\n  walk(doc);\n  return out.join(' ').replace(/[ \\t]+/g, ' ').replace(/\\n\\s*/g, '\\n').trim();\n};\n\nconst seen = new Set();\nconst policies = [];\nfor (const it of $input.all()) {\n  const j = it.json || {};\n  const v = Array.isArray(j.versions) ? j.versions[0] : (Array.isArray(j.data?.versions) ? j.data.versions[0] : j);\n  if (!v || !v.id || seen.has(v.id)) continue;\n  if (v.status && String(v.status).toUpperCase() !== 'PUBLISHED') continue;\n  seen.add(v.id);\n  policies.push({\n    version_id: v.id,\n    title: v.title || '',\n    content: toText(v.content).slice(0, MAX_CHARS)\n  });\n}\nif (policies.length === 0) return [];\n\nconst prompt = 'New employee\\n- Name: ' + person.name + '\\n- Job title: ' + (person.job_title || '(empty)') +\n  '\\n- Employment kind: ' + (person.kind || '(unknown)') + '\\n\\nPolicies:\\n' +\n  policies.map(p => '### version_id: ' + p.version_id + '\\nTitle: ' + p.title + '\\nContent:\\n' + (p.content || '(empty)')).join('\\n\\n');\n\nreturn [{ json: { ...person, policies, policy_count: policies.length, agent_prompt: prompt } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "63537b45-47bd-4448-977f-43362c543925",
+      "name": "If Job Title Available",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2512,
+        304
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.has_job_title }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "502defae-4ae1-4b01-9f40-705dab69ac49",
+      "name": "Role-Specific Policy Selector",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        2752,
+        208
+      ],
+      "parameters": {
+        "text": "={{ $json.agent_prompt }}",
+        "options": {
+          "systemMessage": "You decide which company policies a new employee must sign during onboarding, based on their job title and what each policy actually governs.\n\nFor each policy answer one question: does this policy create an obligation on how THIS person does their job? There are two outcomes only: SEND or SKIP.\n\nRules, in order:\n1. Universal scope (addresses all employees / all staff / everyone, or is cross-cutting: information security, acceptable use, code of conduct, data protection, passwords, data classification, remote work, mobile devices) -> SEND.\n2. Imposes an individual duty on everyone (report incidents, complete training, return assets) -> SEND.\n3. Function-specific (developers, system administrators, engineering, finance, procurement...): SEND if the job title matches that function, SKIP only if it clearly does not.\n4. A Roles and Responsibilities section usually lists who OWNS the policy, not who must comply. Never SKIP just because the person is not listed there.\n5. Policies may be in any language. Decide the same way and answer in English.\n6. When in doubt -> SEND. Missing a required policy is worse than sending one extra.\n\nReturn ONLY a JSON array, no prose, no markdown, one object per policy:\n[{\"version_id\": \"<version_id>\", \"title\": \"<title>\", \"action\": \"SEND\" | \"SKIP\", \"reason\": \"<one short sentence>\"}]"
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 3.1
+    },
+    {
+      "id": "d3384d2b-a487-4287-81d9-4c380434bca6",
+      "name": "OpenAI GPT-5.4-mini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        2752,
+        400
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5.4-mini"
+        },
+        "options": {},
+        "builtInTools": {}
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "87d2a062-b76e-4c1d-b9a4-f17dc6a7ace8",
+      "name": "Select Policies to Send",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3008,
+        208
+      ],
+      "parameters": {
+        "jsCode": "// Parse the agent answer. Any policy without a clear SKIP is sent (fail-safe).\nconst ctx = $('Compile User and Policy Data').first().json;\nconst raw = String($input.first().json.output ?? $input.first().json.text ?? '').trim()\n  .replace(/^\\s*```(json)?/i, '').replace(/```\\s*$/, '').trim();\n\nlet decisions = [];\ntry {\n  const parsed = JSON.parse(raw);\n  if (Array.isArray(parsed)) decisions = parsed;\n} catch (e) {\n  decisions = [];\n}\nconst byId = {};\nfor (const d of decisions) if (d && d.version_id) byId[d.version_id] = d;\n\nreturn ctx.policies\n  .filter(p => String(byId[p.version_id]?.action || 'SEND').toUpperCase() !== 'SKIP')\n  .map(p => ({ json: {\n    person_id: ctx.person_id,\n    person_name: ctx.name,\n    version_id: p.version_id,\n    title: p.title,\n    reason: byId[p.version_id]?.reason || 'No clear decision, sent by default'\n  } }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "246c96d9-a115-450a-b1ac-56304228eb17",
+      "name": "Dispatch All Policies",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2752,
+        784
+      ],
+      "parameters": {
+        "jsCode": "// No job title after the wait: we cannot scope, so every published policy is sent.\nconst ctx = $input.first().json;\nreturn ctx.policies.map(p => ({ json: {\n  person_id: ctx.person_id,\n  person_name: ctx.name,\n  version_id: p.version_id,\n  title: p.title,\n  reason: 'No job title on the profile, all policies sent'\n} }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1ba54aef-70aa-4668-b1f3-d5893fd944d6",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -704,
+        0
+      ],
+      "parameters": {
+        "width": 620,
+        "height": 900,
+        "content": "## Send policies to sign automatically at onboarding with Probo\n\nWhen your identity provider creates a new employee in Probo through SCIM, this workflow checks the account looks like a real person, waits so an admin can finish the profile, asks Probo to request signatures on the right set of policies, then confirms on Slack.\n\n### How it works\n1. The **Probo Trigger** fires on every `USER_CREATED` event.\n2. A code step rejects suspicious accounts: test or shared mailboxes, wrong email domain, non-SCIM profiles, missing name. Skipped users are reported on Slack.\n3. The workflow **waits 2 hours** (configurable) so HR or IT can add the job title.\n4. It **refetches the user**. Deactivated or removed users stop here.\n5. It lists every published, active policy and its latest version.\n6. **Job title known**: an AI agent reads each policy and skips only the ones that clearly do not apply to that role. **No job title**: every policy is sent.\n7. Probo sends the signature requests and handles reminders. A Slack recap lists the policies sent.\n\n### Setup\n1. SCIM must be connected in Probo (Google Workspace, Microsoft Entra ID, Okta...).\n2. Create a **Probo API** credential and select it on every Probo node.\n3. Paste your **organization ID** in the trigger.\n4. Add an **OpenAI** credential (or swap in any chat model).\n5. Add a **Slack** credential and set `cfg_slack_channel` in **Set User Configurations**, then activate.\n\n### Customization tips\n- Set `cfg_allowed_email_domains` to your company domains.\n- Change `cfg_wait_hours` (0 = immediate).\n- Edit the agent system prompt to match your own scoping rules."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3f16af08-57fc-4e1d-bd3d-0ac729bc1624",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -48,
+        240
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 448,
+        "height": 320,
+        "content": "## Start and configure\n\nReceives the new-user event from Probo and sets workflow-level configuration values used for filtering and timing."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b4fb7a58-c35e-4b00-b943-b4e77c63955e",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        464,
+        240
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 432,
+        "height": 320,
+        "content": "## Validate new hire\n\nNormalizes the Probo user-created payload and decides whether the account appears to be a real employee before continuing."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1f6f1c8e-9998-4136-bc39-50a448bcddfb",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        960,
+        176
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 688,
+        "height": 304,
+        "content": "## Wait and refresh profile\n\nPauses to let admins complete the user profile, then refetches the user from Probo and keeps only active users for downstream processing."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3296eb73-5ccf-40ed-8ec9-39108e1706f6",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1712,
+        176
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 688,
+        "height": 304,
+        "content": "## Collect policy versions\n\nLists published policies, retrieves the latest published version, and combines policy data with the refreshed user context."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "dfafd827-4095-4579-ac77-8c5d803a5dc9",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2464,
+        48
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 688,
+        "height": 496,
+        "content": "## Select role policies\n\nChecks whether the user has a job title, uses an AI agent and OpenAI chat model to determine relevant policies, and parses the result into the policies to send."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "190e319f-164a-40c7-910c-199e482b395b",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2704,
+        576
+      ],
+      "parameters": {
+        "color": 7,
+        "height": 368,
+        "content": "## Fallback send all\n\nHandles users without a known job title by preparing every published policy for signature instead of trying to scope by role."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "4021f35b-33ad-4eef-bec1-9145ada9b88f",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3216,
+        224
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 768,
+        "height": 336,
+        "content": "## Request signatures and confirm\n\nSends the selected or fallback set of policies to Probo for signature, then posts a recap on Slack (policies sent, and any failed request)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "19b0530c-d832-42ab-8979-e36ee4bd447c",
+      "name": "Sticky Note8",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        960,
+        512
+      ],
+      "parameters": {
+        "color": 7,
+        "height": 320,
+        "content": "## Notify skipped user\n\nPosts on Slack why the account was skipped, so an admin can act if it is a real employee."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f0215755-eaa7-477f-b85c-65b5a0265e9b",
+      "name": "When New User in Probo",
+      "type": "@probo/n8n-nodes-probo.proboTrigger",
+      "position": [
+        0,
+        400
+      ],
+      "webhookId": "52997bb8-5619-4fd7-a3c6-b5f1bde23f90",
+      "parameters": {
+        "events": [
+          "USER_CREATED"
+        ],
+        "organizationId": "<__PLACEHOLDER_VALUE__Your Probo organization ID (Settings > Organization)__>"
+      },
+      "credentials": {
+        "proboApi": {
+          "id": "dEaYtE59uBBGUuGm",
+          "name": "Probo Local"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f74bdeb6-355d-45ac-a3e6-efeff95997a0",
+      "name": "Fetch User Details from Probo",
+      "type": "@probo/n8n-nodes-probo.probo",
+      "position": [
+        1264,
+        304
+      ],
+      "parameters": {
+        "userId": "={{ $json.person_id }}",
+        "resource": "user",
+        "operation": "getUser"
+      },
+      "credentials": {
+        "proboApi": {
+          "id": "dEaYtE59uBBGUuGm",
+          "name": "Probo Local"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "aa85ce1f-eead-40c7-9af6-7beb92ce6758",
+      "name": "Fetch Published Policies",
+      "type": "@probo/n8n-nodes-probo.probo",
+      "position": [
+        1760,
+        304
+      ],
+      "parameters": {
+        "filters": {
+          "status": [
+            "ACTIVE"
+          ],
+          "published": true,
+          "documentTypes": [
+            "POLICY"
+          ]
+        },
+        "resource": "document",
+        "operation": "getAll",
+        "returnAll": true,
+        "organizationId": "={{ $json.org_id }}"
+      },
+      "credentials": {
+        "proboApi": {
+          "id": "dEaYtE59uBBGUuGm",
+          "name": "Probo Local"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 1
+    },
+    {
+      "id": "8762871d-0cd3-488c-b9bd-102607b96038",
+      "name": "Fetch Latest Policy Version",
+      "type": "@probo/n8n-nodes-probo.probo",
+      "position": [
+        2000,
+        304
+      ],
+      "parameters": {
+        "limit": 1,
+        "filters": {
+          "statuses": [
+            "PUBLISHED"
+          ]
+        },
+        "resource": "document",
+        "operation": "getAllVersions",
+        "documentId": "={{ $json.id }}"
+      },
+      "credentials": {
+        "proboApi": {
+          "id": "dEaYtE59uBBGUuGm",
+          "name": "Probo Local"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "44f6868e-25b9-424d-8bd1-b4642522c28d",
+      "name": "Send for Policy Signature",
+      "type": "@probo/n8n-nodes-probo.probo",
+      "onError": "continueRegularOutput",
+      "position": [
+        3264,
+        400
+      ],
+      "parameters": {
+        "resource": "document",
+        "operation": "requestSignature",
+        "signatoryId": "={{ $json.person_id }}",
+        "documentVersionId": "={{ $json.version_id }}"
+      },
+      "credentials": {
+        "proboApi": {
+          "id": "dEaYtE59uBBGUuGm",
+          "name": "Probo Local"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "40ae48c3-85d6-4d8f-a6f2-a705aec52fcd",
+      "name": "Summarize Sent Policies",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3504,
+        400
+      ],
+      "parameters": {
+        "jsCode": "// Build one Slack recap from all signature requests (sent + failed).\nconst person = $('Merge Active User Profiles').first().json;\nconst upstream = $('Select Policies to Send').isExecuted\n  ? $('Select Policies to Send').all()\n  : $('Dispatch All Policies').all();\nconst results = $input.all();\n\nconst sent = [];\nconst failed = [];\nresults.forEach((it, i) => {\n  const title = upstream[i]?.json?.title || 'Untitled policy';\n  if (it.json && it.json.error) failed.push(title);\n  else sent.push(title);\n});\n\nconst who = person.name + ' (' + person.email + (person.job_title ? ', ' + person.job_title : ', no job title') + ')';\nlet text = ':white_check_mark: *Onboarding: policies sent for signature*\\n' + who + ' received ' + sent.length + ' ' + (sent.length === 1 ? 'policy' : 'policies') + ' to sign:\\n' + sent.map(t => '\u2022 ' + t).join('\\n');\nif (failed.length) text += '\\n\\n:x: ' + failed.length + ' request(s) failed:\\n' + failed.map(t => '\u2022 ' + t).join('\\n');\n\nreturn [{ json: { slack_text: text, sent_count: sent.length, failed_count: failed.length } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "65803268-d281-41b2-b166-d484aa7a1008",
+      "name": "Notify Policies Sent on Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        3744,
+        400
+      ],
+      "webhookId": "57cdf94f-f35a-4779-af65-8845a330508f",
+      "parameters": {
+        "text": "={{ $json.slack_text }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Set User Configurations').first().json.cfg_slack_channel }}"
+        },
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "2qPfvrOtwP9KbOXd",
+          "name": "Slack account 2"
+        }
+      },
+      "typeVersion": 2.7
+    },
+    {
+      "id": "969d1a85-6a1a-46fa-afd7-3beb23d2bc22",
+      "name": "Notify Skipped User on Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1008,
+        672
+      ],
+      "webhookId": "c090bdcc-5284-42b2-b08c-6aa6ded4fcf0",
+      "parameters": {
+        "text": "=:warning: *Onboarding: new Probo user skipped*\n{{ $json.name || 'Unknown user' }} ({{ $json.email || 'no email' }}) was not sent any policy.\nReason: {{ $json.reject_reasons.join(', ') }}\nIf this is a real employee, request their signatures manually in Probo.",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Set User Configurations').first().json.cfg_slack_channel }}"
+        },
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "2qPfvrOtwP9KbOXd",
+          "name": "Slack account 2"
+        }
+      },
+      "typeVersion": 2.7
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "executionOrder": "v1"
+  },
+  "versionId": "b136a76a-1786-4bdd-8ca1-bb61a911fa98",
+  "nodeGroups": [],
+  "connections": {
+    "OpenAI GPT-5.4-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Role-Specific Policy Selector",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dispatch All Policies": {
+      "main": [
+        [
+          {
+            "node": "Send for Policy Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Job Title Available": {
+      "main": [
+        [
+          {
+            "node": "Role-Specific Policy Selector",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Dispatch All Policies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Legitimate New Hire": {
+      "main": [
+        [
+          {
+            "node": "Wait for Profile Completion",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Skipped User on Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When New User in Probo": {
+      "main": [
+        [
+          {
+            "node": "Set User Configurations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Policies to Send": {
+      "main": [
+        [
+          {
+            "node": "Send for Policy Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set User Configurations": {
+      "main": [
+        [
+          {
+            "node": "Verify User Authenticity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Sent Policies": {
+      "main": [
+        [
+          {
+            "node": "Notify Policies Sent on Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Published Policies": {
+      "main": [
+        [
+          {
+            "node": "Fetch Latest Policy Version",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify User Authenticity": {
+      "main": [
+        [
+          {
+            "node": "If Legitimate New Hire",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send for Policy Signature": {
+      "main": [
+        [
+          {
+            "node": "Summarize Sent Policies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Active User Profiles": {
+      "main": [
+        [
+          {
+            "node": "Fetch Published Policies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Latest Policy Version": {
+      "main": [
+        [
+          {
+            "node": "Compile User and Policy Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Profile Completion": {
+      "main": [
+        [
+          {
+            "node": "Fetch User Details from Probo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile User and Policy Data": {
+      "main": [
+        [
+          {
+            "node": "If Job Title Available",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch User Details from Probo": {
+      "main": [
+        [
+          {
+            "node": "Merge Active User Profiles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Role-Specific Policy Selector": {
+      "main": [
+        [
+          {
+            "node": "Select Policies to Send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

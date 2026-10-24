@@ -1,6 +1,6 @@
 # 🎬 Learn anything, write a book, design a curriculum
 
-> ⚡ **1,058 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,170 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

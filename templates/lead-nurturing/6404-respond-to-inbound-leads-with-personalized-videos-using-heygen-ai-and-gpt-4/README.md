@@ -1,6 +1,6 @@
 # 💬 Respond to inbound leads with personalized videos using Heygen AI and GPT-4
 
-> ⚡ **1,459 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,533 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

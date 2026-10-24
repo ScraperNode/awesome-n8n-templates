@@ -1,6 +1,6 @@
 # ⚒️ Send location updates of the ISS to a topic in MQTT
 
-> ⚡ **2,578 views** · ⚒️ [Engineering](../)
+> ⚡ **2,622 views** · ⚒️ [Engineering](../)
 
 ## Description
 

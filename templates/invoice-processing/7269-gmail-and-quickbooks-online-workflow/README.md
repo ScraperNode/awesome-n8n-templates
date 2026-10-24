@@ -1,6 +1,6 @@
 # 🧾 Gmail and QuickBooks Online workflow
 
-> ⚡ **494 views** · 🧾 [Invoice Processing](../)
+> ⚡ **537 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

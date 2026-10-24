@@ -1,6 +1,6 @@
 # 🎫 🛠️ HaloPSA tool MCP server 💪 all 20 operations
 
-> ⚡ **165 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **265 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

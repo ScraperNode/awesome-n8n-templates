@@ -1,6 +1,6 @@
 # 📊 YouTube analytics data reporting API integration for AI agents
 
-> ⚡ **162 views** · 📊 [Market Research & Insights](../)
+> ⚡ **186 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

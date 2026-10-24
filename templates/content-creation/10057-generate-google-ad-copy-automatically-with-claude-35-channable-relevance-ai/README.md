@@ -1,6 +1,6 @@
 # 🎬 Generate Google ad copy automatically with Claude 3.5, Channable & Relevance AI
 
-> ⚡ **233 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **414 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Monitor YouTube channels and send daily updates to Discord via RSS (no API key)
 
-> ⚡ **263 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **458 views** · 📱 [Social Media & Email Marketing](../)
 
 > 💡 **Pro Tip** — YouTube's API quotas can be a bottleneck when you're pulling data at scale. [ScraperNode](https://scrapernode.com/youtube) is a community node with dedicated scrapers for [channels](https://scrapernode.com/youtube/scrapers/channels), [videos](https://scrapernode.com/youtube/scrapers/videos), and [comments](https://scrapernode.com/youtube/scrapers/comments) — no quota limits, just structured data.
 >

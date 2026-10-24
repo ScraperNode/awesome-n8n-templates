@@ -1,6 +1,6 @@
 # 📖 AI agent to chat with Snowflake database
 
-> ⚡ **3,173 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **3,880 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

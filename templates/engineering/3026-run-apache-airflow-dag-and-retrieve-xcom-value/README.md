@@ -1,6 +1,6 @@
 # ⚒️ Run Apache Airflow DAG and retrieve XCom value
 
-> ⚡ **833 views** · ⚒️ [Engineering](../)
+> ⚡ **958 views** · ⚒️ [Engineering](../)
 
 ## Description
 

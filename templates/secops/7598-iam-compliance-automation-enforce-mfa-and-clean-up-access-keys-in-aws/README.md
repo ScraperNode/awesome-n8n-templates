@@ -1,6 +1,6 @@
 # 🔒 IAM compliance automation: enforce MFA and clean up access keys in AWS
 
-> ⚡ **407 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **453 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

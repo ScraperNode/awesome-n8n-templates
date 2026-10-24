@@ -1,0 +1,255 @@
+{
+  "name": "Chase overdue invoices from Google Sheets with escalating Gmail drafts",
+  "nodes": [
+    {
+      "id": "0e6dcd27-5905-569e-b937-0200cc5591a9",
+      "name": "Daily 9am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "46bf0119-5910-5b33-beea-12eef4c84881",
+      "name": "Read invoices",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Invoices"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "a040d5cb-1568-5980-ad51-6be1649a7c5a",
+      "name": "Pick invoices to chase",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Pick overdue, unpaid invoices that were not chased in the last 3 days,\n// and choose the reminder tier from how many days overdue each one is.\nconst DAY = 24 * 60 * 60 * 1000;\nconst now = new Date();\nconst out = [];\nconst items = $input.all();\nfor (let idx = 0; idx < items.length; idx++) {\n  const item = items[idx];\n  const row = item.json;\n  const status = String(row['Status'] || '').trim().toUpperCase();\n  if (status === 'PAID') continue;\n  const due = new Date(row['Due']);\n  if (isNaN(due)) continue;\n  const daysOverdue = Math.floor((now - due) / DAY);\n  if (daysOverdue < 1) continue;\n  const last = row['Last chased'] ? new Date(row['Last chased']) : null;\n  if (last && !isNaN(last) && (now - last) < 3 * DAY) continue;\n  let tier, instruction;\n  if (daysOverdue < 15) {\n    tier = 'polite';\n    instruction = 'Polite first nudge. Friendly, assume it slipped through the cracks.';\n  } else if (daysOverdue <= 30) {\n    tier = 'firmer';\n    instruction = 'Firmer second reminder. Still courteous, but clear the invoice is now well past due and ask for a payment date.';\n  } else {\n    tier = 'final';\n    instruction = 'Final notice. Calm and professional, state that this is the final reminder. Do not add any link; it is added separately.';\n  }\n  const paymentLink = String(row['Payment link'] || '').trim();\n  out.push({ json: { ...row, daysOverdue, tier, instruction,\n    paymentLine: tier === 'final' && paymentLink ? `Payment link: ${paymentLink}` : '' }, pairedItem: { item: idx } });\n}\nreturn out;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b854217f-11e1-51dd-8683-4ffe96851aa3",
+      "name": "Draft the reminder",
+      "type": "n8n-nodes-base.openAi",
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "prompt": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "You draft invoice reminder emails for a freelancer. Under 70 words. Reference the invoice number, amount and days overdue. Ask if anything is needed to process payment. No guilt trips, no threats. Do not include any links; a payment link is added separately. Output only the email body."
+            },
+            {
+              "role": "user",
+              "content": "=Tone: {{$json.instruction}}\nClient: {{$json.Client}}\nInvoice: {{$json['Invoice #']}}\nAmount: {{$json.Amount}}\nDays overdue: {{$json.daysOverdue}}"
+            }
+          ]
+        },
+        "options": {},
+        "resource": "chat",
+        "chatModel": "gpt-4o",
+        "operation": "complete"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "f8fb805c-c761-503b-94ee-57241205936f",
+      "name": "Create Gmail draft",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        880,
+        300
+      ],
+      "parameters": {
+        "message": "={{ $json.message.content }}{{ $('Pick invoices to chase').item.json.paymentLine ? '\\n\\n' + $('Pick invoices to chase').item.json.paymentLine : '' }}",
+        "options": {
+          "sendTo": "={{ $('Pick invoices to chase').item.json['Client email'] }}"
+        },
+        "subject": "={{ $('Pick invoices to chase').item.json.tier === 'final' ? 'Final notice: ' : 'Following up on ' }}{{ $('Pick invoices to chase').item.json['Invoice #'] }}",
+        "resource": "draft",
+        "emailType": "text"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "0e1e597b-098f-586b-87aa-c40a5aaa892b",
+      "name": "Log the chase",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1100,
+        300
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Invoice #": "={{ $('Pick invoices to chase').item.json['Invoice #'] }}",
+            "Last chased": "={{ $now.toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "Invoice #",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Invoice #",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last chased",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Last chased",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Invoice #"
+          ]
+        },
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Invoices"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "2eaf12a9-b734-5673-aab1-e03126dde556",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        -160
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 420,
+        "height": 420,
+        "content": "## Invoice Chaser (Jupi Labs)\nEvery morning at 9am this finds overdue, unpaid invoices in your Google Sheet and writes a reminder into Gmail **as a draft**. Nothing is sent until you open the draft and hit send.\n\n**Tone escalates by days overdue:**\n- 1-14 days: polite first nudge\n- 15-30 days: firmer second reminder\n- 31+ days: final notice, with the invoice's payment link added (if the sheet has one)\n\nSkips invoices marked PAID, not yet due, or chased in the last 3 days. Logs the chase time back to the sheet."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "11a4104c-4709-510a-b4eb-e37fafcae6c5",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        420,
+        -160
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 420,
+        "height": 420,
+        "content": "## Setup (5 min)\n1. In **Read invoices** and **Log the chase**, pick your invoices spreadsheet (tab `Invoices`).\n2. Connect credentials: Google Sheets, Gmail, OpenAI.\n3. Columns on the `Invoices` tab: Invoice #, Client, Client email, Due, Amount, Status, Payment link, Last chased.\n4. Mark paid invoices with Status = PAID.\n\nSwap the OpenAI node for any chat model if you prefer."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Daily 9am": {
+      "main": [
+        [
+          {
+            "node": "Read invoices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read invoices": {
+      "main": [
+        [
+          {
+            "node": "Pick invoices to chase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Gmail draft": {
+      "main": [
+        [
+          {
+            "node": "Log the chase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft the reminder": {
+      "main": [
+        [
+          {
+            "node": "Create Gmail draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick invoices to chase": {
+      "main": [
+        [
+          {
+            "node": "Draft the reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

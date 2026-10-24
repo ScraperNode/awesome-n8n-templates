@@ -1,6 +1,6 @@
 # 📈 Automated stock trading with AI: integrating Alpaca and Google Sheets
 
-> ⚡ **25,911 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **32,799 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

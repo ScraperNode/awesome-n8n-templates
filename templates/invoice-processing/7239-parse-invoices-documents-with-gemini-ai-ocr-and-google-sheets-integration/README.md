@@ -1,6 +1,6 @@
 # 🧾 Parse invoices & documents with Gemini AI, OCR, and Google Sheets integration
 
-> ⚡ **1,972 views** · 🧾 [Invoice Processing](../)
+> ⚡ **2,319 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

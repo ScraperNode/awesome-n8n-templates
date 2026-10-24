@@ -1,6 +1,6 @@
 # 📁 Compress binary files to zip format
 
-> ⚡ **2,278 views** · 📁 [File Management](../)
+> ⚡ **2,392 views** · 📁 [File Management](../)
 
 ## Description
 

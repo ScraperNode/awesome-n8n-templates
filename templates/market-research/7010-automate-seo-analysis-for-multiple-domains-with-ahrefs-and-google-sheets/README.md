@@ -1,6 +1,6 @@
 # 📊 Automate SEO analysis for multiple domains with Ahrefs and Google Sheets
 
-> ⚡ **1,261 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,464 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

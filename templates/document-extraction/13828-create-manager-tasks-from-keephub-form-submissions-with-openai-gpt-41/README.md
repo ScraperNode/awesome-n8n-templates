@@ -1,6 +1,6 @@
 # 🔬 Create manager tasks from Keephub form submissions with OpenAI GPT-4.1
 
-> ⚡ **4 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **21 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

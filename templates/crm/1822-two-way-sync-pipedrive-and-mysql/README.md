@@ -1,6 +1,6 @@
 # 🤝 Two way sync Pipedrive and MySQL
 
-> ⚡ **15,153 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **17,122 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

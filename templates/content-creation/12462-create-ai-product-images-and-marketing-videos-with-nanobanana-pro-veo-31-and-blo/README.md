@@ -1,6 +1,6 @@
 # 🎬 Create AI product images and marketing videos with NanoBanana Pro, Veo 3.1 and Blotato
 
-> ⚡ **3,841 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **7,491 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Generate Dream 100 prospect lists with Perplexity AI research and Google Sheets
 
-> ⚡ **646 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **801 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

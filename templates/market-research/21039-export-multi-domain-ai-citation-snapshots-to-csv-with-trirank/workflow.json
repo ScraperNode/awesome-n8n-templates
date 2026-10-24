@@ -1,0 +1,254 @@
+{
+  "name": "Export multi-domain AI citation snapshots to CSV with TriRank",
+  "nodes": [
+    {
+      "id": "run-inventory",
+      "name": "Run inventory",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        200
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "configure-domains",
+      "name": "Configure domains",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        200
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "domains",
+              "name": "domains",
+              "type": "string",
+              "value": "example.com\nexample.org"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "prepare-domains",
+      "name": "Prepare domains",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        460,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Bare public hostnames, one per line (commas/semicolons also accepted).\n// Fail before any HTTP request rather than silently truncate the inventory.\nconst value = $input.first().json.domains;\nif (typeof value !== 'string' || value.length > 8000) {\n  throw new Error('Set domains to a text list of 1-5 bare domain names (max 8000 characters).');\n}\nconst domains = [];\nfor (const part of value.split(/[\\n,;]+/)) {\n  const host = part.trim().toLowerCase().replace(/^www\\./, '');\n  if (!host) continue;\n  const labels = host.split('.');\n  if (host.length > 253 || labels.length < 2 ||\n      !labels.every(s => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(s)) ||\n      !/[a-z]/.test(labels[labels.length - 1])) {\n    throw new Error('Use bare domain names only, without URLs, paths, ports or spreadsheet formulas.');\n  }\n  if (!domains.includes(host)) domains.push(host);\n}\nif (domains.length < 1 || domains.length > 5) {\n  throw new Error('Configure 1-5 unique domains. Split a longer inventory into separate runs.');\n}\nreturn domains.map(domain => ({ json: { domain } }));\n",
+        "language": "javaScript"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "read-cached-signals",
+      "name": "Read cached signals",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        740,
+        200
+      ],
+      "parameters": {
+        "url": "=https://trirankai.com/api/signals/{{ $json.domain }}",
+        "method": "GET",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "build-inventory-rows",
+      "name": "Build inventory rows",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1020,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// One output row per requested domain, in input order, never a leaderboard.\n// Partial API readings expose MISSING engines, not the other engines' verdicts.\nconst inputs = $input.all();\nconst requested = $('Prepare domains').all();\nif (inputs.length !== requested.length) {\n  throw new Error('Response count differs from domain count; refusing to mislabel CSV rows.');\n}\nconst engines = ['ChatGPT', 'Claude', 'Gemini', 'Perplexity'];\nconst lookupAt = new Date().toISOString();\nconst safeList = xs => Array.isArray(xs) && new Set(xs).size === xs.length &&\n  xs.every(x => engines.includes(x));\nreturn inputs.map((item, index) => {\n  // Use n8n item linking, including error items, rather than assuming body order.\n  const domain = $('Prepare domains').itemMatching(index).json.domain;\n  if (!requested.some(x => x.json.domain === domain)) throw new Error('Unlinked domain response.');\n  const res = item.json;\n  const httpStatus = Number(res.statusCode);\n  const row = {\n    domain,\n    reading_state: 'request_failed',\n    http_status: Number.isInteger(httpStatus) && httpStatus >= 100 && httpStatus <= 599 ? httpStatus : '',\n    visibility_score: '',\n    ChatGPT: 'unavailable', Claude: 'unavailable', Gemini: 'unavailable', Perplexity: 'unavailable',\n    measurement_checked_at: '',\n    lookup_at: lookupAt,\n    notes: 'Request failed; no citation verdict. No automatic retry.',\n    report_url: 'https://trirankai.com/site/' + domain,\n    setup_url: 'https://trirankai.com/audit',\n  };\n  if (httpStatus === 429) {\n    row.reading_state = 'rate_limited';\n    row.notes = 'Read allowance reached. Try after the daily reset at 00:00 UTC. No citation verdict.';\n    return { json: row };\n  }\n  if (httpStatus !== 200) return { json: row };\n  const body = res.body;\n  const c = body && typeof body === 'object' && body.domain === domain ? body.citation : null;\n  row.reading_state = 'invalid_response';\n  row.notes = 'Response did not match the domain or citation contract; no verdict inferred.';\n  if (!c || typeof c !== 'object') return { json: row };\n  if (c.state === 'scored' && safeList(c.cited) &&\n      typeof c.score === 'number' && Number.isFinite(c.score) && c.score >= 0 && c.score <= 100 &&\n      (c.cited.length === 0) === (c.score === 0) &&\n      typeof c.checkedAt === 'string' && /^\\d{4}-\\d{2}-\\d{2}T/.test(c.checkedAt) &&\n      Number.isFinite(Date.parse(c.checkedAt))) {\n    const ageMs = Date.parse(lookupAt) - Date.parse(c.checkedAt);\n    if (ageMs < -60000 || ageMs > 14 * 86400000) {\n      row.reading_state = 'no_fresh_measurement';\n      row.notes = 'Measurement timestamp is stale or in the future; no current score or verdict exported.';\n    } else {\n      row.reading_state = 'scored';\n      row.visibility_score = c.score;\n      row.measurement_checked_at = new Date(c.checkedAt).toISOString();\n      for (const engine of engines) row[engine] = c.cited.includes(engine) ? 'cited' : 'not_cited';\n      row.notes = 'Complete cached quartet. Domain prompts/times may differ; do not treat this inventory as a controlled competitor ranking.';\n    }\n  } else if (c.state === 'partial' && safeList(c.missing) && c.missing.length > 0 && c.missing.length < 4) {\n    row.reading_state = 'partial';\n    for (const engine of engines) row[engine] = c.missing.includes(engine) ? 'not_freshly_measured' : 'verdict_not_exposed';\n    row.notes = 'Partial coverage. API names missing engines but does not expose the others\\' verdicts or a complete score.';\n  } else if (c.state === 'none') {\n    row.reading_state = 'no_fresh_measurement';\n    row.notes = 'No fresh citation reading available. This is not zero citations. A human can seed or refresh an audit at the setup URL.';\n  }\n  if (body.authError === 'invalid_key') row.notes += ' Optional API key rejected; API used anonymous access.';\n  // Only validated hosts/dates/enums and our own prose reach CSV cells. Raw\n  // response/error text (which could contain formulas or credentials) is not copied.\n  return { json: row };\n});\n",
+        "language": "javaScript"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "download-citation-csv",
+      "name": "Download citation CSV",
+      "type": "n8n-nodes-base.convertToFile",
+      "position": [
+        1300,
+        200
+      ],
+      "parameters": {
+        "options": {
+          "fileName": "trirank-citation-inventory.csv",
+          "headerRow": true
+        },
+        "operation": "csv",
+        "binaryPropertyName": "data"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "overview",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        -260
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 1540,
+        "height": 320,
+        "content": "# Export multi-domain AI citation snapshots to CSV with TriRank\n\nFor SEO/GEO consultants and agencies: one manual run produces a downloadable inventory for 1-5 client or competitor domains. Unlike a change alert, it needs no Slack/SMTP credential, schedule or saved baseline.\n\n**Setup:** Set bare domains in Configure domains. Run each domain through the [TriRank audit](https://trirankai.com/audit) once if you need a measurement; complete human verification yourself. Then Execute workflow and download the final node\u2019s binary CSV.\n\n**Boundary:** reads cached data from https://trirankai.com, never runs new AI probes. No fresh data is not zero citations. Different domains may have different prompts and measurement times: this is an inventory, not a fair ranking."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1-configure",
+      "name": "1 Configure",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        390
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 550,
+        "height": 230,
+        "content": "## 1. Configure and validate\nOne bare hostname per line, or comma/semicolon separated. URLs/paths/ports are rejected. www is normalized; duplicates use one read. Max 5 unique domains; too many fails before HTTP calls. Defaults are examples, not fabricated sample results."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2-read",
+      "name": "2 Read",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        540,
+        390
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 350,
+        "height": 230,
+        "content": "## 2. Read-only API\nOne GET per domain, no retries. Anonymous limit: 60/day/IP, shared with other workflows. Optional x-api-key belongs in n8n Header Auth credentials, never exported JSON. 429 and network failures remain explicit rows."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3-interpret",
+      "name": "3 Interpret",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        920,
+        390
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 350,
+        "height": 230,
+        "content": "## 3. Preserve unknowns\nOnly scored readings have a numeric score and all 4 verdicts. Partial means some checks are missing; other verdicts are not exposed. No data/errors leave score blank. Measurement time differs from lookup time. CSV never ranks domains."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "4-download",
+      "name": "4 Download",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1300,
+        390
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 350,
+        "height": 230,
+        "content": "## 4. Download CSV\nOpen Download citation CSV \u2192 Binary \u2192 Download. No external delivery or workflow activation required. You may connect storage later using your own credential; it is not configured by this export."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Run inventory": {
+      "main": [
+        [
+          {
+            "node": "Configure domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare domains": {
+      "main": [
+        [
+          {
+            "node": "Read cached signals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure domains": {
+      "main": [
+        [
+          {
+            "node": "Prepare domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read cached signals": {
+      "main": [
+        [
+          {
+            "node": "Build inventory rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build inventory rows": {
+      "main": [
+        [
+          {
+            "node": "Download citation CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

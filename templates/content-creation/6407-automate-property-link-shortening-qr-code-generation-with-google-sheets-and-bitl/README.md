@@ -1,6 +1,6 @@
 # 🎬 Automate property link shortening & QR code generation with Google Sheets and Bitly
 
-> ⚡ **103 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **116 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

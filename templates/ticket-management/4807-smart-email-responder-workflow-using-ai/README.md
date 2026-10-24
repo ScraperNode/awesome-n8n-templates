@@ -1,6 +1,6 @@
 # 🎫 Smart email responder workflow using AI
 
-> ⚡ **18,837 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **23,319 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

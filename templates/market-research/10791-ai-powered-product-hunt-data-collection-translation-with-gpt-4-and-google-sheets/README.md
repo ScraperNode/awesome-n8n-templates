@@ -1,6 +1,6 @@
 # 📊 AI-powered Product Hunt data collection & translation with GPT-4 and Google Sheets
 
-> ⚡ **83 views** · 📊 [Market Research & Insights](../)
+> ⚡ **157 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

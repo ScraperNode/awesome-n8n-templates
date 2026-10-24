@@ -1,6 +1,6 @@
 # 📊 Monitor brand reputation and detect crises with GPT-4, Slack and Gmail
 
-> ⚡ **95 views** · 📊 [Market Research & Insights](../)
+> ⚡ **140 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

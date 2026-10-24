@@ -1,6 +1,6 @@
 # 📋 Monitoring team capacity in Jira and sending alerts for over-allocation
 
-> ⚡ **195 views** · 📋 [Project Management](../)
+> ⚡ **236 views** · 📋 [Project Management](../)
 
 ## Description
 

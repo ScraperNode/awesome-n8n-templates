@@ -1,6 +1,6 @@
 # 🔬 Log farm machinery operations from a webhook into Google Sheets
 
-> ⚡ **4 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **46 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

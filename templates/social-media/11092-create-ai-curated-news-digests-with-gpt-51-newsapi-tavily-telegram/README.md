@@ -1,6 +1,6 @@
 # 📱 Create AI-curated news digests with GPT-5.1, NewsAPI, Tavily & Telegram
 
-> ⚡ **296 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **447 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

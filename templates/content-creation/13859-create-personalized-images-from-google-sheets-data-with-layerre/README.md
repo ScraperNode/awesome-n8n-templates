@@ -1,6 +1,6 @@
 # 🎬 Create personalized images from Google Sheets data with Layerre
 
-> ⚡ **92 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **132 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

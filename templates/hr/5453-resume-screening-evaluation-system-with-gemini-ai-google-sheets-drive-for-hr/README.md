@@ -1,6 +1,6 @@
 # 👥 Resume screening & evaluation system with Gemini AI, Google Sheets & Drive for HR
 
-> ⚡ **17,796 views** · 👥 [HR & Recruitment](../)
+> ⚡ **21,672 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

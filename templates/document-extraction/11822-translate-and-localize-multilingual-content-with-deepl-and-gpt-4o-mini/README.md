@@ -1,6 +1,6 @@
 # 🔬 Translate and localize multilingual content with DeepL and GPT-4o-mini
 
-> ⚡ **110 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **183 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

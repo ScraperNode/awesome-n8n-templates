@@ -1,6 +1,6 @@
 # 🎯 Automated lead qualification & nurturing with JotForm, HubSpot, Email & AI scoring
 
-> ⚡ **189 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **389 views** · 🎯 [AI Summarization & Classification](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

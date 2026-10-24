@@ -1,6 +1,6 @@
 # 🔒 Monitor Zoho CRM changes & alert on suspicious activity with Google Sheets
 
-> ⚡ **84 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **169 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

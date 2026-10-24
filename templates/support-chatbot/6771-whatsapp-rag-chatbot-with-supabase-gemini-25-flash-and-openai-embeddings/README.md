@@ -1,6 +1,6 @@
 # 💬 WhatsApp RAG chatbot with Supabase, Gemini 2.5 Flash, and OpenAI embeddings
 
-> ⚡ **7,818 views** · 💬 [Support Chatbots](../)
+> ⚡ **10,767 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

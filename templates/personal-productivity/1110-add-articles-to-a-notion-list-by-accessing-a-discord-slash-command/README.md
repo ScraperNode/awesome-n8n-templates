@@ -1,6 +1,6 @@
 # ⚡ Add articles to a Notion list by accessing a Discord slash command
 
-> ⚡ **2,142 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,151 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Display project data on a smashing dashboard
 
-> ⚡ **4,915 views** · 📊 [Market Research & Insights](../)
+> ⚡ **5,156 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

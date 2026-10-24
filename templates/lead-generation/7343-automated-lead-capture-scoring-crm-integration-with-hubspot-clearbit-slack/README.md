@@ -1,6 +1,6 @@
 # 🎣 Automated lead capture, scoring & CRM integration with HubSpot, Clearbit & Slack
 
-> ⚡ **769 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,163 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

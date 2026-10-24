@@ -1,6 +1,6 @@
 # 🔍 Natural language Q&A for Pipedrive leads using GPT-4o-mini
 
-> ⚡ **216 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **285 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate consistent styled images from references with Google Gemini and Sheets
 
-> ⚡ **137 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **357 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

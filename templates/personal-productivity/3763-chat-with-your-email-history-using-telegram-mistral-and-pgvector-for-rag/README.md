@@ -1,6 +1,6 @@
 # ⚡ Chat with your email history using Telegram, Mistral and Pgvector for RAG
 
-> ⚡ **4,399 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,593 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

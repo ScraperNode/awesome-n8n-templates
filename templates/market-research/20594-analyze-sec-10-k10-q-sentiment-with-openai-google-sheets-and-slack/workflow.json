@@ -1,0 +1,811 @@
+{
+  "id": "HZ9yqIaX6HGlpnLr",
+  "meta": {
+    "instanceId": "9f24379abd1ca05a3f590fdaa874ca82fbc5e1188798d609d51d2a8f6bacb662"
+  },
+  "name": "SEC EDGAR 10-K/10-Q Sentiment with OpenAI, Sheets & Slack",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "e248d6ff-5d7e-4bc3-908c-3ca834892e77",
+      "name": "Daily SEC Filing Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        256,
+        960
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "3de4bef0-7484-4019-b7d0-2c84e9848325",
+      "name": "SEC EDGAR \u2014 Check Filings",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        480,
+        960
+      ],
+      "parameters": {
+        "url": "https://data.sec.gov/submissions/CIK+1234567890.json",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "a11a52e1-f737-4276-b15d-12064a4fd134",
+      "name": "Filter 10-K / 10-Q Filings",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        896,
+        1088
+      ],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst recent = data.filings.recent;\n\nconst filings = [];\n\nfor (let i = 0; i < recent.form.length; i++) {\n  const form = recent.form[i];\n\n  // Only 10-K and 10-Q\n  if (form !== '10-K' && form !== '10-Q') {\n    continue;\n  }\n\n  filings.push({\n    company: data.name,\n    ticker: data.tickers?.[0] || '',\n    cik: data.cik,\n    form: form,\n    filingDate: recent.filingDate[i],\n    accessionNumber: recent.accessionNumber[i],\n    primaryDocument: recent.primaryDocument[i],\n\n    filingUrl: `https://www.sec.gov/Archives/edgar/data/${data.cik.replace(/^0+/, '')}/${recent.accessionNumber[i].replace(/-/g, '')}/${recent.primaryDocument[i]}`\n  });\n}\n\n// Sort newest first\nfilings.sort(\n  (a, b) => new Date(b.filingDate) - new Date(a.filingDate)\n);\n\n// Return ONLY the latest filing\nreturn [\n  {\n    json: filings[0]\n  }\n];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "5bce9e80-0371-4d7b-834b-b0ff33bf0809",
+      "name": "SEC - Fetch Filing Document",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2320,
+        960
+      ],
+      "parameters": {
+        "url": "={{ $json.filingUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.4
+    },
+    {
+      "id": "e7fa5e42-43d3-4f87-9ac4-6839c694d259",
+      "name": "Code - Extract Risk Factors + MD&A",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2608,
+        960
+      ],
+      "parameters": {
+        "jsCode": "const html = $json.data || '';\n\nif (!html) {\n  throw new Error('SEC filing data is empty');\n}\n\n// ---------------------------------------------\n// Convert HTML to readable text\n// ---------------------------------------------\n\nlet text = html\n  .replace(/<script[\\s\\S]*?<\\/script>/gi, ' ')\n  .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')\n  .replace(/<[^>]+>/g, ' ')\n  .replace(/&nbsp;/gi, ' ')\n  .replace(/&#160;/gi, ' ')\n  .replace(/&#8212;/gi, '\u2014')\n  .replace(/&#8217;/gi, \"'\")\n  .replace(/&#8220;/gi, '\"')\n  .replace(/&#8221;/gi, '\"')\n  .replace(/&amp;/gi, '&')\n  .replace(/&lt;/gi, '<')\n  .replace(/&gt;/gi, '>')\n  .replace(/&#39;/gi, \"'\")\n  .replace(/&quot;/gi, '\"')\n  .replace(/\\s+/g, ' ')\n  .trim();\n\nconst normalized = text.toLowerCase();\n\n// ---------------------------------------------\n// RISK FACTORS\n// ---------------------------------------------\n\nconst riskMatches = [\n  ...text.matchAll(/item\\s+1a\\.?\\s+risk\\s+factors/gi)\n];\n\nlet riskStart = -1;\n\nif (riskMatches.length > 0) {\n  // Last occurrence avoids Table of Contents\n  riskStart = riskMatches[riskMatches.length - 1].index;\n}\n\n// ---------------------------------------------\n// MD&A\n// ---------------------------------------------\n\nconst mdaPatterns = [\n  /item\\s+2\\.?\\s+management['\u2019]s?\\s+discussion\\s+and\\s+analysis/gi,\n  /item\\s+2\\.?\\s+management\\s+discussion\\s+and\\s+analysis/gi,\n  /management['\u2019]s?\\s+discussion\\s+and\\s+analysis/gi,\n  /management\\s+discussion\\s+and\\s+analysis/gi\n];\n\nlet mdaStart = -1;\n\nfor (const pattern of mdaPatterns) {\n\n  const matches = [\n    ...text.matchAll(pattern)\n  ];\n\n  if (matches.length > 0) {\n\n    // Use the LAST occurrence\n    mdaStart = matches[matches.length - 1].index;\n\n    break;\n  }\n}\n\n// ---------------------------------------------\n// RISK FACTORS EXTRACTION\n// ---------------------------------------------\n\nlet riskFactors = '';\n\nif (riskStart !== -1) {\n\n  let riskEnd = text.length;\n\n  // Risk Factors normally ends before Item 2\n  const afterRisk = text.substring(riskStart + 20);\n\n  const endMatches = [\n    ...afterRisk.matchAll(\n      /item\\s+2\\.?\\s+(?:unregistered\\s+sales|management|management['\u2019]s)/gi\n    )\n  ];\n\n  if (endMatches.length > 0) {\n\n    const candidate =\n      riskStart +\n      20 +\n      endMatches[0].index;\n\n    if (candidate > riskStart) {\n      riskEnd = candidate;\n    }\n  }\n\n  riskFactors = text\n    .substring(riskStart, riskEnd)\n    .trim();\n}\n\n// ---------------------------------------------\n// MD&A EXTRACTION\n// ---------------------------------------------\n\nlet mda = '';\n\nif (mdaStart !== -1) {\n\n  let mdaEnd = Math.min(\n    mdaStart + 150000,\n    text.length\n  );\n\n  const afterMda = text.substring(mdaStart + 20);\n\n  const endMatches = [\n    ...afterMda.matchAll(\n      /item\\s+3\\.?\\s+(?:quantitative|controls|controls\\s+and\\s+procedures)/gi\n    )\n  ];\n\n  if (endMatches.length > 0) {\n\n    const candidate =\n      mdaStart +\n      20 +\n      endMatches[0].index;\n\n    if (candidate > mdaStart) {\n      mdaEnd = Math.min(candidate, mdaEnd);\n    }\n  }\n\n  mda = text\n    .substring(mdaStart, mdaEnd)\n    .trim();\n}\n\n// ---------------------------------------------\n// RETURN\n// ---------------------------------------------\n\nreturn [\n  {\n    json: {\n      riskFactors,\n      mda,\n\n      riskFactorsFound: riskStart !== -1,\n      mdaFound: mdaStart !== -1,\n\n      extractedTextLength: text.length\n    }\n  }\n];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "edf050bd-342b-4e9f-b8ab-bc22d2efbf5c",
+      "name": "IF - Filing Already Exists",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1328,
+        960
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "dfa9ee49-265d-4545-a115-150e6815dc68",
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              },
+              "leftValue": "={{ Object.keys($json).length }}",
+              "rightValue": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "969fbc65-f678-4053-81d8-4fdeee825e4e",
+      "name": "Sheets - Check Existing Filing",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1120,
+        1200
+      ],
+      "parameters": {
+        "options": {},
+        "filtersUI": {
+          "values": [
+            {
+              "lookupValue": "={{ $json.accessionNumber }}",
+              "lookupColumn": "accessionNumber"
+            }
+          ]
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultUrl": "",
+          "cachedResultName": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1z6PH39CNFCEwDsjrSMbo61ObBuNzSU9iLMnJoopeu88",
+          "cachedResultUrl": "",
+          "cachedResultName": "SEC Filing Monitor"
+        }
+      },
+      "typeVersion": 4.7,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "e4d22181-2a5c-4dde-b585-287a6b797dc5",
+      "name": "Merge - New Filing Data",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1728,
+        1072
+      ],
+      "parameters": {},
+      "typeVersion": 3.2
+    },
+    {
+      "id": "7aa518ea-b1e9-4fcb-9300-409130e4b4cd",
+      "name": "Code - Prepare Filing Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1952,
+        1072
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.filter(item => item.json.filingUrl);"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "78163c3d-272b-4a05-88c1-85b21f4c1af0",
+      "name": "Merge - Filing Content & Metadata",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        2960,
+        1056
+      ],
+      "parameters": {},
+      "typeVersion": 3.2
+    },
+    {
+      "id": "6bf0b27d-e9ab-4bd0-a99a-5fe81abbeac2",
+      "name": "Code - Get Latest Filing",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3184,
+        1056
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst extracted = items.find(item => item.json.riskFactors || item.json.mda)?.json || {};\nconst metadata = items.find(item => item.json.company || item.json.ticker)?.json || {};\n\nreturn [\n  {\n    json: {\n      company: metadata.company || \"\",\n      ticker: metadata.ticker || \"\",\n      cik: metadata.cik || \"\",\n      form: metadata.form || \"\",\n      filingDate: metadata.filingDate || \"\",\n      accessionNumber: metadata.accessionNumber || \"\",\n      primaryDocument: metadata.primaryDocument || \"\",\n      filingUrl: metadata.filingUrl || \"\",\n\n      riskFactors: extracted.riskFactors || \"\",\n      mda: extracted.mda || \"\",\n\n      riskFactorsFound: extracted.riskFactorsFound || false,\n      mdaFound: extracted.mdaFound || false,\n      extractedTextLength: extracted.extractedTextLength || 0\n    }\n  }\n];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "43e143b4-a3a1-4597-9177-4e3f6265eeb5",
+      "name": "Code - Prepare AI Input",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3408,
+        1056
+      ],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nconst sourceText = `${data.riskFactors || \"\"}\\n${data.mda || \"\"}`;\n\n// Keywords that are useful for financial/risk analysis\nconst keywords = [\n  \"risk\",\n  \"materially adversely\",\n  \"revenue\",\n  \"net sales\",\n  \"gross margin\",\n  \"operating income\",\n  \"operating expenses\",\n  \"net income\",\n  \"cash flow\",\n  \"liquidity\",\n  \"debt\",\n  \"tariff\",\n  \"tariffs\",\n  \"supply\",\n  \"demand\",\n  \"competition\",\n  \"regulatory\",\n  \"litigation\",\n  \"legal\",\n  \"macroeconomic\",\n  \"inflation\",\n  \"interest rate\",\n  \"foreign currency\",\n  \"outlook\",\n  \"expects\",\n  \"expect\",\n  \"uncertainty\",\n  \"uncertain\",\n  \"cost\",\n  \"margin\"\n];\n\n// Split into sentences\nconst sentences = sourceText\n  .replace(/\\s+/g, \" \")\n  .split(/(?<=[.!?])\\s+/);\n\n// Keep sentences containing important keywords\nconst relevantSentences = sentences.filter(sentence => {\n  const lower = sentence.toLowerCase();\n\n  return keywords.some(keyword => lower.includes(keyword));\n});\n\n// Remove duplicates\nconst uniqueSentences = [...new Set(relevantSentences)];\n\n// Limit total text sent to Groq\nconst MAX_CHARS = 18000;\n\nlet selectedText = \"\";\n\nfor (const sentence of uniqueSentences) {\n  if ((selectedText.length + sentence.length + 1) > MAX_CHARS) {\n    break;\n  }\n\n  selectedText += sentence + \" \";\n}\n\nreturn [\n  {\n    json: {\n      company: data.company,\n      ticker: data.ticker,\n      form: data.form,\n      filingDate: data.filingDate,\n      accessionNumber: data.accessionNumber,\n      filingUrl: data.filingUrl,\n\n      relevantText: selectedText.trim(),\n\n      originalTextLength: sourceText.length,\n      relevantTextLength: selectedText.length,\n      sentencesFound: uniqueSentences.length\n    }\n  }\n];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "561dcef2-0948-45ae-a024-f0320230176f",
+      "name": "AI - Analyze Filing Sentiment",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        3680,
+        1056
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "options": {},
+        "responses": {
+          "values": [
+            {
+              "content": "=You are an SEC filing analyst.\n\nAnalyze ONLY the information provided below.\n\nCompany: {{ $json.company }}\nTicker: {{ $json.ticker }}\nForm: {{ $json.form }}\nFiling Date: {{ $json.filingDate }}\n\nIMPORTANT RULES:\n\n1. Use ONLY the provided filing information.\n2. Do not use knowledge from older Apple filings.\n3. Do not invent financial numbers.\n4. Only report financial figures that appear in the provided text.\n5. If information is not available, say so.\n6. Do not make investment recommendations.\n\nFILING INFORMATION:\n\n{{ $json.relevantText }}\n\nReturn ONLY valid JSON:\n\n{\n  \"overallSentiment\": \"Positive | Neutral | Negative\",\n  \"riskLevel\": \"Low | Medium | High\",\n  \"riskSummary\": \"\",\n  \"keyRisks\": [],\n  \"businessOutlook\": \"\",\n  \"financialHighlights\": [],\n  \"investorTakeaway\": \"\"\n} {{ $json.company }}"
+            }
+          ]
+        },
+        "builtInTools": {}
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "credential-id",
+          "name": "OpenAI (PAID) (AI-ML Team)"
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "1761c9af-ece9-4735-bb40-c93ff95466ab",
+      "name": "Code - Format AI Analysis",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4032,
+        1056
+      ],
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\n\n// ===============================\n// 1. Get AI output\n// ===============================\nconst output = response.output?.[0]?.content?.[0]?.text || \"\";\n\nif (!output) {\n  throw new Error(\"AI response text not found\");\n}\n\n// Remove markdown code fences\nconst cleaned = output\n  .replace(/```json/gi, \"\")\n  .replace(/```/g, \"\")\n  .trim();\n\nlet analysis;\n\ntry {\n  analysis = JSON.parse(cleaned);\n} catch (error) {\n  throw new Error(\"AI response is not valid JSON: \" + error.message);\n}\n\n\n// ===============================\n// 2. Get original SEC filing data\n// ===============================\nconst filing = $('Code - Get Latest Filing').first().json;\n\n\n// ===============================\n// 3. Combine SEC data + AI analysis\n// ===============================\nreturn [\n  {\n    json: {\n      \n      // SEC / Company information\n      company: filing.company || \"\",\n      ticker: filing.ticker || \"\",\n      cik: filing.cik || \"\",\n      form: filing.form || \"\",\n      filingDate: filing.filingDate || \"\",\n      accessionNumber: filing.accessionNumber || \"\",\n      primaryDocument: filing.primaryDocument || \"\",\n      filingUrl: filing.filingUrl || \"\",\n\n      // AI Analysis\n      overallSentiment: analysis.overallSentiment || \"\",\n      riskLevel: analysis.riskLevel || \"\",\n      riskSummary: analysis.riskSummary || \"\",\n      keyRisks: analysis.keyRisks || [],\n      businessOutlook: analysis.businessOutlook || \"\",\n      financialHighlights: analysis.financialHighlights || [],\n      investorTakeaway: analysis.investorTakeaway || \"\"\n    }\n  }\n];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "6511d468-dfed-4d67-ad8a-67102b2232fc",
+      "name": "Sheets - Save Filing Analysis",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        4352,
+        1056
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "cik": "={{ $json.cik }}",
+            "form": "={{ $json.form }}",
+            "ticker": "={{ $json.ticker }}",
+            "company": "={{ $json.company }}",
+            "Key Risks": "={{ $json.keyRisks }}",
+            "filingUrl": "={{ $json.filingUrl }}",
+            "Risk Level": "={{ $json.riskLevel }}",
+            "fillingDate": "={{ $json.filingDate }}",
+            "Risk Summary": "={{ $json.riskSummary }}",
+            "accessionNumber": "={{ $json.accessionNumber }}",
+            "primaryDocument": "={{ $json.primaryDocument }}",
+            "Business Outlook": "={{ $json.businessOutlook }}",
+            "Investor Takeaway": "={{ $json.investorTakeaway }}",
+            "Overall Sentiment": "={{ $json.overallSentiment }}",
+            "Financial Highlights": "={{ $json.financialHighlights }}"
+          },
+          "schema": [
+            {
+              "id": "company",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "company",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ticker",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "ticker",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cik",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "cik",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "form",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "form",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fillingDate",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "fillingDate",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "accessionNumber",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "accessionNumber",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "primaryDocument",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "primaryDocument",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "filingUrl",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "filingUrl",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Overall Sentiment",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Overall Sentiment",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Risk Level",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Risk Level",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Risk Summary",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Risk Summary",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Key Risks",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Key Risks",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Business Outlook",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Business Outlook",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Financial Highlights",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Financial Highlights",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Investor Takeaway",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Investor Takeaway",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultUrl": "",
+          "cachedResultName": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1z6PH39CNFCEwDsjrSMbo61ObBuNzSU9iLMnJoopeu88",
+          "cachedResultUrl": "",
+          "cachedResultName": "SEC Filing Monitor"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "984f6358-5b89-4f08-8bbb-50ea943f3ea5",
+      "name": "Slack - Send Filing Alert",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        4576,
+        1056
+      ],
+      "webhookId": "38486602-b2a9-456e-b07c-b908d0894f07",
+      "parameters": {
+        "text": "=\ud83d\udcca *SEC Filing Alert \u2014 {{$json.company}} ({{$json.ticker}})*  \ud83d\udcc4 *Filing:* {{$json.form}} \ud83d\udcc5 *Filing Date:* {{$json.fillingDate}}  *Overall Sentiment:* {{$json[\"Overall Sentiment\"]}} *Risk Level:* {{$json[\"Risk Level\"]}}  \u26a0\ufe0f *Risk Summary* {{$json[\"Risk Summary\"]}}  \ud83d\udd34 *Key Risks* \u2022 {{$json[\"Key Risks\"][0]}} \u2022 {{$json[\"Key Risks\"][1]}} \u2022 {{$json[\"Key Risks\"][2]}} \u2022 {{$json[\"Key Risks\"][3]}}  \ud83d\udcc8 *Business Outlook* {{$json[\"Business Outlook\"]}}  \ud83d\udcb0 *Financial Highlights* \u2022 Q3 2026: ${{$json[\"Financial Highlights\"][0].totalNetSales}}M revenue \u2014 {{$json[\"Financial Highlights\"][0].yearOverYearChangePercentage}}% YoY \u2022 First Nine Months 2026: ${{$json[\"Financial Highlights\"][1].totalNetSales}}M revenue \u2014 {{$json[\"Financial Highlights\"][1].yearOverYearChangePercentage}}% YoY  \ud83d\udd17 *SEC Filing* {{$json.filingUrl}}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "C0B34AKELAZ",
+          "cachedResultName": "api-alerts"
+        },
+        "otherOptions": {}
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "13ffd799-f102-406a-ad9c-991f682d3a7a",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        176,
+        800
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 560,
+        "height": 496,
+        "content": "## Daily Filing Check \nRuns the workflow once every day and fetches the latest SEC filings for the companies being monitored."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8ee0f1c4-4501-42fa-bbd8-21889857c5a8",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        800,
+        800
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 736,
+        "height": 592,
+        "content": "## Filter New Filings\nFilters the SEC results to keep only 10-K and 10-Q filings, then checks Google Sheets to identify whether the filing has already been processed."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2fb17f1e-3168-4559-afc6-3db7cd304d74",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1584,
+        800
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 624,
+        "height": 512,
+        "content": "## Prepare Filing Data\nCombines the required filing information from different workflow branches and prepares clean filing metadata for the next processing steps."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "fe54cc9b-322f-4533-af35-1a1ce66efb70",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2256,
+        800
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 576,
+        "height": 512,
+        "content": "## Extract Filing Content\nFetches the complete SEC filing document and extracts the important Risk Factors and MD&A sections needed for sentiment and risk analysis."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "11f5d9b6-4ed7-4c50-85f2-6788738b7105",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2880,
+        800
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 720,
+        "height": 512,
+        "content": "## Prepare AI Analysis\nCombines filing metadata with the extracted content and prepares the relevant information in a structured format that can be sent to the AI model."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3b0d37e1-d54d-482e-bdbb-fa79beabae24",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3648,
+        800
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 528,
+        "height": 512,
+        "content": "## Analyze Filing\nUses AI to analyze the filing, identify sentiment and risk levels, summarize key risks, evaluate the business outlook, and extract important financial highlights."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "7b69ae45-37ed-4c09-8456-9a21b365a7d0",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4224,
+        800
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 592,
+        "height": 512,
+        "content": "## Save & Notify\nStores the completed filing analysis in Google Sheets and sends a concise Slack notification containing the important sentiment, risk, business, and financial insights."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3a844daf-ae4f-4b84-8d68-c19a560a755c",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -672,
+        704
+      ],
+      "parameters": {
+        "width": 784,
+        "height": 688,
+        "content": "# SEC EDGAR 10-K/10-Q Sentiment with OpenAI, Sheets & Slack\n\nThis n8n workflow automatically checks SEC EDGAR for the latest **10-K or 10-Q filing**, downloads the filing document, extracts the **Risk Factors** and **Management's Discussion and Analysis (MD&A)** sections, sends relevant filing content to **OpenAI** for sentiment and risk analysis, saves the result in **Google Sheets**, and sends a summary alert to **Slack**. The workflow also checks the filing's accession number to help prevent processing the same filing multiple times.\n\n## Setup Steps\n\n- Create an n8n workflow and add a Schedule Trigger for the required daily execution time.\n- Configure the SEC EDGAR HTTP Request to retrieve recent company filings.\n- Add a Code node to filter only 10-K and 10-Q filing types.\nConnect Google Sheets and configure it to check existing accession numbers.\n- Add an IF node to identify whether the filing is new or already processed.\n- Configure the required Merge and Code nodes to prepare the filing metadata.\n- Add an HTTP Request to fetch the complete SEC filing document.\n- Extract the Risk Factors and MD&A sections using a Code node.\n- Prepare the extracted filing content and metadata for the AI model.\n- Configure the AI model with a structured prompt for sentiment and risk analysis.\n- Format the AI response into consistent JSON fields.\nConfigure Google Sheets to append the analysis as a new row.\n- Configure Slack credentials and create the filing alert message.\n- Test the complete workflow with a real SEC filing.\nVerify that the data is correctly saved in Sheets and the Slack notification is received."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "60db8391-82f0-4092-8b01-e4eeb103c5f6",
+  "nodeGroups": [],
+  "connections": {
+    "Daily SEC Filing Check": {
+      "main": [
+        [
+          {
+            "node": "SEC EDGAR \u2014 Check Filings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Prepare AI Input": {
+      "main": [
+        [
+          {
+            "node": "AI - Analyze Filing Sentiment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - New Filing Data": {
+      "main": [
+        [
+          {
+            "node": "Code - Prepare Filing Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Get Latest Filing": {
+      "main": [
+        [
+          {
+            "node": "Code - Prepare AI Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Format AI Analysis": {
+      "main": [
+        [
+          {
+            "node": "Sheets - Save Filing Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Prepare Filing Data": {
+      "main": [
+        [
+          {
+            "node": "SEC - Fetch Filing Document",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge - Filing Content & Metadata",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Filter 10-K / 10-Q Filings": {
+      "main": [
+        [
+          {
+            "node": "Sheets - Check Existing Filing",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge - New Filing Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "IF - Filing Already Exists": {
+      "main": [
+        [
+          {
+            "node": "Merge - New Filing Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEC - Fetch Filing Document": {
+      "main": [
+        [
+          {
+            "node": "Code - Extract Risk Factors + MD&A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEC EDGAR \u2014 Check Filings": {
+      "main": [
+        [
+          {
+            "node": "Filter 10-K / 10-Q Filings",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF - Filing Already Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI - Analyze Filing Sentiment": {
+      "main": [
+        [
+          {
+            "node": "Code - Format AI Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets - Save Filing Analysis": {
+      "main": [
+        [
+          {
+            "node": "Slack - Send Filing Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets - Check Existing Filing": {
+      "main": [
+        [
+          {
+            "node": "IF - Filing Already Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - Filing Content & Metadata": {
+      "main": [
+        [
+          {
+            "node": "Code - Get Latest Filing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Extract Risk Factors + MD&A": {
+      "main": [
+        [
+          {
+            "node": "Merge - Filing Content & Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

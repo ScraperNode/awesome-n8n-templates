@@ -1,6 +1,6 @@
 # 📊 Mine user complaints and generate insight reports with Olostep, Gemini and Google Docs
 
-> ⚡ **16 views** · 📊 [Market Research & Insights](../)
+> ⚡ **35 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 👥 Automate DEI eligibility screening with Azure GPT-4o, Google Drive and Sheets
 
-> ⚡ **64 views** · 👥 [HR & Recruitment](../)
+> ⚡ **93 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

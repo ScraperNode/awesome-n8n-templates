@@ -1,6 +1,6 @@
 # ✨ Seo FAQ generator for websites using GPT 5 Nano and Google Sheets
 
-> ⚡ **58 views** · ✨ [AI & LLMs](../)
+> ⚡ **68 views** · ✨ [AI & LLMs](../)
 
 ## Description
 

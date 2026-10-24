@@ -1,6 +1,6 @@
 # 🎫 Automate incident reporting & alerts with forms, Google Sheets and Gmail
 
-> ⚡ **997 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,184 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

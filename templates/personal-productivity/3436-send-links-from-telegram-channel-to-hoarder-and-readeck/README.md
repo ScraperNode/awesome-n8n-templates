@@ -1,6 +1,6 @@
 # ⚡ Send links from Telegram channel to Hoarder and Readeck
 
-> ⚡ **306 views** · ⚡ [Personal Productivity](../)
+> ⚡ **327 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

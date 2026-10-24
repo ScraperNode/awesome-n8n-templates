@@ -1,6 +1,6 @@
 # 💬 Manage WhatsApp property maintenance tickets with WATI and Google Sheets
 
-> ⚡ **3 views** · 💬 [Support Chatbots](../)
+> ⚡ **160 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

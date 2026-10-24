@@ -1,6 +1,6 @@
 # 🎬 Generate AI newsletter drafts from Google Sheets to Notion with GPT-5-mini
 
-> ⚡ **522 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **617 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

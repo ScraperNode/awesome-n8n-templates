@@ -1,6 +1,6 @@
 # 🎬 Create AI videos with scripts, images & HeyGen avatars (🔥 LIMITED-TIME OFFER)
 
-> ⚡ **1,049 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,193 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

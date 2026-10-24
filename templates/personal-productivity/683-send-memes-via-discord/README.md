@@ -1,6 +1,6 @@
 # ⚡ Send memes via Discord
 
-> ⚡ **2,852 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,868 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

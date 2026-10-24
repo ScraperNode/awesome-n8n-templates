@@ -1,6 +1,6 @@
 # 📈 Discord Forex AI trading assistant w/ proper position sizing (metatrader5)
 
-> ⚡ **201 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **429 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

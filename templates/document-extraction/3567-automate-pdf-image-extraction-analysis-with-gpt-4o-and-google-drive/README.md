@@ -1,6 +1,6 @@
 # 🔬 Automate PDF image extraction & analysis with GPT-4o and Google Drive
 
-> ⚡ **8,824 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **9,568 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

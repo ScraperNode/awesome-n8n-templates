@@ -1,6 +1,6 @@
 # 🎬 Content generator for WordPress v3
 
-> ⚡ **3,573 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,400 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

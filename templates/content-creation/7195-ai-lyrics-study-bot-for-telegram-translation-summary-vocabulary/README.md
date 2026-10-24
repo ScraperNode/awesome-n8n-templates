@@ -1,6 +1,6 @@
 # 🎬 AI lyrics study bot for Telegram — Translation, summary, vocabulary
 
-> ⚡ **489 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **560 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

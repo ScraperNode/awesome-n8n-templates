@@ -1,6 +1,6 @@
 # 📱 Schedule BlueSky posts and threads using Google Sheets as content calendar
 
-> ⚡ **80 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **123 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

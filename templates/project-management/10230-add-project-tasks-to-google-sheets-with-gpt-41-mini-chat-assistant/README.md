@@ -1,6 +1,6 @@
 # 📋 Add Project Tasks to Google Sheets with GPT-4.1-mini Chat Assistant
 
-> ⚡ **13,670 views** · 📋 [Project Management](../)
+> ⚡ **14,820 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Auto-translate WordPress blog posts to any language with AI Translate Pro to Google Docs
 
-> ⚡ **537 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **604 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

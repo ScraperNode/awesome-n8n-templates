@@ -1,6 +1,6 @@
 # 🤝 Automated sales leaderboard with HighLevel CRM, GPT-4o, Notion & Slack
 
-> ⚡ **384 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **589 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

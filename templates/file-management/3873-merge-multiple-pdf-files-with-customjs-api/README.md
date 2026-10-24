@@ -1,28 +1,23 @@
 # 📁 Merge multiple PDF files with CustomJS API
 
-> ⚡ **1,172 views** · 📁 [File Management](../)
+> ⚡ **1,304 views** · 📁 [File Management](../)
 
 ## Description
 
-![workflow.png](fileId:1280)
+![image.png](fileId:5367)
 This n8n template demonstrates how to download multiple PDF files from public URLs and merge them into a single PDF using the PDF Toolkit from www.customjs.space.
 
-[@custom-js/n8n-nodes-pdf-toolkit](https://www.npmjs.com/package/@custom-js/n8n-nodes-pdf-toolkit)
-
-### Notice
-
-Community nodes can only be installed on self-hosted instances of n8n.
+[@custom-js/n8n-nodes-pdf-toolkit-v2](https://www.npmjs.com/package/@custom-js/n8n-nodes-pdf-toolkit-v2)
 
 ### What this workflow does
 
 - **Downloads** each PDF using an HTTP Request.
 - **Populates** files into an array with **Merge** node from n8n.
-- **Merges** all downloaded PDFs using the Merge PDF node from the @custom-js/n8n-nodes-pdf-toolkit.
+- **Merges** all downloaded PDFs using the Merge PDF node from the @custom-js/n8n-nodes-pdf-toolkit-v2.
 - **Writes** the final merged PDF to disk.
 
 ### Requirements
 
-- **Self-hosted** n8n instance
 - **CustomJS API key** for merging multiple PDF files.
 - **PDF files to be merged** to be converted into a PDF
 

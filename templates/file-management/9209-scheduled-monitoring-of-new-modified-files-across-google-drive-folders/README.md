@@ -1,6 +1,6 @@
 # 📁 Scheduled monitoring of new & modified files across Google Drive folders
 
-> ⚡ **876 views** · 📁 [File Management](../)
+> ⚡ **1,152 views** · 📁 [File Management](../)
 
 ## Description
 

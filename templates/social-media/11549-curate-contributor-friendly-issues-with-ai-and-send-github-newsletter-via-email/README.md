@@ -1,6 +1,6 @@
 # 📱 Curate contributor-friendly issues with AI and send GitHub newsletter via email
 
-> ⚡ **79 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **101 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate blog posts and social media content with GPT-4.1 and Pexels images
 
-> ⚡ **474 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **669 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Analyze customer survey feedback with AI, Google Sheets & Slack reports
 
-> ⚡ **141 views** · 📊 [Market Research & Insights](../)
+> ⚡ **234 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

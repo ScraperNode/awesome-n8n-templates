@@ -1,6 +1,6 @@
 # 🔒 🛠️ Microsoft Entra ID tool MCP server 💪 all 12 operations
 
-> ⚡ **196 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **247 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

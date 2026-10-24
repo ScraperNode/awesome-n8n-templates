@@ -1,6 +1,6 @@
 # 🎬 Create AI shorts with HeyGen, Creatomate, Replicate, Gemini and OpenAI
 
-> ⚡ **397 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,560 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — Since TikTok doesn't have a public API, getting data usually means fragile HTTP scraping. [ScraperNode](https://scrapernode.com/tiktok) is a community node that gives you clean JSON for [TikTok profiles](https://scrapernode.com/tiktok/scrapers/profiles), [videos](https://scrapernode.com/tiktok/scrapers/posts), and [comments](https://scrapernode.com/tiktok/scrapers/comments) — drop it into your workflow and skip the parsing.
 >
@@ -125,6 +125,10 @@ For each source video, the workflow generates **3 unique shorts**, and for each 
 - Set/Edit Fields, Split In Batches, Split Out, Merge, Aggregate, Wait, If nodes
 
 ---
+
+Example Reels:
+[Example 1](https://drive.google.com/file/d/1p0kST9M0Os0OisttzRS4682TXoFnObO1/view?usp=drive_link)
+[Example 2](https://drive.google.com/file/d/1Vzb2fH3T0WiDmCNQFTcX1tGNboJknogw/view?usp=drive_link)
 
 *Built by [@adamgoodyer](https://youtube.com/@adamgoodyer) — The Anti-Guru Technical Educator. Real workflows, real implementation, no fluff.*
 

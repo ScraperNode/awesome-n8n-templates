@@ -1,6 +1,6 @@
 # 📊 Research content keywords with SE Ranking and export to Google Sheets
 
-> ⚡ **49 views** · 📊 [Market Research & Insights](../)
+> ⚡ **196 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

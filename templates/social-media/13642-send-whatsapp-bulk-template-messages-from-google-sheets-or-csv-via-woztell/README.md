@@ -1,6 +1,6 @@
 # 📱 Send WhatsApp bulk template messages from Google Sheets or CSV via WOZTELL
 
-> ⚡ **61 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **523 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

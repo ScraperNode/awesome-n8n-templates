@@ -1,6 +1,6 @@
 # ⚙️ Attach a default error handler to all active workflows
 
-> ⚡ **4,781 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **4,936 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

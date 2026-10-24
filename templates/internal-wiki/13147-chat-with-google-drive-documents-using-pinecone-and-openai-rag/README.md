@@ -1,6 +1,6 @@
 # 📖 Chat with Google Drive documents using Pinecone and OpenAI RAG
 
-> ⚡ **282 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **411 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

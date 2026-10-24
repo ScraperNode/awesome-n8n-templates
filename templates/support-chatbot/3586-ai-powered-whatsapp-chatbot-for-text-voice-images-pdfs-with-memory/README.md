@@ -1,6 +1,6 @@
 # 💬 AI-powered WhatsApp chatbot 🤖📲 for text, voice, images & PDFs with memory 🧠
 
-> ⚡ **134,637 views** · 💬 [Support Chatbots](../)
+> ⚡ **158,156 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

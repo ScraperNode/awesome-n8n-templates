@@ -1,6 +1,6 @@
 # 🤝 Create an organization in Affinity
 
-> ⚡ **699 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **710 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

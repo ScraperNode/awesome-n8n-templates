@@ -1,6 +1,6 @@
 # 📈 Send hourly crypto market analysis from Binance to Telegram
 
-> ⚡ **3,699 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **3,916 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

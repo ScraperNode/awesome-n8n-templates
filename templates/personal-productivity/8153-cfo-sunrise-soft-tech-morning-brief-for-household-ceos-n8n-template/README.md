@@ -1,6 +1,6 @@
 # ⚡ 🌸 CFO sunrise — Soft-Tech morning brief for household CEOs (n8n template)
 
-> ⚡ **72 views** · ⚡ [Personal Productivity](../)
+> ⚡ **96 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Export Odoo company data via API endpoint with JSON/Excel output options
 
-> ⚡ **533 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,018 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

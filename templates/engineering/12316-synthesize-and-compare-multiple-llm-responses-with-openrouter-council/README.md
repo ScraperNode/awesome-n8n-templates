@@ -1,6 +1,6 @@
 # ⚒️ Synthesize and compare multiple LLM responses with OpenRouter council
 
-> ⚡ **240 views** · ⚒️ [Engineering](../)
+> ⚡ **521 views** · ⚒️ [Engineering](../)
 
 ## Description
 

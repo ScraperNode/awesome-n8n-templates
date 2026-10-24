@@ -1,6 +1,6 @@
 # ⚡ Analyze food ingredients from Telegram photos using Gemini and Airtable
 
-> ⚡ **244 views** · ⚡ [Personal Productivity](../)
+> ⚡ **378 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

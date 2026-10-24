@@ -1,6 +1,6 @@
 # 👥 Automated employee offboarding: lock Redmine & GitLab accounts using Odoo 18
 
-> ⚡ **65 views** · 👥 [HR & Recruitment](../)
+> ⚡ **108 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

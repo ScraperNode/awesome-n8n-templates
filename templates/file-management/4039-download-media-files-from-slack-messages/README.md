@@ -1,6 +1,6 @@
 # 📁 Download media files from Slack messages
 
-> ⚡ **1,752 views** · 📁 [File Management](../)
+> ⚡ **1,932 views** · 📁 [File Management](../)
 
 ## Description
 

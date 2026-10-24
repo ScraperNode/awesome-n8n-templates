@@ -1,6 +1,6 @@
 # 💬 Generate personalized sales follow-ups from Fireflies transcripts with Gemini & Google Drive
 
-> ⚡ **85 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **116 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

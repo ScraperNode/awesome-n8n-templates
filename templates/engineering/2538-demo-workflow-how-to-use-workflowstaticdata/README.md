@@ -1,6 +1,6 @@
 # ⚒️ Demo workflow - how to use workflowStaticData()
 
-> ⚡ **11,729 views** · ⚒️ [Engineering](../)
+> ⚡ **12,193 views** · ⚒️ [Engineering](../)
 
 ## Description
 

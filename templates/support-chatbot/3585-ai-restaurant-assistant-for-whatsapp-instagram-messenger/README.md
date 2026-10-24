@@ -1,6 +1,6 @@
 # 💬 🤖 AI restaurant assistant for WhatsApp, Instagram & Messenger
 
-> ⚡ **8,111 views** · 💬 [Support Chatbots](../)
+> ⚡ **8,604 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

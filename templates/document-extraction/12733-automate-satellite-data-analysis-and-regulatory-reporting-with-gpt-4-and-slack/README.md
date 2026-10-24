@@ -1,6 +1,6 @@
 # 🔬 Automate satellite data analysis and regulatory reporting with GPT-4 and Slack
 
-> ⚡ **81 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **206 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Compare flight fares from Skyscanner, Air India & more with email alerts
 
-> ⚡ **841 views** · 📊 [Market Research & Insights](../)
+> ⚡ **974 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Travel AI agent - AI-powered travel planner
 
-> ⚡ **5,104 views** · ⚡ [Personal Productivity](../)
+> ⚡ **5,359 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

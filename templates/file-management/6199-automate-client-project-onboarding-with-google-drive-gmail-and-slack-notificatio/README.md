@@ -1,6 +1,6 @@
 # 📁 Automate client project onboarding with Google Drive, Gmail, and Slack notifications
 
-> ⚡ **367 views** · 📁 [File Management](../)
+> ⚡ **443 views** · 📁 [File Management](../)
 
 ## Description
 

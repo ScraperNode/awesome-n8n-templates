@@ -1,6 +1,6 @@
 # 💬 Complete appointment system with Supabase and AI assistants for scheduling & management
 
-> ⚡ **476 views** · 💬 [Support Chatbots](../)
+> ⚡ **949 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

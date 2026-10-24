@@ -1,6 +1,6 @@
 # 🔍 Create a Lookio RAG assistant from a CSV text corpus
 
-> ⚡ **55 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **79 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

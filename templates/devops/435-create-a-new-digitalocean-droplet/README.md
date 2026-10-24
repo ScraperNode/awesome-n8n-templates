@@ -1,6 +1,6 @@
 # ⚙️ Create a new DigitalOcean droplet
 
-> ⚡ **1,296 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,335 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Personal assistant for calendar & tasks with GPT-4o-mini and Telegram
 
-> ⚡ **1,148 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,446 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

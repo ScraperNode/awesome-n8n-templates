@@ -1,6 +1,6 @@
 # ⚡ Manage personal expenses with webhooks and Google Sheets automated tracker
 
-> ⚡ **1,373 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,600 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

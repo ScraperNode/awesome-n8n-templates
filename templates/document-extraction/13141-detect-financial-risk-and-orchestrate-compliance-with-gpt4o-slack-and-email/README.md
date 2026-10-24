@@ -1,6 +1,6 @@
 # 🔬 Detect financial risk and orchestrate compliance with GPT‑4o, Slack and email
 
-> ⚡ **59 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **160 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

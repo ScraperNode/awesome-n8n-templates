@@ -1,6 +1,6 @@
 # ⚒️ 🔐🦙Private & local Ollama self-hosted + dynamic LLM router
 
-> ⚡ **15,233 views** · ⚒️ [Engineering](../)
+> ⚡ **16,005 views** · ⚒️ [Engineering](../)
 
 ## Description
 

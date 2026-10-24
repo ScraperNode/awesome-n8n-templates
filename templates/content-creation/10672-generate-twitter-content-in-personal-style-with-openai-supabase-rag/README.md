@@ -1,6 +1,6 @@
 # 🎬 Generate Twitter content in personal style with OpenAI & Supabase RAG
 
-> ⚡ **162 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **226 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

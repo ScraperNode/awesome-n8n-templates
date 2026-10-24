@@ -1,6 +1,6 @@
 # 📱 Automatic Gmail unsubscribe detection with AI and Google Sheets contact management
 
-> ⚡ **131 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **210 views** · 📱 [Social Media & Email Marketing](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

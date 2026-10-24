@@ -1,6 +1,6 @@
 # ⚡ Send Telegram text and audio messages to Notion with DeepSeek summaries & OpenAI transcription
 
-> ⚡ **871 views** · ⚡ [Personal Productivity](../)
+> ⚡ **922 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ AI expense tracker: Telegram voice/photo/text to sheets
 
-> ⚡ **660 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,307 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

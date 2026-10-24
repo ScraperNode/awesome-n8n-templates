@@ -1,6 +1,6 @@
 # 📈 AI-powered stock market summary bot
 
-> ⚡ **30,472 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **35,947 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

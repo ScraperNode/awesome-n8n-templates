@@ -1,6 +1,6 @@
 # 📖 AI chat with any data source (using the n8n workflow tool)
 
-> ⚡ **44,575 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **44,326 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

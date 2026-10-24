@@ -1,6 +1,6 @@
 # 🎬 Create images from text prompts using Flux Kontext Pro and Replicate
 
-> ⚡ **1,046 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,147 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

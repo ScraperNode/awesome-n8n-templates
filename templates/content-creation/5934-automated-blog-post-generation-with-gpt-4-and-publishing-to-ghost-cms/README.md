@@ -1,6 +1,6 @@
 # 🎬 Automated blog post generation with GPT-4 and publishing to Ghost CMS
 
-> ⚡ **3,673 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,232 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

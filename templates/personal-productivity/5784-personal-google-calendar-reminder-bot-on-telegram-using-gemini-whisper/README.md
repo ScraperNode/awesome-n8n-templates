@@ -1,6 +1,6 @@
 # ⚡ Personal Google Calendar & reminder bot on Telegram using Gemini & Whisper
 
-> ⚡ **5,681 views** · ⚡ [Personal Productivity](../)
+> ⚡ **5,879 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

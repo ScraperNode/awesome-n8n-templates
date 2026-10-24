@@ -1,6 +1,6 @@
 # 💬 Automate patient intake & symptom triage with AI, Cal.com and Google Services
 
-> ⚡ **215 views** · 💬 [Support Chatbots](../)
+> ⚡ **263 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

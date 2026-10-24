@@ -1,6 +1,6 @@
 # ⚙️ Mark outdated workflow nodes on canvas and send a summary with Gmail (add-on)
 
-> ⚡ **2,260 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,363 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

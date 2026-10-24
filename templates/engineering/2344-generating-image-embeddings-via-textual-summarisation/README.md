@@ -1,6 +1,6 @@
 # ⚒️ Generating image embeddings via textual summarisation
 
-> ⚡ **9,492 views** · ⚒️ [Engineering](../)
+> ⚡ **9,889 views** · ⚒️ [Engineering](../)
 
 ## Description
 

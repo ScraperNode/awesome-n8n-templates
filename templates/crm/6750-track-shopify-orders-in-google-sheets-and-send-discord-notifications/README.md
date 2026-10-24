@@ -1,6 +1,6 @@
 # 🤝 Track Shopify orders in Google Sheets and send Discord notifications
 
-> ⚡ **767 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **875 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

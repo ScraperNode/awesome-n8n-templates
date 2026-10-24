@@ -1,6 +1,6 @@
 # ⚙️ Automate n8n updates with version checking and Portainer webhook
 
-> ⚡ **383 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **474 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

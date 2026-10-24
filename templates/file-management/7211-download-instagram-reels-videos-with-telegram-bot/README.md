@@ -1,6 +1,6 @@
 # 📁 Download Instagram reels & videos with Telegram bot
 
-> ⚡ **5,635 views** · 📁 [File Management](../)
+> ⚡ **8,748 views** · 📁 [File Management](../)
 
 ## Description
 

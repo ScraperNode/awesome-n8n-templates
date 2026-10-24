@@ -1,6 +1,6 @@
 # 🎬 Create short-form AI videos for any topic using OpenAI, Veo 3 & Gmail
 
-> ⚡ **1,214 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,364 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

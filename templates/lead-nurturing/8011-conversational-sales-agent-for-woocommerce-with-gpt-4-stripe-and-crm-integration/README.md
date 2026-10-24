@@ -1,6 +1,6 @@
 # 💬 Conversational sales agent for WooCommerce with GPT-4, Stripe and CRM integration
 
-> ⚡ **685 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **864 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

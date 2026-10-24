@@ -1,6 +1,6 @@
 # 💬 Manage WhatsApp vehicle service reminders and bookings with WATI and Google Sheets
 
-> ⚡ **46 views** · 💬 [Support Chatbots](../)
+> ⚡ **215 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

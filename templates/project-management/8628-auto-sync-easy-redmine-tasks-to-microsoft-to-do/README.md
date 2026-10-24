@@ -1,14 +1,14 @@
-# 📋 Auto-sync Easy Redmine tasks to Microsoft To-Do
+# 📋 Auto-sync Easy8 tasks to Microsoft To-Do
 
-> ⚡ **328 views** · 📋 [Project Management](../)
+> ⚡ **385 views** · 📋 [Project Management](../)
 
 ## Description
 
-# Auto-Sync Easy Redmine Tasks to Microsoft To Do
+# Auto-Sync Easy8 Tasks to Microsoft To Do
 
-This workflow automatically synchronizes tasks from Easy Redmine into a Microsoft To Do list using a predefined filter. Before syncing, it clears the target list in Microsoft To Do to avoid duplicates. It’s ideal for teams or individuals who plan work in Redmine but prefer Microsoft To Do for daily task tracking.
+This workflow automatically synchronizes tasks from Easy8 into a Microsoft To Do list using a predefined filter. Before syncing, it clears the target list in Microsoft To Do to avoid duplicates. It’s ideal for teams or individuals who plan work in Easy8 but prefer Microsoft To Do for daily task tracking.
 
-By connecting Redmine’s task filtering with Microsoft To Do’s simple interface, this setup ensures your task list is always focused and up to date—without manual copying or switching tools.
+By connecting Easy8’s task filtering with Microsoft To Do’s simple interface, this setup ensures your task list is always focused and up to date—without manual copying or switching tools.
 
 ## How it works
 **Scheduled Trigger** – Run Daily Sync
@@ -23,48 +23,48 @@ Prepares the list to be cleared before syncing new tasks.
 Deletes previously existing tasks to prevent duplication.
 A code node ensures that the workflow only proceeds after all deletions are complete.
 
-**Get Redmine Tasks by Filter** – Pull Fresh Data
-Retrieves tasks from Easy Redmine using saved filters (e.g., assigned to the user, due this week).
-Only pulls the relevant tasks defined by your Redmine criteria.
+**Get Easy8 Tasks by Filter** – Pull Fresh Data
+Retrieves tasks from Easy8 using saved filters (e.g., assigned to the user, due this week).
+Only pulls the relevant tasks defined by your Easy8 criteria.
 
 **Split and Format Tasks** – One at a Time
-Processes each Redmine task individually.
-A code node enriches each task with a direct link back to the Easy Redmine issue.
+Processes each Easy8 task individually.
+A code node enriches each task with a direct link back to the Easy8 issue.
 
 **Create To Do Task** – Sync to Microsoft To Do
 Creates a new Microsoft To Do task with name, due date, and optionally a formatted description.
-The result is a clean, updated task list reflecting current Redmine assignments.
+The result is a clean, updated task list reflecting current Easy8 assignments.
 
 ## How to Use
 1. Connect credentials:
-Easy Redmine API token (with permission to access issues).
+Easy8 API token (with permission to access issues).
 Microsoft credentials (to manage Microsoft To Do lists).
-2. In the Redmine filter node, configure the filter to fetch relevant issues.
+2. In the Easy8 filter node, configure the filter to fetch relevant issues.
 3. In the Microsoft To Do nodes, select the correct list for both retrieval and creation.
 4. Open the Schedule Trigger node and adjust to your desired sync time and timezone.
-5. Run a test to confirm that the Redmine tasks appear correctly in your Microsoft To Do list.
+5. Run a test to confirm that the Easy8 tasks appear correctly in your Microsoft To Do list.
 
 ## Example Use Cases
-- Daily Planning: Automatically refill your Microsoft To Do list with current Redmine tasks every morning.
+- Daily Planning: Automatically refill your Microsoft To Do list with current Easy8 tasks every morning.
 - Team Sync: Push sprint items or task board assignments into a shared team to-do list.
-- Priority Focus: Only pull in tasks due today or marked as high priority in Redmine.
+- Priority Focus: Only pull in tasks due today or marked as high priority in Easy8.
 
 ## Requirements
-- Easy Redmine account
+- Easy8 account
 	- API access enabled
 	- Saved filters for task selection
 - Microsoft 365 account
 	- Microsoft To Do access
 
 ## Customization
-- Adjust the Redmine filters to target different users, statuses, or projects.
+- Adjust the Easy8 filters to target different users, statuses, or projects.
 - Modify the function node to format the task title or description with more detail.
 - Add conditionals to only sync urgent or near-due tasks.
 - Route different project tasks to different To Do lists.
 - Optionally send a confirmation message (email, Slack) when the sync completes.
 
 ## Workflow Improvement Suggestions
-- Rename nodes for clarity (e.g., “Delete Old Tasks”, “Fetch Redmine Tasks”).
+- Rename nodes for clarity (e.g., “Delete Old Tasks”, “Fetch Easy8 Tasks”).
 - Add error handling if API requests fail.
 - Use environment variables for list IDs and API URLs to improve reusability.
 - Add logging or tracking (e.g., number of tasks synced per execution).

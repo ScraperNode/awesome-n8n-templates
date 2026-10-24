@@ -1,6 +1,6 @@
 # 🔬 Validate property documents with Claude (Anthropic), Google Drive and Slack
 
-> ⚡ **11 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **110 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

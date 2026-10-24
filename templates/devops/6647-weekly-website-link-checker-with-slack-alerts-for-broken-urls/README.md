@@ -1,6 +1,6 @@
 # ⚙️ Weekly website link checker with Slack alerts for broken URLs
 
-> ⚡ **669 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **731 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

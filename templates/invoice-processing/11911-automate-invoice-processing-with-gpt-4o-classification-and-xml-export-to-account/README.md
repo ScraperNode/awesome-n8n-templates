@@ -1,6 +1,6 @@
 # 🧾 Automate invoice processing with GPT-4o classification and XML export to accounting
 
-> ⚡ **887 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,822 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

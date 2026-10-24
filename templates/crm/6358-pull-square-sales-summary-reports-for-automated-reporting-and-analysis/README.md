@@ -1,6 +1,6 @@
 # 🤝 Pull Square sales summary reports for automated reporting and analysis
 
-> ⚡ **374 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **454 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

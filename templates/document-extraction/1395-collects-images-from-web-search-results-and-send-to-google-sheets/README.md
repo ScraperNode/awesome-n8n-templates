@@ -1,6 +1,6 @@
 # 🔬 Collects images from web search results and send to Google Sheets
 
-> ⚡ **3,652 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **3,849 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

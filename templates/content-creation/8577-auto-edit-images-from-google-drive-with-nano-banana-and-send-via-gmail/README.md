@@ -1,6 +1,6 @@
 # 🎬 Auto-edit images from Google Drive with Nano Banana and send via Gmail
 
-> ⚡ **1,341 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,684 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

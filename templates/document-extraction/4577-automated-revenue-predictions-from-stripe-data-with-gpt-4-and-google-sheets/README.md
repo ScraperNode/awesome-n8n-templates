@@ -1,6 +1,6 @@
 # 🔬 Automated revenue predictions from Stripe data with GPT-4 and Google Sheets
 
-> ⚡ **1,211 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,263 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

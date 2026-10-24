@@ -1,6 +1,6 @@
 # 💬 Email new leads from Google Sheets via Outlook on a schedule
 
-> ⚡ **3,769 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **5,632 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

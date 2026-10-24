@@ -1,6 +1,6 @@
 # ⚙️ Proxmox AI agent with n8n and generative AI integration
 
-> ⚡ **80,869 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **104,040 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

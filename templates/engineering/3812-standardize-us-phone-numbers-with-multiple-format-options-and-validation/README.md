@@ -1,6 +1,6 @@
 # ⚒️ Standardize US phone numbers with multiple format options and validation
 
-> ⚡ **454 views** · ⚒️ [Engineering](../)
+> ⚡ **521 views** · ⚒️ [Engineering](../)
 
 ## Description
 

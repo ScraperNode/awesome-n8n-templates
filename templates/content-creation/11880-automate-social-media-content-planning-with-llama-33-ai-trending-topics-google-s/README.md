@@ -1,6 +1,6 @@
 # 🎬 Automate social media content planning with Llama 3.3 AI, trending topics & Google Suite
 
-> ⚡ **477 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **861 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

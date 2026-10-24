@@ -1,6 +1,6 @@
 # 🎣 Event Sponsor Matching with Google Sheets, GPT & Gmail
 
-> ⚡ **5 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **40 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

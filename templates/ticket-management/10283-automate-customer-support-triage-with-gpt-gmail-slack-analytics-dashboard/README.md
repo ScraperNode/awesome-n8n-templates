@@ -1,6 +1,6 @@
 # 🎫 Automate customer support triage with GPT, Gmail, Slack & analytics dashboard
 
-> ⚡ **109 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **203 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Verify email deliverability with Hunter
 
-> ⚡ **553 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **557 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

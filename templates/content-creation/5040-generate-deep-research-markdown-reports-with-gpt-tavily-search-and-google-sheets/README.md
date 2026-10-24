@@ -1,6 +1,6 @@
 # 🎬 Generate deep research markdown reports with GPT, Tavily Search, and Google Sheets
 
-> ⚡ **588 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **625 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

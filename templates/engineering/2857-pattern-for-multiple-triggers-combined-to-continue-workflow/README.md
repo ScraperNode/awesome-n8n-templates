@@ -1,6 +1,6 @@
 # ⚒️ Pattern for multiple triggers combined to continue workflow
 
-> ⚡ **1,603 views** · ⚒️ [Engineering](../)
+> ⚡ **1,667 views** · ⚒️ [Engineering](../)
 
 ## Description
 

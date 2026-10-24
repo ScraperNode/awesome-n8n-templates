@@ -1,6 +1,6 @@
 # 📱 Manage Brevo contact lists with full CRUD and bulk membership control
 
-> ⚡ **5 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **29 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

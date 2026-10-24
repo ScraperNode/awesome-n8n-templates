@@ -1,6 +1,6 @@
 # 💬 Multi-channel AI appointment confirmation with GPT-4, ElevenLabs & Twilio
 
-> ⚡ **240 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **273 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

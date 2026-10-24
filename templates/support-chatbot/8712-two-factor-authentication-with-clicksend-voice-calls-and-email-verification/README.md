@@ -1,6 +1,6 @@
 # 💬 Two-factor authentication with ClickSend voice calls and email verification
 
-> ⚡ **123 views** · 💬 [Support Chatbots](../)
+> ⚡ **151 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

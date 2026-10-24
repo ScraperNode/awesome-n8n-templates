@@ -1,6 +1,6 @@
 # 📁 Automatic media download from WhatsApp Business messages with HTTP storage
 
-> ⚡ **2,652 views** · 📁 [File Management](../)
+> ⚡ **3,290 views** · 📁 [File Management](../)
 
 ## Description
 

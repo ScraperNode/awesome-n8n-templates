@@ -1,6 +1,6 @@
 # ⚡ Receive updates for Calendly events
 
-> ⚡ **1,539 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,550 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

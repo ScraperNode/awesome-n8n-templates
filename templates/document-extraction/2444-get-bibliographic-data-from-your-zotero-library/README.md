@@ -1,6 +1,6 @@
 # 🔬 Get bibliographic data from your Zotero library
 
-> ⚡ **1,522 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,649 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

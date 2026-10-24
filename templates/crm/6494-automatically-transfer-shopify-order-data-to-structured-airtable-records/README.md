@@ -1,6 +1,6 @@
 # 🤝 Automatically transfer Shopify order data to structured Airtable records
 
-> ⚡ **231 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **284 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

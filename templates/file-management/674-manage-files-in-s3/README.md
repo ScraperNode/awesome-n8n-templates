@@ -1,6 +1,6 @@
 # 📁 Manage files in S3
 
-> ⚡ **3,531 views** · 📁 [File Management](../)
+> ⚡ **3,571 views** · 📁 [File Management](../)
 
 ## Description
 

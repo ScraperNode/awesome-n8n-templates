@@ -1,6 +1,6 @@
 # 🎬 Create and publish Instagram carousels automatically with GPT-4.1 and Blotato
 
-> ⚡ **336 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **431 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

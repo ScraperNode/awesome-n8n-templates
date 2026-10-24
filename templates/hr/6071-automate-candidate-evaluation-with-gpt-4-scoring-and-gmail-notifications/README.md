@@ -1,6 +1,6 @@
 # 👥 Automate candidate evaluation with GPT-4 scoring and Gmail notifications
 
-> ⚡ **500 views** · 👥 [HR & Recruitment](../)
+> ⚡ **511 views** · 👥 [HR & Recruitment](../)
 
 > 💡 **Pro Tip** — Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.
 >

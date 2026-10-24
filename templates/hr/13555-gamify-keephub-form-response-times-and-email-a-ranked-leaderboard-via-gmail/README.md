@@ -1,6 +1,6 @@
 # 👥 Gamify Keephub form response times and email a ranked leaderboard via Gmail
 
-> ⚡ **2 views** · 👥 [HR & Recruitment](../)
+> ⚡ **9 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

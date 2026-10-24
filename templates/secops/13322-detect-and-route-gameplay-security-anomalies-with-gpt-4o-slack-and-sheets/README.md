@@ -1,6 +1,6 @@
 # 🔒 Detect and route gameplay security anomalies with GPT-4o, Slack and Sheets
 
-> ⚡ **20 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **82 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

@@ -1,0 +1,451 @@
+{
+  "id": "suu7nqszPqVZBRvU",
+  "meta": {
+    "instanceId": "d1dc073e8e3059a23e2730f69cb1b90065a2ac39039fea0727fdf9bee77a9131",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Microsoft 365 AI Incident Triage",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "02a7ce1e-d0d1-4073-804f-753c9452667c",
+      "name": "Microsoft 365 Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -592,
+        1232
+      ],
+      "webhookId": "70148f92-0193-4d43-9405-47aff61a8617",
+      "parameters": {
+        "path": "m365-triage-trigger",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "dfdfcd81-3cbd-4a77-8bbf-98fe5bc99a6d",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        -368,
+        1136
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 202,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "X-Triage-Version",
+                "value": "2.0"
+              }
+            ]
+          }
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"processing\", \"incident_id\": $('Microsoft 365 Trigger').first().json.headers['x-request-id'] || Date.now().toString(), \"message\": \"Incident received and being triaged\", \"timestamp\": new Date().toISOString() } }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "107216c7-d103-4016-8e42-cd4313e2d2a2",
+      "name": "Extract & Validate",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -368,
+        1328
+      ],
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\nconst headers = $input.first().json.headers || {};\nconst text = body.message || '';\n\n// Webhook signature validation\nconst providedSignature = headers['x-teams-signature'];\nconst expectedSignature = $vars.WEBHOOK_SECRET || process.env.WEBHOOK_SECRET;\n\nif (!expectedSignature) {\n  throw new Error('\u274c SECURITY_ERROR: WEBHOOK_SECRET not configured');\n}\n\nif (providedSignature !== expectedSignature) {\n  throw new Error('\u274c SECURITY_ERROR: Invalid webhook signature');\n}\n\n// Strict validation\nif (!text || text.trim().length < 10) {\n  throw new Error('\u274c VALIDATION_ERROR: Message too short (min 10 chars)');\n}\n\nif (text.length > 5000) {\n  throw new Error('\u274c VALIDATION_ERROR: Message too long (max 5000 chars)');\n}\n\n// Aggressive sanitization - strip ALL HTML/script content\nconst sanitized = text\n  .replace(/<[^>]*>/g, '')\n  .trim();\n\n// Load from environment variables with strict validation\nconst JIRA_PROJECT = $vars.JIRA_PROJECT_KEY || process.env.JIRA_PROJECT_KEY;\nconst JIRA_DOMAIN = $vars.JIRA_DOMAIN || process.env.JIRA_DOMAIN;\nconst PAGERDUTY_SERVICE = $vars.PAGERDUTY_SERVICE_ID || process.env.PAGERDUTY_SERVICE_ID;\nconst PAGERDUTY_EMAIL = $vars.PAGERDUTY_EMAIL || process.env.PAGERDUTY_EMAIL;\nconst TIMEZONE = $vars.TIMEZONE || process.env.TIMEZONE || 'UTC';\n\n// Validate critical config - fail hard on missing values\nif (!JIRA_PROJECT) {\n  throw new Error('\u274c CONFIG_ERROR: JIRA_PROJECT_KEY not configured');\n}\n\nif (!JIRA_DOMAIN || JIRA_DOMAIN.includes('your-domain')) {\n  throw new Error('\u274c CONFIG_ERROR: JIRA_DOMAIN not configured or using placeholder');\n}\n\nif (!PAGERDUTY_SERVICE || PAGERDUTY_SERVICE === 'PXXXXXX') {\n  throw new Error('\u274c CONFIG_ERROR: PAGERDUTY_SERVICE_ID not configured or using placeholder');\n}\n\nif (!PAGERDUTY_EMAIL || !PAGERDUTY_EMAIL.includes('@') || PAGERDUTY_EMAIL.includes('company.com')) {\n  throw new Error('\u274c CONFIG_ERROR: PAGERDUTY_EMAIL not configured or using placeholder');\n}\n\n// Validate timezone format\nconst validTimezone = TIMEZONE.includes('/') || TIMEZONE === 'UTC';\nif (!validTimezone) {\n  console.warn(`\u26a0\ufe0f WARNING: Invalid timezone format '${TIMEZONE}', using UTC`);\n}\n\nconst incident_id = body.incident_id || `INC-${Date.now()}`;\n\nreturn {\n  json: {\n    sanitized_text: sanitized,\n    JIRA_PROJECT_KEY: JIRA_PROJECT,\n    JIRA_DOMAIN: JIRA_DOMAIN,\n    PAGERDUTY_SERVICE_ID: PAGERDUTY_SERVICE,\n    PAGERDUTY_EMAIL: PAGERDUTY_EMAIL,\n    TIMEZONE: validTimezone ? TIMEZONE : 'UTC',\n    channelId: body.channelId || 'general',\n    reporterName: body.userName || 'Engineer',\n    reporterEmail: body.userEmail || 'user@example.com',\n    timestamp: new Date().toISOString(),\n    incident_id: incident_id,\n    validation_passed: true\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ef82c47f-7cba-4311-835a-52291e370428",
+      "name": "Idempotency Check",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -144,
+        1328
+      ],
+      "parameters": {
+        "jsCode": "// Check for duplicate incidents (idempotency)\nconst incident_id = $input.first().json.incident_id;\nconst REDIS_KEY = `incident:processed:${incident_id}`;\n\nconst recentIncidents = $getWorkflowStaticData('global').recentIncidents || [];\n\nif (recentIncidents.includes(incident_id)) {\n  throw new Error(`\u274c DUPLICATE: Incident ${incident_id} already processed`);\n}\n\n\nrecentIncidents.push(incident_id);\nif (recentIncidents.length > 1000) {\n  recentIncidents.shift();\n}\n$getWorkflowStaticData('global').recentIncidents = recentIncidents;\n\nreturn $input.all();"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e38b5e62-bf8f-410e-9e08-a59f7b717bfa",
+      "name": "AI Brain (GPT-4o-mini)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "maxTries": 2,
+      "position": [
+        80,
+        1328
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {
+          "maxTokens": 800,
+          "temperature": 0.3
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an incident triage AI. Analyze this incident report and return ONLY a JSON object with NO markdown fences, NO preamble, NO explanation.\n\nRequired JSON structure:\n{\n  \"title\": \"Brief incident title (max 100 chars)\",\n  \"severity\": \"P1|P2|P3|P4\",\n  \"requires_pagerduty\": true|false,\n  \"cause_hypothesis\": \"Likely root cause\",\n  \"affected_systems\": [\"system1\", \"system2\"],\n  \"actions\": [\"action1\", \"action2\"],\n  \"business_impact\": \"Impact description\",\n  \"estimated_users_affected\": \"number or range\",\n  \"affected_service\": \"Service name\",\n  \"customer_facing\": true|false\n}\n\nSeverity guide:\n- P1: Complete outage, customer-facing, >1000 users\n- P2: Major degradation, customer-facing, 100-1000 users\n- P3: Minor issue, internal or <100 users\n- P4: Cosmetic, no business impact\n\nIncident Report:\n{{ $json.sanitized_text }}\n\nContext:\n- Reporter: {{ $json.reporterName }}\n- Timestamp: {{ $json.timestamp }}\n\nRespond with ONLY the JSON object."
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1.3,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "d27e7b5b-1982-4284-b9bb-29792f3e41d7",
+      "name": "Parse & Enrich",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        432,
+        1328
+      ],
+      "parameters": {
+        "jsCode": "try {\n  const aiOutput = $input.first().json;\n  const aiContent = aiOutput.choices?.[0]?.message?.content || aiOutput.message?.content || aiOutput.content || '';\n  \n  const jsonMatch = aiContent.match(/\\{[\\s\\S]*\\}/);\n  if (!jsonMatch) {\n    throw new Error('No JSON object found in AI response');\n  }\n  \n  const cleanJson = jsonMatch[0];\n  const triage = JSON.parse(cleanJson);\n  const config = $('Extract & Validate').first().json;\n\n  \n  const required = {\n    'title': 'string',\n    'severity': 'string',\n    'requires_pagerduty': 'boolean',\n    'cause_hypothesis': 'string',\n    'affected_systems': 'array',\n    'actions': 'array',\n    'business_impact': 'string',\n    'estimated_users_affected': 'string',\n    'affected_service': 'string',\n    'customer_facing': 'boolean'\n  };\n  \n  for (const [field, type] of Object.entries(required)) {\n    if (triage[field] === undefined) {\n      throw new Error(`Missing required field: ${field}`);\n    }\n    const actualType = Array.isArray(triage[field]) ? 'array' : typeof triage[field];\n    if (actualType !== type) {\n      throw new Error(`Field ${field} should be ${type}, got ${actualType}`);\n    }\n  }\n\n  const validSeverities = ['P1', 'P2', 'P3', 'P4'];\n  if (!validSeverities.includes(triage.severity)) {\n    console.warn(`\u26a0\ufe0f Invalid severity ${triage.severity}, defaulting to P3`);\n    triage.severity = 'P3';\n  }\n\n  const priorityMap = {\n    'P1': 'Highest',\n    'P2': 'High',\n    'P3': 'Medium',\n    'P4': 'Low'\n  };\n\n  \n  return {\n    json: {\n      title: triage.title,\n      severity: triage.severity,\n      requires_pagerduty: triage.requires_pagerduty,\n      cause_hypothesis: triage.cause_hypothesis,\n      affected_systems: triage.affected_systems,\n      actions: triage.actions,\n      business_impact: triage.business_impact,\n      estimated_users_affected: triage.estimated_users_affected,\n      affected_service: triage.affected_service,\n      customer_facing: triage.customer_facing,\n      jira_priority: priorityMap[triage.severity],\n      JIRA_PROJECT_KEY: config.JIRA_PROJECT_KEY,\n      JIRA_DOMAIN: config.JIRA_DOMAIN,\n      PAGERDUTY_SERVICE_ID: config.PAGERDUTY_SERVICE_ID,\n      PAGERDUTY_EMAIL: config.PAGERDUTY_EMAIL,\n      TIMEZONE: config.TIMEZONE,\n      channelId: config.channelId,\n      reporterName: config.reporterName,\n      reporterEmail: config.reporterEmail,\n      timestamp: config.timestamp,\n      incident_id: config.incident_id,\n      parse_success: true,\n      parse_method: 'ai'\n    }\n  };\n} catch (e) {\n\n  const config = $('Extract & Validate').first().json;\n  \n  return {\n    json: {\n      title: \"AI Parse Failed - Manual Triage Required\",\n      severity: \"P3\",\n      requires_pagerduty: false,\n      cause_hypothesis: `AI parsing error: ${e.message}`,\n      affected_systems: [\"Unknown - Requires Manual Review\"],\n      actions: [\n        \"Review original message in Teams\",\n        \"Check AI response format\",\n        \"Manually classify severity\"\n      ],\n      business_impact: \"Unable to auto-triage, requires human review\",\n      estimated_users_affected: \"Unknown\",\n      affected_service: \"Unknown\",\n      customer_facing: false,\n      jira_priority: 'Medium',\n      JIRA_PROJECT_KEY: config.JIRA_PROJECT_KEY,\n      JIRA_DOMAIN: config.JIRA_DOMAIN,\n      PAGERDUTY_SERVICE_ID: config.PAGERDUTY_SERVICE_ID,\n      PAGERDUTY_EMAIL: config.PAGERDUTY_EMAIL,\n      TIMEZONE: config.TIMEZONE,\n      channelId: config.channelId,\n      reporterName: config.reporterName,\n      reporterEmail: config.reporterEmail,\n      timestamp: config.timestamp,\n      incident_id: config.incident_id,\n      parse_success: false,\n      parse_method: 'fallback',\n      parse_error: e.message\n    }\n  };\n}"
+      },
+      "typeVersion": 2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "105ec930-a31f-4363-a4af-838ed057a8d7",
+      "name": "Create Jira Incident",
+      "type": "n8n-nodes-base.jira",
+      "maxTries": 3,
+      "position": [
+        656,
+        1328
+      ],
+      "parameters": {
+        "project": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $json.JIRA_PROJECT_KEY }}"
+        },
+        "summary": "={{ $json.title }}",
+        "issueType": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Incident"
+        },
+        "additionalFields": {
+          "labels": "={{ ['ai-triaged', 'automation', $json.severity.toLowerCase(), $json.parse_method].join(',') }}",
+          "priority": {
+            "__rl": true,
+            "mode": "name",
+            "value": "={{ $json.jira_priority }}"
+          }
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "11bd4368-e577-4b15-9364-31e424253592",
+      "name": "Build Enhanced Card",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        880,
+        1328
+      ],
+      "parameters": {
+        "jsCode": "const triage = $('Parse & Enrich').first().json;\nconst jira = $input.first().json;\nconst jiraUrl = `${triage.JIRA_DOMAIN}/browse/${jira.key || 'ERROR'}`;\n\nconst escape = (str) => {\n  if (typeof str !== 'string') return String(str);\n  return str.replace(/[{}[\\]\"\\\\]/g, '\\\\$&').replace(/\\n/g, '\\\\n');\n};\n\nconst severityConfig = {\n  'P1': { emoji: '\ud83d\udd34', color: 'attention', label: 'CRITICAL' },\n  'P2': { emoji: '\ud83d\udfe0', color: 'warning', label: 'HIGH' },\n  'P3': { emoji: '\ud83d\udfe1', color: 'good', label: 'MEDIUM' },\n  'P4': { emoji: '\ud83d\udfe2', color: 'default', label: 'LOW' }\n};\n\nconst config = severityConfig[triage.severity] || severityConfig['P3'];\n\nlet formattedTime;\ntry {\n  formattedTime = new Date(triage.timestamp).toLocaleString('en-US', {\n    timeZone: triage.TIMEZONE,\n    dateStyle: 'short',\n    timeStyle: 'short',\n    hour12: false\n  });\n} catch (e) {\n  console.warn(`\u26a0\ufe0f Timezone error: ${e.message}, using ISO format`);\n  formattedTime = new Date(triage.timestamp).toISOString();\n}\n\nconst card = {\n  type: 'AdaptiveCard',\n  version: '1.6',\n  body: [\n    {\n      type: 'Container',\n      style: config.color,\n      items: [\n        {\n          type: 'TextBlock',\n          text: `${config.emoji} ${config.label}: ${escape(triage.title)}`,\n          weight: 'Bolder',\n          size: 'Large',\n          wrap: true,\n          color: triage.severity === 'P1' ? 'attention' : 'default'\n        }\n      ]\n    },\n    {\n      type: 'ColumnSet',\n      separator: true,\n      spacing: 'Small',\n      columns: [\n        {\n          type: 'Column',\n          width: 'auto',\n          items: [\n            {\n              type: 'TextBlock',\n              text: `\ud83d\udc64 ${escape(triage.reporterName)}`,\n              size: 'Small',\n              wrap: true\n            }\n          ]\n        },\n        {\n          type: 'Column',\n          width: 'stretch',\n          items: [\n            {\n              type: 'TextBlock',\n              text: `\ud83d\udd50 ${formattedTime}`,\n              size: 'Small',\n              horizontalAlignment: 'Right'\n            }\n          ]\n        }\n      ]\n    },\n    {\n      type: 'FactSet',\n      separator: true,\n      facts: [\n        { title: '\ud83c\udfab Ticket', value: escape(jira.key || 'Creation failed') },\n        { title: '\ud83d\udcca Severity', value: `${triage.severity} (${triage.jira_priority})` },\n        { title: '\ud83d\udd27 Service', value: escape(triage.affected_service) },\n        { title: '\ud83d\udc65 Users', value: escape(triage.estimated_users_affected) },\n        { title: '\ud83c\udf10 Customer', value: triage.customer_facing ? 'Yes' : 'No' }\n      ]\n    },\n    {\n      type: 'TextBlock',\n      text: '**\ud83d\udca5 Business Impact**',\n      weight: 'Bolder',\n      size: 'Small',\n      separator: true\n    },\n    {\n      type: 'TextBlock',\n      text: escape(triage.business_impact),\n      wrap: true,\n      size: 'Small',\n      color: triage.customer_facing ? 'attention' : 'default'\n    },\n    {\n      type: 'TextBlock',\n      text: '**\ud83d\udd0d Systems Affected**',\n      weight: 'Bolder',\n      size: 'Small',\n      separator: true\n    },\n    {\n      type: 'TextBlock',\n      text: triage.affected_systems.map(s => `\u2022 ${escape(s)}`).join('\\\\n'),\n      wrap: true,\n      size: 'Small'\n    },\n    {\n      type: 'TextBlock',\n      text: '**\ud83d\udca1 Hypothesis**',\n      weight: 'Bolder',\n      size: 'Small',\n      separator: true\n    },\n    {\n      type: 'TextBlock',\n      text: escape(triage.cause_hypothesis),\n      wrap: true,\n      size: 'Small'\n    },\n    {\n      type: 'TextBlock',\n      text: '**\u2705 Recommended Actions**',\n      weight: 'Bolder',\n      size: 'Small',\n      separator: true\n    },\n    {\n      type: 'TextBlock',\n      text: triage.actions.map((a, i) => `${i + 1}. ${escape(a)}`).join('\\\\n'),\n      wrap: true,\n      size: 'Small'\n    }\n  ],\n  actions: [\n    {\n      type: 'Action.OpenUrl',\n      title: '\ud83d\udccb View Jira Ticket',\n      url: jiraUrl,\n      style: 'positive'\n    }\n  ]\n};\n\n// Add PagerDuty indicator if triggered\nif (triage.requires_pagerduty) {\n  card.body.splice(1, 0, {\n    type: 'TextBlock',\n    text: '\ud83d\udea8 **PagerDuty Alert Triggered**',\n    size: 'Small',\n    color: 'attention',\n    weight: 'Bolder'\n  });\n}\n\n// Add AI parse warning if fallback\nif (!triage.parse_success) {\n  card.body.push({\n    type: 'Container',\n    separator: true,\n    style: 'warning',\n    items: [\n      {\n        type: 'TextBlock',\n        text: '\u26a0\ufe0f AI parsing failed. This ticket requires manual review.',\n        size: 'Small',\n        weight: 'Bolder',\n        wrap: true\n      }\n    ]\n  });\n}\n\nreturn {\n  json: {\n    title: triage.title,\n    severity: triage.severity,\n    requires_pagerduty: triage.requires_pagerduty,\n    jira_key: jira.key,\n    jira_url: jiraUrl,\n    adaptive_card: card,\n    formatted_timestamp: formattedTime,\n    incident_id: triage.incident_id,\n    reporterName: triage.reporterName,\n    affected_service: triage.affected_service,\n    customer_facing: triage.customer_facing,\n    parse_success: triage.parse_success,\n    parse_method: triage.parse_method,\n    timestamp: triage.timestamp,\n    PAGERDUTY_SERVICE_ID: triage.PAGERDUTY_SERVICE_ID,\n    PAGERDUTY_EMAIL: triage.PAGERDUTY_EMAIL\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "5966b500-7c65-408d-8178-0bfd45ef4c6d",
+      "name": "P1/P2 Check",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1104,
+        1328
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.requires_pagerduty }}",
+              "value2": true
+            }
+          ],
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and"
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "6e01b262-fa1e-453b-929e-2c56f402f0eb",
+      "name": "Trigger PagerDuty",
+      "type": "n8n-nodes-base.pagerDuty",
+      "maxTries": 2,
+      "position": [
+        1328,
+        1216
+      ],
+      "parameters": {
+        "email": "={{ $json.PAGERDUTY_EMAIL }}",
+        "title": "={{ $json.severity }}: {{ $json.title }}",
+        "resource": "incident",
+        "operation": "create",
+        "serviceId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.PAGERDUTY_SERVICE_ID }}"
+        },
+        "authentication": "apiToken",
+        "additionalFields": {
+          "urgency": "={{ $json.severity === 'P1' ? 'high' : 'low' }}"
+        },
+        "conferenceBridgeUi": {}
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "5356f91a-b5c6-4192-acc3-ad5a24fce608",
+      "name": "Post to Teams",
+      "type": "n8n-nodes-base.microsoftTeams",
+      "maxTries": 2,
+      "position": [
+        1568,
+        1344
+      ],
+      "webhookId": "f88acbd9-ae80-4259-91d6-dd3ac676a034",
+      "parameters": {
+        "resource": "message"
+      },
+      "retryOnFail": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "c6db6840-1e2a-4656-b435-686a5143cbc5",
+      "name": "Log Success",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1776,
+        1328
+      ],
+      "parameters": {
+        "jsCode": "const success = $input.first().json;\n\nconst logEntry = {\n  workflow: 'incident-triage',\n  version: '2.1',\n  status: 'success',\n  incident_id: success.incident_id,\n  jira_key: success.jira_key,\n  jira_url: success.jira_url,\n  severity: success.severity,\n  pagerduty_triggered: success.requires_pagerduty,\n  ai_parse_success: success.parse_success,\n  parse_method: success.parse_method,\n  reporter: success.reporterName,\n  affected_service: success.affected_service,\n  customer_facing: success.customer_facing,\n  timestamp: new Date().toISOString(),\n  execution_time_ms: Date.now() - new Date(success.timestamp).getTime()\n};\n\nconsole.log('\u2705 INCIDENT_TRIAGE_SUCCESS:', JSON.stringify(logEntry));\n\n\nreturn { json: logEntry };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1144844a-0fd7-42b7-ab87-9a5bc2094977",
+      "name": "Main Triage Documentation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1280,
+        1008
+      ],
+      "parameters": {
+        "width": 550,
+        "height": 532,
+        "content": "## AI-Powered Microsoft 365 Incident Triage\n\n### How it works\n1. **Trigger**: M365 webhook hits. Returns 202 Accepted immediately to prevent source timeout.\n2. **Deduplicate**: Idempotency check against staticData. Same incident won't process twice.\n3. **Analyze**: GPT-4o-mini transforms messy reports into structured JSON (severity, impact, root cause hypothesis).\n4. **Log and track**: Creates Jira Incident with normalized priorities and automated labels.\n5. **Escalate**: Routes P1/P2 to PagerDuty. Posts Adaptive Card to Teams for full visibility.\n\n### Setup steps\n- [ ] Set WEBHOOK_SECRET in environment variables\n- [ ] Configure JIRA_PROJECT_KEY and JIRA_DOMAIN\n- [ ] Add PagerDuty SERVICE_ID and EMAIL\n- [ ] Confirm OpenAI node uses GPT-4o-mini\n- [ ] Point Teams Outgoing Webhook to n8n production URL"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "17e56e89-8dc2-401d-8d95-ce62aa29e46a",
+      "name": "Sticky Note - Section 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -688,
+        1008
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 696,
+        "height": 528,
+        "content": "### Ingestion & Security\nCaptures M365 webhook and returns 202 response immediately. JS logic validates Teams signature, sanitizes input to block injection, runs idempotency check against staticData to prevent duplicate tickets."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "78fec294-fb97-4fd0-930f-53704554f24b",
+      "name": "Sticky Note - Section 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        48,
+        1008
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 520,
+        "height": 528,
+        "content": "### AI Analysis & Enrichment\nSends sanitized report to GPT-4o-mini for structured extraction (severity, impact, root cause). Parse & Enrich node handles JSON parsing with fallback. Flow continues even if AI output is malformed."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0b94ce74-594a-4297-bf9c-74be838b4dd2",
+      "name": "Sticky Note - Section 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        608,
+        1008
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1336,
+        "height": 528,
+        "content": "### Integration & Escalation\nCreates Jira incident and builds Adaptive Card for Teams. P1/P2 incidents trigger PagerDuty. Final node generates structured logs for performance tracking and observability."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "versionId": "cd1d7ff4-543f-4312-ad85-39e911f69c49",
+  "connections": {
+    "P1/P2 Check": {
+      "main": [
+        [
+          {
+            "node": "Trigger PagerDuty",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post to Teams",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to Teams": {
+      "main": [
+        [
+          {
+            "node": "Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Enrich": {
+      "main": [
+        [
+          {
+            "node": "Create Jira Incident",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Idempotency Check": {
+      "main": [
+        [
+          {
+            "node": "AI Brain (GPT-4o-mini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger PagerDuty": {
+      "main": [
+        [
+          {
+            "node": "Post to Teams",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract & Validate": {
+      "main": [
+        [
+          {
+            "node": "Idempotency Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Enhanced Card": {
+      "main": [
+        [
+          {
+            "node": "P1/P2 Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Jira Incident": {
+      "main": [
+        [
+          {
+            "node": "Build Enhanced Card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Microsoft 365 Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract & Validate",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Brain (GPT-4o-mini)": {
+      "main": [
+        [
+          {
+            "node": "Parse & Enrich",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

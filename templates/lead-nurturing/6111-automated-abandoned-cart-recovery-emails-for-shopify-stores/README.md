@@ -1,6 +1,6 @@
 # 💬 Automated abandoned cart recovery emails for Shopify stores
 
-> ⚡ **425 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **513 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

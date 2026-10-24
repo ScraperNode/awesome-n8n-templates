@@ -1,6 +1,6 @@
 # 🔬 Upload bulk records from CSV - Airtable Interfaces
 
-> ⚡ **2,089 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,107 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Ultimate content generator for WordPress
 
-> ⚡ **5,646 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,599 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

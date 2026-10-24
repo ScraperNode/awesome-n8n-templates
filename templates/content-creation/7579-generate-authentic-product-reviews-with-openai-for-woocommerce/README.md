@@ -1,6 +1,6 @@
 # 🎬 Generate authentic product reviews with OpenAI for WooCommerce
 
-> ⚡ **993 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,126 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

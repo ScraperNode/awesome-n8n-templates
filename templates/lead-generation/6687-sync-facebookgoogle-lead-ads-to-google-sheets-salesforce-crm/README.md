@@ -1,6 +1,6 @@
 # 🎣 Sync Facebook/Google lead ads to Google Sheets & Salesforce CRM
 
-> ⚡ **7,066 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **9,480 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Scheduled website uptime monitor with Slack alert
 
-> ⚡ **132 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **170 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

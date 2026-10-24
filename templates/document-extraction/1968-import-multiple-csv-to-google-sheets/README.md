@@ -1,6 +1,6 @@
 # 🔬 Import multiple CSV to Google Sheets
 
-> ⚡ **6,258 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **6,389 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

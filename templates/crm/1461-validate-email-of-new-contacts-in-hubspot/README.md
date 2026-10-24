@@ -1,6 +1,6 @@
 # 🤝 Validate email of new contacts in Hubspot
 
-> ⚡ **3,525 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **3,549 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

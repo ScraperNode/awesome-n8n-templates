@@ -1,6 +1,6 @@
 # ⚒️ Track AI agent token usage and estimate costs in Google Sheets
 
-> ⚡ **16,706 views** · ⚒️ [Engineering](../)
+> ⚡ **24,566 views** · ⚒️ [Engineering](../)
 
 ## Description
 

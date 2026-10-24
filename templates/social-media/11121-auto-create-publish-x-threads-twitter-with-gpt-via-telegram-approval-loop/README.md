@@ -1,6 +1,6 @@
 # 📱 Auto create & publish X-threads (Twitter) with GPT via Telegram & approval loop
 
-> ⚡ **450 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **562 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

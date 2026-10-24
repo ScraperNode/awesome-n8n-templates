@@ -1,6 +1,6 @@
 # 📋 Task time analysis: Automated overspend time insights for ClickUp and more
 
-> ⚡ **133 views** · 📋 [Project Management](../)
+> ⚡ **188 views** · 📋 [Project Management](../)
 
 ## Description
 

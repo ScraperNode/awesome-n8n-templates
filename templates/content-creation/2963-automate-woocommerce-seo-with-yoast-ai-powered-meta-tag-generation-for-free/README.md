@@ -1,6 +1,6 @@
 # 🎬 Automate WooCommerce SEO with Yoast & AI-powered meta tag generation for FREE
 
-> ⚡ **7,276 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **7,446 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

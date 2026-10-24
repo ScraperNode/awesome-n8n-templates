@@ -1,6 +1,6 @@
 # ⚡ Masked email management for Fastmail
 
-> ⚡ **561 views** · ⚡ [Personal Productivity](../)
+> ⚡ **590 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

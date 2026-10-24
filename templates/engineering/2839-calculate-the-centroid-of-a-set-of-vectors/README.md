@@ -1,6 +1,6 @@
 # ⚒️ Calculate the centroid of a set of vectors
 
-> ⚡ **637 views** · ⚒️ [Engineering](../)
+> ⚡ **653 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Automatic invoice due date reminders from Stripe to Google Calendar
 
-> ⚡ **165 views** · 🧾 [Invoice Processing](../)
+> ⚡ **192 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

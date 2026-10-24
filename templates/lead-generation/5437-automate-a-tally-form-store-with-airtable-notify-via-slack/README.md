@@ -1,6 +1,6 @@
 # 🎣 Automate a Tally form: store with Airtable, notify via Slack
 
-> ⚡ **659 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **741 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

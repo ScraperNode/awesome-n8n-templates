@@ -1,6 +1,6 @@
 # 🔬 Pharmacy inventory alerts for low stock & expiring medicine with Google Sheets
 
-> ⚡ **5,254 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **7,311 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

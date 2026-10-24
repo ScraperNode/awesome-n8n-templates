@@ -1,6 +1,6 @@
 # 🎣 Qualify and route real estate leads with Anthropic Claude, MLS/CRM, and Google Sheets
 
-> ⚡ **97 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **481 views** · 🎣 [Lead Generation & Enrichment](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

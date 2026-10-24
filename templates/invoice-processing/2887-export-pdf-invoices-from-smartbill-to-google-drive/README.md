@@ -1,6 +1,6 @@
 # 🧾 Export PDF invoices from SmartBill to Google Drive
 
-> ⚡ **1,095 views** · 🧾 [Invoice Processing](../)
+> ⚡ **953 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

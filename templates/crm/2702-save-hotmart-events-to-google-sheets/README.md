@@ -1,6 +1,6 @@
 # 🤝 Save Hotmart events to Google Sheets
 
-> ⚡ **1,027 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,062 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

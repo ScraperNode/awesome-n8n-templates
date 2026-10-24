@@ -1,6 +1,6 @@
 # 💬 Automate interior design lead qualification with AI & human approval to Notion
 
-> ⚡ **308 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **718 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

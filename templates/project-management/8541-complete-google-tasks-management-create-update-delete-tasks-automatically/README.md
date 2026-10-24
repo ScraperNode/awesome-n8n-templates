@@ -1,6 +1,6 @@
 # 📋 Complete Google Tasks management: Create, update & delete tasks automatically
 
-> ⚡ **470 views** · 📋 [Project Management](../)
+> ⚡ **547 views** · 📋 [Project Management](../)
 
 ## Description
 

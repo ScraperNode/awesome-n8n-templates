@@ -1,6 +1,6 @@
 # 🔬 Scan Confluence pages with the REST API for inactive page owners
 
-> ⚡ **67 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **176 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

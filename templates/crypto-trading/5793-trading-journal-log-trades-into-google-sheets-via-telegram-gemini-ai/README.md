@@ -1,6 +1,6 @@
 # 📈 Trading journal: log trades into Google Sheets via Telegram & Gemini AI
 
-> ⚡ **290 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **348 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

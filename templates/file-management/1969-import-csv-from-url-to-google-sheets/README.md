@@ -1,6 +1,6 @@
 # 📁 Import CSV from URL to Google Sheets
 
-> ⚡ **5,892 views** · 📁 [File Management](../)
+> ⚡ **5,983 views** · 📁 [File Management](../)
 
 ## Description
 

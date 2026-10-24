@@ -1,6 +1,6 @@
 # 🤝 Sync Zendesk tickets to Pipedrive contact owners
 
-> ⚡ **1,098 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,180 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

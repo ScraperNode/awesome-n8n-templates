@@ -1,6 +1,6 @@
 # 🔬 Store retell transcripts in Sheets, Airtable or Notion from webhook
 
-> ⚡ **2,336 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,498 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

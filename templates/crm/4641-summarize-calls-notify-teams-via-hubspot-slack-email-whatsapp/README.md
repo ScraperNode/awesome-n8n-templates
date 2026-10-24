@@ -1,6 +1,6 @@
 # 🤝 Summarize calls & notify teams via HubSpot, Slack, Email, WhatsApp
 
-> ⚡ **10,874 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **11,578 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

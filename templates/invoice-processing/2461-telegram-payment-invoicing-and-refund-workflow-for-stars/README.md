@@ -1,6 +1,6 @@
 # 🧾 Telegram payment, invoicing and refund workflow for Stars
 
-> ⚡ **2,345 views** · 🧾 [Invoice Processing](../)
+> ⚡ **2,370 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

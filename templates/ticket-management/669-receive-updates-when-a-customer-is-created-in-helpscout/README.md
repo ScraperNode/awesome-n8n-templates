@@ -1,6 +1,6 @@
 # 🎫 Receive updates when a customer is created in HelpScout
 
-> ⚡ **611 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **640 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

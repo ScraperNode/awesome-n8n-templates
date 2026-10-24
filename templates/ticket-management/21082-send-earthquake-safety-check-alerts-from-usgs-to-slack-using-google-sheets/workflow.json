@@ -1,0 +1,554 @@
+{
+  "name": "Send a Slack safety check when an earthquake hits near your sites, using the USGS feed and Google Sheets",
+  "nodes": [
+    {
+      "id": "2252a26e-025d-47db-8d1d-e1de37da47d6",
+      "name": "Every 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        -100
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "2adb045d-7b7d-42ca-869e-5f973af01520",
+      "name": "Run now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        150
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "38eb9c55-b3df-41b7-8183-b19de6781524",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "feed",
+              "type": "string",
+              "value": "4.5_hour"
+            },
+            {
+              "id": "c2",
+              "name": "min_magnitude",
+              "type": "number",
+              "value": 5
+            },
+            {
+              "id": "c3",
+              "name": "radius_km",
+              "type": "number",
+              "value": 100
+            },
+            {
+              "id": "c4",
+              "name": "language",
+              "type": "string",
+              "value": "en"
+            },
+            {
+              "id": "c5",
+              "name": "timezone",
+              "type": "string",
+              "value": "UTC"
+            }
+          ]
+        },
+        "includeOtherFields": false
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "0e5b80c8-1e4e-4dfe-86a8-8bf1ca456a3c",
+      "name": "Read Sites tab",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "resource": "sheet",
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sites"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.7,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "48330d43-686a-4036-82e3-0f431dd93532",
+      "name": "Get earthquakes (USGS)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        820,
+        0
+      ],
+      "parameters": {
+        "url": "=https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/{{ $('Config').first().json.feed }}.geojson",
+        "method": "GET",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.5
+    },
+    {
+      "id": "5f10d3db-c004-49d8-826c-58a839d494ab",
+      "name": "Read Alerts tab",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1040,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "resource": "sheet",
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Alerts"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.7,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "36fd3227-54ba-4db6-86d4-5712739e337e",
+      "name": "Match quakes and sites",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1420,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// ---- earthquakes near your sites: distance and magnitude in code -------------------------------------------\nconst num = (v) => { const n = Number(String(v ?? '').trim()); return String(v ?? '').trim() !== '' && Number.isFinite(n) ? n : NaN; };\n// great-circle distance in km (haversine, Earth radius 6371 km)\nfunction distanceKm(lat1, lon1, lat2, lon2) {\n  const rad = (d) => (d * Math.PI) / 180;\n  const a = Math.sin(rad(lat2 - lat1) / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(rad(lon2 - lon1) / 2) ** 2;\n  return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(a)));\n}\n\n// the Sites tab: name, lat, lon, contact, and optional per-site radius_km / min_magnitude\nfunction readSites(rows, cfg) {\n  const sites = [], problems = [];\n  rows.forEach((r, i) => {\n    const name = String(r.site ?? '').trim();\n    if (!name && String(r.lat ?? '').trim() === '' && String(r.lon ?? '').trim() === '') return; // an empty row\n    const lat = num(r.lat), lon = num(r.lon);\n    if (!name) problems.push('row ' + (i + 2) + ': no site name');\n    if (!(lat >= -90 && lat <= 90) || !(lon >= -180 && lon <= 180)) { problems.push('row ' + (i + 2) + ' (' + (name || '?') + '): lat / lon are not valid numbers'); return; }\n    sites.push({ name, lat, lon, contact: String(r.contact ?? '').trim(),\n      radius_km: num(r.radius_km) > 0 ? num(r.radius_km) : Number(cfg.radius_km), min_magnitude: Number.isFinite(num(r.min_magnitude)) ? num(r.min_magnitude) : Number(cfg.min_magnitude) });\n  });\n  return { sites, problems };\n}\n\n// which (earthquake, site) pairs need a safety check, and which were already sent\nfunction matchQuakes(feed, sites, sentKeys) {\n  const out = [];\n  for (const f of feed?.features ?? []) {\n    const p = f.properties ?? {}, [lon, lat, depth] = f.geometry?.coordinates ?? [];\n    if (!(Number.isFinite(lat) && Number.isFinite(lon) && Number.isFinite(p.mag))) continue;\n    if (p.status === 'deleted' || (p.type && p.type !== 'earthquake')) continue;\n    const near = [];\n    for (const s of sites) {\n      const d = distanceKm(s.lat, s.lon, lat, lon);\n      const key = f.id + '|' + s.name;\n      if (p.mag >= s.min_magnitude && d <= s.radius_km && !sentKeys.has(key)) near.push({ ...s, distance_km: Math.round(d), key });\n    }\n    if (near.length) out.push({ id: f.id, mag: p.mag, place: p.place ?? '', time: p.time, depth_km: Number.isFinite(depth) ? Math.round(depth) : null,\n      url: p.url ?? '', tsunami: p.tsunami === 1, status: p.status ?? '', near: near.sort((a, b) => a.distance_km - b.distance_km) });\n  }\n  return out.sort((a, b) => b.mag - a.mag);\n}\n\nfunction fmtTime(ms, tz) {\n  try { return new Intl.DateTimeFormat('sv-SE', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(ms)); }\n  catch (e) { return new Date(ms).toISOString().slice(0, 16).replace('T', ' ') + ' UTC'; }\n}\nconst mention = (c) => (/^[UW][A-Z0-9]{6,}$/.test(c) ? '<@' + c + '>' : c);\n\nfunction message(q, cfg) {\n  const ja = String(cfg.language || 'en').toLowerCase().startsWith('ja');\n  const when = fmtTime(q.time, cfg.timezone || 'UTC');\n  const sites = q.near.map((s) => '\u2022 ' + s.name + (ja ? ' \u2014 \u7d04' + s.distance_km + ' km' : ' \u2014 about ' + s.distance_km + ' km') + (s.contact ? (ja ? '\uff08\u62c5\u5f53 ' : ' (contact ') + mention(s.contact) + (ja ? '\uff09' : ')') : '')).join('\\n');\n  if (ja) return ':rotating_light: *\u5730\u9707\uff08USGS\uff09M' + q.mag + '*\uff5c' + when + '\uff08' + (cfg.timezone || 'UTC') + '\uff09\uff5c' + q.place + (q.depth_km !== null ? '\uff5c\u6df1\u3055 ' + q.depth_km + ' km' : '') +\n    '\\n\u8fd1\u304f\u306e\u62e0\u70b9\uff1a\\n' + sites + '\\n*\u5b89\u5426\u3068\u88ab\u5bb3\u306e\u6709\u7121\u3092\u3001\u3053\u306e\u30b9\u30ec\u30c3\u30c9\u306b\u8fd4\u4fe1\u3057\u3066\u304f\u3060\u3055\u3044\u3002*' + (q.tsunami ? '\\n:warning: USGS \u306e\u6d25\u6ce2\u306e\u5370\u304c\u4ed8\u3044\u3066\u3044\u307e\u3059\u3002\u6d25\u6ce2\u306e\u60c5\u5831\u306f\u3001\u6c17\u8c61\u5e81\u306a\u3069\u306e\u516c\u5f0f\u306e\u767a\u8868\u3067\u78ba\u304b\u3081\u3066\u304f\u3060\u3055\u3044\u3002' : '') +\n    '\\n_\u30de\u30b0\u30cb\u30c1\u30e5\u30fc\u30c9\uff08\u898f\u6a21\uff09\u3068\u3001\u9707\u6e90\u304b\u3089\u306e\u76f4\u7dda\u8ddd\u96e2\u3067\u5224\u5b9a\u3057\u3066\u3044\u307e\u3059\u3002\u9707\u5ea6\uff08\u63fa\u308c\u306e\u5f37\u3055\uff09\u3067\u306f\u3042\u308a\u307e\u305b\u3093\u3002USGS \u306e\u901f\u5831\u5024\u3067\u3001\u3042\u3068\u3067\u5909\u308f\u308b\u3053\u3068\u304c\u3042\u308a\u307e\u3059\u3002_ ' + q.url;\n  return ':rotating_light: *Earthquake (USGS) M' + q.mag + '* | ' + when + ' (' + (cfg.timezone || 'UTC') + ') | ' + q.place + (q.depth_km !== null ? ' | depth ' + q.depth_km + ' km' : '') +\n    '\\nSites nearby:\\n' + sites + '\\n*Please reply in this thread: is everyone safe, any damage?*' + (q.tsunami ? '\\n:warning: USGS has a tsunami flag on this event. Check your official local warnings.' : '') +\n    '\\n_Judged by magnitude and straight-line distance from the epicentre, not by local shaking intensity. USGS values are preliminary and may change._ ' + q.url;\n}\n\nconst cfg = $('Config').first().json;\nconst { sites, problems } = readSites($('Read Sites tab').all().map((i) => i.json), cfg);\n// a wrong coordinate must not silently remove a site from the watch\nif (problems.length) throw new Error('Fix the Sites tab: ' + problems.join('; '));\nif (!sites.length) throw new Error('The Sites tab has no site yet (columns: site, lat, lon, contact, radius_km, min_magnitude).');\nconst feed = $('Get earthquakes (USGS)').first().json;\nif (!Array.isArray(feed.features)) throw new Error('The USGS feed could not be read: ' + JSON.stringify(feed).slice(0, 200));\nconst sent = new Set($('Read Alerts tab').all().map((i) => String(i.json.alert_key ?? '')).filter(Boolean));\nconst quakes = matchQuakes(feed, sites, sent);\nreturn quakes.map((q) => ({ json: { ...q, text: message(q, cfg) } }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ac96e5e0-a8c1-4764-807b-a8b0d91e8876",
+      "name": "Post safety check",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "select": "channel",
+        "resource": "message",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "operation": "post",
+        "messageType": "text",
+        "otherOptions": {
+          "link_names": true,
+          "includeLinkToWorkflow": false
+        }
+      },
+      "typeVersion": 2.7
+    },
+    {
+      "id": "47199737-0664-4d9a-87c7-96f48414eeb3",
+      "name": "To alert rows",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2020,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// one row per (earthquake, site): the Alerts tab is what stops a second message for the same pair\nconst qs = $('Match quakes and sites').all().map((i) => i.json);\nconst now = $now.toISO();\nreturn qs.flatMap((q) => q.near.map((s) => ({ json: { alert_key: s.key, event_id: q.id, site: s.name, magnitude: q.mag, distance_km: s.distance_km, place: q.place,\n  event_time: new Date(q.time).toISOString(), sent_at: now, usgs_url: q.url } })));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "26935e07-f11e-48c8-8cf1-8b2ff640d79e",
+      "name": "Add to Alerts tab",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2240,
+        0
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [
+            "alert_key"
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Alerts"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "144abaa2-0f84-452b-8d54-90ea22d2c208",
+      "name": "Run once: set up the sheet",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        800
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "7c36e624-f181-44e4-806b-731eca50d04e",
+      "name": "Add the Sites and Alerts tabs",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        440,
+        800
+      ],
+      "parameters": {
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $(\"Spreadsheet ID\").first().json.spreadsheet_id }}:batchUpdate",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={\"requests\":[{\"addSheet\":{\"properties\":{\"title\":\"Sites\"}}},{\"addSheet\":{\"properties\":{\"title\":\"Alerts\"}}}]}",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api"
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "4578215b-8de6-43d8-8e1d-c74e0afb9650",
+      "name": "Write the header rows",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        660,
+        800
+      ],
+      "parameters": {
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $(\"Spreadsheet ID\").first().json.spreadsheet_id }}/values:batchUpdate",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={\"valueInputOption\":\"RAW\",\"data\":[{\"range\":\"'Sites'!A1\",\"values\":[[\"site\",\"lat\",\"lon\",\"contact\",\"radius_km\",\"min_magnitude\"]]},{\"range\":\"'Alerts'!A1\",\"values\":[[\"alert_key\",\"event_id\",\"site\",\"magnitude\",\"distance_km\",\"place\",\"event_time\",\"sent_at\",\"usgs_url\"]]}]}",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api"
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "b0b0b0b0-0000-4000-8000-0000000000a7",
+      "name": "Spreadsheet ID",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        800
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sid1",
+              "name": "spreadsheet_id",
+              "type": "string",
+              "value": "PASTE_YOUR_SPREADSHEET_ID_HERE"
+            }
+          ]
+        },
+        "includeOtherFields": false
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "sticky-2-7fe90adf",
+      "name": "Section 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        -284
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 420,
+        "height": 604,
+        "content": "## 1. Every 5 minutes\nConfig holds the feed, the default magnitude and radius, the language and the time zone."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-3-27eaa0f1",
+      "name": "Section 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        540,
+        -158
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 640,
+        "height": 328,
+        "content": "## 2. Sites, earthquakes, sent alerts\nYour sites from the sheet, the USGS real-time feed, and the pairs already sent."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-4-7de4c44b",
+      "name": "Section 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1360,
+        -288
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 200,
+        "height": 458,
+        "content": "## 3. Code decides\nStraight-line distance from the epicentre and the magnitude, per site. Bad coordinates stop the run with a message."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-5-9edd6389",
+      "name": "Section 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1740,
+        -158
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 640,
+        "height": 328,
+        "content": "## 4. Ask and remember\nOne Slack message per earthquake. The pair is stored after the message, so a failed post is tried again."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-6-e2d4cc03",
+      "name": "Section 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        642
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 860,
+        "height": 328,
+        "content": "## Run once: set up the sheet\nPaste your spreadsheet ID and run once: it adds the Sites and Alerts tabs with their header rows."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-1-8fe4d5e7",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -130,
+        -1368
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 780,
+        "height": 940,
+        "content": "## Earthquake near a site? Ask who is safe, at once\nEvery 5 minutes the workflow reads the free USGS real-time earthquake feed (no key). For every site in your `Sites` tab (name, latitude, longitude, contact), **code computes the distance from the epicentre** and posts a safety-check message in Slack when the magnitude is at or above your limit and the site is within your radius. The contact is mentioned; people reply in the thread. **No AI is used.**\n\n### How it works\n1. Read the Sites tab and the USGS feed (default: M4.5+ of the past hour).\n2. Code checks each earthquake against each site (distance and magnitude, per-site limits optional). A wrong coordinate stops the run with a clear message instead of dropping the site.\n3. One Slack message per earthquake lists the sites nearby, closest first.\n4. The `Alerts` tab stores earthquake + site, so the same pair is never sent twice.\n\n### Setup\n1. Blank Google Sheet: paste its ID in **Spreadsheet ID**, run **Run once**, select the sheet in the Google Sheets nodes.\n2. Fill the Sites tab: site, lat, lon (right-click the place in Google Maps to copy them), contact (a Slack member ID mentions them).\n3. Pick a Slack channel. Set the limits, language and time zone in **Config**. Publish.\n\n### Note\nMagnitude is not local shaking intensity. Use it as a trigger to ask, not as a damage report."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Read Sites tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run now": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "To alert rows": {
+      "main": [
+        [
+          {
+            "node": "Add to Alerts tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Sites tab": {
+      "main": [
+        [
+          {
+            "node": "Get earthquakes (USGS)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Spreadsheet ID": {
+      "main": [
+        [
+          {
+            "node": "Add the Sites and Alerts tabs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Alerts tab": {
+      "main": [
+        [
+          {
+            "node": "Match quakes and sites",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post safety check": {
+      "main": [
+        [
+          {
+            "node": "To alert rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get earthquakes (USGS)": {
+      "main": [
+        [
+          {
+            "node": "Read Alerts tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match quakes and sites": {
+      "main": [
+        [
+          {
+            "node": "Post safety check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run once: set up the sheet": {
+      "main": [
+        [
+          {
+            "node": "Spreadsheet ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add the Sites and Alerts tabs": {
+      "main": [
+        [
+          {
+            "node": "Write the header rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

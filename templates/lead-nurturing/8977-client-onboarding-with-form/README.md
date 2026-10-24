@@ -1,6 +1,6 @@
 # 💬 Client onboarding with form
 
-> ⚡ **774 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,132 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

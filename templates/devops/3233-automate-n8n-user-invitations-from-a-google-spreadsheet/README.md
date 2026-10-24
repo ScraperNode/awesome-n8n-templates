@@ -1,6 +1,6 @@
 # ⚙️ Automate n8n user invitations from a Google spreadsheet
 
-> ⚡ **725 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **933 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

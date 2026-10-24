@@ -1,6 +1,6 @@
 # ⚒️ Control your 3D printer with GPT-4o and OctoPrint API conversations
 
-> ⚡ **800 views** · ⚒️ [Engineering](../)
+> ⚡ **949 views** · ⚒️ [Engineering](../)
 
 ## Description
 

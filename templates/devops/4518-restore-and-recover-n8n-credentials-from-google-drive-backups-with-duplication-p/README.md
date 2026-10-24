@@ -1,6 +1,6 @@
 # ⚙️ Restore and recover n8n credentials from Google Drive backups with duplication protection
 
-> ⚡ **1,762 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,914 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

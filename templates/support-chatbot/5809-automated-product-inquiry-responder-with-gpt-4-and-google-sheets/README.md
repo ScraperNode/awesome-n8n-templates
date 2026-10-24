@@ -1,6 +1,6 @@
 # 💬 Automated product inquiry responder with GPT-4 and Google Sheets
 
-> ⚡ **2,131 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,646 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

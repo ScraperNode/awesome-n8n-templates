@@ -1,6 +1,6 @@
 # ⚒️ 🤖 Build resilient AI workflows with automatic GPT and Gemini failover chain
 
-> ⚡ **2,214 views** · ⚒️ [Engineering](../)
+> ⚡ **2,622 views** · ⚒️ [Engineering](../)
 
 ## Description
 

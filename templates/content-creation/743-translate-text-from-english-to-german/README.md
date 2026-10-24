@@ -1,6 +1,6 @@
 # 🎬 Translate text from English to German
 
-> ⚡ **4,342 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,482 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

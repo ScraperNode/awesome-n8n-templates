@@ -1,6 +1,6 @@
 # ⚙️ Import workflows and map their credentials using a multi-form
 
-> ⚡ **3,347 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **3,562 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

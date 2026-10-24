@@ -1,6 +1,6 @@
 # ⚒️ Unify multiple triggers into a single workflow
 
-> ⚡ **1,828 views** · ⚒️ [Engineering](../)
+> ⚡ **2,405 views** · ⚒️ [Engineering](../)
 
 ## Description
 

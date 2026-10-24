@@ -1,6 +1,6 @@
 # 🎬 Build an image restoration service with n8n & Gemini AI image editing
 
-> ⚡ **2,267 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,439 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

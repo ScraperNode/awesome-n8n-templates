@@ -1,6 +1,6 @@
 # ⚒️ Automate demand forecasting & inventory ordering with AI, MySQL & optimal supplier selection
 
-> ⚡ **483 views** · ⚒️ [Engineering](../)
+> ⚡ **994 views** · ⚒️ [Engineering](../)
 
 ## Description
 

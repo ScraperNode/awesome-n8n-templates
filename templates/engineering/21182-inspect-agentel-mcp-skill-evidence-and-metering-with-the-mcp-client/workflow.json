@@ -1,0 +1,360 @@
+{
+  "name": "Agentel MCP \u2014 Inspect Skill evidence",
+  "nodes": [
+    {
+      "id": "setup-note",
+      "name": "Overview and required setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -100,
+        -840
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 960,
+        "height": 660,
+        "content": "# Inspect Skill evidence before adoption\n### How it works\nRun this manual workflow to inspect one public Agentel Skill record before deciding whether to adopt it. It checks the Reader identity, current prices and allowance, attempts one detail read only when its local checks allow it, and compares the before/after allowance snapshots. A refused preflight uses the Read not started branch. Reading does not install or execute a Skill, grant permissions, apply to a Mission or award Credit.\n\n### Setup\nObtain a restricted Agentel INFO_READ Reader, never an owner or full runtime key. Store it in a private n8n Bearer Auth credential and bind the same credential to all three MCP Client nodes. Edit only skill_id in Choose Skill. After import, open More actions \u2192 Settings: set all four execution/progress save options to Do not save, enable a 90-second timeout, save and reopen to verify. Import may discard these settings. Check any automatically selected credential before running.\n\nAt validation, the detail cost 1 INFO of plan allowance, not an automatic card charge. Recheck current prices; preflight is not a reservation. Errors or unknown results may consume allowance: never automatically retry. No model is required. source_checked is source checking, not independent verification.\n\n[Setup and validation limits](https://agentel.tech/en/lab/mcp/n8n)"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "preflight-section",
+      "name": "Identity and budget checks",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -80,
+        -110
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1190,
+        "height": 480,
+        "content": "## 1. Check identity and allowance\nChoose a Skill, read the connection and inspect the budget. Bind the restricted Reader before running. The IF node admits at most one detail attempt."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "evidence-section",
+      "name": "One read and allowance receipt",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1120,
+        -110
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1040,
+        "height": 520,
+        "content": "## 2. Read one Skill and report evidence\nOne public detail attempt, evidence inspection and a fresh connection snapshot. Keep the same Reader throughout. Unknown metering is not a free result. The lower Read not started branch reports a refused preflight; do not bypass it."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "manual",
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "choose",
+      "name": "Choose Skill",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "if ($input.all().length !== 1) throw new Error(\"EXPECTED_ONE_TRIGGER_ITEM\");\nreturn [{json: {skill_id: \"agentel\"}}];"
+      },
+      "retryOnFail": false,
+      "typeVersion": 2
+    },
+    {
+      "id": "before",
+      "name": "Connection before",
+      "type": "@n8n/n8n-nodes-langchain.mcpClient",
+      "onError": "stopWorkflow",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "tool": {
+          "mode": "list",
+          "value": "get_connection"
+        },
+        "options": {
+          "timeout": 20000,
+          "convertToBinary": false
+        },
+        "inputMode": "json",
+        "jsonInput": {},
+        "endpointUrl": "https://agentel.tech/mcp",
+        "authentication": "bearerAuth",
+        "serverTransport": "httpStreamable"
+      },
+      "retryOnFail": false,
+      "typeVersion": 1.1
+    },
+    {
+      "id": "budget",
+      "name": "Read budget",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        680,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Client-only guards. Embedded into n8n Code nodes; no network or credentials.\nconst object = value => value !== null && typeof value === 'object' && !Array.isArray(value);\nconst fail = (status, code) => ({ business_ok: false, status, error_code: code, summary: {} });\nconst publicLink = value => typeof value === 'string' && value.length <= 2048 && /^https:\\/\\/[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?:\\/[^\\s]*)?$/.test(value) ? value : null;\n\nfunction errorState(value, depth = 0) {\n  if (depth > 32) return 'INVALID';\n  if (value === null || typeof value !== 'object') return 'NONE';\n  if (Object.hasOwn(value, 'isError') && typeof value.isError !== 'boolean') return 'INVALID';\n  if (Object.hasOwn(value, 'error') || value.isError === true) return 'ERROR';\n  let state = 'NONE';\n  for (const child of Object.values(value)) {\n    const next = errorState(child, depth + 1);\n    if (next === 'INVALID') return next;\n    if (next === 'ERROR') state = next;\n  }\n  return state;\n}\n\nfunction unwrap(items) {\n  if (!Array.isArray(items) || items.length !== 1 || !object(items[0]?.json)) return { failure: fail('INVALID_PAYLOAD', 'EXPECTED_ONE_NATIVE_RESULT') };\n  const raw = items[0].json;\n  const state = errorState(raw);\n  if (state !== 'NONE') return { failure: fail(state === 'ERROR' ? 'BUSINESS_ERROR' : 'INVALID_PAYLOAD', 'NATIVE_RESULT_REJECTED') };\n  // Native MCP Client 1.1 returned structuredContent in the dated acceptance.\n  // Do not scrape text content or guess alternative wrappers on a changed client.\n  if (!object(raw.structuredContent)) return { failure: fail('INVALID_PAYLOAD', 'STRUCTURED_CONTENT_REQUIRED') };\n  return { data: raw.structuredContent };\n}\n\nfunction normalizeConnection(items) {\n  const result = unwrap(items);\n  if (result.failure) return result.failure;\n  const d = result.data;\n  const required = ['agent', 'connection', 'plan', 'usage', 'limits', 'postAllowance', 'costRules', 'quotaPolicy', 'upgrade', 'dataUse'];\n  if (required.some(k => !object(d[k])) || d.connection.writes !== false || typeof d.agent.id !== 'string' || !d.agent.id ||\n      typeof d.plan.infoClass !== 'string' || !/^[A-Z0-9_]{1,80}$/.test(d.plan.infoClass)) return fail('INVALID_PAYLOAD', 'INVALID_CONNECTION');\n  if (typeof d.usage.subject !== 'string' || !d.usage.subject.trim() || d.usage.subject.length > 80) return fail('INVALID_PAYLOAD', 'INVALID_METERING_SUBJECT');\n  const remaining = {};\n  for (const period of ['daily', 'monthly']) {\n    const n = d.usage[period]?.remaining;\n    const limit = d.usage[period]?.limit;\n    if (!Number.isSafeInteger(n) || n < 0 || !Number.isSafeInteger(limit) || limit < 0) return fail('INVALID_PAYLOAD', 'INVALID_ALLOWANCE');\n    remaining[period] = n;\n  }\n  if (d.costRules.get_connection !== 0) return fail('POLICY_CHANGED', 'CONNECTION_COST_CHANGED');\n  return { business_ok: true, status: 'CONNECTION_READY', error_code: '', summary: { readonly: true, planClass: d.plan.infoClass, remaining } };\n}\n\nfunction prepareRead(items, config) {\n  const connection = normalizeConnection(items);\n  if (!connection.business_ok) return { ...connection, can_read: false };\n  if (!object(config) || typeof config.skill_id !== 'string' || !/^[a-zA-Z0-9_-]{1,200}$/.test(config.skill_id)) return { ...fail('INVALID_INPUT', 'INVALID_SKILL_ID'), can_read: false };\n  const data = items[0].json.structuredContent;\n  // This candidate admits exactly one detail page, only at its advertised cost.\n  // A future price needs a reviewed candidate, never an implicit higher budget.\n  if (data.costRules.get_network_item?.perPage !== 1) return { ...fail('POLICY_CHANGED', 'DETAIL_COST_CHANGED'), can_read: false };\n  if (connection.summary.remaining.daily < 1 || connection.summary.remaining.monthly < 1) return { ...fail('QUOTA_UNAVAILABLE', 'NO_DETAIL_ALLOWANCE'), can_read: false };\n  return { ...connection, status: 'DETAIL_READ_READY', can_read: true, skill_id: config.skill_id, planned_info_units: 1 };\n}\n\nfunction inspectSkill(items, config) {\n  const result = unwrap(items);\n  if (result.failure) return result.failure;\n  const { item, usage } = result.data;\n  if (!object(item) || item.kind !== 'SKILL' || item.id !== config.skill_id || typeof item.title !== 'string' || !item.title ||\n      typeof item.version !== 'string' || !item.version || typeof item.reviewStatus !== 'string' ||\n      !Array.isArray(item.permissions) || item.permissions.some(p => typeof p !== 'string') ||\n      typeof item.license !== 'string' || !object(usage) || usage.costUnits !== 1) return fail('INVALID_PAYLOAD', 'INVALID_SKILL_DETAIL');\n  // These fields are data, never installation instructions or executable code.\n  return { business_ok: true, status: 'SKILL_EVIDENCE_READ', error_code: '', summary: {\n    id: item.id, title: item.title, version: item.version, evidenceLevel: item.reviewStatus,\n    sourceUrl: publicLink(item.sourceUrl), canonicalUrl: publicLink(item.canonicalUrl),\n    declaredPermissions: item.permissions, declaredLicense: item.license,\n    trustLevel: 'UNTRUSTED_NETWORK_CONTENT', reported_info_units: usage.costUnits,\n    next_step: 'Review the Skill source, permissions and host compatibility. Installation or SDK/API writes require separate authorization.',\n    installed: false, runtimeVerifiedByThisWorkflow: false,\n  } };\n}\n\nfunction finishReceipt(afterItems, beforeItems, prepared, evidence) {\n  const after = normalizeConnection(afterItems);\n  if (!after.business_ok) return { ...fail('METERING_UNKNOWN', 'AFTER_CONNECTION_INVALID'), evidence };\n  const before = normalizeConnection(beforeItems);\n  if (!before.business_ok || !prepared.can_read || !object(evidence) || typeof evidence.business_ok !== 'boolean') return fail('INVALID_PAYLOAD', 'RECEIPT_INPUT_INVALID');\n  const a = afterItems[0].json.structuredContent, b = beforeItems[0].json.structuredContent;\n  if (a.agent.id !== b.agent.id || a.usage.subject !== b.usage.subject || a.plan.infoClass !== b.plan.infoClass) return { ...fail('METERING_UNKNOWN', 'SUBJECT_CHANGED'), evidence };\n  for (const period of ['daily', 'monthly']) {\n    if (typeof a.usage[period].resetsAt !== 'string' || a.usage[period].resetsAt !== b.usage[period].resetsAt || a.usage[period].limit !== b.usage[period].limit) return { ...fail('METERING_UNKNOWN', 'WINDOW_CHANGED'), evidence };\n  }\n  const daily = before.summary.remaining.daily - after.summary.remaining.daily;\n  const monthly = before.summary.remaining.monthly - after.summary.remaining.monthly;\n  const consistent = daily === 1 && monthly === 1 && evidence.business_ok;\n  return { business_ok: Boolean(evidence.business_ok), status: consistent ? 'SKILL_EVIDENCE_AND_BALANCE_OBSERVED' : 'SKILL_READ_METERING_UNKNOWN',\n    error_code: consistent ? '' : 'ALLOWANCE_DELTA_OR_EVIDENCE_UNCONFIRMED', evidence,\n    metering: { dailyAllowanceDelta: daily, monthlyAllowanceDelta: monthly, reportedDetailUnits: evidence.summary?.reported_info_units ?? null,\n      exclusiveUseAssumed: false, chargeAttribution: 'NOT_PROVEN_BY_SHARED_BALANCE', cashPaymentTested: false },\n    retry: false };\n}\n\nreturn [{json: prepareRead($input.all(), $(\"Choose Skill\").first().json)}];"
+      },
+      "retryOnFail": false,
+      "typeVersion": 2
+    },
+    {
+      "id": "can-read",
+      "name": "Can read one detail?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        920,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "can-read-true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.can_read }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "skill",
+      "name": "Skill detail",
+      "type": "@n8n/n8n-nodes-langchain.mcpClient",
+      "onError": "stopWorkflow",
+      "position": [
+        1160,
+        0
+      ],
+      "parameters": {
+        "tool": {
+          "mode": "list",
+          "value": "get_network_item"
+        },
+        "options": {
+          "timeout": 20000,
+          "convertToBinary": false
+        },
+        "inputMode": "json",
+        "jsonInput": "={{ { kind: \"SKILL\", id: $(\"Read budget\").first().json.skill_id } }}",
+        "endpointUrl": "https://agentel.tech/mcp",
+        "authentication": "bearerAuth",
+        "serverTransport": "httpStreamable"
+      },
+      "retryOnFail": false,
+      "typeVersion": 1.1
+    },
+    {
+      "id": "evidence",
+      "name": "Inspect evidence",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Client-only guards. Embedded into n8n Code nodes; no network or credentials.\nconst object = value => value !== null && typeof value === 'object' && !Array.isArray(value);\nconst fail = (status, code) => ({ business_ok: false, status, error_code: code, summary: {} });\nconst publicLink = value => typeof value === 'string' && value.length <= 2048 && /^https:\\/\\/[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?:\\/[^\\s]*)?$/.test(value) ? value : null;\n\nfunction errorState(value, depth = 0) {\n  if (depth > 32) return 'INVALID';\n  if (value === null || typeof value !== 'object') return 'NONE';\n  if (Object.hasOwn(value, 'isError') && typeof value.isError !== 'boolean') return 'INVALID';\n  if (Object.hasOwn(value, 'error') || value.isError === true) return 'ERROR';\n  let state = 'NONE';\n  for (const child of Object.values(value)) {\n    const next = errorState(child, depth + 1);\n    if (next === 'INVALID') return next;\n    if (next === 'ERROR') state = next;\n  }\n  return state;\n}\n\nfunction unwrap(items) {\n  if (!Array.isArray(items) || items.length !== 1 || !object(items[0]?.json)) return { failure: fail('INVALID_PAYLOAD', 'EXPECTED_ONE_NATIVE_RESULT') };\n  const raw = items[0].json;\n  const state = errorState(raw);\n  if (state !== 'NONE') return { failure: fail(state === 'ERROR' ? 'BUSINESS_ERROR' : 'INVALID_PAYLOAD', 'NATIVE_RESULT_REJECTED') };\n  // Native MCP Client 1.1 returned structuredContent in the dated acceptance.\n  // Do not scrape text content or guess alternative wrappers on a changed client.\n  if (!object(raw.structuredContent)) return { failure: fail('INVALID_PAYLOAD', 'STRUCTURED_CONTENT_REQUIRED') };\n  return { data: raw.structuredContent };\n}\n\nfunction normalizeConnection(items) {\n  const result = unwrap(items);\n  if (result.failure) return result.failure;\n  const d = result.data;\n  const required = ['agent', 'connection', 'plan', 'usage', 'limits', 'postAllowance', 'costRules', 'quotaPolicy', 'upgrade', 'dataUse'];\n  if (required.some(k => !object(d[k])) || d.connection.writes !== false || typeof d.agent.id !== 'string' || !d.agent.id ||\n      typeof d.plan.infoClass !== 'string' || !/^[A-Z0-9_]{1,80}$/.test(d.plan.infoClass)) return fail('INVALID_PAYLOAD', 'INVALID_CONNECTION');\n  if (typeof d.usage.subject !== 'string' || !d.usage.subject.trim() || d.usage.subject.length > 80) return fail('INVALID_PAYLOAD', 'INVALID_METERING_SUBJECT');\n  const remaining = {};\n  for (const period of ['daily', 'monthly']) {\n    const n = d.usage[period]?.remaining;\n    const limit = d.usage[period]?.limit;\n    if (!Number.isSafeInteger(n) || n < 0 || !Number.isSafeInteger(limit) || limit < 0) return fail('INVALID_PAYLOAD', 'INVALID_ALLOWANCE');\n    remaining[period] = n;\n  }\n  if (d.costRules.get_connection !== 0) return fail('POLICY_CHANGED', 'CONNECTION_COST_CHANGED');\n  return { business_ok: true, status: 'CONNECTION_READY', error_code: '', summary: { readonly: true, planClass: d.plan.infoClass, remaining } };\n}\n\nfunction prepareRead(items, config) {\n  const connection = normalizeConnection(items);\n  if (!connection.business_ok) return { ...connection, can_read: false };\n  if (!object(config) || typeof config.skill_id !== 'string' || !/^[a-zA-Z0-9_-]{1,200}$/.test(config.skill_id)) return { ...fail('INVALID_INPUT', 'INVALID_SKILL_ID'), can_read: false };\n  const data = items[0].json.structuredContent;\n  // This candidate admits exactly one detail page, only at its advertised cost.\n  // A future price needs a reviewed candidate, never an implicit higher budget.\n  if (data.costRules.get_network_item?.perPage !== 1) return { ...fail('POLICY_CHANGED', 'DETAIL_COST_CHANGED'), can_read: false };\n  if (connection.summary.remaining.daily < 1 || connection.summary.remaining.monthly < 1) return { ...fail('QUOTA_UNAVAILABLE', 'NO_DETAIL_ALLOWANCE'), can_read: false };\n  return { ...connection, status: 'DETAIL_READ_READY', can_read: true, skill_id: config.skill_id, planned_info_units: 1 };\n}\n\nfunction inspectSkill(items, config) {\n  const result = unwrap(items);\n  if (result.failure) return result.failure;\n  const { item, usage } = result.data;\n  if (!object(item) || item.kind !== 'SKILL' || item.id !== config.skill_id || typeof item.title !== 'string' || !item.title ||\n      typeof item.version !== 'string' || !item.version || typeof item.reviewStatus !== 'string' ||\n      !Array.isArray(item.permissions) || item.permissions.some(p => typeof p !== 'string') ||\n      typeof item.license !== 'string' || !object(usage) || usage.costUnits !== 1) return fail('INVALID_PAYLOAD', 'INVALID_SKILL_DETAIL');\n  // These fields are data, never installation instructions or executable code.\n  return { business_ok: true, status: 'SKILL_EVIDENCE_READ', error_code: '', summary: {\n    id: item.id, title: item.title, version: item.version, evidenceLevel: item.reviewStatus,\n    sourceUrl: publicLink(item.sourceUrl), canonicalUrl: publicLink(item.canonicalUrl),\n    declaredPermissions: item.permissions, declaredLicense: item.license,\n    trustLevel: 'UNTRUSTED_NETWORK_CONTENT', reported_info_units: usage.costUnits,\n    next_step: 'Review the Skill source, permissions and host compatibility. Installation or SDK/API writes require separate authorization.',\n    installed: false, runtimeVerifiedByThisWorkflow: false,\n  } };\n}\n\nfunction finishReceipt(afterItems, beforeItems, prepared, evidence) {\n  const after = normalizeConnection(afterItems);\n  if (!after.business_ok) return { ...fail('METERING_UNKNOWN', 'AFTER_CONNECTION_INVALID'), evidence };\n  const before = normalizeConnection(beforeItems);\n  if (!before.business_ok || !prepared.can_read || !object(evidence) || typeof evidence.business_ok !== 'boolean') return fail('INVALID_PAYLOAD', 'RECEIPT_INPUT_INVALID');\n  const a = afterItems[0].json.structuredContent, b = beforeItems[0].json.structuredContent;\n  if (a.agent.id !== b.agent.id || a.usage.subject !== b.usage.subject || a.plan.infoClass !== b.plan.infoClass) return { ...fail('METERING_UNKNOWN', 'SUBJECT_CHANGED'), evidence };\n  for (const period of ['daily', 'monthly']) {\n    if (typeof a.usage[period].resetsAt !== 'string' || a.usage[period].resetsAt !== b.usage[period].resetsAt || a.usage[period].limit !== b.usage[period].limit) return { ...fail('METERING_UNKNOWN', 'WINDOW_CHANGED'), evidence };\n  }\n  const daily = before.summary.remaining.daily - after.summary.remaining.daily;\n  const monthly = before.summary.remaining.monthly - after.summary.remaining.monthly;\n  const consistent = daily === 1 && monthly === 1 && evidence.business_ok;\n  return { business_ok: Boolean(evidence.business_ok), status: consistent ? 'SKILL_EVIDENCE_AND_BALANCE_OBSERVED' : 'SKILL_READ_METERING_UNKNOWN',\n    error_code: consistent ? '' : 'ALLOWANCE_DELTA_OR_EVIDENCE_UNCONFIRMED', evidence,\n    metering: { dailyAllowanceDelta: daily, monthlyAllowanceDelta: monthly, reportedDetailUnits: evidence.summary?.reported_info_units ?? null,\n      exclusiveUseAssumed: false, chargeAttribution: 'NOT_PROVEN_BY_SHARED_BALANCE', cashPaymentTested: false },\n    retry: false };\n}\n\nreturn [{json: inspectSkill($input.all(), $(\"Read budget\").first().json)}];"
+      },
+      "retryOnFail": false,
+      "typeVersion": 2
+    },
+    {
+      "id": "after",
+      "name": "Connection after",
+      "type": "@n8n/n8n-nodes-langchain.mcpClient",
+      "onError": "stopWorkflow",
+      "position": [
+        1640,
+        0
+      ],
+      "parameters": {
+        "tool": {
+          "mode": "list",
+          "value": "get_connection"
+        },
+        "options": {
+          "timeout": 20000,
+          "convertToBinary": false
+        },
+        "inputMode": "json",
+        "jsonInput": {},
+        "endpointUrl": "https://agentel.tech/mcp",
+        "authentication": "bearerAuth",
+        "serverTransport": "httpStreamable"
+      },
+      "retryOnFail": false,
+      "typeVersion": 1.1
+    },
+    {
+      "id": "receipt",
+      "name": "Evidence and balance receipt",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1880,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Client-only guards. Embedded into n8n Code nodes; no network or credentials.\nconst object = value => value !== null && typeof value === 'object' && !Array.isArray(value);\nconst fail = (status, code) => ({ business_ok: false, status, error_code: code, summary: {} });\nconst publicLink = value => typeof value === 'string' && value.length <= 2048 && /^https:\\/\\/[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?:\\/[^\\s]*)?$/.test(value) ? value : null;\n\nfunction errorState(value, depth = 0) {\n  if (depth > 32) return 'INVALID';\n  if (value === null || typeof value !== 'object') return 'NONE';\n  if (Object.hasOwn(value, 'isError') && typeof value.isError !== 'boolean') return 'INVALID';\n  if (Object.hasOwn(value, 'error') || value.isError === true) return 'ERROR';\n  let state = 'NONE';\n  for (const child of Object.values(value)) {\n    const next = errorState(child, depth + 1);\n    if (next === 'INVALID') return next;\n    if (next === 'ERROR') state = next;\n  }\n  return state;\n}\n\nfunction unwrap(items) {\n  if (!Array.isArray(items) || items.length !== 1 || !object(items[0]?.json)) return { failure: fail('INVALID_PAYLOAD', 'EXPECTED_ONE_NATIVE_RESULT') };\n  const raw = items[0].json;\n  const state = errorState(raw);\n  if (state !== 'NONE') return { failure: fail(state === 'ERROR' ? 'BUSINESS_ERROR' : 'INVALID_PAYLOAD', 'NATIVE_RESULT_REJECTED') };\n  // Native MCP Client 1.1 returned structuredContent in the dated acceptance.\n  // Do not scrape text content or guess alternative wrappers on a changed client.\n  if (!object(raw.structuredContent)) return { failure: fail('INVALID_PAYLOAD', 'STRUCTURED_CONTENT_REQUIRED') };\n  return { data: raw.structuredContent };\n}\n\nfunction normalizeConnection(items) {\n  const result = unwrap(items);\n  if (result.failure) return result.failure;\n  const d = result.data;\n  const required = ['agent', 'connection', 'plan', 'usage', 'limits', 'postAllowance', 'costRules', 'quotaPolicy', 'upgrade', 'dataUse'];\n  if (required.some(k => !object(d[k])) || d.connection.writes !== false || typeof d.agent.id !== 'string' || !d.agent.id ||\n      typeof d.plan.infoClass !== 'string' || !/^[A-Z0-9_]{1,80}$/.test(d.plan.infoClass)) return fail('INVALID_PAYLOAD', 'INVALID_CONNECTION');\n  if (typeof d.usage.subject !== 'string' || !d.usage.subject.trim() || d.usage.subject.length > 80) return fail('INVALID_PAYLOAD', 'INVALID_METERING_SUBJECT');\n  const remaining = {};\n  for (const period of ['daily', 'monthly']) {\n    const n = d.usage[period]?.remaining;\n    const limit = d.usage[period]?.limit;\n    if (!Number.isSafeInteger(n) || n < 0 || !Number.isSafeInteger(limit) || limit < 0) return fail('INVALID_PAYLOAD', 'INVALID_ALLOWANCE');\n    remaining[period] = n;\n  }\n  if (d.costRules.get_connection !== 0) return fail('POLICY_CHANGED', 'CONNECTION_COST_CHANGED');\n  return { business_ok: true, status: 'CONNECTION_READY', error_code: '', summary: { readonly: true, planClass: d.plan.infoClass, remaining } };\n}\n\nfunction prepareRead(items, config) {\n  const connection = normalizeConnection(items);\n  if (!connection.business_ok) return { ...connection, can_read: false };\n  if (!object(config) || typeof config.skill_id !== 'string' || !/^[a-zA-Z0-9_-]{1,200}$/.test(config.skill_id)) return { ...fail('INVALID_INPUT', 'INVALID_SKILL_ID'), can_read: false };\n  const data = items[0].json.structuredContent;\n  // This candidate admits exactly one detail page, only at its advertised cost.\n  // A future price needs a reviewed candidate, never an implicit higher budget.\n  if (data.costRules.get_network_item?.perPage !== 1) return { ...fail('POLICY_CHANGED', 'DETAIL_COST_CHANGED'), can_read: false };\n  if (connection.summary.remaining.daily < 1 || connection.summary.remaining.monthly < 1) return { ...fail('QUOTA_UNAVAILABLE', 'NO_DETAIL_ALLOWANCE'), can_read: false };\n  return { ...connection, status: 'DETAIL_READ_READY', can_read: true, skill_id: config.skill_id, planned_info_units: 1 };\n}\n\nfunction inspectSkill(items, config) {\n  const result = unwrap(items);\n  if (result.failure) return result.failure;\n  const { item, usage } = result.data;\n  if (!object(item) || item.kind !== 'SKILL' || item.id !== config.skill_id || typeof item.title !== 'string' || !item.title ||\n      typeof item.version !== 'string' || !item.version || typeof item.reviewStatus !== 'string' ||\n      !Array.isArray(item.permissions) || item.permissions.some(p => typeof p !== 'string') ||\n      typeof item.license !== 'string' || !object(usage) || usage.costUnits !== 1) return fail('INVALID_PAYLOAD', 'INVALID_SKILL_DETAIL');\n  // These fields are data, never installation instructions or executable code.\n  return { business_ok: true, status: 'SKILL_EVIDENCE_READ', error_code: '', summary: {\n    id: item.id, title: item.title, version: item.version, evidenceLevel: item.reviewStatus,\n    sourceUrl: publicLink(item.sourceUrl), canonicalUrl: publicLink(item.canonicalUrl),\n    declaredPermissions: item.permissions, declaredLicense: item.license,\n    trustLevel: 'UNTRUSTED_NETWORK_CONTENT', reported_info_units: usage.costUnits,\n    next_step: 'Review the Skill source, permissions and host compatibility. Installation or SDK/API writes require separate authorization.',\n    installed: false, runtimeVerifiedByThisWorkflow: false,\n  } };\n}\n\nfunction finishReceipt(afterItems, beforeItems, prepared, evidence) {\n  const after = normalizeConnection(afterItems);\n  if (!after.business_ok) return { ...fail('METERING_UNKNOWN', 'AFTER_CONNECTION_INVALID'), evidence };\n  const before = normalizeConnection(beforeItems);\n  if (!before.business_ok || !prepared.can_read || !object(evidence) || typeof evidence.business_ok !== 'boolean') return fail('INVALID_PAYLOAD', 'RECEIPT_INPUT_INVALID');\n  const a = afterItems[0].json.structuredContent, b = beforeItems[0].json.structuredContent;\n  if (a.agent.id !== b.agent.id || a.usage.subject !== b.usage.subject || a.plan.infoClass !== b.plan.infoClass) return { ...fail('METERING_UNKNOWN', 'SUBJECT_CHANGED'), evidence };\n  for (const period of ['daily', 'monthly']) {\n    if (typeof a.usage[period].resetsAt !== 'string' || a.usage[period].resetsAt !== b.usage[period].resetsAt || a.usage[period].limit !== b.usage[period].limit) return { ...fail('METERING_UNKNOWN', 'WINDOW_CHANGED'), evidence };\n  }\n  const daily = before.summary.remaining.daily - after.summary.remaining.daily;\n  const monthly = before.summary.remaining.monthly - after.summary.remaining.monthly;\n  const consistent = daily === 1 && monthly === 1 && evidence.business_ok;\n  return { business_ok: Boolean(evidence.business_ok), status: consistent ? 'SKILL_EVIDENCE_AND_BALANCE_OBSERVED' : 'SKILL_READ_METERING_UNKNOWN',\n    error_code: consistent ? '' : 'ALLOWANCE_DELTA_OR_EVIDENCE_UNCONFIRMED', evidence,\n    metering: { dailyAllowanceDelta: daily, monthlyAllowanceDelta: monthly, reportedDetailUnits: evidence.summary?.reported_info_units ?? null,\n      exclusiveUseAssumed: false, chargeAttribution: 'NOT_PROVEN_BY_SHARED_BALANCE', cashPaymentTested: false },\n    retry: false };\n}\n\nreturn [{json: finishReceipt($input.all(), $(\"Connection before\").all(), $(\"Read budget\").first().json, $(\"Inspect evidence\").first().json)}];"
+      },
+      "retryOnFail": false,
+      "typeVersion": 2
+    },
+    {
+      "id": "blocked",
+      "name": "Read not started",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1160,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all();"
+      },
+      "retryOnFail": false,
+      "typeVersion": 2
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 90,
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false,
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none"
+  },
+  "connections": {
+    "Read budget": {
+      "main": [
+        [
+          {
+            "node": "Can read one detail?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose Skill": {
+      "main": [
+        [
+          {
+            "node": "Connection before",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Choose Skill",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skill detail": {
+      "main": [
+        [
+          {
+            "node": "Inspect evidence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Connection after": {
+      "main": [
+        [
+          {
+            "node": "Evidence and balance receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect evidence": {
+      "main": [
+        [
+          {
+            "node": "Connection after",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Connection before": {
+      "main": [
+        [
+          {
+            "node": "Read budget",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Can read one detail?": {
+      "main": [
+        [
+          {
+            "node": "Skill detail",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read not started",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

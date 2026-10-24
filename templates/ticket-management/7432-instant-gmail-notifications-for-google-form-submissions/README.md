@@ -1,6 +1,6 @@
 # 🎫 Instant Gmail notifications for Google Form submissions
 
-> ⚡ **962 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,103 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

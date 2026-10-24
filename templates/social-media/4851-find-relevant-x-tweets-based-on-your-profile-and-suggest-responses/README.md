@@ -1,6 +1,6 @@
 # 📱 Find relevant X tweets based on your profile and suggest responses
 
-> ⚡ **707 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **753 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

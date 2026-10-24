@@ -1,6 +1,6 @@
 # 🔬 Automate systematic literature reviews with Google Drive, GPT-4, Gemini, Qdrant and Airtable
 
-> ⚡ **236 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **769 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

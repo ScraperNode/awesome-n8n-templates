@@ -1,6 +1,6 @@
 # 🎬 Optimize SEO meta tags in Google Sheets with Google Gemini
 
-> ⚡ **1,223 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,365 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Automated stale user re-engagement system with Supabase, Google Sheets & Gmail
 
-> ⚡ **179 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **196 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

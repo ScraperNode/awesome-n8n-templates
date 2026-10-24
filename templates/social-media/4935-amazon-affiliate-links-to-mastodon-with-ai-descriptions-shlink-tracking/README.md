@@ -1,6 +1,6 @@
 # 📱 Amazon affiliate links to Mastodon with AI descriptions & Shlink tracking
 
-> ⚡ **1,746 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,985 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

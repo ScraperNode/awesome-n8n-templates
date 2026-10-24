@@ -1,6 +1,6 @@
 # 📱 The title is very good, clearly conveying the template's purpose while mentioning key technologies
 
-> ⚡ **603 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **678 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

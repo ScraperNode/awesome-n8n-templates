@@ -1,6 +1,6 @@
 # 🎫 Automated email management with Gemini AI: Gmail summarizing, labeling and Notion/Sheets logging
 
-> ⚡ **775 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,173 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

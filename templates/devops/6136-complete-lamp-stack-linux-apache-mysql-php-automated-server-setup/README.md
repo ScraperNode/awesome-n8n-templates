@@ -1,6 +1,6 @@
 # ⚙️ Complete LAMP stack (Linux, Apache, MySQL, PHP) automated server setup
 
-> ⚡ **621 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **748 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

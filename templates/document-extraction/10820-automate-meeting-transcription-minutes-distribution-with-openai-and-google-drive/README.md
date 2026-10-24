@@ -1,6 +1,6 @@
 # 🔬 Automate meeting transcription & minutes distribution with OpenAI and Google Drive
 
-> ⚡ **360 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **686 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

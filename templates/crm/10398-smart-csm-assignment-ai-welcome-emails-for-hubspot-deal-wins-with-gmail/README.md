@@ -1,6 +1,6 @@
 # 🤝 Smart CSM assignment & AI welcome emails for HubSpot deal wins with Gmail
 
-> ⚡ **139 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **218 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

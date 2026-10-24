@@ -1,6 +1,6 @@
 # 🤝 Analyze customer sales calls and update CRM with Whisper and GPT-4
 
-> ⚡ **29 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **145 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

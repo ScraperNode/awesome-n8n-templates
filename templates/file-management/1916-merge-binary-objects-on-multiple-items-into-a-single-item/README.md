@@ -1,6 +1,6 @@
 # 📁 Merge binary objects on multiple items into a single item
 
-> ⚡ **2,560 views** · 📁 [File Management](../)
+> ⚡ **2,669 views** · 📁 [File Management](../)
 
 ## Description
 

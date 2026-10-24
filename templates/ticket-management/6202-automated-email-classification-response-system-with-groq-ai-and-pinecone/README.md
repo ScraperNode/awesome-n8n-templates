@@ -1,6 +1,6 @@
 # 🎫 Automated email classification & response system with Groq AI and Pinecone
 
-> ⚡ **1,024 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,153 views** · 🎫 [Ticket Management & Triage](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >

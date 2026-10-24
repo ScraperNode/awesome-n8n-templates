@@ -1,6 +1,6 @@
 # 📊 Daily Google Ads performance to Notion and Google Sheets
 
-> ⚡ **1,456 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,598 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 Generate event speaker recommendations with Claude AI and Google Sheets
 
-> ⚡ **132 views** · 🔧 [Miscellaneous](../)
+> ⚡ **145 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

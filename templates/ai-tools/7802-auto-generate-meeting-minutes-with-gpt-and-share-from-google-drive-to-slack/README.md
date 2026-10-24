@@ -1,6 +1,6 @@
 # 🎯 Auto-generate meeting minutes with GPT and share from Google Drive to Slack
 
-> ⚡ **223 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **271 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

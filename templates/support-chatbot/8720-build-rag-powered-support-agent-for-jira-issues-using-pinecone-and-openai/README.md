@@ -1,6 +1,6 @@
 # 💬 Build RAG-powered support agent for Jira issues using Pinecone and OpenAI
 
-> ⚡ **477 views** · 💬 [Support Chatbots](../)
+> ⚡ **577 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

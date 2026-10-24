@@ -1,6 +1,6 @@
 # 💬 Personalized cold email generator with Supabase, Smartlead & Google Gemini AI
 
-> ⚡ **778 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **999 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

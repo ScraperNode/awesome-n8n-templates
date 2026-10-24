@@ -1,6 +1,6 @@
 # 🎬 Summarize meeting transcripts with GPT-4 & sentiment analysis for Gmail
 
-> ⚡ **1,383 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,821 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Publish a post to a publication on Medium
 
-> ⚡ **1,720 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,870 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

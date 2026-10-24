@@ -1,6 +1,6 @@
 # ⚡ Daily email digest with GPT-4 summaries to Google Docs
 
-> ⚡ **2,093 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,365 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Weekly Google Search Console SEO pulse: Organic & brand vs non-brand performance
 
-> ⚡ **840 views** · 📊 [Market Research & Insights](../)
+> ⚡ **905 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

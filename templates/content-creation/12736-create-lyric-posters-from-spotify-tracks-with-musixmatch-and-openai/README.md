@@ -1,6 +1,6 @@
 # 🎬 Create lyric posters from Spotify tracks with Musixmatch and OpenAI
 
-> ⚡ **43 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **175 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

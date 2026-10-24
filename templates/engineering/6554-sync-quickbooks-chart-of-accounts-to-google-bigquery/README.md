@@ -1,66 +1,40 @@
 # ⚒️ Sync QuickBooks chart of accounts to Google BigQuery
 
-> ⚡ **129 views** · ⚒️ [Engineering](../)
+> ⚡ **160 views** · ⚒️ [Engineering](../)
 
 ## Description
 
-## Sync QuickBooks Chart of Accounts to Google BigQuery
+## Quick overview
 Keep a historical, structured copy of your QuickBooks Chart of Accounts in BigQuery. This n8n workflow runs weekly, syncing new or updated accounts for better reporting and long-term tracking.
 
-### Who Is This For?
-* **Data Analysts & BI Developers**
-  Build a robust financial model and analyze changes over time.
-* **Financial Analysts & Accountants**
-  Track structural changes in your Chart of Accounts historically.
-* **Business Owners**
-  Maintain a permanent archive of your financial structure for future reference.
+## How it works
+1. Every Monday, the workflow automatically fetches all accounts created or updated in the past 7 days from QuickBooks Online.
+2. The raw API response is cleaned, currencies are managed, stable IDs are created, and all fields are formatted consistently for downstream use.
+3. The cleaned data is converted into an SQL insert-ready structure compatible with the target BigQuery table schema.
+4. Account records are inserted or updated in BigQuery, keeping your data warehouse in sync with QuickBooks on a weekly basis.
 
-### What the Workflow Does
-* **Extract**
-  Every Monday, fetch accounts created or updated in the past 7 days from QuickBooks.
-* **Transform**
-  Clean the API response, manage currencies, create stable IDs, and format the data.
-* **Format**
-  Convert cleaned data into an SQL insert-ready structure.
-* **Load**
-  Insert or update account records into BigQuery.
+## Setup
+1. Create a BigQuery table (e.g., quickbooks.accounts) with columns that match the fields produced in the final SQL insert step of the workflow.
+2. Connect your QuickBooks Online and BigQuery credentials in the n8n Credential Manager before making any further configuration changes.
+3. Open the Get Updated Accounts from QuickBooks node and replace {COMPANY_ID} with your real Company ID — press Ctrl + Alt + ? inside QuickBooks to find it.
+4. Open the Load Accounts to BigQuery node, select the correct project, and verify that your dataset and table name are correctly referenced in the SQL query.
+5. Save and activate the workflow — it will now run automatically every Monday and sync the past 7 days of QuickBooks account data to BigQuery.
 
-### Setup Steps
-**1. Prepare BigQuery**
-* Create a table (e.g., `quickbooks.accounts`) with columns matching the final SQL insert step.
+## Requirements
+- QuickBooks Online account
+- QuickBooks Company ID
+- Google Cloud project with BigQuery and a matching table
 
+## Customization
+- Change Sync Frequency : Adjust the schedule node to run daily, weekly, etc.
+- Initial Backfill : Temporarily update the API query to select * from Account for a full pull.
+- Add Fields : Modify 2. Structure Account Data to include or transform fields as needed.
 
-**2. Add Credentials**
-* Connect QuickBooks Online and BigQuery credentials in n8n.
-
-
-**3. Configure the HTTP Node**
-* Open `1. Get Updated Accounts from QuickBooks`.
-* Replace the Company ID {COMPANY_ID} with your real Company ID.
-  * Press `Ctrl + Alt + ?` in QuickBooks to find it.
-
-
-**4. Configure the BigQuery Node**
-* Open `4. Load Accounts to BigQuery`.
-* Select the correct project.
-* Make sure your dataset and table name are correctly referenced in the SQL.
-
-
-**5. Activate**
-* Save and activate the workflow. It will now run every week.
-
-### Requirements
-* QuickBooks Online account
-* QuickBooks Company ID
-* Google Cloud project with BigQuery and a matching table
-
-### Customization Options
-* **Change Sync Frequency**
-  Adjust the schedule node to run daily, weekly, etc.
-* **Initial Backfill**
-  Temporarily update the API query to `select * from Account` for a full pull.
-* **Add Fields**
-  Modify `2. Structure Account Data` to include or transform fields as needed.
+## Additional info
+Published by Fahmi Fahreza, Indonesia’s first official n8n Brand Ambassador and founder of WithMi Automation, built from real client implementations, not tutorials.
+→ Let us build it for you: [withmiautomation.com](withmiautomation.com)
+→ Learn to build it yourself: [academy.withmiautomation.com](academy.withmiautomation.com)
+→ Bring Fahmi to your team (training, workshop, talkshow): [fahmiiireza.com](fahmiiireza.com)
 
 ## 🔗 Nodes Used
 

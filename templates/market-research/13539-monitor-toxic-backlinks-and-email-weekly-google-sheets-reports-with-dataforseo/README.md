@@ -1,6 +1,6 @@
 # 📊 Monitor toxic backlinks and email weekly Google Sheets reports with DataForSEO
 
-> ⚡ **6 views** · 📊 [Market Research & Insights](../)
+> ⚡ **36 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

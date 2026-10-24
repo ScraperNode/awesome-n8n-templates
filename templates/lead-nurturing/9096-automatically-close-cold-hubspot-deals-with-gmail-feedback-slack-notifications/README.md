@@ -1,6 +1,6 @@
 # 💬 Automatically close cold HubSpot deals with Gmail feedback & Slack notifications
 
-> ⚡ **88 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **116 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

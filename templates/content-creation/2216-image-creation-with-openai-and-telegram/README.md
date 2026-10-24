@@ -1,6 +1,6 @@
 # 🎬 Image creation with OpenAI and Telegram
 
-> ⚡ **11,634 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **11,811 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

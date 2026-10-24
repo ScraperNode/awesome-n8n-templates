@@ -1,6 +1,6 @@
 # 💬 Get multimodal AI dating advice on Telegram with Google Gemini and Sheets
 
-> ⚡ **61 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **222 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

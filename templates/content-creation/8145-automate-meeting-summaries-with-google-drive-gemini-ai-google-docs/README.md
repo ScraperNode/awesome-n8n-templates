@@ -1,6 +1,6 @@
 # 🎬 Automate meeting summaries with Google Drive, Gemini AI & Google Docs
 
-> ⚡ **276 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **298 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

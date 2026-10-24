@@ -1,6 +1,6 @@
 # 💬 Automate AI phone booking & CRM updates with GPT-4, VAPI.ai, and GHL
 
-> ⚡ **1,564 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,649 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

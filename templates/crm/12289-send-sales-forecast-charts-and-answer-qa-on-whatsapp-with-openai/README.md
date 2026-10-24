@@ -1,6 +1,6 @@
 # 🤝 Send sales forecast charts and answer Q&A on WhatsApp with OpenAI
 
-> ⚡ **695 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,892 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 Create stunning AI images directly from WhatsApp with Gemini
 
-> ⚡ **1,652 views** · 🔧 [Miscellaneous](../)
+> ⚡ **2,184 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

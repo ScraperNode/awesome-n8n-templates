@@ -1,6 +1,6 @@
 # 👥 Automate Google Classroom with Gemini AI: Topics, assignments & student tracking
 
-> ⚡ **1,275 views** · 👥 [HR & Recruitment](../)
+> ⚡ **2,162 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Send multi-channel medication reminders to patients
 
-> ⚡ **898 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,005 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

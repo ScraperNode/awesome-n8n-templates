@@ -1,6 +1,6 @@
 # 📊 Add product ideas to Google Sheets via a Slack
 
-> ⚡ **1,406 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,433 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

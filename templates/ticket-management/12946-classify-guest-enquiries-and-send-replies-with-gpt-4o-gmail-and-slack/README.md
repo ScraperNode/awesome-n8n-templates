@@ -1,6 +1,6 @@
 # 🎫 Classify guest enquiries and send replies with GPT-4o, Gmail and Slack
 
-> ⚡ **62 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **87 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

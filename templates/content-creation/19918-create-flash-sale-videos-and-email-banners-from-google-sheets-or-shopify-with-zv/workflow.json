@@ -1,0 +1,1458 @@
+{
+  "name": "Create flash-sale videos and email banners from Google Sheets with Zvid",
+  "nodes": [
+    {
+      "id": "zvid-fs-0001",
+      "name": "Test manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        50,
+        240
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "zvid-fs-0002",
+      "name": "Every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        310,
+        240
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "zvid-fs-0003",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        570,
+        240
+      ],
+      "parameters": {
+        "mode": "raw",
+        "options": {},
+        "jsonOutput": "{\n  \"apiUrl\": \"https://api.zvid.io\",\n  \"editorUrl\": \"https://editor.zvid.io\",\n  \"source\": \"sheet\",\n  \"shopDomain\": \"\",\n  \"apiVersion\": \"2024-07\",\n  \"minDropPercent\": 5,\n  \"defaultEndsAt\": \"in 24 hours\",\n  \"brandName\": \"Kicklab\",\n  \"storeUrl\": \"kicklab.example\",\n  \"ctaText\": \"Shop the sale\",\n  \"promoCode\": \"\",\n  \"currencySymbol\": \"$\",\n  \"inkColor\": \"#0D0D0D\",\n  \"urgencyAccent\": \"#E11D2E\",\n  \"brandAccent\": \"#FFD54A\",\n  \"textColor\": \"#FFFFFF\",\n  \"mutedColor\": \"#9CA3AF\",\n  \"displayFont\": \"Anton\",\n  \"uiFont\": \"Space Grotesk\",\n  \"bannerWidth\": 1200,\n  \"bannerHeight\": 628,\n  \"musicUrl\": \"https://cdn.pixabay.com/audio/2025/03/19/audio_56ae1dae5f.mp3\",\n  \"musicVolume\": 0.2,\n  \"maxMusicBytes\": 5242880,\n  \"emailTo\": \"\",\n  \"emailFrom\": \"user@example.com\",\n  \"emailSubject\": \"Flash sale: {product} is {discount}% off\",\n  \"statusDoneValue\": \"done\",\n  \"dryRun\": false,\n  \"pollSeconds\": 10,\n  \"timeoutMinutes\": 20\n}"
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "zvid-fs-0004",
+      "name": "Source?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1050,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "sale-source--cond",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Config').first().json.source === 'shopify' }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zvid-fs-0005",
+      "name": "Poll price drops",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        1310,
+        240
+      ],
+      "parameters": {
+        "url": "=https://{{ $('Config').first().json.shopDomain }}/admin/api/{{ $('Config').first().json.apiVersion }}/products.json?limit=50",
+        "options": {
+          "timeout": 20000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-fs-0006",
+      "name": "Find price drops",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1570,
+        240
+      ],
+      "parameters": {
+        "jsCode": "// Shopify has no \"price changed\" webhook topic, so this polls the product\n// list and diffs every variant price against a snapshot kept in workflow\n// static data. The FIRST run records the baseline and announces nothing -\n// that is the correct outcome, not a failure: there is nothing to compare\n// against yet. From the second run on, the biggest qualifying drop wins.\nconst cfg = $('Config').first().json;\nconst res = $input.first().json;\nconst status = Number(res.statusCode);\n\nif (!Number.isFinite(status) || status === 0) {\n  throw new Error('Could not reach ' + (cfg.shopDomain || '(shopDomain is empty)') + '. shopDomain looks like \"your-store.myshopify.com\", and the shopify-token credential must be attached to Poll price drops.');\n}\nif (status === 401 || status === 403) {\n  throw new Error('Shopify rejected the token (HTTP ' + status + '). The custom app needs the read_products scope and the header name must be X-Shopify-Access-Token.');\n}\nif (status !== 200) {\n  throw new Error('Shopify answered HTTP ' + status + ': ' + JSON.stringify(res.body).slice(0, 300));\n}\n\nlet body = res.body;\nif (typeof body === 'string') {\n  try { body = JSON.parse(body); } catch (e) {\n    throw new Error('Shopify answered 200 but the body was not JSON.');\n  }\n}\nconst products = Array.isArray(body.products) ? body.products : [];\n\nconst store = $getWorkflowStaticData('global');\nif (!store.priceSnapshot || typeof store.priceSnapshot !== 'object') store.priceSnapshot = {};\nconst snapshot = store.priceSnapshot;\nconst minDrop = Number(cfg.minDropPercent) > 0 ? Number(cfg.minDropPercent) : 5;\n\nlet best = null;\nlet seen = 0;\nlet baseline = 0;\nfor (const p of products) {\n  const variants = Array.isArray(p.variants) ? p.variants : [];\n  for (const v of variants) {\n    const key = String(v.id);\n    const price = parseFloat(v.price);\n    if (!Number.isFinite(price)) continue;\n    seen += 1;\n    const was = Number(snapshot[key]);\n    snapshot[key] = price;\n    if (!Number.isFinite(was)) { baseline += 1; continue; }\n    if (!(price < was)) continue;\n    const pct = ((was - price) / was) * 100;\n    if (pct < minDrop) continue;\n    if (!best || pct > best.pct) best = { pct, was, price, product: p, variant: v };\n  }\n}\n\nif (!best) {\n  return [{ json: {\n    found: false,\n    reason: seen === 0\n      ? 'No product variants came back from Shopify.'\n      : (baseline === seen\n        ? 'Baseline recorded for ' + seen + ' variants. The next poll compares against it - price drops are announced from then on.'\n        : 'No price drop of at least ' + minDrop + '% since the last poll (' + seen + ' variants checked).'),\n    checked: seen,\n  } }];\n}\n\nconst image = best.product.image && best.product.image.src ? best.product.image.src : '';\nif (!image) {\n  throw new Error('\"' + best.product.title + '\" dropped in price but has no product image in Shopify. Add one, or announce this sale from the sheet instead.');\n}\nconst symbol = String(cfg.currencySymbol || '$');\nconst fmt = (n) => symbol + (Math.abs(n - Math.round(n)) < 0.005 ? String(Math.round(n)) : n.toFixed(2));\n\nreturn [{ json: {\n  found: true,\n  product: String(best.product.title || '').trim(),\n  oldPrice: fmt(best.was),\n  newPrice: fmt(best.price),\n  imageUrl: image,\n  endsAt: String(cfg.defaultEndsAt || '').trim(),\n  rowNumber: null,\n  sourceKind: 'shopify',\n  variantId: String(best.variant.id),\n  productHandle: String(best.product.handle || ''),\n  checked: seen,\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-fs-0007",
+      "name": "Read sale sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        1830,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "resource": "sheet",
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-fs-0008",
+      "name": "Pick next sale",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1830,
+        480
+      ],
+      "parameters": {
+        "jsCode": "// The Google Sheets node emits one item per row plus a row_number field.\n// Keep the FIRST row whose Status column is empty - row_number lets the\n// update node at the end mark exactly that row as done.\nconst rows = $input.all().map((i) => i.json);\nconst isEmpty = (v) => v === undefined || v === null || String(v).trim() === '';\nconst row = rows.find((r) => isEmpty(r.Status));\n\nif (!row) {\n  return [{ json: {\n    found: false,\n    reason: 'Every row in the sale sheet already has a Status. Add a new price-drop row to announce.',\n    checked: rows.length,\n  } }];\n}\n\nconst need = ['Product', 'OldPrice', 'NewPrice', 'ImageUrl'];\nconst missing = need.filter((k) => isEmpty(row[k]));\nif (missing.length) {\n  throw new Error('Row ' + row.row_number + ' is missing ' + missing.join(', ') + '. Fill those columns, or put anything in Status to skip the row.');\n}\n\nreturn [{ json: {\n  found: true,\n  product: String(row.Product).trim(),\n  oldPrice: String(row.OldPrice).trim(),\n  newPrice: String(row.NewPrice).trim(),\n  imageUrl: String(row.ImageUrl).trim(),\n  endsAt: isEmpty(row.EndsAt) ? '' : String(row.EndsAt).trim(),\n  rowNumber: row.row_number,\n  sourceKind: 'sheet',\n  checked: rows.length,\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-fs-0009",
+      "name": "Sale found?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2310,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "sale-found--cond",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.found }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zvid-fs-0010",
+      "name": "Nothing to announce",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2570,
+        240
+      ],
+      "parameters": {
+        "jsCode": "// Nothing pending in the sheet, or no qualifying price drop since the last\n// poll. A normal, successful outcome - not an error.\nlet picked = null;\ntry { picked = $('Pick next sale').first().json; } catch (e) { /* sheet branch did not run */ }\nif (!picked) picked = $('Find price drops').first().json;\nreturn [{ json: {\n  rendered: false,\n  reason: picked.reason || 'Nothing to announce right now.',\n  checked: picked.checked,\n  source: $('Config').first().json.source,\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-fs-0011",
+      "name": "Check music",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        3050,
+        240
+      ],
+      "parameters": {
+        "url": "={{ $('Config').first().json.musicUrl }}",
+        "method": "HEAD",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {}
+          },
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "zvid-fs-0012",
+      "name": "Music guard",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3310,
+        240
+      ],
+      "parameters": {
+        "jsCode": "// The plan caps audio assets at ~5 MB, and a dead music URL would fail the\n// whole render. HEAD the file first: unreachable or oversized means the sale\n// video renders WITHOUT music instead of not rendering at all.\nconst cfg = $('Config').first().json;\nconst res = $input.first().json;\n\nlet sale = null;\ntry { sale = $('Pick next sale').first().json; } catch (e) { /* sheet branch did not run */ }\nif (!sale || !sale.found) sale = $('Find price drops').first().json;\n\nconst max = Number(cfg.maxMusicBytes) > 0 ? Number(cfg.maxMusicBytes) : 5242880;\nconst url = String(cfg.musicUrl || '').trim();\nlet musicUrl = '';\nlet musicNote = 'no musicUrl in Config - rendering without a music bed';\n\nif (url) {\n  const status = Number(res.statusCode);\n  const headers = res.headers || {};\n  const len = Number(headers['content-length'] || headers['Content-Length'] || 0);\n  if (!Number.isFinite(status) || status === 0) {\n    musicNote = 'the music URL was unreachable - rendering without a music bed';\n  } else if (status >= 400) {\n    musicNote = 'the music URL answered HTTP ' + status + ' - rendering without a music bed';\n  } else if (len > max) {\n    musicNote = 'the music file is ' + len + ' bytes, over the ' + max + ' byte cap - rendering without a music bed';\n  } else {\n    musicUrl = url;\n    musicNote = len > 0 ? 'music bed OK (' + len + ' bytes)' : 'music bed OK (the server did not report a size)';\n  }\n}\n\nreturn [{ json: { ...sale, musicUrl, musicNote } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-fs-0013",
+      "name": "Build project JSON",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        50,
+        1160
+      ],
+      "parameters": {
+        "jsCode": "// Builds BOTH deliverables for one price drop:\n//   item 1 -> a 1080x1920 flash-sale video for socials\n//   item 2 -> a still image banner (type: \"image\") for the email blast\n// Same render API, same credentials; only the payload differs.\n//\n// Design adapted from Zvid's library: ecom-flash-sale (angled urgency bands,\n// Anton headline, struck-through price beat), ecom-launch-countdown (radial\n// glow + ring composition on the deal scene) and img-ecom-flash-sale (the\n// banner's left-copy / right-product split with the promo chip).\n\n// --- small helpers ---------------------------------------------------------\nfunction escapeHtml(s) {\n  return String(s == null ? '' : s).replace(/[&<>\"']/g, (c) => ({\n    '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;',\n  }[c]));\n}\n\nfunction clean(v) {\n  return String(v == null ? '' : v).replace(/\\s+/g, ' ').trim();\n}\n\nfunction round2(n) {\n  return Math.round(n * 100) / 100;\n}\n\n// The render API's project-name pattern is strict ASCII: /^[a-zA-Z0-9_\\- ]+$/.\n// Product titles are routinely not, so slug hard and keep a fallback.\nfunction sanitizeProjectName(s) {\n  const out = String(s).toLowerCase().normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '')\n    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 90);\n  return out || 'flash-sale';\n}\n\nfunction hexRgb(hex) {\n  const m = /^#?([0-9a-fA-F]{6})$/.exec(String(hex).trim());\n  if (!m) return '255,255,255';\n  const n = parseInt(m[1], 16);\n  return ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255);\n}\n\n// \"$1,299.99\" -> { amount: 1299.99, symbol: '$', display: '$1,299.99' }\n// Bare numbers (\"129\") inherit the currency symbol from the other price, or\n// fall back to the configured one, so a sheet can be sloppy about formatting.\n// `typed` records whether the sheet actually spelled a symbol: if it did, that\n// exact string goes on screen; if it did not, the number is reformatted with\n// the currency symbol rather than shown bare (a sale creative reading\n// \"129 -> 89\" next to a \"$40\" savings chip looks broken).\nfunction parsePrice(raw, fallbackSymbol) {\n  const text = clean(raw);\n  const symbolMatch = /[^\\d\\s.,\\-]+/.exec(text);\n  const symbol = symbolMatch ? symbolMatch[0] : (fallbackSymbol || '');\n  const numeric = text.replace(/[^\\d.,-]/g, '').replace(/,/g, '');\n  const amount = Number.parseFloat(numeric);\n  return {\n    amount: Number.isFinite(amount) ? amount : null,\n    symbol,\n    typed: Boolean(symbolMatch),\n    display: text,\n    raw: text,\n  };\n}\n\nfunction groupThousands(intPart) {\n  return String(intPart).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',');\n}\n\n// Whole amounts print without decimals ($52), fractional amounts keep two\n// ($52.50) \u2014 the way a storefront prints them.\nfunction formatMoney(amount, symbol) {\n  const abs = Math.abs(amount);\n  const whole = Math.abs(abs - Math.round(abs)) < 0.005;\n  const fixed = whole ? String(Math.round(abs)) : abs.toFixed(2);\n  const parts = fixed.split('.');\n  return (symbol || '') + groupThousands(parts[0]) + (parts[1] ? '.' + parts[1] : '');\n}\n\n// Largest size from the ramp whose estimated wrap stays inside maxLines.\n// avgEm is the average glyph width in em for the face (Anton is narrow,\n// Space Grotesk is wider). Errs towards \"one size smaller\" so nothing clips.\nfunction fitSize(text, sizes, boxWidth, maxLines, avgEm) {\n  const words = String(text).split(/\\s+/).filter(Boolean);\n  const longest = Math.max.apply(null, words.map((w) => w.length).concat([1]));\n  let last = sizes[sizes.length - 1];\n  for (let i = 0; i < sizes.length; i++) {\n    const size = sizes[i];\n    const per = Math.max(4, Math.floor(boxWidth / (size * avgEm)));\n    let lines = 1;\n    let used = 0;\n    for (let j = 0; j < words.length; j++) {\n      const w = words[j];\n      const need = used === 0 ? w.length : used + 1 + w.length;\n      if (need <= per) { used = need; continue; }\n      lines += 1;\n      used = Math.min(w.length, per);\n    }\n    last = size;\n    if (lines <= maxLines && longest * size * avgEm <= boxWidth) return { size: size, lines: lines };\n  }\n  const per = Math.max(4, Math.floor(boxWidth / (last * avgEm)));\n  let lines = 1;\n  let used = 0;\n  for (let j = 0; j < words.length; j++) {\n    const w = words[j];\n    const need = used === 0 ? w.length : used + 1 + w.length;\n    if (need <= per) { used = need; continue; }\n    lines += 1;\n    used = Math.min(w.length, per);\n  }\n  return { size: last, lines: lines };\n}\n\n// Width of a single-line run, in px. avgEm is the average glyph advance for\n// the face/case (Space Grotesk bold reads ~0.62em uppercase, ~0.56em mixed).\n// SVG <text> does not wrap or shrink, so every pill below is sized from this.\nfunction runWidth(text, fontPx, letterSpacing, avgEm) {\n  const n = String(text).length;\n  return Math.ceil(n * (fontPx * avgEm + letterSpacing));\n}\n\n// Largest font from `sizes` whose single line fits `maxWidth`; falls back to\n// the smallest and truncates with an ellipsis so a pill can never spill.\nfunction fitRun(text, sizes, maxWidth, letterSpacing, avgEm) {\n  const s = String(text);\n  for (let i = 0; i < sizes.length; i++) {\n    if (runWidth(s, sizes[i], letterSpacing, avgEm) <= maxWidth) {\n      return { text: s, size: sizes[i], width: runWidth(s, sizes[i], letterSpacing, avgEm) };\n    }\n  }\n  const size = sizes[sizes.length - 1];\n  const per = Math.max(1, Math.floor(maxWidth / (size * avgEm + letterSpacing)));\n  const cut = s.slice(0, Math.max(1, per - 3)).replace(/\\s+$/, '') + '...';\n  return { text: cut, size: size, width: runWidth(cut, size, letterSpacing, avgEm) };\n}\n\n// --- the build -------------------------------------------------------------\nfunction buildFlashSale(cfg, sale) {\n  const ink = clean(cfg.inkColor) || '#0D0D0D';\n  const urgency = clean(cfg.urgencyAccent) || '#E11D2E';\n  const accent = clean(cfg.brandAccent) || '#FFD54A';\n  const textColor = clean(cfg.textColor) || '#FFFFFF';\n  const muted = clean(cfg.mutedColor) || '#9CA3AF';\n  const displayFont = clean(cfg.displayFont) || 'Anton';\n  const uiFont = clean(cfg.uiFont) || 'Space Grotesk';\n  const inkRgb = hexRgb(ink);\n  const accentRgb = hexRgb(accent);\n  const urgencyRgb = hexRgb(urgency);\n\n  const brandName = clean(cfg.brandName) || 'Your Store';\n  const storeUrl = clean(cfg.storeUrl).replace(/^https?:\\/\\//i, '').replace(/\\/+$/, '');\n  const ctaText = clean(cfg.ctaText) || 'Shop the sale';\n  const promoCode = clean(cfg.promoCode);\n\n  const product = clean(sale.product);\n  if (!product) throw new Error('The sale has no product name.');\n  const imageUrl = clean(sale.imageUrl);\n  if (!imageUrl) throw new Error('The sale for \"' + product + '\" has no ImageUrl. A flash-sale creative needs a product photo.');\n\n  const oldPrice = parsePrice(sale.oldPrice, clean(cfg.currencySymbol) || '$');\n  const newPrice = parsePrice(sale.newPrice, oldPrice.symbol || clean(cfg.currencySymbol) || '$');\n  if (oldPrice.amount === null || newPrice.amount === null) {\n    throw new Error('Could not read the prices for \"' + product + '\" (OldPrice \"' + oldPrice.raw + '\", NewPrice \"' + newPrice.raw + '\"). Use plain numbers like 129 or 129.00, with or without a currency symbol.');\n  }\n  // A typo'd cell (\"-5\", \"0\") would otherwise sail past the \"is this really a\n  // drop?\" check below and publish a >=100% discount, with formatMoney hiding\n  // the minus sign. Both prices must be real, positive money first.\n  if (!(oldPrice.amount > 0) || !(newPrice.amount > 0)) {\n    throw new Error('Both prices for \"' + product + '\" must be above zero (OldPrice \"' + oldPrice.raw + '\", NewPrice \"' + newPrice.raw + '\").');\n  }\n  if (!(newPrice.amount < oldPrice.amount)) {\n    throw new Error('\"' + product + '\" is not a price drop: NewPrice (' + newPrice.raw + ') must be lower than OldPrice (' + oldPrice.raw + ').');\n  }\n  const symbol = newPrice.symbol || oldPrice.symbol || '$';\n  const oldDisplay = oldPrice.typed ? oldPrice.display : formatMoney(oldPrice.amount, symbol);\n  const newDisplay = newPrice.typed ? newPrice.display : formatMoney(newPrice.amount, symbol);\n  const savedAmount = round2(oldPrice.amount - newPrice.amount);\n  const savedDisplay = formatMoney(savedAmount, symbol);\n  // FLOOR, never round: rounding is the one direction that overstates the offer\n  // to a shopper (49.86% off would go on screen as \"50% OFF\").\n  const exactPct = ((oldPrice.amount - newPrice.amount) / oldPrice.amount) * 100;\n  const discountPct = Math.floor(exactPct);\n  if (discountPct < 1) {\n    throw new Error('\"' + product + '\" is only a ' + round2(exactPct) + '% drop - under 1%, too small to announce as a flash sale.');\n  }\n\n  const endsAt = clean(sale.endsAt);\n  const endsLine = endsAt ? ('ENDS ' + endsAt).toUpperCase() : '';\n\n  const musicUrl = clean(sale.musicUrl);\n  const musicVolume = Number(cfg.musicVolume);\n\n  // ---------------------------------------------------------------- video --\n  const tDur = 0.45;\n  const s1Content = 3.2;\n  const s2Content = 5.8;\n  const s3Content = 4.4;\n  const s1 = round2(s1Content + tDur);\n  const s2 = round2(s2Content + tDur);\n  const s3 = s3Content;\n  const totalSeconds = round2(s1 + s2 + s3 - tDur * 2);\n\n  const bandsSvg =\n    \"<svg width='1080' height='1920' viewBox='0 0 1080 1920' xmlns='http://www.w3.org/2000/svg'>\" +\n    \"<defs><radialGradient id='fsHook' cx='0.5' cy='0.42' r='0.85'>\" +\n    \"<stop offset='0' stop-color='#FFFFFF' stop-opacity='0.16'/><stop offset='1' stop-color='#FFFFFF' stop-opacity='0'/>\" +\n    \"</radialGradient><linearGradient id='fsHookFloor' x1='0' y1='0' x2='0' y2='1'>\" +\n    \"<stop offset='0.72' stop-color='\" + ink + \"' stop-opacity='0'/><stop offset='1' stop-color='\" + ink + \"' stop-opacity='0.4'/>\" +\n    '</linearGradient></defs>' +\n    \"<rect width='1080' height='1920' fill='\" + urgency + \"'/>\" +\n    \"<rect width='1080' height='1920' fill='url(#fsHook)'/>\" +\n    \"<path d='M-200 392 L1280 320 L1280 720 L-200 792 Z' fill='\" + ink + \"' opacity='0.17'/>\" +\n    \"<path d='M-200 380 L1280 308 L1280 326 L-200 398 Z' fill='\" + accent + \"' opacity='0.92'/>\" +\n    \"<path d='M-200 792 L1280 720 L1280 738 L-200 810 Z' fill='\" + accent + \"' opacity='0.92'/>\" +\n    \"<rect width='1080' height='1920' fill='url(#fsHookFloor)'/>\" +\n    '</svg>';\n\n  const heroPanelSvg =\n    \"<svg width='680' height='830' viewBox='0 0 680 830' xmlns='http://www.w3.org/2000/svg'>\" +\n    \"<rect x='2' y='2' width='676' height='826' rx='44' fill='rgba(\" + inkRgb + \",0.26)' stroke='rgba(255,255,255,0.55)' stroke-width='3'/>\" +\n    \"<rect x='20' y='20' width='640' height='790' rx='30' fill='none' stroke='rgba(255,255,255,0.2)' stroke-width='1.5'/>\" +\n    '</svg>';\n\n  const burstSvg = (pct) =>\n    \"<svg width='280' height='280' viewBox='0 0 280 280' xmlns='http://www.w3.org/2000/svg'>\" +\n    \"<circle cx='140' cy='140' r='134' fill='rgba(\" + inkRgb + \",0.35)'/>\" +\n    \"<circle cx='140' cy='140' r='118' fill='\" + accent + \"'/>\" +\n    \"<circle cx='140' cy='140' r='106' fill='none' stroke='rgba(\" + inkRgb + \",0.35)' stroke-width='2' stroke-dasharray='7 9'/>\" +\n    \"<text x='140' y='150' font-family='Anton, Impact, Arial' font-size='\" + (String(pct).length > 2 ? 66 : 76) + \"' fill='\" + ink + \"' text-anchor='middle' letter-spacing='-2'>-\" + pct + \"%</text>\" +\n    \"<text x='140' y='196' font-family='Space Grotesk, Arial' font-size='24' font-weight='700' fill='\" + ink + \"' text-anchor='middle' letter-spacing='8'>OFF</text>\" +\n    '</svg>';\n\n  // A slow diagonal light sweep keeps the hook scene alive without competing\n  // with the type. One loop = the whole scene, per the customCode contract.\n  const sweep = (seconds) => ({\n    animationDuration: Math.min(15, seconds),\n    css:\n      '.sw{position:relative;width:1080px;height:1920px;overflow:hidden}' +\n      '.sw i{position:absolute;top:-500px;left:-900px;display:block;width:420px;height:3000px;' +\n      'background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,0.16) 50%,rgba(255,255,255,0) 100%);' +\n      'transform:rotate(18deg);animation:swp 3.6s ease-in-out infinite}' +\n      '.sw i:nth-child(2){animation-delay:-1.8s;width:220px;opacity:0.7}' +\n      '@keyframes swp{0%{transform:translateX(0) rotate(18deg)}100%{transform:translateX(2400px) rotate(18deg)}}',\n  });\n\n  const productFit1 = fitSize(product, [56, 48, 42, 36, 32], 900, 2, 0.53);\n  const brandChipFit = fitRun(brandName.toUpperCase(), [26, 23, 20, 18], 880, 7, 0.62);\n  const ctaFit = fitRun(ctaText, [44, 39, 34, 30], 820, 0, 0.56);\n  const scene1 = {\n    id: 'hook',\n    duration: s1,\n    backgroundColor: urgency,\n    transition: 'slideup',\n    transitionId: 'drop',\n    transitionDuration: tDur,\n    visuals: [\n      { type: 'SVG', width: 1080, height: 1920, track: 0, enterBegin: 0, exitEnd: s1, svg: bandsSvg },\n      {\n        type: 'TEXT', x: 540, y: 960, anchor: 'center-center', track: 1, opacity: 0.85,\n        enterBegin: 0, exitEnd: s1,\n        style: { fontFamily: uiFont, color: textColor },\n        html: \"<div class='sw'><i></i><i></i></div>\",\n        customCode: sweep(s1),\n      },\n      {\n        type: 'TEXT', x: 540, y: 132, anchor: 'top-center', track: 2,\n        enterBegin: 0.1, enterEnd: 0.5, enterAnimation: 'fade', exitEnd: s1,\n        style: { fontFamily: uiFont, color: textColor },\n        html: \"<div style='display:inline-block; border:2px solid rgba(255,255,255,0.6); color:\" + textColor + \"; border-radius:999px; padding:14px 40px; font-size:\" + brandChipFit.size + \"px; font-weight:800; letter-spacing:7px;'>\" + escapeHtml(brandChipFit.text) + '</div>',\n      },\n      {\n        type: 'TEXT', x: 540, y: 430, width: 1000, anchor: 'top-center', track: 3,\n        enterBegin: 0.15, enterEnd: 0.6, enterAnimation: 'circleopen', exitEnd: s1,\n        style: { fontFamily: displayFont, color: textColor },\n        html: \"<div style='text-align:center; color:\" + textColor + \"; font-size:150px; line-height:0.92; letter-spacing:1px;'>FLASH<br><span style='color:\" + accent + \";'>SALE</span></div>\",\n      },\n      {\n        type: 'SVG', x: 540, y: 1180, width: 680, height: 830, anchor: 'center-center', track: 4,\n        enterBegin: 0.35, enterEnd: 0.85, enterAnimation: 'smoothup', exitEnd: s1,\n        svg: heroPanelSvg,\n      },\n      {\n        type: 'IMAGE', src: imageUrl, x: 540, y: 1180, width: 600, height: 750, anchor: 'center-center',\n        radius: { tl: 30, tr: 30, bl: 30, br: 30 }, track: 5,\n        enterBegin: 0.45, enterEnd: 0.95, enterAnimation: 'smoothup', exitEnd: s1,\n      },\n      {\n        type: 'SVG', x: 846, y: 866, width: 280, height: 280, anchor: 'center-center', track: 6,\n        enterBegin: 0.95, enterEnd: 1.35, enterAnimation: 'circleopen', exitEnd: s1,\n        svg: burstSvg(discountPct),\n      },\n      {\n        type: 'TEXT', x: 540, y: 1660, width: 900, anchor: 'top-center', track: 7,\n        enterBegin: 1.25, enterEnd: 1.7, enterAnimation: 'smoothup', exitEnd: s1,\n        style: { fontFamily: uiFont, color: textColor },\n        html: \"<div style='text-align:center; color:\" + textColor + '; font-size:' + productFit1.size + \"px; line-height:1.2; font-weight:700; letter-spacing:-0.5px;'>\" + escapeHtml(product) + '</div>',\n      },\n    ],\n  };\n\n  const dropBgSvg =\n    \"<svg width='1080' height='1920' viewBox='0 0 1080 1920' xmlns='http://www.w3.org/2000/svg'>\" +\n    \"<defs><radialGradient id='fsDrop' cx='0.5' cy='0.26' r='0.85'>\" +\n    \"<stop offset='0' stop-color='\" + urgency + \"' stop-opacity='0.38'/><stop offset='1' stop-color='\" + urgency + \"' stop-opacity='0'/>\" +\n    \"</radialGradient><linearGradient id='fsDropFloor' x1='0' y1='0' x2='0' y2='1'>\" +\n    \"<stop offset='0.55' stop-color='\" + ink + \"' stop-opacity='0'/><stop offset='1' stop-color='\" + ink + \"' stop-opacity='0.85'/>\" +\n    '</linearGradient></defs>' +\n    \"<rect width='1080' height='1920' fill='\" + ink + \"'/>\" +\n    \"<rect width='1080' height='1920' fill='url(#fsDrop)'/>\" +\n    \"<rect width='1080' height='1920' fill='url(#fsDropFloor)'/>\" +\n    \"<circle cx='540' cy='530' r='240' fill='none' stroke='rgba(\" + accentRgb + \",0.24)' stroke-width='2'/>\" +\n    \"<circle cx='540' cy='530' r='276' fill='none' stroke='rgba(\" + accentRgb + \",0.11)' stroke-width='1.5'/>\" +\n    \"<path d='M0 74 L1080 74' stroke='\" + urgency + \"' stroke-width='40'/>\" +\n    \"<path d='M0 1846 L1080 1846' stroke='\" + urgency + \"' stroke-width='40'/>\" +\n    '</svg>';\n\n  const productFit2 = fitSize(product, [50, 44, 38, 34, 30], 900, 2, 0.53);\n  const newLen = newDisplay.length;\n  const newSize = newLen <= 4 ? 184 : newLen <= 6 ? 156 : newLen <= 8 ? 128 : 108;\n  // Single-line HTML runs clip at the canvas edge, so every one is measured\n  // and stepped down (then truncated) if it would not fit its safe width.\n  // The kicker keeps 320 px in reserve for the \" \u00b7 PRICE DROP\" tail.\n  const kickerFit = fitRun(brandName.toUpperCase(), [26, 23, 20, 18], 600, 7, 0.62);\n  const endsFit = endsLine ? fitRun(endsLine, [34, 30, 26, 22], 880, 3, 0.62) : null;\n  // With a deadline strip under it the savings pill sits at 1330; without one\n  // it drops into the space the strip would have used, so a sale with no EndsAt\n  // does not leave a dead band above the bottom rule.\n  const savePillY = endsFit ? 1330 : 1440;\n\n  const scene2 = {\n    id: 'drop',\n    duration: s2,\n    backgroundColor: ink,\n    transition: 'slideleft',\n    transitionId: 'cta',\n    transitionDuration: tDur,\n    visuals: [\n      { type: 'SVG', width: 1080, height: 1920, track: 0, enterBegin: 0, exitEnd: s2, svg: dropBgSvg },\n      {\n        type: 'TEXT', x: 540, y: 74, anchor: 'center-center', track: 1,\n        enterBegin: 0, exitEnd: s2,\n        style: { fontFamily: uiFont, color: textColor },\n        html: \"<div style='color:\" + textColor + '; font-size:' + kickerFit.size + \"px; font-weight:800; letter-spacing:7px;'>\" + escapeHtml(kickerFit.text) + ' &middot; PRICE DROP</div>',\n      },\n      {\n        type: 'SVG', x: 540, y: 530, width: 340, height: 425, anchor: 'center-center', track: 2,\n        enterBegin: 0.2, enterEnd: 0.6, enterAnimation: 'fade', exitEnd: s2,\n        svg: \"<svg width='340' height='425' viewBox='0 0 340 425' xmlns='http://www.w3.org/2000/svg'><rect x='1.5' y='1.5' width='337' height='422' rx='28' fill='rgba(255,255,255,0.05)' stroke='rgba(\" + accentRgb + \",0.55)' stroke-width='3'/></svg>\",\n      },\n      {\n        type: 'IMAGE', src: imageUrl, x: 540, y: 530, width: 300, height: 375, anchor: 'center-center',\n        radius: { tl: 20, tr: 20, bl: 20, br: 20 }, track: 3,\n        enterBegin: 0.3, enterEnd: 0.75, enterAnimation: 'circleopen', exitEnd: s2,\n      },\n      {\n        type: 'TEXT', x: 540, y: 830, width: 900, anchor: 'top-center', track: 4,\n        enterBegin: 0.55, enterEnd: 1, enterAnimation: 'smoothup', exitEnd: s2,\n        style: { fontFamily: uiFont, color: textColor },\n        html: \"<div style='text-align:center; color:\" + textColor + '; font-size:' + productFit2.size + \"px; line-height:1.2; font-weight:700;'>\" + escapeHtml(product) + '</div>',\n      },\n      {\n        type: 'TEXT', x: 540, y: 1010, width: 900, anchor: 'top-center', track: 5,\n        enterBegin: 0.9, enterEnd: 1.35, enterAnimation: 'smoothup',\n        exitBegin: 2.4, exitEnd: 2.8, exitAnimation: 'slideleft',\n        style: { fontFamily: displayFont, color: muted },\n        html: \"<div style='text-align:center; color:\" + muted + \"; font-size:150px; line-height:1; text-decoration:line-through; text-decoration-thickness:8px;'>\" + escapeHtml(oldDisplay) + '</div>',\n      },\n      {\n        type: 'TEXT', x: 540, y: 982, width: 960, anchor: 'top-center', track: 6,\n        enterBegin: 2.8, enterEnd: 3.2, enterAnimation: 'circleopen', exitEnd: s2,\n        style: { fontFamily: displayFont, color: accent },\n        html:\n          \"<div style='text-align:center;'>\" +\n          \"<div style='color:\" + muted + \"; font-size:52px; line-height:1.1; text-decoration:line-through; text-decoration-thickness:4px;'>\" + escapeHtml(oldDisplay) + '</div>' +\n          \"<div style='margin-top:10px; color:\" + accent + '; font-size:' + newSize + \"px; line-height:1; letter-spacing:-2px;'>\" + escapeHtml(newDisplay) + '</div>' +\n          '</div>',\n      },\n      {\n        type: 'TEXT', x: 540, y: savePillY, anchor: 'top-center', track: 7,\n        enterBegin: 3.35, enterEnd: 3.75, enterAnimation: 'smoothup', exitEnd: s2,\n        style: { fontFamily: uiFont, color: textColor },\n        html: \"<div style='display:inline-block; background:rgba(\" + accentRgb + \",0.14); border:2px solid rgba(\" + accentRgb + \",0.6); color:\" + accent + \"; border-radius:999px; padding:18px 46px; font-size:38px; font-weight:800; letter-spacing:1px;'>YOU SAVE \" + escapeHtml(savedDisplay) + ' &middot; ' + discountPct + '%</div>',\n      },\n    ],\n  };\n\n  if (endsFit) {\n    scene2.visuals.push({\n      type: 'TEXT', x: 540, y: 1520, anchor: 'top-center', track: 8,\n      enterBegin: 3.75, enterEnd: 4.15, enterAnimation: 'smoothleft', exitEnd: s2,\n      style: { fontFamily: uiFont, color: textColor },\n      html: \"<div style='display:inline-block; background:\" + urgency + \"; color:\" + textColor + \"; border-radius:14px; padding:18px 44px; font-size:\" + endsFit.size + \"px; font-weight:800; letter-spacing:3px;'>\" + escapeHtml(endsFit.text) + '</div>',\n    });\n  }\n\n  // Scene 3 stacks from a single cursor so the card always hugs its contents:\n  // with a promo code the card grows, without one it stays compact \u2014 either way\n  // the block sits around the optical centre of a 1920-tall frame.\n  const cardTop = 620;\n  const kickerY = cardTop - 150;\n  const headlineY = cardTop + 80;\n  const priceChipY = headlineY + 260;\n  const promoY = promoCode ? priceChipY + 146 : null;\n  const ctaY = promoCode ? promoY + 200 : priceChipY + 146;\n  const cardBottom = ctaY + 170;\n  const cardH = cardBottom - cardTop;\n  const footerY = cardBottom + 110;\n  const bandY = Math.min(1740, footerY + 200);\n\n  const ctaBgSvg =\n    \"<svg width='1080' height='1920' viewBox='0 0 1080 1920' xmlns='http://www.w3.org/2000/svg'>\" +\n    \"<defs><linearGradient id='fsCtaShade' x1='0' y1='0' x2='0' y2='1'>\" +\n    \"<stop offset='0' stop-color='\" + ink + \"' stop-opacity='0.55'/><stop offset='0.55' stop-color='\" + ink + \"' stop-opacity='0.8'/><stop offset='1' stop-color='\" + ink + \"' stop-opacity='0.9'/>\" +\n    \"</linearGradient><radialGradient id='fsCtaGlow' cx='0.5' cy='0.46' r='0.7'>\" +\n    \"<stop offset='0' stop-color='\" + accent + \"' stop-opacity='0.16'/><stop offset='1' stop-color='\" + accent + \"' stop-opacity='0'/>\" +\n    '</radialGradient></defs>' +\n    \"<rect width='1080' height='1920' fill='url(#fsCtaShade)'/>\" +\n    \"<rect width='1080' height='1920' fill='url(#fsCtaGlow)'/>\" +\n    \"<rect x='84' y='\" + cardTop + \"' width='912' height='\" + cardH + \"' rx='48' fill='rgba(\" + inkRgb + \",0.72)' stroke='rgba(\" + accentRgb + \",0.55)' stroke-width='2.5'/>\" +\n    \"<path d='M84 \" + (cardBottom - 2) + \" H996' stroke='\" + urgency + \"' stroke-width='6' stroke-linecap='round'/>\" +\n    \"<path d='M-200 \" + (bandY + 22) + ' L1280 ' + (bandY - 174) + ' L1280 ' + (bandY - 152) + ' L-200 ' + (bandY + 44) + \" Z' fill='\" + urgency + \"' opacity='0.75'/>\" +\n    '</svg>';\n\n  const scene3 = {\n    id: 'cta',\n    duration: s3,\n    backgroundColor: ink,\n    visuals: [\n      {\n        type: 'IMAGE', src: imageUrl, width: 1080, height: 1920, position: 'center-center', resize: 'cover',\n        opacity: 0.45, zoom: true, track: 0, enterBegin: 0, exitEnd: s3,\n      },\n      { type: 'SVG', width: 1080, height: 1920, track: 1, enterBegin: 0, exitEnd: s3, svg: ctaBgSvg },\n      {\n        type: 'TEXT', x: 540, y: kickerY, anchor: 'top-center', track: 6,\n        enterBegin: 0.05, enterEnd: 0.45, enterAnimation: 'fade', exitEnd: s3,\n        style: { fontFamily: uiFont, color: textColor },\n        html: \"<div style='display:inline-block; background:\" + urgency + \"; color:\" + textColor + \"; border-radius:999px; padding:16px 44px; font-size:28px; font-weight:800; letter-spacing:7px;'>LAST CHANCE</div>\",\n      },\n      {\n        type: 'TEXT', x: 540, y: headlineY, width: 840, anchor: 'top-center', track: 2,\n        enterBegin: 0.2, enterEnd: 0.65, enterAnimation: 'smoothup', exitEnd: s3,\n        style: { fontFamily: displayFont, color: textColor },\n        html: \"<div style='text-align:center; color:\" + textColor + \"; font-size:98px; line-height:1.02; letter-spacing:0.5px;'>SAVE \" + discountPct + \"%<br><span style='color:\" + accent + \";'>BEFORE IT&#39;S GONE</span></div>\",\n      },\n      {\n        type: 'TEXT', x: 540, y: priceChipY, anchor: 'top-center', track: 7,\n        enterBegin: 0.6, enterEnd: 1, enterAnimation: 'fade', exitEnd: s3,\n        style: { fontFamily: uiFont, color: accent },\n        html: \"<div style='display:inline-block; border:2px solid rgba(\" + accentRgb + \",0.55); border-radius:16px; padding:16px 40px; color:\" + accent + \"; font-size:44px; font-weight:800;'><span style='color:\" + muted + \"; text-decoration:line-through; text-decoration-thickness:3px;'>\" + escapeHtml(oldDisplay) + \"</span> &nbsp;&rarr;&nbsp; \" + escapeHtml(newDisplay) + '</div>',\n      },\n      {\n        type: 'TEXT', x: 540, y: ctaY, anchor: 'top-center', track: 4,\n        enterBegin: 0.95, enterEnd: 1.4, enterAnimation: 'circleopen', exitEnd: s3,\n        style: { fontFamily: uiFont, color: ink },\n        html: \"<div style='display:inline-block; background:\" + accent + '; color:' + ink + \"; border-radius:999px; padding:28px 72px; font-size:\" + ctaFit.size + \"px; font-weight:800;'>\" + escapeHtml(ctaFit.text) + ' &rarr;</div>',\n      },\n      {\n        type: 'TEXT', x: 540, y: footerY, width: 900, anchor: 'top-center', track: 5,\n        enterBegin: 1.35, enterEnd: 1.75, enterAnimation: 'fade', exitEnd: s3,\n        style: { fontFamily: uiFont, color: muted },\n        html: \"<div style='text-align:center; color:\" + muted + \"; font-size:30px; font-weight:700; letter-spacing:5px;'>\" + escapeHtml((storeUrl || brandName).toUpperCase()) + '</div>',\n      },\n    ],\n  };\n\n  if (promoCode) {\n    scene3.visuals.push({\n      type: 'TEXT', x: 540, y: promoY, anchor: 'top-center', track: 3,\n      enterBegin: 0.7, enterEnd: 1.1, enterAnimation: 'fade', exitEnd: s3,\n      style: { fontFamily: uiFont, color: accent },\n      html:\n        \"<div style='text-align:center; color:\" + muted + \"; font-size:26px; font-weight:700; letter-spacing:6px;'>USE CODE</div>\" +\n        \"<div style='margin-top:14px; display:inline-block; border:3px dashed \" + accent + '; color:' + accent + \"; border-radius:18px; padding:18px 54px; font-size:54px; font-weight:800; letter-spacing:8px;'>\" + escapeHtml(promoCode.toUpperCase()) + '</div>',\n    });\n  }\n\n  const slug = sanitizeProjectName('flash-sale ' + discountPct + ' off ' + product);\n  const videoPayload = {\n    name: slug,\n    resolution: 'instagram-reel',\n    frameRate: 30,\n    backgroundColor: ink,\n    outputFormat: 'mp4',\n    scenes: [scene1, scene2, scene3],\n  };\n  // NOTE: no `track` on audios \u2014 the render API rejects audios[].track.\n  if (musicUrl) {\n    videoPayload.audios = [{ src: musicUrl, volume: Number.isFinite(musicVolume) ? musicVolume : 0.2 }];\n  }\n\n  // --------------------------------------------------------------- banner --\n  // Designed at 1200x628 and scaled uniformly into whatever bannerWidth /\n  // bannerHeight is configured, then centred \u2014 so a 1080x1080 or 1600x900\n  // banner keeps the same composition instead of stretching.\n  const bw = Math.max(320, Math.round(Number(cfg.bannerWidth) || 1200));\n  const bh = Math.max(200, Math.round(Number(cfg.bannerHeight) || 628));\n  const k = Math.min(bw / 1200, bh / 628);\n  const ox = (bw - 1200 * k) / 2;\n  const oy = (bh - 628 * k) / 2;\n  const bx = (v) => Math.round(ox + v * k);\n  const by = (v) => Math.round(oy + v * k);\n  const bs = (v) => Math.max(1, Math.round(v * k));\n  const bf = (v) => Math.max(8, Math.round(v * k));\n\n  // The artwork block is centred, but the frame hairline and the urgency wedge\n  // are anchored to the CANVAS, not to that block: on a non-1200x628 ratio\n  // (a 1080x1080 email/social banner, say) they still hug the real edges\n  // instead of drawing a floating letterboxed card.\n  const banInset = Math.max(12, Math.round(22 * k));\n  // A canvas taller than the 1200x628 design ratio (a 1080x1080 email banner,\n  // say) leaves a deep empty band above and below the scaled block. Rather than\n  // letterbox it, the urgency wedge grows into the bottom band and a mirrored\n  // accent wash fills the top one, so the composition still reaches both edges.\n  // Both are zero on a 1200x628 canvas, where there is no slack to fill.\n  const banSlack = Math.max(0, Math.round(oy));\n  const banWedge = Math.max(28, Math.round(72 * k) + Math.round(banSlack * 0.8));\n  const banCrown = banSlack > 24 ? Math.round(banSlack * 0.85) : 0;\n\n  const bannerBgSvg =\n    \"<svg width='\" + bw + \"' height='\" + bh + \"' viewBox='0 0 \" + bw + ' ' + bh + \"' xmlns='http://www.w3.org/2000/svg'>\" +\n    \"<defs><radialGradient id='fsBanA' cx='0.12' cy='0.88' r='0.8'>\" +\n    \"<stop offset='0' stop-color='\" + accent + \"' stop-opacity='0.22'/><stop offset='1' stop-color='\" + accent + \"' stop-opacity='0'/>\" +\n    \"</radialGradient><radialGradient id='fsBanB' cx='0.78' cy='0.12' r='0.7'>\" +\n    \"<stop offset='0' stop-color='\" + urgency + \"' stop-opacity='0.35'/><stop offset='1' stop-color='\" + urgency + \"' stop-opacity='0'/>\" +\n    '</radialGradient></defs>' +\n    \"<rect width='\" + bw + \"' height='\" + bh + \"' fill='\" + ink + \"'/>\" +\n    \"<rect width='\" + bw + \"' height='\" + bh + \"' fill='url(#fsBanA)'/>\" +\n    \"<rect width='\" + bw + \"' height='\" + bh + \"' fill='url(#fsBanB)'/>\" +\n    (banCrown ? \"<path d='M0 0 L\" + bw + \" 0 L0 \" + banCrown + \" Z' fill='\" + urgency + \"' opacity='0.5'/>\" : '') +\n    \"<rect x='\" + banInset + \"' y='\" + banInset + \"' width='\" + (bw - banInset * 2) + \"' height='\" + (bh - banInset * 2) + \"' rx='\" + banInset + \"' fill='none' stroke='rgba(255,255,255,0.12)' stroke-width='1.5'/>\" +\n    \"<path d='M0 \" + bh + ' L' + bw + ' ' + (bh - banWedge) + ' L' + bw + ' ' + bh + \" Z' fill='\" + urgency + \"' opacity='0.72'/>\" +\n    '</svg>';\n\n  const bannerNameFit = fitSize(product, [32, 28, 25, 22], 560, 2, 0.55);\n  const bannerNewSize = newLen <= 4 ? 82 : newLen <= 6 ? 72 : newLen <= 8 ? 62 : 52;\n  // Every banner pill is an SVG, which neither wraps nor shrinks: size the box\n  // from the measured run so long brands / CTAs never spill past the artwork.\n  const banChip = fitRun(brandName.toUpperCase(), [18, 16, 14], 420, 3, 0.62);\n  const banChipW = banChip.width + 72;\n  // The CTA pill carries an arrow glyph drawn at a fixed offset from its right\n  // edge, so the text run is measured with a DELIBERATELY generous avgEm and\n  // then centred inside the slack. Over-estimating shows up as extra padding;\n  // under-estimating would run the text into the arrow.\n  const banCta = fitRun(ctaText, [19, 17, 15], 300, 0, 0.66);\n  const banCtaPad = 30;\n  const banCtaArrow = 22;\n  const banCtaGap = 16;\n  const banCtaW = banCtaPad * 2 + banCta.width + banCtaGap + banCtaArrow;\n  const banSave = fitRun('YOU SAVE ' + savedDisplay, [17, 15, 14], 200, 1, 0.6);\n  const banSaveW = banSave.width + 36;\n  const banEnds = endsLine ? fitRun(endsLine, [17, 15, 14], 260, 2, 0.62) : null;\n  const banEndsW = banEnds ? banEnds.width + 40 : 0;\n\n  const bannerVisuals = [\n    { type: 'SVG', x: 0, y: 0, width: bw, height: bh, anchor: 'top-left', track: 0, svg: bannerBgSvg },\n    {\n      type: 'SVG', x: bx(728), y: by(72), width: bs(420), height: bs(484), anchor: 'top-left', track: 1,\n      svg: \"<svg width='420' height='484' viewBox='0 0 420 484' xmlns='http://www.w3.org/2000/svg'><rect x='1.5' y='1.5' width='417' height='481' rx='28' fill='rgba(255,255,255,0.05)' stroke='rgba(\" + accentRgb + \",0.5)' stroke-width='3'/></svg>\",\n    },\n    {\n      type: 'IMAGE', src: imageUrl, x: bx(740), y: by(84), width: bs(396), height: bs(460), anchor: 'top-left',\n      radius: { tl: bs(20), tr: bs(20), bl: bs(20), br: bs(20) }, track: 2,\n    },\n    {\n      type: 'SVG', x: bx(658), y: by(386), width: bs(168), height: bs(168), anchor: 'top-left', track: 3,\n      svg:\n        \"<svg width='168' height='168' viewBox='0 0 168 168' xmlns='http://www.w3.org/2000/svg'>\" +\n        \"<circle cx='84' cy='84' r='82' fill='rgba(\" + inkRgb + \",0.45)'/>\" +\n        \"<circle cx='84' cy='84' r='72' fill='\" + accent + \"'/>\" +\n        \"<circle cx='84' cy='84' r='64' fill='none' stroke='rgba(\" + inkRgb + \",0.35)' stroke-width='1.6' stroke-dasharray='5 7'/>\" +\n        \"<text x='84' y='90' font-family='Anton, Impact, Arial' font-size='\" + (String(discountPct).length > 2 ? 40 : 46) + \"' fill='\" + ink + \"' text-anchor='middle' letter-spacing='-1'>-\" + discountPct + \"%</text>\" +\n        \"<text x='84' y='118' font-family='Space Grotesk, Arial' font-size='15' font-weight='700' fill='\" + ink + \"' text-anchor='middle' letter-spacing='5'>OFF</text>\" +\n        '</svg>',\n    },\n    {\n      type: 'SVG', x: bx(64), y: by(52), width: bs(banChipW), height: bs(48), anchor: 'top-left', track: 4,\n      svg:\n        \"<svg width='\" + banChipW + \"' height='48' viewBox='0 0 \" + banChipW + \" 48' xmlns='http://www.w3.org/2000/svg'>\" +\n        \"<rect x='0.9' y='0.9' width='\" + (banChipW - 1.8) + \"' height='46.2' rx='23.1' fill='rgba(255,255,255,0.06)' stroke='rgba(255,255,255,0.28)' stroke-width='1.4'/>\" +\n        \"<circle cx='28' cy='24' r='7' fill='\" + accent + \"'/>\" +\n        \"<text x='50' y='31' font-family='Space Grotesk, Arial' font-size='\" + banChip.size + \"' font-weight='700' fill='\" + textColor + \"' letter-spacing='3'>\" + escapeHtml(banChip.text) + '</text>' +\n        '</svg>',\n    },\n    {\n      type: 'TEXT', x: bx(64), y: by(130), width: bs(560), anchor: 'top-left', track: 5,\n      style: { fontFamily: uiFont, color: accent },\n      html: \"<div style='color:\" + accent + '; font-size:' + bf(21) + \"px; font-weight:700; letter-spacing:6px;'>LIMITED TIME &middot; PRICE DROP</div>\",\n    },\n    {\n      type: 'TEXT', x: bx(62), y: by(162), width: bs(620), anchor: 'top-left', track: 6,\n      style: { fontFamily: displayFont, color: textColor },\n      html: \"<div style='color:\" + textColor + '; font-size:' + bf(94) + \"px; line-height:1; letter-spacing:0.5px;'>FLASH <span style='color:\" + accent + \";'>SALE</span></div>\",\n    },\n    {\n      type: 'TEXT', x: bx(64), y: by(276), width: bs(560), anchor: 'top-left', track: 7,\n      style: { fontFamily: uiFont, color: textColor },\n      html: \"<div style='color:\" + textColor + '; font-size:' + bf(bannerNameFit.size) + \"px; line-height:1.25; font-weight:700;'>\" + escapeHtml(product) + '</div>',\n    },\n    {\n      type: 'TEXT', x: bx(64), y: by(372), width: bs(560), anchor: 'top-left', track: 8,\n      style: { fontFamily: uiFont, color: muted },\n      html: \"<div style='color:\" + muted + '; font-size:' + bf(30) + \"px; font-weight:600; text-decoration:line-through; text-decoration-thickness:3px;'>\" + escapeHtml(oldDisplay) + '</div>',\n    },\n    {\n      type: 'TEXT', x: bx(62), y: by(406), width: bs(560), anchor: 'top-left', track: 9,\n      style: { fontFamily: displayFont, color: accent },\n      html: \"<div style='color:\" + accent + '; font-size:' + bf(bannerNewSize) + \"px; line-height:1; letter-spacing:-1px;'>\" + escapeHtml(newDisplay) + '</div>',\n    },\n  ];\n\n  // Row A: the savings chip and (when present) the deadline chip.\n  bannerVisuals.push({\n    type: 'SVG', x: bx(64), y: by(496), width: bs(banSaveW), height: bs(42), anchor: 'top-left', track: 10,\n    svg:\n      \"<svg width='\" + banSaveW + \"' height='42' viewBox='0 0 \" + banSaveW + \" 42' xmlns='http://www.w3.org/2000/svg'>\" +\n      \"<rect x='0.9' y='0.9' width='\" + (banSaveW - 1.8) + \"' height='40.2' rx='11' fill='rgba(\" + accentRgb + \",0.16)' stroke='rgba(\" + accentRgb + \",0.6)' stroke-width='1.6'/>\" +\n      \"<text x='\" + (banSaveW / 2) + \"' y='27' font-family='Space Grotesk, Arial' font-size='\" + banSave.size + \"' font-weight='700' fill='\" + accent + \"' text-anchor='middle' letter-spacing='1'>\" + escapeHtml(banSave.text) + '</text>' +\n      '</svg>',\n  });\n\n  if (banEnds) {\n    bannerVisuals.push({\n      type: 'SVG', x: bx(64 + banSaveW + 16), y: by(496), width: bs(banEndsW), height: bs(42), anchor: 'top-left', track: 11,\n      svg:\n        \"<svg width='\" + banEndsW + \"' height='42' viewBox='0 0 \" + banEndsW + \" 42' xmlns='http://www.w3.org/2000/svg'>\" +\n        \"<rect width='\" + banEndsW + \"' height='42' rx='11' fill='\" + urgency + \"'/>\" +\n        \"<text x='\" + (banEndsW / 2) + \"' y='27' font-family='Space Grotesk, Arial' font-size='\" + banEnds.size + \"' font-weight='700' fill='\" + textColor + \"' text-anchor='middle' letter-spacing='2'>\" + escapeHtml(banEnds.text) + '</text>' +\n        '</svg>',\n    });\n  }\n\n  // Row B: the call to action.\n  bannerVisuals.push({\n    type: 'SVG', x: bx(64), y: by(552), width: bs(banCtaW), height: bs(50), anchor: 'top-left', track: 12,\n    svg:\n      \"<svg width='\" + banCtaW + \"' height='50' viewBox='0 0 \" + banCtaW + \" 50' xmlns='http://www.w3.org/2000/svg'>\" +\n      \"<rect width='\" + banCtaW + \"' height='50' rx='25' fill='\" + accent + \"'/>\" +\n      \"<text x='\" + (banCtaPad + banCta.width / 2) + \"' y='\" + (25 + Math.round(banCta.size * 0.36)) + \"' font-family='Space Grotesk, Arial' font-size='\" + banCta.size + \"' font-weight='700' fill='\" + ink + \"' text-anchor='middle'>\" + escapeHtml(banCta.text) + '</text>' +\n      \"<path d='M\" + (banCtaW - banCtaPad - banCtaArrow) + ' 25 H' + (banCtaW - banCtaPad) + ' M' + (banCtaW - banCtaPad - 7) + ' 18 L' + (banCtaW - banCtaPad) + ' 25 L' + (banCtaW - banCtaPad - 7) + \" 32' fill='none' stroke='\" + ink + \"' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/>\" +\n      '</svg>',\n  });\n\n  const bannerPayload = {\n    type: 'image',\n    name: sanitizeProjectName('flash-sale banner ' + discountPct + ' off ' + product),\n    resolution: 'custom',\n    width: bw,\n    height: bh,\n    outputFormat: 'png',\n    backgroundColor: ink,\n    visuals: bannerVisuals,\n  };\n\n  const meta = {\n    product: product,\n    oldPrice: oldDisplay,\n    newPrice: newDisplay,\n    savedDisplay: savedDisplay,\n    discountPct: discountPct,\n    endsAt: endsAt || null,\n    imageUrl: imageUrl,\n    musicUrl: musicUrl || null,\n    musicNote: clean(sale.musicNote) || null,\n    promoCode: promoCode || null,\n    brandName: brandName,\n    storeUrl: storeUrl || null,\n    ctaText: ctaText,\n    videoSeconds: totalSeconds,\n    bannerSize: bw + 'x' + bh,\n    productSizeScene1: productFit1.size,\n    productSizeScene2: productFit2.size,\n    newPriceSize: newSize,\n    rowNumber: sale.rowNumber == null ? null : sale.rowNumber,\n    sourceKind: clean(sale.sourceKind) || 'sheet',\n    videoName: slug,\n  };\n\n  return { videoPayload: videoPayload, bannerPayload: bannerPayload, meta: meta };\n}\n\n// === n8n glue ===\nconst cfg = $('Config').first().json;\nconst sale = $input.first().json;\nconst built = buildFlashSale(cfg, sale);\nreturn [\n  { json: { kind: 'video', payload: built.videoPayload, meta: built.meta }, pairedItem: { item: 0 } },\n  { json: { kind: 'banner', payload: built.bannerPayload, meta: built.meta }, pairedItem: { item: 0 } },\n];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-fs-0014",
+      "name": "Validate project (free)",
+      "type": "@zvid/n8n-nodes-zvid.zvid",
+      "position": [
+        310,
+        1160
+      ],
+      "parameters": {
+        "source": "json",
+        "resource": "render",
+        "operation": "validate",
+        "projectJson": "={{ JSON.stringify(({ payload: $json.payload }).payload) }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "zvid-fs-0015",
+      "name": "Check validation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        570,
+        1160
+      ],
+      "parameters": {
+        "jsCode": "// The free validate endpoint runs the exact pipeline a render submission\n// runs, so a failure here is a payload bug - surface the field list for the\n// deliverable that broke instead of a generic HTTP error. Runs once per\n// item, so both the video and the banner are checked before either is paid\n// for.\nconst built = $('Build project JSON').all();\nreturn $input.all().map((res, i) => {\n  const status = res.json.statusCode ?? (res.json.valid === true ? 200 : 400);\n  const body = res.json.body || { ...res.json, details: res.json.errors ?? res.json.details };\n  const kind = built[i].json.kind;\n  if (status !== 200 || body.valid === false) {\n    const details = Array.isArray(body.details)\n      ? body.details.map((d) => '  - ' + d.field + ': ' + d.message).join('\\n')\n      : JSON.stringify(body).slice(0, 500);\n    throw new Error('Zvid rejected the ' + kind + ' payload (HTTP ' + status + '): ' + (body.message || body.error) + '\\n' + details);\n  }\n  return {\n    json: { ...built[i].json, creditsRequired: body.creditsRequired, warnings: body.warnings || [] },\n    pairedItem: { item: i },\n  };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-fs-0016",
+      "name": "Dry run?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1050,
+        1160
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "dry-run--cond",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Config').first().json.dryRun }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zvid-fs-0017",
+      "name": "Save draft to editor",
+      "type": "@zvid/n8n-nodes-zvid.zvid",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        1310,
+        1160
+      ],
+      "parameters": {
+        "resource": "project",
+        "operation": "create",
+        "projectJson": "={{ JSON.stringify(({ name: $json.payload.name, payload: $json.payload }).payload) }}",
+        "projectName": "={{ ({ name: $json.payload.name, payload: $json.payload }).name }}"
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-fs-0018",
+      "name": "Dry run summary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1570,
+        1160
+      ],
+      "parameters": {
+        "jsCode": "// Dry run: everything except the two paid renders. Open each editorLink to\n// preview the exact video and the exact banner, then set dryRun to false in\n// Config to render them for real. The sheet row is NOT marked done, so the\n// next real run picks the same sale.\nconst cfg = $('Config').first().json;\nconst checked = $('Check validation').all();\nconst drafts = $input.all();\nconst total = checked.reduce((n, c) => n + (Number(c.json.creditsRequired) || 0), 0);\n\nreturn checked.map((c, i) => {\n  const d = c.json;\n  // The draft save is best-effort (onError: continue) so a hiccup there never\n  // hides the rest of the dry-run report.\n  let editorLink = null;\n  let draftId = null;\n  const res = drafts[i] && drafts[i].json;\n  const project = res && res.project;\n  if (project && project.id) {\n    draftId = project.id;\n    editorLink = String(cfg.editorUrl || 'https://editor.zvid.io').replace(/\\/+$/, '') + '/?project=' + project.id;\n  }\n  return {\n    json: {\n      dryRun: true,\n      kind: d.kind,\n      product: d.meta.product,\n      oldPrice: d.meta.oldPrice,\n      newPrice: d.meta.newPrice,\n      discountPct: d.meta.discountPct,\n      creditsRequired: d.creditsRequired,\n      creditsForBothDeliverables: total,\n      videoSeconds: d.meta.videoSeconds,\n      bannerSize: d.meta.bannerSize,\n      musicNote: d.meta.musicNote,\n      editorLink,\n      draftId,\n      warnings: d.warnings,\n      sheetUpdated: false,\n      emailSent: false,\n      nextStep: editorLink\n        ? 'Open editorLink to preview this deliverable, then set dryRun to false in Config to render the video AND the banner for real.'\n        : 'Set dryRun to false in Config to render this for real.',\n      payload: d.payload,\n    },\n    pairedItem: { item: i },\n  };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-fs-0019",
+      "name": "Submit render",
+      "type": "@zvid/n8n-nodes-zvid.zvid",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        2570,
+        1160
+      ],
+      "parameters": {
+        "source": "json",
+        "resource": "render",
+        "operation": "create",
+        "renderType": "={{ $json.payload.type === \"image\" ? \"image\" : \"video\" }}",
+        "projectJson": "={{ JSON.stringify(({ payload: $json.payload }).payload) }}",
+        "waitForCompletion": false
+      },
+      "retryOnFail": false,
+      "typeVersion": 1,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-fs-0020",
+      "name": "Attach job to item",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        50,
+        2080
+      ],
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst jobId = response.jobId || response.id;\nif (!jobId) throw new Error('Render submission returned no jobId. Check https://app.zvid.io before retrying.');\nconst { payload, ...asset } = $('Prepare render attempt').first().json;\nreturn [{ json: { ...asset, jobId, renderStartedAt: Date.now() }, pairedItem: { item: 0 } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-fs-0021",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        310,
+        2080
+      ],
+      "webhookId": "a91f4c26-7d38-4b52-9e07-3c6a8d1f5b24",
+      "parameters": {
+        "unit": "seconds",
+        "amount": "={{ $('Config').first().json.pollSeconds }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "zvid-fs-0022",
+      "name": "Get render status",
+      "type": "@zvid/n8n-nodes-zvid.zvid",
+      "maxTries": 3,
+      "position": [
+        570,
+        2080
+      ],
+      "parameters": {
+        "jobId": "={{ $json.jobId }}",
+        "resource": "render",
+        "operation": "get",
+        "waitForCompletion": false
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-fs-0023",
+      "name": "Merge job status",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        830,
+        2080
+      ],
+      "parameters": {
+        "jsCode": "const carried = $('Attach job to item').first().json;\nconst job = $input.first().json;\nreturn [{ json: { ...carried, state: job.state, failedReason: job.failedReason || null, result: job.result || null }, pairedItem: { item: 0 } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-fs-0024",
+      "name": "Render finished?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        830,
+        2320
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "render-finished--cond",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.state === 'completed' }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zvid-fs-0025",
+      "name": "Still rendering?",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        570,
+        2320
+      ],
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nif (item.state === 'failed') throw new Error('The ' + item.kind + ' render failed: ' + (item.failedReason || 'no reason given'));\nconst timeoutMs = Number($('Config').first().json.timeoutMinutes || 20) * 60000;\nif (Date.now() - Number(item.renderStartedAt) >= timeoutMs) {\n  throw new Error('Render ' + item.jobId + ' timed out. It may still finish on Zvid; check https://app.zvid.io before retrying.');\n}\nreturn $input.all();"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-fs-0026",
+      "name": "Collect outputs",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1310,
+        2080
+      ],
+      "parameters": {
+        "jsCode": "// Both jobs are finished by the time this runs: fold the two deliverables\n// into ONE item so the sheet write-back, the email and the summary all see\n// the same announcement, and build the email body here (a code node, where\n// escaping is easy to get right) rather than inside an expression.\nconst cfg = $('Config').first().json;\nconst items = $input.all().map((i) => i.json);\nconst pick = (kind) => items.find((d) => d.kind === kind);\nconst urlOf = (d) => (d && (typeof d.result === 'string' ? d.result : (d.result ? d.result.url : null))) || null;\n\nconst video = pick('video');\nconst banner = pick('banner');\nconst videoUrl = urlOf(video);\nconst bannerUrl = urlOf(banner);\nif (!videoUrl) throw new Error('The video render completed without returning a URL.');\nif (!bannerUrl) throw new Error('The banner render completed without returning a URL.');\n\nconst meta = (video || banner).meta;\nconst credits = items.reduce((n, d) => n + (Number(d.creditsRequired) || 0), 0);\n\n// Sheet / Shopify text is untrusted, so escape everything that lands in HTML.\nconst esc = (s) => String(s == null ? '' : s).replace(/[&<>\"]/g, (c) => ({\n  '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;',\n}[c]));\n\nconst subjectTpl = String(cfg.emailSubject || 'Flash sale: {product} is {discount}% off');\nconst emailSubject = subjectTpl\n  .replace(/\\{product\\}/g, meta.product)\n  .replace(/\\{discount\\}/g, String(meta.discountPct))\n  .replace(/\\{oldPrice\\}/g, meta.oldPrice)\n  .replace(/\\{newPrice\\}/g, meta.newPrice)\n  .replace(/\\{brand\\}/g, meta.brandName || '');\n\nconst storeLink = String(cfg.storeUrl || '').trim();\nconst href = storeLink ? (/^https?:/i.test(storeLink) ? storeLink : 'https://' + storeLink) : videoUrl;\nconst ink = String(cfg.inkColor || '#0D0D0D');\nconst accent = String(cfg.brandAccent || '#FFD54A');\n\nconst emailHtml =\n  '<div style=\"font-family:Helvetica,Arial,sans-serif; background:' + ink + '; padding:28px; text-align:center;\">' +\n  '<a href=\"' + href + '\"><img src=\"' + bannerUrl + '\" alt=\"' + esc(meta.product) + ' flash sale\" style=\"display:block; width:100%; max-width:600px; margin:0 auto; border:0;\"/></a>' +\n  '<p style=\"color:#FFFFFF; font-size:20px; font-weight:bold; margin:24px 0 6px;\">' + esc(meta.product) + '</p>' +\n  '<p style=\"color:#9CA3AF; font-size:15px; margin:0 0 22px;\">' + esc(meta.oldPrice) + ' &rarr; ' + esc(meta.newPrice) + ' &middot; save ' + esc(meta.savedDisplay) + ' (' + meta.discountPct + '% off)' + (meta.endsAt ? ' &middot; ends ' + esc(meta.endsAt) : '') + '</p>' +\n  '<a href=\"' + href + '\" style=\"display:inline-block; background:' + accent + '; color:' + ink + '; font-weight:bold; padding:14px 34px; border-radius:999px; text-decoration:none;\">' + esc(meta.ctaText) + '</a>' +\n  '<p style=\"margin:26px 0 0;\"><a href=\"' + videoUrl + '\" style=\"color:#9CA3AF; font-size:13px;\">Watch the 13-second sale video</a></p>' +\n  '</div>';\n\nreturn [{ json: {\n  videoUrl,\n  bannerUrl,\n  product: meta.product,\n  oldPrice: meta.oldPrice,\n  newPrice: meta.newPrice,\n  savedDisplay: meta.savedDisplay,\n  discountPct: meta.discountPct,\n  endsAt: meta.endsAt,\n  bannerSize: meta.bannerSize,\n  videoSeconds: meta.videoSeconds,\n  musicNote: meta.musicNote,\n  rowNumber: meta.rowNumber,\n  sourceKind: meta.sourceKind,\n  creditsCharged: credits,\n  videoJobId: video ? video.jobId : null,\n  bannerJobId: banner ? banner.jobId : null,\n  emailSubject,\n  emailHtml,\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-fs-0027",
+      "name": "Sheet mode?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1570,
+        2080
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "sheet-mode--cond",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Config').first().json.source !== 'shopify' && Boolean($('Collect outputs').first().json.rowNumber) }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zvid-fs-0028",
+      "name": "Mark sale done",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        1830,
+        2080
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Status": "={{ $('Config').first().json.statusDoneValue }}",
+            "VideoUrl": "={{ $('Collect outputs').first().json.videoUrl }}",
+            "BannerUrl": "={{ $('Collect outputs').first().json.bannerUrl }}",
+            "row_number": "={{ $('Collect outputs').first().json.rowNumber }}"
+          },
+          "schema": [
+            {
+              "id": "row_number",
+              "type": "number",
+              "display": true,
+              "removed": false,
+              "readOnly": true,
+              "required": false,
+              "displayName": "row_number",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VideoUrl",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "VideoUrl",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "BannerUrl",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "BannerUrl",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "row_number"
+          ]
+        },
+        "options": {},
+        "resource": "sheet",
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.7,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-fs-0029",
+      "name": "Email the banner?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2090,
+        2080
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "email-banner--cond",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ String($('Config').first().json.emailTo || '').includes('@') }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zvid-fs-0030",
+      "name": "Email the banner",
+      "type": "n8n-nodes-base.emailSend",
+      "onError": "continueRegularOutput",
+      "position": [
+        2090,
+        2320
+      ],
+      "parameters": {
+        "html": "={{ $('Collect outputs').first().json.emailHtml }}",
+        "options": {},
+        "subject": "={{ $('Collect outputs').first().json.emailSubject }}",
+        "toEmail": "={{ $('Config').first().json.emailTo }}",
+        "fromEmail": "={{ $('Config').first().json.emailFrom }}",
+        "emailFormat": "html"
+      },
+      "typeVersion": 2.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "zvid-fs-0031",
+      "name": "Run summary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2570,
+        2080
+      ],
+      "parameters": {
+        "jsCode": "// Final report for a live run: ONE item carrying both URLs, so the two\n// viewer nodes each download exactly one file.\nconst cfg = $('Config').first().json;\nconst d = $('Collect outputs').first().json;\n\nlet sheetUpdated = false;\ntry { $('Mark sale done').first(); sheetUpdated = true; } catch (e) { /* Shopify mode: no row to update */ }\nlet emailSent = false;\ntry { $('Email the banner').first(); emailSent = true; } catch (e) { /* email branch skipped */ }\n\nreturn [{\n  json: {\n    rendered: true,\n    product: d.product,\n    oldPrice: d.oldPrice,\n    newPrice: d.newPrice,\n    discountPct: d.discountPct,\n    endsAt: d.endsAt,\n    videoUrl: d.videoUrl,\n    bannerUrl: d.bannerUrl,\n    videoSeconds: d.videoSeconds,\n    bannerSize: d.bannerSize,\n    creditsCharged: d.creditsCharged,\n    videoJobId: d.videoJobId,\n    bannerJobId: d.bannerJobId,\n    musicNote: d.musicNote,\n    source: cfg.source,\n    sheetRow: d.rowNumber,\n    sheetUpdated,\n    sheetStatus: sheetUpdated ? cfg.statusDoneValue : null,\n    emailSent,\n    emailTo: emailSent ? cfg.emailTo : null,\n  },\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-fs-0032",
+      "name": "\u25b6 Watch video",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        3090,
+        2080
+      ],
+      "parameters": {
+        "url": "={{ $json.videoUrl }}",
+        "options": {
+          "timeout": 30000
+        },
+        "requestMethod": "GET",
+        "authentication": "none",
+        "jsonParameters": false,
+        "responseFormat": "file",
+        "dataPropertyName": "data"
+      },
+      "retryOnFail": true,
+      "typeVersion": 2,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-fs-0033",
+      "name": "\u25b6 View banner",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        3350,
+        2080
+      ],
+      "parameters": {
+        "url": "={{ $json.bannerUrl }}",
+        "options": {
+          "timeout": 30000
+        },
+        "requestMethod": "GET",
+        "authentication": "none",
+        "jsonParameters": false,
+        "responseFormat": "file",
+        "dataPropertyName": "data"
+      },
+      "retryOnFail": true,
+      "typeVersion": 2,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-watch-ready",
+      "name": "Video ready to watch?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2830,
+        2080
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "zvid-watch-ready-condition",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ !$json.dryRun && /^https?:\\/\\//i.test(String(($json.videoUrl) || '')) }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "zvid-fs-asset-loop",
+      "name": "Render one asset at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        2050,
+        1160
+      ],
+      "parameters": {
+        "options": {},
+        "batchSize": 1
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "zvid-fs-prepare-attempt",
+      "name": "Prepare render attempt",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2310,
+        1160
+      ],
+      "parameters": {
+        "jsCode": "// Each deliverable owns its retry deadline; an accepted job is never resubmitted.\nreturn $input.all().map((item, i) => ({\n  json: { ...item.json, submitStartedAt: Date.now(), submitAttempts: 0 },\n  pairedItem: { item: i },\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-fs-retry-rejection",
+      "name": "Check submission rejection",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2830,
+        1160
+      ],
+      "parameters": {
+        "jsCode": "// Retry only an explicit HTTP 429 rejection. Timeouts/5xx may have accepted\n// a paid job already, so they stop for inspection instead of creating duplicates.\nconst item = $input.first();\nconst error = item.error || item.json.error || {};\nconst previous = $('Prepare render attempt').first().json;\nconst carried = item.json.payload ? item.json : previous;\nconst status = Number(error.httpCode || error.statusCode || error.response?.status || error.cause?.statusCode || error.cause?.response?.status);\n// n8n's task-runner serialization drops httpCode but retains its exact,\n// status-specific NodeApiError message and the API response in context.data.\nconst serialized429 = !status && error.name === 'NodeApiError' && error.message === 'The service is receiving too many requests from you';\nif (status !== 429 && !serialized429) {\n  throw new Error('Render submission failed: ' + (error.description || error.message || String(error)) + '. Check https://app.zvid.io before retrying; the request may already have created a job.');\n}\nlet body = error.response?.data || error.context?.data || error.cause?.response?.data || error.cause?.error || {};\nif (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }\nconst headers = error.response?.headers || error.cause?.response?.headers || {};\nconst rawRetry = headers['retry-after'] ?? body.retryAfter;\nconst retrySeconds = Number(rawRetry) || Math.ceil((Date.parse(rawRetry) - Date.now()) / 1000) || 30;\nconst waitSeconds = Math.max(30, retrySeconds);\nconst deadline = Number(previous.submitStartedAt) + Number($('Config').first().json.timeoutMinutes || 20) * 60000;\nif (Date.now() + waitSeconds * 1000 >= deadline) {\n  throw new Error('Render capacity stayed full until the submission deadline. Check https://app.zvid.io; completed assets from this run remain in Render one asset at a time.');\n}\nreturn [{ json: { ...carried, submitStartedAt: previous.submitStartedAt, submitAttempts: Number(carried.submitAttempts || 0) + 1, retrySeconds: waitSeconds }, pairedItem: { item: 0 } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-fs-capacity-wait",
+      "name": "Wait for render capacity",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        2830,
+        1400
+      ],
+      "webhookId": "zvid-flash-sale-capacity-wait",
+      "parameters": {
+        "unit": "seconds",
+        "amount": "={{ $json.retrySeconds }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "publication-overview-flash-sale-alert",
+      "name": "Workflow overview and setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -800,
+        0
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 720,
+        "height": 1160,
+        "content": "## Create a flash-sale video and banner\n\n### How it works\nRead a sale from Google Sheets or Shopify and render a vertical video and email banner, one at a time. Wait when render capacity is full. Sheet mode saves both URLs; optional SMTP delivery sends the banner when configured.\n\n### Setup\n1. Install **`@zvid/n8n-nodes-zvid`** from **Settings \u2192 Community nodes** before credentials. A workspace owner/admin may need to install it.\n2. Create a **Zvid API** credential with [your API key](https://app.zvid.io/api-keys) and Base URL `https://api.zvid.io`. Select it on every Zvid node.\n3. Connect Google Sheets and select the same spreadsheet and tab in both sheet nodes.\n4. Set source, brandName, storeUrl and ctaText in Config. Shopify mode needs its credential; optional email needs SMTP and emailTo.\n5. **dryRun=false** renders and spends Zvid credits. Set it to **true** for an editor draft and quote.\n6. Test manually and review the output before activating automatic runs.\n\n### Customization\nAdjust branding, media and timing in the configuration node. [Detailed setup guide](https://github.com/Zvid-io/zvid-n8n/blob/master/workflows/flash-sale-alert.md)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-flash-sale-alert-configure",
+      "name": "1. Choose settings and an entry point",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 880,
+        "height": 520,
+        "content": "## 1. Choose settings and an entry point\n\nComplete the overview setup first. Use the manual trigger for a test, then check the trigger settings and workflow timezone before activation."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-flash-sale-alert-source",
+      "name": "2. Find the next sale",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1000,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1140,
+        "height": 760,
+        "content": "## 2. Find the next sale\n\nSelect sheet or Shopify in Config. Shopify mode compares prices between runs; sheet mode takes the next eligible row."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-flash-sale-alert-eligible",
+      "name": "3. Check the sale details",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2260,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 620,
+        "height": 520,
+        "content": "## 3. Check the sale details\n\nHeaders: Product, OldPrice, NewPrice, ImageUrl, EndsAt, Status, VideoUrl, BannerUrl. The first four are required. NewPrice must be lower than OldPrice; leave output columns empty."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-flash-sale-alert-music",
+      "name": "4. Check the background music",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3000,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 620,
+        "height": 520,
+        "content": "## 4. Check the background music\n\nCheck the configured track or stock candidates before use. Follow the guard\u2019s result when music is unavailable."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-flash-sale-alert-validate",
+      "name": "5. Build and validate the design",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        920
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 880,
+        "height": 520,
+        "content": "## 5. Build and validate the design\n\nPrepare the media and video design, then validate the payload and credit quote. Resolve validation errors before submitting a render."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-flash-sale-alert-preview",
+      "name": "6. Choose an optional editor preview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1000,
+        920
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 880,
+        "height": 520,
+        "content": "## 6. Choose an optional editor preview\n\ndryRun=true returns an editor draft and credit quote. The default false branch renders and spends Zvid credits; upstream AI services may charge separately."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-flash-sale-alert-capacity",
+      "name": "7. Submit one asset safely",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2000,
+        920
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1140,
+        "height": 760,
+        "content": "## 7. Submit one asset safely\n\nRender one asset at a time. Retry only explicit HTTP 429 rejections after at least 30 seconds, up to timeoutMinutes. Other submission errors stop for inspection; an accepted job is never automatically resubmitted."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-flash-sale-alert-render",
+      "name": "8. Render and wait for completion",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        1840
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1140,
+        "height": 760,
+        "content": "## 8. Render and wait for completion\n\nSubmit the render, then check its status until completion or timeout. Keep each result paired with its source item. Check Zvid before retrying a timed-out job."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-flash-sale-alert-deliver",
+      "name": "9. Save both assets and optionally email",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1260,
+        1840
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1140,
+        "height": 760,
+        "content": "## 9. Save both assets and optionally email\n\nWrite the video and banner links back in sheet mode. SMTP delivery runs only when emailTo is configured."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "zvid-watch-instructions",
+      "name": "10. Review the finished media",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2520,
+        1840
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1140,
+        "height": 520,
+        "content": "## 10. Review the finished media\n\nOpen Watch video \u2192 Binary \u2192 data \u2192 View. Select each output item for batches; image outputs open as images. Empty links and preview results skip the download. Each request times out after 30 seconds; completed links remain available."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get render status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Source?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Source?": {
+      "main": [
+        [
+          {
+            "node": "Poll price drops",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read sale sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dry run?": {
+      "main": [
+        [
+          {
+            "node": "Save draft to editor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Render one asset at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every hour": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check music": {
+      "main": [
+        [
+          {
+            "node": "Music guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Music guard": {
+      "main": [
+        [
+          {
+            "node": "Build project JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run summary": {
+      "main": [
+        [
+          {
+            "node": "Video ready to watch?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "\u25b6 View banner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sale found?": {
+      "main": [
+        [
+          {
+            "node": "Check music",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nothing to announce",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheet mode?": {
+      "main": [
+        [
+          {
+            "node": "Mark sale done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email the banner?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit render": {
+      "main": [
+        [
+          {
+            "node": "Attach job to item",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check submission rejection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test manually": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark sale done": {
+      "main": [
+        [
+          {
+            "node": "Email the banner?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick next sale": {
+      "main": [
+        [
+          {
+            "node": "Sale found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect outputs": {
+      "main": [
+        [
+          {
+            "node": "Sheet mode?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read sale sheet": {
+      "main": [
+        [
+          {
+            "node": "Pick next sale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check validation": {
+      "main": [
+        [
+          {
+            "node": "Dry run?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email the banner": {
+      "main": [
+        [
+          {
+            "node": "Run summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find price drops": {
+      "main": [
+        [
+          {
+            "node": "Sale found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge job status": {
+      "main": [
+        [
+          {
+            "node": "Render finished?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll price drops": {
+      "main": [
+        [
+          {
+            "node": "Find price drops",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render finished?": {
+      "main": [
+        [
+          {
+            "node": "Render one asset at a time",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Still rendering?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still rendering?": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email the banner?": {
+      "main": [
+        [
+          {
+            "node": "Email the banner",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Run summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get render status": {
+      "main": [
+        [
+          {
+            "node": "Merge job status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach job to item": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build project JSON": {
+      "main": [
+        [
+          {
+            "node": "Validate project (free)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save draft to editor": {
+      "main": [
+        [
+          {
+            "node": "Dry run summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video ready to watch?": {
+      "main": [
+        [
+          {
+            "node": "\u25b6 Watch video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Prepare render attempt": {
+      "main": [
+        [
+          {
+            "node": "Submit render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate project (free)": {
+      "main": [
+        [
+          {
+            "node": "Check validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for render capacity": {
+      "main": [
+        [
+          {
+            "node": "Submit render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check submission rejection": {
+      "main": [
+        [
+          {
+            "node": "Wait for render capacity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render one asset at a time": {
+      "main": [
+        [
+          {
+            "node": "Collect outputs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare render attempt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

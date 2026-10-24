@@ -1,6 +1,6 @@
 # ⚙️ Set DevOps infrastructure with Docker, K3s, Jenkins & Grafana for Linux servers
 
-> ⚡ **3,814 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **4,771 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

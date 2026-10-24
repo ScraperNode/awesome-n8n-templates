@@ -1,6 +1,6 @@
 # 📊 Summarize RSS feeds into a daily AI digest with Gemini, Slack, and Gmail
 
-> ⚡ **39 views** · 📊 [Market Research & Insights](../)
+> ⚡ **509 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 👥 Automate HR candidate shortlisting with Sheets, Gmail, ClickUp & Calendly
 
-> ⚡ **228 views** · 👥 [HR & Recruitment](../)
+> ⚡ **356 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

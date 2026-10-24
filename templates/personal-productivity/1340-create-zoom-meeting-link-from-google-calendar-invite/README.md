@@ -1,6 +1,6 @@
 # ⚡ Create Zoom meeting link from Google Calendar invite
 
-> ⚡ **2,667 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,749 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Multi-source tax & cash flow forecasting with GPT-4, Gmail and Google Sheets
 
-> ⚡ **71 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **178 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

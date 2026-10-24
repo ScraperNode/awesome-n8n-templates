@@ -1,6 +1,6 @@
 # 💬 Auto-follow-up for canceled Calendly meetings with GPT-4, Loom & Asana
 
-> ⚡ **935 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,041 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

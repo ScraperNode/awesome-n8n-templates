@@ -1,6 +1,6 @@
 # 🤖 Email drafting & news research assistant with OpenAI, Gmail, Tavily & Perplexity
 
-> ⚡ **420 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **530 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

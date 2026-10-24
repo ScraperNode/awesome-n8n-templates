@@ -1,6 +1,6 @@
 # ⚙️ Monitor website uptime and diagnose errors with Gemini and Slack alerts
 
-> ⚡ **6 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **89 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

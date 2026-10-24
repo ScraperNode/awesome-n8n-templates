@@ -1,6 +1,6 @@
 # 🔧 Set credentials dynamically using expressions
 
-> ⚡ **5,448 views** · 🔧 [Miscellaneous](../)
+> ⚡ **6,106 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

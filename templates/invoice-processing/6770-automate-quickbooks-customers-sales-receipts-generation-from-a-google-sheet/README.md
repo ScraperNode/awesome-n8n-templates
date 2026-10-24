@@ -1,6 +1,6 @@
 # 🧾 Automate QuickBooks customers & sales receipts generation from a Google Sheet
 
-> ⚡ **315 views** · 🧾 [Invoice Processing](../)
+> ⚡ **358 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

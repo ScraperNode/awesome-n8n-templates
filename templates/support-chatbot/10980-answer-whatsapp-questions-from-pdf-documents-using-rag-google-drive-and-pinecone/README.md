@@ -1,6 +1,6 @@
 # 💬 Answer WhatsApp questions from PDF documents using RAG, Google Drive and Pinecone
 
-> ⚡ **1,383 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,405 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

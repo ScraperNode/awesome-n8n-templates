@@ -1,6 +1,6 @@
 # 🔧 Plex automatic QBittorent throttler
 
-> ⚡ **1,645 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,728 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

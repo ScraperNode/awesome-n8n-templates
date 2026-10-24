@@ -1,6 +1,6 @@
 # 🤝 Export new deals from HubSpot to Slack and Airtable
 
-> ⚡ **1,845 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,868 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

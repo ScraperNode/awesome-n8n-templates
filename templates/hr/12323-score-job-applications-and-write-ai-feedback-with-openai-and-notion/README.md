@@ -1,6 +1,6 @@
 # 👥 Score job applications and write AI feedback with OpenAI and Notion
 
-> ⚡ **45 views** · 👥 [HR & Recruitment](../)
+> ⚡ **70 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

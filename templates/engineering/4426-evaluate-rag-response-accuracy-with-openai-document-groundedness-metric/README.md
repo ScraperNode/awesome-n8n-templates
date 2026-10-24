@@ -1,6 +1,6 @@
 # ⚒️ Evaluate RAG response accuracy with OpenAI: document groundedness metric
 
-> ⚡ **1,671 views** · ⚒️ [Engineering](../)
+> ⚡ **1,851 views** · ⚒️ [Engineering](../)
 
 ## Description
 

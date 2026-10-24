@@ -1,6 +1,6 @@
 # ⚒️ Merge greetings with the users based on the language
 
-> ⚡ **2,504 views** · ⚒️ [Engineering](../)
+> ⚡ **2,596 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤖 Control Discord bot with natural language via MCP server
 
-> ⚡ **809 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **881 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

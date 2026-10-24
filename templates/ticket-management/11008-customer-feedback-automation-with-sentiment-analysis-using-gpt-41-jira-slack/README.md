@@ -1,6 +1,6 @@
 # 🎫 Customer feedback automation with sentiment analysis using GPT-4.1, Jira & Slack
 
-> ⚡ **100 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **154 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,0 +1,791 @@
+{
+  "id": "YrT2Z8kCIXdXhDwD",
+  "meta": {
+    "instanceId": "dd69efaf8212c74ad206700d104739d3329588a6f3f8381a46a481f34c9cc281",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Multi-Store Inventory Orchestrator",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "550e2d59-0c42-480e-a63f-95dd45ff5439",
+      "name": "Sticky Note - Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -416,
+        528
+      ],
+      "parameters": {
+        "width": 1136,
+        "height": 860,
+        "content": "## Multi-Store Inventory Orchestrator\n\nAn AI agent fulfills one order across multiple stores/warehouses: it checks live stock, builds an allocation plan, and reserves stock idempotently \u2014 retrying with backoff and escalating to a human instead of guessing when a reservation can't be resolved cleanly.\n\n### How it works\n1. A webhook receives the new order and normalizes it, deriving an idempotency key and session ID.\n2. Postgres dedupes retried/duplicate webhooks before they ever reach the agent.\n3. An AI Agent (GPT\u20114.1) with four tools \u2014 check stock, reserve, release, and check rate limits \u2014 decides which stores to use, builds the allocation plan, and reserves stock.\n4. The agent's structured JSON decision is logged to Postgres for audit and replay.\n5. Fully-reserved orders auto-confirm; partial or failed allocations go to Slack for human ops review, then get confirmed or cancelled based on that decision.\n\n### Setup steps\n1. Add HTTP credentials for each store's inventory API (or unified middleware) on the four tool nodes.\n2. Add an OpenAI credential for the agent.\n3. Add a Postgres credential and create the `inventory_orders` and `inventory_reservations` tables.\n4. Add a Slack credential on the ops-review notification node.\n5. Point the manual-resolution Wait node's resume webhook at your ops dashboard.\n\n### Customization tips\nSend a test order split across 2+ stores, with one intentionally out of stock, to exercise the escalation path end-to-end."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2c96290f-6c0b-4fb8-97bf-b56400afb665",
+      "name": "Sticky Note - Trigger & Allocation Agent",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1024,
+        304
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 1552,
+        "height": 1208,
+        "content": "## 1. Trigger, Dedupe & Allocation Agent\nReceives the order, dedupes retried webhooks, then lets the AI agent check stock and build/execute the allocation plan across stores."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6b5dac06-6813-4ced-b853-3ee2e28b053e",
+      "name": "Sticky Note - Logging & Auto-Confirm",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2688,
+        288
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 864,
+        "height": 1144,
+        "content": "## 2. Parse, Log & Route on Fulfillment\nExtracts the agent's decision, logs the order and every reservation for audit, then branches on whether the order was fully fulfilled."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "80b206cb-33d3-4593-afac-f7b1a7be13e4",
+      "name": "Sticky Note - Human Exception Gate",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3616,
+        288
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 1264,
+        "height": 1416,
+        "content": "## 3. Auto-Confirm or Human Exception Resolution\nClean allocations confirm automatically. Shortfalls go to Slack for ops review, then get confirmed or cancelled based on the human decision."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "17b8fcc7-2a2c-4bc0-8037-82f55b90632e",
+      "name": "Webhook - New Order",
+      "type": "n8n-nodes-base.webhook",
+      "notes": "Receives the new-order payload (orderId, customerId, items, candidateStores) that needs to be fulfilled across stores.",
+      "position": [
+        1072,
+        864
+      ],
+      "webhookId": "f1a2b3c4-inv-order-trigger-0001",
+      "parameters": {
+        "path": "inventory-orchestrator/new-order",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "34f9880c-474c-40b6-8e35-5a12be4ffbd4",
+      "name": "Set - Config",
+      "type": "n8n-nodes-base.set",
+      "notes": "Normalizes the payload and derives an idempotency key (order + revision) and a sessionId so retries/resumes share agent memory.",
+      "position": [
+        1296,
+        864
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "name": "orderId",
+              "type": "string",
+              "value": "={{ $json.body.orderId }}"
+            },
+            {
+              "name": "customerId",
+              "type": "string",
+              "value": "={{ $json.body.customerId }}"
+            },
+            {
+              "name": "items",
+              "type": "array",
+              "value": "={{ $json.body.items }}"
+            },
+            {
+              "name": "candidateStores",
+              "type": "array",
+              "value": "={{ $json.body.candidateStores || [] }}"
+            },
+            {
+              "name": "idempotencyKey",
+              "type": "string",
+              "value": "={{ 'order-' + $json.body.orderId + '-v' + ($json.body.revision || 1) }}"
+            },
+            {
+              "name": "sessionId",
+              "type": "string",
+              "value": "={{ 'inventory#' + $json.body.orderId }}"
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 3.4
+    },
+    {
+      "id": "66ea808f-96c3-4784-9e4c-e29899dcf1af",
+      "name": "Postgres - Check Idempotency",
+      "type": "n8n-nodes-base.postgres",
+      "notes": "Looks up whether this order/revision has already been processed.",
+      "position": [
+        1520,
+        864
+      ],
+      "parameters": {
+        "table": "inventory_orders",
+        "schema": "public",
+        "options": {},
+        "operation": "select",
+        "returnAll": true
+      },
+      "notesInFlow": true,
+      "typeVersion": 2.5
+    },
+    {
+      "id": "5ff32058-f2a6-493d-86e7-85b54eebc1b0",
+      "name": "IF - Already Processed",
+      "type": "n8n-nodes-base.if",
+      "notes": "If a prior record exists, routes to NoOp - Duplicate Ignored so a retried/duplicate webhook never re-runs allocation; otherwise proceeds to the agent.",
+      "position": [
+        1744,
+        864
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $json.length || 0 }}",
+              "rightValue": 0
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 2.2
+    },
+    {
+      "id": "94292ea7-9998-46ce-92b9-b53d34ee0256",
+      "name": "NoOp - Duplicate Ignored",
+      "type": "n8n-nodes-base.noOp",
+      "notes": "Terminal node for already-processed duplicate webhooks.",
+      "position": [
+        1888,
+        720
+      ],
+      "parameters": {},
+      "notesInFlow": true,
+      "typeVersion": 1
+    },
+    {
+      "id": "ae4371e5-0291-4e38-a34b-4ebb9c2b64bf",
+      "name": "Tool - Check Store Stock",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "notes": "Agent tool: gets the live available quantity for a SKU at a specific store, including a last-updated timestamp.",
+      "position": [
+        1696,
+        1296
+      ],
+      "parameters": {
+        "url": "=https://inventory-mw.internal.example.com/api/stores/{{ $fromAI('store_id', 'the store or warehouse identifier to check') }}/stock",
+        "sendQuery": true,
+        "parametersQuery": {
+          "values": [
+            {}
+          ]
+        },
+        "toolDescription": "Get the current available quantity for a SKU at a specific store/warehouse, including last-updated timestamp so staleness can be judged. Use this before reserving, and re-check if a reservation fails due to a stale quantity."
+      },
+      "notesInFlow": true,
+      "typeVersion": 1.1
+    },
+    {
+      "id": "aa40c9ad-3979-4a86-94ad-cdd307a98d28",
+      "name": "Tool - Reserve Stock",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "notes": "Agent tool: idempotently reserves a SKU/quantity at a store, scoped to the order \u2014 retries never double-reserve.",
+      "position": [
+        1952,
+        1296
+      ],
+      "parameters": {
+        "url": "=https://inventory-mw.internal.example.com/api/stores/{{ $fromAI('store_id', 'the store or warehouse identifier to reserve from') }}/reservations",
+        "method": "POST",
+        "jsonBody": "={{ JSON.stringify({ sku: $fromAI('sku', 'the SKU to reserve'), quantity: $fromAI('quantity', 'quantity to reserve'), orderId: $fromAI('order_id', 'the order this reservation belongs to'), idempotencyKey: $fromAI('idempotency_key', 'idempotency key so retries never double-reserve') }) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "toolDescription": "Reserve a quantity of a SKU at a specific store, scoped to an order and idempotency key. Safe to retry with the same idempotency key \u2014 the store API will return the existing reservation instead of double-reserving. Returns success/failure and the resulting available quantity. If it fails (out of stock, rate-limited, store API error), do not retry more than twice; instead try an alternate store or reduce quantity and report the shortfall.",
+        "parametersHeaders": {
+          "values": [
+            {}
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 1.1
+    },
+    {
+      "id": "9eb4af47-d089-4279-b408-b0494a529b0b",
+      "name": "Tool - Release Reservation",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "notes": "Agent tool: compensating rollback that releases a previously made reservation if a plan partially fails.",
+      "position": [
+        2176,
+        1296
+      ],
+      "parameters": {
+        "url": "=https://inventory-mw.internal.example.com/api/stores/{{ $fromAI('store_id', 'the store or warehouse identifier holding the reservation') }}/reservations/{{ $fromAI('reservation_id', 'the reservation id to release') }}",
+        "method": "DELETE",
+        "toolDescription": "Release (compensate/roll back) a previously made reservation. Use this if a multi-store allocation plan partially fails and earlier successful reservations must be undone so stock isn't held incorrectly."
+      },
+      "notesInFlow": true,
+      "typeVersion": 1.1
+    },
+    {
+      "id": "dfd5511f-af03-4178-a17c-2f30e02b55ae",
+      "name": "Tool - Get Store Rate Limit Status",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "notes": "Agent tool: checks a store's remaining API quota before a burst of reservation calls, so the agent can throttle.",
+      "position": [
+        2400,
+        1296
+      ],
+      "parameters": {
+        "url": "=https://inventory-mw.internal.example.com/api/stores/{{ $fromAI('store_id', 'the store or warehouse identifier') }}/rate-limit-status",
+        "toolDescription": "Check remaining API quota/rate-limit window for a store's inventory API before issuing a burst of reservation calls. Use this if you're about to call reserve_stock many times in a row for the same store, to decide whether to slow down or batch."
+      },
+      "notesInFlow": true,
+      "typeVersion": 1.1
+    },
+    {
+      "id": "ed73f604-e566-4b8d-82d7-23f033425a56",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "notes": "The LLM (GPT-4.1) powering the agent. Add your OpenAI credential here.",
+      "position": [
+        1712,
+        1088
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1"
+        },
+        "options": {},
+        "builtInTools": {}
+      },
+      "notesInFlow": true,
+      "typeVersion": 1.3
+    },
+    {
+      "id": "7a9a8ad5-30f4-4eef-960d-a4cefd025d43",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "notes": "Session-keyed memory (by order) so a retry/resume of the same order stays in context and avoids re-reserving confirmed stock.",
+      "position": [
+        1856,
+        1072
+      ],
+      "parameters": {
+        "sessionKey": "={{ $json.sessionId }}",
+        "sessionIdType": "customKey",
+        "contextWindowLength": 20
+      },
+      "notesInFlow": true,
+      "typeVersion": 1.3
+    },
+    {
+      "id": "43781cbd-017f-4eaf-bdc9-f40cca1f7b88",
+      "name": "AI Agent - Inventory Orchestrator",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "notes": "Orchestrates: checks stock, builds the allocation plan (fewest stores per item), reserves with the idempotency-key pattern, retries at most twice per store+sku+order, tries one alternate store on shortfall, and releases abandoned reservations. Returns structured JSON.",
+      "position": [
+        2000,
+        864
+      ],
+      "parameters": {
+        "text": "=You are an inventory allocation engine fulfilling one order across multiple stores/warehouses.\n\nOrder: {{ $json.orderId }} for customer {{ $json.customerId }}\nIdempotency key: {{ $json.idempotencyKey }}\nItems requested: {{ JSON.stringify($json.items) }}\nCandidate stores (if provided, prefer these; otherwise discover via check_store_stock): {{ JSON.stringify($json.candidateStores) }}\n\nYou have four tools: check_store_stock (live quantity per SKU/store), reserve_stock (idempotent reservation, order+key scoped), release_reservation (compensating rollback), get_store_rate_limit_status (avoid hammering a store's API).\n\nProcess:\n1. For each requested item, check stock across candidate stores before reserving anything.\n2. Build an allocation plan that satisfies each item's quantity, preferring the fewest stores per item and respecting rate limits (check rate-limit status before bursts of calls to the same store).\n3. Execute reservations using the given idempotency key pattern (append store+sku so each reservation call is uniquely idempotent, e.g. \"{{ $json.idempotencyKey }}-store-<id>-sku-<sku>\"). Never call reserve_stock more than twice for the same store+sku+order without stopping to reassess.\n4. If a reservation fails or returns less than requested (stale stock, race with another order, store API error), do not silently under-fulfill: try at most one alternate store for the shortfall, then report it as a partial fulfillment rather than guessing.\n5. If any earlier successful reservations in this plan must be abandoned because the overall order can't be completed as planned, call release_reservation on them before finishing, and note that in your output.\n\nIf earlier turns exist in this conversation (same order), treat this as a retry/resume and avoid re-reserving anything already confirmed successful last time \u2014 check state via check_store_stock first if unsure.\n\nReturn ONLY a JSON object (no markdown fences, no commentary) with keys: summary (2-4 sentences), allocationPlan (array of {sku, storeId, quantityRequested, quantityReserved, reservationId, status: 'reserved'|'failed'|'released'}), fullyFulfilled (boolean), shortfalls (array of {sku, quantityShort, reason}), verdict ('confirm'|'needs_review'), notes (string, any rate-limit throttling or retries worth flagging).",
+        "options": {},
+        "promptType": "define"
+      },
+      "notesInFlow": true,
+      "typeVersion": 1.6
+    },
+    {
+      "id": "b75cfb7c-e9ee-4959-9133-0d05d9b82368",
+      "name": "Set - Parse Agent Output",
+      "type": "n8n-nodes-base.set",
+      "notes": "Extracts the agent's structured JSON output (allocationPlan, fullyFulfilled, shortfalls, verdict, notes).",
+      "position": [
+        2752,
+        864
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "name": "parsedOutput",
+              "type": "object",
+              "value": "={{ JSON.parse(String($json.output || $json.text || $json.response || '{}').replace(/```json|```/g, '').trim()) }}"
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 3.4
+    },
+    {
+      "id": "0139dcf8-cbdc-4545-a3b9-0621c90c4083",
+      "name": "Postgres - Log Order Decision",
+      "type": "n8n-nodes-base.postgres",
+      "notes": "Inserts the order-level decision into inventory_orders for audit history.",
+      "position": [
+        2976,
+        768
+      ],
+      "parameters": {
+        "table": "inventory_orders",
+        "schema": "public",
+        "columns": "order_id, customer_id, idempotency_key, allocation_plan, fully_fulfilled, verdict, shortfalls, notes, created_at",
+        "options": {}
+      },
+      "notesInFlow": true,
+      "typeVersion": 2.5
+    },
+    {
+      "id": "4abb8151-087c-4de9-bf03-59e37a857696",
+      "name": "Postgres - Log Reservations",
+      "type": "n8n-nodes-base.postgres",
+      "notes": "Inserts each individual reservation into inventory_reservations for per-line audit and replay.",
+      "position": [
+        2976,
+        960
+      ],
+      "parameters": {
+        "table": "inventory_reservations",
+        "schema": "public",
+        "columns": "order_id, sku, store_id, quantity_reserved, reservation_id, status, created_at",
+        "options": {}
+      },
+      "notesInFlow": true,
+      "typeVersion": 2.5
+    },
+    {
+      "id": "19310ab0-b4ab-4790-bb64-d2cacc46290b",
+      "name": "IF - Fully Fulfilled",
+      "type": "n8n-nodes-base.if",
+      "notes": "Branches on the agent's verdict: 'confirm' goes to auto-confirmation; anything else goes to human ops review.",
+      "position": [
+        3424,
+        864
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.parsedOutput.verdict }}",
+              "rightValue": "confirm"
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 2.2
+    },
+    {
+      "id": "dc661118-3cfd-4f4e-ae75-d46e0afbf888",
+      "name": "HTTP - Confirm Order (auto)",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Confirms clean, fully-reserved allocations immediately against the OMS.",
+      "position": [
+        3648,
+        768
+      ],
+      "parameters": {
+        "url": "=https://oms.internal.example.com/api/orders/{{ $json.orderId }}/confirm",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{ JSON.stringify({ allocationPlan: $json.parsedOutput.allocationPlan }) }}",
+        "sendBody": true,
+        "specifyBody": "json"
+      },
+      "notesInFlow": true,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "4e032b43-9425-4e54-895c-f8d726f1c848",
+      "name": "Slack - Request Ops Review",
+      "type": "n8n-nodes-base.slack",
+      "notes": "Posts the allocation plan, shortfalls, and agent notes to #inventory-ops-review and asks a human to resolve.",
+      "position": [
+        3648,
+        960
+      ],
+      "webhookId": "a1b2c3d4-inv-ops-review-0002",
+      "parameters": {
+        "text": "=\ud83d\udce6 *Order needs manual review \u2014 partial or failed allocation*\n\n*Order:* {{ $json.orderId }} for customer {{ $json.customerId }}\n*Fully fulfilled:* {{ $json.parsedOutput.fullyFulfilled }}\n\n*Shortfalls:*\n{{ $json.parsedOutput.shortfalls.map(s => '- ' + s.sku + ': short ' + s.quantityShort + ' (' + s.reason + ')').join('\\n') }}\n\n*Allocation plan:*\n{{ $json.parsedOutput.allocationPlan.map(a => '- [' + a.status + '] ' + a.sku + ' x' + a.quantityReserved + '/' + a.quantityRequested + ' @ store ' + a.storeId).join('\\n') }}\n\n*Notes:* {{ $json.parsedOutput.notes }}\n\nReply or use the Confirm/Split/Cancel action to resolve.",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#inventory-ops-review"
+        },
+        "otherOptions": {}
+      },
+      "notesInFlow": true,
+      "typeVersion": 2.3
+    },
+    {
+      "id": "7fc5eee8-d516-4bf4-b1af-477b17b77b0b",
+      "name": "Wait - For Manual Resolution",
+      "type": "n8n-nodes-base.wait",
+      "notes": "Pauses the workflow until the ops dashboard's resolve action calls back into this webhook with a decision.",
+      "position": [
+        3872,
+        960
+      ],
+      "webhookId": "b2c3d4e5-inv-ops-signoff-0003",
+      "parameters": {},
+      "notesInFlow": true,
+      "typeVersion": 1.1
+    },
+    {
+      "id": "2d74fe86-8ce9-45ae-8394-159dea980f4e",
+      "name": "IF - Ops Approved",
+      "type": "n8n-nodes-base.if",
+      "notes": "Branches on the human's decision from the ops dashboard.",
+      "position": [
+        4096,
+        960
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.opsApproved === true || $json.opsApproved === 'true' }}"
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 2.2
+    },
+    {
+      "id": "a3502c09-b41b-4b54-91d7-99a19df2e551",
+      "name": "HTTP - Confirm Order (delayed)",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Confirms the order (flagged resolvedByOps: true) if ops approved proceeding despite the shortfall.",
+      "position": [
+        4320,
+        864
+      ],
+      "parameters": {
+        "url": "=https://oms.internal.example.com/api/orders/{{ $json.orderId }}/confirm",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{ JSON.stringify({ allocationPlan: $json.parsedOutput.allocationPlan, resolvedByOps: true }) }}",
+        "sendBody": true,
+        "specifyBody": "json"
+      },
+      "notesInFlow": true,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "a24cc47c-b4b9-4c2e-ba6d-3e4fa4c0b63f",
+      "name": "HTTP - Cancel Order",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Cancels the order with the shortfall details as the reason, if ops did not approve.",
+      "position": [
+        4320,
+        1056
+      ],
+      "parameters": {
+        "url": "=https://oms.internal.example.com/api/orders/{{ $json.orderId }}/cancel",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{ JSON.stringify({ reason: 'Unresolved inventory shortfall after ops review', shortfalls: $json.parsedOutput.shortfalls }) }}",
+        "sendBody": true,
+        "specifyBody": "json"
+      },
+      "notesInFlow": true,
+      "typeVersion": 4.2
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "89ed0874-e99f-4aa5-8432-13497c3c32d7",
+  "nodeGroups": [],
+  "connections": {
+    "Set - Config": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Check Idempotency",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Ops Approved": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Confirm Order (delayed)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP - Cancel Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent - Inventory Orchestrator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - New Order": {
+      "main": [
+        [
+          {
+            "node": "Set - Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Fully Fulfilled": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Confirm Order (auto)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack - Request Ops Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Reserve Stock": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent - Inventory Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent - Inventory Orchestrator",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Already Processed": {
+      "main": [
+        [
+          {
+            "node": "NoOp - Duplicate Ignored",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent - Inventory Orchestrator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Parse Agent Output": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Log Order Decision",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Postgres - Log Reservations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Check Store Stock": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent - Inventory Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Request Ops Review": {
+      "main": [
+        [
+          {
+            "node": "Wait - For Manual Resolution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Release Reservation": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent - Inventory Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Check Idempotency": {
+      "main": [
+        [
+          {
+            "node": "IF - Already Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - For Manual Resolution": {
+      "main": [
+        [
+          {
+            "node": "IF - Ops Approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Log Order Decision": {
+      "main": [
+        [
+          {
+            "node": "IF - Fully Fulfilled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Inventory Orchestrator": {
+      "main": [
+        [
+          {
+            "node": "Set - Parse Agent Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Get Store Rate Limit Status": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent - Inventory Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

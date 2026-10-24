@@ -1,6 +1,6 @@
 # 🔬 Generate stale page reports for Confluence spaces with REST API v1 and v2
 
-> ⚡ **40 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **111 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

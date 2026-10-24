@@ -1,6 +1,6 @@
 # 🤝 Replicate line items on new deal in HubSpot and notify with Slack
 
-> ⚡ **1,326 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,353 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

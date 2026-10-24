@@ -1,6 +1,6 @@
 # ⚡ Optimize Resumes & Generate Cover Letters with Gemini AI and PDF.co
 
-> ⚡ **58 views** · ⚡ [Personal Productivity](../)
+> ⚡ **78 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

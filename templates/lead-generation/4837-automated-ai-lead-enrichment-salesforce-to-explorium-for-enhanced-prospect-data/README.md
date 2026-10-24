@@ -1,6 +1,6 @@
 # 🎣 Automated AI lead enrichment: Salesforce to Explorium for enhanced prospect data
 
-> ⚡ **1,610 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,766 views** · 🎣 [Lead Generation & Enrichment](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

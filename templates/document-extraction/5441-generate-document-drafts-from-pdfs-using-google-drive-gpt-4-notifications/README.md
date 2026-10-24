@@ -1,6 +1,6 @@
 # 🔬 Generate document drafts from PDFs using Google Drive, GPT-4 & notifications
 
-> ⚡ **1,761 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,926 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

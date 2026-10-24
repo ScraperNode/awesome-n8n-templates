@@ -1,6 +1,6 @@
 # 💬 Build an AI IT support agent with Azure Search, Entra ID & Jira
 
-> ⚡ **2,002 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,307 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

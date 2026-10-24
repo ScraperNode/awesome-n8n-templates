@@ -1,6 +1,6 @@
 # 🤝 Sync Stripe charges to HubSpot contacts
 
-> ⚡ **1,888 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,909 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

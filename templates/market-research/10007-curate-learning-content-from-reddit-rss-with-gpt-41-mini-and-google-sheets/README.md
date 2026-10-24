@@ -1,6 +1,6 @@
 # 📊 Curate learning content from Reddit & RSS with GPT-4.1-mini and Google Sheets
 
-> ⚡ **212 views** · 📊 [Market Research & Insights](../)
+> ⚡ **335 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

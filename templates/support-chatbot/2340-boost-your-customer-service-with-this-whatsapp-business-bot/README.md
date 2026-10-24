@@ -1,6 +1,6 @@
 # 💬 🚀 Boost your customer service with this WhatsApp Business bot!
 
-> ⚡ **52,311 views** · 💬 [Support Chatbots](../)
+> ⚡ **52,992 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

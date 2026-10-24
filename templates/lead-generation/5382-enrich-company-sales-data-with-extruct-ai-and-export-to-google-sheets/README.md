@@ -1,6 +1,6 @@
 # 🎣 Enrich company sales data with Extruct AI and export to Google Sheets
 
-> ⚡ **132 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **153 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

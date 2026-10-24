@@ -1,6 +1,6 @@
 # ⚒️ Build your own N8N workflows MCP server
 
-> ⚡ **90,767 views** · ⚒️ [Engineering](../)
+> ⚡ **97,494 views** · ⚒️ [Engineering](../)
 
 ## Description
 

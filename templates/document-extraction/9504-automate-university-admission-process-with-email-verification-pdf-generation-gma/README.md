@@ -1,6 +1,6 @@
 # 🔬 Automate university admission process with Email verification, PDF generation & Gmail
 
-> ⚡ **173 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **240 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

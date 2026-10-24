@@ -1,6 +1,6 @@
 # 🎯 Auto-generate sticky notes and rename nodes
 
-> ⚡ **234 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **2,886 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

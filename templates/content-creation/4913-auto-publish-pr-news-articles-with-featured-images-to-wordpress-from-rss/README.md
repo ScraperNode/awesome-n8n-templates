@@ -1,6 +1,6 @@
 # 🎬 Auto-publish PR news articles with featured images to WordPress from RSS
 
-> ⚡ **3,381 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,512 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

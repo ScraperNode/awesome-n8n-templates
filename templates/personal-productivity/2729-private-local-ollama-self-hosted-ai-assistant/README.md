@@ -1,6 +1,6 @@
 # ⚡ 🔐🦙🤖 Private & local Ollama self-hosted AI assistant
 
-> ⚡ **62,453 views** · ⚡ [Personal Productivity](../)
+> ⚡ **65,528 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

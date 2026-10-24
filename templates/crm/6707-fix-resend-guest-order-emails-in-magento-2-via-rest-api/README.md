@@ -1,6 +1,6 @@
 # 🤝 Fix & resend guest order emails in Magento 2 via REST API
 
-> ⚡ **85 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **101 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

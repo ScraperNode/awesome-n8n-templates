@@ -1,6 +1,6 @@
 # 👥 Classify emails & extract structured data from job applications with GPT-4o
 
-> ⚡ **819 views** · 👥 [HR & Recruitment](../)
+> ⚡ **941 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

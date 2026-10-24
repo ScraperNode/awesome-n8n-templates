@@ -1,6 +1,6 @@
 # 🎬 Auto-tag blog posts in WordPress with AI
 
-> ⚡ **7,903 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **7,977 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

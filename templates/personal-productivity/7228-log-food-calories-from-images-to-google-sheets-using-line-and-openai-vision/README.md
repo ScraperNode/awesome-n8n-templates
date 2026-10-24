@@ -1,6 +1,6 @@
 # ⚡ Log food calories from images to Google Sheets using LINE and OpenAI Vision
 
-> ⚡ **1,383 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,516 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

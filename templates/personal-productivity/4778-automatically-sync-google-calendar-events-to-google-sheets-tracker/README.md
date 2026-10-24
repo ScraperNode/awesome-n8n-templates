@@ -1,6 +1,6 @@
 # ⚡ Automatically sync Google Calendar events to Google Sheets tracker
 
-> ⚡ **310 views** · ⚡ [Personal Productivity](../)
+> ⚡ **334 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

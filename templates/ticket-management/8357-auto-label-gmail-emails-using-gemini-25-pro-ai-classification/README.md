@@ -1,6 +1,6 @@
 # 🎫 Auto-label Gmail emails using Gemini 2.5 Pro AI classification
 
-> ⚡ **1,038 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,373 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

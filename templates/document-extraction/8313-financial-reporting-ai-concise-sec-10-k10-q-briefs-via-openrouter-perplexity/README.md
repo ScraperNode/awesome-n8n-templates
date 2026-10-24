@@ -1,6 +1,6 @@
 # 🔬 Financial reporting AI: concise SEC 10-K/10-Q briefs via OpenRouter + Perplexity
 
-> ⚡ **97 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **116 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

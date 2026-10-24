@@ -1,6 +1,6 @@
 # 📱 🛠️ Reddit tool MCP server 💪 all 13 operations
 
-> ⚡ **180 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **185 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

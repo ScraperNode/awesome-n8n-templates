@@ -1,6 +1,6 @@
 # ✨ Automated crypto news digest to Telegram with RSS feeds and GPT-4
 
-> ⚡ **1,625 views** · ✨ [AI & LLMs](../)
+> ⚡ **2,087 views** · ✨ [AI & LLMs](../)
 
 ## Description
 

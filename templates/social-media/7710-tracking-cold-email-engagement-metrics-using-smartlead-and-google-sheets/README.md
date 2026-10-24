@@ -1,6 +1,6 @@
 # 📱 Tracking cold email engagement metrics using Smartlead and Google Sheets
 
-> ⚡ **146 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **221 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Create dynamic Twitter profile banner
 
-> ⚡ **2,785 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,786 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

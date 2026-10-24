@@ -1,6 +1,6 @@
 # 💬 Schedule meetings via WhatsApp using natural language with Gemini AI & Google Suite
 
-> ⚡ **889 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,215 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

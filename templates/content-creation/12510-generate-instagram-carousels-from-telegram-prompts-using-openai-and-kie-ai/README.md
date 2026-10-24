@@ -1,6 +1,6 @@
 # 🎬 Generate Instagram carousels from Telegram prompts using OpenAI and Kie AI
 
-> ⚡ **87 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **357 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

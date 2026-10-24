@@ -1,6 +1,6 @@
 # 🤝 Monitor HubSpot deal risk with OpenAI scoring and Slack alerts
 
-> ⚡ **60 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **80 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

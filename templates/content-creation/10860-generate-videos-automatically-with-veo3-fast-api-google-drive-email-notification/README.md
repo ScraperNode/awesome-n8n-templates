@@ -1,6 +1,6 @@
 # 🎬 Generate videos automatically with Veo3 Fast API, Google Drive & email notifications
 
-> ⚡ **277 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **461 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

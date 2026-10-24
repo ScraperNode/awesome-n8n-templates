@@ -1,6 +1,6 @@
 # 📊 Track flight fares with Amadeus & Skyscanner - alerts, refunds & trends
 
-> ⚡ **965 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,207 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

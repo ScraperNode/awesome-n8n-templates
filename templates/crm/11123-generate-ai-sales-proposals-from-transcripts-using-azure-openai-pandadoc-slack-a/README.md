@@ -1,6 +1,6 @@
 # 🤝 Generate AI sales proposals from transcripts using Azure OpenAI, PandaDoc & Slack approval
 
-> ⚡ **97 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **156 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

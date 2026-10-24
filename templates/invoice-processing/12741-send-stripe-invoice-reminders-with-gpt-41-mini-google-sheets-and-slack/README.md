@@ -1,6 +1,6 @@
 # 🧾 Send Stripe invoice reminders with GPT-4.1-mini, Google Sheets and Slack
 
-> ⚡ **267 views** · 🧾 [Invoice Processing](../)
+> ⚡ **297 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

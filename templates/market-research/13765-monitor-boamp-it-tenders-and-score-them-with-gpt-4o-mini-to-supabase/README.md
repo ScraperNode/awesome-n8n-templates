@@ -1,6 +1,6 @@
 # 📊 Monitor BOAMP IT tenders and score them with GPT-4o Mini to Supabase
 
-> ⚡ **17 views** · 📊 [Market Research & Insights](../)
+> ⚡ **93 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

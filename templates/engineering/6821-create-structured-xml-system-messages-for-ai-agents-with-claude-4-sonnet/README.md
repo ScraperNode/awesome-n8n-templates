@@ -1,6 +1,6 @@
 # ⚒️ Create structured XML system messages for AI agents with Claude 4 Sonnet
 
-> ⚡ **175 views** · ⚒️ [Engineering](../)
+> ⚡ **188 views** · ⚒️ [Engineering](../)
 
 ## Description
 

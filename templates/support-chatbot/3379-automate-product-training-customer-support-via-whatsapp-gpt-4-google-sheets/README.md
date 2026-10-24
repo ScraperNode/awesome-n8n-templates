@@ -1,6 +1,6 @@
 # 💬 Automate product training & customer support via WhatsApp, GPT-4 & Google Sheets
 
-> ⚡ **38,459 views** · 💬 [Support Chatbots](../)
+> ⚡ **40,322 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

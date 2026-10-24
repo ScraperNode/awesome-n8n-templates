@@ -1,6 +1,6 @@
 # 💬 Automate HVAC service scheduling with AI agent, Google Calendar and Gmail
 
-> ⚡ **976 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,180 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 Technical stock analysis with Telegram, Airtable and a GPT-powered AI agent
 
-> ⚡ **22,123 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **22,802 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

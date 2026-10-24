@@ -1,6 +1,6 @@
 # 🤝 Validate website of new companies in HubSpot
 
-> ⚡ **1,505 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,524 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

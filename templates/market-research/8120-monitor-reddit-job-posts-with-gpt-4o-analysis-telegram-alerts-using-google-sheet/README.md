@@ -1,6 +1,6 @@
 # 📊 Monitor Reddit job posts with GPT-4o analysis & Telegram alerts using Google Sheets
 
-> ⚡ **197 views** · 📊 [Market Research & Insights](../)
+> ⚡ **247 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

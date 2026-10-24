@@ -1,6 +1,6 @@
 # 🎬 Generate & post unique MCQ polls to Telegram with Gemini AI and Google Sheets
 
-> ⚡ **252 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **499 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

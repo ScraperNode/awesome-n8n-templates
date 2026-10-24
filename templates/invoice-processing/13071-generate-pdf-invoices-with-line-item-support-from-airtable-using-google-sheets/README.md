@@ -1,6 +1,6 @@
 # 🧾 Generate PDF invoices with line item support from Airtable using Google Sheets
 
-> ⚡ **13 views** · 🧾 [Invoice Processing](../)
+> ⚡ **62 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

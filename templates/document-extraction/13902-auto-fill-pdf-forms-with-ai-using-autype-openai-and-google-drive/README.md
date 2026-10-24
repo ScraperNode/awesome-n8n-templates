@@ -1,6 +1,6 @@
 # 🔬 Auto-fill PDF forms with AI using Autype, OpenAI, and Google Drive
 
-> ⚡ **75 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **304 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

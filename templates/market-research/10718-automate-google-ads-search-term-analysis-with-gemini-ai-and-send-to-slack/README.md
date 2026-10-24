@@ -1,6 +1,6 @@
 # 📊 Automate Google Ads search term analysis with Gemini AI and send to Slack
 
-> ⚡ **2,243 views** · 📊 [Market Research & Insights](../)
+> ⚡ **3,370 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

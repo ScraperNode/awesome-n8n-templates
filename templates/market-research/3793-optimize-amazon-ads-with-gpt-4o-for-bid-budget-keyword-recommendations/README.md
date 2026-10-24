@@ -1,6 +1,6 @@
 # 📊 Optimize Amazon ads with GPT-4o for bid, budget & keyword recommendations
 
-> ⚡ **4,474 views** · 📊 [Market Research & Insights](../)
+> ⚡ **5,054 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate AI Twitter posts with web research using GPT, Tavily and image generation
 
-> ⚡ **1,276 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,360 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

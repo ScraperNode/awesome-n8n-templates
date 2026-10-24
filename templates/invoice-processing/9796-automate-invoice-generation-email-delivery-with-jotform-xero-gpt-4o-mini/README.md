@@ -1,6 +1,6 @@
 # 🧾 Automate invoice generation & email delivery with Jotform, Xero & GPT-4o-mini
 
-> ⚡ **157 views** · 🧾 [Invoice Processing](../)
+> ⚡ **183 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

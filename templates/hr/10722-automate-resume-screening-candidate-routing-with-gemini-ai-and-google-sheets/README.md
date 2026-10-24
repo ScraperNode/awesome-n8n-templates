@@ -1,6 +1,6 @@
 # 👥 Automate resume screening & candidate routing with Gemini AI and Google Sheets
 
-> ⚡ **500 views** · 👥 [HR & Recruitment](../)
+> ⚡ **791 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

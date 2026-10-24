@@ -1,6 +1,6 @@
 # 💬 Smart chat assistant with GPT-5, Google Sheets, and Pinecone RAG memory
 
-> ⚡ **468 views** · 💬 [Support Chatbots](../)
+> ⚡ **538 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

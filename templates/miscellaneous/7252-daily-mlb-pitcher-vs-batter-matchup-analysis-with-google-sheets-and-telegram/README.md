@@ -1,6 +1,6 @@
 # 🔧 Daily MLB pitcher vs. batter matchup analysis with Google Sheets and Telegram
 
-> ⚡ **326 views** · 🔧 [Miscellaneous](../)
+> ⚡ **398 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

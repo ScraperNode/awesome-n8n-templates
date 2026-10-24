@@ -1,6 +1,6 @@
 # 💬 Send personalized transactional emails from KlickTipp via SMTP
 
-> ⚡ **147 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **176 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 Get IPO calendar alerts via Telegram with Finnhub API and Gemini AI
 
-> ⚡ **155 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **168 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Track website traffic & backlinks with Ahref API and Google Sheets
 
-> ⚡ **481 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **631 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

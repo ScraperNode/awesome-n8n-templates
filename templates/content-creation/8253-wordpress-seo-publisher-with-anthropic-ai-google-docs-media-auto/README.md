@@ -1,6 +1,6 @@
 # 🎬 WordPress SEO publisher with Anthropic AI, Google Docs & media auto
 
-> ⚡ **69 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **90 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

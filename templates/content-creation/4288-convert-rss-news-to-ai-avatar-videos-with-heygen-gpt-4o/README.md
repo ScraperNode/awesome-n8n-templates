@@ -1,6 +1,6 @@
 # 🎬 Convert RSS news to AI avatar videos with Heygen & GPT-4o
 
-> ⚡ **2,745 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,811 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

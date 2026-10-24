@@ -1,6 +1,6 @@
 # 👥 Provision new employee accounts to Google Workspace, Slack, Jira, and Salesforce
 
-> ⚡ **278 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,346 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

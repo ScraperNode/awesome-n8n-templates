@@ -1,6 +1,6 @@
 # ⚙️ Website downtime monitoring with smart alerts via Telegram & Email
 
-> ⚡ **282 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,609 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

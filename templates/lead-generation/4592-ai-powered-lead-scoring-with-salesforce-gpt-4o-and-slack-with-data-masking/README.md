@@ -1,6 +1,6 @@
 # 🎣 AI-powered lead scoring with Salesforce, GPT-4o, and Slack with data masking
 
-> ⚡ **684 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **747 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

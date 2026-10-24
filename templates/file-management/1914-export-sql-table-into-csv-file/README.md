@@ -1,6 +1,6 @@
 # 📁 Export SQL table into CSV file
 
-> ⚡ **9,003 views** · 📁 [File Management](../)
+> ⚡ **9,303 views** · 📁 [File Management](../)
 
 ## Description
 

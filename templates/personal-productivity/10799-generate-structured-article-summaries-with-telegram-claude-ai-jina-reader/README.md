@@ -1,6 +1,6 @@
 # ⚡ Generate structured article summaries with Telegram, Claude AI & Jina Reader
 
-> ⚡ **94 views** · ⚡ [Personal Productivity](../)
+> ⚡ **216 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

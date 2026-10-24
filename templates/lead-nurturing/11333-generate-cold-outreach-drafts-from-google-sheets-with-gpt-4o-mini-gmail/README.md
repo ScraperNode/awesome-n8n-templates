@@ -1,6 +1,6 @@
 # 💬 Generate cold outreach drafts from Google Sheets with GPT-4o-mini & Gmail
 
-> ⚡ **122 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **265 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

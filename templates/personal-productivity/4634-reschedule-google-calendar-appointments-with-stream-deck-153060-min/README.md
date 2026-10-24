@@ -1,6 +1,6 @@
 # ⚡ Reschedule Google Calendar appointments with Stream Deck (15/30/60 min)
 
-> ⚡ **345 views** · ⚡ [Personal Productivity](../)
+> ⚡ **351 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Tiny Tiny RSS new stared article saved to wallabag 
 
-> ⚡ **977 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,004 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

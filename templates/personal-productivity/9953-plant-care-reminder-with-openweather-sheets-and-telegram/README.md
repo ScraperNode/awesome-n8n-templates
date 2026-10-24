@@ -1,6 +1,6 @@
 # ⚡ Plant care reminder with OpenWeather, Sheets and Telegram
 
-> ⚡ **296 views** · ⚡ [Personal Productivity](../)
+> ⚡ **370 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

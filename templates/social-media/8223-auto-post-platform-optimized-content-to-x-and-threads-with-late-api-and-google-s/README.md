@@ -1,6 +1,6 @@
 # 📱 Auto-post platform-optimized content to X and Threads with late API and Google Sheets
 
-> ⚡ **3,093 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **3,591 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

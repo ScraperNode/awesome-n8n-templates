@@ -1,6 +1,6 @@
 # 🎬 Full blog content automation with GPT-4, Claude & Ghost CMS publisher
 
-> ⚡ **1,299 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,621 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

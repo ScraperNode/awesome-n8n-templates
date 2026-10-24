@@ -1,6 +1,6 @@
 # 🔧 Build a self-hosted URL shortener with a dashboard
 
-> ⚡ **6,073 views** · 🔧 [Miscellaneous](../)
+> ⚡ **6,153 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

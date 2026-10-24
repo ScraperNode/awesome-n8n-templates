@@ -1,6 +1,6 @@
 # 🔒 Prevent phishing emails with GPT-4, VirusTotal, Slack, and Google Sheets
 
-> ⚡ **27 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **272 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

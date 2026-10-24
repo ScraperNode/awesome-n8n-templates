@@ -1,6 +1,6 @@
 # 🔬 AI research agents to automate PDF analysis with Mistral’s best-in-class OCR
 
-> ⚡ **4,630 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,990 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

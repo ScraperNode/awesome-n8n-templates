@@ -1,6 +1,6 @@
 # 🔬 Reconcile Stripe, bank, and e-commerce data with GPT-4.1 and Google Sheets
 
-> ⚡ **53 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **114 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Analyze WooCommerce product reviews with GPT-4, Airtable & Slack summaries
 
-> ⚡ **5 views** · 📊 [Market Research & Insights](../)
+> ⚡ **17 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

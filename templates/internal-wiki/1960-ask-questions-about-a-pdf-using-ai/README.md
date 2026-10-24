@@ -1,6 +1,6 @@
 # 📖 Ask questions about a PDF using AI
 
-> ⚡ **142,454 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **146,276 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

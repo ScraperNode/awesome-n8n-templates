@@ -1,6 +1,6 @@
 # 💬 Auto-reply to Telegram messages using BrowserAct and Google Gemini
 
-> ⚡ **20 views** · 💬 [Support Chatbots](../)
+> ⚡ **207 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 Build an All-Source Knowledge Assistant with Claude, RAG, Perplexity, and Drive
 
-> ⚡ **8,492 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **10,612 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

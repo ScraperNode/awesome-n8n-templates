@@ -1,6 +1,6 @@
 # 🎬 Create marketing content with voice commands using GPT-4 & AI tools in Telegram
 
-> ⚡ **1,777 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,940 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔒 Automate security incident response with Google Sheets, email alerts and EDR isolation
 
-> ⚡ **92 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **125 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

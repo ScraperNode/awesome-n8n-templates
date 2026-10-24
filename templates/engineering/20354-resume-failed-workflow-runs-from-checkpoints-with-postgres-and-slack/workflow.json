@@ -1,0 +1,1812 @@
+{
+  "id": "a7ldLty8xYKwUCqw",
+  "meta": {
+    "instanceId": "dd69efaf8212c74ad206700d104739d3329588a6f3f8381a46a481f34c9cc281",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Workflow Checkpoint System - Resume Failed Executions From Last Successful Node",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "83026767-4a80-4547-846c-20b012ef1e00",
+      "name": "Sticky Note - Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -528,
+        -384
+      ],
+      "parameters": {
+        "width": 1850,
+        "height": 2700,
+        "content": "## \u267b\ufe0f Workflow Checkpoint System \u2014 resume failed executions from the last successful node\n\nA multi-stage pipeline (demo: order fulfilment with 5 stages) that **saves a checkpoint to Postgres after every successful stage**. If a stage fails, the run is parked; a retry (automatic sweeper or manual webhook call) **skips every stage that already has a checkpoint and continues from the failed one**, with the earlier stages' outputs restored into context.\n\n### Flow\nTrigger (manual / webhook / schedule) \u2192 Config \u2192 Ensure tables \u2192 **Run branch:** Init run \u2192 Load run state + checkpoints \u2192 Build resume plan \u2192 Lease lock \u2192 **Stage loop** (Select stage \u2192 Run stage \u2192 Capture \u2192 Save checkpoint \u2192 Advance) \u2192 Completed\n**Failure branch:** inline retry with backoff \u2192 mark run failed (or dead letter) \u2192 Slack alert \u2192 sweeper resumes later\n**Sweeper branch:** every 10 min find failed / stalled runs \u2192 call this workflow's webhook with the runId \u2192 resume\n\n### Key mechanics\n1. **Checkpoint per stage**: workflow_checkpoints holds the stage output; resume restores `context` from these rows and starts at the first stage without a completed checkpoint.\n2. **Lease lock**: only one execution may own a run. A run in `running` state is protected until its heartbeat (updated_at) is older than leaseMinutes.\n3. **Crash recovery**: checkpoint writes are NOT continueOnFail. If n8n or Postgres dies mid-run, the run stays `running`, the lease expires and the sweeper resumes it from the last checkpoint.\n4. **Layered retries**: inline retries per stage (exponential backoff + jitter), then run-level resumes (maxRunAttempts), then `dead_letter` + Slack alert for manual action.\n5. **Idempotency keys**: every stage gets `runId:stage` as its idempotency key and deterministic ids, so a re-executed stage cannot double-charge or double-ship.\n6. **Permanent errors** (non-retryable) go straight to dead_letter.\n7. **Audit trail**: workflow_run_events logs started / resumed / stage_completed / stage_failed / run_completed.\n\n### Setup\n1. Import the workflow and attach Postgres and Slack credentials (tables are created automatically on every start, no SQL file needed).\n2. Edit Set - Checkpoint Config: set `selfWebhookUrl` to this workflow's production webhook URL (it must end in /webhook/checkpoint-run), the Slack channel and the limits.\n3. Workflow Settings \u2192 Error workflow \u2192 select this workflow, so Error Trigger can report hard crashes.\n4. Activate the workflow (sweeper and webhook need it).\n\n### Try it\n- Run the Manual Trigger: the demo injects a failure at `charge_payment` on run attempt 1. Stages 1-2 are checkpointed, the run is marked `failed`, Slack alerts.\n- Resume immediately: POST {\"runId\": \"<id from the alert>\"} to the webhook, or wait for the sweeper. Stages 1-2 are skipped and the run continues at `charge_payment` and completes.\n- Check workflow_runs, workflow_checkpoints and workflow_run_events in Postgres.\n\n### Webhook payload (all optional)\n{ runId, order: { orderId, customer: {name, email}, items: [{sku, qty, price}], currency }, failAt: \"<stage name>\", failTimes: 1 }\nSend only `runId` to resume an existing run (its stored payload is reused).\n\n### Adapting to your process\nReplace the five `JS - Stage N` Code nodes with your own nodes (HTTP, DB, etc.), keep each stage's input/output contract (`stageResult: {ok, output, error, retryable}`) and add the stage name to the STAGES list in JS - Build Execution Plan and to Switch - Stage Router."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "07704961-e6e1-4b5f-8112-71ebae9ac8be",
+      "name": "Sticky Note - Triggers & Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1408,
+        -384
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 1280,
+        "height": 800,
+        "content": "## 1. Triggers, Mode & Setup\n\n- **Manual Trigger - New Run** \u2014 starts a brand-new demo run from the editor with the built-in sample order and an injected failure.\n- **Webhook - Start or Resume Run** \u2014 POST /checkpoint-run starts a run, or resumes one when the body contains an existing runId.\n- **Schedule Trigger - Auto Resume Sweeper** \u2014 fires every 10 minutes to look for failed or stalled runs that can be resumed.\n- **Set - Mode Manual** \u2014 tags the manual execution with entryMode = manual.\n- **Set - Mode Webhook** \u2014 tags the webhook execution with entryMode = webhook.\n- **Set - Mode Sweeper** \u2014 tags the scheduled execution with entryMode = sweeper.\n- **Set - Checkpoint Config** \u2014 holds every policy setting: stage retries, backoff, run attempts, lease, resume delay, sweeper URL, Slack channel.\n- **Postgres - Ensure Checkpoint Tables** \u2014 creates workflow_runs, workflow_checkpoints and workflow_run_events if they do not exist yet.\n- **Switch - Entry Mode** \u2014 sends sweeper executions to the sweeper branch and manual / webhook executions to the run branch."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "fcd7565f-9735-4b83-812b-51319e98390a",
+      "name": "Sticky Note - Sweeper",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2752,
+        -384
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 1240,
+        "height": 560,
+        "content": "## 2. Auto-Resume Sweeper\n\n- **Postgres - Find Resumable Runs** \u2014 selects failed runs whose retry time has passed and running runs whose lease expired, within the attempt limit.\n- **JS - Build Resume Requests** \u2014 turns each resumable run into one item carrying the runId and the self-webhook URL.\n- **HTTP Request - Trigger Resume** \u2014 calls this workflow's own webhook with {runId, resume: true} so each run resumes in its own execution.\n- **JS - Summarize Sweep** \u2014 aggregates how many runs were found and how many resume calls succeeded."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c27934c9-bec1-4a19-9e1c-f6e5cbfa4bf9",
+      "name": "Sticky Note - Init, Plan & Lock",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1408,
+        480
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 2340,
+        "height": 800,
+        "content": "## 3. Run Init, Resume Plan & Lease Lock\n\n- **JS - Init Run** \u2014 merges the request over the sample order, builds the config object and creates or reuses the runId.\n- **Postgres - Load Run State** \u2014 reads the stored run (status, payload, attempts) plus all completed checkpoints as one JSON array.\n- **JS - Build Execution Plan** \u2014 restores context from checkpoints and sets stageIndex to the first stage without a completed checkpoint.\n- **IF - Run Already Completed?** \u2014 stops the flow when the run is already completed so nothing is executed twice.\n- **Set - Skip Completed Run** \u2014 ends the execution with outcome = skipped_already_completed.\n- **Postgres - Acquire Run Lock** \u2014 upserts the run as running and increments attempts only if no other live execution holds the lease.\n- **IF - Lock Acquired?** \u2014 continues only if the lock query returned a row, meaning this execution owns the run.\n- **Set - Skip Locked Run** \u2014 ends the execution with outcome = skipped_locked_or_completed when another execution owns the run.\n- **JS - Restore Plan State** \u2014 puts the plan back on the item after the lock query and sets the real attempt number from the database."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6f629472-5fe3-4e2b-aff3-64d796919205",
+      "name": "Sticky Note - Stage Loop",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1616,
+        1344
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 2060,
+        "height": 1060,
+        "content": "## 4. Stage Loop & Checkpointing\n\n- **JS - Select Stage** \u2014 picks the stage at stageIndex, increments the stage attempt and creates the idempotency key runId:stage.\n- **IF - All Stages Done?** \u2014 sends the run to completion when there is no stage left, otherwise to the stage router.\n- **Switch - Stage Router** \u2014 routes the item to the Code node that implements the selected stage.\n- **JS - Stage 1: Validate Order** \u2014 validates the order and computes the total (permanent error if the order has no items).\n- **JS - Stage 2: Reserve Inventory** \u2014 reserves stock and returns a deterministic reservationId derived from the idempotency key.\n- **JS - Stage 3: Charge Payment** \u2014 charges the validated total with a deterministic chargeId (the demo failure is injected here).\n- **JS - Stage 4: Create Shipment** \u2014 creates the shipment and returns a tracking number using the reservation from earlier checkpoints.\n- **JS - Stage 5: Send Confirmation** \u2014 sends the confirmation email including the charge and tracking details restored from checkpoints.\n- **JS - Capture Stage Result** \u2014 normalises stage output or stage-node errors into stageOk, stageOutput, stageError, stageRetryable and duration.\n- **IF - Stage Succeeded?** \u2014 routes successful stages to checkpointing and failed stages to retry planning.\n- **Postgres - Save Checkpoint** \u2014 atomically stores the stage output, moves the run's current stage, refreshes the lease heartbeat and logs an event.\n- **JS - Advance Stage** \u2014 adds the stage output to context, records history and moves stageIndex to the next stage, then loops."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6e541e92-9f21-4782-8615-67c991564e5c",
+      "name": "Sticky Note - Failure Handling",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3744,
+        1344
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 1700,
+        "height": 1232,
+        "content": "## 5. Failure Handling\n\n- **JS - Plan Stage Retry** \u2014 decides between an inline retry with exponential backoff and giving up, and flags permanent errors.\n- **IF - Retry Stage Inline?** \u2014 true retries the same stage after a wait, false fails the run and leaves its checkpoints intact.\n- **Wait - Stage Backoff** \u2014 pauses for the computed backoff seconds, then the loop re-runs the same stage.\n- **Postgres - Mark Run Failed** \u2014 sets failed or dead_letter, schedules next_retry_at, records the failed checkpoint and logs the failure.\n- **JS - Build Failure Summary** \u2014 combines the failure context with the database result into one flat object for the alert.\n- **Slack - Alert Run Failed** \u2014 tells the team which stage failed, what is checkpointed and when the sweeper will resume the run."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2d132eb5-dbe1-4bc5-8d7e-55b43aa422e9",
+      "name": "Sticky Note - Completion & Crash",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1616,
+        2464
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 2000,
+        "height": 700,
+        "content": "## 6. Completion & Crash Alerts\n\n- **Postgres - Mark Run Completed** \u2014 marks the run completed, clears failure fields and logs the run_completed event.\n- **JS - Build Completion Summary** \u2014 builds the final summary: stages skipped from checkpoints, stages executed now and whether the run was recovered.\n- **IF - Recovered Run?** \u2014 only runs that were resumed after a failure get a recovery notification.\n- **Slack - Notify Recovery** \u2014 announces the recovered run, where it resumed and which stages were skipped thanks to checkpoints.\n- **Error Trigger - Workflow Crash** \u2014 catches hard failures such as a Postgres outage or an n8n error that stops the execution.\n- **Slack - Crash Alert** \u2014 reports the crashed execution and explains that the sweeper resumes any in-flight run after its lease expires."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f307ee7d-65b8-4504-a521-c3dca86f44db",
+      "name": "Manual Trigger - New Run",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        1488,
+        48
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "d805aa36-f1ae-4097-841f-3d48a128fdce",
+      "name": "Webhook - Start or Resume Run",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        1488,
+        160
+      ],
+      "webhookId": "6e6944d3-bbf5-404a-a0ae-b4e5833bfa03",
+      "parameters": {
+        "path": "checkpoint-run",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "6c8a97e2-11d0-44ff-a507-31a9862b5d66",
+      "name": "Schedule Trigger - Auto Resume Sweeper",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        1488,
+        288
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "7b606196-55d5-4ecb-912f-2d6af686c494",
+      "name": "Set - Mode Manual",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1728,
+        48
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "374ebe5a-9ef9-4bda-ac03-a513a86cf7b4",
+              "name": "entryMode",
+              "type": "string",
+              "value": "manual"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "8841ea99-1e29-423d-9560-2b4ec1a80984",
+      "name": "Set - Mode Webhook",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1728,
+        160
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f7f3a683-5e62-4fe9-9c32-60fdc2816017",
+              "name": "entryMode",
+              "type": "string",
+              "value": "webhook"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "9b0b483c-ed90-4c41-97a4-12806e92afa4",
+      "name": "Set - Mode Sweeper",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1728,
+        288
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d0745cc1-15f2-4d71-92af-2f03507bef95",
+              "name": "entryMode",
+              "type": "string",
+              "value": "sweeper"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "1e285506-ce01-4780-b71b-2e6474fee531",
+      "name": "Set - Checkpoint Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1968,
+        160
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "acfc4403-728c-4f7b-8a9f-211e97323268",
+              "name": "workflowName",
+              "type": "string",
+              "value": "order-fulfillment"
+            },
+            {
+              "id": "cc8ba3e3-2e99-477f-a9e0-b1f5a472ea5f",
+              "name": "maxStageAttempts",
+              "type": "number",
+              "value": 2
+            },
+            {
+              "id": "ac61e3a6-52cb-46d8-8899-230b2db4cb47",
+              "name": "stageBackoffSeconds",
+              "type": "number",
+              "value": 3
+            },
+            {
+              "id": "951179a0-3213-4b34-8523-2575d0dd15d6",
+              "name": "maxBackoffSeconds",
+              "type": "number",
+              "value": 30
+            },
+            {
+              "id": "6d17abfb-193e-4ff7-9513-64291d42d810",
+              "name": "maxRunAttempts",
+              "type": "number",
+              "value": 3
+            },
+            {
+              "id": "f0a9fed6-468b-4467-9169-1c4d09f78636",
+              "name": "resumeDelayMinutes",
+              "type": "number",
+              "value": 5
+            },
+            {
+              "id": "9707d5ae-d216-4b71-87d4-270192a474bb",
+              "name": "leaseMinutes",
+              "type": "number",
+              "value": 10
+            },
+            {
+              "id": "e66e9991-5ea1-43d7-9bea-6f2354afa07e",
+              "name": "sweepBatchSize",
+              "type": "number",
+              "value": 5
+            },
+            {
+              "id": "e50086cd-4e06-4c8e-8aca-c02449da1bd7",
+              "name": "selfWebhookUrl",
+              "type": "string",
+              "value": "http://localhost:5678/webhook/checkpoint-run"
+            },
+            {
+              "id": "37e23242-8c8a-4616-b469-11c2c70fa585",
+              "name": "slackChannel",
+              "type": "string",
+              "value": "#workflow-alerts"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "63dbd7d6-42cb-42b0-8800-50c1b4adefa6",
+      "name": "Postgres - Ensure Checkpoint Tables",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        2208,
+        160
+      ],
+      "parameters": {
+        "query": "CREATE TABLE IF NOT EXISTS workflow_runs (\n  run_id        TEXT PRIMARY KEY,\n  workflow_name TEXT        NOT NULL,\n  status        TEXT        NOT NULL,\n  current_stage TEXT,\n  failed_stage  TEXT,\n  payload       JSONB,\n  attempts      INT         NOT NULL DEFAULT 0,\n  last_error    TEXT,\n  next_retry_at TIMESTAMPTZ,\n  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  completed_at  TIMESTAMPTZ\n);\nCREATE TABLE IF NOT EXISTS workflow_checkpoints (\n  run_id       TEXT        NOT NULL,\n  stage        TEXT        NOT NULL,\n  stage_index  INT         NOT NULL,\n  status       TEXT        NOT NULL,\n  output       JSONB,\n  attempts     INT         NOT NULL DEFAULT 1,\n  duration_ms  INT,\n  completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  PRIMARY KEY (run_id, stage)\n);\nCREATE TABLE IF NOT EXISTS workflow_run_events (\n  id         BIGSERIAL PRIMARY KEY,\n  run_id     TEXT        NOT NULL,\n  event      TEXT        NOT NULL,\n  stage      TEXT,\n  detail     JSONB,\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);\nCREATE INDEX IF NOT EXISTS idx_workflow_runs_status ON workflow_runs (status, next_retry_at);\nCREATE INDEX IF NOT EXISTS idx_workflow_run_events_run ON workflow_run_events (run_id, created_at);\nSELECT 1 AS tables_ready;",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "e1329213-7463-4b12-97c9-19996d039440",
+      "name": "Switch - Entry Mode",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        2448,
+        160
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "sweep",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "5408fc8d-3cef-4c40-be36-2e4bd41cdb62",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $('Set - Checkpoint Config').first().json.entryMode }}",
+                    "rightValue": "sweeper"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "run",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "becce65a-eb32-40a6-a477-9bd28ba48374",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    },
+                    "leftValue": "={{ $('Set - Checkpoint Config').first().json.entryMode }}",
+                    "rightValue": "sweeper"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "b3032c35-5fde-4432-83ec-745703e5b6aa",
+      "name": "Postgres - Find Resumable Runs",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        2832,
+        -48
+      ],
+      "parameters": {
+        "query": "SELECT run_id, status, failed_stage, attempts\nFROM workflow_runs\nWHERE workflow_name = $1\n  AND attempts < $2::int\n  AND (\n    (status = 'failed' AND (next_retry_at IS NULL OR next_retry_at <= NOW()))\n    OR (status = 'running' AND updated_at < NOW() - ($3::int * INTERVAL '1 minute'))\n  )\nORDER BY updated_at ASC\nLIMIT $4::int;",
+        "options": {
+          "queryReplacement": "={{ [ $('Set - Checkpoint Config').first().json.workflowName, $('Set - Checkpoint Config').first().json.maxRunAttempts, $('Set - Checkpoint Config').first().json.leaseMinutes, $('Set - Checkpoint Config').first().json.sweepBatchSize ] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "9caf270d-bb7b-49ab-8ad7-85ffa8edd8a6",
+      "name": "JS - Build Resume Requests",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3072,
+        -48
+      ],
+      "parameters": {
+        "jsCode": "const cfg = $('Set - Checkpoint Config').first().json;\nconst rows = $input.all().map(i => i.json).filter(r => r && r.run_id);\n\nreturn rows.map(r => ({\n  json: {\n    runId: r.run_id,\n    url: cfg.selfWebhookUrl,\n    previousStatus: r.status,\n    failedStage: r.failed_stage || null,\n    attempts: r.attempts\n  }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "53ac4e9a-59a0-4ac0-862d-3cc3c6590b88",
+      "name": "HTTP Request - Trigger Resume",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3312,
+        -48
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "method": "POST",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify({ runId: $json.runId, resume: true }) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2,
+      "continueOnFail": true
+    },
+    {
+      "id": "ac2039e9-9e30-4ff6-9856-931a5a63be5b",
+      "name": "JS - Summarize Sweep",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3552,
+        -48
+      ],
+      "parameters": {
+        "jsCode": "const reqs = $('JS - Build Resume Requests').all().map(i => i.json);\nconst res = $input.all().map(i => i.json);\nconst ok = res.filter(r => Number(r.statusCode) >= 200 && Number(r.statusCode) < 300).length;\n\nreturn [{\n  json: {\n    resumableRuns: reqs.length,\n    resumeCallsAccepted: ok,\n    resumeCallsFailed: reqs.length - ok,\n    runIds: reqs.map(r => r.runId)\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "11a5c2c9-9c15-4c44-b5ab-e6648d4c625d",
+      "name": "JS - Init Run",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1488,
+        880
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) { try { return $(name).item.json; } catch (e) { return $(name).first().json; } }\nconst cfgIn = ref('Set - Checkpoint Config');\nconst body = (cfgIn.body && typeof cfgIn.body === 'object') ? cfgIn.body : {};\nconst demo = cfgIn.entryMode === 'manual';\n\nconst defaultOrder = {\n  orderId: 'ORD-' + Date.now(),\n  customer: { name: 'Asha Patel', email: 'user@example.com' },\n  items: [\n    { sku: 'LAP-RUG-16', qty: 2, price: 1350 },\n    { sku: 'DOCK-USB-C', qty: 2, price: 120 }\n  ],\n  currency: 'USD'\n};\n\nconst runId = body.runId ? String(body.runId) : 'RUN-' + Date.now();\nconst request = {\n  order: (body.order && typeof body.order === 'object') ? body.order : defaultOrder,\n  // The manual demo injects one failure at charge_payment so the resume path is visible.\n  failAt: body.failAt !== undefined ? String(body.failAt) : (demo ? 'charge_payment' : ''),\n  failTimes: Number(body.failTimes) || 1\n};\n\nconst config = {\n  workflowName: cfgIn.workflowName,\n  maxStageAttempts: Math.max(1, Number(cfgIn.maxStageAttempts) || 2),\n  stageBackoffSeconds: Math.max(1, Number(cfgIn.stageBackoffSeconds) || 3),\n  maxBackoffSeconds: Math.max(1, Number(cfgIn.maxBackoffSeconds) || 30),\n  maxRunAttempts: Math.max(1, Number(cfgIn.maxRunAttempts) || 3),\n  resumeDelayMinutes: Math.max(1, Number(cfgIn.resumeDelayMinutes) || 5),\n  leaseMinutes: Math.max(1, Number(cfgIn.leaseMinutes) || 10),\n  slackChannel: cfgIn.slackChannel\n};\n\nreturn [{ json: { runId, resumeRequested: !!body.runId, entryMode: cfgIn.entryMode, request, config, startedAt: Date.now() } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1c18274f-24a2-4526-9b85-fe9c2d27567a",
+      "name": "Postgres - Load Run State",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1728,
+        880
+      ],
+      "parameters": {
+        "query": "SELECT r.run_id, r.status, r.payload, r.attempts, r.failed_stage, r.current_stage, r.last_error,\n  COALESCE((\n    SELECT json_agg(json_build_object('stage', c.stage, 'stage_index', c.stage_index, 'output', c.output, 'attempts', c.attempts) ORDER BY c.stage_index)\n    FROM workflow_checkpoints c\n    WHERE c.run_id = r.run_id AND c.status = 'completed'\n  ), '[]'::json) AS checkpoints\nFROM workflow_runs r\nWHERE r.run_id = $1;",
+        "options": {
+          "queryReplacement": "={{ [ $json.runId ] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "f1094ee0-0afc-4dd0-a66b-e5b7b1c25dc3",
+      "name": "JS - Build Execution Plan",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1968,
+        880
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) { try { return $(name).item.json; } catch (e) { return $(name).first().json; } }\nconst init = ref('JS - Init Run');\nconst row = $input.first().json;\nconst exists = !!(row && row.run_id);\n\nconst STAGES = ['validate_order', 'reserve_inventory', 'charge_payment', 'create_shipment', 'send_confirmation'];\n\n// A resumed run always reuses the payload stored when it first started.\nconst request = (exists && row.payload && typeof row.payload === 'object') ? row.payload : init.request;\n\nlet cps = row.checkpoints;\nif (typeof cps === 'string') { try { cps = JSON.parse(cps); } catch (e) { cps = []; } }\nif (!Array.isArray(cps)) cps = [];\nconst byStage = {};\ncps.forEach(c => { byStage[c.stage] = c; });\n\n// Resume point = first stage without a completed checkpoint (contiguous prefix only).\nlet stageIndex = 0;\nconst context = {};\nconst completedStages = [];\nwhile (stageIndex < STAGES.length && byStage[STAGES[stageIndex]]) {\n  context[STAGES[stageIndex]] = byStage[STAGES[stageIndex]].output;\n  completedStages.push(STAGES[stageIndex]);\n  stageIndex++;\n}\n\nconst alreadyCompleted = exists && row.status === 'completed';\nconst resumed = exists && (stageIndex > 0 || ['failed', 'running', 'dead_letter'].includes(row.status));\n\nreturn [{\n  json: {\n    runId: init.runId,\n    request,\n    config: init.config,\n    stages: STAGES,\n    stageIndex,\n    completedStages,\n    context,\n    stageAttempt: 0,\n    stageHistory: [],\n    runAttempt: (Number(row.attempts) || 0) + 1,\n    startedAt: init.startedAt,\n    alreadyCompleted,\n    resumeInfo: {\n      resumed,\n      previousStatus: exists ? row.status : 'new',\n      previousFailedStage: row.failed_stage || null,\n      previousError: row.last_error || null,\n      resumedFromStage: STAGES[stageIndex] || null,\n      skippedStages: completedStages,\n      note: (init.resumeRequested && !exists) ? 'runId not found: started as a new run' : ''\n    }\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "dd7bea6b-b1aa-4a2c-97f9-f7bf0954e70c",
+      "name": "IF - Run Already Completed?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2416,
+        880
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "7d97c649-6083-444b-89c9-4c23f971b2c9",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.alreadyCompleted }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "a7d166ce-fb3b-43f9-88b6-2d8637c327f7",
+      "name": "Set - Skip Completed Run",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2656,
+        1056
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1445bf3-3257-421a-8c5b-b389774902b8",
+              "name": "outcome",
+              "type": "string",
+              "value": "skipped_already_completed"
+            },
+            {
+              "id": "4baf4fc4-f350-4ed8-b580-1765eefef9e5",
+              "name": "runId",
+              "type": "string",
+              "value": "={{ $json.runId }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "1b3ad0e7-cf6f-4fc1-aa9c-d878df6a3faf",
+      "name": "Postgres - Acquire Run Lock",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        2656,
+        880
+      ],
+      "parameters": {
+        "query": "WITH upsert AS (\n  INSERT INTO workflow_runs (run_id, workflow_name, status, current_stage, payload, attempts, created_at, updated_at)\n  VALUES ($1, $2, 'running', $3::text, $4::jsonb, 1, NOW(), NOW())\n  ON CONFLICT (run_id) DO UPDATE SET\n    status = 'running',\n    current_stage = EXCLUDED.current_stage,\n    attempts = workflow_runs.attempts + 1,\n    next_retry_at = NULL,\n    updated_at = NOW()\n  WHERE workflow_runs.status <> 'completed'\n    AND (workflow_runs.status <> 'running' OR workflow_runs.updated_at < NOW() - ($5::int * INTERVAL '1 minute'))\n  RETURNING run_id, attempts, (xmax = 0) AS inserted\n), ev AS (\n  INSERT INTO workflow_run_events (run_id, event, stage, detail)\n  SELECT run_id, CASE WHEN inserted THEN 'run_started' ELSE 'run_resumed' END, $3::text, jsonb_build_object('attempt', attempts)\n  FROM upsert\n)\nSELECT run_id, attempts, inserted FROM upsert;",
+        "options": {
+          "queryReplacement": "={{ [ $json.runId, $json.config.workflowName, $json.stages[$json.stageIndex] || null, JSON.stringify($json.request), $json.config.leaseMinutes ] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "4540c7ef-fdc6-40e1-ac1a-16bac4e196e7",
+      "name": "IF - Lock Acquired?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2896,
+        880
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "3d176ac0-d016-4681-8ed8-60998b2c899d",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ !!$json.run_id }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "9d37c609-27fc-41c3-bd60-1446aa2efcf2",
+      "name": "Set - Skip Locked Run",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3136,
+        1056
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c30d72c2-71d7-4e96-8303-f311e69f6ada",
+              "name": "outcome",
+              "type": "string",
+              "value": "skipped_locked_or_completed"
+            },
+            {
+              "id": "6a19fcf9-e46f-4a23-a816-718c57c02ebe",
+              "name": "runId",
+              "type": "string",
+              "value": "={{ $('JS - Init Run').first().json.runId }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "94b5b717-bf8d-40ca-bddf-70342503b1ca",
+      "name": "JS - Restore Plan State",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3136,
+        880
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) { try { return $(name).item.json; } catch (e) { return $(name).first().json; } }\nconst lock = $input.first().json;\nconst plan = ref('JS - Build Execution Plan');\n\n// The Postgres node replaced the item with the lock row, so restore the plan.\nreturn [{\n  json: {\n    ...plan,\n    runAttempt: Number(lock.attempts) || plan.runAttempt,\n    lockAcquiredAt: Date.now()\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7f03ffcd-69fb-4f68-aba4-31eb92a6aa96",
+      "name": "JS - Select Stage",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1488,
+        1920
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nconst stage = s.stages[s.stageIndex] || null;\n\nreturn [{\n  json: {\n    ...s,\n    stage,\n    allDone: !stage,\n    stageAttempt: s.stageAttempt + 1,\n    stageStartedAt: Date.now(),\n    idempotencyKey: s.runId + ':' + stage\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "01d7d5fb-62b0-4eb9-af24-981fe13d6616",
+      "name": "IF - All Stages Done?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1728,
+        1920
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "8bb9709d-3d09-4de9-bee9-2b87a3b71164",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.allDone }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "54920ef5-7d9e-4542-ae75-0e6c2146d7d5",
+      "name": "Switch - Stage Router",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1968,
+        2016
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "validate_order",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "9c1bc99a-8e9d-4dcb-9c46-40a2c58be170",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.stage }}",
+                    "rightValue": "validate_order"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "reserve_inventory",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "48ec6ace-d398-4fd9-8d30-27db8cc8b432",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.stage }}",
+                    "rightValue": "reserve_inventory"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "charge_payment",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "23a36a8e-a198-497b-867a-83911bc3228c",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.stage }}",
+                    "rightValue": "charge_payment"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "create_shipment",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "ba8ed728-8f31-4726-b705-d6d6551edef1",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.stage }}",
+                    "rightValue": "create_shipment"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "send_confirmation",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "2a52cfb3-3f94-42e0-ae32-51f7d5d97679",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.stage }}",
+                    "rightValue": "send_confirmation"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "894b3482-e11e-483d-bb11-3c377bff100b",
+      "name": "JS - Stage 1: Validate Order",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2432,
+        1776
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nfunction h(str) { let x = 0; for (let i = 0; i < str.length; i++) { x = (Math.imul(31, x) + str.charCodeAt(i)) | 0; } return Math.abs(x).toString(36).toUpperCase(); }\nfunction maybeFail(stage) {\n  if (s.request.failAt === stage && s.runAttempt <= (Number(s.request.failTimes) || 1)) {\n    throw new Error('Injected failure at ' + stage + ' (run attempt ' + s.runAttempt + ')');\n  }\n}\nconst fail = (error, retryable = true) => [{ json: { ...s, stageResult: { ok: false, retryable, error } } }];\nconst ok = (output) => [{ json: { ...s, stageResult: { ok: true, output } } }];\nconst order = s.request.order || {};\nconst ctx = s.context || {};\n\n// Replace with your real step (HTTP / DB / etc.). Use s.idempotencyKey for any external side effect.\ntry {\n  maybeFail('validate_order');\n  if (!Array.isArray(order.items) || order.items.length === 0) {\n    return fail('Order has no items (permanent validation error)', false);\n  }\n  const total = order.items.reduce((sum, i) => sum + Number(i.qty) * Number(i.price), 0);\n  return ok({ valid: true, itemCount: order.items.length, total, currency: order.currency || 'USD' });\n} catch (e) { return fail(e.message); }"
+      },
+      "typeVersion": 2,
+      "continueOnFail": true
+    },
+    {
+      "id": "d44b9546-b675-4ddf-8b8f-e27f8beb46aa",
+      "name": "JS - Stage 2: Reserve Inventory",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2432,
+        1904
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nfunction h(str) { let x = 0; for (let i = 0; i < str.length; i++) { x = (Math.imul(31, x) + str.charCodeAt(i)) | 0; } return Math.abs(x).toString(36).toUpperCase(); }\nfunction maybeFail(stage) {\n  if (s.request.failAt === stage && s.runAttempt <= (Number(s.request.failTimes) || 1)) {\n    throw new Error('Injected failure at ' + stage + ' (run attempt ' + s.runAttempt + ')');\n  }\n}\nconst fail = (error, retryable = true) => [{ json: { ...s, stageResult: { ok: false, retryable, error } } }];\nconst ok = (output) => [{ json: { ...s, stageResult: { ok: true, output } } }];\nconst order = s.request.order || {};\nconst ctx = s.context || {};\n\ntry {\n  maybeFail('reserve_inventory');\n  if (!ctx.validate_order) return fail('Missing checkpoint context: validate_order', false);\n  return ok({\n    reservationId: 'RSV-' + h(s.idempotencyKey),\n    reservedLines: order.items.length,\n    idempotencyKey: s.idempotencyKey\n  });\n} catch (e) { return fail(e.message); }"
+      },
+      "typeVersion": 2,
+      "continueOnFail": true
+    },
+    {
+      "id": "b452f60c-28c3-4a82-af64-0e91e5dfbe1c",
+      "name": "JS - Stage 3: Charge Payment",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2432,
+        2016
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nfunction h(str) { let x = 0; for (let i = 0; i < str.length; i++) { x = (Math.imul(31, x) + str.charCodeAt(i)) | 0; } return Math.abs(x).toString(36).toUpperCase(); }\nfunction maybeFail(stage) {\n  if (s.request.failAt === stage && s.runAttempt <= (Number(s.request.failTimes) || 1)) {\n    throw new Error('Injected failure at ' + stage + ' (run attempt ' + s.runAttempt + ')');\n  }\n}\nconst fail = (error, retryable = true) => [{ json: { ...s, stageResult: { ok: false, retryable, error } } }];\nconst ok = (output) => [{ json: { ...s, stageResult: { ok: true, output } } }];\nconst order = s.request.order || {};\nconst ctx = s.context || {};\n\ntry {\n  maybeFail('charge_payment');\n  const v = ctx.validate_order;\n  if (!v) return fail('Missing checkpoint context: validate_order', false);\n  // Deterministic id from the idempotency key: a re-run can never create a second charge.\n  return ok({\n    chargeId: 'CHG-' + h(s.idempotencyKey),\n    amount: v.total,\n    currency: v.currency,\n    idempotencyKey: s.idempotencyKey\n  });\n} catch (e) { return fail(e.message); }"
+      },
+      "typeVersion": 2,
+      "continueOnFail": true
+    },
+    {
+      "id": "d1d54ddd-de3f-4cb0-bd16-b342d620128a",
+      "name": "JS - Stage 4: Create Shipment",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2432,
+        2144
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nfunction h(str) { let x = 0; for (let i = 0; i < str.length; i++) { x = (Math.imul(31, x) + str.charCodeAt(i)) | 0; } return Math.abs(x).toString(36).toUpperCase(); }\nfunction maybeFail(stage) {\n  if (s.request.failAt === stage && s.runAttempt <= (Number(s.request.failTimes) || 1)) {\n    throw new Error('Injected failure at ' + stage + ' (run attempt ' + s.runAttempt + ')');\n  }\n}\nconst fail = (error, retryable = true) => [{ json: { ...s, stageResult: { ok: false, retryable, error } } }];\nconst ok = (output) => [{ json: { ...s, stageResult: { ok: true, output } } }];\nconst order = s.request.order || {};\nconst ctx = s.context || {};\n\ntry {\n  maybeFail('create_shipment');\n  const r = ctx.reserve_inventory;\n  if (!r) return fail('Missing checkpoint context: reserve_inventory', false);\n  return ok({\n    trackingNumber: 'TRK-' + h(s.idempotencyKey),\n    carrier: 'DHL',\n    reservationId: r.reservationId,\n    idempotencyKey: s.idempotencyKey\n  });\n} catch (e) { return fail(e.message); }"
+      },
+      "typeVersion": 2,
+      "continueOnFail": true
+    },
+    {
+      "id": "2ae12908-a1e6-4fa8-bf9c-77685bbf84b3",
+      "name": "JS - Stage 5: Send Confirmation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2432,
+        2256
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nfunction h(str) { let x = 0; for (let i = 0; i < str.length; i++) { x = (Math.imul(31, x) + str.charCodeAt(i)) | 0; } return Math.abs(x).toString(36).toUpperCase(); }\nfunction maybeFail(stage) {\n  if (s.request.failAt === stage && s.runAttempt <= (Number(s.request.failTimes) || 1)) {\n    throw new Error('Injected failure at ' + stage + ' (run attempt ' + s.runAttempt + ')');\n  }\n}\nconst fail = (error, retryable = true) => [{ json: { ...s, stageResult: { ok: false, retryable, error } } }];\nconst ok = (output) => [{ json: { ...s, stageResult: { ok: true, output } } }];\nconst order = s.request.order || {};\nconst ctx = s.context || {};\n\ntry {\n  maybeFail('send_confirmation');\n  const c = ctx.charge_payment, sh = ctx.create_shipment;\n  if (!c || !sh) return fail('Missing checkpoint context: charge_payment / create_shipment', false);\n  return ok({\n    messageId: 'MSG-' + h(s.idempotencyKey),\n    to: (order.customer || {}).email || null,\n    chargeId: c.chargeId,\n    trackingNumber: sh.trackingNumber,\n    idempotencyKey: s.idempotencyKey\n  });\n} catch (e) { return fail(e.message); }"
+      },
+      "typeVersion": 2,
+      "continueOnFail": true
+    },
+    {
+      "id": "dea3fe5a-e7ee-4e27-a863-48ec9f0c0029",
+      "name": "JS - Capture Stage Result",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2672,
+        2016
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) { try { return $(name).item.json; } catch (e) { return $(name).first().json; } }\nconst s = ref('JS - Select Stage');\nconst r = $input.first().json;\n\nlet ok = false, output = null, error = null, retryable = true;\nif (r.stageResult) {\n  ok = r.stageResult.ok === true;\n  output = r.stageResult.output || null;\n  error = r.stageResult.error || null;\n  retryable = r.stageResult.retryable !== false;\n} else if (r.error) {\n  // A stage node threw and continueOnFail turned the error into data.\n  error = typeof r.error === 'string' ? r.error : (r.error.message || 'Stage node error');\n} else {\n  error = 'Stage returned no result';\n}\n\nreturn [{\n  json: {\n    ...s,\n    stageOk: ok,\n    stageOutput: output,\n    stageError: error,\n    stageRetryable: retryable,\n    stageDurationMs: Date.now() - s.stageStartedAt\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "0dea5db5-bec4-4473-b0ed-79624aae63f4",
+      "name": "IF - Stage Succeeded?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2912,
+        2016
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "07b9ea68-ae5e-4979-8b28-223a341e8364",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.stageOk }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "a3337930-87c1-4c81-825c-1c52136a4261",
+      "name": "Postgres - Save Checkpoint",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        3152,
+        1904
+      ],
+      "parameters": {
+        "query": "WITH cp AS (\n  INSERT INTO workflow_checkpoints (run_id, stage, stage_index, status, output, attempts, duration_ms, completed_at)\n  VALUES ($1, $2, $3::int, 'completed', $4::jsonb, $5::int, $6::int, NOW())\n  ON CONFLICT (run_id, stage) DO UPDATE SET\n    status = 'completed',\n    output = EXCLUDED.output,\n    attempts = EXCLUDED.attempts,\n    duration_ms = EXCLUDED.duration_ms,\n    completed_at = NOW()\n  RETURNING stage\n), run AS (\n  UPDATE workflow_runs SET current_stage = $7::text, updated_at = NOW() WHERE run_id = $1 RETURNING run_id\n), ev AS (\n  INSERT INTO workflow_run_events (run_id, event, stage, detail)\n  VALUES ($1, 'stage_completed', $2, jsonb_build_object('attempts', $5::int, 'durationMs', $6::int))\n)\nSELECT (SELECT stage FROM cp) AS stage, (SELECT run_id FROM run) AS run_id;",
+        "options": {
+          "queryReplacement": "={{ [ $json.runId, $json.stage, $json.stageIndex, JSON.stringify($json.stageOutput), $json.stageAttempt, $json.stageDurationMs, $json.stages[$json.stageIndex + 1] || null ] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "2c281e6e-17d3-4ec6-8a83-c5e7020b88a2",
+      "name": "JS - Advance Stage",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3392,
+        1904
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) { try { return $(name).item.json; } catch (e) { return $(name).first().json; } }\n// The Postgres node replaced the item, so restore the state captured before the checkpoint write.\nconst s = ref('JS - Capture Stage Result');\n\nreturn [{\n  json: {\n    ...s,\n    context: { ...s.context, [s.stage]: s.stageOutput },\n    completedStages: [...s.completedStages, s.stage],\n    stageHistory: [...s.stageHistory, { stage: s.stage, attempts: s.stageAttempt, durationMs: s.stageDurationMs, ok: true }],\n    stageIndex: s.stageIndex + 1,\n    stageAttempt: 0,\n    stageError: null\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f9387b5d-685c-41d5-8f56-b8b8adb7f303",
+      "name": "JS - Plan Stage Retry",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3792,
+        1920
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nconst cfg = s.config;\n\nconst retryStage = s.stageRetryable && s.stageAttempt < cfg.maxStageAttempts;\nlet backoffSeconds = 0;\nif (retryStage) {\n  const exp = cfg.stageBackoffSeconds * Math.pow(2, s.stageAttempt - 1);\n  const jitter = Math.random() * cfg.stageBackoffSeconds;\n  backoffSeconds = Math.round(Math.min(cfg.maxBackoffSeconds, exp + jitter) * 10) / 10;\n}\n\nreturn [{\n  json: {\n    ...s,\n    retryStage,\n    backoffSeconds,\n    permanentFailure: !s.stageRetryable,\n    stageHistory: [...s.stageHistory, { stage: s.stage, attempts: s.stageAttempt, durationMs: s.stageDurationMs, ok: false, error: s.stageError }]\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "713fb1c9-f98f-4e22-a4b4-d38fa822a6f4",
+      "name": "IF - Retry Stage Inline?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4032,
+        1920
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "884d9973-86b0-4d3f-ad7a-44008e4d8d3f",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.retryStage }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "73fc3253-28dc-46af-8b08-d960026e274a",
+      "name": "Wait - Stage Backoff",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        4272,
+        1776
+      ],
+      "webhookId": "0fecee8a-e069-49fa-b9fb-b821161db1f5",
+      "parameters": {
+        "amount": "={{ $json.backoffSeconds }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "c5cf5d4d-8b04-4654-9333-47b939258384",
+      "name": "Postgres - Mark Run Failed",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        4272,
+        2064
+      ],
+      "parameters": {
+        "query": "WITH upd AS (\n  UPDATE workflow_runs SET\n    status = CASE WHEN $4::boolean OR attempts >= $5::int THEN 'dead_letter' ELSE 'failed' END,\n    failed_stage = $2,\n    last_error = $3,\n    next_retry_at = CASE WHEN $4::boolean OR attempts >= $5::int THEN NULL ELSE NOW() + (attempts * $6::int * INTERVAL '1 minute') END,\n    updated_at = NOW()\n  WHERE run_id = $1\n  RETURNING run_id, status, attempts, failed_stage, next_retry_at\n), cp AS (\n  INSERT INTO workflow_checkpoints (run_id, stage, stage_index, status, output, attempts, duration_ms, completed_at)\n  VALUES ($1, $2, $7::int, 'failed', jsonb_build_object('error', $3::text), $8::int, $9::int, NOW())\n  ON CONFLICT (run_id, stage) DO UPDATE SET\n    status = 'failed',\n    output = EXCLUDED.output,\n    attempts = workflow_checkpoints.attempts + EXCLUDED.attempts,\n    completed_at = NOW()\n), ev AS (\n  INSERT INTO workflow_run_events (run_id, event, stage, detail)\n  VALUES ($1, 'stage_failed', $2, jsonb_build_object('error', $3::text, 'permanent', $4::boolean))\n)\nSELECT run_id, status, attempts, failed_stage, next_retry_at FROM upd;",
+        "options": {
+          "queryReplacement": "={{ [ $json.runId, $json.stage, ($json.stageError || 'unknown error').slice(0, 500), $json.permanentFailure, $json.config.maxRunAttempts, $json.config.resumeDelayMinutes, $json.stageIndex, $json.stageAttempt, $json.stageDurationMs ] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "0818a73d-0d35-4e07-b7df-6950688f90c8",
+      "name": "JS - Build Failure Summary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4512,
+        2064
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) { try { return $(name).item.json; } catch (e) { return $(name).first().json; } }\nconst s = ref('JS - Plan Stage Retry');\nconst row = $input.first().json;\n\nreturn [{\n  json: {\n    runId: s.runId,\n    failedStage: s.stage,\n    error: s.stageError,\n    permanent: s.permanentFailure,\n    runStatus: row.status || 'failed',\n    runAttempts: row.attempts !== undefined ? row.attempts : s.runAttempt,\n    nextRetryAt: row.next_retry_at || null,\n    completedStages: s.completedStages,\n    config: s.config\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e48155b8-e579-44bc-b78f-840ebc2c4b6b",
+      "name": "Slack - Alert Run Failed",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        4752,
+        2064
+      ],
+      "webhookId": "ce03af1e-5970-4a92-a848-ed7351d48214",
+      "parameters": {
+        "text": "=\ud83d\udd34 *Workflow run {{ $json.runStatus }}* \u2014 {{ $json.runId }}\nFailed stage: *{{ $json.failedStage }}* | Checkpointed stages: {{ $json.completedStages.join(', ') || 'none' }}\nError: {{ $json.error }}\nRun attempts: {{ $json.runAttempts }}/{{ $json.config.maxRunAttempts }}{{ $json.permanent ? ' (permanent error)' : '' }}\n{{ $json.runStatus === 'failed' ? 'Auto-resume from ' + $json.failedStage + ' after ' + $json.nextRetryAt + ' (or POST {\"runId\":\"' + $json.runId + '\"} to the webhook now).' : 'No more automatic retries. Fix the cause, then POST {\"runId\":\"' + $json.runId + '\"} to the webhook to resume from ' + $json.failedStage + '.' }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $json.config.slackChannel }}"
+        },
+        "otherOptions": {}
+      },
+      "typeVersion": 2.3,
+      "continueOnFail": true
+    },
+    {
+      "id": "f43a0544-333a-43c3-8467-99af5a7fdff4",
+      "name": "Postgres - Mark Run Completed",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1728,
+        2880
+      ],
+      "parameters": {
+        "query": "WITH upd AS (\n  UPDATE workflow_runs SET\n    status = 'completed', current_stage = NULL, failed_stage = NULL, last_error = NULL,\n    next_retry_at = NULL, completed_at = NOW(), updated_at = NOW()\n  WHERE run_id = $1\n  RETURNING run_id, attempts\n), ev AS (\n  INSERT INTO workflow_run_events (run_id, event, detail)\n  VALUES ($1, 'run_completed', jsonb_build_object('attempts', (SELECT attempts FROM upd), 'resumed', $2::boolean))\n)\nSELECT run_id, attempts FROM upd;",
+        "options": {
+          "queryReplacement": "={{ [ $json.runId, $json.resumeInfo.resumed ] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "2ea7afe4-d24f-448d-ad5a-9153116dc46f",
+      "name": "JS - Build Completion Summary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2384,
+        2880
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) { try { return $(name).item.json; } catch (e) { return $(name).first().json; } }\nconst s = ref('JS - Select Stage');\nconst row = $input.first().json;\n\nconst executed = s.stageHistory.filter(h => h.ok).map(h => h.stage);\nreturn [{\n  json: {\n    runId: s.runId,\n    outcome: 'completed',\n    recovered: s.resumeInfo.resumed === true,\n    resumedFromStage: s.resumeInfo.resumedFromStage,\n    previousFailedStage: s.resumeInfo.previousFailedStage,\n    previousError: s.resumeInfo.previousError,\n    skippedStages: s.resumeInfo.skippedStages,\n    executedStages: executed,\n    runAttempts: row.attempts !== undefined ? row.attempts : s.runAttempt,\n    results: s.context,\n    totalDurationMs: Date.now() - s.startedAt,\n    config: s.config\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "073d5fc0-5aa0-4695-b54e-9ad3dec55734",
+      "name": "IF - Recovered Run?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2624,
+        2880
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "e225ff3f-8dc2-467c-8183-e00f7a4e666d",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.recovered }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "1ce890bc-7181-4f7c-bacd-051a8f53d953",
+      "name": "Slack - Notify Recovery",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        2864,
+        2768
+      ],
+      "webhookId": "e4a8bb7a-379e-43a7-a24f-191416ce78ab",
+      "parameters": {
+        "text": "=\ud83d\udfe2 *Run recovered from checkpoint* \u2014 {{ $json.runId }}\nResumed at *{{ $json.resumedFromStage }}* after *{{ $json.previousFailedStage || 'a crash' }}* failed ({{ $json.previousError || 'lease expired' }})\nSkipped (restored from checkpoints): {{ $json.skippedStages.join(', ') || 'none' }}\nExecuted this time: {{ $json.executedStages.join(', ') }}\nRun attempts: {{ $json.runAttempts }} | Duration of final attempt: {{ $json.totalDurationMs }} ms",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $json.config.slackChannel }}"
+        },
+        "otherOptions": {}
+      },
+      "typeVersion": 2.3,
+      "continueOnFail": true
+    },
+    {
+      "id": "0bdb8dec-8f11-41d5-8b01-7635859c683d",
+      "name": "Error Trigger - Workflow Crash",
+      "type": "n8n-nodes-base.errorTrigger",
+      "disabled": true,
+      "position": [
+        3040,
+        2880
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "560389f4-9ec6-447a-a128-e4fc214d2c9d",
+      "name": "Slack - Crash Alert",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        3280,
+        2880
+      ],
+      "webhookId": "470c7ea1-1ef5-4987-bd61-c93a767500e6",
+      "parameters": {
+        "text": "=\ud83d\udea8 *Checkpoint workflow crashed*\nExecution: {{ $json.execution.id }} ({{ $json.execution.url }})\nLast node: {{ $json.execution.lastNodeExecuted }}\nError: {{ $json.execution.error.message }}\nAny in-flight run keeps its last checkpoint; the sweeper resumes it once its lease expires.",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#workflow-alerts"
+        },
+        "otherOptions": {}
+      },
+      "typeVersion": 2.3,
+      "continueOnFail": true
+    },
+    {
+      "id": "adfc7611-3e3e-44d1-bc66-c286e3552a8e",
+      "name": "Wait For Data",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        1936,
+        2880
+      ],
+      "webhookId": "ba9ecc65-e48d-4a18-8e51-c2dd1584310b",
+      "parameters": {},
+      "typeVersion": 1.1
+    },
+    {
+      "id": "4eb167a1-726c-41f5-9e02-65c6af375d62",
+      "name": "Wait For Result",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        2176,
+        880
+      ],
+      "webhookId": "4e45c7aa-e773-4f1e-bac2-395bbdd0d21d",
+      "parameters": {
+        "amount": 15
+      },
+      "typeVersion": 1.1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "afb8b8e7-73ed-418f-9c27-5006c8abf89d",
+  "nodeGroups": [],
+  "connections": {
+    "JS - Init Run": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Load Run State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait For Data": {
+      "main": [
+        [
+          {
+            "node": "JS - Build Completion Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait For Result": {
+      "main": [
+        [
+          {
+            "node": "IF - Run Already Completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Select Stage": {
+      "main": [
+        [
+          {
+            "node": "IF - All Stages Done?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Mode Manual": {
+      "main": [
+        [
+          {
+            "node": "Set - Checkpoint Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Advance Stage": {
+      "main": [
+        [
+          {
+            "node": "JS - Select Stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Mode Sweeper": {
+      "main": [
+        [
+          {
+            "node": "Set - Checkpoint Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Mode Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set - Checkpoint Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Lock Acquired?": {
+      "main": [
+        [
+          {
+            "node": "JS - Restore Plan State",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Skip Locked Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Recovered Run?": {
+      "main": [
+        [
+          {
+            "node": "Slack - Notify Recovery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Entry Mode": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Find Resumable Runs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "JS - Init Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - Stage Backoff": {
+      "main": [
+        [
+          {
+            "node": "JS - Select Stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - All Stages Done?": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Mark Run Completed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch - Stage Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Stage Succeeded?": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Save Checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "JS - Plan Stage Retry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Plan Stage Retry": {
+      "main": [
+        [
+          {
+            "node": "IF - Retry Stage Inline?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Stage Router": {
+      "main": [
+        [
+          {
+            "node": "JS - Stage 1: Validate Order",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "JS - Stage 2: Reserve Inventory",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "JS - Stage 3: Charge Payment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "JS - Stage 4: Create Shipment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "JS - Stage 5: Send Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Restore Plan State": {
+      "main": [
+        [
+          {
+            "node": "JS - Select Stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Checkpoint Config": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Ensure Checkpoint Tables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Retry Stage Inline?": {
+      "main": [
+        [
+          {
+            "node": "Wait - Stage Backoff",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres - Mark Run Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger - New Run": {
+      "main": [
+        [
+          {
+            "node": "Set - Mode Manual",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Build Execution Plan": {
+      "main": [
+        [
+          {
+            "node": "Wait For Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Capture Stage Result": {
+      "main": [
+        [
+          {
+            "node": "IF - Stage Succeeded?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Load Run State": {
+      "main": [
+        [
+          {
+            "node": "JS - Build Execution Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Build Failure Summary": {
+      "main": [
+        [
+          {
+            "node": "Slack - Alert Run Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Build Resume Requests": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Trigger Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Mark Run Failed": {
+      "main": [
+        [
+          {
+            "node": "JS - Build Failure Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Save Checkpoint": {
+      "main": [
+        [
+          {
+            "node": "JS - Advance Stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Run Already Completed?": {
+      "main": [
+        [
+          {
+            "node": "Set - Skip Completed Run",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres - Acquire Run Lock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Acquire Run Lock": {
+      "main": [
+        [
+          {
+            "node": "IF - Lock Acquired?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Stage 1: Validate Order": {
+      "main": [
+        [
+          {
+            "node": "JS - Capture Stage Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Stage 3: Charge Payment": {
+      "main": [
+        [
+          {
+            "node": "JS - Capture Stage Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Trigger Resume": {
+      "main": [
+        [
+          {
+            "node": "JS - Summarize Sweep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Build Completion Summary": {
+      "main": [
+        [
+          {
+            "node": "IF - Recovered Run?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Stage 4: Create Shipment": {
+      "main": [
+        [
+          {
+            "node": "JS - Capture Stage Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Mark Run Completed": {
+      "main": [
+        [
+          {
+            "node": "Wait For Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Start or Resume Run": {
+      "main": [
+        [
+          {
+            "node": "Set - Mode Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger - Workflow Crash": {
+      "main": [
+        [
+          {
+            "node": "Slack - Crash Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Find Resumable Runs": {
+      "main": [
+        [
+          {
+            "node": "JS - Build Resume Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Stage 2: Reserve Inventory": {
+      "main": [
+        [
+          {
+            "node": "JS - Capture Stage Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JS - Stage 5: Send Confirmation": {
+      "main": [
+        [
+          {
+            "node": "JS - Capture Stage Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Ensure Checkpoint Tables": {
+      "main": [
+        [
+          {
+            "node": "Switch - Entry Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger - Auto Resume Sweeper": {
+      "main": [
+        [
+          {
+            "node": "Set - Mode Sweeper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

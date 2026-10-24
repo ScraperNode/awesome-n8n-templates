@@ -1,6 +1,6 @@
 # 📈 USDT and TRC20 wallet tracker API workflow for n8n
 
-> ⚡ **2,908 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **3,107 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 Generate lessons learned reports from Jira epics with AI and Google Docs
 
-> ⚡ **7,216 views** · 📋 [Project Management](../)
+> ⚡ **7,930 views** · 📋 [Project Management](../)
 
 ## Description
 

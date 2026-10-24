@@ -1,6 +1,6 @@
 # 💬 Protect Telegram groups with math CAPTCHA verification and Google Sheets
 
-> ⚡ **41 views** · 💬 [Support Chatbots](../)
+> ⚡ **51 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

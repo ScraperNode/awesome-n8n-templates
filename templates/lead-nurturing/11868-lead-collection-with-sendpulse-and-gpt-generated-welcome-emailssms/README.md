@@ -1,6 +1,6 @@
 # 💬 Lead collection with SendPulse and GPT-generated welcome emails/SMS
 
-> ⚡ **51 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **106 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

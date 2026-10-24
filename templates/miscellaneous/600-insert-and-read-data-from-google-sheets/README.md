@@ -1,6 +1,6 @@
 # 🔧 Insert and read data from Google Sheets
 
-> ⚡ **13,236 views** · 🔧 [Miscellaneous](../)
+> ⚡ **13,720 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

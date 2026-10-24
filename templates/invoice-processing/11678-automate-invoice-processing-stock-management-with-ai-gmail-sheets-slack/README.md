@@ -1,6 +1,6 @@
 # 🧾 Automate invoice processing & stock management with AI, Gmail, Sheets & Slack
 
-> ⚡ **250 views** · 🧾 [Invoice Processing](../)
+> ⚡ **452 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

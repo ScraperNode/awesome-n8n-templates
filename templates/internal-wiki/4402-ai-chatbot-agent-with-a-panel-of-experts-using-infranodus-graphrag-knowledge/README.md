@@ -1,6 +1,6 @@
 # 📖 AI Chatbot Agent with a Panel of Experts using InfraNodus GraphRAG Knowledge
 
-> ⚡ **8,600 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **8,869 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

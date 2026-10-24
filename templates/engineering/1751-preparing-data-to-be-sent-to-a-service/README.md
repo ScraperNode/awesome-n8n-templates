@@ -1,6 +1,6 @@
 # ⚒️ Preparing data to be sent to a service
 
-> ⚡ **64,760 views** · ⚒️ [Engineering](../)
+> ⚡ **64,264 views** · ⚒️ [Engineering](../)
 
 ## Description
 

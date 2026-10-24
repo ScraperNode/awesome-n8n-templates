@@ -1,6 +1,6 @@
 # 👥 Transform raw hiring transcripts into briefs & scorecards with AI and Google Docs
 
-> ⚡ **1,009 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,028 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

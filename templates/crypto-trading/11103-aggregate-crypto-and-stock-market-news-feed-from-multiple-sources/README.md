@@ -1,6 +1,6 @@
 # 📈 Aggregate crypto and stock market news feed from multiple sources
 
-> ⚡ **981 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,393 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

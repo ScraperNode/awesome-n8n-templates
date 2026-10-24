@@ -1,6 +1,6 @@
 # 🎣 Enrich Google Maps business leads using Apify, OpenAI, Jina AI, Telegram and Sheets
 
-> ⚡ **32 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **116 views** · 🎣 [Lead Generation & Enrichment](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -8,28 +8,30 @@
 
 ## Description
 
-Automate your B2B lead generation by scraping Google Maps, generating AI business summaries, and extracting hidden contact emails from websites, all triggered via Telegram.
+B2B leads without the database subscription. This workflow scrapes Google Maps, writes AI business summaries, and digs contact emails out of websites, all triggered from Telegram on your phone. Four hours of manual hunting becomes 5 minutes per 50 leads.
+
+*Last updated: September 2026.*
 
 ## Why Use This Workflow?
 
-**Time Savings:** Reduces lead research time from 4 hours of manual searching to 5 minutes of automated execution per 50 leads.  
+**Time Savings:** Lead research drops from 4 hours of manual searching to 5 minutes of automated execution per 50 leads.  
 
-**Cost Reduction:** Replaces expensive monthly lead database subscriptions with a pay-as-you-go model using Apify and OpenAI.  
+**Cost Reduction:** A pay-as-you-go model with Apify and OpenAI replaces expensive monthly lead database subscriptions.  
 
-**Error Prevention:** Uses AI to deduplicate results and ensure company summaries are professional and consistent for your CRM.  
+**Error Prevention:** AI deduplicates results and keeps company summaries professional and CRM-ready.  
 
-**Scalability:** Allows you to trigger massive scraping tasks from your mobile phone via Telegram while the backend handles the heavy lifting.
+**Scalability:** Trigger massive scraping tasks from your phone while the backend does the heavy lifting.
 
 ## Ideal For
 
-- **Sales Development Reps (SDRs):** Rapidly building targeted lists of local businesses for cold outreach or door-knocking campaigns.
-- **Marketing Agencies:** Identifying new businesses in specific sectors (e.g., "Dentists in Paris") to offer SEO or advertising services.
-- **Real Estate Investors:** Finding specific commercial properties or business types in a geographic area to identify investment opportunities.
+- **Sales Development Reps (SDRs):** Targeted lists of local businesses for cold outreach or door-knocking campaigns.
+- **Marketing Agencies:** New businesses in specific sectors (e.g., "Dentists in Paris") for SEO or advertising pitches.
+- **Real Estate Investors:** Commercial properties or business types by area for investment scouting.
 
 ## How It Works
 
 1. **Trigger:** The workflow starts when you send a message to your Telegram bot in the format: `Sector; Limit; MapsURL`.
-2. **Data Collection:** n8n parses these parameters and triggers an Apify Actor to scrape Google Maps for business details.
+2. **Data Collection:** [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) parses these parameters and triggers an Apify Actor to scrape Google Maps for business details.
 3. **Processing:** The workflow retrieves the results, removes duplicate entries, and begins a loop to process each business.
 4. **Intelligence Layer (Summary):** OpenAI analyzes the business data to create a natural, human-like summary of the company.
 5. **Enrichment (Email Hunting):** If the business has a website, Jina AI fetches the page content, and OpenAI extracts the most authoritative contact email.
@@ -41,7 +43,7 @@ Automate your B2B lead generation by scraping Google Maps, generating AI busines
 
 | Requirement | Type | Purpose |
 |-------------|------|---------|
-| [n8n instance](https://n8n.partnerlinks.io/khmuhtadin) | Essential | Workflow execution and logic |
+| [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin) | Essential | Workflow execution and logic |
 | [Apify Account](https://apify.com?fpr=khmuhtadin) | Essential | Scrapes Google Maps data |
 | [OpenAI API Key](https://openai.com) | Essential | Generates summaries and extracts emails |
 | [Google Sheets](https://google.com/sheets) | Essential | Data storage and lead management |
@@ -50,7 +52,7 @@ Automate your B2B lead generation by scraping Google Maps, generating AI busines
 
 ### Installation Steps
 
-1. Import the JSON file into your [n8n instance](https://n8n.partnerlinks.io/khmuhtadin).
+1. Import the JSON file into your [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin).
 2. **Configure credentials:**
    - **Telegram:** Create a bot via @BotFather and add your token to the Telegram nodes.
    - **Apify:** Provide your API token to the "Run Maps Scraper" and "Fetch Dataset" nodes.
@@ -110,12 +112,23 @@ The workflow utilizes a **Split In Batches** loop to ensure stability. It first 
 
 ---
 
-**Created by:** [Khaisa Studio](https://khaisa.studio)  
+### Quick Answers
+**What do I send the bot?**  
+`Sector; Limit; MapsURL`. Example: `Coffee Shops; 5; https://www.google.com/maps/search/coffee+shops+london`.  
+**Which Apify actor runs?**  
+`nwua9Gu5YrADL7ZDj` for Maps scraping, configured in the workflow nodes.  
+**Can summaries be non-English?**  
+Yes. Adjust the OpenAI prompt language (English, French, Spanish, etc.).  
+
+**Made by:** [khmuhtadin](https://khmuhtadin.com)  
 **Category:** Marketing | **Tags:** Lead Gen, AI, Google Maps, Telegram  
-**Need custom workflows?** [Contact us](https://khaisa.studio/contact)
+**Need custom workflows?** [Contact me](https://khmuhtadin.com/contact)
 
 **Connect with the creator:**  
 [Portfolio](https://khmuhtadin.com) • [Workflows](https://khaisa.studio/products/) • [LinkedIn](https://www.linkedin.com/in/khmuhtadin/) • [Medium](https://medium.com/@khaisastudio) • [Threads](https://www.threads.com/@khmuhtadin)
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

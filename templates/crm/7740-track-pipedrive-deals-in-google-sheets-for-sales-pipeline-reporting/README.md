@@ -1,6 +1,6 @@
 # 🤝 Track Pipedrive deals in Google Sheets for sales pipeline reporting
 
-> ⚡ **509 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **673 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

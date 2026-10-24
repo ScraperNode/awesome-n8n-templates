@@ -1,6 +1,6 @@
 # ⚒️ Generate SQL queries from schema only - AI-powered
 
-> ⚡ **54,392 views** · ⚒️ [Engineering](../)
+> ⚡ **56,993 views** · ⚒️ [Engineering](../)
 
 ## Description
 

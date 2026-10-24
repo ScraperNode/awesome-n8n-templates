@@ -1,6 +1,6 @@
 # 👥 Hr job posting and evaluation with AI
 
-> ⚡ **9,314 views** · 👥 [HR & Recruitment](../)
+> ⚡ **9,627 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

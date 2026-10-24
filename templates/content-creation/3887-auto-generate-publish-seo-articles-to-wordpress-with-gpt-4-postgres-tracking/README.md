@@ -1,6 +1,6 @@
 # 🎬 Auto-generate & publish SEO articles to WordPress with GPT-4 + Postgres tracking
 
-> ⚡ **4,328 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,531 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

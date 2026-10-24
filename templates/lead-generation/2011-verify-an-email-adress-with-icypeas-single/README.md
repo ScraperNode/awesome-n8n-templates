@@ -1,6 +1,6 @@
 # 🎣 Verify an email adress with Icypeas (single)
 
-> ⚡ **802 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **814 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Automate Gmail Organization with AI-Powered Email Classification and Smart Labeling
 
-> ⚡ **195 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **375 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

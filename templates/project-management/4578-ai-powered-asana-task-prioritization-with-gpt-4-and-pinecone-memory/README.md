@@ -1,6 +1,6 @@
 # 📋 AI-powered Asana task prioritization with GPT-4 and Pinecone memory
 
-> ⚡ **1,487 views** · 📋 [Project Management](../)
+> ⚡ **1,616 views** · 📋 [Project Management](../)
 
 ## Description
 

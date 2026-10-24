@@ -1,6 +1,6 @@
 # 🎬 Edit & deliver images with DALL-E 2, Google Drive & Telegram messaging
 
-> ⚡ **686 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **738 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

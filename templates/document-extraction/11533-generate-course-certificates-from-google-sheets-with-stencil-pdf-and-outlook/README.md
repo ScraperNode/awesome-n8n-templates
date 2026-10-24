@@ -1,6 +1,6 @@
 # 🔬 Generate course certificates from Google Sheets with Stencil PDF and Outlook
 
-> ⚡ **43 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **224 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

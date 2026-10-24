@@ -1,6 +1,6 @@
 # 🤖 Manage Odoo CRM with natural language using OpenAI and MCP Server
 
-> ⚡ **1,260 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **1,949 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

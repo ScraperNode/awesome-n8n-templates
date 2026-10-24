@@ -1,6 +1,6 @@
 # 💬 Automated tour payment reminders via WhatsApp & email with payment links
 
-> ⚡ **711 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,188 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Convert RSS feeds into a podcast with Google Gemini, Kokoro TTS, and FFmpeg
 
-> ⚡ **2,219 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,530 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

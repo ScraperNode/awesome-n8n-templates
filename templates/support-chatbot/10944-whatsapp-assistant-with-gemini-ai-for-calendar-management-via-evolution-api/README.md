@@ -1,6 +1,6 @@
 # 💬 WhatsApp assistant with Gemini AI for calendar management via Evolution API
 
-> ⚡ **1,027 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,733 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

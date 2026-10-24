@@ -1,6 +1,6 @@
 # 🤖 QuickBooks Online MCP Server (step by step video)
 
-> ⚡ **247 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **282 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

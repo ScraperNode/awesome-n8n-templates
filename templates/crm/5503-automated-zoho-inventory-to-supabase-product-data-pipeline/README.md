@@ -1,6 +1,6 @@
 # 🤝 Automated Zoho Inventory to Supabase product data pipeline
 
-> ⚡ **784 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **990 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

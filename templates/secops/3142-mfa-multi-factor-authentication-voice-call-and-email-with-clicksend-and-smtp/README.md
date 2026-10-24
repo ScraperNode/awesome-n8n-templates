@@ -1,6 +1,6 @@
 # 🔒 MFA multi-factor authentication (Voice call and Email) with ClickSend and SMTP
 
-> ⚡ **2,810 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,960 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

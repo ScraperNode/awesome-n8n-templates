@@ -1,6 +1,6 @@
 # 🤝 🛠️ GetResponse tool MCP server 💪 5 operations
 
-> ⚡ **138 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **154 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Automated lead intelligence: enrich Google Sheets with Clearbit & sync to Notion and ClickUp
 
-> ⚡ **71 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **84 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

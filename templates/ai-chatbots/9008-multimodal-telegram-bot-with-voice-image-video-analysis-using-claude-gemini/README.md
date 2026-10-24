@@ -1,56 +1,34 @@
 # 🤖 Multimodal telegram bot with voice, image & video analysis using Claude & Gemini
 
-> ⚡ **1,482 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **1,856 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 
-# What it's for:
-This is a base template for anyone trying to develop a telegram AI Agent. This base allows for multiple inputs (Voice, Picture, Video, and Text inputs) to be processed by an AI model of their choosing to a get a User started. From here, the User may connect any tools that they see fit to the AI Agent for their n8n workflows.
+## Quick overview
+This is a starting point for building a Telegram AI agent. The base handles four input types: voice, pictures, video, and text, through the AI models of your choice. From here you connect tools to expand what the agent can do inside your n8n workflows.
 
-# How it works:
-**Input**: Telegram message to a bot chat
+## How it works
+1. **Input:** a message sent to the bot chat.
+2. A Switch node sorts the message by type:
+3. Voice message
+4. Picture message
+5. Video message
+6. Text message
+7. It currently uses OpenAI and Gemini to analyze voice, photos, and video, but you can swap in other models. The model reads the message, generates a response from the system prompt, and sends it back as a Telegram message.
 
-**n8n Processing**: Switch node determines the type:
-1. Voice Message
-2. Picture Message
-3. Video Message
-4. Text Message
+## Setup
+1. **Create the Telegram bot.** In Telegram, search for "BotFather", send `/newbot`, follow the prompts, and copy the access token.
+2. **Add the Telegram credential in n8n.** Open the Telegram trigger node, create a credential, paste the access token, and save.
+3. **Add the LLM credentials.** Add your OpenAI and Gemini keys (and any other model you prefer) to the LLM nodes, then pick your model, and make sure each account has credits. Guides: OpenAI (voice) → https://winflowai.com/blog/get-openai-api-key/ and Google Gemini (images and video) → https://winflowai.com/blog/get-gemini-api-key/
 
-(Currently uses OpenAI and Gemini to analyze Voice/Photo/Video content but feel free to change these nodes with other models)
+## Requirements
+- Telegram bot access token
+- OpenAI API key (voice)
+- Google Gemini API key (pictures and video)
+- n8n instance (Cloud or self-hosted)
 
-**AI Agent Proccessing**: LLM of your choosing examines message and based on system prompt, generates an output
-
-**Output**: AI Output is sent back in telegram Message
-
-# How to use:
- 1. Create your chat bot and generate access token
--&gt; Search Bot father in telegram
--&gt; Type "/newbot"
--&gt; follow instructions and create access token
--&gt; Copy access token
-
- 2. Create Credentials in n8n
--&gt; Open telegram trigger node
--&gt; Click create credential
--&gt; Paste access token
--&gt; Save
-
- 3. Create LLM access token
- (Different per LLM but search your LLM + API in google)
--&gt; (will have to create an account with the LLM platform)
--&gt; buy credits to use LLM API
--&gt; Generate Access token
--&gt; Paste token in LLM node
-
-# Requirements:
-- Telegram Bot Access Token
-- Google Gemini Access Token (For Picture and Video messages)
-- OpenAI Access Token (For Voice messages)
-- LLM Access Token (Your preference for the AI Agent)
-
-# Customizing this workflow:
-- To personalize the AI Output, adjust the system prompt (give context or directions on the AI's role)
-- Add tools to the AI agent to give it more utility besides a personalied LLM (Example: Calendars, Databases, etc).
+## Customization
+- Adjust the system prompt to shape the agent's output, and add tools to take it beyond conversation.
 
 ## 🔗 Nodes Used
 

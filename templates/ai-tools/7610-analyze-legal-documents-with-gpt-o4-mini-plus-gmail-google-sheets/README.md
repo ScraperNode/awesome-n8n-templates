@@ -1,6 +1,6 @@
 # 🎯 Analyze Legal Documents with GPT & o4-mini plus Gmail & Google Sheets
 
-> ⚡ **1,081 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **1,244 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

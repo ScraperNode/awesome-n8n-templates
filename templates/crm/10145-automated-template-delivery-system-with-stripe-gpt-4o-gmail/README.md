@@ -1,6 +1,6 @@
 # 🤝 Automated template delivery system with Stripe, GPT-4o & Gmail
 
-> ⚡ **717 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **760 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

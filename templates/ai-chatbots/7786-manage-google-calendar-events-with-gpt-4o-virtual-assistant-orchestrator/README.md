@@ -1,6 +1,6 @@
 # 🤖 Manage Google Calendar events with GPT-4o virtual assistant (Orchestrator)
 
-> ⚡ **431 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **507 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

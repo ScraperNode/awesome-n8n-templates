@@ -1,6 +1,6 @@
 # ⚒️ Manage User Authentication with Telegram, Redis Cache and Google Sheets
 
-> ⚡ **352 views** · ⚒️ [Engineering](../)
+> ⚡ **376 views** · ⚒️ [Engineering](../)
 
 ## Description
 

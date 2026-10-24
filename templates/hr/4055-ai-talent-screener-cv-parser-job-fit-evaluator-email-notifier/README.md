@@ -1,6 +1,6 @@
 # 👥 AI talent screener – CV parser, job fit evaluator & email notifier
 
-> ⚡ **1,549 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,649 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Compare vendor quotations with Grok AI and export to Google Sheets & email
 
-> ⚡ **820 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,043 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

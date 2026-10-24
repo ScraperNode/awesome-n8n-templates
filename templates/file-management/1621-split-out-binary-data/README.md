@@ -1,6 +1,6 @@
 # 📁 Split out binary data
 
-> ⚡ **8,078 views** · 📁 [File Management](../)
+> ⚡ **8,299 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 👥 AI automated HR workflow for CV analysis and candidate evaluation
 
-> ⚡ **65,297 views** · 👥 [HR & Recruitment](../)
+> ⚡ **67,939 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

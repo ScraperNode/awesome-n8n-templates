@@ -1,6 +1,6 @@
 # 📱 Automate event registration & follow-ups with Gmail reminders & Google Sheets
 
-> ⚡ **434 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **490 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

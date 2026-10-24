@@ -1,6 +1,6 @@
 # 📊 Namesilo bulk domain availability checker
 
-> ⚡ **1,235 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,353 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

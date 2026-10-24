@@ -1,6 +1,6 @@
 # 🎬 Generate AI SEO blog posts with human review using SE Ranking and Claude
 
-> ⚡ **84 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **397 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

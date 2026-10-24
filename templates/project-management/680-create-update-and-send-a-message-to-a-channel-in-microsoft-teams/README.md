@@ -1,6 +1,6 @@
 # 📋 Create, update and send a message to a channel in Microsoft Teams
 
-> ⚡ **21,505 views** · 📋 [Project Management](../)
+> ⚡ **22,384 views** · 📋 [Project Management](../)
 
 ## Description
 

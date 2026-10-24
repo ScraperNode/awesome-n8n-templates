@@ -1,6 +1,6 @@
 # 🎬 Generate viral Bigfoot vlog videos with Veo 3
 
-> ⚡ **5,114 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,403 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Recover abandoned WooCommerce carts with custom coupon emails
 
-> ⚡ **85 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **219 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

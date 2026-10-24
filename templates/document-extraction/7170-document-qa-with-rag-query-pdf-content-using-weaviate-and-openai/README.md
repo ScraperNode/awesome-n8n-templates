@@ -1,6 +1,6 @@
 # 🔬 Document Q&A with RAG: Query PDF content using Weaviate and OpenAI
 
-> ⚡ **2,419 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,644 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

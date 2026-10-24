@@ -1,0 +1,1366 @@
+{
+  "name": "Alert on portfolio price moves with SEC filings and news on Telegram",
+  "nodes": [
+    {
+      "id": "al000002-0000-4000-8000-000000000002",
+      "name": "Weekdays 10/14/18 Berlin",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        400,
+        2450
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10,14,18 * * 1-5"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "al000003-0000-4000-8000-000000000003",
+      "name": "Normalize Trigger",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        700,
+        2320
+      ],
+      "parameters": {
+        "jsCode": "\n// Single entry: the schedule. Everything a user tunes lives in the Config node.\nconst cfg = (() => { try { return $('\u2699\ufe0f Config').first().json; } catch (e) { return {}; } })();\nconst chat = String(cfg.chat_id || '').trim();\nif (!chat) throw new Error('Set chat_id in the Config node. Message your bot, then read the id from the Telegram trigger output.');\nreturn [{ json: {\n  source: 'scheduled',\n  chat_id: chat,\n  language: cfg.language || 'en',\n  threshold: Number(cfg.threshold_pct) || 4,      // flag a move of this size either way\n  big_threshold: Number(cfg.big_move_pct) || 7\n}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "al000004-0000-4000-8000-000000000004",
+      "name": "Read Portfolio",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        980,
+        2320
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "portfolio"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": ""
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.7,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "al000005-0000-4000-8000-000000000005",
+      "name": "Build Symbol Batches",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1260,
+        2320
+      ],
+      "parameters": {
+        "jsCode": "// --- Yahoo symbol resolution -------------------------------------------------\n// The sheet's `ticker` column is Fritz's own shorthand and is NOT always a valid\n// Yahoo symbol. Bare European tickers silently resolve to a DIFFERENT company on\n// a US exchange: 'GLE' is Global Engine Group (a $0.46 Nasdaq penny stock), not\n// Societe Generale; 'ALV' is Autoliv, not Allianz; 'CBK' is Commercial Bancgroup,\n// not Commerzbank; 'SGLN' is Surgline Intl, not iShares Physical Gold. Those\n// return real-looking prices under the wrong name, which is worse than no data.\n// An optional `yahoo` column in the sheet always wins if present.\nconst YAHOO = {\n  'CBK':'CBK.DE', 'BAYN':'BAYN.DE', 'ALV':'ALV.DE', 'HOT':'HOT.DE',\n  'GLE':'GLE.PA', 'SAN':'SAN.MC', 'ASML':'ASML.AS',\n  'CSPX':'CSPX.L', 'SGLN':'SGLN.L', 'BRK.B':'BRK-B'\n};\nfunction resolveSymbol(row, ticker){\n  const explicit = String(row.yahoo || row.Yahoo || '').trim();\n  if (explicit) return explicit;\n  return YAHOO[ticker.toUpperCase()] || ticker;\n}\n\nconst ctx=$('Normalize Trigger').first().json;\nconst rows=$input.all().map(i=>i.json).filter(r=>r);\nlet holdings=rows.map(r=>{\n  const ticker=String(r.ticker||r.Ticker||'').trim();\n  return { ticker, yahoo: resolveSymbol(r, ticker),\n    name:String(r.name||r.Name||'').trim(),\n    market:String(r.market||r.Market||'US').trim() };\n}).filter(h=>h.ticker && h.ticker!=='-' && h.ticker!=='\u2014');\nif(!holdings.length) holdings=[{ticker:'AAPL',yahoo:'AAPL',name:'Apple',market:'US'}];\n\nconst SIZE=20, out=[];\nfor(let i=0;i<holdings.length;i+=SIZE){\n  const chunk=holdings.slice(i,i+SIZE);\n  out.push({ json:{ ...ctx, batch_index: out.length,\n    symbols: chunk.map(h=>h.yahoo).join(','),\n    meta: chunk } });\n}\nreturn out;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "al000006-0000-4000-8000-000000000006",
+      "name": "Fetch Quotes",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1540,
+        2320
+      ],
+      "parameters": {
+        "url": "=https://query1.finance.yahoo.com/v7/finance/spark?symbols={{ $json.symbols }}&range=5d&interval=1d",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "al000007-0000-4000-8000-000000000007",
+      "name": "Fetch FX",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        1540,
+        2470
+      ],
+      "parameters": {
+        "url": "https://api.frankfurter.dev/v1/latest?base=EUR&symbols=USD,GBP,CHF,SEK,DKK,NOK",
+        "options": {}
+      },
+      "executeOnce": true,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "al000011-0000-4000-8000-000000000011",
+      "name": "Fetch CIK Map",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        1540,
+        2620
+      ],
+      "parameters": {
+        "url": "https://www.sec.gov/files/company_tickers.json",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "MNDST Research user@example.com"
+            }
+          ]
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "al000008-0000-4000-8000-000000000008",
+      "name": "Compute Moves",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1820,
+        2320
+      ],
+      "parameters": {
+        "jsCode": "const ctx=$('Normalize Trigger').first().json;\n\n// USD -> EUR (European tickers already quote in EUR)\nlet rates={};\ntry {\n  const fx=$('Fetch FX').first().json;\n  rates=(fx && fx.rates) || {};   // EUR -> X, so X -> EUR is a DIVIDE\n} catch(e){}\n// Not everything non-EUR is USD: SGLN.L quotes in GBp (pence), CSPX.L in USD\n// despite being London-listed. Treating pence as dollars was off by ~75x.\nfunction toEur(price, cur){\n  if(typeof price!=='number') return null;\n  if(cur==='EUR') return price;\n  if(cur==='GBp'||cur==='GBX') return rates.GBP ? (price/100)/rates.GBP : null;\n  const r=rates[cur];\n  return r ? price/r : null;\n}\n\n// name lookup from the sheet\nconst meta={};\nfor(const b of $('Build Symbol Batches').all()){\n  for(const m of (b.json.meta||[])) meta[(m.yahoo||m.ticker).toUpperCase()]=m;\n}\n\n// EDGAR ticker -> CIK. US filers only; European lines simply won't resolve.\nconst cik={};\ntry{\n  const map=$('Fetch CIK Map').first().json||{};\n  for(const k of Object.keys(map)){\n    const v=map[k];\n    if(v && v.ticker) cik[String(v.ticker).toUpperCase()]=String(v.cik_str).padStart(10,'0');\n  }\n}catch(e){}\n\nconst rows=[];\nfor(const item of $input.all()){\n  const res=((item.json||{}).spark||{}).result||[];\n  for(const r of res){\n    const resp=(r.response||[])[0]||{}; const m=resp.meta||{};\n    const sym=m.symbol||r.symbol; if(!sym) continue;\n    // A TRUE one-day move is the latest price against the PREVIOUS BAR's close.\n    // meta.chartPreviousClose is NOT yesterday: it is the close preceding the whole\n    // requested range (verified against Yahoo - on range=5d it sits 5 sessions back),\n    // so using it here silently produced a multi-day number labelled as daily.\n    const q=((resp.indicators&&resp.indicators.quote)||[])[0]||{};\n    const closes=(q.close||[]).filter(x=>typeof x==='number');\n    const price=m.regularMarketPrice;\n    if(typeof price!=='number') continue;\n    let prev=null, prevIsBar=false;\n    if(closes.length>=2){ prev=closes[closes.length-2]; prevIsBar=true; }\n    else if(typeof m.chartPreviousClose==='number'){ prev=m.chartPreviousClose; }\n    if(!(typeof prev==='number'&&prev>0)) continue;\n    const pct=((price-prev)/prev)*100;\n    // Timeframe must be stated, never inferred by the reader. This endpoint is\n    // range=2d/interval=1d and pct is regularMarketPrice vs chartPreviousClose,\n    // i.e. a ONE-DAY move: today so far against the prior session's close.\n    const ts=(resp.timestamp||[]);\n    const dstr=t=>{ try { return new Date(t*1000).toISOString().slice(0,10); } catch(e){ return null; } };\n    const prevCloseDate = (prevIsBar && ts.length>=2) ? dstr(ts[ts.length-2]) : null;\n    const cur=m.currency||'USD';\n    const eur = toEur(price, cur);\n    const mi = meta[String(sym).toUpperCase()] || {};\n    rows.push({\n      ticker: mi.ticker || sym, yahoo: sym, name: mi.name || sym,\n      cik: cik[String(mi.ticker||sym).toUpperCase()] || cik[String(sym).toUpperCase()] || '',\n      currency:cur, price, prev, eur,\n      pct:Math.round(pct*100)/100,\n      window:'1d',\n      window_label: prevCloseDate ? ('1-day move, vs close on '+prevCloseDate)\n                  : 'move since the previous available close (single session of data)',\n      direction: pct<0?'down':'up'\n    });\n  }\n}\n\nconst thr=ctx.threshold;\nlet breaches=rows.filter(r=>Math.abs(r.pct)>=thr)\n                   .sort((a,b)=>Math.abs(b.pct)-Math.abs(a.pct));\n\n// --- de-duplicate ---------------------------------------------------------\n// The cron fires 3x a day. A name that is down 5% at 10:00 is still down 5% at\n// 14:00 and 18:00 - without this you get three identical alerts for one event,\n// each costing a SerpAPI search and a GPT-5 call. On-demand asks bypass it.\nlet fresh = breaches;\nif (ctx.source !== 'invoke') {\n  const sd = $getWorkflowStaticData('global');\n  const today = new Date().toISOString().slice(0,10);\n  sd.alerted = sd.alerted || {};\n  for (const k of Object.keys(sd.alerted)) {\n    if (sd.alerted[k].date !== today) delete sd.alerted[k];   // new day, clean slate\n  }\n  fresh = breaches.filter(b => {\n    const seen = sd.alerted[b.ticker];\n    if (!seen) return true;\n    return Math.abs(b.pct) >= Math.abs(seen.pct) + 2;          // only if it got materially worse\n  });\n  for (const b of fresh) sd.alerted[b.ticker] = { date: today, pct: b.pct };\n}\nbreaches = fresh;\n\n// A symbol that returns no data used to vanish with no trace, so a broken\n// ticker looked exactly like a quiet day. Report it instead.\nconst requested=[];\nfor(const b of $('Build Symbol Batches').all()) for(const m of (b.json.meta||[])) requested.push(m);\nconst back=new Set(rows.map(r=>String(r.yahoo).toUpperCase()));\nconst unresolved=requested.filter(m=>!back.has(String(m.yahoo||m.ticker).toUpperCase()))\n                          .map(m=>`${m.name||m.ticker} (${m.yahoo||m.ticker})`);\n\nif(!breaches.length){\n  return [{ json:{ ...ctx, any:false, checked:rows.length, breaches:[], movers:[], unresolved, window:'1d', window_label:'1-day move, vs previous close' } }];\n}\n// one item per breach so the enrichment nodes run per name\nreturn breaches.map(b=>({ json:{ ...ctx, any:true, checked:rows.length,\n  breach:b, breaches, movers:rows, unresolved, window:'1d',\n  window_label: b.window_label || '1-day move, vs previous close' } }));\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "al000009-0000-4000-8000-000000000009",
+      "name": "Anything moved?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2100,
+        2320
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "any",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.any }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "al00000a-0000-4000-8000-00000000000a",
+      "name": "Fetch Filings",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2380,
+        2220
+      ],
+      "parameters": {
+        "url": "=https://data.sec.gov/submissions/CIK{{ ($json.breach.cik || '0000000000') }}.json",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "MNDST Research user@example.com"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "al00000b-0000-4000-8000-00000000000b",
+      "name": "Fetch News",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2660,
+        2220
+      ],
+      "parameters": {
+        "url": "=https://serpapi.com/search.json?engine=google_news&q={{ encodeURIComponent($('Compute Moves').all()[$runIndex].json.breach.name + ' stock') }}&hl=en&gl=us",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "serpApi"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "al00000c-0000-4000-8000-00000000000c",
+      "name": "Aggregate Evidence",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2940,
+        2220
+      ],
+      "parameters": {
+        "jsCode": "const ctx=$('Compute Moves').first().json;\nconst breaches=(ctx.breaches||[]);\n\n// EDGAR submissions + SerpAPI news are index-aligned with the breach list\nconst filings=$('Fetch Filings').all().map(i=>i.json);\nconst news=$('Fetch News').all().map(i=>i.json);\n\nconst enriched=breaches.map((b,idx)=>{\n  const f=filings[idx]||{};\n  const recent=(((f.filings||{}).recent)||{});\n  const forms=[];\n  const n=Math.min(8,(recent.form||[]).length);\n  for(let i=0;i<n;i++){\n    forms.push({ form:recent.form[i], date:recent.filingDate[i],\n                 desc:(recent.primaryDocDescription||[])[i]||'' });\n  }\n  const nr=((news[idx]||{}).news_results||[]).slice(0,6).map(x=>({\n    title:x.title||'', source:(x.source&&(x.source.name||x.source))||'',\n    date:x.date||'', link:x.link||'', snippet:(x.snippet||'').slice(0,260)\n  }));\n  return { ...b, edgar_company:f.name||'', filings:forms, news:nr };\n});\n\nreturn [{ json:{ ...ctx, enriched } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "al00000d-0000-4000-8000-00000000000d",
+      "name": "Explain Moves",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        3220,
+        2220
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5",
+          "cachedResultName": "GPT-5"
+        },
+        "options": {
+          "temperature": 1
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are Fritz's market analyst - the same analyst who writes his Monday report. Something in his portfolio has moved sharply. Explain it.\n\nTIMEFRAME: every % below is a ONE-DAY (daily) move - today's price against the previous session's close. State it explicitly in the output: write '+4.2% today' or '-5.1% on the day', never a bare percentage, so Fritz is never left guessing whether a number is daily or weekly.\n\nOutput ALWAYS IN ENGLISH regardless of any other language.\n\nFor EACH name below, work out WHY it moved, using the evidence given:\n- SEC filings are primary evidence. An 8-K is a material event, a 10-Q/10-K is results, a Form 4 is an insider transaction. A filing dated today or yesterday is very likely the cause.\n- News is secondary. Weigh FT, WSJ, Reuters, AP and Bloomberg heavily. Treat Motley Fool, Zacks, Simply Wall St, Benzinga and InvestorPlace as noise and ignore them.\n- If the evidence does not explain the move, say so plainly rather than inventing a reason. A move with no visible cause is itself worth flagging - it often means sector or macro drift.\n\nThen think FORWARD, exactly as in the weekly report: what could this mean next, for the stock AND any macro or sector linkage. Give a magnitude + direction estimate for where this could go.\n\nAlso state whether this looks like a single-name event or something moving the whole sector - check whether his other holdings in the same sector moved together.\n\nFormat as Telegram-friendly HTML. Use ONLY <b>...</b> for headers and <a href=\"URL\">text</a> for links. NO Markdown, asterisks, underscores or backticks.\n\n\u26a1 <b>Portfolio Alert</b> (daily moves)\n\nOne block per name:\n<b>TICKER</b> [\u00b1X.X% today (1-day move), EUR price] - [what happened, grounded in the evidence]\n[forward view: what this could mean next + magnitude/direction estimate]\n[<a href=\"URL\">source</a> when available]\n\nEnd with one <b>Read-across</b> line if several holdings moved together, otherwise omit it.\n\nMoves and evidence (JSON):\n{{ JSON.stringify($json.enriched, null, 2) }}\n\nAll holdings checked today, for read-across context (JSON):\n{{ JSON.stringify(($json.movers||[]).map(m => ({t:m.ticker,p:m.pct}))) }}\n\nReturn JSON: { \"report\": \"<HTML using ONLY <b> and <a href> tags>\", \"item_count\": <number of names explained> }\n\n\nHOW TO WRITE THIS (Fritz's explicit feedback, follow it):\nWrite like a smart friend who follows markets explaining it over coffee, not like a sell-side desk note. He is an operator, not a trader.\n- Plain words over jargon. Say \"sales\" not \"top-line\", \"profit margin\" not \"operating leverage\", \"how much they expect to earn\" not \"guidance\", \"the stock got more expensive relative to profits\" not \"multiple expansion\". If a technical term is genuinely the clearest word, use it and add three words of plain explanation right after.\n- Lead with what it MEANS for him, then the number that backs it up.\n- Concrete over abstract. \"They sold more than expected and raised what they think they will earn this year\" beats \"beat and raise with positive estimate revisions\".\n- Short sentences. Vary the length. No stacked clauses.\n- Never use em dashes or en dashes anywhere in the output. Use a comma, a full stop, or a plain hyphen.\n- Do not hedge into meaninglessness. Take a view and say why.\n- Cut filler openers like \"Notably\", \"It is worth noting\", \"That said\", \"Importantly\".\n"
+            }
+          ]
+        },
+        "jsonOutput": true
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "al00000e-0000-4000-8000-00000000000e",
+      "name": "Build Alert",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3500,
+        2220
+      ],
+      "parameters": {
+        "jsCode": "const ctx=$('Aggregate Evidence').first().json;\nconst raw=$input.first().json.message?.content ?? $input.first().json;\nconst p=typeof raw==='string'?JSON.parse(raw):raw;\n\n// keep <b>/<i>/<a href> that the analyst emits, neutralise everything else\nconst tg=s=>String(s||'')\n  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')\n  .replace(/&lt;(\\/?(?:b|i))&gt;/g,'<$1>')\n  .replace(/&lt;a href=\"([^\"]*)\"&gt;/g,'<a href=\"$1\">')\n  .replace(/&lt;\\/a&gt;/g,'</a>');\n\nlet body=tg(String(p.report||''));\nconst MAX=3800;\nif(body.length>MAX) {\n  body=body.slice(0,MAX);\n  // A blind slice can cut through an HTML tag, which makes Telegram reject the\n  // whole send with \"can't parse entities\" / \"unsupported start tag\".\n  const lastOpen=body.lastIndexOf('<');\n  if(lastOpen>body.lastIndexOf('>')) body=body.slice(0,lastOpen);\n  for(const t of ['b','i','a']){\n    const o=(body.match(new RegExp('<'+t+'(?:\\\\s[^>]*)?>','g'))||[]).length;\n    const c=(body.match(new RegExp('</'+t+'>','g'))||[]).length;\n    for(let k=0;k<o-c;k++) body+='</'+t+'>';\n  }\n  body+='\\n\u2026(truncated)';\n}\n\n// A ticker that never resolved is a data problem, not a quiet market - say so\n// rather than letting it look like the name simply did not move.\nconst un=(ctx.unresolved||[]);\nif(un.length){\n  body+=`\\n\\n<i>\\u26a0\\ufe0f No price data for: ${tg(un.join(', '))}. Check the ticker in the portfolio sheet.</i>`;\n}\n\nconst names=(ctx.breaches||[]).map(b=>`${b.ticker} ${b.pct>0?'+':''}${b.pct}% (1d)`).join(', ');\nreturn [{ json:{ chat_id:ctx.chat_id, language:ctx.language, source:ctx.source,\n  text:body, checked:ctx.checked, breach_count:(ctx.breaches||[]).length,\n  breaches:names, item_count:p.item_count||0,\n  preview:body.replace(/<[^>]+>/g,'').slice(0,300) } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "al00000f-0000-4000-8000-00000000000f",
+      "name": "Send Alert",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        3780,
+        2220
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "chatId": "={{ $json.chat_id }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "al000010-0000-4000-8000-000000000010",
+      "name": "Log to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        3780,
+        2370
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "source": "={{ $json.source }}",
+            "checked": "={{ $json.checked }}",
+            "preview": "={{ $json.preview }}",
+            "breaches": "={{ $json.breaches }}",
+            "timestamp": "={{ $now }}",
+            "breach_count": "={{ $json.breach_count }}"
+          },
+          "schema": [],
+          "mappingMode": "defineBelow",
+          "matchingColumns": []
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "finance_alert"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": ""
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.7,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "cfgnode",
+      "name": "\u2699\ufe0f Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        620,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "chat_id",
+              "type": "string",
+              "value": ""
+            },
+            {
+              "id": "c2",
+              "name": "threshold_pct",
+              "type": "number",
+              "value": 4
+            },
+            {
+              "id": "c3",
+              "name": "big_move_pct",
+              "type": "number",
+              "value": 7
+            },
+            {
+              "id": "c4",
+              "name": "language",
+              "type": "string",
+              "value": "en"
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "overview",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -460,
+        120
+      ],
+      "parameters": {
+        "width": 640,
+        "height": 900,
+        "content": "## Portfolio price alerts, with the reason attached\n\nChecks your holdings a few times a day and messages you on Telegram only when something actually moved. Every alert carries WHY: the SEC filing or the news story behind the move, not just a percentage.\n\n### Who's it for\nAnyone holding more than a handful of positions who wants to hear about a 6% drop within the hour, without watching a ticker all day.\n\n### How it works\n- Reads your tickers from a Google Sheet.\n- Prices them through Yahoo's public chart endpoint, in batches of 20 (larger batches are rejected).\n- Converts to EUR using ECB rates from Frankfurter, with a separate branch for London pence, which is quoted in GBp and is otherwise 100x wrong.\n- Anything moving past your threshold gets explained: SEC EDGAR filings first (an 8-K is filed before it is a news story), then news through SerpAPI.\n- A quiet day sends nothing at all.\n- Every percentage is labelled with the window it covers, so a \"1-day move\" really is one day.\n\n### How to set up\n1. Create a Google Sheet with a `portfolio` tab. Columns: ticker, name, market, notes, yahoo.\n2. Put the real Yahoo symbol in the `yahoo` column for anything non-US: .DE Xetra, .PA Paris, .AS Amsterdam, .MC Madrid, .L London.\n3. Add Telegram, Google Sheets, OpenAI and SerpAPI credentials.\n4. Open the Config node and set your Telegram chat id and threshold.\n\n### Requirements\nTelegram bot, Google Sheets, OpenAI, SerpAPI. Price and filing data are free and need no key.\n\n### Why the yahoo column matters\nA bare European ticker does not fail, it silently resolves to a different company on a US exchange. ALV returns Autoliv, not Allianz. GLE returns a penny stock, not Societe Generale. Filling that column is the difference between a real alert and a confident wrong one."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "config",
+      "name": "Config",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        560,
+        120
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 420,
+        "height": 150,
+        "content": "### Set this first\nYour Telegram chat id and the move size worth waking you for. Nothing else needs editing."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "prices",
+      "name": "Prices",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1140,
+        120
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 760,
+        "height": 150,
+        "content": "### Prices and currency\nYahoo in batches of 20 (bigger batches are rejected), then ECB rates. London listings quote in pence and are converted separately."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "whyitmoved",
+      "name": "Why it moved",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1900,
+        120
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 700,
+        "height": 150,
+        "content": "### The reason, not just the number\nSEC filings are checked before news: an 8-K is filed before anyone writes about it."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "project": {
+        "id": "54g7Dv5noKapcYx8",
+        "icon": null,
+        "name": "Friedrich   <info@mndst.co>",
+        "type": "personal",
+        "createdAt": "2025-08-25T09:47:39.261Z",
+        "updatedAt": "2025-08-25T09:47:42.261Z",
+        "description": null,
+        "projectRelations": [
+          {
+            "user": {
+              "id": "1808dc04-2492-4fa3-a372-43f47b4606bc",
+              "email": "info@mndst.co",
+              "disabled": false,
+              "lastName": " ",
+              "settings": {
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1771934349503
+                },
+                "userActivated": true,
+                "userActivatedAt": 1756317931425,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "lbnunnTAgh424QLb"
+              },
+              "createdAt": "2025-08-25T09:47:37.700Z",
+              "firstName": "Friedrich",
+              "isPending": false,
+              "updatedAt": "2026-08-31T08:39:24.000Z",
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-08-30",
+              "personalizationAnswers": null
+            },
+            "userId": "1808dc04-2492-4fa3-a372-43f47b4606bc",
+            "createdAt": "2025-08-25T09:47:39.261Z",
+            "projectId": "54g7Dv5noKapcYx8",
+            "updatedAt": "2025-08-25T09:47:39.261Z"
+          }
+        ]
+      },
+      "createdAt": "2026-08-18T11:58:19.165Z",
+      "projectId": "54g7Dv5noKapcYx8",
+      "updatedAt": "2026-08-18T11:58:19.165Z",
+      "workflowId": "Ye93GDssyxLFGGuQ"
+    }
+  ],
+  "settings": {
+    "timezone": "Europe/Berlin",
+    "executionOrder": "v1"
+  },
+  "createdAt": "2026-08-18T11:58:19.162Z",
+  "updatedAt": "2026-08-31T10:55:15.611Z",
+  "isArchived": false,
+  "staticData": {
+    "global": {
+      "alerted": {
+        "CRWD": {
+          "pct": -4.19,
+          "date": "2026-08-31"
+        },
+        "HOOD": {
+          "pct": -5.01,
+          "date": "2026-08-31"
+        },
+        "KLAC": {
+          "pct": -4.48,
+          "date": "2026-08-31"
+        },
+        "NVDA": {
+          "pct": -4.57,
+          "date": "2026-08-31"
+        }
+      }
+    },
+    "node:Weekdays 10/14/18 Berlin": {
+      "recurrenceRules": []
+    }
+  },
+  "connections": {
+    "Fetch FX": {
+      "main": [
+        [
+          {
+            "node": "Fetch CIK Map",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch News": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Evidence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Alert": {
+      "main": [
+        [
+          {
+            "node": "Send Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Quotes": {
+      "main": [
+        [
+          {
+            "node": "Compute Moves",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Moves": {
+      "main": [
+        [
+          {
+            "node": "Anything moved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Explain Moves": {
+      "main": [
+        [
+          {
+            "node": "Build Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch CIK Map": {
+      "main": [
+        [
+          {
+            "node": "Read Portfolio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Filings": {
+      "main": [
+        [
+          {
+            "node": "Fetch News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\u2699\ufe0f Config": {
+      "main": [
+        [
+          {
+            "node": "Normalize Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Portfolio": {
+      "main": [
+        [
+          {
+            "node": "Build Symbol Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything moved?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Filings",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Normalize Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch FX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Evidence": {
+      "main": [
+        [
+          {
+            "node": "Explain Moves",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Symbol Batches": {
+      "main": [
+        [
+          {
+            "node": "Fetch Quotes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekdays 10/14/18 Berlin": {
+      "main": [
+        [
+          {
+            "node": "\u2699\ufe0f Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "description": null,
+  "triggerCount": 1,
+  "activeVersion": {
+    "name": null,
+    "nodes": [
+      {
+        "id": "al000001-0000-4000-8000-000000000001",
+        "name": "Entry (from Orchestrator)",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "position": [
+          400,
+          2200
+        ],
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "action"
+              },
+              {
+                "name": "skill"
+              },
+              {
+                "name": "chat_id"
+              },
+              {
+                "name": "user_id"
+              },
+              {
+                "name": "language"
+              },
+              {
+                "name": "text"
+              },
+              {
+                "name": "cb_action"
+              },
+              {
+                "name": "ref"
+              },
+              {
+                "name": "reply_text"
+              },
+              {
+                "name": "voice_file_id"
+              },
+              {
+                "name": "has_voice",
+                "type": "boolean"
+              },
+              {
+                "name": "callback_query_id"
+              },
+              {
+                "name": "message_id"
+              }
+            ]
+          }
+        },
+        "typeVersion": 1.1
+      },
+      {
+        "id": "al000002-0000-4000-8000-000000000002",
+        "name": "Weekdays 10/14/18 Berlin",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "position": [
+          400,
+          2450
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "cronExpression",
+                "expression": "0 10,14,18 * * 1-5"
+              }
+            ]
+          }
+        },
+        "typeVersion": 1.2
+      },
+      {
+        "id": "al000003-0000-4000-8000-000000000003",
+        "name": "Normalize Trigger",
+        "type": "n8n-nodes-base.code",
+        "position": [
+          700,
+          2320
+        ],
+        "parameters": {
+          "jsCode": "// Two entry paths: the orchestrator (on demand) and the cron.\nlet src='scheduled', chat='0', lang='en', thr=null;\ntry {\n  const e=$('Entry (from Orchestrator)').first().json;\n  if (e && e.action) {\n    src='invoke'; chat=e.chat_id||chat; lang=e.language||'en';\n    // \"alert me on anything over 4%\" -> honour it\n    const m=String(e.text||'').match(/(\\d+(?:[.,]\\d+)?)\\s*%/);\n    if (m) thr=Math.abs(parseFloat(m[1].replace(',','.')));\n  }\n} catch (err) {}\nreturn [{ json: { source:src, chat_id:chat, language:lang,\n  threshold: thr || 4,          // default: flag anything moving 4%+ either way\n  big_threshold: 7 } }];\n"
+        },
+        "typeVersion": 2
+      },
+      {
+        "id": "al000004-0000-4000-8000-000000000004",
+        "name": "Read Portfolio",
+        "type": "n8n-nodes-base.googleSheets",
+        "maxTries": 3,
+        "position": [
+          980,
+          2320
+        ],
+        "parameters": {
+          "options": {},
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "portfolio"
+          },
+          "documentId": {
+            "__rl": true,
+            "mode": "url",
+            "value": "https://docs.google.com/spreadsheets/d//edit"
+          }
+        },
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "AnE0wDgGuSiw7MkX",
+            "name": "Google Sheets account"
+          }
+        },
+        "retryOnFail": true,
+        "typeVersion": 4.7,
+        "alwaysOutputData": true,
+        "waitBetweenTries": 5000
+      },
+      {
+        "id": "al000005-0000-4000-8000-000000000005",
+        "name": "Build Symbol Batches",
+        "type": "n8n-nodes-base.code",
+        "position": [
+          1260,
+          2320
+        ],
+        "parameters": {
+          "jsCode": "// --- Yahoo symbol resolution -------------------------------------------------\n// The sheet's `ticker` column is Fritz's own shorthand and is NOT always a valid\n// Yahoo symbol. Bare European tickers silently resolve to a DIFFERENT company on\n// a US exchange: 'GLE' is Global Engine Group (a $0.46 Nasdaq penny stock), not\n// Societe Generale; 'ALV' is Autoliv, not Allianz; 'CBK' is Commercial Bancgroup,\n// not Commerzbank; 'SGLN' is Surgline Intl, not iShares Physical Gold. Those\n// return real-looking prices under the wrong name, which is worse than no data.\n// An optional `yahoo` column in the sheet always wins if present.\nconst YAHOO = {\n  'CBK':'CBK.DE', 'BAYN':'BAYN.DE', 'ALV':'ALV.DE', 'HOT':'HOT.DE',\n  'GLE':'GLE.PA', 'SAN':'SAN.MC', 'ASML':'ASML.AS',\n  'CSPX':'CSPX.L', 'SGLN':'SGLN.L', 'BRK.B':'BRK-B'\n};\nfunction resolveSymbol(row, ticker){\n  const explicit = String(row.yahoo || row.Yahoo || '').trim();\n  if (explicit) return explicit;\n  return YAHOO[ticker.toUpperCase()] || ticker;\n}\n\nconst ctx=$('Normalize Trigger').first().json;\nconst rows=$input.all().map(i=>i.json).filter(r=>r);\nlet holdings=rows.map(r=>{\n  const ticker=String(r.ticker||r.Ticker||'').trim();\n  return { ticker, yahoo: resolveSymbol(r, ticker),\n    name:String(r.name||r.Name||'').trim(),\n    market:String(r.market||r.Market||'US').trim() };\n}).filter(h=>h.ticker && h.ticker!=='-' && h.ticker!=='\u2014');\nif(!holdings.length) holdings=[{ticker:'AAPL',yahoo:'AAPL',name:'Apple',market:'US'}];\n\nconst SIZE=20, out=[];\nfor(let i=0;i<holdings.length;i+=SIZE){\n  const chunk=holdings.slice(i,i+SIZE);\n  out.push({ json:{ ...ctx, batch_index: out.length,\n    symbols: chunk.map(h=>h.yahoo).join(','),\n    meta: chunk } });\n}\nreturn out;\n"
+        },
+        "typeVersion": 2
+      },
+      {
+        "id": "al000006-0000-4000-8000-000000000006",
+        "name": "Fetch Quotes",
+        "type": "n8n-nodes-base.httpRequest",
+        "position": [
+          1540,
+          2320
+        ],
+        "parameters": {
+          "url": "=https://query1.finance.yahoo.com/v7/finance/spark?symbols={{ $json.symbols }}&range=5d&interval=1d",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "User-Agent",
+                "value": "Mozilla/5.0"
+              }
+            ]
+          }
+        },
+        "typeVersion": 4.2
+      },
+      {
+        "id": "al000007-0000-4000-8000-000000000007",
+        "name": "Fetch FX",
+        "type": "n8n-nodes-base.httpRequest",
+        "onError": "continueRegularOutput",
+        "position": [
+          1540,
+          2470
+        ],
+        "parameters": {
+          "url": "https://api.frankfurter.dev/v1/latest?base=EUR&symbols=USD,GBP,CHF,SEK,DKK,NOK",
+          "options": {}
+        },
+        "executeOnce": true,
+        "typeVersion": 4.2,
+        "alwaysOutputData": true
+      },
+      {
+        "id": "al000011-0000-4000-8000-000000000011",
+        "name": "Fetch CIK Map",
+        "type": "n8n-nodes-base.httpRequest",
+        "onError": "continueRegularOutput",
+        "position": [
+          1540,
+          2620
+        ],
+        "parameters": {
+          "url": "https://www.sec.gov/files/company_tickers.json",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "User-Agent",
+                "value": "MNDST Research fritz@mndst.co"
+              }
+            ]
+          }
+        },
+        "executeOnce": true,
+        "typeVersion": 4.2,
+        "alwaysOutputData": true
+      },
+      {
+        "id": "al000008-0000-4000-8000-000000000008",
+        "name": "Compute Moves",
+        "type": "n8n-nodes-base.code",
+        "position": [
+          1820,
+          2320
+        ],
+        "parameters": {
+          "jsCode": "const ctx=$('Normalize Trigger').first().json;\n\n// USD -> EUR (European tickers already quote in EUR)\nlet rates={};\ntry {\n  const fx=$('Fetch FX').first().json;\n  rates=(fx && fx.rates) || {};   // EUR -> X, so X -> EUR is a DIVIDE\n} catch(e){}\n// Not everything non-EUR is USD: SGLN.L quotes in GBp (pence), CSPX.L in USD\n// despite being London-listed. Treating pence as dollars was off by ~75x.\nfunction toEur(price, cur){\n  if(typeof price!=='number') return null;\n  if(cur==='EUR') return price;\n  if(cur==='GBp'||cur==='GBX') return rates.GBP ? (price/100)/rates.GBP : null;\n  const r=rates[cur];\n  return r ? price/r : null;\n}\n\n// name lookup from the sheet\nconst meta={};\nfor(const b of $('Build Symbol Batches').all()){\n  for(const m of (b.json.meta||[])) meta[(m.yahoo||m.ticker).toUpperCase()]=m;\n}\n\n// EDGAR ticker -> CIK. US filers only; European lines simply won't resolve.\nconst cik={};\ntry{\n  const map=$('Fetch CIK Map').first().json||{};\n  for(const k of Object.keys(map)){\n    const v=map[k];\n    if(v && v.ticker) cik[String(v.ticker).toUpperCase()]=String(v.cik_str).padStart(10,'0');\n  }\n}catch(e){}\n\nconst rows=[];\nfor(const item of $input.all()){\n  const res=((item.json||{}).spark||{}).result||[];\n  for(const r of res){\n    const resp=(r.response||[])[0]||{}; const m=resp.meta||{};\n    const sym=m.symbol||r.symbol; if(!sym) continue;\n    // A TRUE one-day move is the latest price against the PREVIOUS BAR's close.\n    // meta.chartPreviousClose is NOT yesterday: it is the close preceding the whole\n    // requested range (verified against Yahoo - on range=5d it sits 5 sessions back),\n    // so using it here silently produced a multi-day number labelled as daily.\n    const q=((resp.indicators&&resp.indicators.quote)||[])[0]||{};\n    const closes=(q.close||[]).filter(x=>typeof x==='number');\n    const price=m.regularMarketPrice;\n    if(typeof price!=='number') continue;\n    let prev=null, prevIsBar=false;\n    if(closes.length>=2){ prev=closes[closes.length-2]; prevIsBar=true; }\n    else if(typeof m.chartPreviousClose==='number'){ prev=m.chartPreviousClose; }\n    if(!(typeof prev==='number'&&prev>0)) continue;\n    const pct=((price-prev)/prev)*100;\n    // Timeframe must be stated, never inferred by the reader. This endpoint is\n    // range=2d/interval=1d and pct is regularMarketPrice vs chartPreviousClose,\n    // i.e. a ONE-DAY move: today so far against the prior session's close.\n    const ts=(resp.timestamp||[]);\n    const dstr=t=>{ try { return new Date(t*1000).toISOString().slice(0,10); } catch(e){ return null; } };\n    const prevCloseDate = (prevIsBar && ts.length>=2) ? dstr(ts[ts.length-2]) : null;\n    const cur=m.currency||'USD';\n    const eur = toEur(price, cur);\n    const mi = meta[String(sym).toUpperCase()] || {};\n    rows.push({\n      ticker: mi.ticker || sym, yahoo: sym, name: mi.name || sym,\n      cik: cik[String(mi.ticker||sym).toUpperCase()] || cik[String(sym).toUpperCase()] || '',\n      currency:cur, price, prev, eur,\n      pct:Math.round(pct*100)/100,\n      window:'1d',\n      window_label: prevCloseDate ? ('1-day move, vs close on '+prevCloseDate)\n                  : 'move since the previous available close (single session of data)',\n      direction: pct<0?'down':'up'\n    });\n  }\n}\n\nconst thr=ctx.threshold;\nlet breaches=rows.filter(r=>Math.abs(r.pct)>=thr)\n                   .sort((a,b)=>Math.abs(b.pct)-Math.abs(a.pct));\n\n// --- de-duplicate ---------------------------------------------------------\n// The cron fires 3x a day. A name that is down 5% at 10:00 is still down 5% at\n// 14:00 and 18:00 - without this you get three identical alerts for one event,\n// each costing a SerpAPI search and a GPT-5 call. On-demand asks bypass it.\nlet fresh = breaches;\nif (ctx.source !== 'invoke') {\n  const sd = $getWorkflowStaticData('global');\n  const today = new Date().toISOString().slice(0,10);\n  sd.alerted = sd.alerted || {};\n  for (const k of Object.keys(sd.alerted)) {\n    if (sd.alerted[k].date !== today) delete sd.alerted[k];   // new day, clean slate\n  }\n  fresh = breaches.filter(b => {\n    const seen = sd.alerted[b.ticker];\n    if (!seen) return true;\n    return Math.abs(b.pct) >= Math.abs(seen.pct) + 2;          // only if it got materially worse\n  });\n  for (const b of fresh) sd.alerted[b.ticker] = { date: today, pct: b.pct };\n}\nbreaches = fresh;\n\n// A symbol that returns no data used to vanish with no trace, so a broken\n// ticker looked exactly like a quiet day. Report it instead.\nconst requested=[];\nfor(const b of $('Build Symbol Batches').all()) for(const m of (b.json.meta||[])) requested.push(m);\nconst back=new Set(rows.map(r=>String(r.yahoo).toUpperCase()));\nconst unresolved=requested.filter(m=>!back.has(String(m.yahoo||m.ticker).toUpperCase()))\n                          .map(m=>`${m.name||m.ticker} (${m.yahoo||m.ticker})`);\n\nif(!breaches.length){\n  return [{ json:{ ...ctx, any:false, checked:rows.length, breaches:[], movers:[], unresolved, window:'1d', window_label:'1-day move, vs previous close' } }];\n}\n// one item per breach so the enrichment nodes run per name\nreturn breaches.map(b=>({ json:{ ...ctx, any:true, checked:rows.length,\n  breach:b, breaches, movers:rows, unresolved, window:'1d',\n  window_label: b.window_label || '1-day move, vs previous close' } }));\n"
+        },
+        "typeVersion": 2
+      },
+      {
+        "id": "al000009-0000-4000-8000-000000000009",
+        "name": "Anything moved?",
+        "type": "n8n-nodes-base.if",
+        "position": [
+          2100,
+          2320
+        ],
+        "parameters": {
+          "options": {},
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "loose"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "any",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                },
+                "leftValue": "={{ $json.any }}",
+                "rightValue": ""
+              }
+            ]
+          }
+        },
+        "typeVersion": 2.2
+      },
+      {
+        "id": "al00000a-0000-4000-8000-00000000000a",
+        "name": "Fetch Filings",
+        "type": "n8n-nodes-base.httpRequest",
+        "position": [
+          2380,
+          2220
+        ],
+        "parameters": {
+          "url": "=https://data.sec.gov/submissions/CIK{{ ($json.breach.cik || '0000000000') }}.json",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "User-Agent",
+                "value": "MNDST Research fritz@mndst.co"
+              }
+            ]
+          }
+        },
+        "typeVersion": 4.2
+      },
+      {
+        "id": "al00000b-0000-4000-8000-00000000000b",
+        "name": "Fetch News",
+        "type": "n8n-nodes-base.httpRequest",
+        "position": [
+          2660,
+          2220
+        ],
+        "parameters": {
+          "url": "=https://serpapi.com/search.json?engine=google_news&q={{ encodeURIComponent($('Compute Moves').all()[$runIndex].json.breach.name + ' stock') }}&hl=en&gl=us",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          },
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "serpApi"
+        },
+        "credentials": {
+          "serpApi": {
+            "id": "9zZ5YKfJbOsx6Dfm",
+            "name": "SerpAPI account"
+          }
+        },
+        "typeVersion": 4.2
+      },
+      {
+        "id": "al00000c-0000-4000-8000-00000000000c",
+        "name": "Aggregate Evidence",
+        "type": "n8n-nodes-base.code",
+        "position": [
+          2940,
+          2220
+        ],
+        "parameters": {
+          "jsCode": "const ctx=$('Compute Moves').first().json;\nconst breaches=(ctx.breaches||[]);\n\n// EDGAR submissions + SerpAPI news are index-aligned with the breach list\nconst filings=$('Fetch Filings').all().map(i=>i.json);\nconst news=$('Fetch News').all().map(i=>i.json);\n\nconst enriched=breaches.map((b,idx)=>{\n  const f=filings[idx]||{};\n  const recent=(((f.filings||{}).recent)||{});\n  const forms=[];\n  const n=Math.min(8,(recent.form||[]).length);\n  for(let i=0;i<n;i++){\n    forms.push({ form:recent.form[i], date:recent.filingDate[i],\n                 desc:(recent.primaryDocDescription||[])[i]||'' });\n  }\n  const nr=((news[idx]||{}).news_results||[]).slice(0,6).map(x=>({\n    title:x.title||'', source:(x.source&&(x.source.name||x.source))||'',\n    date:x.date||'', link:x.link||'', snippet:(x.snippet||'').slice(0,260)\n  }));\n  return { ...b, edgar_company:f.name||'', filings:forms, news:nr };\n});\n\nreturn [{ json:{ ...ctx, enriched } }];\n"
+        },
+        "typeVersion": 2
+      },
+      {
+        "id": "al00000d-0000-4000-8000-00000000000d",
+        "name": "Explain Moves",
+        "type": "@n8n/n8n-nodes-langchain.openAi",
+        "position": [
+          3220,
+          2220
+        ],
+        "parameters": {
+          "modelId": {
+            "__rl": true,
+            "mode": "list",
+            "value": "gpt-5",
+            "cachedResultName": "GPT-5"
+          },
+          "options": {
+            "temperature": 1
+          },
+          "messages": {
+            "values": [
+              {
+                "content": "=You are Fritz's market analyst - the same analyst who writes his Monday report. Something in his portfolio has moved sharply. Explain it.\n\nTIMEFRAME: every % below is a ONE-DAY (daily) move - today's price against the previous session's close. State it explicitly in the output: write '+4.2% today' or '-5.1% on the day', never a bare percentage, so Fritz is never left guessing whether a number is daily or weekly.\n\nOutput ALWAYS IN ENGLISH regardless of any other language.\n\nFor EACH name below, work out WHY it moved, using the evidence given:\n- SEC filings are primary evidence. An 8-K is a material event, a 10-Q/10-K is results, a Form 4 is an insider transaction. A filing dated today or yesterday is very likely the cause.\n- News is secondary. Weigh FT, WSJ, Reuters, AP and Bloomberg heavily. Treat Motley Fool, Zacks, Simply Wall St, Benzinga and InvestorPlace as noise and ignore them.\n- If the evidence does not explain the move, say so plainly rather than inventing a reason. A move with no visible cause is itself worth flagging - it often means sector or macro drift.\n\nThen think FORWARD, exactly as in the weekly report: what could this mean next, for the stock AND any macro or sector linkage. Give a magnitude + direction estimate for where this could go.\n\nAlso state whether this looks like a single-name event or something moving the whole sector - check whether his other holdings in the same sector moved together.\n\nFormat as Telegram-friendly HTML. Use ONLY <b>...</b> for headers and <a href=\"URL\">text</a> for links. NO Markdown, asterisks, underscores or backticks.\n\n\u26a1 <b>Portfolio Alert</b> (daily moves)\n\nOne block per name:\n<b>TICKER</b> [\u00b1X.X% today (1-day move), EUR price] - [what happened, grounded in the evidence]\n[forward view: what this could mean next + magnitude/direction estimate]\n[<a href=\"URL\">source</a> when available]\n\nEnd with one <b>Read-across</b> line if several holdings moved together, otherwise omit it.\n\nMoves and evidence (JSON):\n{{ JSON.stringify($json.enriched, null, 2) }}\n\nAll holdings checked today, for read-across context (JSON):\n{{ JSON.stringify(($json.movers||[]).map(m => ({t:m.ticker,p:m.pct}))) }}\n\nReturn JSON: { \"report\": \"<HTML using ONLY <b> and <a href> tags>\", \"item_count\": <number of names explained> }\n\n\nHOW TO WRITE THIS (Fritz's explicit feedback, follow it):\nWrite like a smart friend who follows markets explaining it over coffee, not like a sell-side desk note. He is an operator, not a trader.\n- Plain words over jargon. Say \"sales\" not \"top-line\", \"profit margin\" not \"operating leverage\", \"how much they expect to earn\" not \"guidance\", \"the stock got more expensive relative to profits\" not \"multiple expansion\". If a technical term is genuinely the clearest word, use it and add three words of plain explanation right after.\n- Lead with what it MEANS for him, then the number that backs it up.\n- Concrete over abstract. \"They sold more than expected and raised what they think they will earn this year\" beats \"beat and raise with positive estimate revisions\".\n- Short sentences. Vary the length. No stacked clauses.\n- Never use em dashes or en dashes anywhere in the output. Use a comma, a full stop, or a plain hyphen.\n- Do not hedge into meaninglessness. Take a view and say why.\n- Cut filler openers like \"Notably\", \"It is worth noting\", \"That said\", \"Importantly\".\n"
+              }
+            ]
+          },
+          "jsonOutput": true
+        },
+        "credentials": {
+          "openAiApi": {
+            "id": "nTEHXMvA86W27v1h",
+            "name": "OpenAi account"
+          }
+        },
+        "typeVersion": 1.8
+      },
+      {
+        "id": "al00000e-0000-4000-8000-00000000000e",
+        "name": "Build Alert",
+        "type": "n8n-nodes-base.code",
+        "position": [
+          3500,
+          2220
+        ],
+        "parameters": {
+          "jsCode": "const ctx=$('Aggregate Evidence').first().json;\nconst raw=$input.first().json.message?.content ?? $input.first().json;\nconst p=typeof raw==='string'?JSON.parse(raw):raw;\n\n// keep <b>/<i>/<a href> that the analyst emits, neutralise everything else\nconst tg=s=>String(s||'')\n  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')\n  .replace(/&lt;(\\/?(?:b|i))&gt;/g,'<$1>')\n  .replace(/&lt;a href=\"([^\"]*)\"&gt;/g,'<a href=\"$1\">')\n  .replace(/&lt;\\/a&gt;/g,'</a>');\n\nlet body=tg(String(p.report||''));\nconst MAX=3800;\nif(body.length>MAX) {\n  body=body.slice(0,MAX);\n  // A blind slice can cut through an HTML tag, which makes Telegram reject the\n  // whole send with \"can't parse entities\" / \"unsupported start tag\".\n  const lastOpen=body.lastIndexOf('<');\n  if(lastOpen>body.lastIndexOf('>')) body=body.slice(0,lastOpen);\n  for(const t of ['b','i','a']){\n    const o=(body.match(new RegExp('<'+t+'(?:\\\\s[^>]*)?>','g'))||[]).length;\n    const c=(body.match(new RegExp('</'+t+'>','g'))||[]).length;\n    for(let k=0;k<o-c;k++) body+='</'+t+'>';\n  }\n  body+='\\n\u2026(truncated)';\n}\n\n// A ticker that never resolved is a data problem, not a quiet market - say so\n// rather than letting it look like the name simply did not move.\nconst un=(ctx.unresolved||[]);\nif(un.length){\n  body+=`\\n\\n<i>\\u26a0\\ufe0f No price data for: ${tg(un.join(', '))}. Check the ticker in the portfolio sheet.</i>`;\n}\n\nconst names=(ctx.breaches||[]).map(b=>`${b.ticker} ${b.pct>0?'+':''}${b.pct}% (1d)`).join(', ');\nreturn [{ json:{ chat_id:ctx.chat_id, language:ctx.language, source:ctx.source,\n  text:body, checked:ctx.checked, breach_count:(ctx.breaches||[]).length,\n  breaches:names, item_count:p.item_count||0,\n  preview:body.replace(/<[^>]+>/g,'').slice(0,300) } }];\n"
+        },
+        "typeVersion": 2
+      },
+      {
+        "id": "al00000f-0000-4000-8000-00000000000f",
+        "name": "Send Alert",
+        "type": "n8n-nodes-base.telegram",
+        "position": [
+          3780,
+          2220
+        ],
+        "parameters": {
+          "text": "={{ $json.text }}",
+          "chatId": "={{ $json.chat_id }}",
+          "additionalFields": {
+            "parse_mode": "HTML",
+            "appendAttribution": false
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "csxE8zHzXEvdZjgi",
+            "name": "Chief of Staff Bot"
+          }
+        },
+        "typeVersion": 1.2
+      },
+      {
+        "id": "al000010-0000-4000-8000-000000000010",
+        "name": "Log to Sheet",
+        "type": "n8n-nodes-base.googleSheets",
+        "onError": "continueRegularOutput",
+        "maxTries": 3,
+        "position": [
+          3780,
+          2370
+        ],
+        "parameters": {
+          "columns": {
+            "value": {
+              "source": "={{ $json.source }}",
+              "checked": "={{ $json.checked }}",
+              "preview": "={{ $json.preview }}",
+              "breaches": "={{ $json.breaches }}",
+              "timestamp": "={{ $now }}",
+              "breach_count": "={{ $json.breach_count }}"
+            },
+            "schema": [],
+            "mappingMode": "defineBelow",
+            "matchingColumns": []
+          },
+          "options": {},
+          "operation": "append",
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "finance_alert"
+          },
+          "documentId": {
+            "__rl": true,
+            "mode": "url",
+            "value": "https://docs.google.com/spreadsheets/d//edit"
+          }
+        },
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "AnE0wDgGuSiw7MkX",
+            "name": "Google Sheets account"
+          }
+        },
+        "retryOnFail": true,
+        "typeVersion": 4.7,
+        "waitBetweenTries": 5000
+      }
+    ],
+    "authors": "Friedrich  ",
+    "createdAt": "2026-08-31T10:55:15.612Z",
+    "updatedAt": "2026-08-31T10:55:15.612Z",
+    "versionId": "1ef8ec36-e345-4ada-8e0f-63126861ca0f",
+    "workflowId": "Ye93GDssyxLFGGuQ",
+    "connections": {
+      "Fetch FX": {
+        "main": [
+          [
+            {
+              "node": "Fetch CIK Map",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch News": {
+        "main": [
+          [
+            {
+              "node": "Aggregate Evidence",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Alert": {
+        "main": [
+          [
+            {
+              "node": "Send Alert",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Log to Sheet",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Quotes": {
+        "main": [
+          [
+            {
+              "node": "Compute Moves",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Compute Moves": {
+        "main": [
+          [
+            {
+              "node": "Anything moved?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Explain Moves": {
+        "main": [
+          [
+            {
+              "node": "Build Alert",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch CIK Map": {
+        "main": [
+          [
+            {
+              "node": "Read Portfolio",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Filings": {
+        "main": [
+          [
+            {
+              "node": "Fetch News",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read Portfolio": {
+        "main": [
+          [
+            {
+              "node": "Build Symbol Batches",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Anything moved?": {
+        "main": [
+          [
+            {
+              "node": "Fetch Filings",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "Normalize Trigger": {
+        "main": [
+          [
+            {
+              "node": "Fetch FX",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Aggregate Evidence": {
+        "main": [
+          [
+            {
+              "node": "Explain Moves",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Symbol Batches": {
+        "main": [
+          [
+            {
+              "node": "Fetch Quotes",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Weekdays 10/14/18 Berlin": {
+        "main": [
+          [
+            {
+              "node": "Normalize Trigger",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Entry (from Orchestrator)": {
+        "main": [
+          [
+            {
+              "node": "Normalize Trigger",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "description": null
+  },
+  "versionCounter": 52,
+  "activeVersionId": "1ef8ec36-e345-4ada-8e0f-63126861ca0f"
+}

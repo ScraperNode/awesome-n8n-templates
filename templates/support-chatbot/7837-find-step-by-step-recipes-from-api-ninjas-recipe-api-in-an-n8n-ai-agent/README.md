@@ -1,6 +1,6 @@
 # 💬 Find step-by-step recipes from API Ninjas Recipe API in an n8n AI agent
 
-> ⚡ **192 views** · 💬 [Support Chatbots](../)
+> ⚡ **231 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

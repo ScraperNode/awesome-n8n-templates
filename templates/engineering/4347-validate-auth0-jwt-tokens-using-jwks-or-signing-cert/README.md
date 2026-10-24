@@ -1,6 +1,6 @@
 # ⚒️ Validate Auth0 JWT tokens using JWKS or signing cert
 
-> ⚡ **1,111 views** · ⚒️ [Engineering](../)
+> ⚡ **1,297 views** · ⚒️ [Engineering](../)
 
 ## Description
 

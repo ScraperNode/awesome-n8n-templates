@@ -1,6 +1,6 @@
 # ⚙️ Send DingTalk message on new Azure DevOps pull request
 
-> ⚡ **2,521 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,620 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

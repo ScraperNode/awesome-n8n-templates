@@ -1,6 +1,6 @@
 # 🔬 Monitor AI infrastructure costs and route budget alerts with Claude, NVIDIA, Slack, and Gmail
 
-> ⚡ **11 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **55 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

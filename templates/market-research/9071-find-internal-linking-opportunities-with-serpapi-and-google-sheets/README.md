@@ -1,6 +1,6 @@
 # 📊 Find internal linking opportunities with SerpAPI and Google Sheets
 
-> ⚡ **335 views** · 📊 [Market Research & Insights](../)
+> ⚡ **420 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

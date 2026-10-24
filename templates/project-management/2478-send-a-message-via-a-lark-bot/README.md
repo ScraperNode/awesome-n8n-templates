@@ -1,6 +1,6 @@
 # 📋 Send a message via a Lark Bot
 
-> ⚡ **4,284 views** · 📋 [Project Management](../)
+> ⚡ **4,693 views** · 📋 [Project Management](../)
 
 ## Description
 

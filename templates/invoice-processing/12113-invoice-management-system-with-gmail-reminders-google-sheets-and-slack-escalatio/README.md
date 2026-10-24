@@ -1,6 +1,6 @@
 # 🧾 Invoice management system with Gmail reminders, Google Sheets, and Slack escalations
 
-> ⚡ **101 views** · 🧾 [Invoice Processing](../)
+> ⚡ **172 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

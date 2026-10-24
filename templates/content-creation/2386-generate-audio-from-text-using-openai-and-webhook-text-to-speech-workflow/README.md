@@ -1,6 +1,6 @@
 # 🎬 Generate audio from text using OpenAI and Webhook | Text to speech workflow
 
-> ⚡ **12,189 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **12,386 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

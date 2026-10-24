@@ -1,6 +1,6 @@
 # 🎫 Automatic email classification with Gmail and Claude AI
 
-> ⚡ **523 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,231 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

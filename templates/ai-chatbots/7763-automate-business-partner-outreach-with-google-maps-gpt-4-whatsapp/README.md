@@ -1,6 +1,6 @@
 # 🤖 Automate business partner outreach with Google Maps, GPT-4 & WhatsApp
 
-> ⚡ **718 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **984 views** · 🤖 [AI Chatbots & Agents](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -8,49 +8,42 @@
 
 ## Description
 
-Automate Outreach Prospect automates finding, enriching, and messaging potential partners (like restaurants, malls, and bars) using Apify Google Maps scraping, Perplexity enrichment, OpenAI LLMs, Google Sheets, Pinecone knowledge, and WhatsApp sending via GOWA. It turns a manual, slow outreach funnel into a repeatable pipeline so your team spends time closing deals instead of copy-pasting contact details.
+Turn local outreach into a repeatable pipeline. Automate Outreach Prospect finds, enriches, and messages potential partners (restaurants, malls, bars) using Apify Google Maps scraping, Perplexity enrichment, OpenAI LLMs, Google Sheets, Pinecone knowledge, and WhatsApp sending via GOWA. Less copy-paste, more closing deals.
 
 ![Frame 22.png](fileId:2178)
 
-## ⚠️ Important Disclaimer
+## Important Disclaimer
 
 This workflow uses community nodes for WhatsApp functionality:
 - [GOWA](https://github.com/aldinokemal/go-whatsapp-web-multidevice)
 - [WhatsApp HTTP API](https://waha.devlike.pro)
 
-## 💡 Why Use Automate Outreach Prospect?
+*Last updated: September 2026.*
 
-- **Faster prospecting:** Scrape up to 150 leads per search (jumlah leads = 150) and queue them for outreach in minutes, cutting manual research time from days to hours.
-- **Fixes the busywork:** Automatically enrich missing contact data and only send messages to records with phone numbers, so you stop chasing dead leads.
-- **Measurable lift:** Enrich in batches (enrichment batch size = 20), improving outbound readiness and increasing contactable leads per campaign by dozens each run.
-- **Better conversions with context:** Use a searchable company knowledge base (Pinecone + LlamaIndex) so replies are handled with context — less robotic, more relevant. Yes, your bot can sound like a helpful human (minus the coffee breath).
+## Why Use Automate Outreach Prospect?
 
-## ⚡ Perfect For
+- **Faster prospecting:** Scrape up to 150 leads per search and queue them for outreach in minutes. Research that took days now takes hours.
+- **Fixes the busywork:** Missing contact data gets enriched automatically, and messages only go to records with phone numbers. No more dead leads.
+- **Measurable lift:** Enrichment runs in batches of 20, raising contactable leads per campaign by dozens each run.
+- **Better conversions with context:** A searchable company knowledge base (Pinecone + LlamaIndex) lets replies be handled with context. Less robotic, more relevant.
 
-- **Sales Ops:** Teams that need to scale partner outreach without hiring a mini-empire of SDRs.
-- **Growth Marketers:** People who want repeatable local outreach campaigns (mall, restaurant, bar categories).
-- **Small Biz Owners:** Quick way to build partnership lists and automate first outreach without becoming a spreadsheet hermit.
+## Perfect For
 
-## 🔧 How It Works
+- **Sales Ops:** Teams scaling partner outreach without hiring an army of SDRs.
+- **Growth Marketers:** People running repeatable local outreach campaigns (mall, restaurant, bar categories).
+- **Small Biz Owners:** A quick way to build partnership lists and automate first outreach without living in spreadsheets.
 
-### ⏱ Trigger
-Manual scrape start or scheduled jobs: Daily Outbound Schedule, Schedule Outbound message, or Knowledge Base Updated Trigger.
+## How It Works
 
-### 📎 Process
-Apify Google Maps Scraper gathers business listings (location, phone, socials). Results are fetched and saved to Google Sheets (Raw Data). Unenriched records are split and enriched via Perplexity, then saved back.
+* **Trigger:** Manual scrape start or scheduled jobs: Daily Outbound Schedule, Schedule Outbound message, or Knowledge Base Updated Trigger.
+* **Process:** Apify Google Maps Scraper gathers business listings (location, phone, socials). Results land in Google Sheets (Raw Data). Unenriched records are split and enriched via Perplexity, then saved back.
+* **Smart Logic:** OpenAI LLM writes personalized initial messages, and a Reply Handler AI Agent uses Pinecone knowledge embeddings to interpret replies and decide next actions (save PICs, request meeting, send proposal).
+* **Output:** Outbound messages go out over WhatsApp via GOWA nodes (typing indicators, simulated delays, read receipts). Replies are handled and stored; qualified PIC contacts append to a Leads sheet.
+* **Storage:** Google Sheets is the central datastore (Raw Data, Leads Collected). Knowledge base lives in Google Drive and Pinecone (n8n-recharge, namespace CompanyKnowledgeBased). Conversation memory sits in Postgres/Neon.
 
-### 🤖 Smart Logic
-OpenAI LLM creates personalized initial messages, and a Reply Handler AI Agent, uses Pinecone/knowledge embeddings to interpret replies and decide next actions (save PICs, request meeting, send proposal).
+## Quick Setup
 
-### 💌 Output
-Outbound messages are sent over WhatsApp using GOWA nodes (typing indicators, simulated typing delays, read receipts) and replies are handled & stored; qualified PIC contacts are appended to a Leads sheet.
-
-### 🗂 Storage
-Google Sheets is the central datastore (Raw Data, Leads Collected). Knowledge base lives in Google Drive and Pinecone (n8n-recharge, namespace CompanyKnowledgeBased). Conversation memory stored in Postgres/Neon.
-
-## 🔐 Quick Setup
-
-1. **Import Workflow:** Import JSON file to your [n8n instances](https://n8n.partnerlinks.io/khmuhtadin)
+1. **Import Workflow:** Import JSON file to your [n8n instances](https://n8n.partnerlinks.io/creator-khmuhtadin)
 
 2. **Add Credentials:**
    - Google Sheets OAuth2
@@ -58,7 +51,7 @@ Google Sheets is the central datastore (Raw Data, Leads Collected). Knowledge ba
    - Apify API token
    - OpenAI API
    - Perplexity API
-   - Pinecone API
+   - Pinecone API ([docs](https://docs.pinecone.io/))
    - Cohere API
    - LlamaIndex Cloud key
    - GOWA (WhatsApp) credentials
@@ -81,9 +74,9 @@ Google Sheets is the central datastore (Raw Data, Leads Collected). Knowledge ba
 5. **Test Setup:**
    Run a manual scrape with a real location and send a single outbound message to verify WhatsApp delivery and reply handling.
 
-## 🧩 Required Services
+## Required Services
 
-- Active [n8n instances](https://n8n.partnerlinks.io/khmuhtadin)
+- Active [n8n instances](https://n8n.partnerlinks.io/creator-khmuhtadin)
 - Google Sheets & Google Drive accounts (OAuth2)
 - Apify account & actor access (Google Maps Scraper)
 - OpenAI API key (for LLMs & embeddings)
@@ -95,7 +88,7 @@ Google Sheets is the central datastore (Raw Data, Leads Collected). Knowledge ba
 - PostgreSQL/Neon for conversation memory
 
 
-## 🧠 Workflow Nodes
+## Workflow Nodes
 
 ### Triggers & Scheduling
 - Incoming message
@@ -149,8 +142,19 @@ Google Sheets is the central datastore (Raw Data, Leads Collected). Knowledge ba
 - Reply Conversation Memory
 - Outbound Conversation Memory
 
-Made by: **[Khaisa Studio](https://khaisa.studio?utm_source=n8nofficial)**  
+### Quick Answers
+**How many leads per run?**  
+Up to 150 leads per search, enriched in batches of 20.  
+**How are replies handled?**  
+An AI agent reads each reply against your Pinecone knowledge base and decides: save PIC, request meeting, or send proposal.  
+**Which WhatsApp setup does it use?**  
+GOWA nodes by default, with WAHA as an alternative.  
+
+Made by: **[khmuhtadin](https://khmuhtadin.com)**  
 **Need custom work?** [Contact Me](https://khmuhtadin.com/contact)
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

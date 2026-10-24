@@ -1,6 +1,6 @@
 # 🎫 Generate GEO-optimized support replies from Gmail to Gmail and Slack
 
-> ⚡ **64 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **90 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

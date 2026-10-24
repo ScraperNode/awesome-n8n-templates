@@ -1,6 +1,6 @@
 # 🤝 AI-powered HighLevel CRM automation with GPT and MCP for contact and task management
 
-> ⚡ **221 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **278 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

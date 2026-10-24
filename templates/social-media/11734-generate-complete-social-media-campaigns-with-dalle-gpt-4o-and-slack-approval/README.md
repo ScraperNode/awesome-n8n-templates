@@ -1,6 +1,6 @@
 # 📱 Generate complete social media campaigns with DALL·E, GPT-4o and Slack approval
 
-> ⚡ **245 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **305 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

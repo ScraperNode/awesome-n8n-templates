@@ -1,6 +1,6 @@
 # 📖 Documentation Lookup AI Agent using Context7 and Gemini
 
-> ⚡ **1,713 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **1,900 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

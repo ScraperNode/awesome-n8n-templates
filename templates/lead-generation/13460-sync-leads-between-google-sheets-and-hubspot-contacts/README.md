@@ -1,6 +1,6 @@
 # 🎣 Sync leads between Google Sheets and HubSpot contacts
 
-> ⚡ **6 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **148 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

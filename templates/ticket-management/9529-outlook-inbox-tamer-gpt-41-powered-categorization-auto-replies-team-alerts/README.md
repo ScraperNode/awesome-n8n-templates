@@ -1,6 +1,6 @@
 # 🎫 Outlook inbox tamer: GPT-4.1 powered categorization, auto replies & team alerts
 
-> ⚡ **358 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **500 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

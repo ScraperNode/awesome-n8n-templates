@@ -1,6 +1,6 @@
 # 📱 Automate client nurture & testimonial collection with Notion, Email, Tally & Telegram
 
-> ⚡ **46 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **55 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ AI agent that updates its own rules to modify behavior
 
-> ⚡ **1,453 views** · ⚒️ [Engineering](../)
+> ⚡ **1,733 views** · ⚒️ [Engineering](../)
 
 ## Description
 

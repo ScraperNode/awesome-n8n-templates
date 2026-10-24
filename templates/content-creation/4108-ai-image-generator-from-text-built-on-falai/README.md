@@ -1,6 +1,6 @@
 # 🎬 AI image generator from text built on fal.ai
 
-> ⚡ **27,273 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **27,859 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 Create AI FAQ articles from Slack threads into Notion and Zendesk
 
-> ⚡ **89 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **121 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

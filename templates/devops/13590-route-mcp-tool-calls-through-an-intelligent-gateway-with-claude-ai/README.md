@@ -1,6 +1,6 @@
 # ⚙️ Route MCP tool calls through an intelligent gateway with Claude AI
 
-> ⚡ **5 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **105 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

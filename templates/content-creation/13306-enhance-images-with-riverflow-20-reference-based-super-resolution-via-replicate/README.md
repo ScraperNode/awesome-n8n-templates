@@ -1,6 +1,6 @@
 # 🎬 Enhance images with Riverflow 2.0 reference-based super-resolution via Replicate
 
-> ⚡ **50 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **134 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

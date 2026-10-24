@@ -1,6 +1,6 @@
 # 💬 Run an AI SDR sales pipeline with OpenAI, Google Sheets, Gmail and Calendar
 
-> ⚡ **540 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **3,828 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

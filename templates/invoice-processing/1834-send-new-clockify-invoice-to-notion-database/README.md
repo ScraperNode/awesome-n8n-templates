@@ -1,6 +1,6 @@
 # 🧾 Send new Clockify invoice to Notion database
 
-> ⚡ **1,085 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,181 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

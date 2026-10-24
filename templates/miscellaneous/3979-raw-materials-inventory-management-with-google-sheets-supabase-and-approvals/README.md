@@ -1,6 +1,6 @@
 # 🔧 Raw materials inventory management with Google Sheets, Supabase and approvals
 
-> ⚡ **5,215 views** · 🔧 [Miscellaneous](../)
+> ⚡ **5,974 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

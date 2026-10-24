@@ -1,6 +1,6 @@
 # 📊 Analyze & Tag User Feedback in Notion with GPT-4 Sentiment Analysis
 
-> ⚡ **1,083 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,187 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

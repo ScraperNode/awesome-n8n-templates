@@ -1,6 +1,6 @@
 # 📱 Flag bounced emails in Google Sheets from Gmail delivery error messages
 
-> ⚡ **398 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **464 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

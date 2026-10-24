@@ -1,6 +1,6 @@
 # 🔧 Create a URL on Bitly
 
-> ⚡ **533 views** · 🔧 [Miscellaneous](../)
+> ⚡ **549 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

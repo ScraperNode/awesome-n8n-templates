@@ -1,6 +1,6 @@
 # 🤝 Send AI sales proposals and Stripe payment links after Calendly calls
 
-> ⚡ **111 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **222 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

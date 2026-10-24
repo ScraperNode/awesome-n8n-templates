@@ -1,6 +1,6 @@
 # 🤝 Bulk create Shopify products with inventory management from Google Sheets
 
-> ⚡ **3,958 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **4,306 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

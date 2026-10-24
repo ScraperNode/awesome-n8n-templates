@@ -1,6 +1,6 @@
 # 🔧 Send RSS feed data to webhook
 
-> ⚡ **4,029 views** · 🔧 [Miscellaneous](../)
+> ⚡ **4,022 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Host your own uptime monitoring with scheduled triggers
 
-> ⚡ **28,690 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **31,494 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

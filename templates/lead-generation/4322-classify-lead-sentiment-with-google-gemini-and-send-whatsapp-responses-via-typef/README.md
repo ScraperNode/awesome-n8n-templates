@@ -1,6 +1,6 @@
 # 🎣 Classify lead sentiment with Google Gemini and send WhatsApp responses via Typeform & Supabase
 
-> ⚡ **1,440 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,577 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

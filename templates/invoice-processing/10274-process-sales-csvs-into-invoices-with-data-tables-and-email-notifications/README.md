@@ -1,6 +1,6 @@
 # 🧾 Process sales CSVs into invoices with data tables and email notifications
 
-> ⚡ **189 views** · 🧾 [Invoice Processing](../)
+> ⚡ **257 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 
@@ -143,7 +143,13 @@ Occurs when the CSV file is missing required columns or contains invalid data.
 - Full **CSV → Validation → Data tables → Email → JSON Response** pipeline  
 - Includes built-in structured error handling (**400 / 409**)  
 - **100% native n8n functionality**  
-- Perfect example of **Data tables + logic-based automation** for business use cases
+- Perfect example of **Data tables + logic-based automation** for business use cases  
+
+---
+
+&gt; Browse similar workflows: 
+&gt; [Sales & CRM automation templates](https://www.telosignal.com//explorer/crm-sync) 
+&gt; [Data Processing templates](https://www.telosignal.com//explorer/file-sync)
 
 ## 🔗 Nodes Used
 

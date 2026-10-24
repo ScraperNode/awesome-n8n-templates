@@ -1,6 +1,6 @@
 # 🔒 Detect multi-source transaction fraud and reconcile finances with OpenAI, Nvidia NIM, Gmail, Slack and Google Sheets
 
-> ⚡ **1,013 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,215 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

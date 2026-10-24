@@ -1,6 +1,6 @@
 # 👥 Automated developer onboarding audit with ClickUp, GPT-4o-mini, and Slack alerts
 
-> ⚡ **130 views** · 👥 [HR & Recruitment](../)
+> ⚡ **185 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 Get real-time crypto market data from Bybit with GPT-4.1-mini in Telegram
 
-> ⚡ **967 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,235 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

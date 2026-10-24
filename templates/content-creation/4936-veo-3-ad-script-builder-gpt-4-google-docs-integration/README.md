@@ -1,6 +1,6 @@
 # 🎬 Veo 3 ad script builder (GPT-4 + Google Docs integration)
 
-> ⚡ **742 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **812 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

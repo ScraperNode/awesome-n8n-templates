@@ -1,6 +1,6 @@
 # 👥 Generate AI-powered interview briefs from resumes using Google Sheets & GPT-4o
 
-> ⚡ **55 views** · 👥 [HR & Recruitment](../)
+> ⚡ **80 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

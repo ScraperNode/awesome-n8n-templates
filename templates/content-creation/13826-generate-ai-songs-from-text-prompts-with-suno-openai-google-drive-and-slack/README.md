@@ -1,6 +1,6 @@
 # 🎬 Generate AI songs from text prompts with Suno, OpenAI, Google Drive and Slack
 
-> ⚡ **82 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **888 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

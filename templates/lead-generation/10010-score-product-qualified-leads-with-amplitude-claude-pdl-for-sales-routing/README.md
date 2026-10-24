@@ -1,6 +1,6 @@
 # 🎣 Score product-qualified leads with Amplitude, Claude & PDL for sales routing
 
-> ⚡ **137 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **182 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

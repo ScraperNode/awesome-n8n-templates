@@ -1,6 +1,6 @@
 # 🤝 Receive updates when a new account is added by an admin in ActiveCampaign
 
-> ⚡ **812 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **828 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

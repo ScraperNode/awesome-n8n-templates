@@ -1,6 +1,6 @@
 # 💬 Automate outbound voice calls with Vapi from form submissions
 
-> ⚡ **2,367 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,898 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

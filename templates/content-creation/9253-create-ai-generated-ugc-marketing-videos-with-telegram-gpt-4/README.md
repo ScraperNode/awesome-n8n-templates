@@ -1,6 +1,6 @@
 # 🎬 Create AI-generated UGC marketing videos with Telegram & GPT-4
 
-> ⚡ **3,016 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,401 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

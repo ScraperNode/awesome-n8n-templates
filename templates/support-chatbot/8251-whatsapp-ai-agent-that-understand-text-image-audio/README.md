@@ -1,6 +1,6 @@
 # 💬 WhatsApp AI agent that understand text, image , audio 
 
-> ⚡ **340 views** · 💬 [Support Chatbots](../)
+> ⚡ **777 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate and store AI images with DALL-E and Azure Blob Storage
 
-> ⚡ **399 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **492 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

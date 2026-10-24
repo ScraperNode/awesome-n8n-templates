@@ -1,6 +1,6 @@
 # 🎬 Create Zendesk tickets from Gmail and Slack with Google Sheets tracking
 
-> ⚡ **57 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **77 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

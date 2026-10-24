@@ -1,6 +1,6 @@
 # ⚒️ API queries data from GraphQL
 
-> ⚡ **5,230 views** · ⚒️ [Engineering](../)
+> ⚡ **5,244 views** · ⚒️ [Engineering](../)
 
 ## Description
 

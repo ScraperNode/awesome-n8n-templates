@@ -1,6 +1,6 @@
 # 📱 Send private welcome messages to new WhatsApp group members with Evolution API
 
-> ⚡ **1,938 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,506 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

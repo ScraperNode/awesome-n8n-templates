@@ -1,6 +1,6 @@
 # 🔬 Hackathon participant badge generator with QR code, PDF & email delivery
 
-> ⚡ **69 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **127 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

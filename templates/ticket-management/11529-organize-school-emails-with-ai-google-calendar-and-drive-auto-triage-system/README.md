@@ -1,6 +1,6 @@
 # 🎫 Organize school emails with AI, Google Calendar and Drive auto-triage system
 
-> ⚡ **203 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **338 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

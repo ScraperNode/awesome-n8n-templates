@@ -1,6 +1,6 @@
 # 🔬 Extract text from images with Telegram Bot & Gemini 2.0 Flash OCR
 
-> ⚡ **5,971 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **7,043 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

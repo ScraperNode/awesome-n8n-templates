@@ -1,6 +1,6 @@
 # 🎬 Generate podcast topic ideas from RSS feeds with Gemini, SerpAPI and Notion
 
-> ⚡ **66 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **191 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 👥 Unstructured resume parser with Thordata Universal API + OpenAI GPT-4.1-mini
 
-> ⚡ **123 views** · 👥 [HR & Recruitment](../)
+> ⚡ **169 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

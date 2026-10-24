@@ -1,6 +1,6 @@
 # 💬 Create an all-in-one Discord assistant with Gemini, Llama Vision & Flux images
 
-> ⚡ **129 views** · 💬 [Support Chatbots](../)
+> ⚡ **196 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

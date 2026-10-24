@@ -1,6 +1,6 @@
 # 🎬 Clone voices from text to speech with Zyphra Zonos API
 
-> ⚡ **1,898 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,303 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Lead generation and qualification with GPT-4o, Google Workspace, and automated follow-up
 
-> ⚡ **2,526 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **3,165 views** · 🎣 [Lead Generation & Enrichment](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

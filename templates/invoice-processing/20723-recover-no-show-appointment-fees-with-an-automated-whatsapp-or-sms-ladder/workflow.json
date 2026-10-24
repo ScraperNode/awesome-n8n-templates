@@ -1,0 +1,700 @@
+{
+  "id": "cccc0000-0000-4000-8000-0000000000e5",
+  "name": "Recover no-show fees with a polite escalation ladder",
+  "nodes": [
+    {
+      "id": "e1000000-0000-4000-8000-000000000001",
+      "name": "Every 12 hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -280,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 12
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "e1000000-0000-4000-8000-000000000002",
+      "name": "No-shows (demo data)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -60,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// DEMO SOURCE. Replace with your no-show log (Google Sheet).\n// Columns: appointment_id, customer_name, phone, missed_at (ISO), treatment, fee_eur, prior_no_shows\nconst demoRows = [\n  {\n    appointment_id: 'APT-4001',\n    customer_name: 'Kevin Voorbeeld',\n    phone: '+316****5631',\n    missed_at: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),\n    treatment: 'Haircut',\n    fee_eur: 25,\n    prior_no_shows: 0\n  },\n  {\n    appointment_id: 'APT-4002',\n    customer_name: 'Bram Voorbeeld',\n    phone: '+316****5632',\n    missed_at: new Date(Date.now() - 26 * 3600 * 1000).toISOString(),\n    treatment: 'Balayage',\n    fee_eur: 45,\n    prior_no_shows: 2\n  }\n];\nreturn demoRows.map((row) => ({ json: row }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-000000000105",
+      "name": "Prepare + validate rows",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        140,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Prepare rows: parse the missed timestamp once and compute hoursAgo,\n// so the window check downstream is a simple branch. Rows with a broken\n// or missing timestamp or contact are flagged with the exact reason and\n// routed to the error log.\nconst items = $input.all();\nconst now = Date.now();\nconst out = [];\nfor (const item of items) {\n  const r = item.json;\n  const t = r.missed_at ? new Date(r.missed_at).getTime() : NaN;\n  let rowError = null;\n  if (!r.appointment_id) rowError = 'missing appointment_id';\n  else if (!r.phone) rowError = 'missing phone';\n  else if (isNaN(t)) rowError = 'missed_at not parseable';\n  out.push({\n    json: {\n      ...r,\n      hours_ago: rowError ? null : (now - t) / 3600000,\n      row_valid: !rowError,\n      row_error: rowError\n    }\n  });\n}\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-000000000106",
+      "name": "Row valid?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        360,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.row_valid }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-000000000107",
+      "name": "In 20-30h window?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        580,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "w1",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "leftValue": "={{ $json.hours_ago }}",
+              "rightValue": 20
+            },
+            {
+              "id": "w2",
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              },
+              "leftValue": "={{ $json.hours_ago }}",
+              "rightValue": 30
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-000000000108",
+      "name": "Log invalid rows",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        580,
+        220
+      ],
+      "parameters": {
+        "jsCode": "// Error path: rows with a missing appointment_id, phone, or an unparseable\n// missed_at land here instead of silently vanishing, carrying the exact\n// reason set by the prepare node. In production, write these to a\n// 'dunning_errors' sheet so a human can fix the source data.\nconst items = $input.all();\nreturn items.map((item) => ({\n  json: {\n    error: 'invalid no-show row',\n    appointment_id: item.json.appointment_id || null,\n    reason: item.json.row_error || 'unknown',\n    seen_at: new Date().toISOString()\n  }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-000000000109",
+      "name": "Skip (not yet due)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        800,
+        220
+      ],
+      "parameters": {
+        "jsCode": "// Rows outside the 20-30h dunning window pass by harmlessly. They stay in\n// the sheet; the next run picks them up when their time comes.\nconst items = $input.all();\nreturn items.map((item) => ({\n  json: {\n    skipped: true,\n    appointment_id: item.json.appointment_id,\n    hours_ago: item.json.hours_ago,\n    skipped_at: new Date().toISOString()\n  }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e1000000-0000-4000-8000-000000000003",
+      "name": "Escalate by history",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        800,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "// Escalation ladder, run only on rows inside the 20-30h window:\n//   first no-show  -> friendly invoice with fee, easy online payment link\n//   repeat (2+)    -> fee + prepay requirement for future bookings\n// Skip rules before anything is built: rows the reply arm already closed\n// (recovered / partial_paid / disputed in workflow static data) never get\n// another message, and a send log keeps each tier to ONE message per\n// appointment even if the schedule fires twice inside the window.\nconst store = $getWorkflowStaticData('global');\nstore.recovery_state = store.recovery_state || {};\nstore.dunning_sent = store.dunning_sent || {};\nconst cutoff = Date.now() - 60 * 24 * 3600 * 1000;\nfor (const k of Object.keys(store.dunning_sent)) {\n  if ((store.dunning_sent[k].at || 0) < cutoff) delete store.dunning_sent[k];\n}\nconst items = $input.all();\nconst out = [];\nfor (const item of items) {\n  const r = item.json;\n  const closed = store.recovery_state[r.appointment_id];\n  if (closed && ['recovered', 'partial_paid', 'disputed'].includes(closed.status)) {\n    continue; // reply webhook already closed this case\n  }\n  const repeat = (r.prior_no_shows || 0) >= 2;\n  const tier = repeat ? 'repeat_offender' : 'first_offense';\n  const key = r.appointment_id + ':' + tier;\n  if (store.dunning_sent[key]) continue; // this tier already sent\n  let message;\n  if (repeat) {\n    message = 'Hi ' + r.customer_name + ', we missed you at your last appointment. Your no-show fee of EUR ' + r.fee_eur + ' is ready to pay: PAYMENTLINK. For new bookings we now ask a small deposit to hold the time. We would love to see you again.';\n  } else {\n    message = 'Hi ' + r.customer_name + ', we missed you. No problem, it happens. We do charge EUR ' + r.fee_eur + ' for the reserved time block: PAYMENTLINK. Want to pick a new time? Reply NEW.';\n  }\n  store.dunning_sent[key] = { at: Date.now() };\n  out.push({\n    json: {\n      appointment_id: r.appointment_id,\n      customer_name: r.customer_name,\n      to: r.phone,\n      channel: 'whatsapp',\n      tier: tier,\n      fee_eur: r.fee_eur,\n      message: message\n    }\n  });\n}\nreturn out;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e1000000-0000-4000-8000-000000000004",
+      "name": "Send dunning (replace me)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1020,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "// Placeholder for the send node (WhatsApp Business Cloud / SMS).\nconst items = $input.all();\nreturn items.map((item) => ({\n    json: { ...item.json, sent_at: new Date().toISOString(), transport: 'demo' }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e1000000-0000-4000-8000-000000000005",
+      "name": "Track recovery",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1240,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "// Track fee recovery: every sent escalation is stamped here. Wire a\n// Sheet write; the reply webhook in the second arm closes cases in\n// static data (recovered / partial_paid / disputed).\nconst items = $input.all();\nreturn items.map((item) => ({\n    json: { ...item.json, tracked_at: new Date().toISOString(), recovery_state: 'awaiting_payment' }\n}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-0000000000f1",
+      "name": "Sticky Note 00f1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -960,
+        -200
+      ],
+      "parameters": {
+        "width": 640,
+        "height": 980,
+        "content": "## Recover no-show fees with a polite escalation ladder and reply triage\n\n### How it works\nTwo arms share one piece of state, so the ladder stops the moment a customer pays. The escalation arm runs every 12 hours, reads your no-show log and picks visits missed 20 to 30 hours ago, when a friendly invoice still feels fair. First-time no-shows get a short fee message with a payment link; repeat no-shows get the fee plus a deposit request. A send log in workflow static data keeps each tier to one message per appointment, and rows the reply arm already closed are skipped. The reply arm receives the customer's answer on a webhook: PAID or BETAALD marks the fee recovered, PARTIAL or DEEL logs a part payment and flags staff, DISPUTE or BETWIST freezes the case as a staff task, and anything else gets short keyword help. Replies without an appointment id or text are rejected with a 422.\n\n### Setup steps\n- Disable the demo node and connect your no-show sheet; required columns are listed in that node.\n- Replace the placeholder send node with WhatsApp Business Cloud or SMS.\n- Put your payment link where the messages say PAYMENTLINK.\n- Route inbound replies to the payment-reply webhook (body: appointment_id, text).\n- Activate the workflow.\n\n### Requirements\n- A sheet with one row per no-show: missed_at, fee_eur, prior_no_shows, phone, customer_name.\n- A messaging provider that can forward inbound replies to a webhook.\n\n### Customization\nKeyword lists sit at the top of the classify node. Change the escalation threshold (currently 2 prior no-shows), the 20-30 hour window, the fee amounts, or the message copy per tier.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-0000000000f2",
+      "name": "Sticky Note 00f2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -320,
+        -200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 575,
+        "height": 560,
+        "content": "## 1. Read + validate\nEvery 12 hours. Demo source stands in for your sheet; a code node parses timestamps and an IF gate routes broken rows to an error log."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-0000000000f3",
+      "name": "Sticky Note 00f3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        295,
+        -200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 620,
+        "height": 600,
+        "content": "## 2. Window + escalate\nOnly visits missed 20-30h ago are due. First offense gets a friendly invoice; repeats get fee plus a deposit ask. Not-due rows skip silently."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-0000000000f4",
+      "name": "Sticky Note 00f4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        955,
+        -200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 515,
+        "height": 560,
+        "content": "## 3. Send + track\nPlaceholder send node, then a recovery tracker you can wire to a sheet."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "dddd0000-0000-4000-8000-000000000e510",
+      "name": "Webhook: payment reply",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -200,
+        620
+      ],
+      "webhookId": "b0000000-0000-4000-8000-000000000e51",
+      "parameters": {
+        "path": "dunning-reply",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "dddd0000-0000-4000-8000-000000000e511",
+      "name": "Valid reply?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        20,
+        620
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "g1",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              },
+              "leftValue": "={{ $json.body.appointment_id }}",
+              "rightValue": ""
+            },
+            {
+              "id": "g2",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              },
+              "leftValue": "={{ $json.body.text }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "dddd0000-0000-4000-8000-000000000e512",
+      "name": "Respond reply invalid",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        240,
+        820
+      ],
+      "webhookId": "b0000000-0000-4000-8000-000000000e52",
+      "parameters": {
+        "options": {
+          "responseCode": 422
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": false, \"error\": \"reply needs appointment_id and text\" } }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "dddd0000-0000-4000-8000-000000000e513",
+      "name": "Classify reply",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        460,
+        620
+      ],
+      "parameters": {
+        "jsCode": "// Classify the customer's payment reply. One keyword is enough,\n// case-insensitive, bilingual (EN + NL):\n//   paid:     paid, payed, betaald, voldaan\n//   partial:  partial, deelbetaling, gedeeltelijk, half\n//   dispute:  dispute, betwist, contest, wrong, onjuist\n// Anything else stays 'unknown' and gets the help text.\nconst KW = {\n  // order matters: the most specific keyword wins, so a reply like\n  // 'gedeeltelijk betaald' classifies as partial, not paid\n  dispute: ['dispute', 'betwist', 'contest', 'wrong', 'onjuist'],\n  partial: ['partial', 'deelbetaling', 'gedeeltelijk', 'half'],\n  paid: ['paid', 'payed', 'betaald', 'voldaan'],\n};\nconst MSG = {\n  paid: 'Thank you, we received your payment and the case is closed.',\n  partial: 'Thanks for the partial payment. We flagged the remainder for our team and will follow up shortly.',\n  dispute: 'Got it, we put the fee on hold. Our team will review it and message you.',\n  unknown: 'Thanks for the reply. Reply PAID once the fee is settled, or DISPUTE if something is wrong.',\n};\nconst items = $input.all();\nconst out = [];\nfor (const item of items) {\n  const b = item.json.body || item.json;\n  const text = String(b.text || b.reply_text || '').toLowerCase();\n  let verdict = 'unknown';\n  for (const v of Object.keys(KW)) {\n    if (KW[v].some((w) => text.includes(w))) { verdict = v; break; }\n  }\n  out.push({ json: {\n    appointment_id: b.appointment_id,\n    verdict: verdict,\n    reply_text: text.slice(0, 200),\n    message: MSG[verdict],\n  } });\n}\nreturn out;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "dddd0000-0000-4000-8000-000000000e514",
+      "name": "Payment confirmed?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        680,
+        620
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "p1",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.verdict }}",
+              "rightValue": "unknown"
+            },
+            {
+              "id": "p2",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.verdict }}",
+              "rightValue": "dispute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "dddd0000-0000-4000-8000-000000000e515",
+      "name": "Mark recovered",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        900,
+        500
+      ],
+      "parameters": {
+        "jsCode": "// Payment confirmed: close the case and stop the escalation ladder.\n// Writes recovery_state in workflow static data (shared with the\n// escalation arm): paid -> 'recovered', partial -> 'partial_paid' with a\n// staff flag because the rest of the fee is still open.\nconst store = $getWorkflowStaticData('global');\nstore.recovery_state = store.recovery_state || {};\nconst items = $input.all();\nconst out = [];\nfor (const item of items) {\n  const r = item.json;\n  const status = r.verdict === 'partial' ? 'partial_paid' : 'recovered';\n  store.recovery_state[r.appointment_id] = {\n    status: status,\n    at: new Date().toISOString(),\n    via: 'reply webhook',\n  };\n  out.push({ json: {\n    appointment_id: r.appointment_id,\n    outcome: status,\n    needs_staff: r.verdict === 'partial',\n    recovered_at: new Date().toISOString(),\n    verdict: r.verdict,\n    message: r.message,\n  } });\n}\nreturn out;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "dddd0000-0000-4000-8000-000000000e516",
+      "name": "Disputed?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        900,
+        740
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "d1",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.verdict }}",
+              "rightValue": "dispute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "dddd0000-0000-4000-8000-000000000e517",
+      "name": "Log dispute",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1120,
+        820
+      ],
+      "parameters": {
+        "jsCode": "// Dispute: freeze the ladder and raise a staff task.\n// Writes status 'disputed' so the escalation arm skips this appointment\n// until a human resolves it. Rows keep the reply text for context.\nconst store = $getWorkflowStaticData('global');\nstore.recovery_state = store.recovery_state || {};\nconst items = $input.all();\nconst out = [];\nfor (const item of items) {\n  const r = item.json;\n  store.recovery_state[r.appointment_id] = {\n    status: 'disputed',\n    at: new Date().toISOString(),\n    via: 'reply webhook',\n  };\n  out.push({ json: {\n    appointment_id: r.appointment_id,\n    outcome: 'disputed',\n    needs_staff: true,\n    flagged_at: new Date().toISOString(),\n    verdict: r.verdict,\n    reply_text: r.reply_text,\n    message: r.message,\n  } });\n}\nreturn out;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "dddd0000-0000-4000-8000-000000000e518",
+      "name": "Respond to reply",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1340,
+        620
+      ],
+      "webhookId": "b0000000-0000-4000-8000-000000000e53",
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": true, \"verdict\": $json.verdict, \"message\": $json.message } }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-0000000000f5",
+      "name": "Sticky Note 00f5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -240,
+        540
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 860,
+        "height": 440,
+        "content": "## Reply webhook\n\n### How it works\nThe gate rejects replies without an appointment id or text (422). One bilingual keyword maps to a verdict: PAID, BETAALD; PARTIAL, DEEL, GEDEELTELIJK; DISPUTE, BETWIST.\n\n### Setup steps\n- Route WhatsApp or SMS replies here with appointment_id and text.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-0000000000f6",
+      "name": "Sticky Note 00f6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        640,
+        420
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 900,
+        "height": 560,
+        "content": "## Verdict routing\n\n### How it works\nPaid or partial closes the case and stops the ladder; partial also flags staff. Dispute freezes the case as a staff task. Every verdict answers the webhook once.\n\n### Setup steps\n- Wire staff-flag rows to a Sheet or channel.\n"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {
+    "Webhook: payment reply": [
+      {
+        "json": {
+          "body": {
+            "text": "PAID just transferred the fee",
+            "appointment_id": "APT-4001"
+          }
+        }
+      }
+    ]
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Disputed?": {
+      "main": [
+        [
+          {
+            "node": "Log dispute",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Row valid?": {
+      "main": [
+        [
+          {
+            "node": "In 20-30h window?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log invalid rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log dispute": {
+      "main": [
+        [
+          {
+            "node": "Respond to reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid reply?": {
+      "main": [
+        [
+          {
+            "node": "Classify reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond reply invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify reply": {
+      "main": [
+        [
+          {
+            "node": "Payment confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 12 hours": {
+      "main": [
+        [
+          {
+            "node": "No-shows (demo data)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark recovered": {
+      "main": [
+        [
+          {
+            "node": "Respond to reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "In 20-30h window?": {
+      "main": [
+        [
+          {
+            "node": "Escalate by history",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip (not yet due)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payment confirmed?": {
+      "main": [
+        [
+          {
+            "node": "Mark recovered",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Disputed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escalate by history": {
+      "main": [
+        [
+          {
+            "node": "Send dunning (replace me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No-shows (demo data)": {
+      "main": [
+        [
+          {
+            "node": "Prepare + validate rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: payment reply": {
+      "main": [
+        [
+          {
+            "node": "Valid reply?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare + validate rows": {
+      "main": [
+        [
+          {
+            "node": "Row valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send dunning (replace me)": {
+      "main": [
+        [
+          {
+            "node": "Track recovery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

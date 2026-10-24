@@ -1,6 +1,6 @@
 # ⚙️ Automated n8n workflow backup to GitHub with deletion tracking
 
-> ⚡ **5,922 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **7,070 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

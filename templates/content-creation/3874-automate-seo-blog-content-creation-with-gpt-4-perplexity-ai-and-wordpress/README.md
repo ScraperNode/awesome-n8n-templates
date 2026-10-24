@@ -1,6 +1,6 @@
 # 🎬 Automate SEO blog content creation with GPT-4, Perplexity AI and WordPress
 
-> ⚡ **6,762 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **6,957 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

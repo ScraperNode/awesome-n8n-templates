@@ -1,6 +1,6 @@
 # 📊 Discover business ideas from HackerNews posts with GPT-4.1 analysis and Google Sheets
 
-> ⚡ **1,406 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,428 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

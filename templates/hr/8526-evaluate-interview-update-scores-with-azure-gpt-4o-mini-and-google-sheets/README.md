@@ -1,6 +1,6 @@
 # 👥 Evaluate interview & update scores with Azure GPT-4o-mini and Google Sheets
 
-> ⚡ **141 views** · 👥 [HR & Recruitment](../)
+> ⚡ **152 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

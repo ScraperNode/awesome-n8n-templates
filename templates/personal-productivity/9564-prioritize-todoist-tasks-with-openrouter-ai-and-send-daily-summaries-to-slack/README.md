@@ -1,6 +1,6 @@
 # ⚡ Prioritize Todoist tasks with OpenRouter AI and send daily summaries to Slack
 
-> ⚡ **173 views** · ⚡ [Personal Productivity](../)
+> ⚡ **248 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

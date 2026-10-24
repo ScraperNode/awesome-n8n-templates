@@ -1,6 +1,6 @@
 # 🔬 Detect and score refund risk with Webhook, OpenAI and Google Sheets
 
-> ⚡ **32 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **118 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

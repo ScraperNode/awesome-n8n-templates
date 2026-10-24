@@ -1,6 +1,6 @@
 # 📊 Search Skool community posts with Claude and Google Docs analysis
 
-> ⚡ **34 views** · 📊 [Market Research & Insights](../)
+> ⚡ **60 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

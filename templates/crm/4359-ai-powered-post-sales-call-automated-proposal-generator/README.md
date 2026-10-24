@@ -1,6 +1,6 @@
 # 🤝 AI-Powered Post-Sales Call Automated Proposal Generator
 
-> ⚡ **13,679 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **14,362 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

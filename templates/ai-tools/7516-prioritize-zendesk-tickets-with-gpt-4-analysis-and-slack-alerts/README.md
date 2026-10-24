@@ -1,6 +1,6 @@
 # 🎯 Prioritize Zendesk tickets with GPT-4 analysis and Slack alerts
 
-> ⚡ **504 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **534 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

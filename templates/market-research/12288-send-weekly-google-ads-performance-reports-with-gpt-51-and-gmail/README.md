@@ -1,6 +1,6 @@
 # 📊 Send weekly Google Ads performance reports with GPT-5.1 and Gmail
 
-> ⚡ **232 views** · 📊 [Market Research & Insights](../)
+> ⚡ **302 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

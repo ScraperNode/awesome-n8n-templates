@@ -1,6 +1,6 @@
 # 🔬 Get Malaysia tax ID number (TIN) for multiple business reg num (SSM) or NRIC
 
-> ⚡ **245 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **342 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

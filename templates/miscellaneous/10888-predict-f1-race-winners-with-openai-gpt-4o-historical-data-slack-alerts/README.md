@@ -1,6 +1,6 @@
 # 🔧 Predict F1 Race Winners with OpenAI GPT-4o, Historical Data & Slack Alerts
 
-> ⚡ **153 views** · 🔧 [Miscellaneous](../)
+> ⚡ **236 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

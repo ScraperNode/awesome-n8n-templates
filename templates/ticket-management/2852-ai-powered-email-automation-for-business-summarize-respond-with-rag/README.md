@@ -1,6 +1,6 @@
 # 🎫 AI-powered email automation for business: Summarize & respond with RAG
 
-> ⚡ **17,377 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **19,090 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

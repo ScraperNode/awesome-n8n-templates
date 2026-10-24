@@ -1,6 +1,6 @@
 # ⚙️ Automate Google OAuth2 credential creation in n8n
 
-> ⚡ **2,403 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,608 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 AI voice chat using webhook, Memory Manager, OpenAI, Google Gemini & ElevenLabs
 
-> ⚡ **40,083 views** · 💬 [Support Chatbots](../)
+> ⚡ **40,368 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

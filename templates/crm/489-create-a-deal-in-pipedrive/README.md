@@ -1,6 +1,6 @@
 # 🤝 Create a deal in Pipedrive
 
-> ⚡ **1,003 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,016 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

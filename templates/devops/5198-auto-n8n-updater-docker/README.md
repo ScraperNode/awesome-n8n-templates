@@ -1,6 +1,6 @@
 # ⚙️ 🛠️ Auto n8n updater (Docker)
 
-> ⚡ **3,552 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **4,093 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

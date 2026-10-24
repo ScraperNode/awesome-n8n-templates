@@ -1,6 +1,6 @@
 # 🎬 Place products on AI generated backgrounds with Google Imagen, Ideogram & Placid
 
-> ⚡ **417 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **440 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

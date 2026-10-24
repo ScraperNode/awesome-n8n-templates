@@ -1,6 +1,6 @@
 # ⚡ Send daily weather updates via a push notification using the Pushcut node
 
-> ⚡ **1,032 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,075 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

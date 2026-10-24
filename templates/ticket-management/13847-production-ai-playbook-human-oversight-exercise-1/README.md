@@ -1,6 +1,6 @@
 # 🎫 Production AI Playbook: Human Oversight (Exercise 1)
 
-> ⚡ **109 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **470 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

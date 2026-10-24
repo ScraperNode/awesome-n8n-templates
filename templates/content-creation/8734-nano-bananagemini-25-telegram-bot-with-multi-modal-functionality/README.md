@@ -1,6 +1,6 @@
 # 🎬 Nano Banana/Gemini 2.5 Telegram bot with multi-modal functionality
 
-> ⚡ **1,200 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,481 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

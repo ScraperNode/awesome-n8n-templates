@@ -1,6 +1,6 @@
 # 📁 🛠️ Microsoft OneDrive tool MCP server 💪 all 14 operations
 
-> ⚡ **366 views** · 📁 [File Management](../)
+> ⚡ **407 views** · 📁 [File Management](../)
 
 ## Description
 

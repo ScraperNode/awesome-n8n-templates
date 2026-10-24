@@ -1,6 +1,6 @@
 # ⚒️ Compare sequential, agent-based, and parallel LLM processing with Claude 3.7
 
-> ⚡ **1,899 views** · ⚒️ [Engineering](../)
+> ⚡ **2,017 views** · ⚒️ [Engineering](../)
 
 ## Description
 

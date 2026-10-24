@@ -1,6 +1,6 @@
 # ⚡ Realtime Notion Todoist 2-way sync with Redis
 
-> ⚡ **8,553 views** · ⚡ [Personal Productivity](../)
+> ⚡ **8,559 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Real-time email RAG assistant with Gmail, OpenAI GPT, and PGVector
 
-> ⚡ **4,346 views** · ⚡ [Personal Productivity](../)
+> ⚡ **5,011 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

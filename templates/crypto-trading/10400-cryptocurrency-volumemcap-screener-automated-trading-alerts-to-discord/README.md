@@ -1,6 +1,6 @@
 # 📈 Cryptocurrency volume/mCap screener - automated trading alerts to Discord
 
-> ⚡ **102 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **140 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

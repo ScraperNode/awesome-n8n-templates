@@ -1,6 +1,6 @@
 # 🔧 Meetup registration system with PostgreSQL database & interactive giveaway tool
 
-> ⚡ **564 views** · 🔧 [Miscellaneous](../)
+> ⚡ **669 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

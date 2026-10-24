@@ -1,6 +1,6 @@
 # 📱 Post daily tech news on Instagram with Gemini and SerpAPI
 
-> ⚡ **261 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **719 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

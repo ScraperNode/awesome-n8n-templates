@@ -1,6 +1,6 @@
 # ⚒️ Design scalable sync workflows with Data Tables, ProspectPro and HubSpot
 
-> ⚡ **614 views** · ⚒️ [Engineering](../)
+> ⚡ **7,306 views** · ⚒️ [Engineering](../)
 
 ## Description
 

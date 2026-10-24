@@ -1,6 +1,6 @@
 # 💬 Automated phone receptionist for scheduling with Twilio, ElevenLabs & Claude AI
 
-> ⚡ **7,054 views** · 💬 [Support Chatbots](../)
+> ⚡ **9,994 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

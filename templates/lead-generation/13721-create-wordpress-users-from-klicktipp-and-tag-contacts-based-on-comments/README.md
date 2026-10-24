@@ -1,6 +1,6 @@
 # 🎣 Create WordPress users from KlickTipp and tag contacts based on comments
 
-> ⚡ **2 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **64 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Get multiple clients' data from Invoice Ninja
 
-> ⚡ **1,477 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,543 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

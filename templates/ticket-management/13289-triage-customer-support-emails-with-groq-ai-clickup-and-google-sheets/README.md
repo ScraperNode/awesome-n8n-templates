@@ -1,6 +1,6 @@
 # 🎫 Triage customer support emails with Groq AI, ClickUp and Google Sheets
 
-> ⚡ **8 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **109 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 👥 Collect absences from Google Calendars
 
-> ⚡ **3,870 views** · 👥 [HR & Recruitment](../)
+> ⚡ **3,893 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

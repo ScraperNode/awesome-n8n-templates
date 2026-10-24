@@ -1,6 +1,6 @@
 # ⚙️ AWS Azure GCP multi-cloud cost monitoring & alerts for budget control
 
-> ⚡ **981 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,200 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

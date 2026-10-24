@@ -1,6 +1,6 @@
 # 🎬 Generate images from Airtable records with Layerre and Canva
 
-> ⚡ **1 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **191 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

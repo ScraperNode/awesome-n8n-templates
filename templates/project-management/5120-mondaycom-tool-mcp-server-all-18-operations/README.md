@@ -1,6 +1,6 @@
 # 📋 🛠️ Monday.com tool MCP Server 💪 all 18 operations
 
-> ⚡ **191 views** · 📋 [Project Management](../)
+> ⚡ **213 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate AI images via Telegram using Gemini & Pollinations
 
-> ⚡ **1,512 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,028 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

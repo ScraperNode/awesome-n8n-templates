@@ -1,6 +1,6 @@
 # 📋 Transform meeting notes into tasks using GPT-4.1-mini, Notion & TickTick via Telegram
 
-> ⚡ **1,213 views** · 📋 [Project Management](../)
+> ⚡ **1,285 views** · 📋 [Project Management](../)
 
 ## Description
 

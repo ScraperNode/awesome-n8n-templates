@@ -1,6 +1,6 @@
 # ⚙️ Centralized n8n error management system with automated email alerts via Gmail
 
-> ⚡ **3,357 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **3,876 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Daily sync of NFL players from Sleeper API to Airtable for fantasy football
 
-> ⚡ **383 views** · ⚒️ [Engineering](../)
+> ⚡ **402 views** · ⚒️ [Engineering](../)
 
 ## Description
 

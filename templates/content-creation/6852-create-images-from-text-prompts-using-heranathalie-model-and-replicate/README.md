@@ -1,6 +1,6 @@
 # 🎬 Create images from text prompts using HeraNathalie model and Replicate
 
-> ⚡ **972 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **993 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

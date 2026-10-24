@@ -1,6 +1,6 @@
 # 🎬 Generate blogs with GPT-4o prompt chaining: outline, evaluate & publish to Sheets
 
-> ⚡ **1,992 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,231 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

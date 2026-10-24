@@ -1,6 +1,6 @@
 # 💬 Automate patient journey with GPT-4, Twilio & Slack notifications
 
-> ⚡ **166 views** · 💬 [Support Chatbots](../)
+> ⚡ **186 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

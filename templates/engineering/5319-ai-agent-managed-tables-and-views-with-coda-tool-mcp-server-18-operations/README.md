@@ -1,6 +1,6 @@
 # ⚒️ AI agent managed tables and views with 🛠️ Coda tool MCP server 💪 18 operations
 
-> ⚡ **133 views** · ⚒️ [Engineering](../)
+> ⚡ **149 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤖 Manage schedule & contacts with Telegram Bot using GPT-4o-mini & Google Services
 
-> ⚡ **318 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **424 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

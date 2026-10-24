@@ -1,6 +1,6 @@
 # 🎬 Instant infographic generator (LINE + Nano Banana Pro)
 
-> ⚡ **1,084 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,284 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

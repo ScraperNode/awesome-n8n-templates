@@ -1,6 +1,6 @@
 # 📱 Generate AI-powered weekly email newsletters from WordPress with Gemini
 
-> ⚡ **825 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **973 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

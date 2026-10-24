@@ -1,6 +1,6 @@
 # 📋 Create sprint goals from Google Sheets with Pega Agile Studio and Google Gemini
 
-> ⚡ **77 views** · 📋 [Project Management](../)
+> ⚡ **103 views** · 📋 [Project Management](../)
 
 ## Description
 

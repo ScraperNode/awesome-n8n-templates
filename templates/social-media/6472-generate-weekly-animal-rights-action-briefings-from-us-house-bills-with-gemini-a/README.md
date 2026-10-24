@@ -1,6 +1,6 @@
 # 📱 Generate weekly animal rights action briefings from U.S. House bills with Gemini AI
 
-> ⚡ **354 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **391 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

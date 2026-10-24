@@ -1,6 +1,6 @@
 # 💬 Automated lead response template using Google Forms, Sheets, and Gmail
 
-> ⚡ **381 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **649 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

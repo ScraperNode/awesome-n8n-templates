@@ -1,6 +1,6 @@
 # 🎬 Blog writer & editor with Google Sheets memory (GPT-4)
 
-> ⚡ **1,360 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,763 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

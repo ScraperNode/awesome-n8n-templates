@@ -1,6 +1,6 @@
 # ⚡ Custom Discord notifications for Radarr, Sonarr, Bazarr etc.
 
-> ⚡ **729 views** · ⚡ [Personal Productivity](../)
+> ⚡ **760 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

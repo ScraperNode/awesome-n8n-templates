@@ -1,6 +1,6 @@
 # 🔍 Automated document compliance validation with AI and vector database
 
-> ⚡ **704 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **978 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Facebook Messenger Chatbot That Learns From Your Documents
 
-> ⚡ **235 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,133 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

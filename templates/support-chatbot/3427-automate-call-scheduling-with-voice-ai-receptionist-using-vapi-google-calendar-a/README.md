@@ -1,6 +1,6 @@
 # 💬 Automate call scheduling with Voice AI receptionist using Vapi, Google Calendar & Airtable
 
-> ⚡ **46,630 views** · 💬 [Support Chatbots](../)
+> ⚡ **53,305 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

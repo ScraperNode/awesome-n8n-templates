@@ -1,6 +1,6 @@
 # 🎣 Automate HubSpot to Salesforce lead creation with Explorium AI enrichment
 
-> ⚡ **758 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **820 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 Batch Delete Posts and Featured Images in WordPress
 
-> ⚡ **220 views** · 🔧 [Miscellaneous](../)
+> ⚡ **231 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

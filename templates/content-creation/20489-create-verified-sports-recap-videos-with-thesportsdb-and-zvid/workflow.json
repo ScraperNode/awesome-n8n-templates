@@ -1,0 +1,2082 @@
+{
+  "id": "ZvidSportsRecapVideo",
+  "meta": {
+    "domainRevision": 2,
+    "lateSeriesReview": 1,
+    "templateCredsSetupCompleted": false
+  },
+  "name": "Review match results and manage corrected sports videos with TheSportsDB",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "zvid-sr-0003",
+      "name": "Set the league and editorial render limits",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        340,
+        500
+      ],
+      "parameters": {
+        "mode": "raw",
+        "options": {},
+        "jsonOutput": "{\n  \"sportsDbKey\": \"123\",\n  \"leagueId\": \"4328\",\n  \"musicUrl\": \"\",\n  \"maxMusicBytes\": 5242880,\n  \"dryRun\": false,\n  \"pollSeconds\": 10,\n  \"timeoutMinutes\": 20,\n  \"maxCreditsPerVideo\": 35\n}"
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "zvid-sr-0002",
+      "name": "Test the sports recap video workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        60,
+        660
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "zvid-sr-0001",
+      "name": "Start the scheduled sports recap video",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        60,
+        260
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "zvid-sr-0021",
+      "name": "\u25b6 Watch video",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        12900,
+        500
+      ],
+      "parameters": {
+        "url": "={{ $json.videoUrl }}",
+        "options": {
+          "timeout": 30000
+        },
+        "responseFormat": "file",
+        "dataPropertyName": "data"
+      },
+      "retryOnFail": true,
+      "typeVersion": 2,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "zvid-sr-0004",
+      "name": "Fetch the queued event directly from TheSportsDB",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        2900,
+        500
+      ],
+      "parameters": {
+        "url": "={{ 'https://www.thesportsdb.com/api/v1/json/' + encodeURIComponent(String($('Set the league and editorial render limits').first().json.sportsDbKey)) + '/lookupevent.php' }}",
+        "options": {
+          "timeout": 20000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ $json.request.EventId }}"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "late-ledger",
+      "name": "Read Sports Recaps recovery log",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        820,
+        500
+      ],
+      "parameters": {
+        "options": {},
+        "resource": "sheet",
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sports Recaps"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": ""
+        }
+      },
+      "typeVersion": 4.7,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "late-plan",
+      "name": "Compare final facts approval and previous video editions",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3180,
+        500
+      ],
+      "parameters": {
+        "jsCode": "function revisionHelpers() {\n\tconst text = (v) => String(v ?? '').trim();\n\tconst number = (v, label) => {\n\t\tif (v === '' || v == null || typeof v === 'boolean' || !Number.isFinite(Number(v)))\n\t\t\tthrow Error(label + ' must be a number');\n\t\treturn Number(v);\n\t};\n\tconst instant = (v, label) => {\n\t\tif (\n\t\t\t!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2})?(?:Z|[+-]\\d{2}:\\d{2})$/.test(text(v)) ||\n\t\t\t!Number.isFinite(Date.parse(v))\n\t\t)\n\t\t\tthrow Error(label + ' needs an ISO timestamp with UTC offset');\n\t\treturn Date.parse(v);\n\t};\n\tconst rows = (input, key) => {\n\t\tconst out = input.filter((r) => Object.keys(r).some((k) => k !== 'row_number' && text(r[k]))),\n\t\t\tseen = new Set();\n\t\tfor (const r of out) {\n\t\t\tif (!text(r[key]) || seen.has(text(r[key]))) throw Error('Every row needs a unique ' + key);\n\t\t\tseen.add(text(r[key]));\n\t\t}\n\t\treturn out;\n\t};\n\treturn { text, number, instant, rows };\n}\nfunction recoverPlan(cfg, key, rows) {\n\tconst matches = rows.filter((r) => String(r.RenderKey || '') === key);\n\tif (matches.length > 1) throw Error('Duplicate RenderKey in log: ' + key);\n\tconst row = matches[0];\n\tif (!row) return null;\n\t// An explicit capacity rejection accepted no paid job. It can be retried on\n\t// a later run; uncertain submissions and failed accepted jobs remain locked.\n\tif (row.Status === 'rate_limited' && !row.JobId && !row.VideoUrl) return null;\n\tif (row.Status === 'completed' || row.VideoUrl)\n\t\treturn {\n\t\t\tready: false,\n\t\t\tstatus: 'already_completed',\n\t\t\trenderKey: key,\n\t\t\tvideoUrl: row.VideoUrl || null,\n\t\t\tcreditsSpent: 0,\n\t\t};\n\tif (row.Status === 'rendering' && row.JobId && cfg.dryRun !== true) {\n\t\tlet plan;\n\t\ttry {\n\t\t\tplan = JSON.parse(row.PlanJson);\n\t\t} catch {\n\t\t\tthrow Error('Saved PlanJson is invalid for ' + key);\n\t\t}\n\t\tif (plan.renderKey !== key || plan.snapshotVersion !== 1)\n\t\t\tthrow Error('Saved snapshot does not match ' + key);\n\t\treturn { ...plan, ready: true, jobId: String(row.JobId), resumed: true };\n\t}\n\treturn {\n\t\tready: false,\n\t\tstatus: 'needs_review',\n\t\trenderKey: key,\n\t\treason:\n\t\t\tcfg.dryRun === true\n\t\t\t\t? 'Preview skips existing jobs.'\n\t\t\t\t: 'Inspect the saved ' + row.Status + ' job before resetting this key.',\n\t\tjobId: row.JobId || null,\n\t\tcreditsSpent: 0,\n\t};\n}\nfunction reviewMatch(cfg, request, response, logs, now) {\n\tconst h = revisionHelpers();\n\tif (Number(response.statusCode) !== 200)\n\t\tthrow Error('TheSportsDB is unavailable; preserve the existing review and approval');\n\tconst body = typeof response.body === 'string' ? JSON.parse(response.body) : response.body;\n\tif (!body || !Array.isArray(body.events) || !body.events.length)\n\t\tthrow Error('TheSportsDB returned no matching event');\n\tconst events = body.events.filter((e) => h.text(e.idEvent) === h.text(request.EventId));\n\tif (!events.length) throw Error('The source response does not match the requested EventId');\n\tconst facts = events.map((e) => {\n\t\tif (!['FT', 'AET', 'Match Finished'].includes(h.text(e.strStatus)))\n\t\t\tthrow Error('The requested match is not a verified final; approval remains unchanged');\n\t\tconst homeScore = h.number(e.intHomeScore, 'home score'),\n\t\t\tawayScore = h.number(e.intAwayScore, 'away score');\n\t\tif (![homeScore, awayScore].every((n) => Number.isInteger(n) && n >= 0 && n <= 999))\n\t\t\tthrow Error('Invalid final score');\n\t\tconst date = h.text(e.dateEvent);\n\t\tif (\n\t\t\t!/^\\d{4}-\\d{2}-\\d{2}$/.test(date) ||\n\t\t\tnew Date(date + 'T12:00Z').toISOString().slice(0, 10) !== date ||\n\t\t\tdate > now.toISOString().slice(0, 10)\n\t\t)\n\t\t\tthrow Error('Invalid or future final date');\n\t\tif (!h.text(e.strHomeTeam) || !h.text(e.strAwayTeam) || !h.text(e.idLeague))\n\t\t\tthrow Error('Final event lacks teams or league');\n\t\tif (cfg.leagueId && h.text(cfg.leagueId) !== h.text(e.idLeague))\n\t\t\tthrow Error('Event does not belong to the configured league');\n\t\treturn {\n\t\t\teventId: h.text(e.idEvent),\n\t\t\tdate,\n\t\t\tleagueId: h.text(e.idLeague),\n\t\t\tleague: h.text(e.strLeague),\n\t\t\thome: h.text(e.strHomeTeam),\n\t\t\taway: h.text(e.strAwayTeam),\n\t\t\thomeScore,\n\t\t\tawayScore,\n\t\t\tstatus: h.text(e.strStatus),\n\t\t};\n\t});\n\tconst fact = facts[0],\n\t\tfactJson = JSON.stringify(fact);\n\tif (facts.some((f) => JSON.stringify(f) !== factJson))\n\t\tthrow Error('Conflicting source versions for the requested event');\n\tconst history = logs\n\t\t.filter((r) => String(r.RenderKey || '').startsWith('sports-editorial-' + fact.eventId + '-'))\n\t\t.map((r) => {\n\t\t\tlet p;\n\t\t\ttry {\n\t\t\t\tp = JSON.parse(r.PlanJson);\n\t\t\t} catch {\n\t\t\t\tthrow Error('Malformed sports editorial history; inspect the log');\n\t\t\t}\n\t\t\tif (p.eventId !== fact.eventId || !Number.isInteger(p.edition))\n\t\t\t\tthrow Error('Sports editorial history does not match its event');\n\t\t\treturn { row: r, plan: p };\n\t\t})\n\t\t.sort((a, b) => b.plan.edition - a.plan.edition);\n\tif (new Set(history.map((x) => x.plan.edition)).size !== history.length)\n\t\tthrow Error('Duplicate editorial edition in recovery log');\n\tconst latest = history[0],\n\t\tpublished = history.find((x) => x.row.Status === 'completed' && x.row.VideoUrl);\n\tconst same = latest && JSON.stringify(latest.plan.fact) === factJson;\n\tconst edition = same ? latest.plan.edition : (latest?.plan.edition || 0) + 1;\n\tconst snapshot = JSON.stringify({ edition, fact });\n\tconst key = 'sports-editorial-' + fact.eventId + '-' + edition;\n\t// An uncertain or failed edition cannot be bypassed by a source correction.\n\tconst blocked = latest && !same && !['completed', 'rate_limited'].includes(latest.row.Status);\n\tconst state = same ? recoverPlan(cfg, key, logs) : null;\n\tconst correction = Boolean(published && JSON.stringify(published.plan.fact) !== factJson);\n\tconst approved =\n\t\th.text(request.Approval).toLowerCase() === 'approved' &&\n\t\th.text(request.ApprovedSnapshot) === snapshot;\n\tconst ready = !blocked && !state && approved;\n\tconst status = blocked\n\t\t? 'needs_review'\n\t\t: state?.status ||\n\t\t\t(approved ? 'approved' : correction ? 'correction_review' : 'awaiting_approval');\n\tconst prior = correction ? published.plan.fact : null;\n\tconst line = fact.home + ' ' + fact.homeScore + '\u2013' + fact.awayScore + ' ' + fact.away;\n\tconst previousLine = prior\n\t\t? prior.home + ' ' + prior.homeScore + '\u2013' + prior.awayScore + ' ' + prior.away\n\t\t: '';\n\tconst caption =\n\t\t(correction ? 'CORRECTION: ' : 'FINAL: ') +\n\t\tline +\n\t\t' (' +\n\t\tfact.date +\n\t\t').' +\n\t\t(prior ? ' Previous rendered version: ' + previousLine + '.' : '');\n\treturn {\n\t\tready,\n\t\tstatus,\n\t\trenderKey: key,\n\t\teventId: fact.eventId,\n\t\tedition,\n\t\tfact,\n\t\treviewSnapshot: snapshot,\n\t\tcorrection,\n\t\tprior,\n\t\tpreviousVideoUrl: published?.row.VideoUrl || '',\n\t\tvideoUrl: state?.videoUrl || null,\n\t\tcaption,\n\t\tdate: fact.date,\n\t\treason: blocked\n\t\t\t? 'Inspect the previous uncertain or failed edition before approving a replacement.'\n\t\t\t: state?.reason ||\n\t\t\t\t(!approved\n\t\t\t\t\t? 'Review CurrentSnapshot, set Approval=approved and copy it exactly into ApprovedSnapshot. Changed facts require fresh approval.'\n\t\t\t\t\t: ''),\n\t\treviewUpdate: {\n\t\t\tEventId: fact.eventId,\n\t\t\tCurrentSnapshot: snapshot,\n\t\t\tReviewStatus: status,\n\t\t\tLastCheckedAt: now.toISOString(),\n\t\t\tPriorVideoUrl: published?.row.VideoUrl || '',\n\t\t\tChangeSummary: caption,\n\t\t},\n\t\thandoff: [\n\t\t\t{\n\t\t\t\tEventId: fact.eventId,\n\t\t\t\tEdition: edition,\n\t\t\t\tMode: correction ? 'correction' : 'original',\n\t\t\t\tDate: fact.date,\n\t\t\t\tCurrentResult: line,\n\t\t\t\tPreviousResult: previousLine,\n\t\t\t\tPreviousVideoUrl: published?.row.VideoUrl || '',\n\t\t\t\tApprovalSnapshot: snapshot,\n\t\t\t\tSource: 'https://www.thesportsdb.com/event/' + fact.eventId,\n\t\t\t\tCaption: caption,\n\t\t\t},\n\t\t],\n\t};\n}\nreturn [{json:reviewMatch($('Set the league and editorial render limits').first().json,$('Select the least recently checked enabled event').first().json.request,$json,$('Read Sports Recaps recovery log').all().map(i=>i.json),new Date())}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "late-ready",
+      "name": "Eligible source content or saved render exists?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4700,
+        500
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ready-condition",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.ready === true }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "late-no-work",
+      "name": "Explain skipped content or recovery needs",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4980,
+        850
+      ],
+      "parameters": {
+        "jsCode": "return $input.all();"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "late-resume",
+      "name": "Resume the accepted render job?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        5460,
+        500
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "resume-condition",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ Boolean($json.jobId) }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "late-resume-context",
+      "name": "Restore the saved result and handoff context",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5740,
+        220
+      ],
+      "parameters": {
+        "jsCode": "return $input.all();"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-sr-0009",
+      "name": "Build the approved original or corrected match report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        7540,
+        500
+      ],
+      "parameters": {
+        "jsCode": "// === late-series glue ===\nfunction revisionProject(cfg, plan, kind) {\n\tconst text = (value, y, size = 46, color = '#FFFFFF') => ({\n\t\ttype: 'TEXT',\n\t\ttext: String(value),\n\t\tx: 80,\n\t\ty,\n\t\twidth: 920,\n\t\tanchor: 'top-left',\n\t\tstyle: { fontFamily: 'Arial', fontSize: size + 'px', fontWeight: '600', color },\n\t});\n\tconst scene = (id, title, body, footer, duration = 6) => ({\n\t\tid,\n\t\tduration,\n\t\tbackgroundColor: kind === 'weather' ? '#102B36' : '#13213D',\n\t\tvisuals: [text(title, 240, 58), text(body, 520), text(footer, 1530, 27, '#BCD6E4')],\n\t});\n\tlet scenes;\n\tif (kind === 'weather')\n\t\tscenes = [\n\t\t\tscene(\n\t\t\t\t'call-sheet',\n\t\t\t\tplan.calendarLabel + ' \u00b7 ' + plan.date,\n\t\t\t\tplan.caption + '\\nAll slots are proposals; confirm before booking.',\n\t\t\t\t'Open-Meteo \u00b7 ' + plan.timezone,\n\t\t\t\t5,\n\t\t\t),\n\t\t\t...plan.decisions.map((d, i) =>\n\t\t\t\tscene(\n\t\t\t\t\t'booking-' + i,\n\t\t\t\t\td.Decision.toUpperCase() + ' \u00b7 ' + d.Title,\n\t\t\t\t\td.Start\n\t\t\t\t\t\t? new Intl.DateTimeFormat('en-GB', {\n\t\t\t\t\t\t\t\ttimeZone: plan.timezone,\n\t\t\t\t\t\t\t\thour: '2-digit',\n\t\t\t\t\t\t\t\tminute: '2-digit',\n\t\t\t\t\t\t\t}).format(new Date(d.Start)) +\n\t\t\t\t\t\t\t\t'\u2013' +\n\t\t\t\t\t\t\t\tnew Intl.DateTimeFormat('en-GB', {\n\t\t\t\t\t\t\t\t\ttimeZone: plan.timezone,\n\t\t\t\t\t\t\t\t\thour: '2-digit',\n\t\t\t\t\t\t\t\t\tminute: '2-digit',\n\t\t\t\t\t\t\t\t}).format(new Date(d.End)) +\n\t\t\t\t\t\t\t\t'\\nRain ' +\n\t\t\t\t\t\t\t\td.RainProbability +\n\t\t\t\t\t\t\t\t'% \u00b7 Wind ' +\n\t\t\t\t\t\t\t\tMath.round(d.WindKmh) +\n\t\t\t\t\t\t\t\t' km/h'\n\t\t\t\t\t\t: d.Reason,\n\t\t\t\t\t'Booking ' + d.BookingId + ' \u00b7 priority ' + d.Priority + ' \u00b7 ' + plan.timezone,\n\t\t\t\t\t6,\n\t\t\t\t),\n\t\t\t),\n\t\t];\n\telse {\n\t\tconst f = plan.fact;\n\t\tscenes = [\n\t\t\tscene(\n\t\t\t\t'edition',\n\t\t\t\tplan.correction ? 'CORRECTED MATCH REPORT' : 'APPROVED MATCH REPORT',\n\t\t\t\tf.home + '\\n' + f.homeScore + ' \u2013 ' + f.awayScore + '\\n' + f.away,\n\t\t\t\tf.date + ' \u00b7 TheSportsDB \u00b7 edition ' + plan.edition,\n\t\t\t\t7,\n\t\t\t),\n\t\t];\n\t\tif (plan.correction)\n\t\t\tscenes.push(\n\t\t\t\tscene(\n\t\t\t\t\t'correction',\n\t\t\t\t\t'WHAT CHANGED',\n\t\t\t\t\tplan.prior.home +\n\t\t\t\t\t\t' ' +\n\t\t\t\t\t\tplan.prior.homeScore +\n\t\t\t\t\t\t'\u2013' +\n\t\t\t\t\t\tplan.prior.awayScore +\n\t\t\t\t\t\t' ' +\n\t\t\t\t\t\tplan.prior.away +\n\t\t\t\t\t\t'\\nReplaced by\\n' +\n\t\t\t\t\t\tf.home +\n\t\t\t\t\t\t' ' +\n\t\t\t\t\t\tf.homeScore +\n\t\t\t\t\t\t'\u2013' +\n\t\t\t\t\t\tf.awayScore +\n\t\t\t\t\t\t' ' +\n\t\t\t\t\t\tf.away,\n\t\t\t\t\t'Prior video retained in the correction pack',\n\t\t\t\t\t7,\n\t\t\t\t),\n\t\t\t);\n\t\tscenes.push(\n\t\t\tscene(\n\t\t\t\t'handoff',\n\t\t\t\t'EDITORIAL HANDOFF',\n\t\t\t\t'Checked final status: ' +\n\t\t\t\t\tf.status +\n\t\t\t\t\t'\\nMatch date: ' +\n\t\t\t\t\tf.date +\n\t\t\t\t\t'\\nReview the source and caption before publication.',\n\t\t\t\t'Event ' + f.eventId + ' \u00b7 No automatic social publication',\n\t\t\t\t5,\n\t\t\t),\n\t\t);\n\t}\n\treturn {\n\t\t...plan,\n\t\tpayload: {\n\t\t\tname: kind + '-brief-' + plan.date + '-' + (plan.edition || 1),\n\t\t\twidth: 1080,\n\t\t\theight: 1920,\n\t\t\tfps: 30,\n\t\t\tscenes,\n\t\t\taudios: plan.musicOk && cfg.musicUrl ? [{ src: cfg.musicUrl, volume: 0.12 }] : [],\n\t\t},\n\t};\n}\nreturn [{json:revisionProject($('Set the league and editorial render limits').first().json,$json,'sports')}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "late-music",
+      "name": "A background music URL is configured?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        6220,
+        500
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "music-condition",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ Boolean($('Set the league and editorial render limits').first().json.musicUrl) }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "late-music-probe",
+      "name": "Check the optional music file size and availability",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        6500,
+        500
+      ],
+      "parameters": {
+        "url": "={{ $('Set the league and editorial render limits').first().json.musicUrl }}",
+        "method": "HEAD",
+        "options": {
+          "timeout": 8000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "late-music-restore",
+      "name": "Keep the source plan and usable music only",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        6780,
+        500
+      ],
+      "parameters": {
+        "jsCode": "const plan=$('Compare final facts approval and previous video editions').first().json,cfg=$('Set the league and editorial render limits').first().json,probe=$json;const bytes=Number(probe.headers?.['content-length']||0);const musicOk=Number(probe.statusCode)===200&&Number.isFinite(bytes)&&bytes>=0&&bytes<=Number(cfg.maxMusicBytes||5242880);return [{json:{...plan,musicOk,musicProbe:probe}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "late-design-context",
+      "name": "Prepare the selected source for design",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        7060,
+        500
+      ],
+      "parameters": {
+        "jsCode": "return $input.all();"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "late-validate",
+      "name": "Validate the video and request its credit quote",
+      "type": "@zvid/n8n-nodes-zvid.zvid",
+      "position": [
+        7820,
+        500
+      ],
+      "parameters": {
+        "source": "json",
+        "resource": "render",
+        "operation": "validate",
+        "projectJson": "={{ JSON.stringify($json.payload) }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "late-quote",
+      "name": "Enforce the per-video credit ceiling",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        8100,
+        500
+      ],
+      "parameters": {
+        "jsCode": "function checkQuote(cfg, build, response) {\n  const body = response.body || response;\n  if (body.valid !== true) throw new Error('Zvid validation failed: '+JSON.stringify(body.errors || body.details || body).slice(0,1200));\n  const credits = Number(body.creditsRequired), ceiling = Number(cfg.maxCreditsPerVideo);\n  if (!Number.isFinite(credits) || credits < 0) throw new Error('Zvid did not return a valid credit quote.');\n  if (!Number.isFinite(ceiling) || ceiling <= 0) throw new Error('Set maxCreditsPerVideo to a positive number.');\n  if (credits > ceiling) throw new Error('Video needs '+credits+' credits; maxCreditsPerVideo is '+ceiling+'. No paid render submitted for this item.');\n  return {...build,creditsRequired:credits,warnings:body.warnings || []};\n}\nconst d=checkQuote($('Set the league and editorial render limits').first().json,$('Build the approved original or corrected match report').first().json,$json);const {payload,forecast,weather,narrationData,musicProbe,...snapshot}=d;d.checkpoint={...snapshot,snapshotVersion:1};if(JSON.stringify(d.checkpoint).length>45000)throw Error('Recovery snapshot exceeds the sheet cell limit. No render submitted.');return [{json:d}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "late-preview",
+      "name": "Return a validation-only preview?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        8380,
+        500
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "preview-condition",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Set the league and editorial render limits').first().json.dryRun === true }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "late-preview-report",
+      "name": "Return the source plan design quote and handoff",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        8380,
+        850
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{...$json,status:'preview',dryRun:true,videoUrl:null,note:'No log writes, editor draft, render or delivery.'}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "late-claim",
+      "name": "Reserve this render key before spending credits",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        8860,
+        500
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "JobId": "",
+            "Status": "submitting",
+            "PlanJson": "={{ JSON.stringify($('Enforce the per-video credit ceiling').first().json.checkpoint) }}",
+            "VideoUrl": "",
+            "RenderKey": "={{ $('Enforce the per-video credit ceiling').first().json.renderKey }}",
+            "CompletedAt": "",
+            "CreditsQuoted": "={{ $('Enforce the per-video credit ceiling').first().json.creditsRequired }}"
+          },
+          "schema": [
+            {
+              "id": "RenderKey",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "RenderKey",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "JobId",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "JobId",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VideoUrl",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "VideoUrl",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CreditsQuoted",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "CreditsQuoted",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PlanJson",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "PlanJson",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CompletedAt",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "CompletedAt",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "RenderKey"
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sports Recaps"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": ""
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "late-attempt",
+      "name": "Prepare a bounded render submission attempt",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        9140,
+        500
+      ],
+      "parameters": {
+        "jsCode": "const prior=$json;const checkpoint=$('Enforce the per-video credit ceiling').first().json.checkpoint;return [{json:{...checkpoint,checkpoint,submitStartedAt:prior.submitStartedAt||Date.now(),submitAttempts:Number(prior.submitAttempts||0)+1}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "late-submit",
+      "name": "Submit this approved video to Zvid",
+      "type": "@zvid/n8n-nodes-zvid.zvid",
+      "onError": "continueErrorOutput",
+      "position": [
+        9420,
+        500
+      ],
+      "parameters": {
+        "source": "json",
+        "resource": "render",
+        "operation": "create",
+        "renderType": "video",
+        "projectJson": "={{ JSON.stringify($('Enforce the per-video credit ceiling').first().json.payload) }}",
+        "waitForCompletion": false
+      },
+      "retryOnFail": false,
+      "typeVersion": 1
+    },
+    {
+      "id": "late-rejection",
+      "name": "Distinguish a capacity rejection from an uncertain submission",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        9420,
+        850
+      ],
+      "parameters": {
+        "jsCode": "function classifySubmissionError(context, error, now, cfg) {\n\tconst status = Number(\n\t\terror.httpCode ||\n\t\t\terror.statusCode ||\n\t\t\terror.status ||\n\t\t\terror.response?.status ||\n\t\t\terror.cause?.statusCode ||\n\t\t\terror.cause?.response?.status,\n\t);\n\tconst rejected =\n\t\tstatus === 429 ||\n\t\t(!status &&\n\t\t\terror.name === 'NodeApiError' &&\n\t\t\terror.message === 'The service is receiving too many requests from you');\n\tlet body =\n\t\terror.response?.data ||\n\t\terror.context?.data ||\n\t\terror.cause?.response?.data ||\n\t\terror.cause?.error ||\n\t\t{};\n\tif (typeof body === 'string') {\n\t\ttry {\n\t\t\tbody = JSON.parse(body);\n\t\t} catch {\n\t\t\tbody = {};\n\t\t}\n\t}\n\tconst headers = error.response?.headers || error.cause?.response?.headers || {};\n\tconst raw = headers['retry-after'] ?? body.retryAfter;\n\tconst retrySeconds = Math.max(30, Number(raw) || Math.ceil((Date.parse(raw) - now) / 1000) || 30);\n\tconst deadline = context.submitStartedAt + Number(cfg.timeoutMinutes || 20) * 60000;\n\tconst retry = rejected && context.submitAttempts < 3 && now + retrySeconds * 1000 < deadline;\n\tconst reason = rejected\n\t\t? 'Zvid render capacity is full (HTTP 429); no job was accepted. ' +\n\t\t\t(retry\n\t\t\t\t? 'Retrying after ' + retrySeconds + ' seconds.'\n\t\t\t\t: 'Retry this workflow later; the rejected key is safe to reuse.')\n\t\t: 'Render submission outcome is uncertain. Inspect https://app.zvid.io before retrying: ' +\n\t\t\tString(error.description || error.message || error);\n\treturn {\n\t\t...context,\n\t\tstatus: rejected ? 'rate_limited' : 'needs_review',\n\t\treason,\n\t\tretry,\n\t\tretrySeconds,\n\t\tvideoUrl: null,\n\t\tcheckpoint: {\n\t\t\t...context.checkpoint,\n\t\t\tsubmission: {\n\t\t\t\tstatus: rejected ? 'rate_limited' : 'needs_review',\n\t\t\t\treason,\n\t\t\t\tattemptedAt: new Date(now).toISOString(),\n\t\t\t},\n\t\t},\n\t};\n}\nconst item=$input.first();return [{json:classifySubmissionError($('Prepare a bounded render submission attempt').first().json,item.error||item.json.error||{},Date.now(),$('Set the league and editorial render limits').first().json)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "late-save-rejection",
+      "name": "Record the rejected or uncertain submission",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        9700,
+        850
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "JobId": "",
+            "Status": "={{ $('Distinguish a capacity rejection from an uncertain submission').first().json.status }}",
+            "PlanJson": "={{ JSON.stringify($('Distinguish a capacity rejection from an uncertain submission').first().json.checkpoint) }}",
+            "VideoUrl": "",
+            "RenderKey": "={{ $('Distinguish a capacity rejection from an uncertain submission').first().json.renderKey }}"
+          },
+          "schema": [
+            {
+              "id": "RenderKey",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "RenderKey",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "JobId",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "JobId",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VideoUrl",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "VideoUrl",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PlanJson",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "PlanJson",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "RenderKey"
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "resource": "sheet",
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sports Recaps"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": ""
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "late-rejection-context",
+      "name": "Restore the submission rejection and retry timing",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        9980,
+        850
+      ],
+      "parameters": {
+        "jsCode": "return [{json:$('Distinguish a capacity rejection from an uncertain submission').first().json}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "late-retry-capacity",
+      "name": "Retry this explicit capacity rejection?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        10260,
+        850
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "retry-capacity-condition",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.retry === true }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "late-capacity-wait",
+      "name": "Wait before retrying available render capacity",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        9140,
+        1200
+      ],
+      "parameters": {
+        "unit": "seconds",
+        "amount": "={{ $json.retrySeconds }}",
+        "resume": "timeInterval"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "late-submission-stop",
+      "name": "Report why the render submission stopped",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        10540,
+        850
+      ],
+      "parameters": {
+        "jsCode": "throw Error($json.reason);"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "late-accepted",
+      "name": "Capture the accepted render job ID",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        9700,
+        500
+      ],
+      "parameters": {
+        "jsCode": "function trackJob(context, response, now) {\n  const jobId=String(response.jobId || response.id || context.jobId || '').trim();\n  if (!jobId) throw new Error('No render job ID returned. The sheet stays submitting; inspect https://app.zvid.io before resetting it.');\n  return {...context,jobId,pollStartedAt:now};\n}\nreturn [{json:trackJob($('Enforce the per-video credit ceiling').first().json.checkpoint,$json,Date.now())}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "late-save-job",
+      "name": "Persist the accepted job for recovery",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        9980,
+        500
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "JobId": "={{ $('Capture the accepted render job ID').first().json.jobId }}",
+            "Status": "rendering",
+            "RenderKey": "={{ $('Capture the accepted render job ID').first().json.renderKey }}"
+          },
+          "schema": [
+            {
+              "id": "RenderKey",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "RenderKey",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "JobId",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "JobId",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "RenderKey"
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "resource": "sheet",
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sports Recaps"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": ""
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "late-restore-new",
+      "name": "Restore the accepted render context",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        10260,
+        500
+      ],
+      "parameters": {
+        "jsCode": "return [{json:$('Capture the accepted render job ID').first().json}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "late-track",
+      "name": "Track the saved job and its source context",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        11020,
+        220
+      ],
+      "parameters": {
+        "jsCode": "function trackJob(context, response, now) {\n  const jobId=String(response.jobId || response.id || context.jobId || '').trim();\n  if (!jobId) throw new Error('No render job ID returned. The sheet stays submitting; inspect https://app.zvid.io before resetting it.');\n  return {...context,jobId,pollStartedAt:now};\n}\nreturn [{json:trackJob($json,{},Date.now())}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "late-status",
+      "name": "Wait for this accepted Zvid render",
+      "type": "@zvid/n8n-nodes-zvid.zvid",
+      "onError": "continueRegularOutput",
+      "position": [
+        11300,
+        500
+      ],
+      "parameters": {
+        "jobId": "={{ $json.jobId }}",
+        "resource": "render",
+        "operation": "get",
+        "waitOptions": {
+          "maxWaitTime": "={{ (Number($('Set the league and editorial render limits').first().json.timeoutMinutes) || 20)*60 }}",
+          "pollInterval": "={{ Number($('Set the league and editorial render limits').first().json.pollSeconds) || 10 }}"
+        },
+        "waitForCompletion": true
+      },
+      "retryOnFail": false,
+      "typeVersion": 1
+    },
+    {
+      "id": "late-classify",
+      "name": "Classify completion failure or uncertain status",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        11580,
+        500
+      ],
+      "parameters": {
+        "jsCode": "function classifyJob(context, response, now, timeoutMinutes) {\n  const result=response.result;\n  const url=typeof result==='string'?result:result?.url || result?.videoUrl || '';\n  const state=String(response.state || response.status || '').toLowerCase();\n  if (state==='completed') {\n    if (!/^https:\\/\\/\\S+$/i.test(url)) return {...context,status:'needs_review',reason:'Completed job has no HTTPS media URL. Inspect Zvid; do not resubmit.',videoUrl:null};\n    return {...context,status:'completed',videoUrl:url,renderedAt:new Date(now).toISOString()};\n  }\n  if (['failed','cancelled','canceled'].includes(state)) return {...context,status:'failed',reason:String(response.failedReason || response.error || state),videoUrl:null};\n  if (now-context.pollStartedAt >= Number(timeoutMinutes || 20)*60000) return {...context,status:'timed_out',reason:'Polling deadline reached. Keep the job ID and check Zvid before resuming.',videoUrl:null};\n  if (!['waiting','queued','active','processing','rendering','pending'].includes(state)) return {...context,status:'needs_review',reason:'Unrecognized render state: '+state,videoUrl:null};\n  return {...context,status:'rendering',videoUrl:null};\n}\nconst context=$('Track the saved job and its source context').first().json;let response=$json;if(response.error){const error=typeof response.error==='string'?response.error:JSON.stringify(response.error);response={state:/did not finish within|timed? ?out/i.test(error)?'timed_out':/failed/i.test(error)?'failed':'needs_review',failedReason:error};}const result=classifyJob(context,response,Date.now(),$('Set the league and editorial render limits').first().json.timeoutMinutes);if(response.state==='timed_out')result.status='timed_out';const {payload,outcomeCheckpoint,...snapshot}=result;result.outcomeCheckpoint={...snapshot,renderOutcome:{status:result.status,reason:result.reason||null}};return [{json:result}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "late-finish",
+      "name": "Record the render outcome and completed URL",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        11860,
+        500
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "JobId": "={{ $('Classify completion failure or uncertain status').first().json.jobId }}",
+            "Status": "={{ $('Classify completion failure or uncertain status').first().json.status }}",
+            "PlanJson": "={{ JSON.stringify($('Classify completion failure or uncertain status').first().json.outcomeCheckpoint) }}",
+            "VideoUrl": "={{ $('Classify completion failure or uncertain status').first().json.videoUrl || '' }}",
+            "RenderKey": "={{ $('Classify completion failure or uncertain status').first().json.renderKey }}",
+            "CompletedAt": "={{ $('Classify completion failure or uncertain status').first().json.renderedAt || '' }}"
+          },
+          "schema": [
+            {
+              "id": "RenderKey",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "RenderKey",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "JobId",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "JobId",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VideoUrl",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "VideoUrl",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CompletedAt",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "CompletedAt",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PlanJson",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "PlanJson",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "RenderKey"
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "resource": "sheet",
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sports Recaps"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": ""
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "late-report",
+      "name": "Prepare the completed result and review pack",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        12340,
+        500
+      ],
+      "parameters": {
+        "jsCode": "function completedResult(result) {\n\tif (result.status !== 'completed' || !/^https:\\/\\/\\S+$/i.test(String(result.videoUrl || '')))\n\t\tthrow Error(\n\t\t\t'Video is not ready (' +\n\t\t\t\tresult.status +\n\t\t\t\t'): ' +\n\t\t\t\t(result.reason || 'Inspect the saved job in Zvid.') +\n\t\t\t\t' Job: ' +\n\t\t\t\t(result.jobId || 'unknown') +\n\t\t\t\t'. The tracking row was saved; no replacement render was submitted.',\n\t\t);\n\treturn { ...result, nextStep: 'Review the video and source handoff before sharing.' };\n}\nreturn [{json:completedResult($('Classify completion failure or uncertain status').first().json)}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "late-handoff",
+      "name": "Download the source-specific review pack",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        12620,
+        850
+      ],
+      "parameters": {
+        "jsCode": "function csvFile(rows, fileName) {\n\tconst columns = Object.keys(rows[0] || {}),\n\t\tcell = (v) => {\n\t\t\tlet s = String(v ?? '');\n\t\t\tif (/^[=+@\\-\\t\\r]/.test(s)) s = \"'\" + s;\n\t\t\treturn '\"' + s.replace(/\"/g, '\"\"') + '\"';\n\t\t};\n\tconst csv = [\n\t\tcolumns.map(cell).join(','),\n\t\t...rows.map((r) => columns.map((k) => cell(r[k])).join(',')),\n\t].join('\\r\\n');\n\treturn { data: Buffer.from(csv, 'utf8').toString('base64'), mimeType: 'text/csv', fileName };\n}\nconst d=$json;return [{json:{renderKey:d.renderKey,status:d.status,videoUrl:d.videoUrl||null,rowCount:(d.handoff||[]).length},binary:{data:csvFile(d.handoff||[],'sports-recap-video-review.csv')}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "zvid-watch-ready",
+      "name": "Completed video is ready to watch?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        12620,
+        500
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "watch-ready-condition",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.status === 'completed' && !$json.dryRun && /^https:\\/\\//i.test(String($json.videoUrl || '')) }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "revision-recover",
+      "name": "Recover accepted work before reading new sources",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1100,
+        500
+      ],
+      "parameters": {
+        "jsCode": "function recoverPlan(cfg, key, rows) {\n\tconst matches = rows.filter((r) => String(r.RenderKey || '') === key);\n\tif (matches.length > 1) throw Error('Duplicate RenderKey in log: ' + key);\n\tconst row = matches[0];\n\tif (!row) return null;\n\t// An explicit capacity rejection accepted no paid job. It can be retried on\n\t// a later run; uncertain submissions and failed accepted jobs remain locked.\n\tif (row.Status === 'rate_limited' && !row.JobId && !row.VideoUrl) return null;\n\tif (row.Status === 'completed' || row.VideoUrl)\n\t\treturn {\n\t\t\tready: false,\n\t\t\tstatus: 'already_completed',\n\t\t\trenderKey: key,\n\t\t\tvideoUrl: row.VideoUrl || null,\n\t\t\tcreditsSpent: 0,\n\t\t};\n\tif (row.Status === 'rendering' && row.JobId && cfg.dryRun !== true) {\n\t\tlet plan;\n\t\ttry {\n\t\t\tplan = JSON.parse(row.PlanJson);\n\t\t} catch {\n\t\t\tthrow Error('Saved PlanJson is invalid for ' + key);\n\t\t}\n\t\tif (plan.renderKey !== key || plan.snapshotVersion !== 1)\n\t\t\tthrow Error('Saved snapshot does not match ' + key);\n\t\treturn { ...plan, ready: true, jobId: String(row.JobId), resumed: true };\n\t}\n\treturn {\n\t\tready: false,\n\t\tstatus: 'needs_review',\n\t\trenderKey: key,\n\t\treason:\n\t\t\tcfg.dryRun === true\n\t\t\t\t? 'Preview skips existing jobs.'\n\t\t\t\t: 'Inspect the saved ' + row.Status + ' job before resetting this key.',\n\t\tjobId: row.JobId || null,\n\t\tcreditsSpent: 0,\n\t};\n}\nfunction resumeOutstanding(cfg, logs, prefix) {\n\tif (cfg.dryRun === true) return null;\n\tconst saved = logs\n\t\t.filter(\n\t\t\t(r) => String(r.RenderKey || '').startsWith(prefix) && r.Status === 'rendering' && r.JobId,\n\t\t)\n\t\t.sort((a, b) => String(a.RenderKey).localeCompare(String(b.RenderKey)));\n\tif (!saved.length) return null;\n\t// Recover paid work even when its source changed or a date rolled over.\n\t// Delivery approval is intentionally re-reviewed after such a recovery.\n\tconst plan = recoverPlan(cfg, saved[0].RenderKey, logs);\n\treturn { ...plan, emailApproved: false, deferredSavedJobs: saved.length - 1 };\n}\nreturn [{json:resumeOutstanding($('Set the league and editorial render limits').first().json,$input.all().map(i=>i.json),'sports-') || {checkNewSource:true}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "revision-recovered",
+      "name": "A saved render needs recovery?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1380,
+        500
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ready-condition",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.checkNewSource !== true }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "revision-queue",
+      "name": "Read the match editorial approval queue",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1860,
+        500
+      ],
+      "parameters": {
+        "options": {},
+        "resource": "sheet",
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Match Editorial Queue"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": ""
+        }
+      },
+      "typeVersion": 4.7,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "revision-choose",
+      "name": "Select the least recently checked enabled event",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2140,
+        500
+      ],
+      "parameters": {
+        "jsCode": "function revisionHelpers() {\n\tconst text = (v) => String(v ?? '').trim();\n\tconst number = (v, label) => {\n\t\tif (v === '' || v == null || typeof v === 'boolean' || !Number.isFinite(Number(v)))\n\t\t\tthrow Error(label + ' must be a number');\n\t\treturn Number(v);\n\t};\n\tconst instant = (v, label) => {\n\t\tif (\n\t\t\t!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2})?(?:Z|[+-]\\d{2}:\\d{2})$/.test(text(v)) ||\n\t\t\t!Number.isFinite(Date.parse(v))\n\t\t)\n\t\t\tthrow Error(label + ' needs an ISO timestamp with UTC offset');\n\t\treturn Date.parse(v);\n\t};\n\tconst rows = (input, key) => {\n\t\tconst out = input.filter((r) => Object.keys(r).some((k) => k !== 'row_number' && text(r[k]))),\n\t\t\tseen = new Set();\n\t\tfor (const r of out) {\n\t\t\tif (!text(r[key]) || seen.has(text(r[key]))) throw Error('Every row needs a unique ' + key);\n\t\t\tseen.add(text(r[key]));\n\t\t}\n\t\treturn out;\n\t};\n\treturn { text, number, instant, rows };\n}\nfunction pickMatchRequest(rows) {\n\tconst h = revisionHelpers(),\n\t\tall = h.rows(rows, 'EventId').filter((r) => h.text(r.Enabled).toLowerCase() === 'yes');\n\tfor (const r of all)\n\t\tif (!/^\\d+$/.test(h.text(r.EventId)))\n\t\t\tthrow Error('EventId must be a numeric TheSportsDB event ID');\n\tall.sort(\n\t\t(a, b) =>\n\t\t\th.text(a.LastCheckedAt).localeCompare(h.text(b.LastCheckedAt)) ||\n\t\t\th.text(a.EventId).localeCompare(h.text(b.EventId)),\n\t);\n\treturn all[0]\n\t\t? { ready: true, request: all[0] }\n\t\t: {\n\t\t\t\tready: false,\n\t\t\t\tstatus: 'nothing_to_render',\n\t\t\t\treason: 'No Enabled=yes event in the Match Editorial Queue',\n\t\t\t};\n}\nreturn [{json:pickMatchRequest($input.all().map(i=>i.json))}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "revision-has-input",
+      "name": "An editorial event is enabled?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2420,
+        500
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ready-condition",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.ready === true }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "revision-review-preview",
+      "name": "Skip editorial writes for a dry run?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3660,
+        500
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ready-condition",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Set the league and editorial render limits').first().json.dryRun === true }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "revision-review-save",
+      "name": "Save current facts without granting approval",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3940,
+        750
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "EventId": "={{ $('Compare final facts approval and previous video editions').first().json.reviewUpdate.EventId }}",
+            "ReviewStatus": "={{ $('Compare final facts approval and previous video editions').first().json.reviewUpdate.ReviewStatus }}",
+            "ChangeSummary": "={{ $('Compare final facts approval and previous video editions').first().json.reviewUpdate.ChangeSummary }}",
+            "LastCheckedAt": "={{ $('Compare final facts approval and previous video editions').first().json.reviewUpdate.LastCheckedAt }}",
+            "PriorVideoUrl": "={{ $('Compare final facts approval and previous video editions').first().json.reviewUpdate.PriorVideoUrl }}",
+            "CurrentSnapshot": "={{ $('Compare final facts approval and previous video editions').first().json.reviewUpdate.CurrentSnapshot }}"
+          },
+          "schema": [
+            {
+              "id": "EventId",
+              "type": "string",
+              "display": true,
+              "displayName": "EventId",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CurrentSnapshot",
+              "type": "string",
+              "display": true,
+              "displayName": "CurrentSnapshot",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ReviewStatus",
+              "type": "string",
+              "display": true,
+              "displayName": "ReviewStatus",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LastCheckedAt",
+              "type": "string",
+              "display": true,
+              "displayName": "LastCheckedAt",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PriorVideoUrl",
+              "type": "string",
+              "display": true,
+              "displayName": "PriorVideoUrl",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ChangeSummary",
+              "type": "string",
+              "display": true,
+              "displayName": "ChangeSummary",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "EventId"
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "resource": "sheet",
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Match Editorial Queue"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": ""
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "revision-review-context",
+      "name": "Restore the checked editorial decision",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4220,
+        500
+      ],
+      "parameters": {
+        "jsCode": "return [{json:$('Compare final facts approval and previous video editions').first().json}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "publication-overview-sports-recap-video",
+      "name": "Workflow overview and setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -800,
+        0
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 720,
+        "height": 1160,
+        "content": "## Review match results and manage corrected sports videos with TheSportsDB\n\n### How it works\nFor sports editors managing a result from first review through corrections. Fetch a queued event directly from TheSportsDB and require approval of its exact fact snapshot. Recheck facts on each run; changed facts invalidate old approval. Compare with the latest completed video, produce an approved original or correction edition, and retain the prior result and video in a correction pack. No LLM or automatic social posting is used. Accepted jobs resume before new source requests; completed keys are not rendered again.\n\n### Setup\n1. Install **`@zvid/n8n-nodes-zvid`** from **Settings \u2192 Community nodes** before credentials. A workspace owner/admin may need to install it.\n2. Configure **Zvid API** using [your key](https://app.zvid.io/api-keys) and Base URL `https://api.zvid.io`; select it on every Zvid node.\n3. Connect Google Sheets. Select **Match Editorial Queue** for the input nodes and **Sports Recaps** for recovery. Log headers: RenderKey, Status, JobId, CreditsQuoted, PlanJson, VideoUrl, CompletedAt.\n4. Input headers: EventId, Enabled, Approval, ApprovedSnapshot, CurrentSnapshot, ReviewStatus, LastCheckedAt, PriorVideoUrl, ChangeSummary. Set Enabled=yes. Configure sportsDbKey and leagueId. Review CurrentSnapshot before copying it to ApprovedSnapshot and setting Approval=approved.\n5. **dryRun=false spends credits** after eligibility. true returns JSON, quote and review files without writes or rendering. Set maxCreditsPerVideo.\n6. Run one execution at a time. Review **Watch video \u2192 Binary \u2192 data \u2192 View** before sharing. Read the [companion guide](https://github.com/Zvid-io/zvid-n8n/blob/master/workflows/sports-recap-video.md) for field rules and migration.\n\n### Customization\nEnable additional events in the same queue. Corrections require new approval; never delete previous editions."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-sports-recap-video-configure",
+      "name": "1. Choose source rules and schedule",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 660,
+        "height": 1160,
+        "content": "## 1. Choose source rules and schedule\n\nComplete the overview setup and source contract. Run one execution at a time. Use the manual trigger before enabling the schedule."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-sports-recap-video-source-recovery",
+      "name": "2. Recover accepted work before source checks",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        760,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 940,
+        "height": 1160,
+        "content": "## 2. Recover accepted work before source checks\n\nResume saved paid jobs even if the upstream source is unavailable. A preview never resumes a paid job."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-sports-recap-video-domain-input",
+      "name": "3. Choose one editorial case",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 940,
+        "height": 1160,
+        "content": "## 3. Choose one editorial case\n\nProcess the least recently checked Enabled=yes EventId. Approval is tied to the complete fact snapshot and edition. The workflow never grants approval."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-sports-recap-video-source",
+      "name": "4. Check final results against the rendered history",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2840,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 660,
+        "height": 1160,
+        "content": "## 4. Check final results against the rendered history\n\nFetch the exact requested event. Compare its final facts with the previous completed edition. Changed facts require a new approval snapshot; uncertain render history blocks a replacement."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-sports-recap-video-editorial-review",
+      "name": "5. Save review facts and protect human approval",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3600,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 940,
+        "height": 1160,
+        "content": "## 5. Save review facts and protect human approval\n\nUpdate CurrentSnapshot and review status only. Review the facts, then set Approval=approved and copy CurrentSnapshot into ApprovedSnapshot. Dry runs skip these writes. Corrections retain the previous video."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-sports-recap-video-eligible",
+      "name": "6. Continue only when the plan is eligible",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4640,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 660,
+        "height": 1160,
+        "content": "## 6. Continue only when the plan is eligible\n\nEmpty input, completed work, missing approval and blocked history return an explicit report. They spend no render credits."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-sports-recap-video-routing",
+      "name": "7. Recover accepted work before a new render",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        5400,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 660,
+        "height": 1160,
+        "content": "## 7. Recover accepted work before a new render\n\nSaved jobs follow the upper route using their original review context. New work continues through optional media and the domain design."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-sports-recap-video-music",
+      "name": "8. Check optional background music",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        6160,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1220,
+        "height": 1160,
+        "content": "## 8. Check optional background music\n\nA failed or oversized music file is skipped. Empty musicUrl continues without an external request. This check preserves the selected source plan."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-sports-recap-video-quote",
+      "name": "9. Build and validate the design and credit ceiling",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        7480,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1220,
+        "height": 1160,
+        "content": "## 9. Build and validate the design and credit ceiling\n\ndryRun=true returns the source plan, design JSON and quote. It performs no log writes, editor draft creation, render, or delivery."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-sports-recap-video-reserve",
+      "name": "10. Reserve the key and preserve the accepted job",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        8800,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 2060,
+        "height": 1490,
+        "content": "## 10. Reserve the key and preserve the accepted job\n\nSave the key and accepted job ID. Retry explicit capacity rejections up to three attempts, respecting the server delay and a 30-second minimum. Uncertain submissions require inspection. Sheets is not an atomic lock."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "publication-section-sports-recap-video-finish",
+      "name": "11. Wait for the accepted render and record its result",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        10960,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1220,
+        "height": 1160,
+        "content": "## 11. Wait for the accepted render and record its result\n\nPoll the saved job within the deadline. Keep failed, timed-out and uncertain job IDs for inspection. Completed keys are skipped on later runs."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "zvid-watch-instructions",
+      "name": "12. Review the video and source-specific handoff",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        12280,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 940,
+        "height": 1160,
+        "content": "## 12. Review the video and source-specific handoff\n\nCompleted renders reach Watch video \u2192 Binary \u2192 data \u2192 View. A failed render stops with its actual reason after saving the tracking row. Download the review CSV and check source facts before sharing."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d7e2a9b4-3f61-4c58-8b07-5a9c1e4d2f83",
+  "connections": {
+    "A saved render needs recovery?": {
+      "main": [
+        [
+          {
+            "node": "Eligible source content or saved render exists?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read the match editorial approval queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "An editorial event is enabled?": {
+      "main": [
+        [
+          {
+            "node": "Fetch the queued event directly from TheSportsDB",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Explain skipped content or recovery needs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Sports Recaps recovery log": {
+      "main": [
+        [
+          {
+            "node": "Recover accepted work before reading new sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume the accepted render job?": {
+      "main": [
+        [
+          {
+            "node": "Restore the saved result and handoff context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "A background music URL is configured?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return a validation-only preview?": {
+      "main": [
+        [
+          {
+            "node": "Return the source plan design quote and handoff",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve this render key before spending credits",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Capture the accepted render job ID": {
+      "main": [
+        [
+          {
+            "node": "Persist the accepted job for recovery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Completed video is ready to watch?": {
+      "main": [
+        [
+          {
+            "node": "\u25b6 Watch video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Submit this approved video to Zvid": {
+      "main": [
+        [
+          {
+            "node": "Capture the accepted render job ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Distinguish a capacity rejection from an uncertain submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for this accepted Zvid render": {
+      "main": [
+        [
+          {
+            "node": "Classify completion failure or uncertain status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore the accepted render context": {
+      "main": [
+        [
+          {
+            "node": "Track the saved job and its source context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enforce the per-video credit ceiling": {
+      "main": [
+        [
+          {
+            "node": "Return a validation-only preview?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip editorial writes for a dry run?": {
+      "main": [
+        [
+          {
+            "node": "Restore the checked editorial decision",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save current facts without granting approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test the sports recap video workflow": {
+      "main": [
+        [
+          {
+            "node": "Set the league and editorial render limits",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "A background music URL is configured?": {
+      "main": [
+        [
+          {
+            "node": "Check the optional music file size and availability",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare the selected source for design",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist the accepted job for recovery": {
+      "main": [
+        [
+          {
+            "node": "Restore the accepted render context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the selected source for design": {
+      "main": [
+        [
+          {
+            "node": "Build the approved original or corrected match report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore the checked editorial decision": {
+      "main": [
+        [
+          {
+            "node": "Eligible source content or saved render exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start the scheduled sports recap video": {
+      "main": [
+        [
+          {
+            "node": "Set the league and editorial render limits",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the match editorial approval queue": {
+      "main": [
+        [
+          {
+            "node": "Select the least recently checked enabled event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry this explicit capacity rejection?": {
+      "main": [
+        [
+          {
+            "node": "Wait before retrying available render capacity",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report why the render submission stopped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Explain skipped content or recovery needs": {
+      "main": [
+        [
+          {
+            "node": "Download the source-specific review pack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep the source plan and usable music only": {
+      "main": [
+        [
+          {
+            "node": "Prepare the selected source for design",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set the league and editorial render limits": {
+      "main": [
+        [
+          {
+            "node": "Read Sports Recaps recovery log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Track the saved job and its source context": {
+      "main": [
+        [
+          {
+            "node": "Wait for this accepted Zvid render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare a bounded render submission attempt": {
+      "main": [
+        [
+          {
+            "node": "Submit this approved video to Zvid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record the rejected or uncertain submission": {
+      "main": [
+        [
+          {
+            "node": "Restore the submission rejection and retry timing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record the render outcome and completed URL": {
+      "main": [
+        [
+          {
+            "node": "Prepare the completed result and review pack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the completed result and review pack": {
+      "main": [
+        [
+          {
+            "node": "Completed video is ready to watch?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Download the source-specific review pack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore the saved result and handoff context": {
+      "main": [
+        [
+          {
+            "node": "Track the saved job and its source context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save current facts without granting approval": {
+      "main": [
+        [
+          {
+            "node": "Restore the checked editorial decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait before retrying available render capacity": {
+      "main": [
+        [
+          {
+            "node": "Prepare a bounded render submission attempt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify completion failure or uncertain status": {
+      "main": [
+        [
+          {
+            "node": "Record the render outcome and completed URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eligible source content or saved render exists?": {
+      "main": [
+        [
+          {
+            "node": "Resume the accepted render job?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Explain skipped content or recovery needs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve this render key before spending credits": {
+      "main": [
+        [
+          {
+            "node": "Prepare a bounded render submission attempt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return the source plan design quote and handoff": {
+      "main": [
+        [
+          {
+            "node": "Download the source-specific review pack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select the least recently checked enabled event": {
+      "main": [
+        [
+          {
+            "node": "An editorial event is enabled?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the video and request its credit quote": {
+      "main": [
+        [
+          {
+            "node": "Enforce the per-video credit ceiling",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch the queued event directly from TheSportsDB": {
+      "main": [
+        [
+          {
+            "node": "Compare final facts approval and previous video editions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recover accepted work before reading new sources": {
+      "main": [
+        [
+          {
+            "node": "A saved render needs recovery?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore the submission rejection and retry timing": {
+      "main": [
+        [
+          {
+            "node": "Retry this explicit capacity rejection?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the optional music file size and availability": {
+      "main": [
+        [
+          {
+            "node": "Keep the source plan and usable music only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build the approved original or corrected match report": {
+      "main": [
+        [
+          {
+            "node": "Validate the video and request its credit quote",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare final facts approval and previous video editions": {
+      "main": [
+        [
+          {
+            "node": "Skip editorial writes for a dry run?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Distinguish a capacity rejection from an uncertain submission": {
+      "main": [
+        [
+          {
+            "node": "Record the rejected or uncertain submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

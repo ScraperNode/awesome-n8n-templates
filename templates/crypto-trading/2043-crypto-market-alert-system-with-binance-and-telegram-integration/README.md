@@ -1,6 +1,6 @@
 # 📈 Crypto market alert system with Binance and Telegram integration
 
-> ⚡ **16,248 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **16,528 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

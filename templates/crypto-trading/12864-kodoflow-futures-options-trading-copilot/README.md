@@ -1,6 +1,6 @@
 # 📈 KodoFlow - Futures & Options Trading Copilot
 
-> ⚡ **37 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **192 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

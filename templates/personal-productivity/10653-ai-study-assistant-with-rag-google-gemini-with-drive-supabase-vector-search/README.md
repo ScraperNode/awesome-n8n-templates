@@ -1,6 +1,6 @@
 # ⚡ AI study assistant with RAG - Google Gemini with Drive & Supabase vector search
 
-> ⚡ **1,211 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,563 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

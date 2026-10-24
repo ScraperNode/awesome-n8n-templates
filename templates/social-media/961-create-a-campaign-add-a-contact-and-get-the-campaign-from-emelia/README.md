@@ -1,6 +1,6 @@
 # 📱 Create a campaign, add a contact, and get the campaign from Emelia
 
-> ⚡ **623 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **642 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

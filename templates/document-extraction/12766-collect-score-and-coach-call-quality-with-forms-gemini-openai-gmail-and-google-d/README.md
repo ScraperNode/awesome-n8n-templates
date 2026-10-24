@@ -1,6 +1,6 @@
 # 🔬 Collect, score, and coach call quality with forms, Gemini, OpenAI, Gmail, and Google Drive
 
-> ⚡ **10 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **58 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

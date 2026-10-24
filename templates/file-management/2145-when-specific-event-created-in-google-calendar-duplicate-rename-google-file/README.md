@@ -1,6 +1,6 @@
 # 📁 When specific event created in Google Calendar, duplicate & rename Google file
 
-> ⚡ **2,663 views** · 📁 [File Management](../)
+> ⚡ **2,758 views** · 📁 [File Management](../)
 
 ## Description
 

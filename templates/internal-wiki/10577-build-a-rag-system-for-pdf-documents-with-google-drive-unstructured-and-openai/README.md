@@ -1,6 +1,6 @@
 # 📖 Build a RAG system for PDF documents with Google Drive, Unstructured, and OpenAI
 
-> ⚡ **563 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **825 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

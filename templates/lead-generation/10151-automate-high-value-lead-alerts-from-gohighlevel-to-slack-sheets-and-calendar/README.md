@@ -1,6 +1,6 @@
 # 🎣 Automate high-value lead alerts from GoHighLevel to Slack, Sheets and Calendar
 
-> ⚡ **143 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **225 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

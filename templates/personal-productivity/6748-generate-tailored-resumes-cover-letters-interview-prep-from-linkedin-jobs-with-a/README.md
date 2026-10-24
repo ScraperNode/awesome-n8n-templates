@@ -1,6 +1,6 @@
 # ⚡ Generate tailored resumes, cover letters & interview prep from LinkedIn jobs with AI
 
-> ⚡ **4,096 views** · ⚡ [Personal Productivity](../)
+> ⚡ **5,348 views** · ⚡ [Personal Productivity](../)
 
 > 💡 **Pro Tip** — If you're pulling LinkedIn data through HTTP requests or dealing with API restrictions, there's a community node called [ScraperNode](https://scrapernode.com/linkedin) that handles this natively. It has dedicated scrapers for [profiles](https://scrapernode.com/linkedin/scrapers/profiles), [companies](https://scrapernode.com/linkedin/scrapers/companies), [jobs](https://scrapernode.com/linkedin/scrapers/jobs), and [people search](https://scrapernode.com/linkedin/scrapers/people-search) — you just pass a URL and get structured data back.
 >

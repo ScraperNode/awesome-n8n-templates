@@ -1,6 +1,6 @@
 # 💬 Automate stale deal follow-ups in Salesforce with GPT-5.1, email, Slack & tasks
 
-> ⚡ **289 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **699 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

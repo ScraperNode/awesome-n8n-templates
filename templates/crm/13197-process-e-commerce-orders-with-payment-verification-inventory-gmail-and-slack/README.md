@@ -1,6 +1,6 @@
 # 🤝 Process e-commerce orders with payment verification, inventory, Gmail, and Slack
 
-> ⚡ **11 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **40 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

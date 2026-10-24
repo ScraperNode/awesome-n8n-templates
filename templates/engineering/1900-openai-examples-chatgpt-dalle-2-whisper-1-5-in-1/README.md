@@ -1,6 +1,6 @@
 # ⚒️ OpenAI examples: ChatGPT, DALLE-2, Whisper-1 – 5-in-1
 
-> ⚡ **26,591 views** · ⚒️ [Engineering](../)
+> ⚡ **26,503 views** · ⚒️ [Engineering](../)
 
 ## Description
 

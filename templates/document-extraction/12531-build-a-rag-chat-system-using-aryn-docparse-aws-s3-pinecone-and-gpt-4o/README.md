@@ -1,6 +1,6 @@
 # 🔬 Build a RAG chat system using Aryn DocParse, AWS S3, Pinecone and GPT-4o
 
-> ⚡ **78 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **115 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

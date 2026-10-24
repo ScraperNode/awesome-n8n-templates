@@ -1,6 +1,6 @@
 # 💬 Create AI-powered website chatbot with Langflow backend and custom branding
 
-> ⚡ **3,117 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,465 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

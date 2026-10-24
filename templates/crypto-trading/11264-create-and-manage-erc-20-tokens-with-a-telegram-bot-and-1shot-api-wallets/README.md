@@ -1,6 +1,6 @@
 # 📈 Create and manage ERC-20 tokens with a Telegram bot and 1Shot API wallets
 
-> ⚡ **10 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **46 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

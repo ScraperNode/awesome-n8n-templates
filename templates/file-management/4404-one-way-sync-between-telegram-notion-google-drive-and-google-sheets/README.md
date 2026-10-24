@@ -1,6 +1,6 @@
 # 📁 One-way sync between Telegram, Notion, Google Drive, and Google Sheets
 
-> ⚡ **10,612 views** · 📁 [File Management](../)
+> ⚡ **12,586 views** · 📁 [File Management](../)
 
 ## Description
 

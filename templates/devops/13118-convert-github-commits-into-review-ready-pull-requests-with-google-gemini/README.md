@@ -1,6 +1,6 @@
 # ⚙️ Convert GitHub commits into review-ready pull requests with Google Gemini
 
-> ⚡ **23 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **91 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

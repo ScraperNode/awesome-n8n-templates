@@ -1,6 +1,6 @@
 # 🔬 Reconcile expenses and optimize tax deductions with OpenAI GPT‑4.1‑mini and Gmail
 
-> ⚡ **1 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **124 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

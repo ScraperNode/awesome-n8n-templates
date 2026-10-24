@@ -1,6 +1,6 @@
 # 📈 Automated range trading with Uniswap V3, Telegram alerts & MetaMask delegation
 
-> ⚡ **907 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,099 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

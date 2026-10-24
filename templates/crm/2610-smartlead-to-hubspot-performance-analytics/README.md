@@ -1,6 +1,6 @@
 # 🤝 Smartlead to HubSpot performance analytics
 
-> ⚡ **1,910 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,933 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

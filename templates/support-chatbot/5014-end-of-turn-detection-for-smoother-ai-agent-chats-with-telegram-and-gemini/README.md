@@ -1,6 +1,6 @@
 # 💬 End of turn detection for smoother AI agent chats with Telegram and Gemini
 
-> ⚡ **1,317 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,411 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

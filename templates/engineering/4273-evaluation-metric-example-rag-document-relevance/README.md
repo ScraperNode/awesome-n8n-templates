@@ -1,6 +1,6 @@
 # ⚒️ Evaluation metric example: RAG document relevance
 
-> ⚡ **3,789 views** · ⚒️ [Engineering](../)
+> ⚡ **4,353 views** · ⚒️ [Engineering](../)
 
 ## Description
 

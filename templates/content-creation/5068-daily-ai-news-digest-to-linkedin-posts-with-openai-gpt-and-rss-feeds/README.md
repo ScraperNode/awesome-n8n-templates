@@ -1,6 +1,6 @@
 # 🎬 Daily AI news digest to LinkedIn posts with OpenAI GPT and RSS feeds
 
-> ⚡ **4,306 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,840 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

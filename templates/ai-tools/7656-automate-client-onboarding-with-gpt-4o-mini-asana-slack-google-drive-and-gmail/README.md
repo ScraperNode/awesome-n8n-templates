@@ -1,6 +1,6 @@
 # 🎯 Automate Client Onboarding with GPT-4o-mini, Asana, Slack, Google Drive and Gmail
 
-> ⚡ **111 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **128 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

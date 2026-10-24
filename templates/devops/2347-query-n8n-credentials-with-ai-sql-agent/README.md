@@ -1,6 +1,6 @@
 # ⚙️ Query n8n credentials with AI SQL agent
 
-> ⚡ **5,429 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **5,413 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

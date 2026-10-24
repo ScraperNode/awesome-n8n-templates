@@ -1,6 +1,6 @@
 # 🎬 Create personalized Loom video scripts from Upwork jobs with Claude AI
 
-> ⚡ **133 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **447 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

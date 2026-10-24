@@ -1,6 +1,6 @@
 # 🔬 Talk to your Google Sheets using ChatGPT-5
 
-> ⚡ **5,653 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **6,071 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

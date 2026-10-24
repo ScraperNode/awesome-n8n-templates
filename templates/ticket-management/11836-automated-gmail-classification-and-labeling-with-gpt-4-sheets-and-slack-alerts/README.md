@@ -1,6 +1,6 @@
 # 🎫 Automated Gmail classification and labeling with GPT-4, Sheets and Slack alerts
 
-> ⚡ **91 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **157 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

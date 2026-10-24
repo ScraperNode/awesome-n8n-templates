@@ -1,0 +1,1554 @@
+{
+  "id": "Z7ko4y8KdOI6EtNu",
+  "meta": {
+    "instanceId": "3ea68bfc01987d49e85628e2104781b7b144a317edd9a33505493c8696952c88",
+    "builderVariant": "mcp",
+    "aiBuilderAssisted": true
+  },
+  "name": "Notion tasks and Google Calendar: two-way time-blocking sync",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "2324d7c8-9dbd-4321-a5fa-7cdcfea77049",
+      "name": "Notion Task Changed",
+      "type": "n8n-nodes-base.notionTrigger",
+      "notes": "Polls your tasks database. Fires for edited AND newly created pages. Pick your own data source here.",
+      "position": [
+        0,
+        560
+      ],
+      "parameters": {
+        "event": "pagedUpdatedInDatabase",
+        "simple": false,
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "unit": "minutes",
+              "value": 30
+            }
+          ]
+        },
+        "dataSourceId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_TASKS_DATA_SOURCE_ID"
+        },
+        "authentication": "oAuth2"
+      },
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "rOdBb3TnMsl0riNj",
+          "name": "Notion account"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "88e5b836-8814-4e15-815b-c18af992fb46",
+      "name": "Normalize Task",
+      "type": "n8n-nodes-base.code",
+      "notes": "Edit the property names (P = ...) and time zone at the top to match your Notion database.",
+      "position": [
+        464,
+        560
+      ],
+      "parameters": {
+        "jsCode": "// Normalize Notion pages into flat task objects for calendar sync.\n// EDIT THESE to match your Notion database:\nconst P = { title: 'Task', date: 'Due date', status: 'Status', direction: 'Direction', eventId: 'Google Event ID' };\nconst CLOSED = ['done', 'canceled', 'cancelled', 'failed', 'failed / canceled'];\nconst ZONE = 'Europe/Prague'; // your IANA time zone\n\nconst staticData = $getWorkflowStaticData('global');\nconst state = staticData.syncState || {};\nconst kinds = staticData.kinds || {};\nconst plain = (arr) => Array.isArray(arr)\n  ? arr.map(t => t.plain_text || (t.text && t.text.content) || '').join('')\n  : '';\n\nreturn $input.all().map(item => {\n  const page = item.json;\n  const props = page.properties || {};\n  const title = plain((props[P.title] || {}).title).trim() || 'Untitled';\n  const dateObj = (props[P.date] || {}).date || null;\n  const rawStart = dateObj ? dateObj.start : null;\n  const rawEnd = dateObj ? dateObj.end : null;\n  const hasDate = !!rawStart;\n  const hasTime = hasDate && rawStart.includes('T');\n  const isAllDay = hasDate && !hasTime;\n\n  let start = null, end = null;\n  if (hasTime) {\n    const s = DateTime.fromISO(rawStart, { setZone: true }).setZone(ZONE);\n    let e = (rawEnd && rawEnd.includes('T')) ? DateTime.fromISO(rawEnd, { setZone: true }).setZone(ZONE) : null;\n    if (!e || !e.isValid || e <= s) e = s.plus({ hours: 1 });\n    start = s.toISO();\n    end = e.toISO();\n  } else if (isAllDay) {\n    // Google wants an EXCLUSIVE end date. Pinned to 12:00 UTC so the day never shifts.\n    const startDate = rawStart.slice(0, 10);\n    const lastRaw = rawEnd ? rawEnd.slice(0, 10) : startDate;\n    const lastDate = lastRaw >= startDate ? lastRaw : startDate;\n    start = startDate + 'T12:00:00.000Z';\n    end = DateTime.fromISO(lastDate).plus({ days: 1 }).toISODate() + 'T12:00:00.000Z';\n  }\n\n  const statusProp = props[P.status] || {};\n  const status = (statusProp.status && statusProp.status.name) || (statusProp.select && statusProp.select.name) || '';\n  const direction = ((props[P.direction] || {}).select || {}).name || '';\n  const eventId = plain((props[P.eventId] || {}).rich_text).trim();\n  const isClosed = CLOSED.includes(status.toLowerCase());\n  const pageUrl = page.url || '';\n\n  // Events cannot be converted in place between timed and all-day: change of kind = delete + recreate.\n  const kind = isAllDay ? 'allday' : 'timed';\n  const prevKind = kinds[page.id] || 'timed';\n  const kindChanged = !!eventId && hasDate && prevKind !== kind;\n\n  const coreFingerprint = [title, start || '', end || '', status, direction, pageUrl, kind].join('|');\n  const unchanged = state[page.id] === coreFingerprint + '|' + (eventId ? '1' : '0');\n  const description = 'Notion: ' + pageUrl + (direction ? '\\n' + direction : '');\n\n  return { json: { pageId: page.id, title, start, end, hasDate, hasTime, isAllDay, kind, kindChanged,\n    status, isClosed, direction, eventId, pageUrl, description, coreFingerprint, unchanged } };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "abb7b3d8-5d4f-4f65-96b9-8722054b1930",
+      "name": "Needs Calendar Sync?",
+      "type": "n8n-nodes-base.if",
+      "notes": "Continues only if the task has a date or already has an event, and something changed since the last sync (loop protection).",
+      "position": [
+        752,
+        560
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "a",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.hasDate || $json.eventId !== \"\" }}",
+              "rightValue": ""
+            },
+            {
+              "id": "b",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.unchanged }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "dbdd84e0-7d0e-4751-b319-9769d633ff20",
+      "name": "Route Sync Action",
+      "type": "n8n-nodes-base.switch",
+      "notes": "Create when no event yet; Update when an event exists; Delete only when the date is removed or the event must be recreated as timed/all-day. Closed tasks keep their event.",
+      "position": [
+        960,
+        544
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "Create (timed)",
+              "conditions": {
+                "options": {
+                  "version": 1,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.eventId }}",
+                    "rightValue": ""
+                  },
+                  {
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.isClosed }}",
+                    "rightValue": ""
+                  },
+                  {
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.hasTime }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Create (all-day)",
+              "conditions": {
+                "options": {
+                  "version": 1,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.eventId }}",
+                    "rightValue": ""
+                  },
+                  {
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.isClosed }}",
+                    "rightValue": ""
+                  },
+                  {
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.isAllDay }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Update (timed)",
+              "conditions": {
+                "options": {
+                  "version": 1,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.eventId }}",
+                    "rightValue": ""
+                  },
+                  {
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.hasTime }}",
+                    "rightValue": ""
+                  },
+                  {
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.kindChanged }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Update (all-day)",
+              "conditions": {
+                "options": {
+                  "version": 1,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.eventId }}",
+                    "rightValue": ""
+                  },
+                  {
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.isAllDay }}",
+                    "rightValue": ""
+                  },
+                  {
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.kindChanged }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Delete",
+              "conditions": {
+                "options": {
+                  "version": 1,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.eventId }}",
+                    "rightValue": ""
+                  },
+                  {
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ !$json.hasDate || $json.kindChanged }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "40734b97-918c-40af-9d09-bc728c7f7cce",
+      "name": "Create Event (timed)",
+      "type": "n8n-nodes-base.googleCalendar",
+      "notes": "Creates a time block. Done tasks get a check mark, Canceled/Failed get a no-entry sign.",
+      "position": [
+        1248,
+        -16
+      ],
+      "parameters": {
+        "end": "={{ $json.end }}",
+        "start": "={{ $json.start }}",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_CALENDAR_ID"
+        },
+        "additionalFields": {
+          "summary": "={{ ($json.isClosed ? (String($json.status).toLowerCase() === 'done' ? '\u2705 ' : '\ud83d\udeab ') : '') + $json.title }}",
+          "description": "={{ $json.description }}"
+        }
+      },
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ezbvq89c5Pd1UO7v",
+          "name": "Google Calendar account"
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "1cb6b374-4c1e-463b-8ff5-1b35fb393935",
+      "name": "Create Event (all-day)",
+      "type": "n8n-nodes-base.googleCalendar",
+      "notes": "All-day event for tasks that have a date but no time.",
+      "position": [
+        1248,
+        176
+      ],
+      "parameters": {
+        "end": "={{ $json.end }}",
+        "start": "={{ $json.start }}",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_CALENDAR_ID"
+        },
+        "additionalFields": {
+          "allday": "yes",
+          "summary": "={{ ($json.isClosed ? (String($json.status).toLowerCase() === 'done' ? '\u2705 ' : '\ud83d\udeab ') : '') + $json.title }}",
+          "description": "={{ $json.description }}"
+        }
+      },
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ezbvq89c5Pd1UO7v",
+          "name": "Google Calendar account"
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "b0ab1fde-b643-48cf-9ed9-01ccad53d8b0",
+      "name": "Update Event (all-day)",
+      "type": "n8n-nodes-base.googleCalendar",
+      "notes": "Same for all-day events.",
+      "onError": "continueErrorOutput",
+      "position": [
+        1248,
+        720
+      ],
+      "parameters": {
+        "eventId": "={{ $json.eventId }}",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_CALENDAR_ID"
+        },
+        "operation": "update",
+        "updateFields": {
+          "end": "={{ $json.end }}",
+          "start": "={{ $json.start }}",
+          "allday": "yes",
+          "summary": "={{ ($json.isClosed ? (String($json.status).toLowerCase() === 'done' ? '\u2705 ' : '\ud83d\udeab ') : '') + $json.title }}",
+          "description": "={{ $json.description }}"
+        }
+      },
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ezbvq89c5Pd1UO7v",
+          "name": "Google Calendar account"
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "bc7a2890-fe04-4cf2-a842-73b1bfef9faa",
+      "name": "Delete Calendar Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "notes": "Removes the event when the date is cleared or the event must be recreated in the other form.",
+      "onError": "continueErrorOutput",
+      "position": [
+        1248,
+        1104
+      ],
+      "parameters": {
+        "eventId": "={{ $json.eventId }}",
+        "options": {},
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_CALENDAR_ID"
+        },
+        "operation": "delete"
+      },
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ezbvq89c5Pd1UO7v",
+          "name": "Google Calendar account"
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "23945401-42c5-4f67-95e6-1f423cb16b83",
+      "name": "Save Event ID to Notion",
+      "type": "n8n-nodes-base.notion",
+      "notes": "Writes the Google event ID back so later edits update the same event.",
+      "maxTries": 3,
+      "position": [
+        1568,
+        80
+      ],
+      "parameters": {
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Normalize Task').item.json.pageId }}"
+        },
+        "options": {},
+        "resource": "databasePage",
+        "operation": "update",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Google Event ID|rich_text",
+              "type": "rich_text",
+              "textContent": "={{ $json.id }}"
+            }
+          ]
+        },
+        "authentication": "oAuth2"
+      },
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "rOdBb3TnMsl0riNj",
+          "name": "Notion account"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 3,
+      "waitBetweenTries": 1500
+    },
+    {
+      "id": "74e980dc-4cdc-4739-854c-cf7998f3a6e4",
+      "name": "Clear Event ID in Notion",
+      "type": "n8n-nodes-base.notion",
+      "notes": "Empties the event ID so the event can be recreated.",
+      "maxTries": 3,
+      "position": [
+        1568,
+        1104
+      ],
+      "parameters": {
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Normalize Task').item.json.pageId }}"
+        },
+        "options": {},
+        "resource": "databasePage",
+        "operation": "update",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Google Event ID|rich_text",
+              "type": "rich_text"
+            }
+          ]
+        },
+        "authentication": "oAuth2"
+      },
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "rOdBb3TnMsl0riNj",
+          "name": "Notion account"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 3,
+      "waitBetweenTries": 1500
+    },
+    {
+      "id": "1158127e-c26d-49e2-983c-5e7dd27d0370",
+      "name": "Remember Sync State",
+      "type": "n8n-nodes-base.code",
+      "notes": "Saves a fingerprint in workflow static data so the re-trigger caused by our own Notion write is skipped.",
+      "position": [
+        1872,
+        560
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Store what the page looks like after a successful sync, so the\n// re-trigger caused by our own Notion write is skipped.\nconst t = $('Normalize Task').item.json;\nconst sd = $getWorkflowStaticData('global');\nsd.syncState = sd.syncState || {};\nsd.kinds = sd.kinds || {};\nconst expectedHasEvent = t.hasDate; // closed tasks keep their event\nsd.syncState[t.pageId] = t.coreFingerprint + '|' + (expectedHasEvent ? '1' : '0');\nif (t.kindChanged) {\n  // Event was deleted so it can be recreated in the other form. State says 'has event'\n  // while Notion has no ID now, so the next poll recreates it.\n} else if (expectedHasEvent) {\n  sd.kinds[t.pageId] = t.kind;\n} else {\n  delete sd.kinds[t.pageId];\n}\nreturn { json: { pageId: t.pageId, title: t.title, synced: true, hasEvent: expectedHasEvent, kind: t.kind } };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "19a75d0c-e518-459d-8c61-31694868baf2",
+      "name": "Event Missing in Calendar?",
+      "type": "n8n-nodes-base.if",
+      "notes": "True when Google returned 404/410 (event deleted by hand). Anything else is an unexpected failure.",
+      "position": [
+        1568,
+        1504
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "m",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ /404|410|not ?found|has been deleted/i.test(JSON.stringify($json)) }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "109b2961-d483-437b-8f12-ed7a77fe5eef",
+      "name": "Clear Stale Event ID",
+      "type": "n8n-nodes-base.notion",
+      "notes": "The event no longer exists: clear the ID instead of failing.",
+      "position": [
+        1840,
+        1488
+      ],
+      "parameters": {
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Normalize Task').item.json.pageId }}"
+        },
+        "options": {},
+        "resource": "databasePage",
+        "operation": "update",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Google Event ID|rich_text",
+              "type": "rich_text"
+            }
+          ]
+        },
+        "authentication": "oAuth2"
+      },
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "rOdBb3TnMsl0riNj",
+          "name": "Notion account"
+        }
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "40a76a01-7b30-40b2-afa4-7f0725af665a",
+      "name": "Forget Sync State",
+      "type": "n8n-nodes-base.code",
+      "notes": "Drops the stored fingerprint so the event can be recreated if the task is still open.",
+      "position": [
+        2080,
+        1488
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// The calendar event was missing: forget the stored state so the next poll can recreate it.\nconst t = $('Normalize Task').item.json;\nconst sd = $getWorkflowStaticData('global');\nsd.syncState = sd.syncState || {};\nsd.kinds = sd.kinds || {};\ndelete sd.syncState[t.pageId];\ndelete sd.kinds[t.pageId];\nreturn { json: { pageId: t.pageId, title: t.title, eventIdCleared: true } };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "63bac0a3-6d30-480f-831a-c5f44c1925de",
+      "name": "Fail on Unexpected Error",
+      "type": "n8n-nodes-base.stopAndError",
+      "notes": "Stops with a clear message for any non-404 Google Calendar error.",
+      "position": [
+        1840,
+        1680
+      ],
+      "parameters": {
+        "errorMessage": "=Google Calendar sync failed for task \"{{ $('Normalize Task').item.json.title }}\": {{ JSON.stringify($json.error || $json) }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c020d1b9-27ca-488a-b7c9-6462d8693a5a",
+      "name": "Backfill: Run Manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "notes": "ONE-TIME BACKFILL. Click 'Execute workflow' on this node once, before activating.",
+      "position": [
+        0,
+        128
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "51dc197d-a09b-47ed-9f89-353118be4a55",
+      "name": "Backfill: Get Open Future Tasks",
+      "type": "n8n-nodes-base.notion",
+      "notes": "Reads open tasks with a date today or later and no event yet. Adjust the status names to your database.",
+      "position": [
+        240,
+        128
+      ],
+      "parameters": {
+        "simple": false,
+        "filters": {
+          "conditions": [
+            {
+              "key": "Due date|date",
+              "type": "date",
+              "condition": "on_or_after",
+              "dateValue": "today"
+            },
+            {
+              "key": "Status|status",
+              "type": "status",
+              "condition": "does_not_equal",
+              "optionValue": "Done"
+            },
+            {
+              "key": "Status|status",
+              "type": "status",
+              "condition": "does_not_equal",
+              "optionValue": "Canceled"
+            },
+            {
+              "key": "Google Event ID|rich_text",
+              "type": "rich_text",
+              "condition": "is_empty"
+            }
+          ]
+        },
+        "options": {},
+        "resource": "databasePage",
+        "matchType": "allFilters",
+        "operation": "getAll",
+        "returnAll": true,
+        "filterType": "manual",
+        "dataSourceId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_NOTION_TASKS_DATA_SOURCE_ID"
+        },
+        "authentication": "oAuth2"
+      },
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "rOdBb3TnMsl0riNj",
+          "name": "Notion account"
+        }
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "71218054-51e7-4c4e-a063-84871df12856",
+      "name": "Google Event Changed",
+      "type": "n8n-nodes-base.googleCalendarTrigger",
+      "notes": "REVERSE SYNC. Fires when an event in the sync calendar changes (also after our own updates; those are skipped below).",
+      "position": [
+        0,
+        2240
+      ],
+      "parameters": {
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "unit": "minutes",
+              "value": 30
+            }
+          ]
+        },
+        "triggerOn": "eventUpdated",
+        "calendarId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_CALENDAR_ID"
+        }
+      },
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ezbvq89c5Pd1UO7v",
+          "name": "Google Calendar account"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0169e1ed-41aa-43d0-8064-ef8b65134b6b",
+      "name": "Parse Google Event",
+      "type": "n8n-nodes-base.code",
+      "notes": "Finds the Notion page id in the event description and normalises start/end. Events without a Notion link are ignored.",
+      "position": [
+        240,
+        2240
+      ],
+      "parameters": {
+        "jsCode": "// Reverse sync step 1: read the Notion page id from the event description\n// ('Notion: <url>') and normalise the event time.\nconst ZONE = 'Europe/Prague'; // your IANA time zone\nconst out = [];\nfor (const item of $input.all()) {\n  const e = item.json;\n  if (!e || e.status === 'cancelled') continue;\n  const m = String(e.description || '').match(/Notion: *[^ ]*?([0-9a-f]{32})/i);\n  if (!m) continue; // not an event made by this workflow\n  const sRaw = e.start && (e.start.dateTime || e.start.date);\n  const eRaw = e.end && (e.end.dateTime || e.end.date);\n  if (!sRaw || !eRaw) continue;\n  const timed = !!(e.start && e.start.dateTime);\n  let g;\n  if (timed) {\n    g = { kind: 'timed',\n      start: DateTime.fromISO(sRaw, { setZone: true }).setZone(ZONE).toISO(),\n      end: DateTime.fromISO(eRaw, { setZone: true }).setZone(ZONE).toISO() };\n  } else {\n    const s = sRaw.slice(0, 10);\n    const last = DateTime.fromISO(eRaw.slice(0, 10)).minus({ days: 1 }).toISODate();\n    g = { kind: 'allday', start: s, end: last >= s ? last : s };\n  }\n  out.push({ json: { pageId: m[1], eventId: e.id, title: e.summary || '', ...g } });\n}\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "2abd2043-1cb0-44ed-aa0e-f132a8d9bb7b",
+      "name": "Get Notion Page",
+      "type": "n8n-nodes-base.notion",
+      "notes": "Reads the current task so we compare against the real state.",
+      "onError": "continueRegularOutput",
+      "position": [
+        512,
+        2240
+      ],
+      "parameters": {
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.pageId }}"
+        },
+        "simple": false,
+        "options": {},
+        "resource": "databasePage",
+        "operation": "get",
+        "authentication": "oAuth2"
+      },
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "rOdBb3TnMsl0riNj",
+          "name": "Notion account"
+        }
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "d2f52da3-2c8c-40f9-8cb4-be6af2e0f84d",
+      "name": "Compare With Notion",
+      "type": "n8n-nodes-base.code",
+      "notes": "Equal = skip (this stops loops). Different = prepare the new date for Notion.",
+      "position": [
+        736,
+        2240
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Reverse sync step 2: does Google differ from Notion? Google wins here.\nconst P = { date: 'Due date', status: 'Status' }; // same names as in Normalize Task\nconst g = $('Parse Google Event').item.json;\nconst page = $json || {};\nconst props = page.properties;\nconst skip = (why) => ({ json: { changed: false, why, pageId: g.pageId } });\nif (!props || page.archived || page.in_trash) return skip('page missing');\nconst d = (props[P.date] || {}).date;\nif (!d || !d.start) return skip('no date in Notion');\nconst nStart = d.start, nEnd = d.end;\nconst nTimed = nStart.includes('T');\nlet same = false;\nif (g.kind === 'timed' && nTimed) {\n  const s = DateTime.fromISO(nStart, { setZone: true });\n  let e = (nEnd && nEnd.includes('T')) ? DateTime.fromISO(nEnd, { setZone: true }) : null;\n  if (!e || e <= s) e = s.plus({ hours: 1 });\n  same = s.toMillis() === DateTime.fromISO(g.start).toMillis() && e.toMillis() === DateTime.fromISO(g.end).toMillis();\n} else if (g.kind === 'allday' && !nTimed) {\n  const ns = nStart.slice(0, 10);\n  const nl = nEnd ? nEnd.slice(0, 10) : ns;\n  same = ns === g.start && (nl >= ns ? nl : ns) === g.end;\n}\nif (same) return skip('already equal'); // this check is what prevents loops\nconst LOCAL = \"yyyy-MM-dd'T'HH:mm:ss\";\nconst notionDate = g.kind === 'timed'\n  ? { start: DateTime.fromISO(g.start, { setZone: true }).toFormat(LOCAL), end: DateTime.fromISO(g.end, { setZone: true }).toFormat(LOCAL), timed: true }\n  : { start: g.start, end: g.end !== g.start ? g.end : '', timed: false };\nconst sd = $getWorkflowStaticData('global');\nsd.kinds = sd.kinds || {};\nsd.kinds[g.pageId] = g.kind;\nreturn { json: { changed: true, pageId: g.pageId, title: g.title, notionDate, hasEnd: !!notionDate.end } };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "251b7285-5157-424d-a486-0590a0465dad",
+      "name": "Google Time Differs?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        992,
+        2240
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.changed }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "bc36031c-c81e-4081-8b89-35a4529f9f98",
+      "name": "Has End Date?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1232,
+        2240
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.hasEnd }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "3aa13d5b-4b87-48ef-aef5-9cc35fcbcba3",
+      "name": "Update Date Range in Notion",
+      "type": "n8n-nodes-base.notion",
+      "notes": "Writes ONLY the date field. Set your time zone here too.",
+      "maxTries": 3,
+      "position": [
+        1472,
+        2208
+      ],
+      "parameters": {
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.pageId }}"
+        },
+        "options": {},
+        "resource": "databasePage",
+        "operation": "update",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Due date|date",
+              "type": "date",
+              "range": true,
+              "dateEnd": "={{ $json.notionDate.end }}",
+              "timezone": "Europe/Prague",
+              "dateStart": "={{ $json.notionDate.start }}",
+              "includeTime": "={{ $json.notionDate.timed }}"
+            }
+          ]
+        },
+        "authentication": "oAuth2"
+      },
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "rOdBb3TnMsl0riNj",
+          "name": "Notion account"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 3,
+      "waitBetweenTries": 1500
+    },
+    {
+      "id": "1e07a4fc-7ed5-47c7-bb56-346fac8b9972",
+      "name": "Update Date in Notion",
+      "type": "n8n-nodes-base.notion",
+      "notes": "Single date (no end), for one-day all-day events.",
+      "maxTries": 3,
+      "position": [
+        1472,
+        2384
+      ],
+      "parameters": {
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.pageId }}"
+        },
+        "options": {},
+        "resource": "databasePage",
+        "operation": "update",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Due date|date",
+              "date": "={{ $json.notionDate.start }}",
+              "type": "date",
+              "timezone": "Europe/Prague",
+              "includeTime": "={{ $json.notionDate.timed }}"
+            }
+          ]
+        },
+        "authentication": "oAuth2"
+      },
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "rOdBb3TnMsl0riNj",
+          "name": "Notion account"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 3,
+      "waitBetweenTries": 1500
+    },
+    {
+      "id": "9c3f728e-854d-4d01-a14f-ea14cb352c09",
+      "name": "Update Event (timed)",
+      "type": "n8n-nodes-base.googleCalendar",
+      "notes": "Moves/renames the event. Errors (e.g. event deleted by hand) go to the missing-event check.",
+      "onError": "continueErrorOutput",
+      "position": [
+        1248,
+        528
+      ],
+      "parameters": {
+        "eventId": "={{ $json.eventId }}",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_CALENDAR_ID"
+        },
+        "operation": "update",
+        "updateFields": {
+          "end": "={{ $json.end }}",
+          "start": "={{ $json.start }}",
+          "summary": "={{ ($json.isClosed ? (String($json.status).toLowerCase() === 'done' ? '\u2705 ' : '\ud83d\udeab ') : '') + $json.title }}",
+          "description": "={{ $json.description }}"
+        }
+      },
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ezbvq89c5Pd1UO7v",
+          "name": "Google Calendar account"
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "089c0d90-29ff-4704-8adb-915ef82678aa",
+      "name": "Note: Overview and setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1200,
+        -144
+      ],
+      "parameters": {
+        "width": 808,
+        "height": 640,
+        "content": "## Notion tasks \u21c4 Google Calendar: two-way time-blocking sync\n\nPlan tasks in Notion, see them as events in Google Calendar, and move them from either side.\n\n### How it works\n- A task with a date and time becomes a time block.\n- If there is no end time in the task, it become a 1h time-block in the calendar. \n- A task with only a date becomes an all-day event.\n- Edits in Notion (title, date, status) update the same event based on the Google Event ID.\n- Done / Canceled tasks keep their event, marked \u2705 or \ud83d\udeab.\n- Moving or resizing an event in Google Calendar updates the date (nd time) in Notion.\n- Both directions skip the workflow's own edits, so it never loops.\n\n### Setup\n1. Notion database with: **Task** (title), **Due date** (date), **Status** (status, with Done and Canceled), **Google Event ID** (text), optional **Direction** (select).\n\n*Note: For setting up your own property names and time zone, edit the top of **Normalize Task**, **Parse Google Event**, and **Compare With Notion**, and the time zone in the 2 **Update Date** nodes.*\n\n2. Create a separate Google Calendar for synced tasks.\n3. Connect your Notion and Google Calendar credentials.\n4. Select your database in **Notion Task Changed** and **Backfill: Get Open Future Tasks**.\n5. Select your calendar in **Google Event Changed** and in the 5 Google Calendar action nodes.\n6. Run **Backfill: Run Manually** once, then activate the workflow.\n\n### Limits\n- Deleted Notion pages are not detected. Close tasks with a status (Done/Canceled) instead.\n- Only date and time edits sync back from Google, not renames.\n- Both triggers poll every 30 min. Each poll that finds changes counts as one execution, so poll less often on small plans (I use 12:00 and 00:00)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "254d8d7b-2d79-4267-aa32-cd18603dafe2",
+      "name": "Note: Section 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -64,
+        -336
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 2360,
+        "content": "## 1. Notion \u2192 Google Calendar\nNew and edited Notion tasks become events in your sync calendar."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3a55242b-30ca-402b-a3bd-85f727dbe73e",
+      "name": "Note: Backfill",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -64,
+        -64
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 480,
+        "height": 364,
+        "content": "### One-time backfill\nRun once before activating. Creates events for open tasks dated today or later that have no event yet."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0ad21dd2-1c07-470c-ad0c-84aa93f18ce8",
+      "name": "Note: Notion trigger",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -64,
+        352
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 260,
+        "height": 360,
+        "content": "### Notion trigger\nPolls your tasks database every 30 min for new and edited cards.\n\nIf needed another time, change it here"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "464e185c-7c34-44f2-9e41-27dbb9f5e087",
+      "name": "Note: Normalize",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        400,
+        352
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 260,
+        "height": 360,
+        "content": "### Normalize Task\n**Edit here:** property names and time zone. Turns each card into start/end, status and event ID."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a514d249-e358-49df-89d4-0eaefe3fd7fc",
+      "name": "Note: Filter and route",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        688,
+        352
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 496,
+        "height": 456,
+        "content": "### Filter and route\nSkips cards with no date and edits made by this workflow. \nThen picks the action: create, update or delete."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ac7338b6-066e-4b9a-9c99-308968d273e9",
+      "name": "Note: Create",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1200,
+        -160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 516,
+        "content": "### Create event\nThe card has no event yet.\nDate only = all-day event.\nDate + starting time =1h  time block\nDate + starting time + ending time = dedicated time-blockimg event."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f1bdfbd2-b73d-4317-aa20-06bbc6eb52a3",
+      "name": "Note: Save ID",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1520,
+        -64
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 260,
+        "height": 320,
+        "content": "### Save event ID\nWrites the new Google event ID into the Notion card."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3196c97b-c1f6-4ef3-ae82-a8dae27ed9c8",
+      "name": "Note: Update",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1200,
+        384
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 520,
+        "content": "### Update event\nThe card already has an event: title, date, time and the \u2705 / \ud83d\udeab status mark are updated."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "78f813a1-4f20-4ceb-b54c-cea7f1cd54c6",
+      "name": "Note: Sync state",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1824,
+        384
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 360,
+        "content": "### Remember sync state\nStores a fingerprint so the next run ignores the workflow's own edits."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ef0eb859-f520-4c61-8bd0-201ba31bf5db",
+      "name": "Note: Delete",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1200,
+        944
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 600,
+        "height": 320,
+        "content": "### Delete event\nThe date was cleared, or the task switched between timed and all-day (the event is then recreated on the next run). The event ID is cleared in Notion."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ee38b55b-707f-45db-b43b-158182e02f8f",
+      "name": "Note: Error handling",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1504,
+        1312
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 800,
+        "height": 520,
+        "content": "### Error handling\nEvent deleted by hand in Google: the ID is cleared and the event is recreated on the next run.\nAny other Google Calendar error stops the run with a clear message."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9c79739e-0845-4e52-8f2f-13bcb8cb6526",
+      "name": "Note: Section 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -64,
+        1904
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 2360,
+        "height": 124,
+        "content": "## 2. Google Calendar \u2192 Notion\nMoving or changing an ending time in the sync calendar updates the Due date in Notion."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0877f146-c264-4696-b0cd-d9a466df638f",
+      "name": "Note: Changed events",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -64,
+        2064
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 500,
+        "height": 360,
+        "content": "### Changed events\nPolls the sync calendar every 30 min and reads the Notion card link from each event. Other events are ignored."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "7977d4f5-0600-473c-ac40-a6bacee70842",
+      "name": "Note: Compare",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        464,
+        2064
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 420,
+        "height": 360,
+        "content": "### Compare with Notion\nReads the card. Same date and time: skip (no loop). Different: Google wins."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e8dfdce4-d0ea-48de-84d1-364f01485b1e",
+      "name": "Note: Write date",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        928,
+        2064
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 748,
+        "height": 488,
+        "content": "### Update the date in Notion\nWrites only the Due date field: a range for timed or multi-day events, a single date for one-day events."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "executionOrder": "v1"
+  },
+  "versionId": "25b63498-3e2b-4a39-b84f-8cf9ee564b0d",
+  "nodeGroups": [],
+  "connections": {
+    "Has End Date?": {
+      "main": [
+        [
+          {
+            "node": "Update Date Range in Notion",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Date in Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Task": {
+      "main": [
+        [
+          {
+            "node": "Needs Calendar Sync?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Notion Page": {
+      "main": [
+        [
+          {
+            "node": "Compare With Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Sync Action": {
+      "main": [
+        [
+          {
+            "node": "Create Event (timed)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Event (all-day)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Event (timed)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Event (all-day)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Delete Calendar Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Google Event": {
+      "main": [
+        [
+          {
+            "node": "Get Notion Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare With Notion": {
+      "main": [
+        [
+          {
+            "node": "Google Time Differs?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion Task Changed": {
+      "main": [
+        [
+          {
+            "node": "Normalize Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear Stale Event ID": {
+      "main": [
+        [
+          {
+            "node": "Forget Sync State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Event (timed)": {
+      "main": [
+        [
+          {
+            "node": "Save Event ID to Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Event Changed": {
+      "main": [
+        [
+          {
+            "node": "Parse Google Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Time Differs?": {
+      "main": [
+        [
+          {
+            "node": "Has End Date?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Calendar Sync?": {
+      "main": [
+        [
+          {
+            "node": "Route Sync Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Event (timed)": {
+      "main": [
+        [
+          {
+            "node": "Remember Sync State",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Event Missing in Calendar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Calendar Event": {
+      "main": [
+        [
+          {
+            "node": "Clear Event ID in Notion",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Event Missing in Calendar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Backfill: Run Manually": {
+      "main": [
+        [
+          {
+            "node": "Backfill: Get Open Future Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Event (all-day)": {
+      "main": [
+        [
+          {
+            "node": "Save Event ID to Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Event (all-day)": {
+      "main": [
+        [
+          {
+            "node": "Remember Sync State",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Event Missing in Calendar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Event ID to Notion": {
+      "main": [
+        [
+          {
+            "node": "Remember Sync State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear Event ID in Notion": {
+      "main": [
+        [
+          {
+            "node": "Remember Sync State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Event Missing in Calendar?": {
+      "main": [
+        [
+          {
+            "node": "Clear Stale Event ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail on Unexpected Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Backfill: Get Open Future Tasks": {
+      "main": [
+        [
+          {
+            "node": "Normalize Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # 🎣 Send Webflow form data to Google Sheets
 
-> ⚡ **1,699 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,759 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

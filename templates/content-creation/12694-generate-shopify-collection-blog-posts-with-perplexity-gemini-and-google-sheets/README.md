@@ -1,6 +1,6 @@
 # 🎬 Generate Shopify collection blog posts with Perplexity, Gemini and Google Sheets
 
-> ⚡ **130 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **275 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

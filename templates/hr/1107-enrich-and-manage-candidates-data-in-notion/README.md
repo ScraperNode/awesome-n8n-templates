@@ -1,6 +1,6 @@
 # 👥 Enrich and manage candidates data in Notion
 
-> ⚡ **2,031 views** · 👥 [HR & Recruitment](../)
+> ⚡ **2,058 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Execute an SQL query in Microsoft SQL
 
-> ⚡ **15,424 views** · ⚒️ [Engineering](../)
+> ⚡ **16,260 views** · ⚒️ [Engineering](../)
 
 ## Description
 

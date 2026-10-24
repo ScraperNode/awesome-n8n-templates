@@ -1,6 +1,6 @@
 # 📈 Monitor Bitcoin & Ethereum prices with CoinGecko alerts via Email/SMS
 
-> ⚡ **481 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **586 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

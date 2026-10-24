@@ -1,6 +1,6 @@
 # 💬 Automatic reminders for follow-ups with AI and human in the loop Gmail
 
-> ⚡ **14,861 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **15,630 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

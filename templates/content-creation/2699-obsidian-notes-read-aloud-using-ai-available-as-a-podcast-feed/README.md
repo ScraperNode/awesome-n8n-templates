@@ -1,6 +1,6 @@
 # 🎬 Obsidian notes read aloud using AI: available as a podcast feed
 
-> ⚡ **3,020 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,152 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

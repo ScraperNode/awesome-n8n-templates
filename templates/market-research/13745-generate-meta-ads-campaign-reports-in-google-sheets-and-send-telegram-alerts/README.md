@@ -1,6 +1,6 @@
 # 📊 Generate Meta Ads campaign reports in Google Sheets and send Telegram alerts
 
-> ⚡ **5 views** · 📊 [Market Research & Insights](../)
+> ⚡ **328 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate and schedule themed social posts with Notion, OpenAI, Fal.ai and Postiz
 
-> ⚡ **156 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **214 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

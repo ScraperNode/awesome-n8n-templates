@@ -1,6 +1,6 @@
 # 💬 Send outreach/cold email using Gmail to new HubSpot contacts
 
-> ⚡ **3,743 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **3,787 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

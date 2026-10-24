@@ -1,6 +1,6 @@
 # 🔒 Create executive security briefings with NixGuard AI & Wazuh alerts
 
-> ⚡ **3,483 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **4,557 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

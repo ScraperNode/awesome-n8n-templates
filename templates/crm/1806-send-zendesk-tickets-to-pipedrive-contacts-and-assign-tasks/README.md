@@ -1,6 +1,6 @@
 # 🤝 Send Zendesk tickets to Pipedrive contacts and assign tasks
 
-> ⚡ **1,113 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,252 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

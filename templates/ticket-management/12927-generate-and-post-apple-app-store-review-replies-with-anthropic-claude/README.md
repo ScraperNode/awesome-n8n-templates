@@ -1,6 +1,6 @@
 # 🎫 Generate and post Apple App Store review replies with Anthropic Claude
 
-> ⚡ **48 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **180 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

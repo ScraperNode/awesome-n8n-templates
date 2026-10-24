@@ -1,6 +1,6 @@
 # 🎫 Gmail MCP workflow - AI-powered email management
 
-> ⚡ **1,892 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **2,059 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

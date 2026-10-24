@@ -1,6 +1,6 @@
 # 📋 Daily team progress checks & reports with Slack, ChatGPT and Google Sheets
 
-> ⚡ **37 views** · 📋 [Project Management](../)
+> ⚡ **65 views** · 📋 [Project Management](../)
 
 ## Description
 

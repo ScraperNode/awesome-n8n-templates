@@ -1,6 +1,6 @@
 # 🎬 Convert newsletters into AI podcasts with GPT-4o Mini and ElevenLabs
 
-> ⚡ **2,089 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,277 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Natural language task management with Todoist and GPT-4o
 
-> ⚡ **1,746 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,840 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

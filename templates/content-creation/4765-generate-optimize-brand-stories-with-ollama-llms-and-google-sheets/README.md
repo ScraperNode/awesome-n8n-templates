@@ -1,6 +1,6 @@
 # 🎬 Generate & optimize brand stories with Ollama LLMs and Google Sheets
 
-> ⚡ **225 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **246 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎯 Declutter Gmail: archive inactive emails with GPT-4 classification
 
-> ⚡ **453 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **496 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

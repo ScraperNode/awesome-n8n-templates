@@ -1,6 +1,6 @@
 # 💬 Create voice assistant interface with OpenAI GPT-4o-mini and text-to-speech
 
-> ⚡ **4,676 views** · 💬 [Support Chatbots](../)
+> ⚡ **5,361 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

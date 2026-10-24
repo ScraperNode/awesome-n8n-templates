@@ -1,6 +1,6 @@
 # ⚒️ Receive messages for an ActiveMQ queue
 
-> ⚡ **904 views** · ⚒️ [Engineering](../)
+> ⚡ **975 views** · ⚒️ [Engineering](../)
 
 ## Description
 

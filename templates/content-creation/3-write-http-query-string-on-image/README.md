@@ -1,6 +1,6 @@
 # 🎬 Write HTTP query string on image
 
-> ⚡ **6,412 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **7,378 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

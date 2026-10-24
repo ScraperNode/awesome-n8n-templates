@@ -1,6 +1,6 @@
 # ⚙️ Backup workflows to Git repository on Gitea
 
-> ⚡ **1,784 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,937 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

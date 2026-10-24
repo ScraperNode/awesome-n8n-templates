@@ -1,6 +1,6 @@
 # 🎣 Capture and score leads with SQL Server and Slack alerts
 
-> ⚡ **8 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **24 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

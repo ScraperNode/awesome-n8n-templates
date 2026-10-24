@@ -1,6 +1,6 @@
 # 🤝 Get all contacts of HubSpot account
 
-> ⚡ **1,888 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,918 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

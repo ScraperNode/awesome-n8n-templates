@@ -1,6 +1,6 @@
 # 📊 Analyze brand mentions on Reddit with GPT-4o mini and Notion integration
 
-> ⚡ **638 views** · 📊 [Market Research & Insights](../)
+> ⚡ **649 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 👥 Automate employee recognition with Slack, Sheets, Gmail & optional GPT-4
 
-> ⚡ **58 views** · 👥 [HR & Recruitment](../)
+> ⚡ **103 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔒 Auto remediate endpoint infections with Wazuh, ClamAV, and GPT-4
 
-> ⚡ **873 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,122 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

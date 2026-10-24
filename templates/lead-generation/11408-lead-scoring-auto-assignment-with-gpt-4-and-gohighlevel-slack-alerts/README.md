@@ -1,6 +1,6 @@
 # 🎣 Lead scoring & auto-assignment with GPT-4 and GoHighLevel + Slack alerts
 
-> ⚡ **250 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **549 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

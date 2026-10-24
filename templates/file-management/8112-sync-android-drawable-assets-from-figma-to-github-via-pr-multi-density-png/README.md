@@ -1,6 +1,6 @@
 # 📁 Sync Android drawable assets from Figma to GitHub via PR (multi-density PNG)
 
-> ⚡ **157 views** · 📁 [File Management](../)
+> ⚡ **215 views** · 📁 [File Management](../)
 
 ## Description
 

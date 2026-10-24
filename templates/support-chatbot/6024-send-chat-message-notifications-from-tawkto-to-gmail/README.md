@@ -1,6 +1,6 @@
 # 💬 Send chat message notifications from Tawk.to to Gmail
 
-> ⚡ **300 views** · 💬 [Support Chatbots](../)
+> ⚡ **408 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

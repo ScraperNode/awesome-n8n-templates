@@ -1,6 +1,6 @@
 # ⚡ Automated congratulations with Google Sheets, Twilio, and n8n
 
-> ⚡ **1,715 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,705 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Extract post titles from a blog
 
-> ⚡ **7,150 views** · 📊 [Market Research & Insights](../)
+> ⚡ **7,172 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

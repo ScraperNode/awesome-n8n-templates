@@ -1,6 +1,6 @@
 # 🎣 Register users to an event on Demio via Typeform
 
-> ⚡ **693 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **700 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Reliable Reddit subreddit search with OAuth2 API authentication
 
-> ⚡ **358 views** · 📊 [Market Research & Insights](../)
+> ⚡ **426 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

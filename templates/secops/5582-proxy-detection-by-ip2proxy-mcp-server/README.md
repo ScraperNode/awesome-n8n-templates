@@ -1,6 +1,6 @@
 # 🔒 Proxy detection by IP2Proxy - MCP server
 
-> ⚡ **428 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **503 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

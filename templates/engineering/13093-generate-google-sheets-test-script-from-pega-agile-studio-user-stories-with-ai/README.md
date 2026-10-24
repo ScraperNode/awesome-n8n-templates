@@ -1,6 +1,6 @@
 # ⚒️ Generate Google Sheets test script from Pega Agile Studio user stories with AI
 
-> ⚡ **39 views** · ⚒️ [Engineering](../)
+> ⚡ **152 views** · ⚒️ [Engineering](../)
 
 ## Description
 

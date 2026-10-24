@@ -1,6 +1,6 @@
 # 📱 WhatsApp marketing dashboard with dynamic broadcasts from Google Sheets to Meta templates
 
-> ⚡ **584 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,202 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

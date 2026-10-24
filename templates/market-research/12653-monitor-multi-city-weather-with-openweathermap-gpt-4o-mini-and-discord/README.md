@@ -1,6 +1,6 @@
 # 📊 Monitor multi-city weather with OpenWeatherMap, GPT-4o-mini, and Discord
 
-> ⚡ **239 views** · 📊 [Market Research & Insights](../)
+> ⚡ **383 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

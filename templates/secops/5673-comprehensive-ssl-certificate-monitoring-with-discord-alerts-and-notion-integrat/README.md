@@ -1,6 +1,6 @@
 # 🔒 Comprehensive SSL certificate monitoring with Discord alerts and Notion integration
 
-> ⚡ **7,587 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **12,247 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

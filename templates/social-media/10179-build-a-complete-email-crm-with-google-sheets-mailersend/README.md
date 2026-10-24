@@ -1,6 +1,6 @@
 # 📱 Build a complete email CRM with Google Sheets & MailerSend
 
-> ⚡ **148 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **287 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

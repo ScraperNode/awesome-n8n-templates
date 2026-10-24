@@ -1,6 +1,6 @@
 # ⚒️ Generate and split sample data records using JavaScript and Python
 
-> ⚡ **1,283 views** · ⚒️ [Engineering](../)
+> ⚡ **1,646 views** · ⚒️ [Engineering](../)
 
 ## Description
 

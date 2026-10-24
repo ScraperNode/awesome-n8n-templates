@@ -1,6 +1,6 @@
 # 🎯 Automate security incident triage with GPT-4o-mini and Gmail notifications
 
-> ⚡ **237 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **322 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

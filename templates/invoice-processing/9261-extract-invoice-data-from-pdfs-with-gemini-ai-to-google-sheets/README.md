@@ -1,6 +1,6 @@
 # 🧾 Extract invoice data from PDFs with Gemini AI to Google Sheets 📄
 
-> ⚡ **115 views** · 🧾 [Invoice Processing](../)
+> ⚡ **164 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

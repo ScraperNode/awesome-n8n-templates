@@ -1,6 +1,6 @@
 # 💬 Automate medical appointments with ElevenLabs voice agent & Google Calendar
 
-> ⚡ **2,104 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,027 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

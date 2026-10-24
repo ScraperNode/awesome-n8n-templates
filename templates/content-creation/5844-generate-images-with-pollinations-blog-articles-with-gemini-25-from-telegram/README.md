@@ -1,6 +1,6 @@
 # 🎬 Generate images with Pollinations & blog articles with Gemini 2.5 from Telegram
 
-> ⚡ **1,512 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,744 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

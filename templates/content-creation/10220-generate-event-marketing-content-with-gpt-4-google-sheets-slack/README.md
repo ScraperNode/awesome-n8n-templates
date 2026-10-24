@@ -1,6 +1,6 @@
 # 🎬 Generate event marketing content with GPT-4, Google Sheets & Slack
 
-> ⚡ **188 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **299 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Survey insights with Qdrant, Python and Information Extractor
 
-> ⚡ **3,657 views** · 📊 [Market Research & Insights](../)
+> ⚡ **3,718 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

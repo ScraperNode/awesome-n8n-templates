@@ -1,6 +1,6 @@
 # 🔬 Build a PDF search system with Mistral OCR and Weaviate DB
 
-> ⚡ **1,346 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,535 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

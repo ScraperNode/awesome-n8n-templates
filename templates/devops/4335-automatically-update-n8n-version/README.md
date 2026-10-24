@@ -1,6 +1,6 @@
 # ⚙️ Automatically update n8n version
 
-> ⚡ **2,153 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,454 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

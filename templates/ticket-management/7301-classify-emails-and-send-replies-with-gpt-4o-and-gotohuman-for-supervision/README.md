@@ -1,6 +1,6 @@
 # 🎫 Classify emails and send replies with GPT-4o and gotoHuman for supervision
 
-> ⚡ **1,159 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,240 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 Task deadline reminders with Google Sheets, ChatGPT, and Gmail
 
-> ⚡ **1,078 views** · 📋 [Project Management](../)
+> ⚡ **1,204 views** · 📋 [Project Management](../)
 
 ## Description
 

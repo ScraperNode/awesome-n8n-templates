@@ -1,6 +1,6 @@
 # 💬 Autonomous meeting scheduler with GPT-4o-mini, Telegram, and Google Calendar
 
-> ⚡ **472 views** · 💬 [Support Chatbots](../)
+> ⚡ **905 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

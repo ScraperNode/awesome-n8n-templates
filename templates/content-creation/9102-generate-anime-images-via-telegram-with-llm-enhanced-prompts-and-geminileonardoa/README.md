@@ -1,6 +1,6 @@
 # 🎬 Generate anime images via Telegram with LLM-enhanced prompts and Gemini/Leonardo.AI
 
-> ⚡ **586 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **775 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Create a Slack AI chatbot with threads & thinking UI using OpenRouter & Postgres
 
-> ⚡ **3,533 views** · 💬 [Support Chatbots](../)
+> ⚡ **4,067 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

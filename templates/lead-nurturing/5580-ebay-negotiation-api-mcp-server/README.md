@@ -1,6 +1,6 @@
 # 💬 [eBay] negotiation API MCP server
 
-> ⚡ **625 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **672 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

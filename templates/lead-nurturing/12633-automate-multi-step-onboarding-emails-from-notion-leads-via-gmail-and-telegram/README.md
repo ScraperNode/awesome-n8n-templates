@@ -1,6 +1,6 @@
 # 💬 Automate multi-step onboarding emails from Notion leads via Gmail and Telegram
 
-> ⚡ **29 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **125 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

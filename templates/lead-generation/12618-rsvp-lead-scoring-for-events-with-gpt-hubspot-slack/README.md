@@ -1,6 +1,6 @@
 # 🎣 RSVP Lead Scoring for Events with GPT, HubSpot & Slack
 
-> ⚡ **24 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **53 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

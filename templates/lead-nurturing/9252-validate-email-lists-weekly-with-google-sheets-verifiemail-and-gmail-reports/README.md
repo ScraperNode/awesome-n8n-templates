@@ -1,6 +1,6 @@
 # 💬 Validate email lists weekly with Google Sheets, VerifiEmail and Gmail reports
 
-> ⚡ **165 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **174 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

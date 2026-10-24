@@ -1,6 +1,6 @@
 # 📊 Monitor social media trends across Reddit, Instagram & TikTok with Apify
 
-> ⚡ **6,942 views** · 📊 [Market Research & Insights](../)
+> ⚡ **7,696 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — Since TikTok doesn't have a public API, getting data usually means fragile HTTP scraping. [ScraperNode](https://scrapernode.com/tiktok) is a community node that gives you clean JSON for [TikTok profiles](https://scrapernode.com/tiktok/scrapers/profiles), [videos](https://scrapernode.com/tiktok/scrapers/posts), and [comments](https://scrapernode.com/tiktok/scrapers/comments) — drop it into your workflow and skip the parsing.
 >
@@ -8,193 +8,149 @@
 
 ## Description
 
-## Who's it for
-Social media managers, content creators, brand managers, and marketing teams who need to track keyword performance and trending content across TikTok, Instagram, and Reddit for competitive analysis and content inspiration.
-## What it does
-This workflow automatically monitors trending content across three major social media platforms using specified keywords. It scrapes posts from TikTok, Instagram, and Reddit, calculates engagement scores using platform-specific metrics, ranks content by performance, and generates a comprehensive HTML email report with the top-performing posts across all platforms.
-## How it works
-The workflow follows a sequential multi-platform scraping process:
+**📺 Full walkthrough video: https://youtu.be/Me4d4BILvHk**
 
-Reddit Scraping: Searches for keyword-based posts and comments with engagement metrics
-Instagram Monitoring: Analyzes hashtag-based content with likes and comments data
-TikTok Analysis: Tracks hashtag performance including views, likes, shares, and comments
-Score Calculation: Applies platform-specific scoring algorithms based on engagement metrics
-Unified Ranking: Combines and ranks all content across platforms by engagement score
-Report Generation: Creates a detailed HTML email report with top performers and analytics
+
+## What it does
+This workflow automatically monitors trending content across Reddit, Instagram, and TikTok using keywords you define. It scrapes the most engaging posts, calculates platform-specific engagement scores, ranks content in a unified leaderboard, and delivers a professional HTML email dashboard — while storing historical data in a structured table for long-term trend tracking.
+
+No manual research. No tab switching. Just the top-performing content in your inbox, automatically.
+
+## Who's it for
+Social media managers, content creators, brand managers, marketing teams, and agencies who need to track keyword performance and trending content across multiple platforms for competitive analysis, content inspiration, and influencer discovery.
+
+## How it works
+The workflow runs a full scraping cycle for each keyword in your list:
+
+- **Reddit Monitoring**: Searches top posts by keyword with upvotes and comment data
+- **Instagram Monitoring**: Scrapes hashtag-based posts with likes and comments
+- **TikTok Analysis**: Tracks hashtag content including views, likes, shares, and comments
+- **Engagement Scoring**: Applies platform-specific algorithms to rank content objectively
+- **Unified Ranking**: Combines all platforms into a single top 15 leaderboard
+- **Email Report**: Delivers a formatted HTML dashboard with clickable links to original posts
+- **Data Storage**: Pushes all results into a DataTable for historical tracking and trend analysis
 
 ## Requirements
 
-Apify account with API access
-Gmail account for report delivery
-Platform-specific scrapers: Reddit Scraper Lite, Instagram Scraper, TikTok Scraper
+- Apify account (free tier works — no recurring cost)
+- Gmail account for report delivery
+- n8n instance (cloud or self-hosted)
+- Platform scrapers: Reddit Scraper Lite, Instagram Scraper, TikTok Scraper
 
 ## How to set up
+
 ### Step 1: Configure Apify credentials
+- Set up Apify API authentication in n8n
+- Ensure access to the required scrapers:
+  - Reddit: `trudax~reddit-scraper-lite`
+  - Instagram: `apify~instagram-scraper`
+  - TikTok: `clockworks~tiktok-scraper`
+- Install the Apify community node: https://docs.apify.com/platform/integrations/n8n
 
-Set up Apify HTTP header authentication in n8n
-Ensure access to the required scrapers:
+### Step 2: Add your keywords
+Open the **"Query social media"** DataTable and add one keyword per row. The Loop Over Query node automatically runs a full Reddit + Instagram + TikTok scraping cycle for every keyword — no limit on the number of keywords.
 
-Reddit: trudax~reddit-scraper-lite
-Instagram: apify~instagram-scraper
-TikTok: clockworks~tiktok-scraper
+### Step 3: Configure search parameters
 
+Reddit:
+- Search terms via `searches` array
+- Sort: `top` (alternatives: hot, new, relevance)
+- Time period: `month` (alternatives: hour, day, week, year, all)
+- Limits: maxItems 50, maxPostCount 25
 
+Instagram:
+- Target hashtags via `directUrls`
+- Results type: `posts`
+- Time filter: `onlyPostsNewerThan: 7 days`
+- Result limit: 15
 
-### Step 2: Customize search parameters
-Reddit configuration:
+TikTok:
+- Target hashtags via `hashtags` array
+- Results per page: 20
+- Time filter: `oldestPostDateUnified: 7 days`
 
-Search terms: Modify "searches" array with your keywords
-Content type: Posts and comments (searchComments can be enabled)
-Sort method: "top" (alternatives: hot, new, relevance)
-Time period: "month" (alternatives: hour, day, week, year, all)
-Result limits: maxItems: 50, maxPostCount: 25
+### Step 4: Set up email reporting
+- Configure Gmail OAuth2 credentials in n8n
+- Update the recipient email address in the **Send a message** node
+- Customize subject and styling as needed
 
-Instagram configuration:
-
-Hashtag URLs: Update directUrls with target hashtags
-Results type: "posts" (alternatives: stories, reels)
-Time filter: "onlyPostsNewerThan": "7 days"
-Result limit: resultsLimit: 15
-
-TikTok configuration:
-
-Hashtags: Update hashtags array with target keywords
-Results per page: resultsPerPage: 20
-Time filter: "oldestPostDateUnified": "7 days"
-
-### Step 3: Set up email reporting
-
-Configure Gmail OAuth2 credentials
-Update recipient email address in "Send a message" node
-Customize email subject and styling as needed
-
-### Step 4: Adjust scoring algorithms
-Current scoring formulas:
-
-Reddit: (upvotes × 1) + (comments × 2)
-Instagram: (likes × 1) + (comments × 2)
-TikTok: (likes × 1) + (comments × 2) + (shares × 3) + (views ÷ 1000)
-
-Modify the code nodes to adjust scoring based on your priorities.
-## How to customize the workflow
-### Keyword and hashtag targeting
-
-Multiple keywords: Add arrays of search terms for broader monitoring
-Brand-specific terms: Include brand names, product names, competitor analysis
-Seasonal tracking: Adjust keywords based on campaigns or seasonal trends
-Negative filtering: Exclude irrelevant content with filtering logic
-
-### Platform-specific customization
-Reddit enhancements:
-
-Subreddit targeting: Focus on specific communities
-Comment analysis: Enable comment scraping for deeper insights
-User profiling: Track specific user activity and influence
-
-Instagram modifications:
-
-Story monitoring: Track story mentions and hashtag usage
-Influencer tracking: Monitor specific account performance
-Location-based: Add geo-targeted hashtag monitoring
-
-TikTok optimizations:
-
-Trend detection: Identify viral sounds and effects
-Creator analysis: Track trending creators in your niche
-Challenge monitoring: Follow hashtag challenge performance
-
-### Scoring and ranking customization
-
-Weighted metrics: Adjust multipliers based on platform importance
-Recency factors: Give bonus points to newer content
-Quality filters: Exclude low-engagement or spam content
-Sentiment analysis: Integrate sentiment scoring for brand monitoring
-
-### Reporting enhancements
-
-Multiple recipients: Send reports to different team members
-Scheduled execution: Add scheduling triggers for automated monitoring
-Data export: Save results to spreadsheets or databases
-Alert thresholds: Set up notifications for high-performing content
+### Step 5: Schedule the workflow
+Add a Schedule Trigger to run the workflow automatically — daily, weekly, or at any interval that suits your monitoring needs.
 
 ## Engagement scoring methodology
+
 ### Platform-specific algorithms
-Reddit scoring logic:
 
-Emphasizes community engagement through upvotes and discussion
-Comments weighted higher (×2) as they indicate deeper engagement
-Filters out low-quality posts and spam content
+**Reddit**
+`Score = (upvotes × 1) + (comments × 2)`
+Comments weighted higher as they indicate deeper community engagement.
 
-Instagram scoring approach:
+**Instagram**
+`Score = (likes × 1) + (comments × 2)`
+Focused on recent content to capture trending moments. Carousel sub-items excluded to avoid duplicates.
 
-Balances visual appeal (likes) with engagement depth (comments)
-Focuses on recent content to capture trending moments
-Excludes carousel sub-items to avoid duplicate counting
+**TikTok**
+`Score = (likes × 1) + (comments × 2) + (shares × 3) + (views ÷ 1000)`
+Shares heavily weighted (×3) as the strongest viral indicator. Views normalized to balance with other metrics.
 
-TikTok scoring system:
+### Performance levels
+Content is automatically classified into three tiers:
+- **High**: Score ≥ 10,000 — viral or highly engaging content
+- **Medium**: Score ≥ 1,000 — solid engagement, worth monitoring
+- **Low**: Score &lt; 1,000 — baseline engagement
 
-Multi-factor algorithm considering all engagement types
-Views normalized (÷1000) to balance with other metrics
-Shares heavily weighted (×3) as they indicate viral potential
+## Results & dashboard
 
-### Level classification
-Content automatically categorized into performance tiers:
+The automated email report includes:
+- **Cross-platform leaderboard**: Top 15 posts ranked by unified engagement score
+- **Platform breakdown**: Total score per network (TikTok / Reddit / Instagram)
+- **Per-post detail**: Author, content preview, score, level, and direct link to original post
+- **Historical DataTable**: One row per post with keyword, source, score, date — queryable over time
 
-High: Score ≥ 10,000 (viral or highly engaging content)
-Medium: Score ≥ 1,000 (good engagement, worth monitoring)
-Low: Score &lt; 1,000 (baseline engagement)
+## How to customize
 
-## Results interpretation
-### Comprehensive analytics dashboard
-The email report includes:
+### Keyword targeting
+- Add as many keywords as needed — one row per keyword in the DataTable
+- Use brand names, product names, competitor terms, or campaign hashtags
+- Adjust for seasonal trends or campaign periods
 
-Cross-platform leaderboard: Top 15 posts ranked by engagement score
-Platform breakdown: Performance summary by social network
-Engagement metrics: Detailed scoring and classification
-Direct links: Clickable access to original content
-Author tracking: Creator identification for influencer outreach
+### Scoring adjustments
+Modify the Code nodes to:
+- Change metric multipliers based on your priorities
+- Add recency bonuses for fresher content
+- Filter out low-quality or spam content
+- Integrate sentiment scoring for brand monitoring
 
-### Actionable insights
-
-Content inspiration: Identify high-performing content formats and topics
-Competitor analysis: Monitor competitor content performance
-Trend identification: Spot emerging topics before they peak
-Influencer discovery: Find creators driving engagement in your niche
+### Reporting enhancements
+- Add multiple email recipients
+- Export results to Google Sheets or Airtable
+- Set alert thresholds for high-performing content
+- Connect to Slack or Teams for real-time notifications
 
 ## Use cases
-### Brand monitoring and competitive analysis
 
-Brand mention tracking: Monitor how your brand performs across platforms
-Competitor surveillance: Track competitor content and engagement rates
-Crisis management: Early detection of negative sentiment or issues
-Market positioning: Understand your brand's social media presence
+**Brand & competitive monitoring**
+Track brand mentions, competitor content performance, and market positioning across all three platforms simultaneously.
 
-### Content strategy optimization
+**Content strategy**
+Identify top-performing content formats, discover effective hashtags, and spot emerging trends before they peak.
 
-Content format analysis: Identify which content types perform best
-Hashtag research: Discover effective hashtags for your niche
-Posting timing: Analyze when high-engagement content is published
-Trend forecasting: Spot emerging trends for proactive content creation
+**Influencer discovery**
+Find creators driving the most engagement in your niche and evaluate potential collaborators based on real performance data.
 
-### Influencer and partnership identification
+**Campaign tracking**
+Monitor hashtag campaigns, track sponsored content performance, and measure share of voice over time.
 
-Creator discovery: Find influential voices in your industry
-Partnership evaluation: Assess potential collaborator engagement rates
-Campaign performance: Track sponsored content and brand partnerships
-Community building: Identify active community members and advocates
+## Limitations
 
-## Workflow limitations
-
-API rate limiting: Subject to Apify scraper limitations and quotas
-Platform restrictions: Some content may be private or restricted
-Real-time delays: 30-second waits between platform scraping prevent rate limiting
-Manual execution: Currently triggered manually (easily schedulable)
-Single keyword focus: Current setup optimized for one keyword at a time
-Platform availability: Dependent on third-party scrapers and their maintenance
+- Subject to Apify scraper quotas (free tier: ~$5 credit/month included)
+- Some private or restricted content may not be accessible
+- 30-second processing waits between platforms to prevent rate limiting
+- Dependent on third-party scraper availability and maintenance
 
 ## 🔗 Nodes Used
 
-HTTP Request, Gmail, Schedule Trigger
+HTTP Request, Gmail, Schedule Trigger, Data table
 
 ## 📥 Import
 

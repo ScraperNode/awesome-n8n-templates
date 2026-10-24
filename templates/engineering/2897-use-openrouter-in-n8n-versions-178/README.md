@@ -1,6 +1,6 @@
 # ⚒️ Use OpenRouter in n8n versions <1.78
 
-> ⚡ **3,595 views** · ⚒️ [Engineering](../)
+> ⚡ **3,805 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Create AI meeting summaries with Fireflies transcripts & Dart tasks using Gemini
 
-> ⚡ **129 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **171 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

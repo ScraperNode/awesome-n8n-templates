@@ -1,6 +1,6 @@
 # 📊 Simple Google indexing workflow in n8n
 
-> ⚡ **6,100 views** · 📊 [Market Research & Insights](../)
+> ⚡ **6,249 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

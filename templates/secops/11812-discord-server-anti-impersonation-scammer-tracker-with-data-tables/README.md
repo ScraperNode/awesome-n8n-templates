@@ -1,6 +1,6 @@
 # 🔒 Discord server anti-impersonation / scammer tracker with data tables
 
-> ⚡ **104 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **430 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

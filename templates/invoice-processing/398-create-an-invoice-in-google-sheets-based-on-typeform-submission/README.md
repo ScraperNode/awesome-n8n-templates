@@ -1,6 +1,6 @@
 # 🧾 Create an invoice in Google Sheets based on Typeform submission
 
-> ⚡ **4,046 views** · 🧾 [Invoice Processing](../)
+> ⚡ **4,039 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Extract information from a logo sheet using forms, AI, Google Sheet and Airtable
 
-> ⚡ **1,408 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,428 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Extract and process information directly from PDF using Claude and Gemini
 
-> ⚡ **16,356 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **16,700 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

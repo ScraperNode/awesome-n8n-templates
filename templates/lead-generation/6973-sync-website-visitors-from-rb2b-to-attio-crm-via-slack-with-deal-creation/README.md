@@ -1,6 +1,6 @@
 # 🎣 Sync website visitors from RB2B to Attio CRM via Slack with deal creation
 
-> ⚡ **314 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **419 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

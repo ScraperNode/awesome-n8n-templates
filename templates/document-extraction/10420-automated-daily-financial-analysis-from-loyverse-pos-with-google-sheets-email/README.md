@@ -1,6 +1,6 @@
 # 🔬 Automated daily financial analysis from Loyverse POS with Google Sheets & email
 
-> ⚡ **1,285 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,502 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

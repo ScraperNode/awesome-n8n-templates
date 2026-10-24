@@ -1,6 +1,6 @@
 # 📱 Automate daily AI news with Perplexity Sonar Pro (via Telegram)
 
-> ⚡ **9,511 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **10,357 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

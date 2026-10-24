@@ -1,6 +1,6 @@
 # 🎬 Run ComfyUI image generation workflows through Replicate API
 
-> ⚡ **4,595 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **6,489 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

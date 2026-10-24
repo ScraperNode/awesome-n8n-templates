@@ -1,6 +1,6 @@
 # 🎫 Gmail customer support auto-responder with Ollama LLM and Pinecone RAG
 
-> ⚡ **621 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **675 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

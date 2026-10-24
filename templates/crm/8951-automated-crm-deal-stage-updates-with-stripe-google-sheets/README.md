@@ -1,6 +1,6 @@
 # 🤝 Automated CRM deal stage updates with Stripe & Google Sheets
 
-> ⚡ **97 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **127 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

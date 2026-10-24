@@ -1,6 +1,6 @@
 # ⚒️ Beginner manager agent with sub-agent tools
 
-> ⚡ **3,254 views** · ⚒️ [Engineering](../)
+> ⚡ **4,248 views** · ⚒️ [Engineering](../)
 
 ## Description
 

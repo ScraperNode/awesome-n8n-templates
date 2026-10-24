@@ -1,6 +1,6 @@
 # ⚙️ Aggregate error alerts and send consolidated reports via Email and Jira
 
-> ⚡ **21 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **49 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

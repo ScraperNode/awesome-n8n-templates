@@ -1,6 +1,6 @@
 # 🔧 Track student arrival with iOS automation, Google Sheets & email alerts
 
-> ⚡ **218 views** · 🔧 [Miscellaneous](../)
+> ⚡ **266 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

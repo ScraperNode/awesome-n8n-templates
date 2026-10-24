@@ -1,6 +1,6 @@
 # ⚡ Send Gmail messages with custom aliases and attachments via API
 
-> ⚡ **972 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,290 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

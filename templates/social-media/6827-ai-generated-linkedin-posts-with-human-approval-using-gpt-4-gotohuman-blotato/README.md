@@ -1,6 +1,6 @@
 # 📱 AI-generated LinkedIn posts with human approval using GPT-4, GoToHuman & Blotato
 
-> ⚡ **1,636 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,756 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 🛠️ Emelia tool MCP server 💪 all 9 operations
 
-> ⚡ **154 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **159 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

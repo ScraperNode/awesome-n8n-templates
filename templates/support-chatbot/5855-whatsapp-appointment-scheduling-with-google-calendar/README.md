@@ -1,6 +1,6 @@
 # 💬 WhatsApp appointment scheduling with Google Calendar
 
-> ⚡ **1,248 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,699 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

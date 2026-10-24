@@ -1,6 +1,6 @@
 # ⚡ Monitor flight price drops and send email alerts with SerpAPI and Gmail
 
-> ⚡ **1,029 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,325 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

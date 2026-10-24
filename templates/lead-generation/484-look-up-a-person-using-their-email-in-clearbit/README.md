@@ -1,6 +1,6 @@
 # 🎣 Look up a person using their email in Clearbit
 
-> ⚡ **505 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **513 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 Telegram trading bot assistant | LLM powered trading bot for crypto/forex
 
-> ⚡ **298 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **658 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

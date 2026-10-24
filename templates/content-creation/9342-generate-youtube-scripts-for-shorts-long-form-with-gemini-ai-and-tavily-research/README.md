@@ -1,6 +1,6 @@
 # 🎬 Generate YouTube scripts for shorts & long-form with Gemini AI and Tavily Research
 
-> ⚡ **2,221 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,155 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

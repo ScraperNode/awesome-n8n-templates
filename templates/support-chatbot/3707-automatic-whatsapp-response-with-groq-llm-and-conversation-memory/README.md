@@ -1,6 +1,6 @@
 # 💬 Automatic WhatsApp response with Groq LLM and conversation memory
 
-> ⚡ **1,951 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,037 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

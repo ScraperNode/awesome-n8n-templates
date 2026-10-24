@@ -1,6 +1,6 @@
 # 💬 Automate multi-channel customer support with Gmail, Telegram, and GPT AI
 
-> ⚡ **4,868 views** · 💬 [Support Chatbots](../)
+> ⚡ **5,443 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

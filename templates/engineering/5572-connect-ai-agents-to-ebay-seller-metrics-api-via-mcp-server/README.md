@@ -1,6 +1,6 @@
 # ⚒️ Connect AI agents to eBay Seller Metrics API via MCP Server
 
-> ⚡ **610 views** · ⚒️ [Engineering](../)
+> ⚡ **660 views** · ⚒️ [Engineering](../)
 
 ## Description
 

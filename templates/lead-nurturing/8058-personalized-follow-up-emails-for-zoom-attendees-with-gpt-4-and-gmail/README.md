@@ -1,6 +1,6 @@
 # 💬 Personalized follow-up emails for Zoom attendees with GPT-4 and Gmail
 
-> ⚡ **221 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **260 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

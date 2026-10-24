@@ -1,6 +1,6 @@
 # 🤝 Dynamic Hubspot lead routing with GPT-4 and Airtable sales team distribution
 
-> ⚡ **149 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **209 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

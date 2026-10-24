@@ -1,6 +1,6 @@
 # 🔬 Generate a legal website accessibility statement with AI and WAVE
 
-> ⚡ **759 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **821 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

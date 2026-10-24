@@ -1,6 +1,6 @@
 # 🔬 Analyze images from forms using GPT-4o-mini Vision and deliver to Telegram
 
-> ⚡ **4,105 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,380 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

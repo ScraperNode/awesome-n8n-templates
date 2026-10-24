@@ -1,6 +1,6 @@
 # 🔬 Summarize meeting recordings and create Notion action items with Gemini AI
 
-> ⚡ **4 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **113 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

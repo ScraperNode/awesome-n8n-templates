@@ -1,6 +1,6 @@
 # 📊 Extract and structure X Post Comments with Airtop Browser Automation
 
-> ⚡ **479 views** · 📊 [Market Research & Insights](../)
+> ⚡ **505 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

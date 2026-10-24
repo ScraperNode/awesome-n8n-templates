@@ -1,6 +1,6 @@
 # ⚡ Automate Gmail organization: weekly newsletter archiving and receipt labeling
 
-> ⚡ **67 views** · ⚡ [Personal Productivity](../)
+> ⚡ **80 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

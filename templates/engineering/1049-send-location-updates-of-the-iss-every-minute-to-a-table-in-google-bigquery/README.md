@@ -1,6 +1,6 @@
 # ⚒️ Send location updates of the ISS every minute to a table in Google BigQuery
 
-> ⚡ **1,907 views** · ⚒️ [Engineering](../)
+> ⚡ **1,920 views** · ⚒️ [Engineering](../)
 
 ## Description
 

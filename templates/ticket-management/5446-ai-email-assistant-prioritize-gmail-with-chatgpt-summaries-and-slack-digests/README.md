@@ -1,6 +1,6 @@
 # 🎫 AI email assistant: Prioritize Gmail with ChatGPT summaries and Slack digests
 
-> ⚡ **4,687 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **5,552 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

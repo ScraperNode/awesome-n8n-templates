@@ -1,6 +1,6 @@
 # 🎬 Sync open Zendesk tickets to Google Sheets with Zendesk and Google Sheets
 
-> ⚡ **178 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **208 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

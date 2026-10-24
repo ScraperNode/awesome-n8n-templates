@@ -1,6 +1,6 @@
 # 💬 🤖 Automate Lead Qualification & Multi-Channel Follow-up with AI (BANT)
 
-> ⚡ **3,211 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **4,373 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

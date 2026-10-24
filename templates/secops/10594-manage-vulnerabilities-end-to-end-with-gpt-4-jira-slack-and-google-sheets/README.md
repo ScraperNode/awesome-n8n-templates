@@ -1,6 +1,6 @@
 # 🔒 Manage vulnerabilities end-to-end with GPT-4, Jira, Slack and Google Sheets
 
-> ⚡ **4 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **136 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

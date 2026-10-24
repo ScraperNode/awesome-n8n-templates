@@ -1,6 +1,6 @@
 # 🎬 Auto-generate SEO blog posts with Perplexity, GPT, Leonardo & WordPress
 
-> ⚡ **38,544 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **46,594 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

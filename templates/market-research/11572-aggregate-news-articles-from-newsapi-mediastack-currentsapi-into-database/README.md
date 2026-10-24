@@ -1,6 +1,6 @@
 # 📊 Aggregate news articles from NewsAPI, Mediastack & CurrentsAPI into database
 
-> ⚡ **3,767 views** · 📊 [Market Research & Insights](../)
+> ⚡ **6,816 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

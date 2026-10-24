@@ -1,6 +1,6 @@
 # 🤝 Log e-commerce orders in Google Sheets with monthly tabs & status tracking
 
-> ⚡ **989 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,303 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

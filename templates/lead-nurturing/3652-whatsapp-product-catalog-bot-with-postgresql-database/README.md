@@ -1,6 +1,6 @@
 # 💬 WhatsApp product catalog bot with PostgreSQL database
 
-> ⚡ **2,023 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,196 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,0 +1,1181 @@
+{
+  "id": "fjhrBrBp5SCt5Wu0",
+  "meta": {
+    "instanceId": "bc8ca75c203589705ae2e446cad7181d6f2a7cc1766f958ef9f34810e53b8cb2",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Website uptime watchdog with incident tracking",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "0cf04bfb-95f4-4288-a61f-64e9eb5eb4c5",
+      "name": "Every 10 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        976,
+        -224
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "5e3a845d-56fc-40d7-8543-c8b6049ef528",
+      "name": "Read Sites",
+      "type": "n8n-nodes-base.googleSheets",
+      "notes": "The Sites tab needs these columns:\nSite Name | URL | Expected Status | Expected Keyword | Max Response ms | Fail Threshold | Alert Email | Active\n\nBlank Expected Status means any 2xx passes.\nBlank Expected Keyword skips the content check.\nBlank Max Response ms means 5000.\nBlank Fail Threshold means 2 checks in a row.\nAlert Email is optional and accepts a comma separated list.\nWrite no in Active to pause a site without deleting it.",
+      "position": [
+        1184,
+        -224
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sites"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "f30b489d-3366-4a33-8ebc-b3d13af83486",
+      "name": "Prepare Sites",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1408,
+        -224
+      ],
+      "parameters": {
+        "jsCode": "const out = [];\nconst seen = new Set();\nfor (const item of $input.all()) {\n  const r = item.json || {};\n  const activeRaw = (r['Active'] === undefined || r['Active'] === '') ? 'yes' : r['Active'];\n  const active = String(activeRaw).trim().toLowerCase();\n  if (['no', 'false', '0', 'paused', 'off'].includes(active)) continue;\n\n  let url = String(r['URL'] || '').trim();\n  if (!url) continue;\n  if (!/^https?:\\/\\//i.test(url)) url = 'https://' + url;\n  if (seen.has(url)) continue;\n  seen.add(url);\n\n  out.push({ json: {\n    siteName: String(r['Site Name'] || url).trim(),\n    url: url,\n    expectedStatus: parseInt(r['Expected Status'], 10) || null,\n    keyword: String(r['Expected Keyword'] || '').trim(),\n    maxResponseMs: parseInt(r['Max Response ms'], 10) || 5000,\n    failThreshold: Math.max(1, parseInt(r['Fail Threshold'], 10) || 2),\n    alertEmail: String(r['Alert Email'] || '').trim()\n  }});\n}\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "0e0b0bda-ce7c-4a6c-b828-152de1daaff6",
+      "name": "Loop Over Sites",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        1632,
+        -224
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "41371876-0ea0-44a1-8342-c5b921b7a1b6",
+      "name": "Stamp Start",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2208,
+        -208
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: { ...i.json, startedAt: Date.now() } }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "da80ed52-ccba-46dc-b583-52e24714b521",
+      "name": "Check Site",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        2432,
+        -208
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "maxRedirects": 5
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "n8n-uptime-watchdog/1.0"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "a0e39b5f-5727-4d4b-8c2a-1b450a3a8006",
+      "name": "Evaluate Result",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2640,
+        -208
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const site = $('Stamp Start').item.json;\nconst r = $json || {};\nconst elapsed = Date.now() - site.startedAt;\nconst statusCode = (r.statusCode !== undefined && r.statusCode !== null) ? Number(r.statusCode) : null;\nconst body = typeof r.body === 'string' ? r.body : '';\n\nlet reason = null;\nif (r.error || statusCode === null) {\n  let msg = 'No response';\n  if (typeof r.error === 'string') msg = r.error;\n  else if (r.error && (r.error.message || r.error.description)) msg = r.error.message || r.error.description;\n  reason = 'Request failed: ' + String(msg).slice(0, 200);\n} else {\n  const statusOk = site.expectedStatus ? statusCode === site.expectedStatus : (statusCode >= 200 && statusCode < 300);\n  if (!statusOk) {\n    reason = 'Unexpected HTTP status ' + statusCode + ' (expected ' + (site.expectedStatus || '2xx') + ')';\n  } else if (site.keyword && !body.toLowerCase().includes(site.keyword.toLowerCase())) {\n    reason = 'Expected keyword not found on page: \"' + site.keyword + '\"';\n  }\n}\n\nconst isUp = reason === null;\nconst isSlow = isUp && elapsed > site.maxResponseMs;\nif (isSlow) reason = 'Slow response: ' + elapsed + ' ms (limit ' + site.maxResponseMs + ' ms)';\n\nreturn { json: {\n  siteName: site.siteName,\n  url: site.url,\n  keyword: site.keyword,\n  maxResponseMs: site.maxResponseMs,\n  failThreshold: site.failThreshold,\n  alertEmail: site.alertEmail,\n  statusCode: statusCode,\n  responseMs: elapsed,\n  isUp: isUp,\n  isSlow: isSlow,\n  reason: reason\n} };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "91e11fa1-0b43-4cad-8e54-91e60efd88f2",
+      "name": "Read Previous State",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2864,
+        -208
+      ],
+      "parameters": {
+        "options": {},
+        "filtersUI": {
+          "values": [
+            {
+              "lookupValue": "={{ $json.url }}",
+              "lookupColumn": "Site URL"
+            }
+          ]
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Site State"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "df5b1bf8-83b3-4e8b-a301-df2b1022e2c4",
+      "name": "Decide Transition",
+      "type": "n8n-nodes-base.code",
+      "notes": "A site must fail its threshold number of checks in a row before it is called DOWN, which is what filters out one-off blips. Recovery is immediate on the first healthy check.\nWhile an incident stays open a reminder is sent every 6 hours rather than every 10 minutes.",
+      "position": [
+        3280,
+        -208
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Change this number to control how often a still-open incident is re-announced\nconst REMINDER_HOURS = 6;\n\nconst cur = $('Evaluate Result').item.json;\nconst prev = $json || {};\nconst nowMs = Date.now();\nconst nowIso = new Date(nowMs).toISOString();\n\nconst prevState = ['UP', 'DOWN', 'SLOW'].includes(prev['State']) ? prev['State'] : 'UP';\nconst prevCount = parseInt(prev['Problem Count'], 10) || 0;\n\nconst problem = !cur.isUp ? 'DOWN' : (cur.isSlow ? 'SLOW' : null);\nconst problemCount = problem ? prevCount + 1 : 0;\n\n// State changes only after N bad checks in a row, but recovery is immediate\nlet newState = prevState;\nif (!problem) newState = 'UP';\nelse if (problemCount >= cur.failThreshold) newState = problem;\n\nlet action = 'NONE';\nconst lastAlertMs = prev['Last Alert At'] ? Date.parse(prev['Last Alert At']) : 0;\nif (newState !== prevState) {\n  action = newState === 'UP' ? 'RECOVERED' : 'INCIDENT_OPEN';\n} else if (newState !== 'UP' && lastAlertMs && (nowMs - lastAlertMs) >= REMINDER_HOURS * 3600000) {\n  action = 'REMINDER';\n}\n\nlet downSince = '';\nif (problem) {\n  downSince = (problemCount === 1 || !prev['Down Since']) ? nowIso : prev['Down Since'];\n}\n\nconst startIso = problem ? downSince : (prev['Down Since'] || '');\nlet durationMin = null;\nif (startIso && !isNaN(Date.parse(startIso))) {\n  durationMin = Math.max(0, Math.round((nowMs - Date.parse(startIso)) / 60000));\n}\n\nreturn { json: {\n  ...cur,\n  prevState: prevState,\n  newState: newState,\n  action: action,\n  problemCount: problemCount,\n  downSince: downSince,\n  previousDownSince: prev['Down Since'] || '',\n  prevReason: prev['Last Reason'] || '',\n  durationMin: durationMin,\n  lastAlertAt: action !== 'NONE' ? nowIso : (prev['Last Alert At'] || ''),\n  checkedAt: nowIso\n} };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "fe36f0e0-645f-47ea-8f1e-145d79c8ebcf",
+      "name": "Has Action?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3488,
+        -208
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "d97180d6-0ea2-5229-badd-27bea4eb336e",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "NONE"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8656b56a-c6b7-4f51-ac7a-b6c269bd0297",
+      "name": "Build Alert Message",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3712,
+        -352
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const d = $json;\nconst fmt = (min) => {\n  if (min === null || min === undefined || isNaN(min)) return 'unknown time';\n  const h = Math.floor(min / 60);\n  const m = min % 60;\n  return h > 0 ? h + 'h ' + m + 'm' : m + 'm';\n};\n\nlet icon, title, detail, tag;\nif (d.action === 'RECOVERED') {\n  icon = ':large_green_circle:';\n  tag = 'RECOVERED';\n  title = 'RECOVERED: ' + d.siteName;\n  detail = 'Back to normal after ' + fmt(d.durationMin) + ' (' + d.prevState.toLowerCase() + ' incident). Response time: ' + d.responseMs + ' ms.';\n} else if (d.action === 'REMINDER') {\n  icon = ':rotating_light:';\n  tag = d.newState;\n  title = 'STILL ' + d.newState + ': ' + d.siteName;\n  detail = d.reason + '. Ongoing for ' + fmt(d.durationMin) + '.';\n} else {\n  icon = d.newState === 'DOWN' ? ':red_circle:' : ':large_yellow_circle:';\n  tag = d.newState;\n  title = (d.newState === 'DOWN' ? 'SITE DOWN: ' : 'SITE SLOW: ') + d.siteName;\n  detail = d.reason;\n}\n\nconst lines = [\n  icon + ' *' + title + '*',\n  '*URL:* ' + d.url,\n  '*Details:* ' + detail,\n  '*HTTP status:* ' + (d.statusCode === null ? 'no response' : d.statusCode),\n  '*Response time:* ' + d.responseMs + ' ms',\n  '*Checked at:* ' + d.checkedAt\n];\n\nconst plain = [\n  title,\n  '',\n  'URL: ' + d.url,\n  'Details: ' + detail,\n  'HTTP status: ' + (d.statusCode === null ? 'no response' : d.statusCode),\n  'Response time: ' + d.responseMs + ' ms',\n  'Checked at: ' + d.checkedAt\n];\n\nreturn { json: {\n  slackText: lines.join('\\n'),\n  emailSubject: '[' + tag + '] ' + d.siteName,\n  emailBody: plain.join('\\n')\n} };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "d8752d8e-78af-4904-8c5d-6e03a9874d8b",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "onError": "continueRegularOutput",
+      "position": [
+        3936,
+        -352
+      ],
+      "webhookId": "79c1d200-9574-43d5-ab70-b5196140a802",
+      "parameters": {
+        "text": "={{ $json.slackText }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_CHANNEL_ID"
+        },
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        },
+        "authentication": "oAuth2"
+      },
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Yq1c63Qg1P3pWwwt",
+          "name": "Slack crm"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "aea00a24-eba0-4864-9366-897ce3c5a2f6",
+      "name": "Has Alert Email?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4160,
+        -352
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "7b50e998-fdc9-5bf8-b2b1-de19d393f80e",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Decide Transition').item.json.alertEmail }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "4068ab95-730e-4a38-ba28-adb28fd4d2d6",
+      "name": "Send Email Alert",
+      "type": "n8n-nodes-base.gmail",
+      "onError": "continueRegularOutput",
+      "position": [
+        4368,
+        -432
+      ],
+      "webhookId": "a6580c6d-6c5c-4157-946a-528226dcb098",
+      "parameters": {
+        "sendTo": "={{ $('Decide Transition').item.json.alertEmail }}",
+        "message": "={{ $('Build Alert Message').item.json.emailBody }}",
+        "options": {},
+        "subject": "={{ $('Build Alert Message').item.json.emailSubject }}",
+        "emailType": "text"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "9422b94c-db6a-4123-b6c4-86c66ff8af46",
+      "name": "Save State",
+      "type": "n8n-nodes-base.googleSheets",
+      "notes": "The Site State tab needs these columns, left empty for the workflow to fill:\nSite URL | Site Name | State | Problem Count | Down Since | Last Alert At | Last Checked | Last Status Code | Last Response ms | Last Reason\n\nRows are matched on Site URL, so there is always one row per site and this doubles as a heartbeat showing the monitor itself ran.",
+      "position": [
+        4768,
+        -208
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "State": "={{ $('Decide Transition').item.json.newState }}",
+            "Site URL": "={{ $('Decide Transition').item.json.url }}",
+            "Site Name": "={{ $('Decide Transition').item.json.siteName }}",
+            "Down Since": "={{ $('Decide Transition').item.json.downSince }}",
+            "Last Reason": "={{ $('Decide Transition').item.json.reason || '' }}",
+            "Last Checked": "={{ $('Decide Transition').item.json.checkedAt }}",
+            "Last Alert At": "={{ $('Decide Transition').item.json.lastAlertAt }}",
+            "Problem Count": "={{ $('Decide Transition').item.json.problemCount }}",
+            "Last Response ms": "={{ $('Decide Transition').item.json.responseMs }}",
+            "Last Status Code": "={{ $('Decide Transition').item.json.statusCode }}"
+          },
+          "schema": [
+            {
+              "id": "Site URL",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Site URL",
+              "defaultMatch": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Site Name",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Site Name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "State",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "State",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Problem Count",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Problem Count",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Down Since",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Down Since",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Alert At",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Last Alert At",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Checked",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Last Checked",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Status Code",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Last Status Code",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Response ms",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Last Response ms",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Reason",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Last Reason",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Site URL"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Site State"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "1203f68b-19af-4705-80c1-907e1cae8d8b",
+      "name": "Is Recovery?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4992,
+        -208
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "fcef4425-b51e-5bae-9c8b-4a0d215e76a3",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $('Decide Transition').item.json.action }}",
+              "rightValue": "RECOVERED"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a855d607-de0f-4168-b0ad-22cdd59f4df6",
+      "name": "Log Incident History",
+      "type": "n8n-nodes-base.googleSheets",
+      "notes": "The Incident History tab needs these columns:\nSite Name | Site URL | Incident Type | Started At | Recovered At | Duration Minutes | Last Reason\n\nOne row is written per closed incident, at the moment a site recovers, so total downtime is known.",
+      "position": [
+        5216,
+        -304
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Site URL": "={{ $('Decide Transition').item.json.url }}",
+            "Site Name": "={{ $('Decide Transition').item.json.siteName }}",
+            "Started At": "={{ $('Decide Transition').item.json.previousDownSince }}",
+            "Last Reason": "={{ $('Decide Transition').item.json.prevReason }}",
+            "Recovered At": "={{ $('Decide Transition').item.json.checkedAt }}",
+            "Incident Type": "={{ $('Decide Transition').item.json.prevState }}",
+            "Duration Minutes": "={{ $('Decide Transition').item.json.durationMin }}"
+          },
+          "schema": [
+            {
+              "id": "Site Name",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Site Name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Site URL",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Site URL",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Incident Type",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Incident Type",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Started At",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Started At",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recovered At",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Recovered At",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Duration Minutes",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Duration Minutes",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Reason",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Last Reason",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Incident History"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "7bded916-ba27-4d7e-a25d-ad61d5fffbda",
+      "name": "Daily Digest Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        960,
+        240
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "3a51728d-0908-446a-9464-6b3e748c9d92",
+      "name": "Read Site State",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1168,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Site State"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "61bb3821-2bcd-41ae-82eb-de1aff540870",
+      "name": "Read Incident History",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1392,
+        240
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Incident History"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "adf33198-a08d-4120-923c-0c8848db0643",
+      "name": "Build Digest",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1616,
+        240
+      ],
+      "parameters": {
+        "jsCode": "const states = $('Read Site State').all().map(i => i.json).filter(r => r['Site URL']);\nconst history = $('Read Incident History').all().map(i => i.json).filter(r => r['Site URL']);\n\nconst cutoff = Date.now() - 24 * 3600000;\nconst closed = history.filter(h => {\n  const t = Date.parse(h['Recovered At']);\n  return !isNaN(t) && t >= cutoff;\n});\nconst downtime = closed.reduce((s, h) => s + (parseInt(h['Duration Minutes'], 10) || 0), 0);\n\nconst down = states.filter(s => s['State'] === 'DOWN');\nconst slow = states.filter(s => s['State'] === 'SLOW');\nconst up = states.filter(s => s['State'] === 'UP');\n\nconst slowest = states\n  .filter(s => parseInt(s['Last Response ms'], 10) > 0)\n  .sort((a, b) => parseInt(b['Last Response ms'], 10) - parseInt(a['Last Response ms'], 10))\n  .slice(0, 3);\n\nconst lines = [];\nlines.push(':bar_chart: *Daily uptime digest* (' + new Date().toISOString().slice(0, 10) + ')');\nlines.push('*Monitored:* ' + states.length + '  |  *Up:* ' + up.length + '  |  *Slow:* ' + slow.length + '  |  *Down:* ' + down.length);\n\nif (down.length) {\n  lines.push('');\n  lines.push(':red_circle: *Down right now*');\n  down.forEach(s => lines.push('- ' + s['Site Name'] + ' since ' + (s['Down Since'] || 'unknown')));\n}\nif (slow.length) {\n  lines.push('');\n  lines.push(':large_yellow_circle: *Slow right now*');\n  slow.forEach(s => lines.push('- ' + s['Site Name'] + ' (' + s['Last Response ms'] + ' ms)'));\n}\n\nlines.push('');\nlines.push('*Incidents closed in last 24h:* ' + closed.length + '  |  *Total downtime:* ' + downtime + ' min');\n\nif (slowest.length) {\n  lines.push('');\n  lines.push('*Slowest sites at last check*');\n  slowest.forEach(s => lines.push('- ' + s['Site Name'] + ': ' + s['Last Response ms'] + ' ms'));\n}\n\nif (!states.length) {\n  lines.push('');\n  lines.push('No site state yet. Check that the Sites tab has active rows and the main workflow is running.');\n}\n\nreturn [{ json: { text: lines.join('\\n') } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "428ad761-6ff9-4dcb-ac52-4c66e8207272",
+      "name": "Send Digest",
+      "type": "n8n-nodes-base.slack",
+      "onError": "continueRegularOutput",
+      "position": [
+        1840,
+        240
+      ],
+      "webhookId": "c0bded34-b64b-4f5b-a357-5519709b0b0e",
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_CHANNEL_ID"
+        },
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        },
+        "authentication": "oAuth2"
+      },
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Yq1c63Qg1P3pWwwt",
+          "name": "Slack crm"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "c13ce8bd-7598-49f2-8857-bd3f7031543c",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "position": [
+        976,
+        656
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "4b9a1601-e2d5-4a5b-92d9-57a7f8b1865a",
+      "name": "Format Error",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1184,
+        656
+      ],
+      "parameters": {
+        "jsCode": "const e = $json || {};\nconst wf = (e.workflow && e.workflow.name) || 'Website Uptime Watchdog';\nconst ex = e.execution || {};\nconst msg = (ex.error && ex.error.message) || 'No error message available';\nconst text = [\n  ':warning: *Uptime Watchdog crashed*',\n  '*Workflow:* ' + wf,\n  '*Failed node:* ' + (ex.lastNodeExecuted || 'unknown'),\n  '*Error:* ' + msg,\n  '*Execution:* ' + (ex.url || 'n/a'),\n  '',\n  'Monitoring is paused until this is fixed.'\n].join('\\n');\nreturn [{ json: { text: text } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f3cf3639-f838-4273-bfcc-67c07cb8f346",
+      "name": "Send Error Alert",
+      "type": "n8n-nodes-base.slack",
+      "notes": "This branch only fires if the workflow itself crashes.\nOpen workflow settings and set Error Workflow to this same workflow, otherwise it never runs.",
+      "position": [
+        1424,
+        656
+      ],
+      "webhookId": "d3a3bbf3-2426-4c7f-9ce3-dc98c40df575",
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SLACK_CHANNEL_ID"
+        },
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        },
+        "authentication": "oAuth2"
+      },
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Yq1c63Qg1P3pWwwt",
+          "name": "Slack crm"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "1adfc8bd-85da-4e5b-8eae-de23f8e85d94",
+      "name": "Sticky Note - Section 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        896,
+        -384
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1004,
+        "height": 344,
+        "content": "## 1. Load the sites\nEvery 10 minutes the Sites tab is read. Paused and blank rows are dropped, URLs are normalised and duplicates removed, then sites are checked one at a time so response time is measured honestly."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ed884931-60a3-49b4-a860-89ae5857963b",
+      "name": "Sticky Note - Section 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2144,
+        -368
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1004,
+        "height": 344,
+        "content": "## 2. Check each site\nOne real request per site with a 15 second timeout and redirects followed. A failed request does not stop the loop. The result is judged on status code, keyword and response time, then the site's previous state is loaded."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a98aaf85-3022-4ba9-a44c-a4ca9b24e211",
+      "name": "Sticky Note - Section 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3200,
+        -592
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1436,
+        "height": 568,
+        "content": "## 3. Decide, then alert\nA site is only called DOWN after several failed checks in a row, so a single blip stays quiet, but it returns to UP on the first healthy check. Alerts go out on a new incident, on recovery, and as a reminder every 6 hours."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "835d060d-8696-48fa-951e-2c31e8ff0a6f",
+      "name": "Sticky Note - Section 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4688,
+        -464
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 796,
+        "height": 440,
+        "content": "## 4. Save and log\nThe current state is written on every pass, which doubles as a heartbeat for the monitor itself. When a site recovers, one incident row is closed off with its start time and total downtime."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b3a8458d-2b4d-4046-a576-295e9ba3c08a",
+      "name": "Sticky Note - Section 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        880,
+        112
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1228,
+        "height": 320,
+        "content": "## 5. Daily digest\nEach morning Slack gets a summary: how many sites are up, slow or down, incidents closed in the last 24 hours, total downtime and the slowest sites."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "05096b4f-1367-4617-81ac-cf6274f6dba0",
+      "name": "Sticky Note - Section 6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        912,
+        512
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 780,
+        "height": 344,
+        "content": "## 6. Crash alerts\nIf the workflow itself fails, this branch posts the failed node and a link to the execution. Set Error Workflow in workflow settings to this workflow to switch it on."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "db5008cd-d677-463a-bff1-0954cf18a5de",
+      "name": "Sticky Note - Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        256,
+        -464
+      ],
+      "parameters": {
+        "width": 540,
+        "height": 1353,
+        "content": "# Website uptime watchdog with incident tracking\n\nChecks every site listed in a Google Sheet every 10 minutes, tracks each as UP, SLOW or DOWN, and alerts your team only when the state genuinely changes. Catches wrong status codes, missing keywords, timeouts, DNS failures, expired certificates and slow responses.\n\n### How it works\n1. The Sites tab is read, paused and duplicate rows dropped, and sites are checked one at a time so response times stay accurate.\n2. Each site gets one real request with a 15 second timeout, judged on status code, expected keyword and response time.\n3. A site is only called DOWN after several failed checks in a row, which stops a single blip paging anyone. Recovery is immediate on the first healthy check.\n4. Alerts go to Slack on a new incident, on recovery with total downtime, and every 6 hours while an incident stays open. An optional per-site email is alerted too.\n5. State is written on every pass, so the sheet doubles as a heartbeat. When a site recovers, one incident row is closed with its duration.\n6. Each morning a digest goes to Slack with how many sites are up, incidents closed in the last day, total downtime and the slowest sites.\n7. A separate branch alerts you if the workflow itself crashes.\n\n### Setup\n1. Create one spreadsheet with three tabs: Sites, Site State and Incident History. The columns are in the notes on the Read Sites, Save State and Log Incident History nodes.\n2. Connect Google Sheets, Slack and Gmail, then replace YOUR_GOOGLE_SHEET_ID and YOUR_SLACK_CHANNEL_ID.\n3. In workflow settings set Error Workflow to this same workflow, check the timezone, then activate.\n\n### Customization\nTune Fail Threshold and Max Response ms per site in the sheet, no editing needed."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "versionId": "43d50291-147d-4d10-a1e6-09a7d2610a9a",
+  "nodeGroups": [],
+  "connections": {
+    "Check Site": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Sites": {
+      "main": [
+        [
+          {
+            "node": "Prepare Sites",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save State": {
+      "main": [
+        [
+          {
+            "node": "Is Recovery?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Action?": {
+      "main": [
+        [
+          {
+            "node": "Build Alert Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stamp Start": {
+      "main": [
+        [
+          {
+            "node": "Check Site",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Digest": {
+      "main": [
+        [
+          {
+            "node": "Send Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error": {
+      "main": [
+        [
+          {
+            "node": "Send Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Recovery?": {
+      "main": [
+        [
+          {
+            "node": "Log Incident History",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Sites",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Sites": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Sites",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Result": {
+      "main": [
+        [
+          {
+            "node": "Read Previous State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Sites": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Stamp Start",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Site State": {
+      "main": [
+        [
+          {
+            "node": "Read Incident History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 10 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Read Sites",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Alert Email?": {
+      "main": [
+        [
+          {
+            "node": "Send Email Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email Alert": {
+      "main": [
+        [
+          {
+            "node": "Save State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Slack Alert": {
+      "main": [
+        [
+          {
+            "node": "Has Alert Email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide Transition": {
+      "main": [
+        [
+          {
+            "node": "Has Action?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Alert Message": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Previous State": {
+      "main": [
+        [
+          {
+            "node": "Decide Transition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Digest Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Site State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Incident History": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Sites",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Incident History": {
+      "main": [
+        [
+          {
+            "node": "Build Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

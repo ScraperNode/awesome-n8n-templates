@@ -1,6 +1,6 @@
 # 📊 Get your website indexed by Google automatically
 
-> ⚡ **14,000 views** · 📊 [Market Research & Insights](../)
+> ⚡ **14,354 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

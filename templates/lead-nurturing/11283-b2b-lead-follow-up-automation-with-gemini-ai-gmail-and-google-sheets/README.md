@@ -1,6 +1,6 @@
 # 💬 B2B lead follow-up automation with Gemini AI, Gmail and Google Sheets
 
-> ⚡ **315 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,130 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Generate monthly AI financial reports with OpenAI and email/Slack distribution
 
-> ⚡ **19 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **81 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

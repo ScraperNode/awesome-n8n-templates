@@ -1,6 +1,6 @@
 # 💬 Create a voice & text Telegram assistant with Lookio RAG and GPT-4.1
 
-> ⚡ **287 views** · 💬 [Support Chatbots](../)
+> ⚡ **384 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

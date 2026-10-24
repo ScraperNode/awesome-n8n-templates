@@ -1,6 +1,6 @@
 # 🎫 Triage LinkedIn notifications and InMails using Gmail, OpenAI, Notion, and Slack
 
-> ⚡ **38 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **73 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

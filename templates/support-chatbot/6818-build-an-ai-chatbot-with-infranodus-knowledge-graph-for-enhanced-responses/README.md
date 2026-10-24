@@ -1,6 +1,6 @@
 # 💬 Build an AI chatbot with InfraNodus knowledge graph for enhanced responses
 
-> ⚡ **793 views** · 💬 [Support Chatbots](../)
+> ⚡ **817 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

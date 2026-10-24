@@ -1,6 +1,6 @@
 # 💬 Build a smart chatbot with GPT-5-nano, web search & conversational memory
 
-> ⚡ **1,893 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,096 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

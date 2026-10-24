@@ -1,6 +1,6 @@
 # 🔬 Log failed WooCommerce orders to Airtable and send OpenAI-powered Slack alerts
 
-> ⚡ **2 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **11 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

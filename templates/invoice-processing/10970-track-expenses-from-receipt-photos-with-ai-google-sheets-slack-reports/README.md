@@ -1,6 +1,6 @@
 # 🧾 Track expenses from receipt photos with AI, Google Sheets & Slack reports
 
-> ⚡ **372 views** · 🧾 [Invoice Processing](../)
+> ⚡ **462 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

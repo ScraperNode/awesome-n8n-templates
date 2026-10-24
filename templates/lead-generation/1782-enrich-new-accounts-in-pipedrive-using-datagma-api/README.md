@@ -1,6 +1,6 @@
 # 🎣 Enrich new accounts in Pipedrive using Datagma API
 
-> ⚡ **882 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **914 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

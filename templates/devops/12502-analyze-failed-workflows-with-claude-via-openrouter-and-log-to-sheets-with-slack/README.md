@@ -1,6 +1,6 @@
 # ⚙️ Analyze failed workflows with Claude via OpenRouter and log to Sheets with Slack, Email, Discord alerts
 
-> ⚡ **53 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **94 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

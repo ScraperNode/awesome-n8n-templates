@@ -1,6 +1,6 @@
 # 🧾 GPT-4.1-mini Powered Invoice Processing from Gmail to Google Sheets with Slack
 
-> ⚡ **78 views** · 🧾 [Invoice Processing](../)
+> ⚡ **119 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

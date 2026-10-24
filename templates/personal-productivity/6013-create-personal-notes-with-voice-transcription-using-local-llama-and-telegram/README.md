@@ -1,6 +1,6 @@
 # ⚡ Create personal notes with voice transcription using local LLaMA and Telegram
 
-> ⚡ **2,398 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,861 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

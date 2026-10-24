@@ -1,6 +1,6 @@
 # 🤖 AI resume analysis & candidate evaluation with Slack and Google Sheets
 
-> ⚡ **522 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **593 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Transform NASA patents into business ideas with OpenAI and send to Google Sheets & Slack
 
-> ⚡ **127 views** · 📊 [Market Research & Insights](../)
+> ⚡ **156 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

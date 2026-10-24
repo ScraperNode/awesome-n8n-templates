@@ -1,6 +1,6 @@
 # 🎫 Classify & process IT requests with Jotform, Gemini AI and Google Workspace
 
-> ⚡ **89 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **130 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

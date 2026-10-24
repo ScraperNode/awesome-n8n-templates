@@ -1,6 +1,6 @@
 # 📁 Sync inventory updates between systems via webhook and Google Sheets logging
 
-> ⚡ **32 views** · 📁 [File Management](../)
+> ⚡ **103 views** · 📁 [File Management](../)
 
 ## Description
 

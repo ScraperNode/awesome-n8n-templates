@@ -1,6 +1,6 @@
 # 🎯 Daily news summarization with OpenAI Perplexity AI delivered via Telegram
 
-> ⚡ **781 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **812 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Process large documents with OCR using SubworkflowAI and Gemini
 
-> ⚡ **11,336 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **18,307 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

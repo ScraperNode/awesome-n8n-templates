@@ -1,6 +1,6 @@
 # 📊 🔤 Inventory ABC & Pareto analysis with Google Sheets for supply chain
 
-> ⚡ **1,216 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,440 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

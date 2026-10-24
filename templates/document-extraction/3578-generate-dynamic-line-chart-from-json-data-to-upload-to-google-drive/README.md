@@ -1,6 +1,6 @@
 # 🔬 Generate dynamic line chart from JSON data to upload to Google Drive
 
-> ⚡ **2,611 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,808 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

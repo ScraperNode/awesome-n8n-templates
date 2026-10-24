@@ -1,6 +1,6 @@
 # 🔬 Generate weekly document digests from Google Docs with GPT-4 and email delivery
 
-> ⚡ **188 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **200 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 Monitor Shopify inventory & send low stock alerts to Slack
 
-> ⚡ **971 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,189 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Summarize Umami data with AI (via Openrouter) and save it to Baserow
 
-> ⚡ **1,322 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,361 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

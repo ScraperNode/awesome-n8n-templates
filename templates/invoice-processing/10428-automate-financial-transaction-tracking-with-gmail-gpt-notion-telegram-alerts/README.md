@@ -1,6 +1,6 @@
 # 🧾 Automate financial transaction tracking with Gmail, GPT, Notion & Telegram alerts
 
-> ⚡ **157 views** · 🧾 [Invoice Processing](../)
+> ⚡ **251 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

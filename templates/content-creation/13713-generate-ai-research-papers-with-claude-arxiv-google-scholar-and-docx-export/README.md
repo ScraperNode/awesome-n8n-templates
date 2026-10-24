@@ -1,6 +1,6 @@
 # 🎬 Generate AI research papers with Claude, arXiv, Google Scholar and DOCX export
 
-> ⚡ **28 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **724 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

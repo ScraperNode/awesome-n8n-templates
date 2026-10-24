@@ -1,6 +1,6 @@
 # 📊 Automate unified marketing reports with Google Analytics, Google Ads, Meta Ads & HubSpot
 
-> ⚡ **1,926 views** · 📊 [Market Research & Insights](../)
+> ⚡ **4,372 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

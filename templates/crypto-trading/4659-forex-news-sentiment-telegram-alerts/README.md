@@ -1,6 +1,6 @@
 # 📈 Forex News & Sentiment Telegram Alerts
 
-> ⚡ **1,381 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,441 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

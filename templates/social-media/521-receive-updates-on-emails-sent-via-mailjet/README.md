@@ -1,6 +1,6 @@
 # 📱 Receive updates on emails sent via Mailjet
 
-> ⚡ **521 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **532 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

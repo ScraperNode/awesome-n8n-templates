@@ -1,6 +1,6 @@
 # 🤖 Manage Appian tasks with Ollama Qwen LLM and Postgres memory
 
-> ⚡ **172 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **272 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

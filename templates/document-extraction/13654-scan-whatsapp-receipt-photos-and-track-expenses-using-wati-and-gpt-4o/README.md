@@ -1,6 +1,6 @@
 # 🔬 Scan WhatsApp receipt photos and track expenses using Wati and GPT-4o
 
-> ⚡ **65 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **316 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

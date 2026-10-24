@@ -1,6 +1,6 @@
 # 🎬 Create AI news videos with HeyGen avatars and auto-post to social media
 
-> ⚡ **1,554 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,590 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

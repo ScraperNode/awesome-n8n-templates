@@ -1,0 +1,517 @@
+{
+  "id": "a7ldLty8xYKwUCqw",
+  "meta": {
+    "instanceId": "dd69efaf8212c74ad206700d104739d3329588a6f3f8381a46a481f34c9cc281",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Merge incompatible datasets via webhook with an AI mapping API",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "b3d13015-19fd-4d53-8a4e-2f8011e81367",
+      "name": "Code - Error (AI)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        9040,
+        1168
+      ],
+      "parameters": {
+        "jsCode": "const ctx = $input.first().json;\nreturn [{\n  json: {\n    httpStatus: 502,\n    body: {\n      status: 'error',\n      requestId: ctx.requestId,\n      error: 'AI mapping service failed or returned unusable data',\n      aiStatus: ctx.aiStatus,\n      mappingsFound: (ctx.mappings || []).length\n    },\n    requestId: ctx.requestId\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f80eb81c-82c4-425d-a077-27309b3f98bc",
+      "name": "Code - Error (Validation)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        8080,
+        1248
+      ],
+      "parameters": {
+        "jsCode": "const ctx = $input.first().json;\nreturn [{\n  json: {\n    httpStatus: 400,\n    body: {\n      status: 'error',\n      requestId: ctx.requestId,\n      error: 'Validation failed',\n      details: ctx.errors\n    },\n    requestId: ctx.requestId\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b3e4716b-6621-49a3-81ac-861b6d9d3a2e",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "notes": "Returns the merged dataset + mapping audit (or error envelope).",
+      "position": [
+        10000,
+        1136
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": "={{ $json.httpStatus }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "X-Request-Id",
+                "value": "={{ $json.requestId }}"
+              }
+            ]
+          }
+        },
+        "respondWith": "json",
+        "responseBody": "={{ $json.body }}"
+      },
+      "notesInFlow": true,
+      "typeVersion": 1.1
+    },
+    {
+      "id": "eb07723a-6d74-439e-a59d-546cbace1ad1",
+      "name": "Code - Finalize Output",
+      "type": "n8n-nodes-base.code",
+      "notes": "Assembles the final success envelope.",
+      "position": [
+        9760,
+        976
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) {\n  try { return $(name).item.json; } catch (e) { return $(name).first().json; }\n}\nconst ctx = ref('Code - Build Mapping Report');\n\nreturn [{\n  json: {\n    httpStatus: 200,\n    body: {\n      status: 'mapped',\n      requestId: ctx.requestId,\n      stats: ctx.stats,\n      data: ctx.merged,\n      report: ctx.report\n    },\n    requestId: ctx.requestId\n  }\n}];"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "00610933-b1b1-48d8-9091-55d2b74c6863",
+      "name": "Code - Build Mapping Report",
+      "type": "n8n-nodes-base.code",
+      "notes": "Creates a detailed audit report of mappings, confidence, unmatched fields.",
+      "position": [
+        9520,
+        976
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) {\n  try { return $(name).item.json; } catch (e) { return $(name).first().json; }\n}\nconst ctx = ref('Code - Apply Mapping & Merge');\nconst profileA = ref('Code - Generate Transform Rules').profileA;\nconst profileB = ref('Code - Generate Transform Rules').profileB;\n\nconst mappedSources = new Set((ctx.ruleList || []).map(r => r.source));\nconst mappedTargets = new Set((ctx.ruleList || []).map(r => r.target));\n\nconst unmatchedA = Object.keys(profileA.fields || {}).filter(f => !mappedSources.has(f));\nconst unmatchedB = Object.keys(profileB.fields || {}).filter(f => !mappedTargets.has(f));\n\nconst report = {\n  requestId: ctx.requestId,\n  generatedAt: new Date().toISOString(),\n  aiOk: ctx.aiOk,\n  stats: ctx.stats,\n  mappings: (ctx.ruleList || []).map(r => ({\n    from: r.source,\n    to: r.target,\n    confidence: r.confidence,\n    transform: r.transform\n  })),\n  lowConfidence: (ctx.ruleList || []).filter(r => r.confidence < 0.7),\n  unmatchedFromA: unmatchedA,\n  unmatchedFromB: unmatchedB,\n  summary: `Mapped ${ctx.stats.fieldsMapped} fields using strategy \"${ctx.stats.mergeStrategy}\". ` +\n           `Merged ${ctx.stats.rowsA} + ${ctx.stats.rowsB} \u2192 ${ctx.stats.rowsMerged} rows.`\n};\n\nreturn [{\n  json: {\n    requestId: ctx.requestId,\n    merged: ctx.merged,\n    mappedA: ctx.mappedA,\n    report,\n    stats: ctx.stats\n  }\n}];"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "e23964bf-a02e-488a-a9c4-e81c02747445",
+      "name": "Code - Apply Mapping & Merge",
+      "type": "n8n-nodes-base.code",
+      "notes": "Applies transforms and performs the chosen merge strategy (concat / left / right / inner / outer).",
+      "position": [
+        9280,
+        976
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) {\n  try { return $(name).item.json; } catch (e) { return $(name).first().json; }\n}\nconst ctx = ref('Code - Generate Transform Rules');\nconst rules = ctx.rules || {};\nconst datasetA = ctx.datasetA || [];\nconst datasetB = ctx.datasetB || [];\nconst { mergeStrategy, joinKey, keepUnmapped } = ctx.config;\n\nfunction applyRules(row) {\n  const out = {};\n  for (const [target, rule] of Object.entries(rules)) {\n    let val = row[rule.source];\n\n    if (val === undefined || val === null) {\n      val = rule.defaultValue !== null ? rule.defaultValue : null;\n    } else {\n      switch (rule.transform) {\n        case 'string':   val = String(val); break;\n        case 'number':   val = Number(val); break;\n        case 'boolean':  val = Boolean(val); break;\n        case 'lowercase': if (typeof val === 'string') val = val.toLowerCase(); break;\n        case 'uppercase': if (typeof val === 'string') val = val.toUpperCase(); break;\n        case 'split':    if (typeof val === 'string') val = val.split(/[,;|]/).map(s => s.trim()); break;\n        case 'concatenate':\n          // expression can be \"first_name + ' ' + last_name\"\n          if (rule.expression) {\n            try {\n              // very limited safe eval \u2013 only allow field names + string literals + +\n              const expr = rule.expression.replace(/([a-zA-Z_][a-zA-Z0-9_]*)/g, (m) => {\n                return row[m] !== undefined ? JSON.stringify(row[m]) : '\"\"';\n              });\n              val = eval(expr);\n            } catch (e) { val = null; }\n          }\n          break;\n        case 'dateFormat':\n          // expects ISO or epoch; outputs YYYY-MM-DD\n          try {\n            const d = new Date(val);\n            if (!isNaN(d)) val = d.toISOString().slice(0, 10);\n          } catch (e) {}\n          break;\n        // 'rename' and unknown \u2192 keep as-is\n      }\n    }\n    out[target] = val;\n  }\n\n  if (keepUnmapped) {\n    for (const [k, v] of Object.entries(row)) {\n      if (!(k in out) && !Object.values(rules).some(r => r.source === k)) {\n        out['_src_' + k] = v;\n      }\n    }\n  }\n  return out;\n}\n\nconst mappedA = datasetA.map(row => applyRules(row));\n\n// ---------- Merge strategies ----------\nlet merged = [];\nif (mergeStrategy === 'concat') {\n  merged = [...mappedA, ...datasetB];\n} else {\n  // index B by joinKey\n  const indexB = new Map();\n  for (const row of datasetB) {\n    const key = row[joinKey];\n    if (key !== undefined && key !== null) {\n      if (!indexB.has(key)) indexB.set(key, []);\n      indexB.get(key).push(row);\n    }\n  }\n\n  const usedB = new Set();\n\n  for (const a of mappedA) {\n    const key = a[joinKey];\n    const matches = key !== undefined && key !== null ? (indexB.get(key) || []) : [];\n    if (matches.length) {\n      for (const b of matches) {\n        merged.push({ ...b, ...a });          // A wins on collision\n        usedB.add(b);\n      }\n    } else if (mergeStrategy === 'left' || mergeStrategy === 'outer') {\n      merged.push({ ...a });\n    }\n  }\n\n  if (mergeStrategy === 'right' || mergeStrategy === 'outer') {\n    for (const b of datasetB) {\n      if (!usedB.has(b)) merged.push({ ...b });\n    }\n  }\n  // inner is already handled by only pushing matches\n}\n\nreturn [{\n  json: {\n    requestId: ctx.requestId,\n    config: ctx.config,\n    mappings: ctx.mappings,\n    ruleList: ctx.ruleList,\n    mappedA,\n    datasetB,\n    merged,\n    stats: {\n      rowsA: datasetA.length,\n      rowsB: datasetB.length,\n      rowsMerged: merged.length,\n      fieldsMapped: Object.keys(rules).length,\n      mergeStrategy,\n      joinKey\n    },\n    aiOk: ctx.aiOk\n  }\n}];"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "31a1cf11-4a37-4f94-8f76-83930cb6d377",
+      "name": "Code - Generate Transform Rules",
+      "type": "n8n-nodes-base.code",
+      "notes": "Turns mappings into a lookup of executable transform rules.",
+      "position": [
+        9040,
+        976
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) {\n  try { return $(name).item.json; } catch (e) { return $(name).first().json; }\n}\nconst ctx = ref('Code - Parse AI Mappings');\n\nconst rules = {};\nfor (const m of ctx.mappings || []) {\n  rules[m.target] = {\n    source: m.source,\n    confidence: m.confidence,\n    transform: m.transform,\n    defaultValue: m.defaultValue,\n    expression: m.expression\n  };\n}\n\nconst ruleList = Object.entries(rules).map(([target, r]) => ({\n  target,\n  source: r.source,\n  confidence: r.confidence,\n  transform: r.transform\n}));\n\nreturn [{\n  json: {\n    requestId: ctx.requestId,\n    config: ctx.config,\n    datasetA: ctx.datasetA,\n    datasetB: ctx.datasetB,\n    profileA: ctx.profileA,\n    profileB: ctx.profileB,\n    targetSchema: ctx.targetSchema,\n    mappings: ctx.mappings,\n    rules,\n    ruleList,\n    aiOk: ctx.aiOk\n  }\n}];"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "e5cc3d22-6fe8-4f4f-a2a8-4cec1a4677d6",
+      "name": "IF - AI Response OK?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        8800,
+        1056
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.aiOk }}",
+              "value2": true
+            }
+          ],
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and"
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "af79cd37-7d42-4329-8fd0-c33a34c48a78",
+      "name": "Code - Parse AI Mappings",
+      "type": "n8n-nodes-base.code",
+      "notes": "Normalises AI response + strong heuristic fallback that respects targetSchema & hints.",
+      "position": [
+        8560,
+        1056
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) {\n  try { return $(name).item.json; } catch (e) { return $(name).first().json; }\n}\nconst ctx = ref('Code - Validate & Profile');\nconst res = $input.first().json || {};\nconst statusCode = Number(res.statusCode) || 0;\n\nlet body = res.body;\nif (typeof body === 'string') {\n  try { body = JSON.parse(body); } catch (e) { body = {}; }\n}\nif (!body || typeof body !== 'object') body = {};\n\n// Expected shape from a real LLM:\n// { mappings: [ { source, target, confidence, transform, defaultValue? }, ... ] }\nlet mappings = Array.isArray(body.mappings) ? body.mappings : [];\n\n// ---------- Strong heuristic fallback (works with httpbin mock) ----------\nif (mappings.length === 0) {\n  const fieldsA = Object.keys(ctx.profileA.fields || {});\n  const fieldsB = Object.keys(ctx.profileB.fields || {});\n  const targetList = Array.isArray(ctx.targetSchema) && ctx.targetSchema.length\n    ? ctx.targetSchema\n    : fieldsB;\n  const usedTargets = new Set();\n  const hints = ctx.hints || {};\n\n  // 1. Honour explicit hints first\n  for (const [src, tgt] of Object.entries(hints)) {\n    if (fieldsA.includes(src) && targetList.includes(tgt)) {\n      mappings.push({ source: src, target: tgt, confidence: 0.98, transform: 'rename' });\n      usedTargets.add(tgt);\n    }\n  }\n\n  // 2. Fuzzy match remaining fields\n  for (const a of fieldsA) {\n    if (mappings.some(m => m.source === a)) continue;\n    const aNorm = a.toLowerCase().replace(/[_\\s-]/g, '');\n    let best = null;\n    let bestScore = 0;\n    for (const b of targetList) {\n      if (usedTargets.has(b)) continue;\n      const bNorm = b.toLowerCase().replace(/[_\\s-]/g, '');\n      let score = 0;\n      if (aNorm === bNorm) score = 0.95;\n      else if (aNorm.includes(bNorm) || bNorm.includes(aNorm)) score = 0.78;\n      else if (aNorm.slice(0, 5) === bNorm.slice(0, 5)) score = 0.62;\n      if (score > bestScore) { bestScore = score; best = b; }\n    }\n    if (best && bestScore >= ctx.config.minConfidence) {\n      mappings.push({ source: a, target: best, confidence: bestScore, transform: 'rename' });\n      usedTargets.add(best);\n    }\n  }\n}\n\n// Normalise + filter\nmappings = mappings\n  .map(m => ({\n    source: String(m.source || '').trim(),\n    target: String(m.target || '').trim(),\n    confidence: Math.min(1, Math.max(0, Number(m.confidence) || 0.5)),\n    transform: (m.transform || 'rename').toLowerCase(),\n    defaultValue: m.defaultValue !== undefined ? m.defaultValue : null,\n    expression: m.expression || null          // optional safe expression\n  }))\n  .filter(m => m.source && m.target && m.confidence >= ctx.config.minConfidence);\n\nreturn [{\n  json: {\n    requestId: ctx.requestId,\n    config: ctx.config,\n    datasetA: ctx.datasetA,\n    datasetB: ctx.datasetB,\n    profileA: ctx.profileA,\n    profileB: ctx.profileB,\n    targetSchema: ctx.targetSchema,\n    mappings,\n    aiStatus: statusCode,\n    aiOk: statusCode >= 200 && statusCode < 300\n  }\n}];"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "ea496c29-09c6-4644-885f-48c7b1572395",
+      "name": "HTTP Request - AI Mapping API",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Sends profiles + samples + hints to an AI mapping service (or mock).",
+      "position": [
+        8320,
+        1056
+      ],
+      "parameters": {
+        "url": "={{ $json.aiUrl }}",
+        "method": "POST",
+        "options": {
+          "timeout": "={{ $json.config.aiTimeoutMs }}",
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "jsonBody": "={{ JSON.stringify({\n  requestId: $json.requestId,\n  profileA: $json.profileA,\n  profileB: $json.profileB,\n  hints: $json.hints,\n  targetSchema: $json.targetSchema,\n  instruction: 'Return a JSON object with a key \"mappings\" that is an array of objects: { source, target, confidence (0-1), transform, defaultValue? }. Prefer targetSchema when provided. Use only the transforms: rename, string, number, boolean, lowercase, uppercase, concatenate, split, dateFormat, default.'\n}) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Request-Id",
+              "value": "={{ $json.requestId }}"
+            }
+          ]
+        }
+      },
+      "notesInFlow": true,
+      "typeVersion": 4.2,
+      "continueOnFail": true
+    },
+    {
+      "id": "7acdede0-a500-4d96-9175-d03f26bee71a",
+      "name": "Wait - Pre AI Call",
+      "type": "n8n-nodes-base.wait",
+      "notes": "Short pause before calling the AI mapping service.",
+      "position": [
+        8080,
+        1056
+      ],
+      "webhookId": "72ce5dc4-259d-46c0-90c4-0dd022f5d566",
+      "parameters": {
+        "amount": 1
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "2b61e3bd-5835-4f14-8875-025503941130",
+      "name": "IF - Valid Payload?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        7840,
+        1136
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.valid }}",
+              "value2": true
+            }
+          ],
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and"
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "70223450-0d83-4ddc-a138-757a22e745b4",
+      "name": "Code - Validate & Profile",
+      "type": "n8n-nodes-base.code",
+      "notes": "Validates payload, normalises config, builds lightweight schema profiles.",
+      "position": [
+        7600,
+        1136
+      ],
+      "parameters": {
+        "jsCode": "function ref(name) {\n  try { return $(name).item.json; } catch (e) { return $(name).first().json; }\n}\n\nconst DEFAULTS = {\n  aiMappingUrl: 'https://httpbin.org/post',\n  aiTimeoutMs: 30000,\n  maxSampleRows: 5,\n  minConfidence: 0.55,\n  mergeStrategy: 'concat',          // concat | left | right | inner | outer\n  joinKey: null,\n  keepUnmapped: false,\n  allowSimulation: true\n};\n\nconst hook = ref('Webhook - Submit Datasets');\nconst body = (hook.body && typeof hook.body === 'object') ? hook.body : {};\nconst errors = [];\n\nconst datasetA = Array.isArray(body.datasetA) ? body.datasetA : [];\nconst datasetB = Array.isArray(body.datasetB) ? body.datasetB : [];\nconst hints = body.hints && typeof body.hints === 'object' ? body.hints : {};\nconst targetSchema = Array.isArray(body.targetSchema) ? body.targetSchema : null;\n\nif (datasetA.length === 0) errors.push('datasetA must be a non-empty array of objects');\nif (datasetB.length === 0) errors.push('datasetB must be a non-empty array of objects');\n\nconst mergeStrategy = (body.mergeStrategy || DEFAULTS.mergeStrategy).toLowerCase();\nif (!['concat','left','right','inner','outer'].includes(mergeStrategy)) {\n  errors.push('mergeStrategy must be one of: concat, left, right, inner, outer');\n}\n\nconst joinKey = body.joinKey || DEFAULTS.joinKey;\nif (mergeStrategy !== 'concat' && !joinKey) {\n  errors.push('joinKey is required when mergeStrategy is not \"concat\"');\n}\n\nfunction profile(rows, maxSamples) {\n  if (!rows.length) return { fields: {}, samples: [] };\n  const fields = {};\n  for (const row of rows.slice(0, 80)) {\n    for (const [k, v] of Object.entries(row || {})) {\n      if (!fields[k]) fields[k] = { types: {}, nulls: 0, examples: [] };\n      const t = v === null || v === undefined ? 'null'\n                : Array.isArray(v) ? 'array'\n                : typeof v;\n      fields[k].types[t] = (fields[k].types[t] || 0) + 1;\n      if (v === null || v === undefined) fields[k].nulls += 1;\n      else if (fields[k].examples.length < 3) fields[k].examples.push(v);\n    }\n  }\n  return { fields, samples: rows.slice(0, maxSamples) };\n}\n\nconst profileA = profile(datasetA, DEFAULTS.maxSampleRows);\nconst profileB = profile(datasetB, DEFAULTS.maxSampleRows);\n\nconst config = {\n  ...DEFAULTS,\n  minConfidence: Number(body.minConfidence) || DEFAULTS.minConfidence,\n  mergeStrategy,\n  joinKey,\n  keepUnmapped: body.keepUnmapped === true,\n  aiTimeoutMs: Number(body.aiTimeoutMs) || DEFAULTS.aiTimeoutMs\n};\n\nlet aiUrl = config.aiMappingUrl;\nconst sim = Number(body.simulateStatus);\nif (config.allowSimulation && Number.isInteger(sim) && sim >= 200 && sim <= 599) {\n  aiUrl = 'https://httpbin.org/status/' + sim;\n}\n\nconst valid = errors.length === 0;\n\nreturn [{\n  json: {\n    valid,\n    errors,\n    config,\n    datasetA,\n    datasetB,\n    hints,\n    targetSchema,\n    profileA,\n    profileB,\n    aiUrl,\n    requestId: body.requestId || ('map-' + Date.now())\n  }\n}];"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "f4c4baff-2473-4a4b-a8ac-d5b8f7b1d5d9",
+      "name": "Webhook - Submit Datasets",
+      "type": "n8n-nodes-base.webhook",
+      "notes": "Receives Dataset A, Dataset B and optional mapping / merge options via POST.",
+      "position": [
+        7360,
+        1136
+      ],
+      "webhookId": "ai-data-mapping-webhook",
+      "parameters": {
+        "path": "ai-data-map",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "3f101b44-7a9b-4c9c-80da-edd75d948669",
+      "name": "Sticky Note - Merge & Respond",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        9248,
+        640
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 1100,
+        "height": 676,
+        "content": "## 3. Apply, Merge & Respond\n\n\u2022 Apply Mapping & Merge supports five strategies: concat / left / right / inner / outer\n\u2022 Uses a business key (joinKey) when provided\n\u2022 Full audit report (confidence, unmatched fields, applied transforms)\n\u2022 Consistent success / error envelope returned to the caller"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0eb3a71d-73bd-4053-8ecb-b8f60009655c",
+      "name": "Sticky Note - AI Mapping",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        8032,
+        640
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 1140,
+        "height": 836,
+        "content": "## 2. AI Mapping + Rule Generation\n\n\u2022 HTTP Request calls any LLM / mapping service (default = httpbin mock)\n\u2022 Parse node normalises the response and falls back to a strong heuristic when the AI returns nothing useful\n\u2022 Supports hints + targetSchema\n\u2022 Generates executable transform rules (rename, cast, concat, split, date, default \u2026)"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "458aa74e-485e-4c13-8e03-6882eb790c7b",
+      "name": "Sticky Note - Intake",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        7328,
+        640
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 656,
+        "height": 756,
+        "content": "## 1. Intake & Validation\n\n\u2022 Webhook receives datasetA + datasetB + options\n\u2022 Code node builds field profiles (types, nulls, examples)\n\u2022 Early IF branch returns a clean 400 if payload is invalid"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6939be3a-be4b-4853-bddb-1ed13f2c842c",
+      "name": "Sticky Note - Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        6240,
+        608
+      ],
+      "parameters": {
+        "width": 980,
+        "height": 1480,
+        "content": "## AI-Powered Data Mapping Engine (v2)\n\nReceives two incompatible datasets, uses an AI (or heuristic) mapping step to infer field correspondences, generates executable transformation rules, applies them, and returns a **unified merged dataset** together with a full audit report.\n\n### Request body (POST /webhook/ai-data-map)\n```json\n{\n  \"datasetA\": [ { ... }, ... ],\n  \"datasetB\": [ { ... }, ... ],\n  \"hints\": { \"email_address\": \"email\" },          // optional\n  \"targetSchema\": [\"id\", \"email\", \"full_name\"], // optional\n  \"mergeStrategy\": \"left\",                       // concat | left | right | inner | outer\n  \"joinKey\": \"id\",                               // used when strategy \u2260 concat\n  \"minConfidence\": 0.55,\n  \"keepUnmapped\": false,\n  \"simulateStatus\": 200                          // optional \u2013 forces httpbin status for testing\n}\n```\n\n### Response envelope\n```json\n{\n  \"status\": \"mapped\" | \"error\",\n  \"requestId\": \"...\",\n  \"stats\": { ... },\n  \"data\": [ ... ],          // the merged rows\n  \"report\": { ... }         // full mapping audit\n}\n```\n\n### Nodes (1-line each)\n1. Webhook \u2013 receives the two datasets + options\n2. Code \u2013 Validate & Profile \u2013 schema profiling + config normalisation\n3. IF \u2013 Valid? \u2013 early exit on bad payload\n4. Wait \u2013 Pre AI\n5. HTTP Request \u2013 AI Mapping API (or mock)\n6. Code \u2013 Parse AI Mappings \u2013 normalises AI answer + heuristic fallback\n7. IF \u2013 AI OK?\n8. Code \u2013 Generate Transform Rules\n9. Code \u2013 Apply Mapping & Merge \u2013 real join strategies\n10. Code \u2013 Build Mapping Report\n11. Code \u2013 Finalize Output\n12. Respond to Webhook\n13. Error path \u2192 structured error response\n\n**Tip for beginners**: Record a short YouTube walkthrough of the request/response and paste the link in a sticky note using the official format."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "11148bb5-5ad2-4530-ba63-a939a1a32d47",
+  "nodeGroups": [],
+  "connections": {
+    "Code - Error (AI)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - Pre AI Call": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - AI Mapping API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Valid Payload?": {
+      "main": [
+        [
+          {
+            "node": "Wait - Pre AI Call",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code - Error (Validation)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - AI Response OK?": {
+      "main": [
+        [
+          {
+            "node": "Code - Generate Transform Rules",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code - Error (AI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Finalize Output": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Parse AI Mappings": {
+      "main": [
+        [
+          {
+            "node": "IF - AI Response OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Error (Validation)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Validate & Profile": {
+      "main": [
+        [
+          {
+            "node": "IF - Valid Payload?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Submit Datasets": {
+      "main": [
+        [
+          {
+            "node": "Code - Validate & Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Build Mapping Report": {
+      "main": [
+        [
+          {
+            "node": "Code - Finalize Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Apply Mapping & Merge": {
+      "main": [
+        [
+          {
+            "node": "Code - Build Mapping Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - AI Mapping API": {
+      "main": [
+        [
+          {
+            "node": "Code - Parse AI Mappings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Generate Transform Rules": {
+      "main": [
+        [
+          {
+            "node": "Code - Apply Mapping & Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

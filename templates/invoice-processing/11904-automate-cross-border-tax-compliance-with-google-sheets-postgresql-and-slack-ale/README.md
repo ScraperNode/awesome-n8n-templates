@@ -1,6 +1,6 @@
 # 🧾 Automate cross-border tax compliance with Google Sheets, PostgreSQL and Slack alerts
 
-> ⚡ **42 views** · 🧾 [Invoice Processing](../)
+> ⚡ **53 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Automatically replace and relight the background of any image using APImage
 
-> ⚡ **301 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **354 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

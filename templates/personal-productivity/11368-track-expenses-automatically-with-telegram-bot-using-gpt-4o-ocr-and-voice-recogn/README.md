@@ -1,6 +1,6 @@
 # ⚡ Track expenses automatically with Telegram Bot using GPT-4o, OCR and voice recognition
 
-> ⚡ **1,315 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,933 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

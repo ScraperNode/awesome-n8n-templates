@@ -1,6 +1,6 @@
 # 💬 Telegram AI chatbot agent with InfraNodus GraphRAG knowledge base
 
-> ⚡ **20,967 views** · 💬 [Support Chatbots](../)
+> ⚡ **21,153 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

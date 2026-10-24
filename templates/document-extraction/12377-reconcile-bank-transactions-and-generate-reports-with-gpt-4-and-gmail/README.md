@@ -1,6 +1,6 @@
 # 🔬 Reconcile bank transactions and generate reports with GPT-4 and Gmail
 
-> ⚡ **170 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **406 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

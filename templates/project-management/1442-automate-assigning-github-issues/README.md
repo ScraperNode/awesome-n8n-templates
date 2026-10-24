@@ -1,6 +1,6 @@
 # 📋 Automate assigning GitHub issues
 
-> ⚡ **1,733 views** · 📋 [Project Management](../)
+> ⚡ **1,746 views** · 📋 [Project Management](../)
 
 ## Description
 

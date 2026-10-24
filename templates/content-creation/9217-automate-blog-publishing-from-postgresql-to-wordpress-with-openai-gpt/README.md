@@ -1,6 +1,6 @@
 # 🎬 Automate blog publishing from PostgreSQL to WordPress with OpenAI GPT
 
-> ⚡ **275 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **332 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

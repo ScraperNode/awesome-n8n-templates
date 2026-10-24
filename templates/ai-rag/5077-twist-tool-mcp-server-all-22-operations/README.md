@@ -1,6 +1,6 @@
 # 🔍 🛠️ Twist Tool MCP server 💪 all 22 operations
 
-> ⚡ **143 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **148 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

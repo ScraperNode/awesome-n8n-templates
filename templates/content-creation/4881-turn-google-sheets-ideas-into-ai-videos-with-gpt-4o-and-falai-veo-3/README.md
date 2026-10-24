@@ -1,6 +1,6 @@
 # 🎬 Turn Google Sheets ideas into AI videos with GPT-4o and Fal.AI Veo 3
 
-> ⚡ **9,793 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **9,899 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

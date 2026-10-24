@@ -1,6 +1,6 @@
 # 🔬 Analyze and chat with XML files using GPT and LangChain
 
-> ⚡ **1,077 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,173 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

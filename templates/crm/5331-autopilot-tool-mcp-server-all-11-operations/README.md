@@ -1,6 +1,6 @@
 # 🤝 🛠️ Autopilot tool MCP server 💪 all 11 operations
 
-> ⚡ **130 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **151 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

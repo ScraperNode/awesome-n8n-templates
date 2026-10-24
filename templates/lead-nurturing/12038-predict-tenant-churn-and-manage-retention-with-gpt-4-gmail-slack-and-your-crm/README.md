@@ -1,6 +1,6 @@
 # 💬 Predict tenant churn and manage retention with GPT-4, Gmail, Slack and your CRM
 
-> ⚡ **62 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **88 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

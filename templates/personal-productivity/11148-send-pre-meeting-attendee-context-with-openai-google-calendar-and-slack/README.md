@@ -1,6 +1,6 @@
 # ⚡ Send pre-meeting attendee context with OpenAI, Google Calendar, and Slack
 
-> ⚡ **131 views** · ⚡ [Personal Productivity](../)
+> ⚡ **168 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 WhatsApp virtual agent with Gemini AI - handles text & voice with knowledge base
 
-> ⚡ **1,751 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,348 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

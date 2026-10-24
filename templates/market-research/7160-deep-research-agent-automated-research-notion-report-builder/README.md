@@ -1,6 +1,6 @@
 # 📊 Deep research agent - automated research & Notion report builder
 
-> ⚡ **3,206 views** · 📊 [Market Research & Insights](../)
+> ⚡ **4,520 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

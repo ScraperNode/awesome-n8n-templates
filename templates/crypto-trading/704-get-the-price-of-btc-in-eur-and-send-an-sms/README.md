@@ -1,6 +1,6 @@
 # 📈 Get the price of BTC in EUR and send an SMS
 
-> ⚡ **3,517 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **3,543 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

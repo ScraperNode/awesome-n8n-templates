@@ -1,6 +1,6 @@
 # 📊 Generate AI-powered Strava performance evolution reports with Google Sheets & GPT-5-nano
 
-> ⚡ **63 views** · 📊 [Market Research & Insights](../)
+> ⚡ **133 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

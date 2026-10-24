@@ -1,6 +1,6 @@
 # 🔬 Add new incoming emails to a Google Sheets spreadsheet as a new row
 
-> ⚡ **4,760 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,986 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

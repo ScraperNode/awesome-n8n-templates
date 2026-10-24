@@ -1,6 +1,6 @@
 # 🧾 Automated invoice follow-ups with smart response tones via Google Sheets & email
 
-> ⚡ **712 views** · 🧾 [Invoice Processing](../)
+> ⚡ **836 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate frozen ASMR product videos with Gemini, Veo3, GPT-4o and post to YouTube, TikTok, Instagram and Pinterest
 
-> ⚡ **1,557 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,607 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — Since TikTok doesn't have a public API, getting data usually means fragile HTTP scraping. [ScraperNode](https://scrapernode.com/tiktok) is a community node that gives you clean JSON for [TikTok profiles](https://scrapernode.com/tiktok/scrapers/profiles), [videos](https://scrapernode.com/tiktok/scrapers/posts), and [comments](https://scrapernode.com/tiktok/scrapers/comments) — drop it into your workflow and skip the parsing.
 >

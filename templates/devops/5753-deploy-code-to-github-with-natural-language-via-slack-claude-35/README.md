@@ -1,6 +1,6 @@
 # ⚙️ Deploy code to GitHub with natural language via Slack & Claude 3.5
 
-> ⚡ **322 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **397 views** · ⚙️ [DevOps & CI/CD](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

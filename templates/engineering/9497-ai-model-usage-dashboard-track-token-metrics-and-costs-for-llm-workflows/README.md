@@ -1,6 +1,6 @@
 # ⚒️ AI model usage dashboard: Track token metrics and costs for LLM workflows
 
-> ⚡ **650 views** · ⚒️ [Engineering](../)
+> ⚡ **980 views** · ⚒️ [Engineering](../)
 
 ## Description
 

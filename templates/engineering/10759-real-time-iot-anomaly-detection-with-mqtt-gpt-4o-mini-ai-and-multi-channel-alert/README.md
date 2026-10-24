@@ -1,6 +1,6 @@
 # ⚒️ Real-time IoT anomaly detection with MQTT, GPT-4o-mini AI, and multi-channel alerts
 
-> ⚡ **245 views** · ⚒️ [Engineering](../)
+> ⚡ **422 views** · ⚒️ [Engineering](../)
 
 ## Description
 

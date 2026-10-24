@@ -1,6 +1,6 @@
 # 🎫 📩 Automated email management system with GPT-5, multi-agent AI & Pinecone DB
 
-> ⚡ **553 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **683 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

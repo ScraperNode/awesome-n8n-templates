@@ -1,6 +1,6 @@
 # 📱 Create Branded Social Media Images with Bannerbear (Sync/Async modes)
 
-> ⚡ **225 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **291 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

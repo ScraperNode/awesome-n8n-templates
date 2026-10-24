@@ -1,6 +1,6 @@
 # 🎯 Classify Gmail emails with GPT-4o mini and send Telegram notifications
 
-> ⚡ **1,204 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **1,267 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

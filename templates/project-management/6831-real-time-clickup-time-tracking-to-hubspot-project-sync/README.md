@@ -1,6 +1,6 @@
 # 📋 Real-time ClickUp time tracking to HubSpot project sync
 
-> ⚡ **236 views** · 📋 [Project Management](../)
+> ⚡ **267 views** · 📋 [Project Management](../)
 
 ## Description
 

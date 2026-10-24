@@ -1,6 +1,6 @@
 # 🔬 OCR document processing from LINE/Gmail using GPT-4o to Google Workspace
 
-> ⚡ **75 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **126 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

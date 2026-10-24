@@ -1,6 +1,6 @@
 # ⚒️ 🛠️ Baserow tool MCP server 💪 5 operations
 
-> ⚡ **142 views** · ⚒️ [Engineering](../)
+> ⚡ **150 views** · ⚒️ [Engineering](../)
 
 ## Description
 

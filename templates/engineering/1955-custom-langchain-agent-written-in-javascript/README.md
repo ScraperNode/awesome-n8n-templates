@@ -1,6 +1,6 @@
 # ⚒️ Custom LangChain agent written in JavaScript
 
-> ⚡ **15,784 views** · ⚒️ [Engineering](../)
+> ⚡ **15,906 views** · ⚒️ [Engineering](../)
 
 ## Description
 

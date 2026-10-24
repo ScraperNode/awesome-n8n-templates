@@ -1,6 +1,6 @@
 # 🔬 Extract and store text from chat images using AWS S3
 
-> ⚡ **4,687 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,695 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

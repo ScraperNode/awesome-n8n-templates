@@ -1,6 +1,6 @@
 # ⚒️ Convert Make.com blueprints to workflows with Azure OpenAI and Google Sheets
 
-> ⚡ **23 views** · ⚒️ [Engineering](../)
+> ⚡ **111 views** · ⚒️ [Engineering](../)
 
 ## Description
 

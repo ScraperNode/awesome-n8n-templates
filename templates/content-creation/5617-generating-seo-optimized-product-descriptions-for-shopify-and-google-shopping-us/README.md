@@ -1,6 +1,6 @@
 # 🎬 Generating SEO-optimized product descriptions for Shopify and Google Shopping using AI
 
-> ⚡ **4,180 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,720 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

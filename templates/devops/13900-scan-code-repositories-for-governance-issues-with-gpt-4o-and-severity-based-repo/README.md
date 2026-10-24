@@ -1,6 +1,6 @@
 # ⚙️ Scan code repositories for governance issues with GPT-4o and severity-based reports
 
-> ⚡ **45 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **119 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

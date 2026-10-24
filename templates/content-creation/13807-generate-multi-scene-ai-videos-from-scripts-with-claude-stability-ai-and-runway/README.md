@@ -1,6 +1,6 @@
 # 🎬 Generate multi-scene AI videos from scripts with Claude, Stability AI and Runway
 
-> ⚡ **79 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **771 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

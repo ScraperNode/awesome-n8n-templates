@@ -1,6 +1,6 @@
 # 💬 Book beauty appointments and answer FAQs with GPT-4, Google Calendar, Gmail, and Instagram
 
-> ⚡ **811 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,337 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

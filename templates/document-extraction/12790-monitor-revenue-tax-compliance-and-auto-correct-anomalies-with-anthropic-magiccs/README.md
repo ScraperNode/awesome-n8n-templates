@@ -1,6 +1,6 @@
 # 🔬 Monitor revenue tax compliance and auto-correct anomalies with Anthropic, MagicCSV, Gmail and WhatsApp
 
-> ⚡ **33 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **63 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

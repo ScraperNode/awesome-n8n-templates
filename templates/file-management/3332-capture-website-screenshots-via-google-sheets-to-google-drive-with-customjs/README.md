@@ -1,6 +1,6 @@
 # 📁 Capture website screenshots via Google Sheets to Google Drive with CustomJS
 
-> ⚡ **2,625 views** · 📁 [File Management](../)
+> ⚡ **2,691 views** · 📁 [File Management](../)
 
 ## Description
 

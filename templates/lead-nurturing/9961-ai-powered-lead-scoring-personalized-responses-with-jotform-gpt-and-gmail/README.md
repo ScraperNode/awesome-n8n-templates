@@ -1,6 +1,6 @@
 # 💬 Ai-powered lead scoring & personalized responses with JotForm, GPT, and Gmail
 
-> ⚡ **390 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **717 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

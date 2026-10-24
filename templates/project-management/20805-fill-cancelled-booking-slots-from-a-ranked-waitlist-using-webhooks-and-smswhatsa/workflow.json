@@ -1,0 +1,695 @@
+{
+  "name": "Fill cancelled slots from a ranked waitlist",
+  "nodes": [
+    {
+      "id": "f1000000-0000-4000-8000-000000000001",
+      "name": "Webhook: slot cancelled",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -200,
+        0
+      ],
+      "webhookId": "f1000000-0000-4000-8000-0000000000a1",
+      "parameters": {
+        "path": "waitlist-cancellation",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000002",
+      "name": "Normalize cancellation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        20,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Normalize the cancellation event. Expected body:\n// slot_start (ISO), practitioner, treatment, duration_min\nconst b = $input.first().json.body || $input.first().json;\nif (!b.slot_start || isNaN(new Date(b.slot_start).getTime())) {\n  return [{ json: { ok: false, error: 'slot_start invalid' } }];\n}\nreturn [{\n  json: {\n    ok: true,\n    slot_start: new Date(b.slot_start).toISOString(),\n    practitioner: b.practitioner || 'any',\n    treatment: b.treatment || 'any',\n    duration_min: Number(b.duration_min) || 60,\n    released_at: new Date().toISOString()\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000006",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000016",
+      "name": "Respond invalid",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        240,
+        220
+      ],
+      "webhookId": "b0000000-0000-4000-8000-000000000026",
+      "parameters": {
+        "options": {
+          "responseCode": 422
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": false, \"error\": $json.error } }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000003",
+      "name": "Waitlist (demo data)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        460,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// DEMO SOURCE. Replace with your waitlist sheet.\n// Columns: customer_name, phone, wanted_treatment, flexible (bool), priority_score\nconst demoWaitlist = [\n  { customer_name: 'Lisa Mertens', phone: '+316****5641', wanted_treatment: 'Haircut', flexible: true, priority_score: 9 },\n  { customer_name: 'Daan Cox', phone: '+316****5642', wanted_treatment: 'Balayage', flexible: false, priority_score: 6 },\n  { customer_name: 'Nina Blaauw', phone: '+316****5643', wanted_treatment: 'Haircut', flexible: true, priority_score: 7 },\n  { customer_name: 'Sanne de Vries', phone: '+316****5644', wanted_treatment: 'Haircut', flexible: false, priority_score: 5 },\n  { customer_name: 'Eline Koster', phone: '+316****5645', wanted_treatment: 'Balayage', flexible: true, priority_score: 7 },\n  { customer_name: 'Mark Jansen', phone: '+316****5646', wanted_treatment: 'Haircut', flexible: true, priority_score: 5 }\n];\nreturn demoWaitlist.map((row) => ({ json: row }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000004",
+      "name": "Rank + build offers",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        680,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Rank the waitlist for every slot row in this run.\n// Slot rows come from the cancel arm ($('Normalize cancellation')) or the\n// sweeper arm ($('Sweep: expired slots')); whichever executed wins.\n// Per slot, everyone already offered (any round) or declined is excluded,\n// so a re-offer moves DOWN the waitlist instead of looping on the top 3.\n// Ranking: treatment match first, flexible next, then priority_score.\nconst sources = ['Sweep: expired slots', 'Normalize cancellation'];\nlet slotRows = [];\nfor (const name of sources) {\n  try {\n    const rows = $(name).all();\n    if (rows.length) { slotRows = rows; break; }\n  } catch (e) { /* arm not executed in this run */ }\n}\nif (!slotRows.length) return [];\nconst store = $getWorkflowStaticData('global') || {};\nconst book = store.offerBook || {};\nconst waitlist = $input.all();\nconst out = [];\nfor (const s of slotRows) {\n  const slot = s.json;\n  const entry = book[slot.slot_start];\n  const exclude = entry\n    ? [...(entry.offers || []).map((o) => o.who), ...(entry.declined || [])]\n    : [];\n  const ranked = waitlist\n    .filter((w) => !exclude.includes(w.json.phone))\n    .map((w) => {\n      const r = w.json;\n      let score = 0;\n      if (slot.treatment !== 'any' && r.wanted_treatment === slot.treatment) score += 50;\n      if (r.flexible) score += 20;\n      score += Number(r.priority_score) || 0;\n      return { json: { ...r, match_score: score } };\n    })\n    .sort((a, b) => b.json.match_score - a.json.match_score)\n    .slice(0, 3);\n  const slotStr = new Date(slot.slot_start).toLocaleString('en-GB', {\n    weekday: 'long', hour: '2-digit', minute: '2-digit'\n  });\n  const source = slot.source || 'cancel';\n  if (ranked.length === 0) {\n    out.push({ json: {\n      row_type: 'exhausted',\n      slot_start: slot.slot_start,\n      source: source,\n      detail: 'waitlist exhausted: everyone was already offered or declined'\n    } });\n    continue;\n  }\n  const lead = source === 'sweep'\n    ? 'a spot opened up earlier and is still free'\n    : 'a spot just opened up';\n  for (let i = 0; i < ranked.length; i++) {\n    const e = ranked[i].json;\n    out.push({ json: {\n      ...e,\n      row_type: 'offer',\n      offer_position: i + 1,\n      slot_start: slot.slot_start,\n      practitioner: slot.practitioner,\n      treatment: slot.treatment,\n      duration_min: slot.duration_min,\n      source: source,\n      message: 'Hi ' + e.customer_name + ', ' + lead + ' ' + slotStr + ' with ' + slot.practitioner + '. You are on our waitlist. Want this spot? Reply TAKE within 30 minutes, after that it goes to the next person.'\n    } });\n  }\n}\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000007",
+      "name": "Offer book",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Single writer for the offer state on the offer path.\n// Shape: offerBook[slot_start] = { offers: [{who, at, round}], declined: [],\n//   claimed_by, expires_at, exhausted, treatment, practitioner, duration_min }\n// (The claim guard also writes claimed_by/declined atomically with its\n// verdict; see that node. Same shape, documented in both places.)\n// Offer rows are passed through for the send node; 'exhausted' rows mark\n// the slot closed so the sweeper stops picking it up.\nconst store = $getWorkflowStaticData('global');\nstore.offerBook = store.offerBook || {};\nconst WINDOW_MS = 30 * 60 * 1000; // same 30 min as the offer message\nconst now = new Date();\nconst out = [];\nfor (const item of $input.all()) {\n  const r = item.json;\n  if (r.row_type === 'exhausted') {\n    const e = store.offerBook[r.slot_start] || {};\n    e.exhausted = true;\n    e.expires_at = null; // nothing left to sweep\n    store.offerBook[r.slot_start] = e;\n    out.push(item);\n    continue;\n  }\n  const e = store.offerBook[r.slot_start] || { offers: [], declined: [], claimed_by: null };\n  if (r.treatment) e.treatment = r.treatment;\n  if (r.practitioner) e.practitioner = r.practitioner;\n  if (r.duration_min) e.duration_min = r.duration_min;\n  e.offers = e.offers || [];\n  e.declined = e.declined || [];\n  e.claimed_by = e.claimed_by || null;\n  e.exhausted = false;\n  e.offers.push({ who: r.phone, at: now.toISOString(), round: r.source || 'cancel' });\n  e.expires_at = new Date(now.getTime() + WINDOW_MS).toISOString();\n  store.offerBook[r.slot_start] = e;\n  out.push(item);\n}\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000008",
+      "name": "From sweep?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.source }}",
+              "rightValue": "sweep"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000005",
+      "name": "Send offers (replace me)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1340,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "// Placeholder for the send node (WhatsApp Business Cloud / SMS).\nconst items = $input.all();\nreturn items.map((item) => ({ json: { ...item.json, sent_at: new Date().toISOString(), transport: 'demo' } }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000006",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1560,
+        -100
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": true, \"offers_sent\": $input.all().filter((i) => i.json.row_type === 'offer').length } }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000009",
+      "name": "Send re-offers (replace me)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1340,
+        140
+      ],
+      "parameters": {
+        "jsCode": "// Placeholder for the send node (WhatsApp Business Cloud / SMS).\nconst items = $input.all();\nreturn items.map((item) => ({ json: { ...item.json, sent_at: new Date().toISOString(), transport: 'demo' } }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000010",
+      "name": "Sweep log",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1560,
+        140
+      ],
+      "parameters": {
+        "jsCode": "// Sweeper summary: what this pass re-offered and what it closed out.\nconst rows = $input.all();\nconst reoffered = rows.filter((i) => i.json.row_type === 'offer').length;\nconst exhausted = rows.filter((i) => i.json.row_type === 'exhausted').length;\nreturn [{ json: { swept_at: new Date().toISOString(), reoffered: reoffered, exhausted: exhausted } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000031",
+      "name": "Webhook: claim reply",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -200,
+        400
+      ],
+      "webhookId": "b0000000-0000-4000-8000-00000000003a",
+      "parameters": {
+        "path": "waitlist-claim",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000032",
+      "name": "Valid claim body?",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        20,
+        400
+      ],
+      "parameters": {
+        "jsCode": "// Validate the claim request body and PASS IT THROUGH for the guard.\n// (An IF node forwards its input unchanged, so the guard downstream must\n// receive the body here, not re-read the webhook node: the $('Node')\n// lookup is not reliable for this in all n8n builds.)\nconst out = [];\nfor (const item of $input.all()) {\n  const b = item.json.body || item.json;\n  const ok = !!(b.slot_start && !isNaN(new Date(b.slot_start).getTime()) && (b.phone || b.from));\n  out.push({ json: { ok: ok, error: ok ? '' : 'slot_start or phone missing', body: ok ? b : null } });\n}\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000033",
+      "name": "Claim valid?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        240,
+        400
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000034",
+      "name": "Claim guard (first TAKE wins)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        460,
+        400
+      ],
+      "parameters": {
+        "jsCode": "// Claim guard: decide who gets the slot when TAKE replies arrive.\n// State: claims[slot] = {phone, claimed_at} and the v2 offerBook entry\n// (offers/declined/claimed_by/expires_at/exhausted, shape documented in\n// the 'Offer book' node). This is the one node outside 'Offer book' that\n// writes offerBook: the verdict decision and its state write must be one\n// atomic step so the FIRST TAKE to reach this node wins (same reasoning\n// as v1). On STOP or CANCEL the phone is persisted in declined[] and\n// the slot is released immediately (expires_at = now) so the sweeper\n// re-offers it to the next people instead of waiting out the clock.\n// The read-check-write below is one synchronous step, so on a single\n// self-hosted n8n instance the first TAKE wins and the second cleanly\n// loses. On multi-worker queue mode, move this write to a conditional\n// UPDATE in a transactional store instead.\nconst store = $getWorkflowStaticData('global');\nstore.claims = store.claims || {};\nstore.offerBook = store.offerBook || {};\nconst WINDOW_MS = 30 * 60 * 1000; // same 30 min as the offer message\nconst out = [];\n// Input is the validated passthrough: {ok, error, body}.\nfor (const item of $input.all()) {\n  const b = (item.json && item.json.body) || item.json;\n  const slot = String(b.slot_start || '');\n  const phone = String(b.phone || b.from || '').trim();\n  const text = String(b.reply_text || b.Body || b.text || '').trim().toUpperCase();\n  const offeredAt = b.offered_at ? new Date(b.offered_at).getTime() : null;\n  let verdict, message;\n  const existing = store.claims[slot];\n  const book = store.offerBook[slot];\n\n  if (/^(STOP|CANCEL|ANNULEREN)/.test(text)) {\n    if (book) {\n      book.declined = book.declined || [];\n      if (!book.declined.includes(phone)) book.declined.push(phone);\n      if (book.claimed_by === phone) book.claimed_by = null;\n      book.expires_at = new Date().toISOString(); // release for the sweeper\n    }\n    if (existing && existing.phone === phone) {\n      delete store.claims[slot];\n      verdict = 'withdrawn';\n      message = 'You are no longer on hold for this spot. Thanks for letting us know, we will offer it to someone else.';\n    } else {\n      verdict = 'no_claim';\n      message = 'No active claim found for this number.';\n    }\n  } else if (!/^(TAKE|PAK)/.test(text)) {\n    verdict = 'unclear';\n    message = 'Reply TAKE to take the spot, or STOP to pass.';\n  } else if (existing && existing.phone === phone) {\n    verdict = 'already_yours'; // idempotent retry\n    message = 'This spot is already reserved for you. See you then!';\n  } else if (existing) {\n    verdict = 'too_late';\n    message = 'Sorry, someone else just took this spot. You are still on the waitlist.';\n  } else if (offeredAt && Date.now() - offeredAt > WINDOW_MS) {\n    verdict = 'expired';\n    message = 'This spot is no longer available (the offer expired).';\n  } else {\n    store.claims[slot] = { phone: phone, claimed_at: new Date().toISOString() };\n    if (book) {\n      book.claimed_by = phone;\n      book.expires_at = null; // claimed: nothing left to sweep\n    }\n    verdict = 'claimed';\n    message = 'Done, the spot is yours! You will receive a confirmation with the details.';\n  }\n\n  out.push({ json: {\n    slot_start: slot,\n    from: phone,\n    raw_text: text,\n    verdict: verdict,\n    message: message\n  } });\n}\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000035",
+      "name": "Respond claim",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        680,
+        400
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": true, \"verdict\": $json.verdict, \"message\": $json.message } }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000036",
+      "name": "Respond claim invalid",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        460,
+        620
+      ],
+      "webhookId": "b0000000-0000-4000-8000-000000000046",
+      "parameters": {
+        "options": {
+          "responseCode": 422
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": false, \"error\": $json.error } }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000011",
+      "name": "Sweep: every 30 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -200,
+        860
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000012",
+      "name": "Sweep: expired slots",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        20,
+        860
+      ],
+      "parameters": {
+        "jsCode": "// Sweeper: runs on a schedule, no input items. Emits one row per slot\n// whose offer window expired without a claim. Slots with a holder or\n// slots marked exhausted are skipped. Slot metadata stored at offer time\n// lets the ranker re-rank without the original cancellation payload.\nconst store = $getWorkflowStaticData('global') || {};\nconst book = store.offerBook || {};\nconst out = [];\nfor (const slot of Object.keys(book)) {\n  const e = book[slot];\n  if (!e || e.exhausted || e.claimed_by) continue;\n  if (!e.expires_at || new Date(e.expires_at).getTime() > Date.now()) continue;\n  out.push({ json: {\n    slot_start: slot,\n    practitioner: e.practitioner || 'any',\n    treatment: e.treatment || 'any',\n    duration_min: e.duration_min || 60,\n    source: 'sweep'\n  } });\n}\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000031",
+      "name": "Sticky Note 00f1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -960,
+        -300
+      ],
+      "parameters": {
+        "width": 600,
+        "height": 1150,
+        "content": "## Fill cancelled slots from a ranked waitlist\n\n### How it works\n\nWhen a booking is cancelled, your calendar system POSTs the freed slot to a webhook. The workflow validates the payload, then ranks your waitlist for that exact slot: treatment match counts most, flexibility next, then your own priority score. The top three people get an offer message at the same time; the first reply wins the slot, everyone else gets a polite note.\n\nReplies arrive on a second webhook. The claim guard decides atomically who wins: the first TAKE claims the spot, a repeat TAKE is confirmed again, a late or second TAKE is declined politely, and a STOP marks the sender as declined and releases the slot immediately.\n\nA sweeper runs every 30 minutes. It picks up slots whose offers expired or were declined, excludes everyone already offered or declined, and re-offers to the next people on the list. When the waitlist runs out, the slot is closed out as exhausted.\n\n### Setup\n\n1. Import, activate, and register both webhook paths with your booking system.\n2. Replace the demo waitlist node with your sheet or database.\n3. Replace the two send placeholders with your WhatsApp or SMS node."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000032",
+      "name": "Sticky Note 00f2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -280,
+        -100
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 680,
+        "height": 480,
+        "content": "## 1. Cancellation in\nWebhook plus payload check. Bad payloads get a 422."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000033",
+      "name": "Sticky Note 00f3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        420,
+        -100
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 880,
+        "height": 300,
+        "content": "## 2. Rank + offer book\nTreatment match first, flexible next, then priority. Top three get offers; the book records every round."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000034",
+      "name": "Sticky Note 00f4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1320,
+        -200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 480,
+        "height": 560,
+        "content": "## 3. Send + respond\nPlaceholder sends for offers and re-offers, a JSON response for the caller, and a sweep summary."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000035",
+      "name": "Sticky Note 00f5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -280,
+        320
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 680,
+        "height": 260,
+        "content": "## 4. Claim replies in\nSecond webhook, body validation, 422 on bad input."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000036",
+      "name": "Sticky Note 00f6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        420,
+        320
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 680,
+        "height": 480,
+        "content": "## 5. First reply wins\nThe claim guard decides atomically; JSON responses for every verdict."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000037",
+      "name": "Sticky Note 00f7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -280,
+        760
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 480,
+        "height": 300,
+        "content": "## 6. Sweeper\nEvery 30 minutes: re-offer expired or declined slots to the next people, close exhausted ones."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {
+    "Webhook: claim reply": [
+      {
+        "json": {
+          "body": {
+            "phone": "+316****5641",
+            "offered_at": "2099-01-15T09:40:00.000Z",
+            "reply_text": "TAKE",
+            "slot_start": "2099-01-15T10:00:00.000Z"
+          }
+        }
+      }
+    ],
+    "Webhook: slot cancelled": [
+      {
+        "json": {
+          "body": {
+            "treatment": "Haircut",
+            "slot_start": "2099-01-15T10:00:00.000Z",
+            "duration_min": 45,
+            "practitioner": "Stylist C"
+          }
+        }
+      }
+    ]
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Waitlist (demo data)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Offer book": {
+      "main": [
+        [
+          {
+            "node": "From sweep?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "From sweep?": {
+      "main": [
+        [
+          {
+            "node": "Send re-offers (replace me)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send offers (replace me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim valid?": {
+      "main": [
+        [
+          {
+            "node": "Claim guard (first TAKE wins)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond claim invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid claim body?": {
+      "main": [
+        [
+          {
+            "node": "Claim valid?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Rank + build offers": {
+      "main": [
+        [
+          {
+            "node": "Offer book",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Sweep: every 30 min": {
+      "main": [
+        [
+          {
+            "node": "Sweep: expired slots",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Sweep: expired slots": {
+      "main": [
+        [
+          {
+            "node": "Waitlist (demo data)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Waitlist (demo data)": {
+      "main": [
+        [
+          {
+            "node": "Rank + build offers",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Webhook: claim reply": {
+      "main": [
+        [
+          {
+            "node": "Valid claim body?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Normalize cancellation": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Webhook: slot cancelled": {
+      "main": [
+        [
+          {
+            "node": "Normalize cancellation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Send offers (replace me)": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Send re-offers (replace me)": {
+      "main": [
+        [
+          {
+            "node": "Sweep log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Claim guard (first TAKE wins)": {
+      "main": [
+        [
+          {
+            "node": "Respond claim",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  }
+}

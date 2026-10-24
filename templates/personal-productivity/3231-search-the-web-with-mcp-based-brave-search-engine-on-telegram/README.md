@@ -1,6 +1,6 @@
 # ⚡ Search the web with MCP-based Brave Search Engine on Telegram
 
-> ⚡ **8,002 views** · ⚡ [Personal Productivity](../)
+> ⚡ **8,101 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

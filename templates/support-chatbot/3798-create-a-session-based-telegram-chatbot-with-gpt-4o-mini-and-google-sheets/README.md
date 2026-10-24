@@ -1,6 +1,6 @@
 # 💬 Create a session-based Telegram chatbot with GPT-4o-mini and Google Sheets
 
-> ⚡ **13,351 views** · 💬 [Support Chatbots](../)
+> ⚡ **14,108 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

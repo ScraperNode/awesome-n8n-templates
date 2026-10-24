@@ -1,6 +1,6 @@
 # 🎣 Validate leads email addresses with Hunter.io and Google Sheets
 
-> ⚡ **315 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **369 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

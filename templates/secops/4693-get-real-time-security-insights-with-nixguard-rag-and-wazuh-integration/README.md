@@ -1,6 +1,6 @@
 # 🔒 Get real-time security insights with NixGuard RAG and Wazuh integration
 
-> ⚡ **3,340 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **3,937 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

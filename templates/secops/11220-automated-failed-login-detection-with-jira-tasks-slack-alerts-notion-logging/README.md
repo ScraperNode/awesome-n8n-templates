@@ -1,6 +1,6 @@
 # 🔒 Automated failed login detection with Jira tasks, Slack alerts & Notion logging
 
-> ⚡ **116 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **180 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Mistral OCR, GPT-4o-mini, and Google Sheets integration for enhanced data processing
 
-> ⚡ **166 views** · 🧾 [Invoice Processing](../)
+> ⚡ **235 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

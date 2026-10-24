@@ -1,6 +1,6 @@
 # 📱 Create a new member on Mailchimp
 
-> ⚡ **793 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **801 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

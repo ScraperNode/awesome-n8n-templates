@@ -1,6 +1,6 @@
 # 🎫 Auto-label Gmail with Ollama AI and draft smart replies
 
-> ⚡ **74 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **387 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

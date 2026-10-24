@@ -1,6 +1,6 @@
 # 📁 Process & catalog dress images with GPT-4o, Cloudinary, and Google Sheets
 
-> ⚡ **52 views** · 📁 [File Management](../)
+> ⚡ **79 views** · 📁 [File Management](../)
 
 ## Description
 

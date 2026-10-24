@@ -1,0 +1,456 @@
+{
+  "id": "BiuZNdtI4xXOIGOe",
+  "meta": {
+    "instanceId": "d1dc073e8e3059a23e2730f69cb1b90065a2ac39039fea0727fdf9bee77a9131",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Weekly Business Metrics Report",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "95d2d463-71fd-4102-9ab0-85b25ea82e18",
+      "name": "Every Monday at 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        8736,
+        1808
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "656803b3-9dbb-4eb7-9f68-fa19b2696421",
+      "name": "Compute Date Windows",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        8960,
+        1808
+      ],
+      "parameters": {
+        "jsCode": "// Timezone-aware date windows using Luxon (available in n8n >= 0.214).\n// Add REPORT_TIMEZONE to your n8n environment variables, e.g. 'Europe/Helsinki'.\n// Falls back to UTC if the env var is absent.\nconst { DateTime } = require('luxon');\nconst tz = $env.REPORT_TIMEZONE || 'UTC';\n\n// 'today' in the business timezone at the moment the workflow runs (Monday 08:00).\n// today.weekday === 1 (ISO Monday). startOf('week') gives this week's Monday,\n// minus({ weeks: 1 }) steps back to last week's Monday.\nconst today      = DateTime.now().setZone(tz);\nconst lastMonday = today.startOf('week').minus({ weeks: 1 });\nconst lastSunday = lastMonday.endOf('week'); // Sun 23:59:59.999 in business TZ\n\nconst fmt    = dt => dt.toISODate();                  // YYYY-MM-DD in chosen TZ\nconst toUnix = dt => Math.floor(dt.toMillis() / 1000);\n\nreturn [{ json: {\n  weekLabel: `${fmt(lastMonday)} to ${fmt(lastSunday)}`,\n  timezone:  tz,\n  thisWeek: {\n    start:     lastMonday.toISO(),\n    end:       lastSunday.toISO(),\n    startUnix: toUnix(lastMonday),\n    endUnix:   toUnix(lastSunday),\n    startMs:   lastMonday.toMillis(),\n    endMs:     lastSunday.toMillis()\n  }\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "57e98e9a-9d2a-4865-a956-a7b6747230f6",
+      "name": "Stripe: This Week Revenue",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        9200,
+        1808
+      ],
+      "parameters": {
+        "jsCode": "const startUnix = $('Compute Date Windows').first().json.thisWeek.startUnix;\nconst endUnix   = $('Compute Date Windows').first().json.thisWeek.endUnix;\nconst apiKey    = $env.STRIPE_SECRET_KEY;\nconst PAGE_SIZE = 100;\nlet allCharges  = [];\nlet startingAfter = null;\nlet hasMore = true;\nwhile (hasMore) {\n  let url = `https://api.stripe.com/v1/charges?created[gte]=${startUnix}&created[lte]=${endUnix}&limit=${PAGE_SIZE}`;\n  if (startingAfter) url += `&starting_after=${startingAfter}`;\n  const resp = await $http.request({ method: 'GET', url, headers: { Authorization: `Bearer ${apiKey}` }, json: true });\n  const page = resp.data || [];\n  allCharges = allCharges.concat(page);\n  hasMore = resp.has_more === true;\n  if (hasMore && page.length > 0) { startingAfter = page[page.length - 1].id; } else { hasMore = false; }\n}\nreturn [{ json: { data: allCharges, has_more: false, object: 'list' } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "14648e6a-5cba-40e2-a233-288d77851486",
+      "name": "Notion: Pipeline This Week",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        9424,
+        1808
+      ],
+      "parameters": {
+        "jsCode": "const dbId = $env.NOTION_DEALS_DB_ID;\nconst apiKey = $env.NOTION_API_KEY;\nconst startIso = $('Compute Date Windows').first().json.thisWeek.start;\nconst endIso = $('Compute Date Windows').first().json.thisWeek.end;\nconst headers = { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Notion-Version': '2022-06-28' };\nlet allPages = [];\nlet startCursor = undefined;\nlet hasMore = true;\nwhile (hasMore) {\n  const body = { filter: { and: [{ property: 'Created', date: { on_or_after: startIso } }, { property: 'Created', date: { on_or_before: endIso } }] }, page_size: 100 };\n  if (startCursor) body.start_cursor = startCursor;\n  const resp = await $http.request({ method: 'POST', url: `https://api.notion.com/v1/databases/${dbId}/query`, headers, body: JSON.stringify(body), json: true });\n  allPages = allPages.concat(resp.results || []);\n  hasMore = resp.has_more === true;\n  startCursor = resp.next_cursor || undefined;\n  if (hasMore) await new Promise(r => setTimeout(r, 350));\n}\nconst results = allPages.map(page => { const p = page.properties || {}; return { id: page.id, properties: { amount: p['Deal Value']?.number ?? 0, dealstage: p['Stage']?.select?.name ?? 'unknown', hs_deal_stage_probability: p['Probability']?.number ?? 0, dealname: p['Name']?.title?.[0]?.plain_text ?? '' } }; });\nreturn [{ json: { results, has_more: false, object: 'list' } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "34f6c853-7829-4336-b531-83d2d425f3d9",
+      "name": "GSheets: Ops Metrics",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        9648,
+        1808
+      ],
+      "parameters": {
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "range": "={{ $env.GSHEETS_LAST_ROW_RANGE }}",
+              "rangeDefinition": "specifyRangeA1"
+            }
+          }
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "={{ $env.GSHEETS_SHEET_NAME }}"
+        },
+        "documentId": {
+          "mode": "id",
+          "value": "={{ $env.GSHEETS_SPREADSHEET_ID }}"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "0d635913-c3d8-45a1-93fb-1357e888983e",
+      "name": "Aggregate All Metrics",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        10112,
+        1808
+      ],
+      "parameters": {
+        "jsCode": "const dates = $('Compute Date Windows').first().json;\nconst stripeData = $('Stripe: This Week Revenue').first().json;\nconst notionData = $('Notion: Pipeline This Week').first().json;\nconst sheetsItems = $('GSheets: Ops Metrics').all();\nconst charges = stripeData.data || [];\nconst grossRevenue = charges.filter(c => c.status === 'succeeded' && !c.refunded).reduce((s, c) => s + c.amount, 0) / 100;\nconst refunds = charges.filter(c => c.refunded).reduce((s, c) => s + (c.amount_refunded || 0), 0) / 100;\nconst netRevenue = grossRevenue - refunds;\nconst newCharges = charges.filter(c => c.status === 'succeeded').length;\nconst deals = notionData.results || [];\nconst pipelineValue = deals.reduce((s, d) => s + (d.properties?.amount || 0), 0);\nconst weightedValue = deals.reduce((s, d) => { const amt = d.properties?.amount || 0; const prob = d.properties?.hs_deal_stage_probability || 0; return s + (amt * prob / 100); }, 0);\nconst dealsByStage = deals.reduce((acc, d) => { const stage = d.properties?.dealstage || 'unknown'; acc[stage] = (acc[stage] || 0) + 1; return acc; }, {});\nconst latestOps = sheetsItems.length > 0 ? sheetsItems[sheetsItems.length - 1].json : {};\nreturn [{ json: { weekLabel: dates.weekLabel, revenue: { gross: grossRevenue.toFixed(2), refunds: refunds.toFixed(2), net: netRevenue.toFixed(2), transactions: newCharges }, pipeline: { dealsCreated: deals.length, totalValue: pipelineValue.toFixed(2), weightedValue: weightedValue.toFixed(2), byStage: dealsByStage }, ops: { ticketsClosed: latestOps.tickets_closed || 'N/A', npsScore: latestOps.nps_score || 'N/A', uptimePct: latestOps.uptime_pct || 'N/A', supportHours: latestOps.support_hours || 'N/A' }, generatedAt: new Date().toISOString() } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c7cf5900-f1db-4527-87c3-2cad1c069fea",
+      "name": "Claude: Write Executive Narrative",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        10288,
+        1808
+      ],
+      "parameters": {
+        "text": "=You are a senior business analyst. Write a concise 3-paragraph executive narrative for a weekly business report. Be direct, data-driven, and highlight the most important trend. Use plain prose only \u2014 no bullet points, no headers.\n\nData for week {{ $('Aggregate All Metrics').first().json.weekLabel }}:\n\nREVENUE: Gross \u20ac{{ $('Aggregate All Metrics').first().json.revenue.gross }}, Net \u20ac{{ $('Aggregate All Metrics').first().json.revenue.net }}, Refunds \u20ac{{ $('Aggregate All Metrics').first().json.revenue.refunds }}, Transactions {{ $('Aggregate All Metrics').first().json.revenue.transactions }}\n\nPIPELINE: {{ $('Aggregate All Metrics').first().json.pipeline.dealsCreated }} new deals, total value \u20ac{{ $('Aggregate All Metrics').first().json.pipeline.totalValue }}, weighted \u20ac{{ $('Aggregate All Metrics').first().json.pipeline.weightedValue }}, stages: {{ JSON.stringify($('Aggregate All Metrics').first().json.pipeline.byStage) }}\n\nOPS: Tickets closed {{ $('Aggregate All Metrics').first().json.ops.ticketsClosed }}, NPS {{ $('Aggregate All Metrics').first().json.ops.npsScore }}, Uptime {{ $('Aggregate All Metrics').first().json.ops.uptimePct }}%\n\nParagraph 1: Revenue performance. Paragraph 2: Pipeline health. Paragraph 3: Operational highlights + one forward-looking observation.",
+        "promptType": "define"
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "cdb7c087-ea94-4874-b803-4b7bae0bb8b2",
+      "name": "Anthropic Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "position": [
+        10288,
+        1952
+      ],
+      "parameters": {
+        "model": "claude-sonnet-4-20250514",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "credentials": {
+        "anthropicApi": {
+          "id": "9nzHwX0Ed87LaDrh",
+          "name": "Anthropic account"
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "b7c57bf4-351f-48e7-b87b-0d2310c95b41",
+      "name": "Build HTML Report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        10928,
+        1808
+      ],
+      "parameters": {
+        "jsCode": "const metrics = $('Aggregate All Metrics').first().json;\nconst narrative = $input.first().json.text || 'Narrative unavailable.';\nconst stageRows = Object.entries(metrics.pipeline.byStage || {}).map(([s, c]) => `<tr><td>${s}</td><td>${c}</td></tr>`).join('');\nconst html = `<html><body>Report for ${metrics.weekLabel}</body></html>`;\nreturn [{ json: { ...metrics, narrative, html } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "afda275d-a83f-42ad-9817-849ca8f85491",
+      "name": "Send via SendGrid",
+      "type": "n8n-nodes-base.sendGrid",
+      "position": [
+        11152,
+        1808
+      ],
+      "parameters": {
+        "subject": "=\ud83d\udcca Weekly Business Report \u2014 {{ $json.weekLabel }}",
+        "toEmail": "={{ $env.REPORT_EMAIL_TO }}",
+        "fromName": "ProFlow Weekly Report",
+        "resource": "mail",
+        "fromEmail": "={{ $env.REPORT_EMAIL_FROM }}",
+        "contentType": "html",
+        "additionalFields": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "7d8918e8-83d3-45c2-b963-390d7868d86b",
+      "name": "Slack: Report Sent",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        11376,
+        1808
+      ],
+      "webhookId": "f3915d0d-bb6e-48f9-9ca9-78e3e03aa539",
+      "parameters": {
+        "text": "=\ud83d\udcca Weekly report sent",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.SLACK_CHANNEL_ID }}"
+        },
+        "otherOptions": {}
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "0a9061cb-fd11-42e3-813e-33d1e04c7de0",
+      "name": "Workflow Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "position": [
+        8720,
+        2256
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "a4c7fe64-b130-4f7c-a850-27c1fb77bd2d",
+      "name": "Send Error Email",
+      "type": "n8n-nodes-base.sendGrid",
+      "position": [
+        8928,
+        2256
+      ],
+      "parameters": {
+        "subject": "=\u274c Weekly Report Generation Failed [{{ $json.execution.id }}]",
+        "toEmail": "={{ $env.REPORT_ALERT_EMAIL || $env.REPORT_EMAIL_FROM }}",
+        "fromName": "ProFlow Automations",
+        "resource": "mail",
+        "fromEmail": "={{ $env.REPORT_EMAIL_FROM }}",
+        "contentType": "text",
+        "additionalFields": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5b7fdd57-c259-4561-91d5-f0124bb24710",
+      "name": "README",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        8080,
+        1648
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 540,
+        "height": 748,
+        "content": "## Weekly Business Intelligence Report\n\n### Claude-Powered Executive Summary\n\n### How it works\n1. **Trigger:** Runs every Monday at 08:00. Computes the previous week's date window in your configured timezone.\n2. **Collect:** Fetches data from three sources in sequence \u2014 Stripe (paginated charge history), Notion (CRM pipeline), and Google Sheets (ops metrics).\n3. **Aggregate:** Normalises all data into a single structured item: net/gross revenue, refunds, deal counts, weighted pipeline value, and operational KPIs.\n4. **Write:** Claude Sonnet 4 writes a 3-paragraph executive narrative \u2014 revenue performance, pipeline health, and operational highlights with a forward-looking observation.\n5. **Deliver:** Composes a styled HTML email report and sends it via SendGrid. A Slack confirmation fires with a one-line summary.\n\n### Setup steps\n- [x] Anthropic Chat Model connected (Claude Sonnet 4)\n- [ ] Connect SendGrid credential to Send via SendGrid and Send Error Email nodes\n- [ ] Connect Google Sheets OAuth2 credential to GSheets: Ops Metrics\n- [ ] Connect Slack credential to Slack: Report Sent\n- [ ] Set `STRIPE_SECRET_KEY` env var\n- [ ] Set `NOTION_API_KEY` and `NOTION_DEALS_DB_ID` env vars\n- [ ] Set `GSHEETS_SPREADSHEET_ID`, `GSHEETS_SHEET_NAME`, `GSHEETS_LAST_ROW_RANGE` env vars\n- [ ] Set `REPORT_EMAIL_FROM` and `REPORT_EMAIL_TO` env vars\n- [ ] Set `REPORT_ALERT_EMAIL` env var (error alert recipient)\n- [ ] Set `SLACK_CHANNEL_ID` env var\n- [ ] Set `REPORT_TIMEZONE` env var (e.g. `Europe/Helsinki`, defaults to UTC)\n\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "caa71043-6b77-4148-b1b2-374936696160",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        8656,
+        1648
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 460,
+        "height": 444,
+        "content": "## Trigger & Date Setup\nFires every Monday at 08:00. Computes last week's start and end as ISO timestamps, Unix epochs, and milliseconds \u2014 timezone-aware via Luxon."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "56ae43c5-df59-4979-9da9-e64ee2e36953",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        9152,
+        1648
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 652,
+        "height": 444,
+        "content": "## Data Collection\nFetches data from three sources in sequence. Stripe uses cursor-based pagination to retrieve all charges in the window. Notion queries the Deals database with a date filter and rate-limit delay. Google Sheets reads the latest ops metrics row."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e43f6442-d399-4aa7-bb9e-cc78c35261e6",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        9840,
+        1648
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 992,
+        "height": 448,
+        "content": "## Aggregation & AI Narrative\nNormalises all three data sources into a single structured item. Claude Sonnet 4 then writes a 3-paragraph executive narrative \u2014 revenue performance, pipeline health, and operational highlights with a forward-looking observation. Temperature is set to 0 for consistent tone."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f9567f5d-55c6-429e-a9db-c69285f14d76",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        10864,
+        1648
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 748,
+        "height": 444,
+        "content": "## Report Build & Delivery\nAssembles a styled HTML email with KPI cards, pipeline stage breakdown, and the AI narrative. Sends via SendGrid, then fires a Slack confirmation with net revenue and deal count."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "abba7fe3-bb3f-458b-8cb8-e6b4f6464c7f",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        8656,
+        2128
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 620,
+        "height": 272,
+        "content": "## Global Error Failsafe\nIndependent trigger that catches any workflow execution failure and sends an error email via SendGrid with the execution ID and failed node name."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "versionId": "0299340d-9543-4f7b-ae60-15074c28e257",
+  "connections": {
+    "Build HTML Report": {
+      "main": [
+        [
+          {
+            "node": "Send via SendGrid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send via SendGrid": {
+      "main": [
+        [
+          {
+            "node": "Slack: Report Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Claude: Write Executive Narrative",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Date Windows": {
+      "main": [
+        [
+          {
+            "node": "Stripe: This Week Revenue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GSheets: Ops Metrics": {
+      "main": [
+        [
+          {
+            "node": "Aggregate All Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate All Metrics": {
+      "main": [
+        [
+          {
+            "node": "Claude: Write Executive Narrative",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Monday at 08:00": {
+      "main": [
+        [
+          {
+            "node": "Compute Date Windows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send Error Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stripe: This Week Revenue": {
+      "main": [
+        [
+          {
+            "node": "Notion: Pipeline This Week",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion: Pipeline This Week": {
+      "main": [
+        [
+          {
+            "node": "GSheets: Ops Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude: Write Executive Narrative": {
+      "main": [
+        [
+          {
+            "node": "Build HTML Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

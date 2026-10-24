@@ -1,6 +1,6 @@
 # 🔬 Use REGEX to select date
 
-> ⚡ **1,355 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,368 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

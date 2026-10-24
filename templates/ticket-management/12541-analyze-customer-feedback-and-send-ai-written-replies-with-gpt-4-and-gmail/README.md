@@ -1,6 +1,6 @@
 # 🎫 Analyze customer feedback and send AI-written replies with GPT-4 and Gmail
 
-> ⚡ **111 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **219 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

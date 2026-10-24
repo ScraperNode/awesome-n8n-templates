@@ -1,6 +1,6 @@
 # 💬 Automate restaurant reservations with AI on WhatsApp and Google Sheets
 
-> ⚡ **5,947 views** · 💬 [Support Chatbots](../)
+> ⚡ **7,666 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

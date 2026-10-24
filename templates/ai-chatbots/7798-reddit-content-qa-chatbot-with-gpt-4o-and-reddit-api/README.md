@@ -1,6 +1,6 @@
 # 🤖 Reddit content Q&A chatbot with GPT-4o and Reddit API
 
-> ⚡ **212 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **287 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

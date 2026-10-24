@@ -1,6 +1,6 @@
 # 🔧 Get Slack notifications when new product published on WooCommerce
 
-> ⚡ **1,561 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,587 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

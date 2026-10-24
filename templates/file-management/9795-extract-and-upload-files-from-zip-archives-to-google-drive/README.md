@@ -1,6 +1,6 @@
 # 📁 Extract and upload files from zip archives to Google Drive
 
-> ⚡ **420 views** · 📁 [File Management](../)
+> ⚡ **694 views** · 📁 [File Management](../)
 
 ## Description
 

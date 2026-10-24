@@ -1,6 +1,6 @@
 # ⚙️ Kubernetes management with natural language using GPT-4o and MCP tools
 
-> ⚡ **972 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,159 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 AI agents can get end of day market data with this Marketstack tool MCP Server
 
-> ⚡ **593 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **655 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔒 🛠️ Okta tool MCP server 💪 all 5 operations
 
-> ⚡ **154 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **175 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

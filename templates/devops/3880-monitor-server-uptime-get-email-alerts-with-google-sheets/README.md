@@ -1,6 +1,6 @@
 # ⚙️ Monitor server uptime & get email alerts with Google Sheets
 
-> ⚡ **4,104 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **4,491 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

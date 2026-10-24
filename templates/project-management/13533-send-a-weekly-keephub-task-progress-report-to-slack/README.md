@@ -1,6 +1,6 @@
 # 📋 Send a weekly Keephub task progress report to Slack
 
-> ⚡ **15 views** · 📋 [Project Management](../)
+> ⚡ **39 views** · 📋 [Project Management](../)
 
 ## Description
 

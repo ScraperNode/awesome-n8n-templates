@@ -1,6 +1,6 @@
 # 💬 Allow users to send a sequence of messages to an AI agent in Telegram
 
-> ⚡ **14,038 views** · 💬 [Support Chatbots](../)
+> ⚡ **13,041 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

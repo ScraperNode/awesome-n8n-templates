@@ -1,6 +1,6 @@
 # 📱 Automatic Eventbrite attendance tagging in KlickTipp
 
-> ⚡ **28 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **39 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

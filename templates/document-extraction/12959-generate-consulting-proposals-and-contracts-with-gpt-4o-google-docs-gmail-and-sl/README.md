@@ -1,6 +1,6 @@
-# 🔬 Generate consulting proposals and contracts with GPT-4o, Google Docs, Gmail and Slack
+# 🔬 Generate proposals with GPT-4o, Google Docs, Gmail and Slack
 
-> ⚡ **14 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **67 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

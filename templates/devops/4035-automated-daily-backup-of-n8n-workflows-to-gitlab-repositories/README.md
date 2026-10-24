@@ -1,6 +1,6 @@
 # ⚙️ Automated daily backup of n8n workflows to GitLab repositories
 
-> ⚡ **2,459 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,788 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

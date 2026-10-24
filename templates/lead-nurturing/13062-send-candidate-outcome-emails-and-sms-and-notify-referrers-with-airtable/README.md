@@ -1,6 +1,6 @@
 # 💬 Send candidate outcome emails and SMS and notify referrers with Airtable
 
-> ⚡ **5 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **36 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

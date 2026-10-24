@@ -1,6 +1,6 @@
 # 🔬 Consolidate data from 5 sources for automated reporting with SQL, MongoDB & Google tools
 
-> ⚡ **1,109 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,327 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

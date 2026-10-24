@@ -1,6 +1,6 @@
 # 🤝 Create Mautic contact on a new Shopify customer
 
-> ⚡ **1,101 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,194 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

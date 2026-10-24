@@ -1,6 +1,6 @@
 # ⚙️ Monitor [PROD] workflows in real time with the n8n Public API dashboard
 
-> ⚡ **5 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **348 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

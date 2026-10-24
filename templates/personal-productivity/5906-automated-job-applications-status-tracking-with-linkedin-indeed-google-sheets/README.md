@@ -1,6 +1,6 @@
 # ⚡ Automated job applications & status tracking with LinkedIn, Indeed & Google Sheets
 
-> ⚡ **76,321 views** · ⚡ [Personal Productivity](../)
+> ⚡ **107,316 views** · ⚡ [Personal Productivity](../)
 
 > 💡 **Pro Tip** — Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.
 >

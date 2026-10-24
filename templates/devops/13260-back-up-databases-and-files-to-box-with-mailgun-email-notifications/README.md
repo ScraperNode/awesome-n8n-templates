@@ -1,6 +1,6 @@
 # ⚙️ Back up databases and files to Box with Mailgun email notifications
 
-> ⚡ **22 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **97 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

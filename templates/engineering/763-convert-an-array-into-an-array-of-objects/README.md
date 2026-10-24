@@ -1,6 +1,6 @@
 # ⚒️ Convert an array into an array of objects
 
-> ⚡ **2,109 views** · ⚒️ [Engineering](../)
+> ⚡ **2,114 views** · ⚒️ [Engineering](../)
 
 ## Description
 

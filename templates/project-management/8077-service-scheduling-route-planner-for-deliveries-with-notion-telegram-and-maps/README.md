@@ -1,6 +1,6 @@
 # 📋 Service scheduling & route planner for deliveries with Notion, Telegram and Maps
 
-> ⚡ **281 views** · 📋 [Project Management](../)
+> ⚡ **409 views** · 📋 [Project Management](../)
 
 ## Description
 

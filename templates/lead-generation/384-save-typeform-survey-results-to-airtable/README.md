@@ -1,6 +1,6 @@
 # 🎣 Save Typeform survey results to Airtable
 
-> ⚡ **815 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **819 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

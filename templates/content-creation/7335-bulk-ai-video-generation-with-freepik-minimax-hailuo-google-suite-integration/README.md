@@ -1,6 +1,6 @@
 # 🎬 Bulk AI video generation with Freepik Minimax Hailuo & Google Suite integration
 
-> ⚡ **3,271 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,957 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

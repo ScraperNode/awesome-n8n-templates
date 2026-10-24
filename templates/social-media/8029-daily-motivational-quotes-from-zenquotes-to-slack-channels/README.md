@@ -1,6 +1,6 @@
 # 📱 Daily motivational quotes from ZenQuotes to Slack channels
 
-> ⚡ **413 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **531 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

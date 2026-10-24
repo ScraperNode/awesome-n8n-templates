@@ -1,6 +1,6 @@
 # 🔧 Monitor blood bank stock & send low level alerts with Google Sheets and WhatsApp
 
-> ⚡ **489 views** · 🔧 [Miscellaneous](../)
+> ⚡ **569 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Inbox manager (GPT, Google Calendar & Supabase)
 
-> ⚡ **2,747 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **3,287 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

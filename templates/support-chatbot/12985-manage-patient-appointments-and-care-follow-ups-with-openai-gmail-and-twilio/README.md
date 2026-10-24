@@ -1,6 +1,6 @@
 # 💬 Manage patient appointments and care follow-ups with OpenAI, Gmail and Twilio
 
-> ⚡ **64 views** · 💬 [Support Chatbots](../)
+> ⚡ **193 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

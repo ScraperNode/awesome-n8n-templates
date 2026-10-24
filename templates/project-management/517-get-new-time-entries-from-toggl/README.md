@@ -1,6 +1,6 @@
 # 📋 Get new time entries from Toggl
 
-> ⚡ **1,244 views** · 📋 [Project Management](../)
+> ⚡ **1,328 views** · 📋 [Project Management](../)
 
 ## Description
 

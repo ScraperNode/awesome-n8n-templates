@@ -1,6 +1,6 @@
 # 🎬 Create viral YouTube content from Reddit posts with GPT-4o and Google Sheets
 
-> ⚡ **869 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,076 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Website monitoring, scheduling, and email alerts template
 
-> ⚡ **4,172 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **4,950 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

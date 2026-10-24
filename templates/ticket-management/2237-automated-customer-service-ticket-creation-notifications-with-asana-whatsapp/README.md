@@ -1,6 +1,6 @@
 # 🎫 Automated Customer Service Ticket Creation & Notifications with Asana & WhatsApp
 
-> ⚡ **8,206 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **8,292 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

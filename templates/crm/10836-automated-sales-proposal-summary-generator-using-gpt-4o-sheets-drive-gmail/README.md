@@ -1,6 +1,6 @@
 # 🤝 Automated sales proposal & summary generator using GPT-4o, Sheets, Drive & Gmail
 
-> ⚡ **199 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **230 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Bookmarking urls in your browser and save them to Notion
 
-> ⚡ **2,229 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,261 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

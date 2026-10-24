@@ -1,6 +1,6 @@
 # 📋 Turn emails into AI-enhanced tasks in Notion (multi-user support) with Gmail, Airtable and Softr
 
-> ⚡ **8,508 views** · 📋 [Project Management](../)
+> ⚡ **8,572 views** · 📋 [Project Management](../)
 
 ## Description
 

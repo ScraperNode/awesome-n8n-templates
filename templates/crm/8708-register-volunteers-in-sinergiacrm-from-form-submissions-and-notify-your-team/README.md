@@ -1,6 +1,6 @@
 # 🤝 Register volunteers in SinergiaCRM from form submissions and notify your team
 
-> ⚡ **45 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **51 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

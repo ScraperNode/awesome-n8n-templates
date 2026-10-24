@@ -1,6 +1,6 @@
 # ⚡ Expense logging with Telegram and Google Sheets
 
-> ⚡ **769 views** · ⚡ [Personal Productivity](../)
+> ⚡ **913 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

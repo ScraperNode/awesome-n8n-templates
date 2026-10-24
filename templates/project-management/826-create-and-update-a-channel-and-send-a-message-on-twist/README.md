@@ -1,6 +1,6 @@
 # 📋 Create and update a channel, and send a message on Twist
 
-> ⚡ **605 views** · 📋 [Project Management](../)
+> ⚡ **633 views** · 📋 [Project Management](../)
 
 ## Description
 

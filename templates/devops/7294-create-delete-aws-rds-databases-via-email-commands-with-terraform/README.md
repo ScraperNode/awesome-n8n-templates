@@ -1,6 +1,6 @@
 # ⚙️ Create & delete AWS RDS databases via email commands with Terraform
 
-> ⚡ **542 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **576 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

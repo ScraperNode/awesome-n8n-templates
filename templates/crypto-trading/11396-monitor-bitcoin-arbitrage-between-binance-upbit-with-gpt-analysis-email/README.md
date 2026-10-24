@@ -1,6 +1,6 @@
 # 📈 Monitor bitcoin arbitrage between Binance & Upbit with GPT analysis & email
 
-> ⚡ **286 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **405 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

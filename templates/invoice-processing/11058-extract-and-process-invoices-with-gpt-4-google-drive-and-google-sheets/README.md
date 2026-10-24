@@ -1,6 +1,6 @@
 # 🧾 Extract and process invoices with GPT-4, Google Drive, and Google Sheets
 
-> ⚡ **459 views** · 🧾 [Invoice Processing](../)
+> ⚡ **918 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

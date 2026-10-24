@@ -1,6 +1,6 @@
 # 🔒 Automated lead generation & qualification with Google Maps, GPT-4 & HubSpot
 
-> ⚡ **1,038 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,183 views** · 🔒 [SecOps & Security Automation](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >
@@ -8,123 +8,170 @@
 
 ## Description
 
-This n8n workflow automates CVE tracking by retrieving vulnerability details from the NVD API 🛡️, organizing and updating the data in Google Sheets 📊, and optionally alerting teams via Slack or Email 📩💬.
+# 🚀 AI Lead Machine Pro: Google Maps → Slack → HubSpot → $$$
+
+This n8n workflow automates **end-to-end lead generation**, from scraping local businesses to qualifying and sending high-quality prospects directly into your CRM.
+
+It eliminates manual prospecting and replaces it with a **fully automated AI-powered lead pipeline**.
 
 ---
 
-### Who is this for?
+## 🎯 Who is this for?
 
-This workflow is ideal for:
+This workflow is perfect for:
 
-* Security operations (SecOps) teams 🧑‍💻
-* DevSecOps engineers 🛠️
-* IT compliance officers 🧾
-* Vulnerability management analysts 🕵️
-* Sysadmins or cloud engineers in regulated industries 🏢
-
----
-
-### What problem does this workflow solve?
-
-Manually checking for the latest CVE information is inefficient and error-prone. This automation:
-
-* Monitors NVD for CVE entries based on product or keyword filters 🔍
-* Tracks new vulnerabilities and changes to existing ones ⏱️
-* Logs all CVE data in a structured Google Sheet for ongoing review and audit 🧾
-* Can trigger alerts or actions for high-severity CVEs 🚨
+- Lead generation agencies 📈  
+- Sales teams & outbound closers 💼  
+- Real estate & insurance agents 🏡  
+- SMMA owners & freelancers 🎯  
+- B2B service providers looking for clients 🚀  
 
 ---
 
-### What this workflow does
+## ❌ What problem does this solve?
 
-This workflow builds an automated CVE monitoring system that:
+Finding and qualifying leads manually is:
+- Time-consuming ⏳  
+- Inconsistent 📉  
+- Hard to scale 🚫  
 
-* Queries the [NVD API](https://nvd.nist.gov/developers/vulnerabilities) for vulnerability data matching keywords (e.g. "Apache", "Log4j") 📡
-* Extracts relevant fields: CVE ID, description, severity (CVSS scores), published/modified dates, and affected products 🗂️
-* Saves or updates the information in Google Sheets 📑
-* Optionally filters for critical severity (e.g., CVSS &gt; 8.0) and sends Slack alerts or emails 📬
-* Supports historical tracking and change detection over time 🕒
-
-Includes a Google Sheets template for tracking:
-
-* CVE IDs and metadata
-* Severity levels and scores
-* Product/component tags
-* Resolution/patch status tracking
+This workflow solves that by:
+- Automatically sourcing leads from online directories 🔍  
+- Cleaning and verifying contact data 🧹  
+- Using AI to qualify prospects 🤖  
+- Sending only high-quality leads to your CRM 💎  
 
 ---
 
-### Setup
+## ⚙️ What this workflow does
 
-#### Prerequisites
+This system creates a **fully automated lead generation engine**:
 
-You'll need:
+### 1. Lead Extraction 🗺️
+- Scrapes business data from Google Maps  
+- Pulls additional listings from Yellow Pages  
 
-* An n8n instance (cloud or self-hosted) ☁️
-* A Google account + Google Sheets API credentials 📑
-* (Optional) Slack webhook URL or email setup for notifications 💬
+### 2. Data Cleaning 🧹
+- Removes duplicates  
+- Standardizes names, emails, and phone numbers  
 
-#### Step 1: Configure API Inputs
+### 3. Email Verification ✉️
+- Validates email addresses to reduce bounce rates  
 
-Open the `🔧 Configuration` node and provide:
+### 4. AI Lead Qualification 🤖
+- Uses AI to score and qualify leads based on quality and relevance  
 
-* NVD API parameters (keyword filters, date ranges, etc.)
-* Google Sheet ID and tab name for output
-* Slack webhook URL (optional)
+### 5. Lead Enrichment 💎
+- Enhances leads with additional data for better targeting  
 
-#### Step 2: Set Filters & Preferences
+### 6. Quality Filtering 🎯
+- Filters only the best leads based on defined criteria  
 
-Define:
+### 7. Automated Output 📊
+- Saves all leads to Google Sheets  
+- Sends qualified leads to HubSpot CRM  
+- Triggers Slack alerts for new high-quality leads  
 
-* Target keywords or CPE filters (e.g. “Cisco ASA”, “Windows 10”) 🧩
-* CVSS threshold for high/critical alerts 🎚️
-* Update frequency (manual trigger, scheduled cron, webhook, etc.) 🔁
-
-#### Step 3: Connect to Google Sheets
-
-* Update Sheet node with your destination Sheet ID
-* Ensure columns like `CVE ID`, `Description`, `Severity`, `Last Updated` exist
-
-#### Step 4: Enable Alerts (Optional)
-
-* Set up Slack node with your webhook URL or connect SMTP/Email node
-* Format alert message with key CVE data
-
-#### Step 5: Activate and Run
-
-* Save and activate the workflow 🔛
-* Run manually or schedule it to run periodically (e.g., every 6 hours) ⏱️
+### 8. Analytics Tracking 📈
+- Tracks performance and lead quality metrics  
 
 ---
 
-### Customization Tips
+## 🔌 Integrations
 
-* Add deduplication logic to avoid reprocessing the same CVEs ♻️
-* Use filters to monitor only critical CVEs or specific vendors/vendors 🔍
-* Extend with GitHub Security Advisories or Exploit DB integration 🧩
-* Track remediation status and link to patch notes or fixes 🩹
-
----
-
-### Troubleshooting
-
-**Common Issues**
-
-* *Empty results from NVD:* Check if your keywords are too narrow or if NVD API rate limits apply 📉
-* *Google Sheets error:* Ensure the Sheet ID and tab names are correct and accessible 🔑
-* *Alerts not sending:* Check Slack webhook or email configurations 🔧
+- Google Maps (via scraping/API)  
+- Yellow Pages  
+- Google Sheets  
+- HubSpot CRM  
+- Slack  
+- OpenAI (for AI qualification)  
 
 ---
 
-### Getting Help
+## 🛠️ Setup
 
-* Read inline comments in n8n 📝
-* Visit the [n8n Docs](https://docs.n8n.io) 📚
-* Contact template creator: [dimejicole21@gmailcom](mailto:dimejicole21@gmailcom)
+### Prerequisites
+- n8n (cloud or self-hosted) ☁️  
+- Google Sheets API credentials 📑  
+- HubSpot account 🏢  
+- Slack webhook (optional) 💬  
 
 ---
 
-This template was created by David Olusola. 🛡️
+### Step 1: Configure Inputs
+In the `🔧 Configuration Hub` node:
+- Set your target niche (e.g., real estate, insurance, restaurants)  
+- Define location/city  
+- Add API endpoints or scraper settings  
+
+---
+
+### Step 2: Adjust AI Qualification
+- Customize scoring logic based on your ideal client  
+- Example: business size, niche, contact availability  
+
+---
+
+### Step 3: Connect Outputs
+- Add your Google Sheet ID  
+- Connect HubSpot account  
+- Set Slack webhook for alerts  
+
+---
+
+### Step 4: Run or Schedule
+- Run manually or  
+- Schedule (e.g., every 6–12 hours) for continuous lead flow  
+
+---
+
+## 🧠 Customization Tips
+
+- Add cold email automation after HubSpot 📧  
+- Filter by niche + location for hyper-targeted leads 🎯  
+- Integrate with tools like Instantly or Smartlead for outreach 🔗  
+- Add deduplication logic to avoid reprocessing leads ♻️  
+
+---
+
+## ⚠️ Troubleshooting
+
+**No leads found?**  
+- Broaden your search keywords or location  
+
+**Emails failing verification?**  
+- Check your email verification API limits  
+
+**Slack not sending alerts?**  
+- Verify webhook URL and permissions  
+
+---
+
+## 💡 What makes this powerful?
+
+This isn’t just scraping—it’s a **complete lead pipeline**:
+
+👉 Source → Clean → Verify → Qualify → Enrich → Deliver
+
+Meaning:
+- You don’t just get leads  
+- You get **ready-to-close opportunities**
+
+---
+
+## 👤 Creator
+
+Created by **David (Daex AI)** 🤖  
+Built for scalable lead generation and outbound systems.
+
+---
+
+## 🔥 If you want to sell this
+
+You can position it as:
+- “AI Lead Gen System for Agencies”
+- “Automated Client Acquisition Machine”
+- “Done-for-you B2B Lead Pipeline”
 
 ## 🔗 Nodes Used
 

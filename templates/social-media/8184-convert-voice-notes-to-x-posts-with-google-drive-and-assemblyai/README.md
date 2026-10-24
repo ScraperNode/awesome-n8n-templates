@@ -1,6 +1,6 @@
 # 📱 🎙️ Convert voice notes to X posts with Google Drive and AssemblyAI
 
-> ⚡ **29 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **34 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

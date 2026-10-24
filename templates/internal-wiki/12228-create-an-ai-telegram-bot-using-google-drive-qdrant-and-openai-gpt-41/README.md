@@ -1,6 +1,6 @@
 # 📖 Create an AI Telegram bot using Google Drive, Qdrant, and OpenAI GPT-4.1
 
-> ⚡ **345 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **570 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

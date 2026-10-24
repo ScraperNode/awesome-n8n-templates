@@ -1,6 +1,6 @@
 # ⚙️ Check VPS resource usage every 15 minutes
 
-> ⚡ **5,384 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **5,734 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

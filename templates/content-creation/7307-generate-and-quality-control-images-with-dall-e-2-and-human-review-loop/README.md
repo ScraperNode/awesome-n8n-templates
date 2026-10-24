@@ -1,6 +1,6 @@
 # 🎬 Generate and quality control images with DALL-E 2 and human review loop
 
-> ⚡ **818 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **903 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

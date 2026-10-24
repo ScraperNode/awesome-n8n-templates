@@ -1,6 +1,6 @@
 # ⚡ Personal budget & expense tracker with Google Sheets and alerts MCP
 
-> ⚡ **7,372 views** · ⚡ [Personal Productivity](../)
+> ⚡ **8,529 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

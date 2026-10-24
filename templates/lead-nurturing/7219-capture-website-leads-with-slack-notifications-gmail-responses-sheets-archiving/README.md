@@ -1,6 +1,6 @@
 # 💬 Capture website leads with Slack notifications, Gmail responses & sheets archiving
 
-> ⚡ **439 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **596 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

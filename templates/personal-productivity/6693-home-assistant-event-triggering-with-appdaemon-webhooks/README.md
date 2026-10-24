@@ -1,6 +1,6 @@
 # ⚡ Home Assistant event triggering with AppDaemon Webhooks
 
-> ⚡ **190 views** · ⚡ [Personal Productivity](../)
+> ⚡ **217 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

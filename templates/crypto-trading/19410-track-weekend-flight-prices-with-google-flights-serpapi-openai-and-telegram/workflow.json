@@ -1,0 +1,2123 @@
+{
+  "name": "Track weekend flight prices with Google Flights, SerpAPI, OpenAI and Telegram",
+  "nodes": [
+    {
+      "id": "schedule-check",
+      "name": "Schedule Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        400,
+        2700
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "prep-input",
+      "name": "Prep Input",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        680,
+        1800
+      ],
+      "parameters": {
+        "jsCode": "\n// Normalising entry node. Everything downstream reads THIS, never the trigger,\n// so the skill stays testable and survives new entry paths.\nconst items = $input.all();\nconst src = items.length ? (items[0].json || {}) : {};\nconst OWNER_CHAT = 0;\n\n// The Schedule Trigger emits a timestamp payload with no chat_id / action.\nconst isScheduled = !src.action && !src.chat_id;\nif (isScheduled) {\n  return [{ json: { action: 'scheduled', chat_id: OWNER_CHAT, language: 'en', source: 'schedule', text: '' } }];\n}\nreturn [{ json: {\n  action: (src.action === 'reply' ? 'invoke' : (src.action || 'invoke')),\n  chat_id: src.chat_id || OWNER_CHAT,\n  language: src.language || 'en',\n  text: String(src.text || src.reply_text || ''),\n  cb_action: src.cb_action || '',\n  ref: src.ref || '',\n  source: 'orchestrator'\n} }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "route-by-action",
+      "name": "Route by Action",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        960,
+        1800
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "invoke",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "c0",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "invoke"
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "scheduled",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "c1",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "scheduled"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "parse-request",
+      "name": "Parse Request",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        1240,
+        1800
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5",
+          "cachedResultName": "GPT-5"
+        },
+        "options": {
+          "temperature": 1
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You turn a flight-watching request into JSON. Today is {{ $now.format('yyyy-MM-dd') }}.\n\nUSER MESSAGE:\n{{ $json.text }}\n\nIntent:\n- \"create\" to start watching a route.\n- \"list\" to see existing alerts.\n- \"cancel\" to stop one.\n- \"status\" ONLY when he asks about alerts he already has and names NO new route.\n  \"how are my flight alerts looking\", \"any updates\", \"latest prices\" are status.\n- If he names a destination city, it is a \"create\", even if he phrases it as a question.\n  \"what is the cheapest flight from Berlin to Milan over the next eight weeks\" is a CREATE, not a status.\n- \"unclear\" if none apply.\n\nResolve cities to IATA AIRPORT codes: Berlin BER, Rome FCO, Warsaw WAW, London LHR, Paris CDG, Munich MUC, Vienna VIE, Barcelona BCN, Lisbon LIS, Milan MXP, Amsterdam AMS, Zurich ZRH, Copenhagen CPH, Stockholm ARN, Madrid MAD, Athens ATH, Istanbul IST, Naples NAP, Palermo PMO, Nice NCE, Porto OPO, Dublin DUB, New York JFK.\norigin_iata: ONLY if he actually names a departure city or country. Leave it EMPTY otherwise, do not guess.\nCOUNTRIES: if he names a COUNTRY rather than a city, use that country's CAPITAL and its main airport.\n  Italy is Rome FCO. Germany is Berlin BER. France is Paris CDG. Spain is Madrid MAD. Portugal is Lisbon LIS.\n  Poland is Warsaw WAW. Greece is Athens ATH. Austria is Vienna VIE. Netherlands is Amsterdam AMS.\n  \"Berlin to Italy\" is BER to FCO. \"Germany to Italy\" is BER to FCO.\n  Set origin_from_country / destination_from_country to true when you resolved that side from a country,\n  and put the CITY name in origin_name / destination_name (not the country).\ndestination_iata: the city he wants to fly to. Empty if he never says.\n\nbudget_eur: the number he said in EUR, 0 if none.\nwindow_weeks: how far ahead. 0 if he does not say. \"next month\" 5, \"two months\" 8, \"three months\" 12.\npatterns: the weekend shapes he ASKS FOR, exactly. Options FRI_SUN, THU_SUN, SAT_SUN, SAT_MON, THU_SAT.\n  \"Friday to Sunday\" is [\"FRI_SUN\"]. \"Thursday to Sunday\" is [\"THU_SUN\"]. \"Thursday to Saturday\" is [\"THU_SAT\"].\n  \"long weekend\" is [\"THU_SUN\",\"SAT_MON\"]. Return an EMPTY array if he does not specify.\ncadence: \"daily\" only if he explicitly asks for daily checks, else \"weekly\".\ncancel_hint: for cancel, the city or alert id, lowercase. Empty otherwise.\nlanguage: \"de\" if he wrote German, else \"en\".\n\nReturn ONLY this JSON:\n{\"intent\":\"create|list|cancel|status|unclear\",\"origin_iata\":\"\",\"destination_iata\":\"\",\"origin_name\":\"\",\"destination_name\":\"\",\"budget_eur\":0,\"window_weeks\":0,\"patterns\":[],\"cadence\":\"weekly\",\"cancel_hint\":\"\",\"language\":\"en\",\"origin_from_country\":false,\"destination_from_country\":false}"
+            }
+          ]
+        },
+        "jsonOutput": true
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "normalise-request",
+      "name": "Normalise Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1520,
+        1800
+      ],
+      "parameters": {
+        "jsCode": "\n// Turn the parsed request into a concrete search plan.\n// All date maths is done here in plain JS, never by the model.\nconst ctx = $('Prep Input').first().json;\nconst raw = $input.first().json;\nconst c = raw.message && raw.message.content ? raw.message.content : raw;\nlet p = {};\ntry { p = typeof c === 'string' ? JSON.parse(c) : (c || {}); } catch (e) { p = {}; }\n\nlet intent = ['create','list','cancel','status'].includes(p.intent) ? p.intent : 'unclear';\n// Naming a route is a mechanical signal, so do not leave it to the model:\n// \"cheapest flight from Berlin to Milan\" is a new watch, not a status question.\nif (intent === 'status' && String(p.destination_iata || '').trim()) intent = 'create';\n\n// Window: 8 weeks (about two months) unless he names one. His explicit call.\nconst CFG = (() => { try { return $('\u2699\ufe0f Config').first().json; } catch (e) { return {}; } })();\nconst weeks = Math.min(Math.max(Number(p.window_weeks) || Number(CFG.default_window_weeks) || 8, 1), 12);\n\n// Patterns: whatever he actually said, honoured exactly. Only fall back when silent.\nconst ALL = ['FRI_SUN','SAT_SUN','THU_SUN','SAT_MON','THU_SAT'];\nlet pats = Array.isArray(p.patterns) ? p.patterns.filter(x => ALL.includes(x)) : [];\nconst patsGiven = pats.length > 0;\nif (!patsGiven) pats = ['FRI_SUN'];   // his default: a plain Fri to Sun weekend\n\nconst cadence = p.cadence === 'daily' ? 'daily' : 'weekly';\n\nlet budget = Number(p.budget_eur);\nif (!isFinite(budget) || budget <= 0) budget = 0;\nconst budgetFloored = budget > 0 && budget < 50;\nif (budgetFloored) budget = 50;\n\n// Home airport. Berlin unless he says otherwise, and the card always states it\n// so a wrong assumption is visible rather than silent.\nconst destIata = String(p.destination_iata || '').toUpperCase().slice(0,3);\nlet originIata = String(p.origin_iata || '').toUpperCase().slice(0,3);\nconst originAssumed = !originIata && !!destIata;\nif (originAssumed) originIata = String(CFG.home_airport || 'BER').toUpperCase();\n\n// A create with no destination cannot be saved. Ask instead of storing a dead alert.\nconst needsAsk = intent === 'create' && !destIata;\n\nconst pad = (n) => (n < 10 ? '0' : '') + n;\nconst iso = (d) => d.getUTCFullYear() + '-' + pad(d.getUTCMonth()+1) + '-' + pad(d.getUTCDate());\nconst add = (d, n) => { const x = new Date(d.getTime()); x.setUTCDate(x.getUTCDate() + n); return x; };\nconst today = new Date(); today.setUTCHours(12,0,0,0);\nconst dow = today.getUTCDay();\nconst anchor = add(today, ((8 - (dow === 0 ? 7 : dow)) % 7) || 7);\n\n// A city is not an airport. \"Rome\" means Fiumicino AND Ciampino, and Google\n// Flights accepts a comma list in ONE search, so covering both costs nothing.\nconst CITY_AIRPORTS = {\n  FCO:'FCO,CIA', LHR:'LHR,LGW,STN,LTN', CDG:'CDG,ORY,BVA', MXP:'MXP,LIN,BGY',\n  JFK:'JFK,EWR,LGA', IST:'IST,SAW', WAW:'WAW,WMI', ARN:'ARN,NYO', BRU:'BRU,CRL',\n  VCE:'VCE,TSF', OSL:'OSL,TRF', BCN:'BCN,GRO', MAD:'MAD', LIS:'LIS', ATH:'ATH',\n  VIE:'VIE', AMS:'AMS', NAP:'NAP', DUB:'DUB', CPH:'CPH', ZRH:'ZRH', MUC:'MUC',\n  BER:'BER', OPO:'OPO', PMO:'PMO', NCE:'NCE', TXL:'BER', SXF:'BER'\n};\nconst airportsFor = (iata) => CITY_AIRPORTS[iata] || iata;\n// Display names, so a header never reads \"Berlin to LIS\" when the model\n// returns the code but skips the city name.\nconst CITY_NAMES = {\n  FCO:'Rome', CIA:'Rome', LHR:'London', CDG:'Paris', MXP:'Milan', JFK:'New York',\n  IST:'Istanbul', WAW:'Warsaw', ARN:'Stockholm', BRU:'Brussels', VCE:'Venice',\n  OSL:'Oslo', BCN:'Barcelona', MAD:'Madrid', LIS:'Lisbon', ATH:'Athens',\n  VIE:'Vienna', AMS:'Amsterdam', NAP:'Naples', DUB:'Dublin', CPH:'Copenhagen',\n  ZRH:'Zurich', MUC:'Munich', BER:'Berlin', OPO:'Porto', PMO:'Palermo', NCE:'Nice'\n};\nconst cityName = (given, iata) => {\n  const g = String(given || '').trim();\n  // a bare 3-letter code is not a name\n  if (g && !/^[A-Z]{3}$/.test(g)) return g;\n  return CITY_NAMES[iata] || iata;\n};\n\nconst OFFSETS = { THU_SUN:[3,6], FRI_SUN:[4,6], SAT_SUN:[5,6], SAT_MON:[5,7], THU_SAT:[3,5] };\n\nconst pairs = [];\nfor (let w = 0; w < weeks; w++) {\n  const mon = add(anchor, w * 7);\n  for (const pat of pats) {\n    const o = OFFSETS[pat];\n    pairs.push({ pattern: pat, out: iso(add(mon, o[0])), ret: iso(add(mon, o[1])) });\n  }\n}\nconst runsPerMonth = cadence === 'daily' ? 30 : 4;\n\nreturn [{ json: {\n  ...ctx,\n  intent: needsAsk ? 'ask' : intent,\n  ask_reason: needsAsk ? 'destination' : '',\n  origin: originIata ? airportsFor(originIata) : '',\n  destination: destIata ? airportsFor(destIata) : '',\n  origin_iata: originIata, destination_iata: destIata,\n  origin_name: cityName(p.origin_name, originIata) || (originAssumed ? 'Berlin' : originIata),\n  dest_name: cityName(p.destination_name, destIata),\n  origin_assumed: originAssumed,\n  origin_from_country: !!p.origin_from_country,\n  dest_from_country: !!p.destination_from_country,\n  budget_eur: budget, budget_floored: budgetFloored,\n  window_weeks: weeks, window_given: !!Number(p.window_weeks),\n  patterns: pats, patterns_given: patsGiven,\n  cadence, pairs,\n  searches_per_run: pairs.length,\n  searches_per_month: pairs.length * runsPerMonth,\n  cancel_hint: String(p.cancel_hint || ''),\n  language: p.language || ctx.language || 'en',\n  probe_url: (originIata && destIata && pairs.length)\n    ? ('https://serpapi.com/search.json?engine=google_flights&departure_id=' + airportsFor(originIata) +\n       '&arrival_id=' + airportsFor(destIata) + '&outbound_date=' + pairs[0].out + '&return_date=' + pairs[0].ret +\n       '&currency=EUR&hl=en&gl=de&type=1')\n    : ''\n}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "route-by-intent",
+      "name": "Route by Intent",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1800,
+        1800
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "create",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "i0",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "create"
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "list",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "i1",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "list"
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "cancel",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "i2",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "cancel"
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "status",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "i3",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "status"
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "ask",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "i4",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "ask"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "ack-checking",
+      "name": "Ack Checking",
+      "type": "n8n-nodes-base.telegram",
+      "onError": "continueRegularOutput",
+      "position": [
+        2080,
+        1200
+      ],
+      "parameters": {
+        "text": "={{ $json.language === 'de' ? '\ud83d\udeeb Pr\u00fcfe aktuelle Marktpreise...' : '\ud83d\udeeb Checking current market rates...' }}",
+        "chatId": "={{ $json.chat_id }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "probe-market",
+      "name": "Probe Market",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        2080,
+        1400
+      ],
+      "parameters": {
+        "url": "={{ $json.probe_url }}",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "serpApi"
+      },
+      "executeOnce": true,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "validate-budget",
+      "name": "Validate Budget",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2360,
+        1400
+      ],
+      "parameters": {
+        "jsCode": "\n// Compare the stated budget against what the route actually costs right now.\n// price_insights is free inside the search we already paid for.\nconst ctx = $('Normalise Request').first().json;\nconst r = $input.first().json || {};\nconst pi = r.price_insights || null;\nconst all = (r.best_flights || []).concat(r.other_flights || []);\nconst prices = all.map(x => x.price).filter(x => typeof x === 'number').sort((a,b) => a-b);\n\nconst lowest = pi && typeof pi.lowest_price === 'number' ? pi.lowest_price : (prices[0] || null);\nconst range = pi && Array.isArray(pi.typical_price_range) ? pi.typical_price_range : null;\nconst searchFailed = !!r.error || (!prices.length && !lowest);\n\nlet verdict = 'ok', note = '';\nif (!searchFailed && ctx.budget_eur > 0 && range && range.length === 2) {\n  if (ctx.budget_eur < range[0] * 0.6) { verdict = 'unrealistic'; note = 'well below the typical range'; }\n  else if (ctx.budget_eur < range[0])  { verdict = 'tight'; note = 'below the typical range but not impossible'; }\n} else if (!searchFailed && ctx.budget_eur > 0 && lowest && ctx.budget_eur < lowest * 0.6) {\n  verdict = 'unrealistic'; note = 'well under the cheapest fare on the market today';\n}\n\n// Readable id: ROME-0908-K3 rather than FW-20260908-66wz.\nconst slug = String(ctx.dest_name || ctx.destination || 'TRIP')\n  .toUpperCase().replace(/[^A-Z]/g, '').slice(0, 8) || 'TRIP';\nconst n = new Date();\nconst pad = (x) => (x < 10 ? '0' : '') + x;\nconst stamp = pad(n.getMonth() + 1) + pad(n.getDate());\nconst rnd = Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 2) || 'X1';\n\nreturn [{ json: { ...ctx,\n  market_lowest: lowest, market_range: range,\n  market_level: pi ? (pi.price_level || '') : '',\n  search_failed: searchFailed, verdict, verdict_note: note,\n  alert_id: slug + '-' + stamp + '-' + rnd }}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "build-alert-card",
+      "name": "Build Alert Card",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2640,
+        1400
+      ],
+      "parameters": {
+        "jsCode": "\nconst esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\nconst capHtml = (s, max) => {\n  let t = String(s || '');\n  if (t.length <= max) return t;\n  t = t.slice(0, max);\n  const lt = t.lastIndexOf('<'), gt = t.lastIndexOf('>');\n  if (lt > gt) t = t.slice(0, lt);\n  const open = []; const re = /<(\\/?)([a-zA-Z]+)[^>]*>/g; let m;\n  while ((m = re.exec(t)) !== null) {\n    if (m[1] === '/') { const i = open.lastIndexOf(m[2]); if (i !== -1) open.splice(i, 1); }\n    else open.push(m[2]);\n  }\n  while (open.length) t += '</' + open.pop() + '>';\n  return t + '\\n\u2026(truncated)';\n};\n\nconst d = $input.first().json;\nconst de = d.language === 'de';\nconst eur = (n) => (n == null ? '?' : '\u20ac' + Math.round(n));\nconst PAT = { FRI_SUN:'Fri to Sun', THU_SUN:'Thu to Sun', SAT_SUN:'Sat to Sun', SAT_MON:'Sat to Mon', THU_SAT:'Thu to Sat' };\nconst L = [];\n\nL.push('<b>' + esc(de ? '\ud83d\udeeb Flug-Alarm aktiv' : '\ud83d\udeeb Flight alert active') + '</b>');\nL.push('');\nL.push('<b>' + esc(d.origin_name + ' to ' + d.dest_name) + '</b> (' + esc(d.origin + ' to ' + d.destination) + ')');\nif (d.dest_from_country || d.origin_from_country) {\n  const parts = [];\n  if (d.origin_from_country) parts.push(d.origin_name);\n  if (d.dest_from_country) parts.push(d.dest_name);\n  L.push('<i>' + esc((de ? 'Land genannt, ich nehme die Hauptstadt: ' : 'You named a country, so I am using the capital: ')\n        + parts.join(', ')) + '</i>');\n}\nif (d.origin_assumed) {\n  L.push('<i>' + esc(de ? 'Abflug Berlin angenommen. Sag es, wenn du woanders startest.'\n                        : 'Assumed you fly from Berlin. Tell me if not.') + '</i>');\n}\nif (d.budget_eur > 0) L.push((de ? 'Budget: ' : 'Budget: ') + '<b>' + eur(d.budget_eur) + '</b>');\nelse L.push('<i>' + esc(de ? 'Kein Budget gesetzt, ich zeige dir einfach die Preise.'\n                           : 'No budget set, I will just show you the prices.') + '</i>');\nL.push((de ? 'Zeitraum: ' : 'Window: ') + d.window_weeks + (de ? ' Wochen' : ' weeks')\n       + (d.window_given ? '' : esc(de ? ' (Standard)' : ' (default)')));\nL.push((de ? 'Wochenenden: ' : 'Weekends: ') + esc(d.patterns.map(p => PAT[p] || p).join(', '))\n       + (d.patterns_given ? '' : esc(de ? ' (Standard)' : ' (default)')));\nL.push((de ? 'Pr\u00fcfung: ' : 'Checks: ') + (d.cadence === 'daily'\n       ? (de ? 't\u00e4glich 08:00' : 'daily 08:00')\n       : (de ? 'dienstags 08:00' : 'Tuesday 08:00')));\n\nif (d.budget_floored) L.push('', esc(de ? '\u26a0\ufe0f Budget auf das Minimum von \u20ac50 angehoben.' : '\u26a0\ufe0f Budget raised to the \u20ac50 minimum.'));\n\nL.push('');\nif (d.search_failed) {\n  L.push(esc(de ? 'Marktpreise hole ich beim ersten Lauf, der Alarm l\u00e4uft.'\n                : 'I will pull market rates on the first run, the alert is live.'));\n} else {\n  L.push('<b>' + esc(de ? 'Markt heute' : 'Market today') + '</b>');\n  if (d.market_lowest != null) L.push((de ? 'G\u00fcnstigster Preis: ' : 'Cheapest right now: ') + '<b>' + eur(d.market_lowest) + '</b>');\n  if (d.market_range) L.push((de ? '\u00dcblich: ' : 'Typical: ') + eur(d.market_range[0]) + ' to ' + eur(d.market_range[1]));\n  if (d.verdict === 'unrealistic') L.push('', esc((de ? '\u26a0\ufe0f Dein Budget liegt ' : '\u26a0\ufe0f Your budget is ') + d.verdict_note + '.'));\n  else if (d.verdict === 'tight') L.push('', esc((de ? 'Knapp, aber machbar. ' : 'Tight but plausible. ')));\n}\n\nL.push('');\nL.push('<i>' + esc(d.searches_per_run + (de ? ' Suchen pro Lauf, ca. ' : ' searches per run, about ')\n      + d.searches_per_month + (de ? ' pro Monat.' : ' per month.')) + '</i>');\nif (d.searches_per_month > 250) L.push('<i>' + esc(de ? '\u26a0\ufe0f \u00dcber dem kostenlosen Kontingent (250/Monat).' : '\u26a0\ufe0f Above the free quota (250/month).') + '</i>');\nL.push('<code>' + esc(d.alert_id) + '</code>');\n\nreturn [{ json: { ...d, message: capHtml(L.join('\\n'), 3800) } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "save-alert",
+      "name": "Save Alert",
+      "type": "n8n-nodes-base.dataTable",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        2920,
+        1580
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "notes": "={{ $json.verdict }}",
+            "origin": "={{ $json.origin }}",
+            "status": "active",
+            "cadence": "={{ $json.cadence }}",
+            "chat_id": "={{ Number($json.chat_id) }}",
+            "alert_id": "={{ $json.alert_id }}",
+            "language": "={{ $json.language }}",
+            "patterns": "={{ $json.patterns.join(',') }}",
+            "dest_name": "={{ $json.dest_name }}",
+            "budget_eur": "={{ Number($json.budget_eur) }}",
+            "destination": "={{ $json.destination }}",
+            "origin_name": "={{ $json.origin_name }}",
+            "last_checked": "",
+            "window_weeks": "={{ Number($json.window_weeks) }}",
+            "last_notified": "={{ 0 }}",
+            "last_best_price": "={{ 0 }}"
+          },
+          "schema": [
+            {
+              "id": "alert_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "alert_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "chat_id",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "displayName": "chat_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "language",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "language",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "origin",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "origin",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "destination",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "destination",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "origin_name",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "origin_name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "dest_name",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "dest_name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "budget_eur",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "displayName": "budget_eur",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "window_weeks",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "displayName": "window_weeks",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "patterns",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "patterns",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cadence",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "cadence",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_checked",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "last_checked",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_best_price",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "displayName": "last_best_price",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_notified",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "displayName": "last_notified",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notes",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "notes",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "options": {},
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "send-alert-created",
+      "name": "Send Alert Created",
+      "type": "n8n-nodes-base.telegram",
+      "onError": "continueRegularOutput",
+      "position": [
+        2920,
+        1400
+      ],
+      "parameters": {
+        "text": "={{ $json.message }}",
+        "chatId": "={{ $json.chat_id }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "read-alerts",
+      "name": "Read Alerts",
+      "type": "n8n-nodes-base.dataTable",
+      "maxTries": 3,
+      "position": [
+        2080,
+        2200
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": []
+        },
+        "resource": "row",
+        "matchType": "allConditions",
+        "operation": "get",
+        "returnAll": true,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "build-alert-list",
+      "name": "Build Alert List",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2360,
+        2200
+      ],
+      "parameters": {
+        "jsCode": "\nconst esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\nconst capHtml = (s, max) => {\n  let t = String(s || '');\n  if (t.length <= max) return t;\n  t = t.slice(0, max);\n  const lt = t.lastIndexOf('<'), gt = t.lastIndexOf('>');\n  if (lt > gt) t = t.slice(0, lt);\n  const open = [];\n  const re = /<(\\/?)([a-zA-Z]+)[^>]*>/g;\n  let m;\n  while ((m = re.exec(t)) !== null) {\n    if (m[1] === '/') { const i = open.lastIndexOf(m[2]); if (i !== -1) open.splice(i, 1); }\n    else open.push(m[2]);\n  }\n  while (open.length) t += '</' + open.pop() + '>';\n  return t + '\\n\u2026(truncated)';\n};\n\nconst ctx = $('Prep Input').first().json;\nconst de = ctx.language === 'de';\nconst rows = $input.all().map(i => i.json).filter(r => r && r.alert_id);\nconst active = rows.filter(r => String(r.status || '').toLowerCase() === 'active');\nconst L = [];\nL.push('<b>' + esc(de ? '\ud83d\udeeb Deine Flug-Alarme' : '\ud83d\udeeb Your flight alerts') + '</b>');\nL.push('');\nif (!active.length) {\n  L.push(esc(de ? 'Keine aktiven Alarme. Sag mir einfach: \"beobachte Berlin nach Warschau unter 120 Euro\".'\n                : 'No active alerts. Just tell me: \"watch Berlin to Warsaw under 120 euro\".'));\n} else {\n  let i = 1;\n  for (const r of active) {\n    L.push('<b>' + i + '. ' + esc((r.origin_name || r.origin) + ' \u2192 ' + (r.dest_name || r.destination)) + '</b>  \u20ac' + esc(r.budget_eur));\n    const bits = [esc(String(r.window_weeks || '') + (de ? ' Wochen' : ' weeks')), esc(String(r.cadence || ''))];\n    if (r.last_best_price) bits.push((de ? 'zuletzt ab \u20ac' : 'last seen from \u20ac') + esc(r.last_best_price));\n    L.push('   ' + bits.join(' \u00b7 '));\n    L.push('   <code>' + esc(r.alert_id) + '</code>');\n    i++;\n  }\n}\nreturn [{ json: { ...ctx, message: capHtml(L.join('\\n'), 3800) } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "send-alert-list",
+      "name": "Send Alert List",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        2640,
+        2200
+      ],
+      "parameters": {
+        "text": "={{ $json.message }}",
+        "chatId": "={{ $json.chat_id }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "read-alerts-cancel",
+      "name": "Read Alerts (cancel)",
+      "type": "n8n-nodes-base.dataTable",
+      "maxTries": 3,
+      "position": [
+        2080,
+        2600
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": []
+        },
+        "resource": "row",
+        "matchType": "allConditions",
+        "operation": "get",
+        "returnAll": true,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "match-alert",
+      "name": "Match Alert",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2360,
+        2600
+      ],
+      "parameters": {
+        "jsCode": "\n// Never guess which alert to cancel. A wrong cancellation is silent data loss.\nconst ctx = $('Normalise Request').first().json;\nconst rows = $input.all().map(i => i.json).filter(r => r && r.alert_id);\nconst active = rows.filter(r => String(r.status || '').toLowerCase() === 'active');\nconst hint = String(ctx.cancel_hint || ctx.text || '').toLowerCase().trim();\nconst norm = (s) => String(s || '').toLowerCase();\nconst label = (r) => (r.origin_name || r.origin) + ' to ' + (r.dest_name || r.destination);\n\n// 1. An exact alert id anywhere in the message wins outright.\nconst exact = active.find(r => r.alert_id && hint.includes(norm(r.alert_id)));\nif (exact) return [{ json: { ...ctx, matched: true, alert_id: exact.alert_id, route: label(exact) } }];\n\n// 2. If it LOOKS like an id but matched nothing, refuse rather than fall back.\nif (/[a-z]{2,10}-\\d{3,4}-[a-z0-9]{2,}/i.test(hint)) {\n  return [{ json: { ...ctx, matched: false, reason: 'none',\n    candidates: active.map(r => ({ alert_id: r.alert_id, route: label(r) })) } }];\n}\n\n// 3. Match on city or airport code.\nlet hits = active.filter(r => {\n  const hay = [r.origin, r.destination, r.origin_name, r.dest_name]\n    .flatMap(x => String(x || '').split(',')).map(norm).filter(Boolean);\n  return hay.some(h => h.length > 2 && hint.includes(h));\n});\n\n// 4. Only collapse to the single active alert on a genuinely vague instruction.\nif (!hits.length && active.length === 1 && /^(cancel|stop|delete|remove|loesche|l\u00f6sche|beende)\\b/.test(hint)) {\n  hits = active.slice();\n}\n\nif (hits.length !== 1) {\n  return [{ json: { ...ctx, matched: false,\n    reason: hits.length > 1 ? 'ambiguous' : 'none',\n    candidates: active.map(r => ({ alert_id: r.alert_id, route: label(r) })) } }];\n}\nreturn [{ json: { ...ctx, matched: true, alert_id: hits[0].alert_id, route: label(hits[0]) } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "matched?",
+      "name": "Matched?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2640,
+        2600
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "m",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.matched }}",
+              "rightValue": "true"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "cancel-alert",
+      "name": "Cancel Alert",
+      "type": "n8n-nodes-base.dataTable",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        2920,
+        2500
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "status": "cancelled"
+          },
+          "schema": [
+            {
+              "id": "status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "alert_id",
+              "keyValue": "={{ $json.alert_id }}",
+              "condition": "eq"
+            }
+          ]
+        },
+        "options": {},
+        "resource": "row",
+        "matchType": "allConditions",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "build-cancel-message",
+      "name": "Build Cancel Message",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3200,
+        2600
+      ],
+      "parameters": {
+        "jsCode": "\nconst esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\nconst capHtml = (s, max) => {\n  let t = String(s || '');\n  if (t.length <= max) return t;\n  t = t.slice(0, max);\n  const lt = t.lastIndexOf('<'), gt = t.lastIndexOf('>');\n  if (lt > gt) t = t.slice(0, lt);\n  const open = [];\n  const re = /<(\\/?)([a-zA-Z]+)[^>]*>/g;\n  let m;\n  while ((m = re.exec(t)) !== null) {\n    if (m[1] === '/') { const i = open.lastIndexOf(m[2]); if (i !== -1) open.splice(i, 1); }\n    else open.push(m[2]);\n  }\n  while (open.length) t += '</' + open.pop() + '>';\n  return t + '\\n\u2026(truncated)';\n};\n\nconst d = $input.first().json;\nconst de = d.language === 'de';\nlet t;\nif (d.matched) {\n  t = '<b>' + esc(de ? '\ud83d\uddd1 Alarm gel\u00f6scht' : '\ud83d\uddd1 Alert cancelled') + '</b>\\n' + esc(d.route) + '\\n<code>' + esc(d.alert_id) + '</code>';\n} else if (d.reason === 'ambiguous') {\n  const lines = (d.candidates || []).map((c, i) => (i+1) + '. ' + esc(c.route) + '  <code>' + esc(c.alert_id) + '</code>');\n  t = esc(de ? 'Ich konnte nicht sicher sagen, welchen du meinst. Nenn mir die ID:' : 'I could not tell for sure which one you meant. Give me the ID:') + '\\n\\n' + lines.join('\\n');\n} else {\n  t = esc(de ? 'Dazu habe ich keinen aktiven Alarm gefunden.' : 'I could not find an active alert for that.');\n}\nreturn [{ json: { ...d, message: capHtml(t, 3800) } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "send-cancel-result",
+      "name": "Send Cancel Result",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        3480,
+        2600
+      ],
+      "parameters": {
+        "text": "={{ $json.message }}",
+        "chatId": "={{ $json.chat_id }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "build-unclear",
+      "name": "Build Unclear",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2080,
+        3000
+      ],
+      "parameters": {
+        "jsCode": "\nconst esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\nconst d = $('Normalise Request').first().json;\nconst raw = String(($('Prep Input').first().json || {}).text || '').trim();\nconst de = d.language === 'de';\n\n// /start and /help are a first hello, not a failure. Same card, different opener,\n// so someone who has never seen this bot gets the format instead of a shrug.\nconst isHello = /^\\/(start|help)\\b/i.test(raw);\n\nconst L = [];\nif (isHello) {\n  L.push('<b>' + esc(de ? '\u2708\ufe0f Flug-W\u00e4chter' : '\u2708\ufe0f Flight Watcher') + '</b>');\n  L.push(esc(de\n    ? 'Ich beobachte Flugpreise f\u00fcr ein Wochenende und melde mich dienstags fr\u00fch mit dem Stand.'\n    : 'I watch flight prices for a weekend trip and message you Tuesday mornings with where they stand.'));\n} else {\n  L.push('<b>' + esc(de ? '\u2708\ufe0f Ich mache nur Fl\u00fcge' : '\u2708\ufe0f I only do flights') + '</b>');\n  L.push(esc(de\n    ? 'Das habe ich nicht verstanden. Ich kann nur Flugpreise beobachten, sonst nichts.'\n    : 'I did not understand that. Watching flight prices is the only thing I do.'));\n}\n\nL.push('');\nL.push('<b>' + esc(de ? 'So fragst du' : 'How to ask') + '</b>');\nL.push(esc(de ? 'Nenn Ziel und Budget, der Rest ist optional:' : 'Name a destination and a budget, the rest is optional:'));\nL.push('');\nL.push('<code>' + esc(de ? 'beobachte Fl\u00fcge nach Rom unter 150 Euro' : 'watch flights to Rome under 150 euro') + '</code>');\nL.push('<code>' + esc(de ? 'Fl\u00fcge von M\u00fcnchen nach Lissabon unter 200, Donnerstag bis Sonntag' : 'flights from Munich to Lisbon under 200, Thursday to Sunday') + '</code>');\nL.push('');\nL.push('<b>' + esc(de ? 'Weitere Befehle' : 'Other things I understand') + '</b>');\nL.push('<code>' + esc(de ? 'zeig mir meine Flug-Alarme' : 'show my flight alerts') + '</code>');\nL.push('<code>' + esc(de ? 'wie sehen die Preise gerade aus' : 'how are my alerts looking') + '</code>');\nL.push('<code>' + esc(de ? 'l\u00f6sche den Rom-Alarm' : 'cancel the Rome alert') + '</code>');\nL.push('');\nL.push('<i>' + esc(de\n  ? 'Standard: Freitag bis Sonntag, 8 Wochen im Voraus, Abflug Berlin. Sag es einfach dazu, wenn du etwas anderes willst. Sprachnachrichten gehen auch.'\n  : 'Defaults: Friday to Sunday, 8 weeks ahead, departing Berlin. Just say so if you want something else. Voice notes work too.') + '</i>');\nL.push('');\nL.push('<i>' + esc(de\n  ? 'Kalender, E-Mail oder sonst irgendwas kann ich nicht. Nur Fl\u00fcge.'\n  : 'I cannot do calendars, email or anything else. Only flights.') + '</i>');\n\nreturn [{ json: { ...d, message: L.join('\\n') } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "send-unclear",
+      "name": "Send Unclear",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        2360,
+        2840
+      ],
+      "parameters": {
+        "text": "={{ $json.message }}",
+        "chatId": "={{ $json.chat_id }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "read-active-alerts",
+      "name": "Read Active Alerts",
+      "type": "n8n-nodes-base.dataTable",
+      "maxTries": 3,
+      "position": [
+        1240,
+        3300
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "keyValue": "active",
+              "condition": "eq"
+            }
+          ]
+        },
+        "resource": "row",
+        "matchType": "allConditions",
+        "operation": "get",
+        "returnAll": true,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "expand-searches",
+      "name": "Expand Searches",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1520,
+        3300
+      ],
+      "parameters": {
+        "jsCode": "\n// Build the search plan. Cost is exactly patterns x weekends x routes, because\n// Google Flights has no date-grid endpoint: one search per date pair, always.\nconst CFG = (() => { try { return $('\u2699\ufe0f Config').first().json; } catch (e) { return {}; } })();\nconst MAX_SEARCHES_PER_RUN = Number(CFG.max_searches_per_run) || 60;\nconst rows = $input.all().map(i => i.json).filter(r => r && r.alert_id);\nconst active = rows.filter(r => String(r.status || '').toLowerCase() === 'active');\n\nconst pad = (n) => (n < 10 ? '0' : '') + n;\nconst iso = (d) => d.getUTCFullYear() + '-' + pad(d.getUTCMonth()+1) + '-' + pad(d.getUTCDate());\nconst add = (d, n) => { const x = new Date(d.getTime()); x.setUTCDate(x.getUTCDate() + n); return x; };\nconst today = new Date(); today.setUTCHours(12,0,0,0);\nconst dow = today.getUTCDay();                       // 0 = Sunday, 2 = Tuesday\nconst anchor = add(today, ((8 - (dow === 0 ? 7 : dow)) % 7) || 7);   // next Monday\nconst OFFSETS = { THU_SUN:[3,6], FRI_SUN:[4,6], SAT_SUN:[5,6], SAT_MON:[5,7], THU_SAT:[3,5] };\nconst isTuesday = dow === 2;\n\nconst out = [];\nfor (const r of active) {\n  const cadence = String(r.cadence || 'weekly').toLowerCase();\n  const fullRun = cadence !== 'weekly' || isTuesday;\n\n  const weeks = Math.min(Math.max(Number(r.window_weeks) || 6, 1), 12);\n  const pats = String(r.patterns || 'FRI_SUN').split(',').map(s => s.trim()).filter(s => OFFSETS[s]);\n  const o = String(r.origin || '').toUpperCase();\n  const d = String(r.destination || '').toUpperCase();\n  if (!o || !d || !pats.length) continue;\n\n\n  // ---- LIGHT DAILY CHECK ----\n  // A weekly alert does its full sweep on Tuesday. On the other six days it\n  // re-prices ONLY the weekend that was cheapest, so a drop is caught within a\n  // day instead of within a week, for 6 extra searches per alert per week\n  // instead of 48. Needs best_out/best_ret, which the Tuesday run records.\n  if (!fullRun) {\n    const bo = String(r.best_out || '').trim();\n    const br = String(r.best_ret || '').trim();\n    if (!bo || !br) continue;                       // nothing learned yet\n    if (new Date(bo + 'T12:00:00Z') < today) continue;  // that weekend has passed\n    out.push({ json: {\n      alert_id: r.alert_id, chat_id: r.chat_id, language: r.language || 'en',\n      origin: o, destination: d,\n      origin_name: r.origin_name || o, dest_name: r.dest_name || d,\n      budget: Number(r.budget_eur) || 0,\n      last_notified: Number(r.last_notified) || 0,\n      light: true, week: 0, pattern: pats[0], out: bo, ret: br,\n      url: 'https://serpapi.com/search.json?engine=google_flights&departure_id=' + o +\n           '&arrival_id=' + d + '&outbound_date=' + bo + '&return_date=' + br +\n           '&currency=EUR&hl=en&gl=de&type=1'\n    }});\n    continue;\n  }\n  for (let w = 0; w < weeks; w++) {\n    const mon = add(anchor, w * 7);\n    for (const pat of pats) {\n      const off = OFFSETS[pat];\n      const ob = iso(add(mon, off[0])), rt = iso(add(mon, off[1]));\n      out.push({ json: {\n        alert_id: r.alert_id, chat_id: r.chat_id, language: r.language || 'en',\n        origin: o, destination: d,\n        origin_name: r.origin_name || o, dest_name: r.dest_name || d,\n        budget: Number(r.budget_eur) || 0,\n        last_notified: Number(r.last_notified) || 0,\n        week: w, pattern: pat, out: ob, ret: rt,\n        url: 'https://serpapi.com/search.json?engine=google_flights&departure_id=' + o +\n             '&arrival_id=' + d + '&outbound_date=' + ob + '&return_date=' + rt +\n             '&currency=EUR&hl=en&gl=de&type=1'\n      }});\n    }\n  }\n}\n\nif (!out.length) return [{ json: { _empty: true, reason: active.length ? 'no alert due today' : 'no active alerts' } }];\nreturn out.slice(0, MAX_SEARCHES_PER_RUN);\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "search-flights",
+      "name": "Search Flights",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        1800,
+        3300
+      ],
+      "parameters": {
+        "url": "={{ $json.url || 'https://serpapi.com/search.json?engine=google_flights' }}",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "serpApi"
+      },
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "aggregate-deals",
+      "name": "Aggregate Deals",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2080,
+        3300
+      ],
+      "parameters": {
+        "jsCode": "\n// Pair responses back to requests by index (Search Flights runs once per input\n// item, in order, and Expand Searches is a direct ancestor).\n// Then collapse to ONE best option per calendar weekend, which is what you\n// actually want to scan: \"which upcoming weekend is cheapest\".\nconst reqs = $('Expand Searches').all().map(i => i.json);\nconst res  = $input.all().map(i => i.json);\nif (reqs.length === 1 && reqs[0]._empty) {\n  return [{ json: { alerts: [], searches: 0, skipped: reqs[0].reason } }];\n}\n\n// Use city names, not airport codes: a multi-airport city reads better and\n// Google Flights resolves the city to all of its airports.\nconst gf = (o, d, ob, rt) =>\n  'https://www.google.com/travel/flights?hl=en&curr=EUR&q=' +\n  encodeURIComponent('Flights to ' + d + ' from ' + o + ' on ' + ob + ' through ' + rt);\n\nconst byAlert = {};\nlet failed = 0;\n\nfor (let i = 0; i < reqs.length; i++) {\n  const q = reqs[i], r = res[i] || {};\n  if (!q || !q.alert_id) continue;\n  const a = byAlert[q.alert_id] || (byAlert[q.alert_id] = {\n    alert_id: q.alert_id, chat_id: q.chat_id, language: q.language, light: !!q.light,\n    origin: q.origin, destination: q.destination,\n    origin_name: q.origin_name, dest_name: q.dest_name,\n    budget: q.budget, last_notified: q.last_notified,\n    weeks: {}, searches: 0, typical: null\n  });\n  a.searches++;\n  if (r.error || (!r.best_flights && !r.other_flights)) { failed++; continue; }\n\n  const pi = r.price_insights || {};\n\n  let best = null;\n  for (const f of (r.best_flights || []).concat(r.other_flights || [])) {\n    if (typeof f.price !== 'number') continue;\n    const legs = f.flights || [];\n    if (!legs.length) continue;\n    if (!best || f.price < best.price) {\n      const first = legs[0], last = legs[legs.length - 1];\n      best = {\n        price: f.price, pattern: q.pattern, out: q.out, ret: q.ret,\n        typical: Array.isArray(pi.typical_price_range) ? pi.typical_price_range : null,\n        level: pi.price_level || '',\n        history: Array.isArray(pi.price_history) ? pi.price_history : null,\n        airline: first.airline || '', stops: Math.max(0, legs.length - 1),\n        duration: f.total_duration || null,\n        link: gf(q.origin_name || q.origin, q.dest_name || q.destination, q.out, q.ret)\n      };\n    }\n  }\n  if (!best) continue;\n  // keep only the cheapest option within each calendar weekend\n  const cur = a.weeks[q.week];\n  if (!cur || best.price < cur.price) a.weeks[q.week] = best;\n}\n\nconst alerts = Object.values(byAlert).map(a => {\n  const options = Object.keys(a.weeks).sort((x, y) => Number(x) - Number(y)).map(k => a.weeks[k]);\n  const ranked = options.slice().sort((x, y) => x.price - y.price);\n  a.options = options;                       // chronological\n  a.ranked = ranked;                         // cheapest first\n  a.cheapest = ranked.length ? ranked[0] : null;\n  // The typical range belongs to a SPECIFIC date, not the route. Show the one\n  // for the weekend we are actually recommending, or the comparison misleads.\n  a.typical = a.cheapest ? a.cheapest.typical : null;\n  a.level = a.cheapest ? a.cheapest.level : '';\n\n  // Trajectory, free: price_history rides along in the same response we already\n  // paid for. \"EUR 63, down from 181\" is what makes a low fare believable, and\n  // \"held for N readings\" separates a real drop from a momentary blip.\n  a.trend = null;\n  const h = a.cheapest && a.cheapest.history;\n  if (h && h.length >= 8) {\n    const vals = h.map(p => p[1]).filter(v => typeof v === 'number');\n    if (vals.length >= 8) {\n      const now = vals[vals.length - 1];\n      const early = vals.slice(0, Math.max(3, Math.floor(vals.length / 4)));\n      const base = early.slice().sort((x, y) => x - y)[Math.floor(early.length / 2)];\n      let held = 1;\n      for (let i = vals.length - 2; i >= 0 && vals[i] === now; i--) held++;\n      const firstTs = h[0][0];\n      a.trend = {\n        base, now, held,\n        deltaPct: base ? Math.round(((now - base) / base) * 100) : 0,\n        sinceMonth: firstTs ? new Date(firstTs * 1000).getUTCMonth() : null\n      };\n    }\n  }\n\n  // How soon is the cheapest weekend? Fares firm up close to departure, so a\n  // low price far out is worth flagging differently from a low price next week.\n  a.daysOut = a.cheapest\n    ? Math.round((new Date(a.cheapest.out + 'T12:00:00Z') - Date.now()) / 86400000)\n    : null;\n  a.under = a.budget > 0 ? ranked.filter(o => o.price <= a.budget) : [];\n  a.weekends = options.length;\n  // movement against the last digest, so a drop is visible at a glance\n  a.delta = (a.cheapest && a.last_notified > 0) ? Math.round(a.cheapest.price - a.last_notified) : null;\n  delete a.weeks;\n  // On a light day, only speak up when the fare actually dropped enough to act on.\n  if (a.light && a.cheapest) {\n    const prev = Number(a.last_notified) || 0;\n    const drop = prev > 0 ? prev - a.cheapest.price : 0;\n    a.dropped = prev > 0 && (drop >= 20 || drop / prev >= 0.10);\n  }\n  return a;\n}).filter(a => a.cheapest && (!a.light || a.dropped));\n\nreturn [{ json: { alerts, searches: reqs.length, failed } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "build-deal-messages",
+      "name": "Build Deal Messages",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2360,
+        3300
+      ],
+      "parameters": {
+        "jsCode": "\nconst esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\nconst capHtml = (s, max) => {\n  let t = String(s || '');\n  if (t.length <= max) return t;\n  t = t.slice(0, max);\n  const lt = t.lastIndexOf('<'), gt = t.lastIndexOf('>');\n  if (lt > gt) t = t.slice(0, lt);\n  const open = []; const re = /<(\\/?)([a-zA-Z]+)[^>]*>/g; let m;\n  while ((m = re.exec(t)) !== null) {\n    if (m[1] === '/') { const i = open.lastIndexOf(m[2]); if (i !== -1) open.splice(i, 1); }\n    else open.push(m[2]);\n  }\n  while (open.length) t += '</' + open.pop() + '>';\n  return t + '\\n\u2026(truncated)';\n};\n\nconst d = $input.first().json;\nconst alerts = d.alerts || [];\nconst out = [];\nconst eur = (n) => '\u20ac' + Math.round(n);\nconst mins = (m) => m ? (Math.floor(m/60) + 'h ' + (m % 60) + 'm') : '';\nconst MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];\nconst DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];\nconst dt = (s) => { const x = new Date(s + 'T12:00:00Z');\n  return DOW[x.getUTCDay()] + ' ' + x.getUTCDate() + ' ' + MON[x.getUTCMonth()]; };\nconst span = (o) => dt(o.out) + ' to ' + dt(o.ret);\n\nfor (const a of alerts) {\n  const de = a.language === 'de';\n  const L = [];\n\n  // A light-day hit is a price drop on one known weekend, not a whole digest.\n  if (a.light) {\n    const c0 = a.cheapest;\n    const was = Number(a.last_notified) || 0;\n    L.push('<b>' + esc('\ud83d\udcc9 ' + a.origin_name + ' to ' + a.dest_name + ': ' + eur(c0.price)) + '</b>');\n    if (was > 0) L.push(esc((de ? 'War ' : 'Was ') + eur(was) + (de ? ' am Dienstag' : ' on Tuesday')));\n    L.push(esc(span(c0)));\n    const bits0 = [];\n    if (c0.airline) bits0.push(esc(c0.airline));\n    bits0.push(c0.stops === 0 ? 'nonstop' : c0.stops + ' stop' + (c0.stops > 1 ? 's' : ''));\n    L.push(bits0.join(' \u00b7 ') + '  <a href=\"' + c0.link + '\">' + esc(de ? 'Buchen' : 'Book') + '</a>');\n    out.push({ json: {\n      chat_id: a.chat_id, alert_id: a.alert_id, language: a.language,\n      best_price: c0.price, route: (a.origin_name || a.origin) + ' to ' + (a.dest_name || a.destination),\n      dates_checked: 1, searches: d.searches, under_budget: a.budget <= 0 || c0.price <= a.budget,\n      best_out: c0.out, best_ret: c0.ret,\n      message: capHtml(L.join('\\n'), 3800)\n    }});\n    continue;\n  }\n\n  L.push('<b>' + esc('\u2708\ufe0f ' + a.origin_name + ' to ' + a.dest_name) + '</b>');\n  L.push('<i>' + esc((de ? 'Naechste ' : 'Next ') + a.weekends + (de ? ' Wochenenden' : ' weekends')) + '</i>');\n  L.push('');\n\n  const c = a.cheapest;\n  L.push('<b>' + esc((de ? 'Guenstigstes: ' : 'Cheapest: ') + eur(c.price)) + '</b>');\n  L.push(esc(span(c)));\n  const bits = [];\n  if (c.airline) bits.push(esc(c.airline));\n  bits.push(c.stops === 0 ? (de ? 'nonstop' : 'nonstop') : c.stops + (de ? ' Stopp' : ' stop') + (c.stops > 1 ? 's' : ''));\n  if (c.duration) bits.push(esc(mins(c.duration)));\n  L.push(bits.join(' \u00b7 ') + '  <a href=\"' + c.link + '\">' + esc(de ? 'Buchen' : 'Book') + '</a>');\n\n  if (a.trend && Math.abs(a.trend.deltaPct) >= 15) {\n    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];\n    const from = eur(a.trend.base) + (a.trend.sinceMonth !== null ? ' in ' + MONTHS[a.trend.sinceMonth] : '');\n    L.push(esc(a.trend.deltaPct < 0\n      ? (de ? 'Runter von ' : 'Down from ') + from\n      : (de ? 'Hoch von ' : 'Up from ') + from));\n  }\n  if (a.trend && a.trend.held >= 5) {\n    L.push('<i>' + esc(de ? 'Preis h\u00e4lt seit ' + a.trend.held + ' Messungen' : 'Held at this price for ' + a.trend.held + ' readings') + '</i>');\n  }\n  if (a.level) {\n    const LV = { low: de ? 'Guenstig fuer diese Strecke' : 'Google rates this price low',\n                 typical: de ? 'Normaler Preis' : 'Google rates this price typical',\n                 high: de ? 'Teuer' : 'Google rates this price high' };\n    if (LV[a.level]) L.push(esc(LV[a.level]));\n  }\n  if (a.delta !== null && a.delta !== 0) {\n    L.push(a.delta < 0\n      ? esc((de ? 'Runter um ' : 'Down ') + eur(Math.abs(a.delta)) + (de ? ' seit letzter Woche' : ' since last week'))\n      : esc((de ? 'Hoch um ' : 'Up ') + eur(a.delta) + (de ? ' seit letzter Woche' : ' since last week')));\n  }\n\n  L.push('');\n  // Anything far above what he is willing to pay is noise. Collapse it to one\n  // line rather than padding the message with weekends he will never book.\n  const cut = (a.budget > 0 ? a.budget : c.price) * 1.5;\n  const keep = [], hidden = [];\n  a.ranked.forEach((o, i) => { if (i < 3 || o.price <= cut) keep.push(o); else hidden.push(o); });\n\n  L.push('<b>' + esc(de ? 'Wochenenden' : 'Weekends') + '</b>');\n  for (const o of keep) {\n    const mark = (o === c) ? ' \u2190' : '';\n    L.push(esc(eur(o.price).padEnd(6) + ' ' + span(o)) + mark);\n  }\n  if (hidden.length) {\n    const lo = hidden[0].price, hi = hidden[hidden.length - 1].price;\n    L.push('<i>' + esc((de ? '+ ' : '+ ') + hidden.length +\n      (de ? ' weitere von ' : ' more from ') + eur(lo) + ' to ' + eur(hi) +\n      (de ? ', ignoriert' : ', ignored')) + '</i>');\n  }\n\n  L.push('');\n  if (a.budget > 0) {\n    L.push(esc((de ? 'Budget ' : 'Budget ') + eur(a.budget) + ': ' + a.under.length + ' ' +\n      (de ? 'von ' : 'of ') + a.weekends + (de ? ' Wochenenden darunter' : ' weekends under it')));\n  }\n  if (a.typical) L.push('<i>' + esc((de ? 'Ueblich fuer dieses Wochenende ' : 'Typical for that weekend ')\n      + eur(a.typical[0]) + ' to ' + eur(a.typical[1])) + '</i>');\n  if (a.daysOut !== null && a.daysOut >= 0) {\n    const wk = Math.round(a.daysOut / 7);\n    L.push('<i>' + esc((de ? 'Das g\u00fcnstigste Wochenende ist in etwa ' : 'The cheapest weekend is about ')\n      + wk + (de ? ' Wochen.' : ' weeks out.')) + '</i>');\n  }\n  L.push('<code>' + esc(a.alert_id) + '</code>');\n\n  out.push({ json: {\n    chat_id: a.chat_id, alert_id: a.alert_id, language: a.language,\n    best_price: c.price, best_out: c.out, best_ret: c.ret,\n    route: (a.origin_name || a.origin) + ' to ' + (a.dest_name || a.destination),\n    dates_checked: a.weekends, searches: d.searches,\n    under_budget: a.under.length > 0,\n    message: capHtml(L.join('\\n'), 3800)\n  }});\n}\n\nif (!out.length) return [{ json: { _none: true, searches: d.searches || 0, skipped: d.skipped || '' } }];\nreturn out;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "any-deals?",
+      "name": "Any Deals?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2640,
+        3300
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "d",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.message }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "send-deals",
+      "name": "Send Deals",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        2920,
+        3300
+      ],
+      "parameters": {
+        "text": "={{ $json.message }}",
+        "chatId": "={{ $json.chat_id }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "log-run",
+      "name": "Log Run",
+      "type": "n8n-nodes-base.dataTable",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        2920,
+        3520
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "note": "",
+            "route": "={{ $json.route }}",
+            "alert_id": "={{ $json.alert_id }}",
+            "notified": "={{ true }}",
+            "best_price": "={{ Number($json.best_price) }}",
+            "under_budget": "={{ true }}",
+            "dates_checked": "={{ Number($json.dates_checked) }}",
+            "searches_used": "={{ Number($json.searches) }}"
+          },
+          "schema": [
+            {
+              "id": "alert_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "alert_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "route",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "route",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "dates_checked",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "displayName": "dates_checked",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "searches_used",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "displayName": "searches_used",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "best_price",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "displayName": "best_price",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "under_budget",
+              "type": "boolean",
+              "display": true,
+              "required": false,
+              "displayName": "under_budget",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notified",
+              "type": "boolean",
+              "display": true,
+              "required": false,
+              "displayName": "notified",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "note",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "note",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "options": {},
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "update-alert-state",
+      "name": "Update Alert State",
+      "type": "n8n-nodes-base.dataTable",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        3200,
+        3520
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "best_out": "={{ $json.best_out }}",
+            "best_ret": "={{ $json.best_ret }}",
+            "last_checked": "={{ $now.toISO() }}",
+            "last_notified": "={{ Number($json.best_price) }}",
+            "last_best_price": "={{ Number($json.best_price) }}"
+          },
+          "schema": [
+            {
+              "id": "last_checked",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "last_checked",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_best_price",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "displayName": "last_best_price",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_notified",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "displayName": "last_notified",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "best_out",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "best_out",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "best_ret",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "best_ret",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "alert_id",
+              "keyValue": "={{ $json.alert_id }}",
+              "condition": "eq"
+            }
+          ]
+        },
+        "options": {},
+        "resource": "row",
+        "matchType": "allConditions",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "log-quiet-run",
+      "name": "Log Quiet Run",
+      "type": "n8n-nodes-base.dataTable",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        2920,
+        3760
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "note": "={{ $json.skipped || 'nothing under budget' }}",
+            "route": "",
+            "alert_id": "",
+            "notified": "={{ false }}",
+            "best_price": "={{ 0 }}",
+            "under_budget": "={{ false }}",
+            "dates_checked": "={{ 0 }}",
+            "searches_used": "={{ Number($json.searches || 0) }}"
+          },
+          "schema": [
+            {
+              "id": "alert_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "alert_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "route",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "route",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "dates_checked",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "displayName": "dates_checked",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "searches_used",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "displayName": "searches_used",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "best_price",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "displayName": "best_price",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "under_budget",
+              "type": "boolean",
+              "display": true,
+              "required": false,
+              "displayName": "under_budget",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notified",
+              "type": "boolean",
+              "display": true,
+              "required": false,
+              "displayName": "notified",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "note",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "note",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow"
+        },
+        "options": {},
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "readlog",
+      "name": "Read Log",
+      "type": "n8n-nodes-base.dataTable",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        2080,
+        2840
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": []
+        },
+        "resource": "row",
+        "matchType": "allConditions",
+        "operation": "get",
+        "returnAll": true,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "buildstatus",
+      "name": "Build Status",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2360,
+        3000
+      ],
+      "parameters": {
+        "jsCode": "\nconst esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\nconst capHtml = (s, max) => {\n  let t = String(s || '');\n  if (t.length <= max) return t;\n  t = t.slice(0, max);\n  const lt = t.lastIndexOf('<'), gt = t.lastIndexOf('>');\n  if (lt > gt) t = t.slice(0, lt);\n  const open = []; const re = /<(\\/?)([a-zA-Z]+)[^>]*>/g; let m;\n  while ((m = re.exec(t)) !== null) {\n    if (m[1] === '/') { const i = open.lastIndexOf(m[2]); if (i !== -1) open.splice(i, 1); }\n    else open.push(m[2]);\n  }\n  while (open.length) t += '</' + open.pop() + '>';\n  return t + '\\n\u2026(truncated)';\n};\n\n// Cached market view. Reads the log table only, so this costs ZERO API calls.\n// Always states how old each reading is, because fares move constantly.\nconst ctx = $('Normalise Request').first().json;\nconst de = ctx.language === 'de';\nconst rows = $input.all().map(i => i.json).filter(r => r && r.createdAt);\n\nconst byAlert = {};\nfor (const r of rows) {\n  if (!r.alert_id) continue;\n  const cur = byAlert[r.alert_id];\n  if (!cur || new Date(r.createdAt) > new Date(cur.createdAt)) byAlert[r.alert_id] = r;\n}\nconst latest = Object.values(byAlert).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));\n\nconst age = (iso) => {\n  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);\n  if (mins < 60) return mins + (de ? ' Min alt' : ' min old');\n  const h = Math.round(mins / 60);\n  if (h < 48) return h + (de ? ' Std alt' : 'h old');\n  return Math.round(h / 24) + (de ? ' Tage alt' : ' days old');\n};\n\nconst L = [];\nL.push('<b>' + esc(de ? '\ud83d\udcca Letzter Stand deiner Flug-Alarme' : '\ud83d\udcca Last known prices') + '</b>');\nL.push('');\nif (!latest.length) {\n  L.push(esc(de ? 'Noch keine Preisdaten. Der erste Lauf ist Dienstag fr\u00fch.'\n                : 'No price data yet. The first run is Tuesday morning.'));\n} else {\n  for (const r of latest) {\n    L.push('<b>' + esc(String(r.route || r.alert_id)) + '</b>  \u20ac' + Math.round(Number(r.best_price) || 0));\n    L.push('<i>' + esc(age(r.createdAt) + ' \u00b7 ' + (Number(r.dates_checked) || 0) + (de ? ' Wochenenden gepr\u00fcft' : ' weekends checked')) + '</i>');\n    L.push('');\n  }\n  L.push('<i>' + esc(de ? 'Zwischengespeichert, keine neue Abfrage. Flugpreise \u00e4ndern sich laufend.'\n                        : 'Cached, no fresh lookup. Fares move constantly.') + '</i>');\n}\nreturn [{ json: { ...ctx, message: capHtml(L.join('\\n'), 3800) } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "sendstatus",
+      "name": "Send Status",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        2640,
+        3000
+      ],
+      "parameters": {
+        "text": "={{ $json.message }}",
+        "chatId": "={{ $json.chat_id }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "buildask",
+      "name": "Build Ask",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2080,
+        3460
+      ],
+      "parameters": {
+        "jsCode": "\nconst esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\nconst capHtml = (s, max) => {\n  let t = String(s || '');\n  if (t.length <= max) return t;\n  t = t.slice(0, max);\n  const lt = t.lastIndexOf('<'), gt = t.lastIndexOf('>');\n  if (lt > gt) t = t.slice(0, lt);\n  const open = []; const re = /<(\\/?)([a-zA-Z]+)[^>]*>/g; let m;\n  while ((m = re.exec(t)) !== null) {\n    if (m[1] === '/') { const i = open.lastIndexOf(m[2]); if (i !== -1) open.splice(i, 1); }\n    else open.push(m[2]);\n  }\n  while (open.length) t += '</' + open.pop() + '>';\n  return t + '\\n\u2026(truncated)';\n};\n\nconst d = $('Normalise Request').first().json;\nconst de = d.language === 'de';\nconst t = de\n  ? 'Wohin soll es gehen? Sag mir die Stadt, zum Beispiel \"nach Rom\".\\n\\nWenn du auch ein Budget und die Wochenend-Variante nennst (Do bis So, Fr bis So, Do bis Sa), richte ich es direkt ein.\\n\\n#flight_watch'\n  : 'Where do you want to fly to? Give me the city, for example \"to Rome\".\\n\\nIf you also name a budget and which weekend shape you want (Thu to Sun, Fri to Sun, Thu to Sat), I will set it up in one go.\\n\\n#flight_watch';\nreturn [{ json: { ...d, message: t } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "askdest",
+      "name": "Ask Destination",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        2360,
+        3460
+      ],
+      "parameters": {
+        "text": "={{ $json.message }}",
+        "chatId": "={{ $json.chat_id }}",
+        "replyMarkup": "forceReply",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "tgtrigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        400,
+        1200
+      ],
+      "webhookId": "7f38ab57-e1eb-472e-bb4b-ea7d9128a918",
+      "parameters": {
+        "updates": [
+          "*"
+        ],
+        "additionalFields": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "routeinput",
+      "name": "Route Input",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        680,
+        1200
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "voice",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "v",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.message?.voice ? 'voice' : ($json.message?.text || $json.message?.caption ? 'text' : 'ignore') }}",
+                    "rightValue": "voice"
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "text",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "t",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.message?.voice ? 'voice' : ($json.message?.text || $json.message?.caption ? 'text' : 'ignore') }}",
+                    "rightValue": "text"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "getvoice",
+      "name": "Get Voice File",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        960,
+        1100
+      ],
+      "parameters": {
+        "fileId": "={{ $('Telegram Trigger').item.json.message.voice.file_id }}",
+        "resource": "file",
+        "additionalFields": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "transcribe",
+      "name": "Transcribe Voice",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        1240,
+        1100
+      ],
+      "parameters": {
+        "options": {},
+        "resource": "audio",
+        "operation": "transcribe"
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "fromtg",
+      "name": "From Telegram",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1520,
+        1200
+      ],
+      "parameters": {
+        "jsCode": "\n// Normalise a Telegram update into the shape Prep Input already expects, so the\n// rest of the workflow is byte-identical to the standard version.\n// Read the trigger when it ran, otherwise fall back to our own input, so this\n// node stays drivable from a temporary webhook during testing.\nlet trig;\ntry { trig = $('Telegram Trigger').first().json; } catch (e) { trig = $input.first().json; }\nif (!trig || (!trig.message && !trig.edited_message && !trig.callback_query)) trig = $input.first().json;\nconst msg  = trig.message || trig.edited_message || {};\nconst chat = (msg.chat && msg.chat.id) || (trig.callback_query && trig.callback_query.from && trig.callback_query.from.id);\nif (!chat) throw new Error('No chat id on the Telegram update.');\n\n// Voice arrives transcribed; text arrives as-is.\nlet text = String(msg.text || msg.caption || '').trim();\nif (!text) {\n  const t = $input.first().json || {};\n  text = String(t.text || t.transcription || '').trim();\n}\n\n// Telegram's command menu sends /alerts, /prices etc. Map them onto the phrasing\n// the parser already understands, so the menu and typing free text share one path.\nconst CMDS = {\n  '/alerts':  'show my flight alerts',\n  '/prices':  'how are my flight alerts looking',\n  '/watch':   '',           // falls through to the help card\n  '/cancel':  'cancel my alert'\n};\nconst cmd = (text.match(/^\\/([a-z_]+)/i) || [])[0];\nif (cmd && CMDS[cmd.toLowerCase()] !== undefined && CMDS[cmd.toLowerCase()] !== '') {\n  text = CMDS[cmd.toLowerCase()];\n}\n\n// Cheap EN/DE detection: umlauts, or German words that are not also English words.\nconst low = ' ' + text.toLowerCase() + ' ';\nconst deWords = [' fluege ',' fl\u00fcge ',' flug ',' nach ',' von ',' unter ',' wochenende ',' zeig ',' loesche ',' l\u00f6sche ',' erinnere ',' guenstig ',' g\u00fcnstig ',' beobachte ',' meine ',' wann ',' bitte '];\nconst isDe = /[\u00e4\u00f6\u00fc\u00df]/.test(text.toLowerCase()) || deWords.some(w => low.includes(w));\n\nreturn [{ json: { action: 'invoke', chat_id: chat, language: isDe ? 'de' : 'en', text, source: 'telegram' } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "errtrig",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "position": [
+        400,
+        4200
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "senderr",
+      "name": "Send Error Alert",
+      "type": "n8n-nodes-base.telegram",
+      "onError": "continueRegularOutput",
+      "position": [
+        680,
+        4200
+      ],
+      "parameters": {
+        "text": "=\u2708\ufe0f Flight watcher broke.\n\nWorkflow: {{ ($json.workflow.name || '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }}\nFailed node: {{ ($json.execution.lastNodeExecuted || '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }}\nError: {{ ($json.execution.error.message || 'Unknown error' || '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }}\nTime: {{ $now.format('MMM D, HH:mm') }}\n\nExecution: {{ $json.execution.url }}",
+        "chatId": "={{ $('\u2699\ufe0f Config').first().json.admin_chat_id }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "cfgnode",
+      "name": "\u2699\ufe0f Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        960,
+        2000
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "home_airport",
+              "type": "string",
+              "value": "BER"
+            },
+            {
+              "id": "c2",
+              "name": "default_window_weeks",
+              "type": "number",
+              "value": 8
+            },
+            {
+              "id": "c3",
+              "name": "max_searches_per_run",
+              "type": "number",
+              "value": 60
+            },
+            {
+              "id": "c4",
+              "name": "drop_alert_eur",
+              "type": "number",
+              "value": 20
+            },
+            {
+              "id": "c5",
+              "name": "admin_chat_id",
+              "type": "string",
+              "value": ""
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "overview",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -300,
+        1180
+      ],
+      "parameters": {
+        "width": 660,
+        "height": 1180,
+        "content": "## Weekend flight price tracker\n\nTell a Telegram bot a route and a budget. Every Tuesday morning it prices every upcoming weekend on that route and sends you one short message, cheapest first, with a booking link. On the other six days it re-prices only the cheapest weekend and pings you if the fare drops.\n\n### Who's it for\nAnyone who books weekend trips and wants to be told when a route gets cheap, instead of checking manually.\n\n### How it works\n- Talk to it in plain language, by text or voice: \"watch flights to Rome under 150 euro, Friday to Sunday\".\n- It resolves cities to airports and covers ALL of a city's airports in one search (Rome = FCO + CIA), so multi-airport cities cost nothing extra.\n- Naming a country uses its capital.\n- Google Flights via SerpAPI supplies live fares, the typical price range for that date and Google's own \"low / typical / high\" verdict.\n- The digest shows one best option per weekend, sorted cheapest first, and collapses anything above 1.5x your budget into a single line.\n\n### How to set up\n1. Create a Telegram bot with @BotFather and add the token as a Telegram credential.\n2. Add a SerpAPI credential (free tier covers roughly 250 searches a month).\n3. Create two Data tables and select them in the nodes. Columns are listed on the grey note below.\n4. Open the Config node and set your home airport and admin chat id.\n\n### Requirements\nTelegram bot token, SerpAPI key, OpenAI key (intent parsing + voice transcription).\n\n### Cost\nOne alert with one weekend shape over 8 weeks is 8 searches on Tuesday plus 6 light checks, about 56 a month, inside the SerpAPI free tier."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "setup:tables",
+      "name": "Setup: tables",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -300,
+        2420
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 660,
+        "height": 560,
+        "content": "### Data tables to create\n\n**flight_alerts**\nString: alert_id, chat_id, language, origin, destination, origin_name, dest_name, patterns, cadence, status, last_checked, notes, best_out, best_ret\nNumber: budget_eur, window_weeks, last_best_price, last_notified\n\n**flight_watch_log**\nString: alert_id, route, note\nNumber: dates_checked, searches_used, best_price\nBoolean: under_budget, notified\n\nImport a one-row CSV rather than adding columns by hand: the types are inferred from the values, and a headers-only file makes every number a string, which silently breaks the price comparisons."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "entry",
+      "name": "Entry",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        360,
+        860
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 900,
+        "height": 150,
+        "content": "### Entry\nTelegram in (text or voice), plus a daily 08:00 cron. Voice is transcribed, then everything joins one path."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "understand",
+      "name": "Understand",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1240,
+        1580
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 820,
+        "height": 150,
+        "content": "### Understand the request\nGPT resolves intent, city to airport, budget, window and weekend shape. Nothing mechanical is left to the model: dates, airports and routing are decided in code."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "search",
+      "name": "Search",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1140,
+        3080
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 900,
+        "height": 150,
+        "content": "### Search and rank\nOne search per weekend. Responses are paired back by index, collapsed to one best option per weekend, then ranked."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "errors",
+      "name": "Errors",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        300,
+        4020
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 620,
+        "height": 150,
+        "content": "### Failure alerts\nThis workflow is its own error handler. Set errorWorkflow to this workflow in Settings, and put your chat id in Config."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "settings": {
+    "timezone": "Europe/Berlin",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Log Run": {
+      "main": [
+        []
+      ]
+    },
+    "Matched?": {
+      "main": [
+        [
+          {
+            "node": "Cancel Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build Cancel Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Cancel Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Log": {
+      "main": [
+        [
+          {
+            "node": "Build Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Ask": {
+      "main": [
+        [
+          {
+            "node": "Ask Destination",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any Deals?": {
+      "main": [
+        [
+          {
+            "node": "Send Deals",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Run",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Alert State",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Quiet Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Input": {
+      "main": [
+        [
+          {
+            "node": "\u2699\ufe0f Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match Alert": {
+      "main": [
+        [
+          {
+            "node": "Matched?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Alerts": {
+      "main": [
+        [
+          {
+            "node": "Build Alert List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Input": {
+      "main": [
+        [
+          {
+            "node": "Get Voice File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "From Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Status": {
+      "main": [
+        []
+      ]
+    },
+    "Build Status": {
+      "main": [
+        [
+          {
+            "node": "Send Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cancel Alert": {
+      "main": [
+        []
+      ]
+    },
+    "Probe Market": {
+      "main": [
+        [
+          {
+            "node": "Validate Budget",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Unclear": {
+      "main": [
+        [
+          {
+            "node": "Send Unclear",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "From Telegram": {
+      "main": [
+        [
+          {
+            "node": "Prep Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Request": {
+      "main": [
+        [
+          {
+            "node": "Normalise Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\u2699\ufe0f Config": {
+      "main": [
+        [
+          {
+            "node": "Route by Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Voice File": {
+      "main": [
+        [
+          {
+            "node": "Transcribe Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Check": {
+      "main": [
+        [
+          {
+            "node": "Prep Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Flights": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Deals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Deals": {
+      "main": [
+        [
+          {
+            "node": "Build Deal Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask Destination": {
+      "main": [
+        []
+      ]
+    },
+    "Expand Searches": {
+      "main": [
+        [
+          {
+            "node": "Search Flights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Action": {
+      "main": [
+        [
+          {
+            "node": "Parse Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Active Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Intent": {
+      "main": [
+        [
+          {
+            "node": "Ack Checking",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Market",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Alerts (cancel)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Ask",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Unclear",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Budget": {
+      "main": [
+        [
+          {
+            "node": "Build Alert Card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Alert Card": {
+      "main": [
+        [
+          {
+            "node": "Save Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Alert Created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Alert List": {
+      "main": [
+        [
+          {
+            "node": "Send Alert List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Route Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe Voice": {
+      "main": [
+        [
+          {
+            "node": "From Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise Request": {
+      "main": [
+        [
+          {
+            "node": "Route by Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Active Alerts": {
+      "main": [
+        [
+          {
+            "node": "Expand Searches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Deal Messages": {
+      "main": [
+        [
+          {
+            "node": "Any Deals?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Cancel Message": {
+      "main": [
+        [
+          {
+            "node": "Send Cancel Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Alerts (cancel)": {
+      "main": [
+        [
+          {
+            "node": "Match Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # 💬 Automate freelance project intake with custom proposals using Jotform & Gemini
 
-> ⚡ **539 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **792 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

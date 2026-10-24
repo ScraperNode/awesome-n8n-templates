@@ -1,6 +1,6 @@
 # 🔒 Automated URL phishing & threat analysis with NixGuard AI
 
-> ⚡ **7,843 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **11,659 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

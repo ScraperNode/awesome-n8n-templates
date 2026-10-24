@@ -1,6 +1,6 @@
 # 📈 Binance spot trader - limit & market orders via API
 
-> ⚡ **18,070 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **20,004 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

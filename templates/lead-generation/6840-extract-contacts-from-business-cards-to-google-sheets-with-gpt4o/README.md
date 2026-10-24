@@ -1,6 +1,6 @@
 # 🎣 Extract contacts from business cards to Google Sheets with GPT4o
 
-> ⚡ **1,730 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,927 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

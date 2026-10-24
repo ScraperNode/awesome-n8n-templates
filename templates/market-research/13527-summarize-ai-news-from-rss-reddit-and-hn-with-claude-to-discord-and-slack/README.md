@@ -1,6 +1,6 @@
 # 📊 Summarize AI news from RSS, Reddit and HN with Claude to Discord and Slack
 
-> ⚡ **94 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,837 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

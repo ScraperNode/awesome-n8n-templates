@@ -1,6 +1,6 @@
 # 🔬 Evaluate OMR answer sheets with Gemini vision AI and Google Sheets
 
-> ⚡ **462 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,413 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

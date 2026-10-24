@@ -1,6 +1,6 @@
 # 🔬 Turn any PDF into a clean Google Doc with Mistral OCR
 
-> ⚡ **2,111 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,592 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

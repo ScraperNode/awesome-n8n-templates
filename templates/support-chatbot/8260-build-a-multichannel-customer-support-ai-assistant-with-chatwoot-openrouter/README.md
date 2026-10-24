@@ -1,6 +1,6 @@
 # 💬 Build a multichannel customer support AI assistant with Chatwoot & OpenRouter
 
-> ⚡ **4,275 views** · 💬 [Support Chatbots](../)
+> ⚡ **6,428 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

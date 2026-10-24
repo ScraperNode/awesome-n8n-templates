@@ -1,6 +1,6 @@
 # ⚡ Sync Google Calendar tasks to Trello every day
 
-> ⚡ **4,093 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,123 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

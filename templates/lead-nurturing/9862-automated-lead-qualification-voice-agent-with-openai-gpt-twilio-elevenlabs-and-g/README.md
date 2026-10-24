@@ -1,6 +1,6 @@
 # 💬 Automated lead qualification voice agent with OpenAI GPT, Twilio, Elevenlabs and Gmail
 
-> ⚡ **1,172 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,117 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

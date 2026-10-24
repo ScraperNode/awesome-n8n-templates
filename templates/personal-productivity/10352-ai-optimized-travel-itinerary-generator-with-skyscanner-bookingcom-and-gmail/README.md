@@ -1,6 +1,6 @@
 # ⚡ Ai-optimized travel itinerary generator with Skyscanner, Booking.com and Gmail
 
-> ⚡ **1,260 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,733 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

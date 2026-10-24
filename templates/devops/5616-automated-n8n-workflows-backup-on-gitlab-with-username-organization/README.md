@@ -1,6 +1,6 @@
 # ⚙️ Automated n8n workflows backup on GitLab with username organization
 
-> ⚡ **445 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **502 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

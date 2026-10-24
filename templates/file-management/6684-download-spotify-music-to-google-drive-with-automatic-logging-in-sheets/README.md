@@ -1,6 +1,6 @@
 # 📁 Download Spotify music to Google Drive with automatic logging in sheets
 
-> ⚡ **665 views** · 📁 [File Management](../)
+> ⚡ **1,127 views** · 📁 [File Management](../)
 
 ## Description
 

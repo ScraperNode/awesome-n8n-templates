@@ -1,6 +1,6 @@
 # ⚡ Document Q&A chatbot with Gemini AI and Supabase vector search for Telegram
 
-> ⚡ **19,854 views** · ⚡ [Personal Productivity](../)
+> ⚡ **20,535 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

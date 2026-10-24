@@ -1,6 +1,6 @@
 # 🤝 Subscription revenue optimizer with Stripe, Postgres & Gmail - predictive retention
 
-> ⚡ **423 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **489 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

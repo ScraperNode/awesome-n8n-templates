@@ -1,6 +1,6 @@
 # 🎫 Ai-powered email triage & auto-response system with OpenAI agents & Gmail
 
-> ⚡ **921 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,934 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

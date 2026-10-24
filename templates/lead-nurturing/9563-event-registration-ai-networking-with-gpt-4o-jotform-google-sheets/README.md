@@ -1,6 +1,6 @@
 # 💬 Event registration & AI networking with GPT-4o, Jotform & Google Sheets
 
-> ⚡ **79 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **103 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

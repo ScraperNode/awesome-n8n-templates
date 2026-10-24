@@ -1,6 +1,6 @@
 # 🎯 Fireflies transcripts to meeting summaries & task extractor to Slack & ClickUp
 
-> ⚡ **1,211 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **1,442 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

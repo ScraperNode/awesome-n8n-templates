@@ -1,6 +1,6 @@
 # 📖 Automate meeting notes summaries with Gemini AI & Slack notifications
 
-> ⚡ **635 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **752 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Send an SMS when a workflow fails
 
-> ⚡ **1,481 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,491 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

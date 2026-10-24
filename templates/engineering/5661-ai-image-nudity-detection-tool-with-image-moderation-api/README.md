@@ -1,6 +1,6 @@
 # ⚒️ AI image nudity detection tool with image moderation API
 
-> ⚡ **2,204 views** · ⚒️ [Engineering](../)
+> ⚡ **35,529 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Create AI-powered social media content for LinkedIn & Facebook with image generation & human approval
 
-> ⚡ **2,183 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **3,196 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

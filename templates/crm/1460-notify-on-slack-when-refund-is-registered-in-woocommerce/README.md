@@ -1,6 +1,6 @@
 # 🤝 Notify on Slack when refund is registered in WooCommerce
 
-> ⚡ **1,152 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,264 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

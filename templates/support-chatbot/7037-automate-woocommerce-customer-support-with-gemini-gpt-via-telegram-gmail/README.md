@@ -1,6 +1,6 @@
 # 💬 Automate WooCommerce customer support with Gemini & GPT via Telegram & Gmail
 
-> ⚡ **484 views** · 💬 [Support Chatbots](../)
+> ⚡ **568 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

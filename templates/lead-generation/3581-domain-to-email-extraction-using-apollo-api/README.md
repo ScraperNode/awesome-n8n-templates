@@ -1,6 +1,6 @@
 # 🎣 Domain to email extraction using Apollo API
 
-> ⚡ **3,048 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **3,278 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

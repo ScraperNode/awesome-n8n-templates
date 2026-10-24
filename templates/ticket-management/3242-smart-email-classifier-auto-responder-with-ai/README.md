@@ -1,6 +1,6 @@
 # 🎫 Smart email classifier & auto-responder with AI
 
-> ⚡ **1,767 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,889 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Manage Cloudflare DNS records with AI-powered chat assistant
 
-> ⚡ **1,291 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,457 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

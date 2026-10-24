@@ -1,6 +1,6 @@
 # 🔬 Strip secrets from JSON file via AI Formatter + Merge node&send mail report
 
-> ⚡ **211 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **331 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

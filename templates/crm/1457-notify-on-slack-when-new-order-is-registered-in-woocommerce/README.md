@@ -1,6 +1,6 @@
 # 🤝 Notify on Slack when new order is registered in WooCommerce
 
-> ⚡ **2,335 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,338 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

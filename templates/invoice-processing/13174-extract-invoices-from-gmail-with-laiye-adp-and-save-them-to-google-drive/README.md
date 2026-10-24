@@ -1,6 +1,6 @@
 # 🧾 Extract invoices from Gmail with Laiye ADP and save them to Google Drive
 
-> ⚡ **24 views** · 🧾 [Invoice Processing](../)
+> ⚡ **123 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

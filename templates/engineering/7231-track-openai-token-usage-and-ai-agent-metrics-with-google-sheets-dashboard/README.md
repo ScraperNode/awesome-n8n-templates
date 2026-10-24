@@ -1,6 +1,6 @@
 # ⚒️ Track OpenAI token usage and AI agent metrics with Google Sheets dashboard
 
-> ⚡ **1,105 views** · ⚒️ [Engineering](../)
+> ⚡ **1,279 views** · ⚒️ [Engineering](../)
 
 ## Description
 

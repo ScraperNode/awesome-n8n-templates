@@ -1,6 +1,6 @@
 # 🤝 Automate SaaS operations with GPT-4.1-mini for user, support & billing management
 
-> ⚡ **305 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **447 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

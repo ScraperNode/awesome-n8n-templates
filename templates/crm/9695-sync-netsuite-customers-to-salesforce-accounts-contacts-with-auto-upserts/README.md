@@ -1,6 +1,6 @@
 # 🤝 Sync NetSuite customers to Salesforce accounts & contacts with auto upserts
 
-> ⚡ **230 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **348 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

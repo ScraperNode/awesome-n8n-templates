@@ -1,6 +1,6 @@
 # 📱 Post AI news to Telegram with Google Gemini and human approval
 
-> ⚡ **444 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,665 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

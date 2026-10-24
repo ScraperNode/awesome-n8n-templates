@@ -1,6 +1,6 @@
 # 🔬 Automate X-ray analysis with VLM Orion and distribute to Gmail, Telegram & Drive
 
-> ⚡ **72 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **117 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

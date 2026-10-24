@@ -1,6 +1,6 @@
 # 📖 Document RAG & chat agent: Google Drive to Qdrant with Mistral OCR
 
-> ⚡ **1,665 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **2,006 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >

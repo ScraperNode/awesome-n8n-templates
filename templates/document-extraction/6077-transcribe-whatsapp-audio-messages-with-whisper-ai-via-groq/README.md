@@ -1,6 +1,6 @@
 # 🔬 Transcribe WhatsApp audio messages with Whisper AI via Groq
 
-> ⚡ **2,396 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,728 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

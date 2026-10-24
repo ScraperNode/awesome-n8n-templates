@@ -1,6 +1,6 @@
 # 🤝 Send weekly low‑stock alerts from WooCommerce to Slack and Jira
 
-> ⚡ **6 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **44 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

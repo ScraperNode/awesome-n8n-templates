@@ -1,6 +1,6 @@
 # 💬 Automate lead response with GPT and human approval to Airtable CRM
 
-> ⚡ **153 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **376 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

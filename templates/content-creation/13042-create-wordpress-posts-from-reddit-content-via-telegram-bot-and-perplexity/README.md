@@ -1,6 +1,6 @@
 # 🎬 Create WordPress posts from Reddit content via Telegram bot and Perplexity
 
-> ⚡ **22 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **98 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

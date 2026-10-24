@@ -1,6 +1,6 @@
 # 🎫 Sync Zendesk tickets with subsequent comments to GitHub issues
 
-> ⚡ **1,085 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,181 views** · 🎫 [Ticket Management & Triage](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

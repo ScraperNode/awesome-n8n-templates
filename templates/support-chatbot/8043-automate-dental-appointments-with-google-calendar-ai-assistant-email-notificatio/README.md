@@ -1,6 +1,6 @@
 # 💬 Automate dental appointments with Google Calendar, AI assistant & email notifications
 
-> ⚡ **2,606 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,448 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

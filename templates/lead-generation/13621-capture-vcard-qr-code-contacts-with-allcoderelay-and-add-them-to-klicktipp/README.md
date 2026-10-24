@@ -1,6 +1,6 @@
 # 🎣 Capture vCard QR code contacts with AllCodeRelay and add them to KlickTipp
 
-> ⚡ **3 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **34 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

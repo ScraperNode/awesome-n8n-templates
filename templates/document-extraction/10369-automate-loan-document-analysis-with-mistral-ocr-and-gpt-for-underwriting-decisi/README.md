@@ -1,6 +1,6 @@
 # 🔬 Automate loan document analysis with Mistral OCR and GPT for underwriting decisions
 
-> ⚡ **615 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **902 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

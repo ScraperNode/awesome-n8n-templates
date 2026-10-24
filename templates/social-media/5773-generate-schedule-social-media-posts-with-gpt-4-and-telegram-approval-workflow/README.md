@@ -1,6 +1,6 @@
 # 📱 Generate & schedule social media posts with GPT-4 and Telegram approval workflow
 
-> ⚡ **3,046 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **3,486 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

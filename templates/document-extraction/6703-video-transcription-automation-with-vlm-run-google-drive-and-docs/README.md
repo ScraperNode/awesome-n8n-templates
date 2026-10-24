@@ -1,6 +1,6 @@
 # 🔬 Video transcription automation with VLM Run, Google Drive and Docs
 
-> ⚡ **945 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,093 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

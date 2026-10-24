@@ -1,6 +1,6 @@
 # ⚒️ Insert Excel data to Postgres
 
-> ⚡ **12,405 views** · ⚒️ [Engineering](../)
+> ⚡ **13,666 views** · ⚒️ [Engineering](../)
 
 ## Description
 

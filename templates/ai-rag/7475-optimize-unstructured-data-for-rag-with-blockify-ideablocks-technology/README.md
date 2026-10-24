@@ -1,6 +1,6 @@
 # 🔍 Optimize unstructured data for RAG with Blockify IdeaBlocks technology
 
-> ⚡ **353 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **409 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

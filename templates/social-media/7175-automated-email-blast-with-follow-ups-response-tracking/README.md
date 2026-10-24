@@ -1,6 +1,6 @@
 # 📱 Automated email blast with follow-ups & response tracking
 
-> ⚡ **2,362 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,844 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Book appointments with voice using VAPI & Cal.com
 
-> ⚡ **2,806 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,047 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

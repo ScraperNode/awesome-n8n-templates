@@ -1,6 +1,6 @@
 # 🎬 Production AI Playbook: Human Oversight (Exercise 3)
 
-> ⚡ **53 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **186 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

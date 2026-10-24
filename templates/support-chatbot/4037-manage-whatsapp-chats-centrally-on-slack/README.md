@@ -1,6 +1,6 @@
 # 💬 Manage WhatsApp chats centrally on Slack
 
-> ⚡ **1,859 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,249 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

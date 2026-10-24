@@ -1,6 +1,6 @@
 # 🎬 Automated SEO blog publishing with WordPress, OpenAI & Perplexity
 
-> ⚡ **243 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **297 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Automate follower resource distribution on BlueSky with keyword-triggered DMs
 
-> ⚡ **33 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **43 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

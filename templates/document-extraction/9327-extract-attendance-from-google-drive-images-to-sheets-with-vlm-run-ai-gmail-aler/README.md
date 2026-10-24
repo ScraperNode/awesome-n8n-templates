@@ -1,6 +1,6 @@
 # 🔬 Extract attendance from Google Drive images to sheets with VLM run AI & Gmail alerts
 
-> ⚡ **16 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **28 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

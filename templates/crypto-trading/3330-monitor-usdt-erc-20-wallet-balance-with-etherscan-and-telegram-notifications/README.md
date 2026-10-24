@@ -1,6 +1,6 @@
 # 📈 Monitor USDT ERC-20 wallet balance with Etherscan and Telegram notifications
 
-> ⚡ **1,492 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,643 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔍 Call & SMS 🛠️ Twilio tool MCP server
 
-> ⚡ **1,213 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **1,248 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

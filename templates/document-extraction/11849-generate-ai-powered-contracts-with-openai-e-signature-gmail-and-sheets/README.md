@@ -1,6 +1,6 @@
 # 🔬 Generate AI-powered contracts with OpenAI, e-signature, Gmail and Sheets
 
-> ⚡ **41 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **165 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

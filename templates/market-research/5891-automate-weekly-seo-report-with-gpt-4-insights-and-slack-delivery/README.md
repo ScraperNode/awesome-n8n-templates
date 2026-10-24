@@ -1,6 +1,6 @@
 # 📊 Automate weekly SEO report with GPT-4 insights and Slack delivery
 
-> ⚡ **2,470 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,634 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

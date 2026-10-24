@@ -1,6 +1,6 @@
 # 🧾 AI-powered invoice extractor via Telegram to Airtable
 
-> ⚡ **174 views** · 🧾 [Invoice Processing](../)
+> ⚡ **205 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

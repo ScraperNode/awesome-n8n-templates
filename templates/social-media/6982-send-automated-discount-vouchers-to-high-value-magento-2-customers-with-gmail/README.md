@@ -1,6 +1,6 @@
 # 📱 Send automated discount vouchers to high-value Magento 2 customers with Gmail
 
-> ⚡ **78 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **88 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ 🛠️ Todoist tool MCP server 💪 all 8 operations
 
-> ⚡ **164 views** · ⚡ [Personal Productivity](../)
+> ⚡ **180 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 Chat with Google Drive documents using OpenAI and Pinecone RAG search
 
-> ⚡ **178 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **379 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 
@@ -13,7 +13,7 @@ Try our n8n quickstart for Pinecone Assistant [here](https://docs.pinecone.io/gu
 
 ### Prerequisites
 
-* A [Pinecone account](https://app.pinecone.io/) and [API key](https://app.pinecone.io/organizations/-/projects/-/keys)
+* A [Pinecone account](https://app.pinecone.io/)
 * A GCP project with [Google Drive API enabled and configured](https://docs.n8n.io/integrations/builtin/credentials/google/oauth-single-service/)
 * An [Open AI account](https://auth.openai.com/create-account) and [API key](https://platform.openai.com/settings/organization/api-keys)
 * A [Cohere account](https://dashboard.cohere.com/welcome/register) and [API key](https://dashboard.cohere.com/api-keys)
@@ -26,15 +26,16 @@ Try our n8n quickstart for Pinecone Assistant [here](https://docs.pinecone.io/gu
 	3. Set the Dimension to `1536`
 	4. Leave everything else as default
 	5. If you use a different index name, update the related nodes to reflect this change
-2. Setup your Pinecone API key, Google Drive OAuth2 API, Open AI, and Cohere credentials in n8n
-3. Download these files and add them to a Drive folder named `n8n-pinecone-demo` in the root of your My Drive
+2. Use the Connect to Pinecone button to authenticate to Pinecone or if you self-host n8n, create a Pinecone credential and add your [Pinecone API key](https://app.pinecone.io/organizations/-/projects/-/keys) directly
+3. Setup your Google Drive OAuth2 API, Open AI, and Cohere credentials in n8n
+4. Download these files and add them to a Drive folder named `n8n-pinecone-demo` in the root of your My Drive
 	1. [https://docs.pinecone.io/release-notes/2022.md](https://docs.pinecone.io/release-notes/2022.md)
 	2. [https://docs.pinecone.io/release-notes/2023.md](https://docs.pinecone.io/release-notes/2023.md)
 	3. [https://docs.pinecone.io/release-notes/2024.md](https://docs.pinecone.io/release-notes/2024.md)
 	4. [https://docs.pinecone.io/release-notes/2025.md](https://docs.pinecone.io/release-notes/2025.md)
 	5. [https://docs.pinecone.io/release-notes/2026.md](https://docs.pinecone.io/release-notes/2026.md)
-4. Activate the workflow or test it with a manual execution to ingest the documents
-5. Enter the chat prompts to chat with the Pinecone release notes
+5. Activate the workflow or test it with a manual execution to ingest the documents
+6. Enter the chat prompts to chat with the Pinecone release notes
 	1. `What support does Pinecone have for MCP?`
 	2. `When was fetch by metadata released?`
 

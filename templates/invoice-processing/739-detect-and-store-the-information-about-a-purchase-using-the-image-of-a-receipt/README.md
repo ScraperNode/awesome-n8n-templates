@@ -1,6 +1,6 @@
 # 🧾 Detect and store the information about a purchase using the image of a receipt
 
-> ⚡ **1,715 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,701 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

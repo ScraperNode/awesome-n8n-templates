@@ -1,6 +1,6 @@
 # 💬 Detect duplicate form submissions & send AI responses with Jotform and Gemini
 
-> ⚡ **83 views** · 💬 [Support Chatbots](../)
+> ⚡ **109 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

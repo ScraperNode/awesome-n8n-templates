@@ -1,6 +1,6 @@
 # ⚒️ Get the community profile of a repository
 
-> ⚡ **724 views** · ⚒️ [Engineering](../)
+> ⚡ **726 views** · ⚒️ [Engineering](../)
 
 ## Description
 

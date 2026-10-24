@@ -1,6 +1,6 @@
 # 📱 Daily newsletter service using Excel, Outlook and AI
 
-> ⚡ **14,146 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **15,120 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

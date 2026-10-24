@@ -1,6 +1,6 @@
 # 🔬 Read XML file and store content in Google Sheets
 
-> ⚡ **6,521 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **6,642 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

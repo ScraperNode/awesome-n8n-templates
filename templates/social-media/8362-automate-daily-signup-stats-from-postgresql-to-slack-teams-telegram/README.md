@@ -1,6 +1,6 @@
 # 📱 Automate daily signup stats from PostgreSQL to Slack, Teams & Telegram
 
-> ⚡ **246 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **313 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

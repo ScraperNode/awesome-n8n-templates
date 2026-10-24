@@ -1,6 +1,6 @@
 # 🔍 Automated customer support with GPT-4 knowledge base agent for Gmail
 
-> ⚡ **631 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **895 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

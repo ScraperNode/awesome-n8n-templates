@@ -1,6 +1,6 @@
 # 🔬 Advanced AI demo (presented at AI Developers #14 meetup)
 
-> ⚡ **26,050 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **26,137 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

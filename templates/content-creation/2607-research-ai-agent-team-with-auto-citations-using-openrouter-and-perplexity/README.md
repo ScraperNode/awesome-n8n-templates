@@ -1,6 +1,6 @@
 # 🎬 Research AI agent team with auto citations using OpenRouter and Perplexity
 
-> ⚡ **4,748 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,650 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

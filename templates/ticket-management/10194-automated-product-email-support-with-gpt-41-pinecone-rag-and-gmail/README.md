@@ -1,6 +1,6 @@
 # 🎫 Automated product email support with GPT-4.1, Pinecone RAG, and Gmail
 
-> ⚡ **343 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **471 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

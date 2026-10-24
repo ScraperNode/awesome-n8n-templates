@@ -1,6 +1,6 @@
 # 💬 Reddit brand engagement with AI comment generation and Slack notifications
 
-> ⚡ **414 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **525 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

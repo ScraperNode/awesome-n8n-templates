@@ -1,6 +1,6 @@
 # 🔧 🎓 Learn API Fundamentals with an Interactive Hands-On Tutorial Workflow
 
-> ⚡ **45,028 views** · 🔧 [Miscellaneous](../)
+> ⚡ **46,104 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

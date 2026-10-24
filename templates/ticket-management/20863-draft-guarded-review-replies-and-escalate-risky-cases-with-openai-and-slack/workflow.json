@@ -1,0 +1,402 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "name": "AI Review Reply Agent with Guardrails and Owner Escalation",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "6c72499f-9190-4583-a370-e525edae41c1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "38bf803b-8f55-4eaf-9605-d26a582fb8a8",
+      "parameters": {
+        "path": "review-reply",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a636aca5-61df-4a70-a24b-9b10d412af63",
+      "name": "Config",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Edit these values. Any OpenAI-compatible endpoint works (OpenAI, Groq, OpenRouter, Together, local Ollama /v1).\nconst CONFIG = {\n  baseUrl: 'https://api.openai.com/v1',\n  model: 'gpt-4o-mini',\n  maxReplyWords: 80,\n  // Phrases the bot must never send on its own (they go to the owner instead)\n  blockedPhrases: ['refund', 'compensation', 'lawsuit', 'legal', 'free meal', 'discount code'],\n  escalateAtOrBelowRating: 2,\n};\nreturn [{ json: { ...$input.first().json, config: CONFIG }, pairedItem: 0 }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7c9ae14f-e389-4062-83f1-9bbfe9cbc7d7",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const b = $json.body || $json;\nconst errors = [];\nif (!b.review || String(b.review).trim().length < 3) errors.push('review is required');\nif (b.rating !== undefined && (isNaN(Number(b.rating)) || Number(b.rating) < 1 || Number(b.rating) > 5)) errors.push('rating must be 1-5');\nreturn [{ pairedItem: 0, json: {\n  config: $json.config,\n  valid: errors.length === 0, errors,\n  review: { business: b.business || 'our business', platform: b.platform || 'Google', author: b.author || 'there',\n            rating: b.rating !== undefined ? Number(b.rating) : null, text: String(b.review || '').trim(), policy: b.policy || 'n/a', id: b.id || null }\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "31cda040-74a2-4c38-a055-432a24b6bf73",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "e1c7efbb-6476-448b-a1e6-41bd0eb61799",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.valid }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c3c10fec-7433-4070-8cc8-1a71b308e59c",
+      "name": "Respond 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        880,
+        500
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 400
+        },
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, errors: $json.errors }) }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "30cf3b86-580d-486c-9452-a4ea5dc92024",
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        880,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const r = $json.review, c = $json.config;\nreturn [{ pairedItem: 0, json: { config: c, review: r,\n  system: `You manage online reputation for a small business. Classify the review and draft a warm, specific, brand-safe public reply of at most ${c.maxReplyWords} words. Mention one concrete detail from the review. Never admit legal liability, never promise refunds or compensation, never ask for private details publicly. Return JSON: {sentiment:'positive'|'neutral'|'negative', rating_guess:number, topics:string[], reply:string, needs_owner_attention:boolean, reason:string}.`,\n  user: `Business: ${r.business}\\nPlatform: ${r.platform}\\nReviewer: ${r.author}\\nStar rating: ${r.rating ?? 'unknown'}\\nOwner policy: ${r.policy}\\nReview: ${r.text}` } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c5b72cc0-a263-43ec-9657-0498a15fc622",
+      "name": "LLM",
+      "type": "n8n-nodes-base.httpRequest",
+      "maxTries": 3,
+      "position": [
+        1100,
+        200
+      ],
+      "parameters": {
+        "url": "={{ $json.config.baseUrl }}/chat/completions",
+        "method": "POST",
+        "options": {
+          "timeout": 60000
+        },
+        "jsonBody": "={{ JSON.stringify({ model: $json.config.model, temperature: 0.2, response_format: { type: 'json_object' }, messages: [ { role: 'system', content: $json.system }, { role: 'user', content: $json.user } ] }) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "78b3047d-1a8c-4903-b1d2-480e1f7e676f",
+      "name": "Parse + Guardrails",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1320,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const prev = $('Build Prompt').first().json;\nconst c = prev.config, r = prev.review;\nlet out; try { out = JSON.parse($json.choices?.[0]?.message?.content || '{}'); } catch (e) { out = { reply: '', needs_owner_attention: true, reason: 'LLM returned non-JSON' }; }\nconst reply = String(out.reply || '');\nconst words = reply.split(/\\s+/).filter(Boolean).length;\nconst hits = c.blockedPhrases.filter(p => reply.toLowerCase().includes(p));\nconst flags = [];\nif (!reply) flags.push('empty reply');\nif (words > c.maxReplyWords * 1.25) flags.push(`reply too long (${words} words)`);\nif (hits.length) flags.push('blocked phrases: ' + hits.join(', '));\nconst rating = r.rating ?? out.rating_guess;\nif (rating && rating <= c.escalateAtOrBelowRating) flags.push(`low rating (${rating})`);\nif (out.needs_owner_attention) flags.push('model flagged: ' + (out.reason || 'needs attention'));\nreturn [{ pairedItem: 0, json: { review: r, sentiment: out.sentiment || 'unknown', topics: out.topics || [], reply, flags, escalate: flags.length > 0 } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "6e6713e2-08b6-4322-b75f-70d1490f494a",
+      "name": "Respond 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1540,
+        200
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, sentiment: $json.sentiment, escalate: $json.escalate, flags: $json.flags, reply: $json.reply }) }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "9de205d4-9b2a-470d-a7a3-1d0ba04e2551",
+      "name": "Escalate?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1760,
+        200
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "13051472-bf55-4205-b1f9-3f7d327dfdfc",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.escalate }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "31ddc5c1-faff-4ba4-ab53-84b490208a5b",
+      "name": "Alert Owner (Slack)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1980,
+        80
+      ],
+      "parameters": {
+        "url": "https://hooks.slack.com/services/REPLACE/WITH/YOUR_WEBHOOK",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{ JSON.stringify({ text: `\u26a0\ufe0f Review needs you (${$json.review.platform}, ${$json.review.rating ?? '?'}\u2605) from ${$json.review.author}:\\n> ${$json.review.text}\\nWhy: ${$json.flags.join('; ')}\\nDraft reply (not posted):\\n${$json.reply}` }) }}",
+        "sendBody": true,
+        "specifyBody": "json"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "82297796-f6d3-4d5e-8a66-b61b26499d9d",
+      "name": "Log Approved Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1980,
+        320
+      ],
+      "parameters": {
+        "url": "https://example.com/REPLACE-with-your-sheet-or-crm-webhook",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={{ JSON.stringify({ id: $json.review.id, platform: $json.review.platform, rating: $json.review.rating, sentiment: $json.sentiment, topics: $json.topics, reply: $json.reply, status: 'ready_to_post' }) }}",
+        "sendBody": true,
+        "specifyBody": "json"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "1da8570e-f68c-493b-98b6-037fe2a880e8",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        -120
+      ],
+      "parameters": {
+        "width": 420,
+        "height": 380,
+        "content": "## AI Review Reply Agent with Guardrails\nPOST a review \u2192 get a brand-safe reply draft.\n\n**Flow:** validate input \u2192 LLM classifies + drafts \u2192 code guardrails (length, blocked phrases, low rating, model flag) \u2192 safe replies are logged as `ready_to_post`, risky ones go to the owner on Slack. Nothing is posted publicly by this workflow.\n\n**Body:** `{business, platform, author, rating, review, policy, id}`"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f97535f1-770d-4977-a5cb-b9b0435858d5",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        880,
+        -200
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 420,
+        "height": 340,
+        "content": "## Setup\n1. **Credentials \u2192 New \u2192 Header Auth**: Name `Authorization`, Value `Bearer YOUR_API_KEY`.\n2. Open the **LLM** node and select that credential.\n3. Edit `baseUrl` / `model` in **Config**.\n4. Paste your Slack incoming-webhook URL in **Alert Owner**.\n5. Point **Log Approved Reply** at a Google Sheets / Airtable / CRM webhook (or swap in a native node)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "fa8d7bd4-6e4f-47d1-9646-ecf12532bbf2",
+      "name": "Guardrails",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1540,
+        -120
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 380,
+        "height": 220,
+        "content": "## Tune the guardrails\nEdit `blockedPhrases`, `maxReplyWords` and `escalateAtOrBelowRating` in **Config**. Guardrails run in code, so a bad model output can never slip through unflagged."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "LLM": {
+      "main": [
+        [
+          {
+            "node": "Parse + Guardrails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Build Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escalate?": {
+      "main": [
+        [
+          {
+            "node": "Alert Owner (Slack)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Approved Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond 200": {
+      "main": [
+        [
+          {
+            "node": "Escalate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Prompt": {
+      "main": [
+        [
+          {
+            "node": "LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse + Guardrails": {
+      "main": [
+        [
+          {
+            "node": "Respond 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

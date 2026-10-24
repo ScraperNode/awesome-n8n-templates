@@ -1,6 +1,6 @@
 # 👥 Automated resume screening & ranking with Llama 4 AI and Google Workspace
 
-> ⚡ **3,444 views** · 👥 [HR & Recruitment](../)
+> ⚡ **3,779 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

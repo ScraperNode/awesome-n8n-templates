@@ -1,6 +1,6 @@
 # 🎬 Generate AI-powered markdown posts from workflow JSON with Gemini & LlamaIndex
 
-> ⚡ **244 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **299 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -8,31 +8,33 @@
 
 ## Description
 
-This AI-powered workflow transforms n8n workflow JSON files into publication-ready, SEO-optimized markdown posts for the n8n community. Simply upload your workflow's JSON, and let Google Gemini 2.5 Pro, guided by a LlamaIndex-powered knowledge base of best practices, automatically generate compelling content. 
+Turn any [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) workflow JSON into a publication-ready, SEO-optimized markdown post for the [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) community. Upload your workflow file and let Google Gemini 2.5 Pro, guided by a LlamaIndex knowledge base of best practices, write the post for you.
+
+*Last updated: September 2026.*
 
 ## Why Use This Workflow?
 
-**Time Savings:** Reduces the time to create a detailed workflow post from over an hour of manual writing to under 2 minutes.
+**Time Savings:** A detailed workflow post drops from over an hour of manual writing to under 2 minutes.
 
-**Cost Reduction:** Eliminates the need for separate AI content subscriptions or outsourcing content creation tasks.
+**Cost Reduction:** No separate AI content subscriptions or outsourced writing needed.
 
-**Error Prevention:** Enforces content quality and structural consistency by using a knowledge base of n8n's official guidelines, minimizing formatting errors.
+**Error Prevention:** A knowledge base of [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin)'s official guidelines keeps content quality and structure consistent, minimizing formatting errors.
 
 
 ## Ideal For
 
-- **n8n Workflow Creators:** To quickly document and share their creations on the community platform without the tedious, time-consuming writing process.
-- **Developer Advocates:** To standardize and accelerate the production of technical tutorials and workflow showcases.
-- **Content & Marketing Teams:** To streamline the content pipeline for n8n-related blog posts, tutorials, and community engagement initiatives.
+- **[n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) Workflow Creators:** Document and share creations on the community platform without the tedious writing.
+- **Developer Advocates:** Standardize and accelerate technical tutorials and workflow showcases.
+- **Content & Marketing Teams:** Streamline the pipeline for [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin)-related blog posts, tutorials, and community content.
 
 ## How It Works
 
-1. **Trigger:** The process starts when you upload an n8n workflow JSON file via a simple web form.
+1. **Trigger:** The process starts when you upload an [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) workflow JSON file via a simple web form.
 2. **Data Extraction:** The workflow automatically extracts the JSON content from the uploaded file.
-3. **Intelligence Layer:** An advanced AI agent, powered by Google Gemini 2.5 Pro, analyzes the structure, nodes, and metadata of your workflow.
-4. **Knowledge Retrieval:** The agent consults a specialized, in-memory knowledge base built from n8n's content guidelines. This knowledge base is created by parsing documents with LlamaIndex and refined with a Cohere Reranker for maximum accuracy.
-5. **Content Generation:** The AI agent synthesizes the technical details from your JSON with the best practices from the knowledge base to write a complete, benefit-driven markdown post.
-6. **Output & Delivery:** The final, polished markdown content is generated as the workflow's output, ready to be copied and pasted into the n8n community platform.
+3. **Intelligence Layer:** An AI agent powered by Google Gemini 2.5 Pro analyzes the structure, nodes, and metadata of your workflow.
+4. **Knowledge Retrieval:** The agent consults a specialized in-memory knowledge base built from [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin)'s content guidelines. Documents are parsed with LlamaIndex and refined with a Cohere Reranker for maximum accuracy.
+5. **Content Generation:** The AI agent combines the technical details from your JSON with knowledge base best practices to write a complete, benefit-driven markdown post.
+6. **Output & Delivery:** The final polished markdown is generated as the workflow output, ready to copy-paste into the [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) community platform.
 
 ## Setup Guide
 
@@ -40,7 +42,7 @@ This AI-powered workflow transforms n8n workflow JSON files into publication-rea
 
 | Requirement | Type | Purpose |
 |-------------|------|---------|
-| [n8n instance](https://n8n.partnerlinks.io/khmuhtadin) | Essential | Workflow execution platform |
+| [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin) | Essential | Workflow execution platform |
 | [Google Gemini API Key](https://ai.google.dev/) | Essential | Powers the core AI content generation |
 | [LlamaIndex Cloud API Key](https://cloud.llamaindex.ai/) | Essential | Parses documents for the knowledge base |
 | [Cohere API Key](https://cohere.com/) | Optional | Improves knowledge base search results |
@@ -48,9 +50,9 @@ This AI-powered workflow transforms n8n workflow JSON files into publication-rea
 
 ### Installation Steps
 
-1. Import the JSON file to your [n8n instance](https://n8n.partnerlinks.io/khmuhtadin).
+1. Import the JSON file to your [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin).
 2. **Configure credentials:**
-   - **Google Gemini:** In the "GEmini 2.5 pro" node, create and add your Google Gemini API credential.
+   - **Google Gemini:** In the "Gemini 2.5 Pro" node, create and add your Google Gemini API credential.
    - **LlamaIndex:** In the three HTTP Request nodes named "Parse Document...", "Monitor Document...", and "Retrieve Parsed...", create an HTTP Header Auth credential. The header name is `Authorization` and the value is `Bearer YOUR_LLAMA_INDEX_API_KEY`.
    - **Cohere:** (Optional) In the "Reranker Cohere" node, create and add your Cohere API credential.
    - **Google Drive:** (Optional) If you plan to auto-update the knowledge base, configure Google Drive OAuth2 credentials for the "Knowledge Base Updated Trigger" and "Download Knowledge Document" nodes.
@@ -59,7 +61,7 @@ This AI-powered workflow transforms n8n workflow JSON files into publication-rea
 4. **Customize settings:**
    - The primary system prompt in the "n8ncreator" agent node can be modified to adjust the tone, style, or structure of the generated content.
 5. **Test execution:**
-   - Run the workflow manually and use the form to upload a sample n8n workflow JSON file to verify that all connections work correctly.
+   - Run the workflow manually and use the form to upload a sample [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) workflow JSON file to verify that all connections work correctly.
 
 ## Technical Details
 
@@ -83,7 +85,7 @@ This AI-powered workflow transforms n8n workflow JSON files into publication-rea
 
 **Advanced Enhancements:**
 - **Automated Publishing:** Connect the output of the "n8ncreator" node to a `Ghost`, `WordPress`, or `GitHub` node to automatically publish the generated post.
-- **Add Web Search:** Equip the Langchain Agent with a web search tool to allow it to fetch live information about new n8n nodes or services.
+- **Add Web Search:** Equip the Langchain Agent with a web search tool to allow it to fetch live information about new [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) nodes or services.
 - **Batch Processing:** Replace the `Form Trigger` with a `Read Binary Files` node to process an entire folder of workflow JSON files in a single run.
 
 ## Performance & Optimization
@@ -100,18 +102,29 @@ This AI-powered workflow transforms n8n workflow JSON files into publication-rea
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| AI output is generic or incomplete | The input JSON file is invalid or lacks key information (e.g., no node names). | Ensure you are uploading a valid, exported n8n workflow JSON. Verify the workflow has been saved with descriptive node names. |
+| AI output is generic or incomplete | The input JSON file is invalid or lacks key information (e.g., no node names). | Ensure you are uploading a valid, exported [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) workflow JSON. Verify the workflow has been saved with descriptive node names. |
 | LlamaIndex parsing fails | The LlamaIndex API key is incorrect or the source document is inaccessible. | Double-check your LlamaIndex API credential. Ensure the Google Doc sharing settings allow access. |
 | Credential Error | API keys are missing or incorrect for Gemini, LlamaIndex, or Cohere. | Go to the specified nodes and verify that the correct credentials have been created and selected. |
 
+### Quick Answers
+**What do I upload?**  
+Any exported [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) workflow JSON file, through the built-in web form.  
+**Which AI writes the post?**  
+Google Gemini 2.5 Pro, guided by a LlamaIndex knowledge base of content guidelines.  
+**Where does the post go?**  
+It is generated as workflow output, ready to copy-paste into the community platform.  
 
-**Created by:** [khaisa Studio](https://khaisa.studio)
+
+**Made by:** [khmuhtadin](https://khmuhtadin.com)
 **Category:** AI
 **Tags:** AI, Content Generation, Google Gemini, LlamaIndex, Automation
-**Need custom workflows?** [Contact us](https://khaisa.studio/pages/contact)
+**Need custom workflows?** [Contact me](https://khmuhtadin.com/contact)
 
 **Connect with the creator:**
 [Portfolio](https://khmuhtadin.com) • [Workflows](https://khaisa.studio/products/) • [LinkedIn](https://www.linkedin.com/in/khmuhtadin/) • [Medium](https://medium.com/@khaisastudio) • [Threads](https://www.threads.com/@khmuhtadin)
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

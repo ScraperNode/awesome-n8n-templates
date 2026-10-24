@@ -1,6 +1,6 @@
 # ⚙️ Teleport workflows between n8n instances with Magic Inbox P2P system
 
-> ⚡ **95 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **134 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

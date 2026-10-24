@@ -1,6 +1,6 @@
 # 🎣 Clean company names for cold emails with GPT-4 Mini and Google Sheets
 
-> ⚡ **1,029 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,159 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

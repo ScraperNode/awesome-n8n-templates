@@ -1,6 +1,6 @@
 # 🎫 Filter and label Gmail emails using keyword-based rules and Google Sheets logging
 
-> ⚡ **170 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **601 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔒 Monitor Jamf policy integrity and send Slack alerts for changes
 
-> ⚡ **62 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **103 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

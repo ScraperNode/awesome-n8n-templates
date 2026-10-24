@@ -1,6 +1,6 @@
 # 🤝 Receive updates for Stripe events
 
-> ⚡ **2,100 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,144 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

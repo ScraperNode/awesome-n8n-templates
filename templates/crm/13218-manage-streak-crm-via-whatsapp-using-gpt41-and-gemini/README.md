@@ -1,6 +1,6 @@
 # 🤝 Manage Streak CRM via WhatsApp using GPT‑4.1 and Gemini
 
-> ⚡ **114 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **447 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

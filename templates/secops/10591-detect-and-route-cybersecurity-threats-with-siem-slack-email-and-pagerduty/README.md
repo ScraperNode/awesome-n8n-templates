@@ -1,6 +1,6 @@
 # 🔒 Detect and route cybersecurity threats with SIEM, Slack, email and PagerDuty
 
-> ⚡ **50 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **405 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

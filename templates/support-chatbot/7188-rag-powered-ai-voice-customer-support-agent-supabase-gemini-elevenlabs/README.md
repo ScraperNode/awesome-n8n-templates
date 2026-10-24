@@ -1,6 +1,6 @@
 # 💬 RAG-powered AI voice customer support agent (Supabase + Gemini + ElevenLabs)
 
-> ⚡ **362 views** · 💬 [Support Chatbots](../)
+> ⚡ **481 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

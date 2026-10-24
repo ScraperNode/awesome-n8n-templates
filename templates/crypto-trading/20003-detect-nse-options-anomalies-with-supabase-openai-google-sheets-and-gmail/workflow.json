@@ -1,0 +1,843 @@
+{
+  "id": "NkEluJl3XW0PabIv",
+  "meta": {
+    "instanceId": "9f24379abd1ca05a3f590fdaa874ca82fbc5e1188798d609d51d2a8f6bacb662",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "NSE Options Anomaly Detection and Alert Workflow with n8n, Supabase, Google Sheets, OpenAI and Gmail",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "fe32094c-c548-4009-94a9-2faeaacca299",
+      "name": "Market Scanner Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        2208,
+        288
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "8361cfdc-9507-4bbb-9888-2a88ba90f690",
+      "name": "Read NSE Watchlist",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2416,
+        288
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1moSuSzyIdsd3c3CupkOA9DxjsIA0w1gwEW3Z1OVIyiM/edit#gid=0",
+          "cachedResultName": "Watchlist"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1moSuSzyIdsd3c3CupkOA9DxjsIA0w1gwEW3Z1OVIyiM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1moSuSzyIdsd3c3CupkOA9DxjsIA0w1gwEW3Z1OVIyiM/edit?usp=drivesdk",
+          "cachedResultName": "NSE Options Anomaly Scanner"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "1370240b-c461-4e68-abbc-121e316409aa",
+      "name": "Prepare Watchlist Symbols",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2624,
+        288
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all();\n\nconst enabledRows = rows.filter(item => {\n  const enabled = String(item.json.enabled).toLowerCase();\n  return enabled === 'true';\n});\n\nreturn enabledRows.map(item => {\n  return {\n    json: {\n      symbol: item.json.symbol,\n      exchange: item.json.exchange,\n      scan_mode: item.json.scan_mode,\n      strike_count: Number(item.json.strike_count || 10)\n    }\n  };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8bbe68b2-2c50-45a9-ba88-46eb44dc2b27",
+      "name": "Fetch NSE Option Chain",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2928,
+        288
+      ],
+      "parameters": {
+        "url": "http://192.168.101.63:5678/webhook-test/mock/nse-option-chain",
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "11ed59bc-9e18-4190-a787-6b6fe9be57b9",
+      "name": "Normalize Option Contracts",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3136,
+        288
+      ],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst contracts = input.data || [];\n\nreturn contracts.map(contract => {\n  return {\n    json: {\n      captured_at: input.captured_at,\n      source: input.source,\n      symbol: contract.symbol,\n      expiry: contract.expiry,\n      strike: Number(contract.strike),\n      option_type: contract.option_type,\n      ltp: Number(contract.ltp || 0),\n      volume: Number(contract.volume || 0),\n      open_interest: Number(contract.open_interest || 0),\n      change_in_oi: Number(contract.change_in_oi || 0),\n      iv: Number(contract.iv || 0),\n      underlying_price: Number(contract.underlying_price || 0)\n    }\n  };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "003b6340-b467-4531-a565-b1de2844b2d0",
+      "name": "Fetch Historical Option Data",
+      "type": "n8n-nodes-base.supabase",
+      "position": [
+        3440,
+        288
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "symbol",
+              "keyValue": "={{ $json.symbol }}",
+              "condition": "eq"
+            }
+          ]
+        },
+        "tableId": "option_snapshots",
+        "operation": "getAll",
+        "returnAll": true
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2f3d1d2a-c80a-43dc-8752-d11e0cbf3a45",
+      "name": "Calculate Option Anomaly",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3648,
+        288
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nfunction average(values) {\n  if (!values.length) return 0;\n  return values.reduce((sum, value) => sum + value, 0) / values.length;\n}\n\nfunction standardDeviation(values) {\n  if (values.length < 2) return 0;\n\n  const avg = average(values);\n  const variance = average(values.map(value => Math.pow(value - avg, 2)));\n\n  return Math.sqrt(variance);\n}\n\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n\n  const historicalVolume = Number(data.historical_avg_volume || 400000);\n  const historicalOI = Number(data.historical_avg_oi || 500000);\n\n  const volume = Number(data.volume || 0);\n  const openInterest = Number(data.open_interest || 0);\n\n  const volumeRatio = historicalVolume > 0 ? volume / historicalVolume : 0;\n  const oiRatio = historicalOI > 0 ? openInterest / historicalOI : 0;\n\n  const historicalRatios = [\n    0.85,\n    0.92,\n    1.05,\n    0.98,\n    1.1,\n    0.95,\n    1.02,\n    1.08,\n    0.91,\n    1.0\n  ];\n\n  const avgRatio = average(historicalRatios);\n  const sdRatio = standardDeviation(historicalRatios);\n\n  const zScore = sdRatio > 0 ? (volumeRatio - avgRatio) / sdRatio : 0;\n\n  let anomalyType = 'normal';\n\n  if (volumeRatio >= 3 && oiRatio >= 2) {\n    anomalyType = 'volume_and_oi_spike';\n  } else if (volumeRatio >= 3) {\n    anomalyType = 'volume_spike';\n  } else if (oiRatio >= 2) {\n    anomalyType = 'oi_spike';\n  } else if (zScore >= 3) {\n    anomalyType = 'statistical_anomaly';\n  }\n\n  const anomaly = volumeRatio >= 3 || oiRatio >= 2 || zScore >= 3;\n\n  results.push({\n    json: {\n      ...data,\n      avg_volume_20d: historicalVolume,\n      avg_oi_20d: historicalOI,\n      volume_ratio: Number(volumeRatio.toFixed(2)),\n      oi_ratio: Number(oiRatio.toFixed(2)),\n      z_score: Number(zScore.toFixed(2)),\n      anomaly_type: anomalyType,\n      anomaly\n    }\n  });\n}\n\nreturn results;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "23f9ce66-f2f9-4881-8349-539654cb221d",
+      "name": "Filter Anomalous Contracts",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3856,
+        288
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "d5e73abb-6be4-42ac-9e9a-e5d975a84058",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.anomaly }}",
+              "rightValue": false
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "f172c9fd-3fb7-453f-b9de-3c2cc20008ef",
+      "name": "Save Option Snapshot",
+      "type": "n8n-nodes-base.supabase",
+      "position": [
+        4160,
+        272
+      ],
+      "parameters": {
+        "tableId": "option_snapshots",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "captured_at",
+              "fieldValue": "={{ $json.captured_at }}"
+            },
+            {
+              "fieldId": "trading_date",
+              "fieldValue": "={{ $json.captured_at.substring(0,10) }}"
+            },
+            {
+              "fieldId": "symbol",
+              "fieldValue": "={{ $json.symbol }}"
+            },
+            {
+              "fieldId": "expiry",
+              "fieldValue": "={{ $json.expiry }}"
+            },
+            {
+              "fieldId": "strike",
+              "fieldValue": "={{ $json.strike }}"
+            },
+            {
+              "fieldId": "option_type",
+              "fieldValue": "={{ $json.option_type }}"
+            },
+            {
+              "fieldId": "ltp",
+              "fieldValue": "={{ $json.ltp }}"
+            },
+            {
+              "fieldId": "volume",
+              "fieldValue": "={{ $json.volume }}"
+            },
+            {
+              "fieldId": "open_interest",
+              "fieldValue": "={{ $json.open_interest }}"
+            },
+            {
+              "fieldId": "change_in_oi",
+              "fieldValue": "={{ $json.change_in_oi }}"
+            },
+            {
+              "fieldId": "iv",
+              "fieldValue": "={{ $json.iv }}"
+            },
+            {
+              "fieldId": "underlying_price",
+              "fieldValue": "={{ $json.underlying_price }}"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "={{ $json.source }}"
+            },
+            {
+              "fieldId": "avg_volume_20d",
+              "fieldValue": "={{ $json.avg_volume_20d }}"
+            },
+            {
+              "fieldId": "avg_oi_20d",
+              "fieldValue": "={{ $json.avg_oi_20d }}"
+            },
+            {
+              "fieldId": "volume_ratio",
+              "fieldValue": "={{ $json.volume_ratio }}"
+            },
+            {
+              "fieldId": "oi_ratio",
+              "fieldValue": "={{ $json.oi_ratio }}"
+            },
+            {
+              "fieldId": "z_score",
+              "fieldValue": "={{ $json.z_score }}"
+            },
+            {
+              "fieldId": "anomaly_type",
+              "fieldValue": "={{ $json.anomaly_type }}"
+            },
+            {
+              "fieldId": "anomaly",
+              "fieldValue": "={{ $json.anomaly }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ff11ae7b-e480-4ad3-bb3e-f99df6b314a8",
+      "name": "Generate AI Anomaly Interpretation",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        4368,
+        272
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-nano",
+          "cachedResultName": "GPT-4.1-NANO"
+        },
+        "options": {},
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an options market activity analyst.\n\nAnalyze the following NSE options anomaly.\n\nSymbol: {{ $json.symbol }}\nExpiry: {{ $json.expiry }}\nStrike: {{ $json.strike }}\nOption type: {{ $json.option_type }}\n\nCurrent volume: {{ $json.volume }}\n20 day average volume: {{ $json.avg_volume_20d }}\nVolume ratio: {{ $json.volume_ratio }}\n\nCurrent open interest: {{ $json.open_interest }}\n20 day average open interest: {{ $json.avg_oi_20d }}\nOI ratio: {{ $json.oi_ratio }}\n\nZ score: {{ $json.z_score }}\n\nAnomaly type: {{ $json.anomaly_type }}\n\nProvide a concise explanation.\n\nExplain what the unusual volume and open interest could indicate.\n\nDiscuss possible bullish, bearish, hedging or event driven interpretations.\n\nDo not claim that this proves institutional or smart money activity.\n\nDo not provide a trade recommendation.\n\nReturn plain text with these sections:\n\nObservation\nPossible interpretation\nRisk note"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "credential-id",
+          "name": "OpenAI (PAID) (AI-ML Team)"
+        }
+      },
+      "typeVersion": 1.8
+    },
+    {
+      "id": "ec3f16c0-827e-4eae-a604-c85916f88269",
+      "name": "Save Anomaly Analysis",
+      "type": "n8n-nodes-base.supabase",
+      "position": [
+        4768,
+        272
+      ],
+      "parameters": {
+        "tableId": "option_anomalies",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "symbol",
+              "fieldValue": "={{ $('Calculate Option Anomaly').item.json.symbol }}"
+            },
+            {
+              "fieldId": "expiry",
+              "fieldValue": "={{ $('Calculate Option Anomaly').item.json.expiry }}"
+            },
+            {
+              "fieldId": "strike",
+              "fieldValue": "={{ $('Calculate Option Anomaly').item.json.strike }}"
+            },
+            {
+              "fieldId": "option_type",
+              "fieldValue": "={{ $('Calculate Option Anomaly').item.json.option_type }}"
+            },
+            {
+              "fieldId": "ltp",
+              "fieldValue": "={{ $('Calculate Option Anomaly').item.json.ltp }}"
+            },
+            {
+              "fieldId": "volume",
+              "fieldValue": "={{ $('Calculate Option Anomaly').item.json.volume }}"
+            },
+            {
+              "fieldId": "open_interest",
+              "fieldValue": "={{ $('Calculate Option Anomaly').item.json.open_interest }}"
+            },
+            {
+              "fieldId": "avg_volume_20d",
+              "fieldValue": "={{ $('Calculate Option Anomaly').item.json.avg_volume_20d }}"
+            },
+            {
+              "fieldId": "avg_oi_20d",
+              "fieldValue": "={{ $('Calculate Option Anomaly').item.json.avg_oi_20d }}"
+            },
+            {
+              "fieldId": "volume_ratio",
+              "fieldValue": "={{ $('Calculate Option Anomaly').item.json.volume_ratio }}"
+            },
+            {
+              "fieldId": "oi_ratio",
+              "fieldValue": "={{ $('Calculate Option Anomaly').item.json.oi_ratio }}"
+            },
+            {
+              "fieldId": "z_score",
+              "fieldValue": "={{ $('Calculate Option Anomaly').item.json.z_score }}"
+            },
+            {
+              "fieldId": "anomaly_type",
+              "fieldValue": "={{ $('Calculate Option Anomaly').item.json.anomaly_type }}"
+            },
+            {
+              "fieldId": "ai_interpretation",
+              "fieldValue": "={{ $json.text || $json.output || $json.message.content || '' }}"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "={{ $('Calculate Option Anomaly').item.json.source }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a21fc161-cf48-4bfc-802f-e571ad759c5c",
+      "name": "Log Anomaly to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        4992,
+        272
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "ltp": "={{ $json.ltp }}",
+            "expiry": "={{ $json.expiry }}",
+            "strike": "={{ $json.strike }}",
+            "symbol": "={{ $json.symbol }}",
+            "volume": "={{ $json.volume }}",
+            "z_score": "={{ $json.z_score }}",
+            "oi_ratio": "={{ $json.oi_ratio }}",
+            "timestamp": "={{ $json.detected_at }}",
+            "avg_oi_20d": "={{ $json.avg_oi_20d }}",
+            "option_type": "={{ $json.option_type }}",
+            "anomaly_type": "={{ $json.anomaly_type }}",
+            "volume_ratio": "={{ $json.volume_ratio }}",
+            "open_interest": "={{ $json.open_interest }}",
+            "avg_volume_20d": "={{ $json.avg_volume_20d }}",
+            "ai_interpretation": "={{ $json.ai_interpretation }}"
+          },
+          "schema": [
+            {
+              "id": "timestamp",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "timestamp",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "symbol",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "symbol",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "expiry",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "expiry",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "strike",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "strike",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "option_type",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "option_type",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ltp",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "ltp",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "volume",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "volume",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "open_interest",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "open_interest",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "avg_volume_20d",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "avg_volume_20d",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "avg_oi_20d",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "avg_oi_20d",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "volume_ratio",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "volume_ratio",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "oi_ratio",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "oi_ratio",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "z_score",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "z_score",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "anomaly_type",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "anomaly_type",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ai_interpretation",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "ai_interpretation",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1099743047,
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1moSuSzyIdsd3c3CupkOA9DxjsIA0w1gwEW3Z1OVIyiM/edit#gid=1099743047",
+          "cachedResultName": "Anomaly Log sheet"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1moSuSzyIdsd3c3CupkOA9DxjsIA0w1gwEW3Z1OVIyiM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1moSuSzyIdsd3c3CupkOA9DxjsIA0w1gwEW3Z1OVIyiM/edit?usp=drivesdk",
+          "cachedResultName": "NSE Options Anomaly Scanner"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "eae9a33b-075e-42d0-9d5b-a1521a5f832b",
+      "name": "Build Email Alert Digest",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5200,
+        272
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nif (items.length === 0) {\n  return [\n    {\n      json: {\n        subject: 'NSE Options Anomaly Alert',\n        body: 'No anomalies detected.'\n      }\n    }\n  ];\n}\n\nconst formatNumber = (value) => {\n  const number = Number(value);\n\n  if (Number.isNaN(number)) {\n    return value ?? '';\n  }\n\n  return number.toLocaleString('en-IN');\n};\n\nconst formatRatio = (value) => {\n  const number = Number(value);\n\n  if (Number.isNaN(number)) {\n    return value ?? '';\n  }\n\n  return number.toFixed(2) + 'x';\n};\n\nconst formatText = (value) => {\n  if (!value) {\n    return '';\n  }\n\n  return String(value)\n    .replace(/\\r\\n/g, '\\n')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n};\n\nconst anomalies = items.map((item, index) => {\n  const data = item.json;\n\n  return {\n    number: index + 1,\n    timestamp: data.timestamp || data.detected_at || '',\n    symbol: data.symbol || '',\n    expiry: data.expiry || '',\n    strike: data.strike || '',\n    option_type: data.option_type || '',\n    ltp: data.ltp || '',\n    volume: data.volume || 0,\n    open_interest: data.open_interest || 0,\n    avg_volume_20d: data.avg_volume_20d || 0,\n    avg_oi_20d: data.avg_oi_20d || 0,\n    volume_ratio: data.volume_ratio || 0,\n    oi_ratio: data.oi_ratio || 0,\n    z_score: data.z_score || 0,\n    anomaly_type: data.anomaly_type || '',\n    ai_interpretation: formatText(data.ai_interpretation || '')\n  };\n});\n\nconst sections = anomalies.map((data) => {\n  return `\nANOMALY ${data.number}\n\nSymbol: ${data.symbol}\nExpiry: ${data.expiry}\nStrike: ${data.strike}\nOption Type: ${data.option_type}\nLTP: ${formatNumber(data.ltp)}\n\nCurrent Volume: ${formatNumber(data.volume)}\n20 Day Average Volume: ${formatNumber(data.avg_volume_20d)}\nVolume Ratio: ${formatRatio(data.volume_ratio)}\n\nCurrent Open Interest: ${formatNumber(data.open_interest)}\n20 Day Average Open Interest: ${formatNumber(data.avg_oi_20d)}\nOI Ratio: ${formatRatio(data.oi_ratio)}\n\nZ Score: ${data.z_score}\nAnomaly Type: ${data.anomaly_type}\n\nAI Interpretation\n\n${data.ai_interpretation}\n`;\n});\n\nconst subject =\n  `NSE Options Anomaly Alert: ${anomalies.length} Anomalies Detected`;\n\nconst body = `\nNSE OPTIONS ANOMALY ALERT\n\nTotal Anomalies Detected: ${anomalies.length}\n\nThe following option contracts have been flagged based on unusual volume, open interest or statistical activity.\n\n${sections.join('\\n----------------------------------------\\n')}\n\nSUMMARY\n\nTotal Anomalies: ${anomalies.length}\n\nAnomaly Types:\n\n${anomalies\n  .reduce((counts, anomaly) => {\n    counts[anomaly.anomaly_type] =\n      (counts[anomaly.anomaly_type] || 0) + 1;\n\n    return counts;\n  }, {})\n  ? Object.entries(\n      anomalies.reduce((counts, anomaly) => {\n        counts[anomaly.anomaly_type] =\n          (counts[anomaly.anomaly_type] || 0) + 1;\n\n        return counts;\n      }, {})\n    )\n      .map(([type, count]) => `${type}: ${count}`)\n      .join('\\n')\n  : 'None'}\n\nRISK NOTE\n\nThese alerts identify unusual options activity only.\n\nThey do not confirm institutional activity, smart money activity, or future market direction.\n\nVolume and open interest should be evaluated together with price movement, implied volatility, change in open interest, market trend, news, expiry context and other relevant factors.\n\nThe AI interpretation is informational and should not be treated as a trading recommendation.\n`;\n\nreturn [\n  {\n    json: {\n      subject,\n      body,\n      anomaly_count: anomalies.length\n    }\n  }\n];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "93de80b2-d384-4cf1-b1d8-dbfb9396d283",
+      "name": "Send Gmail Anomaly Digest",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        5408,
+        272
+      ],
+      "webhookId": "34523855-58af-4209-8321-e4ab99701246",
+      "parameters": {
+        "sendTo": "user@example.com",
+        "message": "={{ $json.body }}",
+        "options": {},
+        "subject": "={{ $json.subject }}",
+        "emailType": "text"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "176c9dd0-9f6d-43fc-98d9-b52933cca701",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4096,
+        16
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 560,
+        "height": 448,
+        "content": "## Snapshot Persistence\n\nThis section preserves the detected option snapshot in Supabase and sends anomalous contracts to OpenAI for interpretation. The AI explains the unusual activity and discusses possible bullish, bearish, hedging, or event driven explanations without treating the anomaly as confirmed smart money activity."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "89f3312c-e8f0-44e2-bfd2-b2a9d871b226",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2160,
+        16
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 624,
+        "height": 448,
+        "content": "## Market Scan Scheduling\n\nThis section starts the NSE options monitoring workflow on the configured schedule. It reads the symbols and scanning configuration from Google Sheets and filters the watchlist to include only enabled instruments before preparing clean symbol data for the options data request."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0c68b6d1-cb20-429d-9af5-28693247b292",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3376,
+        16
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 656,
+        "height": 448,
+        "content": "## Historical Data Analysis\n\nThis section compares the latest option activity against historical information stored in Supabase. Volume ratios, open interest ratios, and statistical z scores are calculated for each contract. Contracts meeting the configured anomaly conditions are then separated for deeper processing"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0383fcf0-fc45-4d1b-9419-78723267ac60",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2848,
+        16
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 464,
+        "height": 448,
+        "content": "## Option Data Collection\nThis section retrieves option chain data from the configured NSE data endpoint. The returned contracts are then converted into a consistent structure containing expiry, strike, option type, price, volume, open interest, implied volatility, and underlying price for further analysis."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "660aeba7-10ee-4f27-af9d-23e37a8a176a",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4704,
+        16
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 896,
+        "height": 448,
+        "content": "## Anomaly Reporting and Email Notification\nThis section stores AI enhanced anomaly results in Supabase, logs all detected contracts in Google Sheets, and combines them into a single email digest. The final Gmail alert includes complete anomaly details, statistical metrics, AI interpretation, and risk information."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "688fec77-207c-4b64-9051-6f3d25b6ad58",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1248,
+        -256
+      ],
+      "parameters": {
+        "width": 848,
+        "height": 720,
+        "content": "# NSE Options Anomaly Detection and Alert Workflow\n## How Workflow Works\n\nThe workflow automatically monitors NSE option contracts according to the configured schedule and watchlist. It first reads enabled symbols from Google Sheets and fetches their option chain data through the configured data endpoint. The returned contracts are normalized and compared against historical option data stored in Supabase. The workflow calculates volume ratios, open interest ratios, and z scores before filtering contracts that meet the anomaly conditions. Detected anomalies are stored as snapshots, analyzed by OpenAI, and saved with their AI interpretation in Supabase. The same anomaly records are logged into Google Sheets for reporting and tracking. Finally, all anomalies from the execution are combined into one Gmail digest containing the complete contract information and AI analysis.\n\n## Setup Steps\n\nConfigure the Google Sheets watchlist with symbols, exchange, scan mode, strike count, and enabled status.\nConfigure the option chain HTTP endpoint and ensure it returns the expected NSE option contract fields.\nCreate and configure the Supabase option snapshot and anomaly tables and connect the Supabase credentials.\nConfigure the anomaly calculation thresholds and historical comparison logic according to your monitoring requirements.\nConnect the OpenAI, Google Sheets, Supabase, and Gmail credentials and verify that anomaly records are saved correctly.\nSet the scanner schedule, execute a test run, verify the Supabase and Google Sheets records, and confirm that all detected anomalies arrive in one Gmail digest.\n"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "4d44bc53-a30b-4ca3-a384-66ca711a5e42",
+  "nodeGroups": [],
+  "connections": {
+    "Read NSE Watchlist": {
+      "main": [
+        [
+          {
+            "node": "Prepare Watchlist Symbols",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Option Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Generate AI Anomaly Interpretation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Anomaly Analysis": {
+      "main": [
+        [
+          {
+            "node": "Log Anomaly to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch NSE Option Chain": {
+      "main": [
+        [
+          {
+            "node": "Normalize Option Contracts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Market Scanner Schedule": {
+      "main": [
+        [
+          {
+            "node": "Read NSE Watchlist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Email Alert Digest": {
+      "main": [
+        [
+          {
+            "node": "Send Gmail Anomaly Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Option Anomaly": {
+      "main": [
+        [
+          {
+            "node": "Filter Anomalous Contracts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Watchlist Symbols": {
+      "main": [
+        [
+          {
+            "node": "Fetch NSE Option Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Anomalous Contracts": {
+      "main": [
+        [
+          {
+            "node": "Save Option Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Option Contracts": {
+      "main": [
+        [
+          {
+            "node": "Fetch Historical Option Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Historical Option Data": {
+      "main": [
+        [
+          {
+            "node": "Calculate Option Anomaly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Anomaly to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Build Email Alert Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate AI Anomaly Interpretation": {
+      "main": [
+        [
+          {
+            "node": "Save Anomaly Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

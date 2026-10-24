@@ -1,6 +1,6 @@
 # 💬 Book, manage, and check appointments using Vapi and Google Calendar
 
-> ⚡ **307 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,168 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 Monitor cryptocurrency payments across multiple blockchains with AgentGatePay
 
-> ⚡ **95 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **112 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

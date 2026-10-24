@@ -1,6 +1,6 @@
 # 🔬 Multi-jurisdiction smart contract compliance monitor with automated alerts
 
-> ⚡ **725 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **752 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

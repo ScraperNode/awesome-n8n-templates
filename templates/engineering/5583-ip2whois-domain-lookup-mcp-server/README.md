@@ -1,6 +1,6 @@
 # ⚒️ IP2WHOIS domain lookup MCP server
 
-> ⚡ **935 views** · ⚒️ [Engineering](../)
+> ⚡ **972 views** · ⚒️ [Engineering](../)
 
 ## Description
 

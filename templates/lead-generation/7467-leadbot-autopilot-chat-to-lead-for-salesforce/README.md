@@ -1,6 +1,6 @@
 # 🎣 LeadBot autopilot — chat-to-lead for Salesforce
 
-> ⚡ **2,343 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **3,419 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Route and analyze customer feedback with Qwen3-VL, Tally, PostgreSQL
 
-> ⚡ **46 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **119 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

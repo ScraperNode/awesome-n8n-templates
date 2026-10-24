@@ -1,6 +1,6 @@
 # ⚒️ JSON data utility: extract key-value pairs by index
 
-> ⚡ **190 views** · ⚒️ [Engineering](../)
+> ⚡ **270 views** · ⚒️ [Engineering](../)
 
 ## Description
 

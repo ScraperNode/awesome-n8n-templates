@@ -1,6 +1,6 @@
 # 🔬 Import Google Keep notes to Google Sheets using OpenAI and Google Drive
 
-> ⚡ **1,721 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,885 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

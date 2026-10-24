@@ -1,6 +1,6 @@
 # ⚙️ Log n8n workflow errors to your REST API with Slack alerts and metrics
 
-> ⚡ **6 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **16 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

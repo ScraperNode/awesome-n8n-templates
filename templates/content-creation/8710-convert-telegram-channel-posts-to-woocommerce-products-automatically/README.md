@@ -1,6 +1,6 @@
 # 🎬 Convert Telegram channel posts to WooCommerce products automatically
 
-> ⚡ **97 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **131 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

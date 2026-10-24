@@ -1,6 +1,6 @@
 # 📊 Track new Featured Snippet keyword wins via email with DataForSEO
 
-> ⚡ **8 views** · 📊 [Market Research & Insights](../)
+> ⚡ **42 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤖 Create smart Telegram reminders with GPT-4 mini and Airtable cancel codes
 
-> ⚡ **239 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **306 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

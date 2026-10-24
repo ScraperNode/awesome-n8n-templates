@@ -1,6 +1,6 @@
 # 🔬 Automate financial operations with O3 CFO & GPT-4.1-mini finance team
 
-> ⚡ **8,527 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **12,110 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

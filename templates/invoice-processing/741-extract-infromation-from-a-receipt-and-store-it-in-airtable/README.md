@@ -1,6 +1,6 @@
 # 🧾 Extract infromation from a receipt and store it in Airtable
 
-> ⚡ **1,298 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,294 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

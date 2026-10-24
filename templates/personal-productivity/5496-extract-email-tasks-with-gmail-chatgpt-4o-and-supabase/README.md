@@ -1,6 +1,6 @@
 # ⚡ Extract email tasks with Gmail, ChatGPT-4o and Supabase
 
-> ⚡ **1,217 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,283 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

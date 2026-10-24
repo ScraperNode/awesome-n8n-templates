@@ -1,6 +1,6 @@
 # 🔬 Extract and organize receipt data with WhatsApp, GPT-4V and Google Sheets
 
-> ⚡ **65 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **83 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

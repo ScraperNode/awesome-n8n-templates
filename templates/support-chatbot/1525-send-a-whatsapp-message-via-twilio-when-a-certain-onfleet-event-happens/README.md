@@ -1,6 +1,6 @@
 # 💬 Send a Whatsapp message via Twilio when a certain Onfleet event happens
 
-> ⚡ **2,826 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,914 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

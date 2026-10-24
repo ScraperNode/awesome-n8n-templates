@@ -1,6 +1,6 @@
 # 📊 Analyze public consultation data and coordinate governance with Claude AI
 
-> ⚡ **17 views** · 📊 [Market Research & Insights](../)
+> ⚡ **53 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

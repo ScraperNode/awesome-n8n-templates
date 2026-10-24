@@ -1,6 +1,6 @@
 # ⚒️ [eBay] recommendation API MCP server
 
-> ⚡ **331 views** · ⚒️ [Engineering](../)
+> ⚡ **345 views** · ⚒️ [Engineering](../)
 
 ## Description
 

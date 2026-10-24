@@ -1,6 +1,6 @@
 # 🎫 User-friendly technical support portal for GLPI ticket management
 
-> ⚡ **2,488 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **3,214 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

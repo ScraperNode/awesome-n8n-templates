@@ -1,6 +1,6 @@
 # 🔬 Process WhatsApp PDFs with AWS Textract OCR via S3
 
-> ⚡ **19 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **140 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

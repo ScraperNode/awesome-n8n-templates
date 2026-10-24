@@ -1,6 +1,6 @@
 # 🔬 🛻 AI agent for logistics order processing with GPT-4o, Gmail and Google Sheet
 
-> ⚡ **11,148 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **11,913 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

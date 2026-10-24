@@ -1,6 +1,6 @@
 # 🔬 🦜✨Use OpenAI to transcribe audio + summarize with AI + save to Google Drive
 
-> ⚡ **23,387 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **24,151 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

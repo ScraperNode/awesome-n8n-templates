@@ -1,6 +1,6 @@
 # 🎬 Translate English scripts to multilingual audio with GPT-4 and ElevenLabs
 
-> ⚡ **55 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **85 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

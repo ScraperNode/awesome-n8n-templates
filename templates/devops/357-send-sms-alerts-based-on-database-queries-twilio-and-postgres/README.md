@@ -1,6 +1,6 @@
 # ⚙️ Send SMS alerts based on database queries (Twilio and Postgres)
 
-> ⚡ **3,401 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **3,386 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

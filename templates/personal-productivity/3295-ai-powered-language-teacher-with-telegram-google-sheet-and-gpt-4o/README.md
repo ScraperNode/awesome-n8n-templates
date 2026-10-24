@@ -1,6 +1,6 @@
 # ⚡ 🧑‍🎓 AI powered language teacher with Telegram, Google Sheet and GPT-4o
 
-> ⚡ **7,476 views** · ⚡ [Personal Productivity](../)
+> ⚡ **7,923 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

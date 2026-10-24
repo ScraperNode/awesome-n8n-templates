@@ -1,6 +1,6 @@
 # 🤖 Manage Shopify store via conversational OpenAI assistant with SmartCommerce
 
-> ⚡ **418 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **560 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

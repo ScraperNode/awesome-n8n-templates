@@ -1,6 +1,6 @@
 # 🔧 Moderate your Discord server using chatGPT-5 & Google Sheets (Learning system)
 
-> ⚡ **151 views** · 🔧 [Miscellaneous](../)
+> ⚡ **211 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

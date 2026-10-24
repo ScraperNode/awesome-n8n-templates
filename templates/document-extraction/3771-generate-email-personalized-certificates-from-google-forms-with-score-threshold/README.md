@@ -1,6 +1,6 @@
 # 🔬 Generate & email personalized certificates from Google Forms with score threshold
 
-> ⚡ **1,097 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,180 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

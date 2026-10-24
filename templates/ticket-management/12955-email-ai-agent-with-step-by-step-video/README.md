@@ -1,6 +1,6 @@
 # 🎫 Email AI Agent (with step by step video)
 
-> ⚡ **80 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **304 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,0 +1,249 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "name": "AI Upwork Job Scout: Gmail alerts \u2192 GPT scoring \u2192 Telegram",
+  "nodes": [
+    {
+      "id": "b70df910-f0ec-492c-ab1f-45ac881a4832",
+      "name": "New Upwork email",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "simple": false,
+        "filters": {
+          "q": "from:upwork.com newer_than:1d",
+          "readStatus": "both"
+        },
+        "options": {},
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "unit": "minutes",
+              "value": 1
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "4ff5a156-dd71-4786-ae9a-aea9fba4553f",
+      "name": "Your profile & settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        224,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "profile",
+              "name": "profile",
+              "type": "string",
+              "value": "Automation engineer: n8n / Make / Zapier, AI chatbots and agents (OpenAI), Telegram bots, REST API integrations, Node.js / Python, PostgreSQL. New on Upwork, prefers small clear projects."
+            },
+            {
+              "id": "language",
+              "name": "language",
+              "type": "string",
+              "value": "English"
+            },
+            {
+              "id": "min_score",
+              "name": "min_score",
+              "type": "number",
+              "value": 6
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "61b6c1e7-8bfa-4f39-b63e-09357e6f4330",
+      "name": "Extract & score jobs",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        448,
+        0
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-5-mini"
+        },
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object",
+              "verbosity": "low"
+            }
+          }
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=You help a freelancer triage Upwork job emails.\nFreelancer profile: {{ $json.profile }}\nWrite all explanations in {{ $json.language }}.\nFind every job in the email. Score each 0-10 for this freelancer: reward clear small scope, verified payment, few proposals, matching skills; heavily penalize Expert/Senior roles, required niche track record, off-stack technology, 20+ proposals and red flags (work outside Upwork, upfront payment).\nNever copy long tracking links. url only if it is https://www.upwork.com/jobs/~...\nReturn only JSON: {\"jobs\": [{\"title\": \"\", \"url\": \"\", \"budget\": \"\", \"summary\": \"\", \"why\": \"\", \"risks\": \"\", \"score\": 0}]}"
+            },
+            {
+              "content": "=Subject: {{ $json.subject }}\n\n{{ String($json.text || '').slice(0, 15000) }}"
+            }
+          ]
+        },
+        "builtInTools": {}
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "444fcd61-5bfe-4a17-9729-8c7416320c82",
+      "name": "Split jobs & keep good ones",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        672,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// One item per job; the 'View job details' link is taken from the email as-is\nconst out = [];\n$input.all().forEach((item, i) => {\n  const src = $('Your profile & settings').itemMatching(i).json;\n  let raw = item.json.text;\n  if (raw === undefined) for (const o of (item.json.output || [])) for (const c of (o.content || [])) if (c.text !== undefined) raw = c.text;\n  let data;\n  try { data = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return; }\n  const jobs = (data && Array.isArray(data.jobs)) ? data.jobs : [];\n  const links = [...String(src.text || '').matchAll(/View job details\\s*\\(\\s*(https?:\\/\\/[^\\s)]+)\\s*\\)/gi)].map((m) => m[1]);\n  jobs.forEach((job, k) => {\n    const score = Math.max(0, Math.min(10, Math.round(Number(job.score) || 0)));\n    if (score < Number(src.min_score || 6)) return;\n    const direct = /^https:\\/\\/www\\.upwork\\.com\\/jobs\\/~/.test(job.url || '') ? job.url : '';\n    const link = direct || (links.length === jobs.length ? links[k] : (jobs.length === 1 ? links[0] : '')) || 'https://www.upwork.com/nx/search/jobs/?q=' + encodeURIComponent(String(job.title || '').slice(0, 120));\n    out.push({ json: { ...job, score, link } });\n  });\n});\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "de3a57eb-7750-4afb-aa11-3d0f824653b7",
+      "name": "Format Telegram card",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        896,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// HTML card for Telegram\nconst esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst j = $json;\nconst card = [\n  (j.score >= 8 ? '\\uD83D\\uDD25 ' : '\\uD83C\\uDD95 ') + '<b>' + esc(j.title) + '</b>  ' + j.score + '/10',\n  j.budget ? '\\uD83D\\uDCB0 ' + esc(j.budget) : '',\n  '\\uD83D\\uDCDD ' + esc(j.summary),\n  '\\u2705 ' + esc(j.why) + (j.risks ? '\\n\\u26A0\\uFE0F ' + esc(j.risks) : ''),\n].filter(Boolean).join('\\n\\n').slice(0, 4000);\nreturn { json: { ...j, card } };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ecf48342-647a-4d6a-80dc-b66b83ede40b",
+      "name": "Send to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "text": "={{ $json.card }}",
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Open job on Upwork",
+                    "additionalFields": {
+                      "url": "={{ $json.link }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "appendAttribution": false,
+          "disable_web_page_preview": true
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "37b299ee-c190-4f33-bf7a-9095027cf89f",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -560,
+        -160
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 520,
+        "height": 520,
+        "content": "## AI Upwork job scout \u2192 Telegram\nTurns Upwork job-alert emails into short, scored Telegram cards so you only see jobs you can actually win.\n\n**How it works**\n1. Gmail trigger picks up Upwork alert emails (job alerts and saved searches).\n2. GPT reads the email, finds every job and scores it 0\u201310 against your profile (penalizes Senior/Expert roles, off-stack tech, crowded jobs and red flags).\n3. Jobs below your minimum score are dropped.\n4. Each good job arrives in Telegram with a summary, risks and a button that opens the job directly (the original 'View job details' link is kept verbatim, so it never breaks).\n\n**Setup (5 min)**\n- Connect Gmail, OpenAI and a Telegram bot (create one with @BotFather).\n- In **Your profile & settings** describe your skills, pick the language and the minimum score.\n- Put your chat ID into **Send to Telegram** and activate."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "New Upwork email": {
+      "main": [
+        [
+          {
+            "node": "Your profile & settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract & score jobs": {
+      "main": [
+        [
+          {
+            "node": "Split jobs & keep good ones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Telegram card": {
+      "main": [
+        [
+          {
+            "node": "Send to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Your profile & settings": {
+      "main": [
+        [
+          {
+            "node": "Extract & score jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split jobs & keep good ones": {
+      "main": [
+        [
+          {
+            "node": "Format Telegram card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

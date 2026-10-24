@@ -1,6 +1,6 @@
 # ⚒️ Evaluate supply chain risk and orchestrate contingencies with Claude, Google Sheets, Gmail and Slack
 
-> ⚡ **25 views** · ⚒️ [Engineering](../)
+> ⚡ **124 views** · ⚒️ [Engineering](../)
 
 ## Description
 

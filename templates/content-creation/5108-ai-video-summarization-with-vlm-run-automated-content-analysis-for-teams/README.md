@@ -1,6 +1,6 @@
 # 🎬 AI video summarization with VLM run - automated content analysis for teams
 
-> ⚡ **381 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **448 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

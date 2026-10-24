@@ -1,6 +1,6 @@
 # 📱 Manage subscribers in ConvertKit
 
-> ⚡ **611 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **630 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

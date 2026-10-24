@@ -1,6 +1,6 @@
 # 📋 Create a task in ClickUp
 
-> ⚡ **5,609 views** · 📋 [Project Management](../)
+> ⚡ **5,769 views** · 📋 [Project Management](../)
 
 ## Description
 

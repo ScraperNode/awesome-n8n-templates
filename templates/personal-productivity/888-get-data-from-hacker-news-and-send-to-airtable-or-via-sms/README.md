@@ -1,6 +1,6 @@
 # ⚡ Get data from Hacker News and send to Airtable or via SMS
 
-> ⚡ **2,652 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,700 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Monitor changes in Google Sheets every 45 mins
 
-> ⚡ **2,136 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,132 views** · ⚡ [Personal Productivity](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >

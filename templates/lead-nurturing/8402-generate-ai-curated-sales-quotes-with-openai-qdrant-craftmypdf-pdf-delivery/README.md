@@ -1,6 +1,6 @@
 # 💬 Generate AI-curated sales quotes with OpenAI, Qdrant & CraftMyPDF PDF delivery
 
-> ⚡ **129 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **146 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

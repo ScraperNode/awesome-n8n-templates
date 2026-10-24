@@ -1,6 +1,6 @@
 # 📊 Ask AI about your Meta Ads - ask questions about your Facebook Ads insights
 
-> ⚡ **3,441 views** · 📊 [Market Research & Insights](../)
+> ⚡ **3,416 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

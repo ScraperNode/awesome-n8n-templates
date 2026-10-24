@@ -1,6 +1,6 @@
 # 🎣 SmartLead sheet sync: auto-capture client inquiries to Google Sheets
 
-> ⚡ **243 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **250 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

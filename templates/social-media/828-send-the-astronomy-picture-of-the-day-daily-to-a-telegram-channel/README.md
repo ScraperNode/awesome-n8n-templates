@@ -1,6 +1,6 @@
 # 📱 Send the astronomy picture of the day daily to a Telegram channel
 
-> ⚡ **3,426 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **3,525 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

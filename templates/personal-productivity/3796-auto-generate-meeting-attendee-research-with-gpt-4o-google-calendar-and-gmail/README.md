@@ -1,6 +1,6 @@
 # ⚡ Auto-generate meeting attendee research with GPT-4o, Google Calendar, and Gmail
 
-> ⚡ **8,411 views** · ⚡ [Personal Productivity](../)
+> ⚡ **8,578 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

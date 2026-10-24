@@ -1,6 +1,6 @@
 # 📱 AI-optimized content posting to X, Discord & LinkedIn with OpenRouter
 
-> ⚡ **2,513 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,725 views** · 📱 [Social Media & Email Marketing](../)
 
 > 💡 **Pro Tip** — If you're pulling LinkedIn data through HTTP requests or dealing with API restrictions, there's a community node called [ScraperNode](https://scrapernode.com/linkedin) that handles this natively. It has dedicated scrapers for [profiles](https://scrapernode.com/linkedin/scrapers/profiles), [companies](https://scrapernode.com/linkedin/scrapers/companies), [jobs](https://scrapernode.com/linkedin/scrapers/jobs), and [people search](https://scrapernode.com/linkedin/scrapers/people-search) — you just pass a URL and get structured data back.
 >
@@ -8,16 +8,18 @@
 
 ## Description
 
-Amplify your social media presence with **BuzzBlast**, an n8n workflow designed to make your content go viral across X, Discord, and LinkedIn. By sending a single chat message, BuzzBlast leverages OpenRouter's AI to optimize your input for each platform’s unique audience—crafting punchy tweets for X, engaging messages for Discord, and professional posts for LinkedIn. With smart language detection, it ensures the output matches your input’s language for authentic engagement.
+One message in, polished posts everywhere. **BuzzBlast** is an [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) workflow that takes a single chat message and rewrites it for X, Discord, and LinkedIn: punchy tweets for X, engaging messages for Discord, professional posts for LinkedIn. Smart language detection keeps the output in your input's language.
+
+*Last updated: September 2026.*
 
 ## Key Features
 
-- 🚀 **Multi-Platform Posting**: Shares optimized content to X, Discord, and LinkedIn simultaneously.
-- 🧠 **AI Optimization**: Uses OpenRouter’s AI to tailor content for virality on each platform.
-- 🌐 **Language Detection**: Matches output to your input language for seamless engagement.
-- 🔄 **Smart Routing**: Automatically directs content to the right platform using a switch node.
-- 📱 **Chat Trigger**: Initiates posts via a simple chat message.
-- ⚡ **Zero Hassle**: No manual reformatting—BuzzBlast handles it all.
+- **Multi-Platform Posting**: Shares optimized content to X, Discord, and LinkedIn simultaneously.
+- **AI Optimization**: Uses OpenRouter’s AI to tailor content for each platform.
+- **Language Detection**: Matches output to your input language for seamless engagement.
+- **Smart Routing**: Automatically directs content to the right platform using a switch node.
+- **Chat Trigger**: Initiates posts via a simple chat message.
+- **Zero Hassle**: No manual reformatting. BuzzBlast handles it all.
 
 ## Ideal For
 
@@ -27,7 +29,7 @@ Amplify your social media presence with **BuzzBlast**, an n8n workflow designed 
 
 ## Pre-Requirements
 
-- **[n8n instance](https://n8n.partnerlinks.io/khaisastudio)**: A running n8n instance (cloud or self-hosted).
+- **[n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin)**: A running [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance (cloud or self-hosted).
 - **Credentials**:
   - X account with OAuth2 API access.
   - Discord Webhook API setup for your server.
@@ -38,7 +40,7 @@ Amplify your social media presence with **BuzzBlast**, an n8n workflow designed 
 ## Setup Instructions
 
 1. **Import the Workflow**:
-   - Copy the provided workflow JSON and import it into your n8n instance via the "Import Workflow" option in the n8n editor.
+   - Copy the provided workflow JSON and import it into your [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance via the "Import Workflow" option in the [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) editor.
 2. **Configure Credentials**:
    - In the `Post to X` node, set up OAuth2 credentials for your X account.
    - In the `Post to Discord` node, configure a Discord Webhook for your server.
@@ -51,10 +53,10 @@ Amplify your social media presence with **BuzzBlast**, an n8n workflow designed 
    - Send a test message via your chat platform (e.g., "Announcing our new product launch!").
    - Verify that the AI optimizes the content and posts it to X, Discord, and LinkedIn as expected.
 5. **Activate the Workflow**:
-   - Once tested, toggle the workflow to "Active" in n8n to enable automatic execution when chat messages are received.
+   - Once tested, toggle the workflow to "Active" in [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) to enable automatic execution when chat messages are received.
 
 ## Customization Guidance
-- **Changes Chat Trigger**: Adjust the chat trigger using your preference platform like telegram, discord, etc.
+- **Change Chat Trigger**: Adjust the chat trigger to your preferred platform like Telegram, Discord, etc.
 - **Modify AI Prompt**: Adjust the prompt in the `AI Content Optimizer` node to change the tone or style (e.g., more professional for LinkedIn or conversational for Discord).
 - **Add New Platforms**: Extend the `Route to Platforms` node by adding conditions for additional platforms (e.g., Instagram or Facebook) and corresponding posting nodes.
 - **Change AI Model**: In the `OpenRouter AI Model` node, select a different OpenRouter model to optimize content quality or manage costs.
@@ -63,10 +65,21 @@ Amplify your social media presence with **BuzzBlast**, an n8n workflow designed 
 
 ## Why Choose BuzzBlast?
 
-BuzzBlast saves time, maximizes reach, and lets AI craft platform-perfect posts that resonate with your audience. Whether you're an influencer, marketer, or business, this workflow makes cross-platform posting effortless. Ready to make waves online? Grab BuzzBlast and start buzzing!
+BuzzBlast saves time, maximizes reach, and lets AI craft platform-perfect posts that resonate with your audience. Whether you're an influencer, marketer, or business, cross-platform posting becomes effortless.
 
-*made by: [khmuhtadin](khmuhtadin.com)*
-**Need a custom?** contact me on **[LinkedIn](https://www.linkedin.com/in/khmuhtadin/)** or **[Web](khmuhtadin.com)**
+### Quick Answers
+**How do I publish a post?**  
+Send one chat message to the Chat Trigger (e.g., from Slack or Telegram). The workflow does the rest.  
+**Will it keep my language?**  
+Yes. Language detection matches the output to whatever language you wrote in.  
+**Can I add more platforms?**  
+Yes. Extend the `Route to Platforms` node with new conditions, e.g., Instagram or Facebook.  
+
+*made by: [khmuhtadin](https://khmuhtadin.com)*
+**Need a custom?** contact me on **[LinkedIn](https://www.linkedin.com/in/khmuhtadin/)** or **[Web](https://khmuhtadin.com)**
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

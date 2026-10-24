@@ -1,6 +1,6 @@
 # ⚒️ 🛠️ Storyblok tool MCP server 💪 all 7 operations
 
-> ⚡ **261 views** · ⚒️ [Engineering](../)
+> ⚡ **267 views** · ⚒️ [Engineering](../)
 
 ## Description
 

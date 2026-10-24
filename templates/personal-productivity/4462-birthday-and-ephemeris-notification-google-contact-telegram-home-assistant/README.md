@@ -1,6 +1,6 @@
 # ⚡ Birthday and ephemeris notification (Google Contact, Telegram & Home Assistant)
 
-> ⚡ **3,130 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,441 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

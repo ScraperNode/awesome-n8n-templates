@@ -1,6 +1,6 @@
 # ⚒️ Extract context from voice notes with OpenRouter AI & Milvus for RAG systems
 
-> ⚡ **680 views** · ⚒️ [Engineering](../)
+> ⚡ **835 views** · ⚒️ [Engineering](../)
 
 ## Description
 

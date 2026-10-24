@@ -1,6 +1,6 @@
 # ⚒️ Insert a document in MongoDB
 
-> ⚡ **16,325 views** · ⚒️ [Engineering](../)
+> ⚡ **16,352 views** · ⚒️ [Engineering](../)
 
 ## Description
 

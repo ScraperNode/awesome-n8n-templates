@@ -1,6 +1,6 @@
 # 📖 Create a factual learning assistant with RAG, Gemini, Telegram & MongoDB
 
-> ⚡ **468 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **608 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 AI-Powered Research with Jina AI Deep Search
 
-> ⚡ **12,987 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **13,364 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

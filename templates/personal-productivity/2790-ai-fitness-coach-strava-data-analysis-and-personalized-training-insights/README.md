@@ -1,6 +1,6 @@
 # ⚡ Ai fitness coach Strava data analysis and personalized training insights
 
-> ⚡ **13,207 views** · ⚡ [Personal Productivity](../)
+> ⚡ **14,380 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

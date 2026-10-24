@@ -1,6 +1,6 @@
 # 📋 Extract meeting tasks from transcripts with AI and sync to Trello
 
-> ⚡ **375 views** · 📋 [Project Management](../)
+> ⚡ **419 views** · 📋 [Project Management](../)
 
 ## Description
 

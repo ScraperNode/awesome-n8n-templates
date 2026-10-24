@@ -1,6 +1,6 @@
 # ⚒️ Email assistant: convert natural language to SQL queries with Phi4-mini and PostgreSQL
 
-> ⚡ **3,011 views** · ⚒️ [Engineering](../)
+> ⚡ **3,191 views** · ⚒️ [Engineering](../)
 
 ## Description
 

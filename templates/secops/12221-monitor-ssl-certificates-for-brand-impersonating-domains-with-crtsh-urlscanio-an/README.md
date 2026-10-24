@@ -1,6 +1,6 @@
 # 🔒 Monitor SSL certificates for brand-impersonating domains with crt.sh, Urlscan.io and Slack
 
-> ⚡ **177 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **270 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

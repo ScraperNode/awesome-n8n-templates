@@ -1,6 +1,6 @@
 # 🔬 💰 Automate currency rates update in invoices with Google Sheet, ExchangeRate API
 
-> ⚡ **1,492 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,581 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

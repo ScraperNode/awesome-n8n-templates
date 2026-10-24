@@ -1,6 +1,6 @@
 # 💬 Sync Open House leads from SignSnapHome to HubSpot with automated email follow-up
 
-> ⚡ **41 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **49 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

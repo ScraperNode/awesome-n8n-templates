@@ -1,6 +1,6 @@
 # 📋 Automate cross-project dependency tracking between Jira and Monday
 
-> ⚡ **100 views** · 📋 [Project Management](../)
+> ⚡ **115 views** · 📋 [Project Management](../)
 
 ## Description
 

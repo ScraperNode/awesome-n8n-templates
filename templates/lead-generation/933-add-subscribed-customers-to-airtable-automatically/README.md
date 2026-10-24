@@ -1,6 +1,6 @@
 # 🎣 Add subscribed customers to Airtable automatically
 
-> ⚡ **615 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **630 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

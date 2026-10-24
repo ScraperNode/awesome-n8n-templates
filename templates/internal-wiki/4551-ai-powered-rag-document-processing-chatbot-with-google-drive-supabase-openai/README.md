@@ -1,6 +1,6 @@
 # 📖 AI-Powered RAG Document Processing & Chatbot with Google Drive, Supabase, OpenAI
 
-> ⚡ **13,291 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **13,845 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

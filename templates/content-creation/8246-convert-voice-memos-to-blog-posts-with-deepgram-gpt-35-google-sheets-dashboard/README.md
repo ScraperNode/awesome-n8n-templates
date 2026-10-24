@@ -1,6 +1,6 @@
 # 🎬 Convert voice memos to blog posts with Deepgram, GPT-3.5 & Google Sheets dashboard
 
-> ⚡ **38 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **44 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

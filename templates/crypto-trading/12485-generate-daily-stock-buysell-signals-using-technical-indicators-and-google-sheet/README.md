@@ -1,6 +1,6 @@
 # 📈 Generate daily stock buy/sell signals using technical indicators and Google Sheets
 
-> ⚡ **1,933 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **2,860 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

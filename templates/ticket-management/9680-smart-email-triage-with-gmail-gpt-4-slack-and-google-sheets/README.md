@@ -1,6 +1,6 @@
 # 🎫 Smart email triage with Gmail, GPT-4, Slack and Google Sheets
 
-> ⚡ **146 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **269 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ 🛠️ Gotify tool MCP server
 
-> ⚡ **195 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **215 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

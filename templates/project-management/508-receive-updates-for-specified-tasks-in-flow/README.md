@@ -1,6 +1,6 @@
 # 📋 Receive updates for specified tasks in flow
 
-> ⚡ **391 views** · 📋 [Project Management](../)
+> ⚡ **404 views** · 📋 [Project Management](../)
 
 ## Description
 

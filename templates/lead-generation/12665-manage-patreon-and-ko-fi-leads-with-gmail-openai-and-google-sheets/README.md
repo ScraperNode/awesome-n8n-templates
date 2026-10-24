@@ -1,6 +1,6 @@
 # 🎣 Manage Patreon and Ko-fi leads with Gmail, OpenAI and Google Sheets
 
-> ⚡ **17 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **90 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

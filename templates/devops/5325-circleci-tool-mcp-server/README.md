@@ -1,6 +1,6 @@
 # ⚙️ 🛠️ CircleCI tool MCP server
 
-> ⚡ **290 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **301 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

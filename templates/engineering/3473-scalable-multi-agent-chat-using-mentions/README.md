@@ -1,6 +1,6 @@
 # ⚒️ Scalable multi-agent chat using @mentions
 
-> ⚡ **16,419 views** · ⚒️ [Engineering](../)
+> ⚡ **16,896 views** · ⚒️ [Engineering](../)
 
 ## Description
 

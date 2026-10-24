@@ -1,6 +1,6 @@
 # ⚡ Weekly reminder on your notion tasks with a deadline
 
-> ⚡ **2,205 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,228 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

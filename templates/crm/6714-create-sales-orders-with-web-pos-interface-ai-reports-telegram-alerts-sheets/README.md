@@ -1,6 +1,6 @@
 # 🤝 Create sales orders with Web POS interface, AI reports, Telegram alerts & sheets
 
-> ⚡ **1,205 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,321 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

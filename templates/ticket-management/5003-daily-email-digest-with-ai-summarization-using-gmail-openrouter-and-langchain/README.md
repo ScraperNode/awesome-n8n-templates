@@ -1,6 +1,6 @@
 # 🎫 Daily Email Digest with AI Summarization using Gmail, OpenRouter and LangChain
 
-> ⚡ **1,572 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **2,034 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

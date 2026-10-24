@@ -1,6 +1,6 @@
 # 👥 Automate employee leave approvals with GPT, Gmail & Calendar integration
 
-> ⚡ **297 views** · 👥 [HR & Recruitment](../)
+> ⚡ **585 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Generate & test SQL code with GPT/OpenRouter AI and PostgreSQL sandbox
 
-> ⚡ **723 views** · ⚒️ [Engineering](../)
+> ⚡ **953 views** · ⚒️ [Engineering](../)
 
 ## Description
 

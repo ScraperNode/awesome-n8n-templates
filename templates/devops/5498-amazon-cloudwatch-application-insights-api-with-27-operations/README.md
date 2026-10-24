@@ -1,6 +1,6 @@
 # ⚙️ Amazon CloudWatch Application Insights API with 27 operations
 
-> ⚡ **782 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **851 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

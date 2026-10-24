@@ -1,6 +1,6 @@
 # 📈 Log daily Interactive Brokers trades to a Google Sheets journal
 
-> ⚡ **167 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **428 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ✨ Daily tech news curation with RSS, GPT-4o-Mini, and Gmail delivery
 
-> ⚡ **1,112 views** · ✨ [AI & LLMs](../)
+> ⚡ **1,358 views** · ✨ [AI & LLMs](../)
 
 ## Description
 

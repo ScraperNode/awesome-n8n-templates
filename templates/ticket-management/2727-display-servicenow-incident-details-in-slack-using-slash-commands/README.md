@@ -1,6 +1,6 @@
 # 🎫 Display ServiceNow incident details in Slack using slash commands
 
-> ⚡ **1,143 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,174 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

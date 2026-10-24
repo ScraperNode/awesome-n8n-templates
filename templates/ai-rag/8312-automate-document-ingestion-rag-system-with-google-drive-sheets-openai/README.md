@@ -1,6 +1,6 @@
 # 🔍 Automate document ingestion & RAG system with Google Drive, Sheets & OpenAI
 
-> ⚡ **1,600 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **2,017 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Enrich new leads in Pipedrive and send an alert to Slack for high-quality ones
 
-> ⚡ **2,228 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **2,275 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

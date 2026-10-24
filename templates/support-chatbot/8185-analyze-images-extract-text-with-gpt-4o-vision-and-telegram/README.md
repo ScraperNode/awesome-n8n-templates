@@ -1,6 +1,6 @@
 # 💬 Analyze images & extract text with GPT-4o Vision and Telegram
 
-> ⚡ **1,106 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,416 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

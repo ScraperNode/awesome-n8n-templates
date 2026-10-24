@@ -1,6 +1,6 @@
 # 💬 Connect Retell Voice Agents to custom functions
 
-> ⚡ **3,455 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,920 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

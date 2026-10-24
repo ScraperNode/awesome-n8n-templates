@@ -1,6 +1,6 @@
 # 💬 Notify customers on WhatsApp when Stripe payment succeeds with MoltFlow
 
-> ⚡ **2 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **25 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ AI Timesheet Generator with Gmail, Calendar & GitHub to Google Sheets
 
-> ⚡ **21,900 views** · ⚡ [Personal Productivity](../)
+> ⚡ **22,640 views** · ⚡ [Personal Productivity](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

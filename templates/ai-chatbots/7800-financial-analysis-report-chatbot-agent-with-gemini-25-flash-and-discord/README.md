@@ -1,6 +1,6 @@
 # 🤖 Financial analysis report chatbot agent with Gemini 2.5 Flash and Discord
 
-> ⚡ **617 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **794 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

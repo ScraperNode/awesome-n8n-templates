@@ -1,6 +1,6 @@
 # 🎬 AI guest post generator with OpenAI & Google Sheets automation
 
-> ⚡ **642 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **949 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

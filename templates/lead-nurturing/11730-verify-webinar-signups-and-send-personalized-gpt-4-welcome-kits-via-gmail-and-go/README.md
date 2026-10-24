@@ -1,6 +1,6 @@
 # 💬 Verify webinar signups and send personalized GPT-4 welcome kits via Gmail and Google Sheets
 
-> ⚡ **4 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **56 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

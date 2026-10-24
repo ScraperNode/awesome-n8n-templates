@@ -1,6 +1,6 @@
 # 🎫 Effortless email management with AI-powered summarization & review
 
-> ⚡ **31,986 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **32,575 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

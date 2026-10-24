@@ -1,6 +1,6 @@
 # ⚙️ Expose TravisCI build operations to AI agents with MCP server
 
-> ⚡ **129 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **150 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

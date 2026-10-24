@@ -1,6 +1,6 @@
 # 🔍 Create a company policy chatbot with RAG, Pinecone vector database, and OpenAI
 
-> ⚡ **2,101 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **2,592 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

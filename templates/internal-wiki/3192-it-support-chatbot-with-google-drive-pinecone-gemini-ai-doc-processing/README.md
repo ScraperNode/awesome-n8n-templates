@@ -1,6 +1,6 @@
 # 📖 IT support chatbot with Google Drive, Pinecone & Gemini | AI doc processing
 
-> ⚡ **12,099 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **12,371 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

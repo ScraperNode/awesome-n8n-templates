@@ -1,6 +1,6 @@
 # 🎫 Push Dialpad call information to Syncro
 
-> ⚡ **1,188 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,311 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Daily Gemini-powered global trend analysis with GDELT, NewsAPI & Discord
 
-> ⚡ **444 views** · 📊 [Market Research & Insights](../)
+> ⚡ **564 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔒 Qualys scan Slack report subworkflow
 
-> ⚡ **1,255 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,244 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

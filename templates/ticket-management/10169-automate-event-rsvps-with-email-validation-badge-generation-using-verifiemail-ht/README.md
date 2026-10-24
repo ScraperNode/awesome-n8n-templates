@@ -1,6 +1,6 @@
 # 🎫 Automate event RSVPs with email validation & badge generation using VerifiEmail & HTMLCssToImage
 
-> ⚡ **90 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **113 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

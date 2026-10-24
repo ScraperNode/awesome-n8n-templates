@@ -1,6 +1,6 @@
 # 🔒 Track policy expiry dates and ownership with Google Sheets and Gmail notifications
 
-> ⚡ **60 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **74 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

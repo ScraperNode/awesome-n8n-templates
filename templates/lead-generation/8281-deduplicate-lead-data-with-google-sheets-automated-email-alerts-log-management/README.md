@@ -1,6 +1,6 @@
 # 🎣 Deduplicate lead data with Google Sheets: automated email alerts & log management
 
-> ⚡ **144 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **200 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

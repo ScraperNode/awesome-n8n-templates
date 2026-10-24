@@ -1,0 +1,383 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "name": "Extract invoice data from Gmail PDFs with Gemini and log to Google Sheets",
+  "nodes": [
+    {
+      "id": "3902d8b3-caf8-4b53-bd3f-c603961d20ba",
+      "name": "Watch Inbox for Invoice PDFs",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "simple": false,
+        "filters": {
+          "q": "has:attachment filename:pdf label:invoices",
+          "readStatus": "unread"
+        },
+        "options": {
+          "downloadAttachments": true,
+          "dataPropertyAttachmentsPrefixName": "attachment_"
+        },
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "6084d130-e891-488c-a7f6-d61b73722233",
+      "name": "Split PDF Attachments",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Fan out: one item per PDF attachment on each email.\nconst out = [];\n$input.all().forEach((item, idx) => {\n  const j = item.json;\n  const from = j.from?.value?.[0]?.address || j.from?.text || '';\n  for (const [key, file] of Object.entries(item.binary || {})) {\n    const name = (file.fileName || key).toLowerCase();\n    if (!(file.mimeType || '').includes('pdf') && !name.endsWith('.pdf')) continue;\n    out.push({\n      json: {\n        email_id: j.id,\n        email_subject: j.subject || '',\n        email_from: from,\n        email_date: j.date || '',\n        file_name: file.fileName || key,\n      },\n      binary: { data: file },\n      pairedItem: { item: idx },\n    });\n  }\n});\nreturn out;\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8f37cefc-0a22-4475-807c-4b42c01ee4f3",
+      "name": "Extract PDF Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "pdf",
+        "binaryPropertyName": "data"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "41338593-e001-46aa-b59b-eee9d717990a",
+      "name": "Keep Email Context",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "713a03fa-2ed7-4bdb-a6e2-d21e4bb9037a",
+              "name": "text",
+              "type": "string",
+              "value": "={{ ($json.text || '').slice(0, 30000) }}"
+            },
+            {
+              "id": "4bc18240-0ee8-48ed-aa02-8ccbbd04d93f",
+              "name": "email_subject",
+              "type": "string",
+              "value": "={{ $('Split PDF Attachments').item.json.email_subject }}"
+            },
+            {
+              "id": "cf925975-d32a-476f-94ef-b5387926a26e",
+              "name": "email_from",
+              "type": "string",
+              "value": "={{ $('Split PDF Attachments').item.json.email_from }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "5b96e030-6cef-481e-b706-48871ddc026c",
+      "name": "Extract Invoice Fields (Gemini)",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "maxTries": 3,
+      "position": [
+        880,
+        300
+      ],
+      "parameters": {
+        "text": "=Email subject: {{ $json.email_subject }}\nSender: {{ $json.email_from }}\n\nInvoice text:\n{{ $json.text }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an accounts-payable clerk. Extract invoice data from the raw text of a PDF invoice. Return only values that appear in the text. Use ISO dates (YYYY-MM-DD). Amounts are plain numbers without currency symbols or thousands separators. If a field is missing use an empty string (or 0 for numbers). Lower your confidence when the text is garbled, totals do not add up, or key fields are missing."
+            }
+          ]
+        },
+        "promptType": "define",
+        "hasOutputParser": true
+      },
+      "retryOnFail": true,
+      "typeVersion": 1.5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "758267ca-a87f-4160-b79b-3929429a40d0",
+      "name": "Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        820,
+        520
+      ],
+      "parameters": {
+        "options": {
+          "temperature": 0
+        },
+        "modelName": "models/gemini-2.5-flash"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1060f87f-4303-4cd5-86ad-9dcccdb49510",
+      "name": "Invoice JSON Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        1000,
+        520
+      ],
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"vendor_name\": {\n      \"type\": \"string\",\n      \"description\": \"Legal name of the company that issued the invoice\"\n    },\n    \"vendor_email\": {\n      \"type\": \"string\",\n      \"description\": \"Billing email of the vendor, empty string if absent\"\n    },\n    \"invoice_number\": {\n      \"type\": \"string\"\n    },\n    \"po_number\": {\n      \"type\": \"string\",\n      \"description\": \"Purchase order number referenced on the invoice, empty string if none\"\n    },\n    \"invoice_date\": {\n      \"type\": \"string\",\n      \"description\": \"ISO 8601 date YYYY-MM-DD\"\n    },\n    \"due_date\": {\n      \"type\": \"string\",\n      \"description\": \"ISO 8601 date YYYY-MM-DD, empty string if not stated\"\n    },\n    \"currency\": {\n      \"type\": \"string\",\n      \"description\": \"ISO 4217 code, e.g. USD\"\n    },\n    \"subtotal\": {\n      \"type\": \"number\"\n    },\n    \"tax\": {\n      \"type\": \"number\"\n    },\n    \"total\": {\n      \"type\": \"number\",\n      \"description\": \"Total amount due\"\n    },\n    \"line_items\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"description\": {\n            \"type\": \"string\"\n          },\n          \"quantity\": {\n            \"type\": \"number\"\n          },\n          \"unit_price\": {\n            \"type\": \"number\"\n          },\n          \"amount\": {\n            \"type\": \"number\"\n          }\n        }\n      }\n    },\n    \"confidence\": {\n      \"type\": \"number\",\n      \"description\": \"0 to 1, your confidence that every field above is correct\"\n    }\n  },\n  \"required\": [\n    \"vendor_name\",\n    \"invoice_number\",\n    \"invoice_date\",\n    \"currency\",\n    \"total\",\n    \"confidence\"\n  ]\n}"
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "49716627-88dc-43b8-985c-c8a5549dacea",
+      "name": "Normalize Invoice",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1140,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Clean the AI output into a flat, spreadsheet-safe row and flag anything a human should look at.\nconst src = $('Split PDF Attachments').item.json;\nconst o = $json.output || {};\nconst num = (v) => {\n  if (typeof v === 'number') return Math.round(v * 100) / 100;\n  const n = parseFloat(String(v ?? '').replace(/[^0-9.\\-]/g, ''));\n  return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;\n};\nconst isoDate = (v) => {\n  if (!v) return '';\n  const d = new Date(v);\n  return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);\n};\nconst clean = (s) => String(s ?? '').trim();\n\nlet minConfidence = 0.85;\ntry { minConfidence = Number($('Config').first().json.minConfidence ?? 0.85); } catch (e) { /* free version has no Config node */ }\n\nconst subtotal = num(o.subtotal), tax = num(o.tax), total = num(o.total);\nconst lineItems = Array.isArray(o.line_items) ? o.line_items : [];\nconst confidence = Math.max(0, Math.min(1, Number(o.confidence) || 0));\n\nconst notes = [];\nif (!clean(o.invoice_number)) notes.push('Missing invoice number');\nif (!total) notes.push('Missing total');\nif (subtotal && Math.abs(subtotal + tax - total) > 0.02) notes.push(`Math mismatch: ${subtotal} + ${tax} != ${total}`);\nif (confidence < minConfidence) notes.push(`Low AI confidence (${confidence})`);\n\nreturn {\n  json: {\n    processed_at: new Date().toISOString(),\n    email_id: src.email_id,\n    email_from: src.email_from,\n    email_subject: src.email_subject,\n    file_name: src.file_name,\n    vendor_name: clean(o.vendor_name),\n    vendor_email: clean(o.vendor_email),\n    invoice_number: clean(o.invoice_number),\n    po_number: clean(o.po_number),\n    invoice_date: isoDate(o.invoice_date),\n    due_date: isoDate(o.due_date),\n    currency: (clean(o.currency) || 'USD').toUpperCase().slice(0, 3),\n    subtotal,\n    tax,\n    total,\n    line_count: lineItems.length,\n    line_items_json: JSON.stringify(lineItems),\n    confidence,\n    status: notes.length ? 'needs_review' : 'extracted',\n    review_notes: notes.join('; '),\n  },\n};\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "42c4bff9-1f08-433b-bce8-8e4f488b9335",
+      "name": "Log Invoice to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "maxTries": 3,
+      "position": [
+        1360,
+        300
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": []
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Invoices"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REPLACE_WITH_YOUR_SPREADSHEET_ID"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.5,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "99b2b4ce-f6cf-4f5c-9140-444616927ba0",
+      "name": "Mark Email as Read",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1580,
+        300
+      ],
+      "parameters": {
+        "messageId": "={{ $('Normalize Invoice').item.json.email_id }}",
+        "operation": "markAsRead"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "7a94644d-2d3f-4079-bb69-9109269a6789",
+      "name": "Sticky Note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -560,
+        -40
+      ],
+      "parameters": {
+        "width": 500,
+        "height": 860,
+        "content": "## Extract invoice data from Gmail PDFs with Gemini and log to Google Sheets\n\n### Who it's for\nBookkeepers, finance ops and small-business owners who still retype vendor invoices from email into a spreadsheet.\n\n### How it works\n1. **Gmail Trigger** polls for unread emails labelled `invoices` that carry a PDF.\n2. **Split PDF Attachments** turns every PDF on the email into its own item, so multi-invoice emails work.\n3. **Extract PDF Text** reads the PDF's text layer.\n4. **Gemini + Structured Output Parser** returns vendor, invoice #, PO #, dates, currency, subtotal, tax, total, line items and a confidence score as strict JSON.\n5. **Normalize Invoice** cleans numbers and dates, checks that subtotal + tax = total, and flags low-confidence rows as `needs_review`.\n6. The row is appended to **Google Sheets** and the email is marked as read so it is never processed twice.\n\n### Set up (about 10 minutes)\n1. Create a Gmail label `invoices` and a filter that applies it to vendor bills.\n2. Make a Google Sheet with a tab named `Invoices` (row 1 headers are created on the first run). Paste its ID into **Log Invoice to Google Sheets**.\n3. Add credentials: Gmail OAuth2, Google Sheets OAuth2, Google Gemini (free API key from Google AI Studio).\n4. Send yourself a sample invoice and activate.\n\n### Requirements\nn8n (tested on 2.43), Gmail, Google Sheets, a Gemini API key. Scanned image-only PDFs need OCR first.\n\n### Customize\nEdit the JSON schema to capture extra fields (cost centre, GL code), or change the Gmail search query.\n\nNeed duplicate-invoice and PO-mismatch checks, Slack approve/reject buttons, QuickBooks bill creation, error alerts and overdue reminders? The Pro version adds all of it: https://mohabaha0.gumroad.com/l/pkhjip"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3c9529ad-e300-4917-aedf-6d164a4ce87d",
+      "name": "Sticky Note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 480,
+        "height": 340,
+        "content": "### 1. Catch the invoice\nPolls Gmail every minute for unread mail labelled `invoices` with a PDF, then fans out one item per PDF."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0963fead-a997-4608-b24b-3e9be5c26047",
+      "name": "Sticky Note 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        460,
+        160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 700,
+        "height": 480,
+        "content": "### 2. Read and understand it\nPulls the PDF text layer and asks Gemini for strict JSON that matches the schema. Temperature 0, 3 retries on rate limits."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9ad69346-2904-4d1c-91c2-41c9ecc9c962",
+      "name": "Sticky Note 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1180,
+        160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 700,
+        "height": 340,
+        "content": "### 3. Clean, log, close out\nValidates the math, flags low-confidence rows, appends to Sheets, and marks the email read."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Extract PDF Text": {
+      "main": [
+        [
+          {
+            "node": "Keep Email Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract Invoice Fields (Gemini)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Invoice": {
+      "main": [
+        [
+          {
+            "node": "Log Invoice to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep Email Context": {
+      "main": [
+        [
+          {
+            "node": "Extract Invoice Fields (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice JSON Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Extract Invoice Fields (Gemini)",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split PDF Attachments": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Invoice to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Mark Email as Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Watch Inbox for Invoice PDFs": {
+      "main": [
+        [
+          {
+            "node": "Split PDF Attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Invoice Fields (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Normalize Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

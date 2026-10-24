@@ -1,6 +1,6 @@
 # 💬 WhatsApp AI customer service bot with GPT-4o-mini and Gmail alerts
 
-> ⚡ **1,994 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,117 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

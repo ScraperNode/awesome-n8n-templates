@@ -1,6 +1,6 @@
 # 📋 Automate change request workflow: Monday.com to Jira with Slack & Sheets
 
-> ⚡ **51 views** · 📋 [Project Management](../)
+> ⚡ **106 views** · 📋 [Project Management](../)
 
 ## Description
 

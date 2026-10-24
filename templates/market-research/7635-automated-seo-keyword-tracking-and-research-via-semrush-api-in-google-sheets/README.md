@@ -1,6 +1,6 @@
 # 📊 Automated SEO Keyword Tracking and Research via Semrush API in Google Sheets
 
-> ⚡ **1,032 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,331 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

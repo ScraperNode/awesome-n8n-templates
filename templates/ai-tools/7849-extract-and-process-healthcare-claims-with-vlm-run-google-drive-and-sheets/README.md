@@ -1,6 +1,6 @@
 # 🎯 Extract and process healthcare claims with VLM Run, Google Drive and Sheets
 
-> ⚡ **694 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **931 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

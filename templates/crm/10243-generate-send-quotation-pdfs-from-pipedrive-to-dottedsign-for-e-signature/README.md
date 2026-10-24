@@ -1,6 +1,6 @@
 # 🤝 Generate & send quotation PDFs from Pipedrive to DottedSign for e-signature
 
-> ⚡ **382 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **593 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

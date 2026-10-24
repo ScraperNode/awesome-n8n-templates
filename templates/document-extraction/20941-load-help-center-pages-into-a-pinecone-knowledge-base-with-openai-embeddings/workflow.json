@@ -1,0 +1,592 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Load help pages into a Pinecone knowledge base with OpenAI embeddings",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "run",
+      "name": "Run it now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "cfg2",
+      "name": "config",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// SUPPORT EMAIL RAG RESPONDER \u2014 CONFIG\n// Everything you might want to change lives in this one node. Nothing else in either\n// workflow needs editing.\n//\n// The same config node ships in BOTH workflows (\"01 answer support email\" and\n// \"02 load knowledge base\"). build.js regenerates both from this one file, and validate.js\n// fails if they drift apart, so you never paste it between them by hand.\n//\n// No API key is written here. OpenAI, Pinecone and Gmail are connected as n8n credentials on\n// the nodes named [cred] ..., so the exported JSON never carries a secret. The switches below\n// only say whether those credentials are in place.\n//\n// With everything below left as shipped, both workflows run end to end on the built-in demo\n// emails and demo knowledge base, and nothing is sent, embedded or written anywhere.\n\n// ---------------------------------------------------------------- Who is answering\nconst COMPANY_NAME = 'Demo Agency';\n// How every automated reply is signed.\nconst SIGNATURE    = 'The Demo Agency support team';\n// Where escalations go: the person or shared inbox that picks up what the workflow will not\n// answer on its own. Blank -> escalations are built and shown, never sent.\nconst SUPPORT_TEAM_EMAIL = '';\n// Your own sending addresses. Mail from these is never answered, so the workflow cannot reply\n// to its own replies.\nconst OWN_ADDRESSES = [];\n\n// ---------------------------------------------------------------- OpenAI\n// true once an OpenAI credential is attached to the three [cred] OpenAI nodes in 01 and the\n// one in 02. false -> classification runs on the keyword rules below, and replies are written\n// from the matched knowledge with a fixed template. The run still completes.\nconst USE_OPENAI         = false;\nconst OPENAI_CHAT_MODEL  = 'gpt-4o-mini';\nconst OPENAI_EMBED_MODEL = 'text-embedding-3-small';\nconst EMBED_DIMENSIONS   = 1536;     // must match the Pinecone index\n\n// ---------------------------------------------------------------- Pinecone\n// The index host from the Pinecone console, e.g. https://support-kb-abc123.svc.us-east-1.pinecone.io\n// The API key goes in an n8n \"Header Auth\" credential (name: Api-Key) on the [cred] Pinecone\n// nodes. Blank host -> the built-in demo knowledge base below is searched instead.\nconst PINECONE_INDEX_HOST = '';\nconst PINECONE_NAMESPACE  = 'support-kb';\nconst TOP_K               = 4;       // how many knowledge chunks are retrieved per email\n\n// ---------------------------------------------------------------- The two gates\n// The workflow only answers when it is sure on BOTH counts. Anything below either floor goes\n// to a person, never to a guess.\n//\n// Classification: how confident the classifier must be that this is (or is not) a support\n// request before acting on it.\nconst MIN_CLASSIFY_CONFIDENCE = 0.6;\n// Knowledge: the best retrieved chunk must score at least this. Pinecone returns cosine\n// similarity (0..1); the demo knowledge base uses a simpler word-overlap score, so it has its\n// own floor.\nconst MIN_MATCH_SCORE      = 0.75;\nconst DEMO_MIN_MATCH_SCORE = 0.3;\n\n// Keyword rules. They always run: with USE_OPENAI = false they ARE the classifier, and with it\n// on they are the fallback when the model call fails or its answer does not parse.\nconst SUPPORT_WORDS = ['help', 'issue', 'problem', 'error', 'not working', 'broken', \"can't\", 'cannot',\n  'unable', 'how do i', 'how can i', 'password', 'login', 'log in', 'access', 'invoice', 'billing',\n  'payment', 'report', 'dashboard', 'account', 'question', 'support', 'reset', 'update my', 'change my'];\nconst NOT_SUPPORT_WORDS = ['partnership', 'guest post', 'backlink', 'seo services', 'our services',\n  'sponsorship', 'collaboration', 'newsletter', 'unsubscribe', 'webinar', 'special offer',\n  'limited time', 'book a demo with us', 'we help agencies'];\n// Intents that always go to a person, however good the knowledge match. The email most likely\n// to be made worse by an automated answer is the angry one.\nconst HANDOFF_WORDS = ['refund', 'chargeback', 'complaint', 'unacceptable', 'lawyer', 'legal',\n  'cancel my contract', 'cancel our contract', 'terminate', 'third time', 'furious', 'disappointed'];\nconst HANDOFF_INTENTS = ['complaint', 'refund', 'legal', 'cancellation'];\n\n// ---------------------------------------------------------------- Knowledge base (workflow 02)\n// Public URLs of help pages or docs to load into Pinecone. Blank -> the demo knowledge base\n// below is chunked and shown instead.\nconst DOC_URLS      = [];\nconst CHUNK_WORDS   = 160;\nconst CHUNK_OVERLAP = 30;\n\n// ---------------------------------------------------------------- Safety switch\n// TEST_RUN = true and TEST_EMAIL blank -> PREVIEW. Every reply and escalation is built in full\n// and shown on a STOP node; nothing is sent, nothing is upserted.\n// TEST_RUN = true and TEST_EMAIL set  -> TEST. Replies and escalations are sent, but all of them\n// to TEST_EMAIL, at most TEST_CAP per run, marked [TEST]. Knowledge can be upserted.\n// TEST_RUN = false                     -> LIVE. Replies go to the customer, in their thread.\nconst TEST_RUN   = true;\nconst TEST_EMAIL = '';\nconst TEST_CAP   = 3;\n// Hard ceiling on customer replies in one run, enforced in code.\nconst REPLY_CAP_PER_RUN = 20;\n\nconst MODE = TEST_RUN !== true ? 'live' : (TEST_EMAIL.trim() !== '' ? 'test' : 'preview');\n\n// ---------------------------------------------------------------- Demo data\n// Invented. Used only when nothing is connected, so the whole run can be watched first.\nconst DEMO_KNOWLEDGE = [\n  { id: 'portal-access', title: 'Logging in to the client portal',\n    text: 'To reset your client portal password, open the portal login page and click \"Forgot password\". '\n      + 'Enter the email address your account was set up with and we send a reset link that is valid for 60 minutes. '\n      + 'If the link has expired, request a new one. If you no longer have access to that email address, reply to your '\n      + 'account manager and we will move the login to a new address after confirming it with the account owner.' },\n  { id: 'invoices', title: 'Invoices and billing',\n    text: 'Invoices are issued on the 1st of each month and emailed to the billing contact on file. Payment is due '\n      + 'within 14 days by bank transfer or card. You can download past invoices from Billing in the client portal. '\n      + 'To change the billing contact or the company details printed on the invoice, reply with the new details '\n      + 'and they will appear from the next invoice.' },\n  { id: 'reporting', title: 'Monthly reports',\n    text: 'Performance reports are published in the client portal by the 5th working day of each month and a link is '\n      + 'emailed to the report contacts on your account. Live dashboards update daily. To add someone to the report '\n      + 'emails, reply with their name and email address.' },\n  { id: 'campaign-changes', title: 'Requesting campaign changes',\n    text: 'Budget changes, pausing a campaign and new creative requests are handled within two working days of the '\n      + 'request. Urgent pauses are actioned the same working day if requested before 3pm. Send change requests to '\n      + 'support with the campaign name and the change you need.' },\n  { id: 'onboarding', title: 'Onboarding a new account',\n    text: 'New accounts need admin access to the ad accounts, analytics and the website tag manager. Your onboarding '\n      + 'checklist in the client portal lists each access request, and the first campaigns go live about ten working '\n      + 'days after all access is granted.' }\n];\n\nconst DEMO_EMAILS = [\n  { from: 'Priya Shah <user@example.com>', subject: 'Locked out of the portal',\n    text: \"Hi, I can't log in to the client portal. How do I reset my password?\",\n    id: 'demo-msg-001', threadId: 'demo-thread-001', messageId: '<user@example.com>' },\n  { from: 'Tom Reid <user@example.com>', subject: 'Re: March invoice',\n    text: 'Thanks. Can you change the billing contact on our invoice to user@example.com please?',\n    id: 'demo-msg-002', threadId: 'demo-thread-777', messageId: '<user@example.com>',\n    inReplyTo: '<user@example.com>' },\n  { from: 'Ana Lopez <user@example.com>', subject: 'TikTok Shop',\n    text: 'Hello, we have a problem connecting our TikTok Shop catalogue to the product feed. Can you help?',\n    id: 'demo-msg-003', threadId: 'demo-thread-003', messageId: '<user@example.com>' },\n  { from: 'Growth Partners <hello@example.com>', subject: 'Partnership opportunity',\n    text: 'We help agencies scale with white-label SEO services. Interested in a partnership? Book a demo with us.',\n    id: 'demo-msg-004', threadId: 'demo-thread-004', messageId: '<user@example.com>' },\n  { from: 'Mark Evans <user@example.com>', subject: 'Report late AGAIN',\n    text: 'This is the third time our monthly report is late. Frankly unacceptable, and I want a refund for this month.',\n    id: 'demo-msg-005', threadId: 'demo-thread-005', messageId: '<user@example.com>' },\n  { from: '', subject: '', text: '', id: 'demo-msg-006', threadId: 'demo-thread-006', messageId: '' }\n];\n\nconst SETTINGS = {\n  company_name:       COMPANY_NAME.trim(),\n  signature:          SIGNATURE.trim(),\n  support_team_email: SUPPORT_TEAM_EMAIL.trim(),\n  own_addresses:      OWN_ADDRESSES.map((a) => String(a).trim().toLowerCase()).filter(Boolean),\n\n  openai_chat_model:  OPENAI_CHAT_MODEL.trim(),\n  openai_embed_model: OPENAI_EMBED_MODEL.trim(),\n  embed_dimensions:   Number(EMBED_DIMENSIONS) || 1536,\n\n  pinecone_index_host: PINECONE_INDEX_HOST.trim().replace(/\\/+$/, ''),\n  pinecone_namespace:  PINECONE_NAMESPACE.trim(),\n  top_k:               Number(TOP_K) || 4,\n\n  min_classify_confidence: Number(MIN_CLASSIFY_CONFIDENCE) || 0.6,\n  min_match_score:         Number(MIN_MATCH_SCORE) || 0.75,\n  demo_min_match_score:    Number(DEMO_MIN_MATCH_SCORE) || 0.3,\n\n  support_words:     SUPPORT_WORDS,\n  not_support_words: NOT_SUPPORT_WORDS,\n  handoff_words:     HANDOFF_WORDS,\n  handoff_intents:   HANDOFF_INTENTS,\n\n  doc_urls:      DOC_URLS.map((u) => String(u).trim()).filter(Boolean),\n  chunk_words:   Number(CHUNK_WORDS) || 160,\n  chunk_overlap: Number(CHUNK_OVERLAP) || 0,\n\n  test_email:        TEST_EMAIL.trim(),\n  test_cap:          Number(TEST_CAP) || 3,\n  reply_cap_per_run: Number(REPLY_CAP_PER_RUN) || 20,\n  mode:              MODE,\n\n  demo_knowledge: DEMO_KNOWLEDGE,\n  demo_emails:    DEMO_EMAILS,\n\n  // derived flags \u2014 the gates read these, never the raw constants\n  openai_enabled:    USE_OPENAI === true,\n  retrieval_enabled: USE_OPENAI === true && PINECONE_INDEX_HOST.trim() !== '',\n  docs_enabled:      DOC_URLS.length > 0,\n  // Replies are only sent outside preview. In test mode they are all redirected to TEST_EMAIL.\n  send_enabled:      MODE !== 'preview',\n  // An escalation needs somewhere to go: the team inbox live, TEST_EMAIL in test.\n  alert_enabled:     MODE === 'test' || (MODE === 'live' && SUPPORT_TEAM_EMAIL.trim() !== ''),\n  // Loading knowledge changes the index every reply is answered from, so preview never does it.\n  upsert_enabled:    USE_OPENAI === true && PINECONE_INDEX_HOST.trim() !== '' && MODE !== 'preview'\n};\n\n// config passes the incoming payload through untouched under `incoming`, so whichever\n// trigger fired, the next node reads the payload from the same place. It runs once per item.\nconst incoming = $input.all().length ? $input.all().map((i) => i.json || {}) : [{}];\nreturn incoming.map((payload) => ({ json: Object.assign({}, SETTINGS, { incoming: payload }) }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "docs-on",
+      "name": "document list configured?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "docs-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.docs_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "list",
+      "name": "list the documents",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        840,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// One item per page in DOC_URLS, so each is fetched (and can fail) on its own.\nconst cfg = $('config').first().json;\nreturn cfg.doc_urls.map((url, n) => ({ json: {\n  url,\n  doc_id: url.replace(/^https?:\\/\\//, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase().slice(0, 60) || 'doc-' + n\n} }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "fetch",
+      "name": "Fetch the document",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Public pages only. A page that still fails after the retries is listed as skipped, not silently left out.",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 20000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "doc-text",
+      "name": "read the document text",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Turns each fetched page into plain text and a title. A page that failed to fetch after the\n// node's retries, or came back with almost no text, is kept with the reason so the run summary\n// says which pages were not loaded rather than silently indexing fewer.\nconst strip = (html) => String(html || '')\n  .replace(/<(head|script|style|nav|footer|header)[\\s\\S]*?<\\/\\1>/gi, ' ')\n  .replace(/<br\\s*\\/?>|<\\/(p|div|li|h\\d)>/gi, '\\n').replace(/<[^>]+>/g, ' ')\n  .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;|&rsquo;/g, \"'\").replace(/&quot;/g, '\"')\n  .replace(/[ \\t]+/g, ' ').replace(/\\n\\s*\\n+/g, '\\n\\n').trim();\n\nreturn $input.all().map((item, idx) => {\n  const doc = $('list the documents').itemMatching(idx).json;\n  const res = item.json || {};\n  if (res.error) {\n    return { json: Object.assign({}, doc, { ok: false, problem: 'fetch failed: ' + String(res.error.message || res.error).slice(0, 160) }) };\n  }\n  const raw = String(res.data || '');\n  const title = ((raw.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i) || [])[1] || doc.doc_id).trim();\n  const text = /<[a-z][\\s\\S]*>/i.test(raw) ? strip(raw) : raw.trim();\n  if (text.split(/\\s+/).length < 20) return { json: Object.assign({}, doc, { ok: false, problem: 'almost no text on the page' }) };\n  return { json: Object.assign({}, doc, { ok: true, title, text, source: doc.url }) };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "demo-kb2",
+      "name": "use the demo knowledge base",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        840,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// No DOC_URLS: the demo knowledge base from config stands in, as documents in the same shape\n// a fetched page produces.\nconst cfg = $('config').first().json;\nreturn cfg.demo_knowledge.map((d) => ({ json: {\n  doc_id: d.id, title: d.title, text: d.text, source: 'demo knowledge base', ok: true\n} }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "chunk",
+      "name": "chunk the documents",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1680,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Splits every document into overlapping windows of CHUNK_WORDS words. Overlap keeps a\n// sentence that straddles a boundary findable from either side. Each chunk id is\n// <doc_id>#<n>, so loading the same page again overwrites its chunks instead of duplicating\n// them. The text, title and source travel as metadata: workflow 01 writes replies from them.\nconst cfg = $('config').first().json;\nconst size = Math.max(40, cfg.chunk_words);\nconst step = Math.max(10, size - Math.min(cfg.chunk_overlap, size - 10));\n\nconst docs = $input.all().map((i) => i.json);\nconst skipped = docs.filter((d) => !d.ok).map((d) => ({ doc: d.url || d.doc_id, problem: d.problem }));\nconst chunks = [];\nfor (const d of docs.filter((x) => x.ok)) {\n  const words = d.text.split(/\\s+/).filter(Boolean);\n  for (let start = 0, n = 0; start < words.length; start += step, n++) {\n    chunks.push({ id: d.doc_id + '#' + n, doc_id: d.doc_id, title: d.title, source: d.source, chunk: n,\n      text: words.slice(start, start + size).join(' ') });\n    if (start + size >= words.length) break;\n  }\n}\nreturn [{ json: { documents: docs.length - skipped.length, skipped, chunk_count: chunks.length, chunks } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "load-on",
+      "name": "loading on?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1960,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "load-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.upsert_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "preview2",
+      "name": "STOP: preview - vectors not upserted",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2240,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// Preview, or OpenAI / Pinecone not configured: every chunk is shown exactly as it would be\n// embedded and upserted (id, metadata, text), with the vector itself left out. Nothing is\n// sent to OpenAI and nothing is written to Pinecone.\nconst cfg = $('config').first().json;\nconst r = $input.first().json;\nconst why = !cfg.retrieval_enabled ? 'OpenAI and Pinecone not configured' : 'preview mode';\nreturn [{ json: {\n  outcome: why + ': ' + r.chunk_count + ' chunks from ' + r.documents + ' documents not upserted',\n  skipped_documents: r.skipped,\n  would_upsert: r.chunks.map((c) => ({ id: c.id, namespace: cfg.pinecone_namespace,\n    values: '[' + cfg.embed_dimensions + ' floats from ' + cfg.openai_embed_model + ']',\n    metadata: { title: c.title, source: c.source, chunk: c.chunk, text: c.text } }))\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "batches",
+      "name": "build the embedding batches",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// OpenAI takes many inputs per embeddings call and Pinecone takes up to 1,000 vectors per\n// upsert. Batches of 96 keep both calls small enough to retry cheaply when one fails.\nconst cfg = $('config').first().json;\nconst { chunks } = $input.first().json;\nconst out = [];\nfor (let i = 0; i < chunks.length; i += 96) {\n  const batch = chunks.slice(i, i + 96);\n  out.push({ json: { batch_no: out.length + 1, chunks: batch,\n    _body: { model: cfg.openai_embed_model, dimensions: cfg.embed_dimensions,\n      input: batch.map((c) => c.title + '\\n\\n' + c.text) } } });\n}\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "emb2",
+      "name": "[cred] OpenAI - embed the chunks",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "The same model and dimensions workflow 01 embeds each question with.",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        2520,
+        0
+      ],
+      "parameters": {
+        "url": "https://api.openai.com/v1/embeddings",
+        "method": "POST",
+        "options": {
+          "timeout": 60000
+        },
+        "jsonBody": "={{ JSON.stringify($json._body) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "upsert-req",
+      "name": "build the Pinecone upsert",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2800,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Pairs each embeddings response with its batch of chunks and builds the Pinecone upsert:\n// one vector per chunk, with the text, title and source as metadata. A batch whose embedding\n// failed after the node's retries is marked and not upserted.\nconst cfg = $('config').first().json;\nreturn $input.all().map((item, idx) => {\n  const batch = $('build the embedding batches').itemMatching(idx).json;\n  const res = item.json || {};\n  const data = Array.isArray(res.data) ? res.data : [];\n  if (res.error || data.length !== batch.chunks.length) {\n    return { json: { batch_no: batch.batch_no, embedded: false, chunk_count: batch.chunks.length,\n      problem: res.error ? String(res.error.message || res.error).slice(0, 200)\n        : 'got ' + data.length + ' embeddings for ' + batch.chunks.length + ' chunks' } };\n  }\n  const vectors = batch.chunks.map((c, n) => ({\n    id: c.id,\n    values: data[n].embedding,\n    metadata: { title: c.title, text: c.text, source: c.source, doc_id: c.doc_id, chunk: c.chunk }\n  }));\n  return { json: { batch_no: batch.batch_no, embedded: true, chunk_count: vectors.length,\n    _body: { vectors, namespace: cfg.pinecone_namespace } } };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "batch-ok",
+      "name": "batch embedded?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "batch-ok-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.embedded }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "emb-fail",
+      "name": "STOP: embedding failed",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3360,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// A batch OpenAI would not embed after its retries. Its chunks were not upserted; the rest\n// of the run carried on. Chunk ids are stable, so running the workflow again simply retries.\nreturn $input.all().map((i) => ({ json: {\n  outcome: 'batch ' + i.json.batch_no + ' not embedded: ' + i.json.problem,\n  chunks_not_loaded: i.json.chunk_count\n} }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "upsert",
+      "name": "[cred] Pinecone - upsert the vectors",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "Chunk ids are stable, so loading the same page again overwrites its chunks rather than duplicating them.",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        3360,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $('config').first().json.pinecone_index_host + '/vectors/upsert' }}",
+        "method": "POST",
+        "options": {
+          "timeout": 30000
+        },
+        "jsonBody": "={{ JSON.stringify($json._body) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Pinecone-API-Version",
+              "value": "2025-01"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "loaded",
+      "name": "STOP: knowledge base loaded",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3640,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Pinecone accepted the batch. `upsertedCount` is Pinecone's own count, set beside how many\n// were sent, so a partial write is visible.\nreturn $input.all().map((i, idx) => {\n  const sent = $('build the Pinecone upsert').itemMatching(idx).json;\n  return { json: {\n    outcome: 'batch ' + sent.batch_no + ' loaded',\n    sent: sent.chunk_count,\n    upserted: i.json.upsertedCount ?? '(not reported)'\n  } };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "pc-refused",
+      "name": "STOP: Pinecone refused the upsert",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3640,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// Pinecone refused a batch after the node's retries: usually a wrong index host, a dimension\n// mismatch between EMBED_DIMENSIONS and the index, or a bad key. Pinecone's error is kept.\nreturn $input.all().map((i) => ({ json: {\n  outcome: 'Pinecone refused the upsert',\n  error: (i.json.error && (i.json.error.message || i.json.error)) || i.json.message || 'unknown error'\n} }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "sticky-00",
+      "name": "Note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -1010
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 760,
+        "height": 730,
+        "content": "## Load help pages into a Pinecone knowledge base with OpenAI embeddings\n\n**Who's it for**\nTeams running a retrieval-based support or chat workflow who need their help pages in Pinecone, reloadable whenever the content changes.\n\n**How it works**\nEach public URL in `DOC_URLS` is fetched on its own and stripped to plain text; a page that fails or comes back empty is listed as skipped. The text is split into overlapping chunks with stable ids, so reloading a page overwrites its chunks rather than duplicating them. Chunks are embedded with OpenAI in batches of 96 and upserted to Pinecone with the text, title and source as metadata. A batch that fails is reported and the rest still load.\n\n**How to set up**\n1. Run **Run it now** first: the sample articles are chunked and shown, nothing is embedded.\n2. Create a Pinecone index with 1536 dimensions and cosine metric, and put its host in `PINECONE_INDEX_HOST`.\n3. List your pages in `DOC_URLS`, attach OpenAI and a Pinecone Header Auth credential (`Api-Key`), set `USE_OPENAI = true`.\n4. Set `TEST_EMAIL` or `TEST_RUN = false`: loading is skipped in preview.\n\n**Requirements**\nAn OpenAI API key, a Pinecone index, and help pages reachable at public URLs.\n\n**How to customize**\n`CHUNK_WORDS` and `CHUNK_OVERLAP` set the chunk size, `OPENAI_EMBED_MODEL` and `EMBED_DIMENSIONS` the embedding, and `PINECONE_NAMESPACE` where the vectors go."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-01",
+      "name": "Note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        280,
+        -220
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1600,
+        "height": 180,
+        "content": "### 1. Read the pages and chunk them\n\n`Fetch the document` runs once per URL with retries, so one broken page does not stop the rest; `read the document text` lists it as skipped with the reason.\n\n`chunk the documents` splits the text into overlapping windows of `CHUNK_WORDS`, each with a stable `<doc>#<n>` id."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-02",
+      "name": "Note 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1960,
+        330
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1880,
+        "height": 202,
+        "content": "### 2. Embed and upsert\n\n`loading on?` keeps preview runs read-only and shows every chunk on `STOP: preview - vectors not upserted`.\n\n`[cred] OpenAI - embed the chunks` embeds each batch of 96, and `[cred] Pinecone - upsert the vectors` writes them with the text as metadata. A batch that fails lands on a named STOP with the API's error, and `STOP: knowledge base loaded` reports Pinecone's own count."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "config": {
+      "main": [
+        [
+          {
+            "node": "document list configured?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run it now": {
+      "main": [
+        [
+          {
+            "node": "config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loading on?": {
+      "main": [
+        [
+          {
+            "node": "build the embedding batches",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: preview - vectors not upserted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "batch embedded?": {
+      "main": [
+        [
+          {
+            "node": "[cred] Pinecone - upsert the vectors",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: embedding failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch the document": {
+      "main": [
+        [
+          {
+            "node": "read the document text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "list the documents": {
+      "main": [
+        [
+          {
+            "node": "Fetch the document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chunk the documents": {
+      "main": [
+        [
+          {
+            "node": "loading on?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read the document text": {
+      "main": [
+        [
+          {
+            "node": "chunk the documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "build the Pinecone upsert": {
+      "main": [
+        [
+          {
+            "node": "batch embedded?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "document list configured?": {
+      "main": [
+        [
+          {
+            "node": "list the documents",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "use the demo knowledge base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "build the embedding batches": {
+      "main": [
+        [
+          {
+            "node": "[cred] OpenAI - embed the chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "use the demo knowledge base": {
+      "main": [
+        [
+          {
+            "node": "chunk the documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] OpenAI - embed the chunks": {
+      "main": [
+        [
+          {
+            "node": "build the Pinecone upsert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Pinecone - upsert the vectors": {
+      "main": [
+        [
+          {
+            "node": "STOP: knowledge base loaded",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: Pinecone refused the upsert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

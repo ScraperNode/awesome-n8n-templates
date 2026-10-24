@@ -1,6 +1,6 @@
 # 🔬 Automate commercial insurance submissions with Google Suite, PDF & email
 
-> ⚡ **313 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **415 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

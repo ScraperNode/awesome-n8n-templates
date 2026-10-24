@@ -1,6 +1,6 @@
 # ⚡ AI personal assistant with GPT-4o, RAG & voice for WhatsApp using Supabase
 
-> ⚡ **4,009 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,300 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

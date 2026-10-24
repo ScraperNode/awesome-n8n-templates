@@ -1,6 +1,6 @@
 # 📁 Upload & categorize files with Supabase Storage and secure URL generation
 
-> ⚡ **2,596 views** · 📁 [File Management](../)
+> ⚡ **2,772 views** · 📁 [File Management](../)
 
 ## Description
 

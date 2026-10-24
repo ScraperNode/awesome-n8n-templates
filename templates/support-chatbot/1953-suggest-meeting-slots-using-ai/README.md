@@ -1,6 +1,6 @@
 # 💬 Suggest meeting slots using AI
 
-> ⚡ **100,789 views** · 💬 [Support Chatbots](../)
+> ⚡ **109,066 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

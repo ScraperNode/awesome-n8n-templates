@@ -1,6 +1,6 @@
 # ⚡ Chinese translator via Line x OpenRouter (Text & Image)
 
-> ⚡ **1,085 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,117 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

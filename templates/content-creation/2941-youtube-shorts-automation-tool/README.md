@@ -1,6 +1,6 @@
 # 🎬 🎬 YouTube shorts automation tool 🚀
 
-> ⚡ **20,353 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **23,300 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

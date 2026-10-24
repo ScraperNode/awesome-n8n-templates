@@ -1,6 +1,6 @@
 # 🎣 Score and enrich inbound leads with Lusha, Slack, and HubSpot
 
-> ⚡ **22 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **66 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

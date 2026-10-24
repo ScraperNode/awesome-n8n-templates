@@ -1,6 +1,6 @@
 # 🔬 Reconcile rent payments with local Excel spreadsheet and OpenAI
 
-> ⚡ **8,005 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **8,090 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

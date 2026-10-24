@@ -1,6 +1,6 @@
 # ⚡ Extract and log data to Airtable with Google Gemini, ILovePDF, and Google Drive
 
-> ⚡ **197 views** · ⚡ [Personal Productivity](../)
+> ⚡ **234 views** · ⚡ [Personal Productivity](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >

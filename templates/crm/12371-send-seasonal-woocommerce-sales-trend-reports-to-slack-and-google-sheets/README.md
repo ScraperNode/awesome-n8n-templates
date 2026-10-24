@@ -1,6 +1,6 @@
 # 🤝 Send seasonal WooCommerce sales trend reports to Slack and Google Sheets
 
-> ⚡ **71 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **99 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

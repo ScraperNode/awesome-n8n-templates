@@ -1,6 +1,6 @@
 # 🔬 Automated tax filing with multi-platform revenue analysis using GPT-4
 
-> ⚡ **85 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **149 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

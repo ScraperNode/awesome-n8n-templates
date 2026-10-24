@@ -1,6 +1,6 @@
 # 📋 Trello task management with Telegram notifications and Supabase database
 
-> ⚡ **433 views** · 📋 [Project Management](../)
+> ⚡ **504 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Auto-summarize Zoom recordings with GPT-4 → Slack & email
 
-> ⚡ **366 views** · 💬 [Support Chatbots](../)
+> ⚡ **429 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 Interactive knowledge base chat with Supabase RAG using AI 📚💬
 
-> ⚡ **5,388 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **5,547 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

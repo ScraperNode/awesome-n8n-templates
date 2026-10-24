@@ -1,6 +1,6 @@
 # 📋 Automatic Trello board cleanup by removing cards with specific labels
 
-> ⚡ **229 views** · 📋 [Project Management](../)
+> ⚡ **283 views** · 📋 [Project Management](../)
 
 ## Description
 

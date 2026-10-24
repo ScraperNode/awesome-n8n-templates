@@ -1,6 +1,6 @@
 # ⚡ Parse natural language dates with OpenAI GPT-4o for smart scheduling
 
-> ⚡ **691 views** · ⚡ [Personal Productivity](../)
+> ⚡ **805 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

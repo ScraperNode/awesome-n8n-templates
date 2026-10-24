@@ -1,6 +1,6 @@
 # 🔬 Translate cocktail instructions using DeepL
 
-> ⚡ **1,425 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,439 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

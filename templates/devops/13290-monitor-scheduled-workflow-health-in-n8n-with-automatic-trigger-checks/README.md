@@ -1,6 +1,6 @@
 # ⚙️ Monitor scheduled workflow health in n8n with automatic trigger checks
 
-> ⚡ **72 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **287 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

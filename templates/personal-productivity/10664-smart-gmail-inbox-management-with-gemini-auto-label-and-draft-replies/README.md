@@ -1,6 +1,6 @@
 # ⚡ Smart Gmail inbox management with Gemini: Auto-label and draft replies
 
-> ⚡ **778 views** · ⚡ [Personal Productivity](../)
+> ⚡ **908 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

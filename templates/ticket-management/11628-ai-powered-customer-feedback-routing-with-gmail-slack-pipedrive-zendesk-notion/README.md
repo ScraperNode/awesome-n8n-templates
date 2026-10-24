@@ -1,6 +1,6 @@
 # 🎫 AI-powered customer feedback routing with Gmail, Slack, Pipedrive, Zendesk & Notion
 
-> ⚡ **37 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **109 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

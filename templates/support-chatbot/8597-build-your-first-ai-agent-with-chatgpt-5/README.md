@@ -1,6 +1,6 @@
 # 💬 Build your first AI agent with ChatGPT-5
 
-> ⚡ **14,530 views** · 💬 [Support Chatbots](../)
+> ⚡ **18,084 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

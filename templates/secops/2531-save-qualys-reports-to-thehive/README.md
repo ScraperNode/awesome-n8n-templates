@@ -1,6 +1,6 @@
 # 🔒 Save Qualys reports to TheHive
 
-> ⚡ **1,182 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,231 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

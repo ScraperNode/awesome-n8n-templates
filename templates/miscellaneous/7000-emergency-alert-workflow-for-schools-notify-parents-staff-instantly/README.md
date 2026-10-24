@@ -1,6 +1,6 @@
 # 🔧 Emergency alert workflow for schools – notify parents & staff instantly
 
-> ⚡ **266 views** · 🔧 [Miscellaneous](../)
+> ⚡ **340 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

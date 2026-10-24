@@ -1,6 +1,6 @@
 # ⚙️ Send a message on Mattermost when a workflow is updated
 
-> ⚡ **1,572 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,649 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 AI-Powered Lead Qualification & Routing with OpenAI, Slack, and Airtable
 
-> ⚡ **406 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **921 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

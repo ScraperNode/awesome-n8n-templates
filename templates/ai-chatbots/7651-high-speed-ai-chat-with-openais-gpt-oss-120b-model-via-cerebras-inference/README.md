@@ -1,6 +1,6 @@
 # 🤖 High-Speed AI Chat with OpenAI's gpt-oss-120B Model via Cerebras Inference
 
-> ⚡ **712 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **829 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

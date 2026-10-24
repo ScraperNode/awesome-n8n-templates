@@ -1,6 +1,6 @@
 # 💬 Telegram AI bot with LangChain nodes
 
-> ⚡ **72,620 views** · 💬 [Support Chatbots](../)
+> ⚡ **75,330 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

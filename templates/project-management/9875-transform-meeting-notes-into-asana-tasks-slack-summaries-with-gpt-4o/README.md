@@ -1,6 +1,6 @@
 # 📋 Transform meeting notes into Asana tasks & Slack summaries with GPT-4o
 
-> ⚡ **475 views** · 📋 [Project Management](../)
+> ⚡ **535 views** · 📋 [Project Management](../)
 
 ## Description
 

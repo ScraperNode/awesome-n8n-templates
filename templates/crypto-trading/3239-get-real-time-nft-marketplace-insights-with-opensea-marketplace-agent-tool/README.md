@@ -1,6 +1,6 @@
 # 📈 Get real-time NFT Marketplace insights with OpenSea Marketplace Agent Tool
 
-> ⚡ **1,224 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,299 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

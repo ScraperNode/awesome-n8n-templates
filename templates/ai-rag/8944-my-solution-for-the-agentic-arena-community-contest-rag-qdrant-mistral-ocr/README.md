@@ -1,6 +1,6 @@
 # 🔍 My solution for the "Agentic Arena Community Contest" (RAG, Qdrant, Mistral OCR)
 
-> ⚡ **849 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **1,188 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

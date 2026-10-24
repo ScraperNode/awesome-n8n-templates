@@ -1,6 +1,6 @@
 # 📊 Classify and summarize WeChat articles with GPT-4 Nano to Google Sheets and Notion
 
-> ⚡ **3,852 views** · 📊 [Market Research & Insights](../)
+> ⚡ **4,492 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 🧑‍⚖️ Ai legal assistant agent — AI-powered legal Q&A with document retrieval
 
-> ⚡ **13,699 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **14,989 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📈 Generate AI stock buy/no-buy signals using GPT‑4.1, Google Sheets and EODHD
 
-> ⚡ **416 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **509 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

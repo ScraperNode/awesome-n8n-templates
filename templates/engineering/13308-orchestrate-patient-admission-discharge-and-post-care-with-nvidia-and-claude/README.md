@@ -1,6 +1,6 @@
 # ⚒️ Orchestrate patient admission, discharge and post-care with NVIDIA and Claude
 
-> ⚡ **20 views** · ⚒️ [Engineering](../)
+> ⚡ **87 views** · ⚒️ [Engineering](../)
 
 ## Description
 

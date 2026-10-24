@@ -1,6 +1,6 @@
 # 🔬 Extract medical reports & generate AI health advice with Mistral AI & GPT-4
 
-> ⚡ **632 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,128 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Track expenses and income in Google Sheets from Telegram with Google Gemini
 
-> ⚡ **18 views** · ⚡ [Personal Productivity](../)
+> ⚡ **307 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

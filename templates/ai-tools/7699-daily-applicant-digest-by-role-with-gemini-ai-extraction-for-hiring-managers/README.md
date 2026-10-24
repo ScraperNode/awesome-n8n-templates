@@ -1,6 +1,6 @@
 # 🎯 Daily applicant digest by role with Gemini AI extraction for hiring managers
 
-> ⚡ **175 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **195 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

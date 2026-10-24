@@ -1,6 +1,6 @@
 # 💬 Automatic travel itinerary generation via email with Llama AI
 
-> ⚡ **1,337 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,474 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

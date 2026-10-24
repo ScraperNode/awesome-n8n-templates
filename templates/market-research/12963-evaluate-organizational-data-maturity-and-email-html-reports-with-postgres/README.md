@@ -1,6 +1,6 @@
 # 📊 Evaluate organizational data maturity and email HTML reports with Postgres
 
-> ⚡ **10 views** · 📊 [Market Research & Insights](../)
+> ⚡ **63 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

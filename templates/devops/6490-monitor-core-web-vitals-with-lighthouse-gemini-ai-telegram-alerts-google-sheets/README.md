@@ -1,6 +1,6 @@
 # ⚙️ Monitor core web vitals with Lighthouse, Gemini AI, Telegram alerts & Google Sheets
 
-> ⚡ **795 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **968 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

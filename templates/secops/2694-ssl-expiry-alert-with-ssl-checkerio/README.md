@@ -1,6 +1,6 @@
 # 🔒 Ssl expiry alert with SSL-Checker.io
 
-> ⚡ **16,782 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **17,097 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

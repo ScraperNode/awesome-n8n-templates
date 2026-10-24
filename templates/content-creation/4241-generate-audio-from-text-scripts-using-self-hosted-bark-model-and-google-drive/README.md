@@ -1,6 +1,6 @@
 # 🎬 Generate audio from text scripts using self-hosted Bark model and Google Drive
 
-> ⚡ **840 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **919 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

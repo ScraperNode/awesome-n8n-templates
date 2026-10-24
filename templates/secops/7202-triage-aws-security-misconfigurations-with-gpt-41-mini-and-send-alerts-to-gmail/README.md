@@ -1,6 +1,6 @@
 # 🔒 Triage AWS security misconfigurations with GPT-4.1 Mini and send alerts to Gmail
 
-> ⚡ **368 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **434 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

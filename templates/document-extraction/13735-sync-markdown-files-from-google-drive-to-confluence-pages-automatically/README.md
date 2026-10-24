@@ -1,6 +1,6 @@
 # 🔬 Sync markdown files from Google Drive to Confluence pages automatically
 
-> ⚡ **45 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **150 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Send real-time notifications for new Shopify orders to Slack
 
-> ⚡ **399 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **469 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

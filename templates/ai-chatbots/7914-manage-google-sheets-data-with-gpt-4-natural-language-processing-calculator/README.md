@@ -1,6 +1,6 @@
 # 🤖 Manage Google Sheets data with GPT-4 natural language processing & calculator
 
-> ⚡ **306 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **403 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

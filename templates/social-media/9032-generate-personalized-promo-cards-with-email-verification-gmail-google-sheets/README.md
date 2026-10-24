@@ -1,6 +1,6 @@
 # 📱 Generate personalized promo cards with email verification, Gmail & Google Sheets
 
-> ⚡ **51 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **64 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

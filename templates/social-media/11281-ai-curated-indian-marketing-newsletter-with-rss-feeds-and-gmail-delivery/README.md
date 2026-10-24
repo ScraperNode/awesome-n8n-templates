@@ -1,6 +1,6 @@
 # 📱 AI-curated Indian marketing newsletter with RSS feeds and Gmail delivery
 
-> ⚡ **149 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **267 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

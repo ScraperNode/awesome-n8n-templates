@@ -1,6 +1,6 @@
 # 🎬 Bulk AI Image Generator, Rename Engine & 4× Upscaler
 
-> ⚡ **744 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **896 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 Gender inclusive language bot for Mattermost
 
-> ⚡ **997 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,041 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Automate inventory replenishment and purchase orders with Mistral AI and ERP
 
-> ⚡ **52 views** · ⚒️ [Engineering](../)
+> ⚡ **287 views** · ⚒️ [Engineering](../)
 
 ## Description
 

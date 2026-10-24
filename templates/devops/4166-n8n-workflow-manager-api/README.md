@@ -1,6 +1,6 @@
 # ⚙️ n8n workflow manager API
 
-> ⚡ **1,059 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,343 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

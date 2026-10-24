@@ -1,6 +1,6 @@
 # 🔒 Monitor SSL certificate expiry with Google Sheets and SMTP email alerts
 
-> ⚡ **98 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **180 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

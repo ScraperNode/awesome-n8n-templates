@@ -1,6 +1,6 @@
 # 💬 🤖 AI-powered WhatsApp assistant for restaurants & delivery automation
 
-> ⚡ **5,012 views** · 💬 [Support Chatbots](../)
+> ⚡ **5,564 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

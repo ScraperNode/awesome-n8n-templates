@@ -1,6 +1,6 @@
 # 🔬 Monitor and report FAQ freshness from Notion to Google Sheets and Slack
 
-> ⚡ **63 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **81 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

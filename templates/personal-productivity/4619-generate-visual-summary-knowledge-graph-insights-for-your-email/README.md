@@ -1,6 +1,6 @@
 # ⚡ Generate visual summary & knowledge graph insights for your email
 
-> ⚡ **1,213 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,329 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

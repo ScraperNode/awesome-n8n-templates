@@ -1,6 +1,6 @@
 # 🔬 Validate customs clearance documents with Claude AI, Google Drive and Slack
 
-> ⚡ **67 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **137 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

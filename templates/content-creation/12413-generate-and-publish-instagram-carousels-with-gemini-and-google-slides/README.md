@@ -1,6 +1,6 @@
 # 🎬 Generate and publish Instagram carousels with Gemini and Google Slides
 
-> ⚡ **144 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **973 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

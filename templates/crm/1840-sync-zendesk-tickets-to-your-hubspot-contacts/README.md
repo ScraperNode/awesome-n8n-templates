@@ -1,6 +1,6 @@
 # 🤝 Sync Zendesk tickets to your HubSpot contacts
 
-> ⚡ **1,115 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,180 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

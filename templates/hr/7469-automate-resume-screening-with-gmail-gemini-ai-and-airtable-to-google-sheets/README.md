@@ -1,6 +1,6 @@
 # 👥 Automate resume screening with Gmail, Gemini AI, and Airtable to Google Sheets
 
-> ⚡ **913 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,012 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

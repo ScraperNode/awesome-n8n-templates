@@ -1,6 +1,6 @@
 # ⚒️ Merge data for multiple executions
 
-> ⚡ **6,474 views** · ⚒️ [Engineering](../)
+> ⚡ **6,553 views** · ⚒️ [Engineering](../)
 
 ## Description
 

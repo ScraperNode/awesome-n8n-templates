@@ -1,6 +1,6 @@
 # 👥 Automated candidate screening & response using GPT-4, Mistral OCR and Slack notifications
 
-> ⚡ **72 views** · 👥 [HR & Recruitment](../)
+> ⚡ **98 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 👥 Batch resume analysis with Google Gemini AI and Google Sheets
 
-> ⚡ **256 views** · 👥 [HR & Recruitment](../)
+> ⚡ **294 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

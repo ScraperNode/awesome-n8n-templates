@@ -1,6 +1,6 @@
 # 📖 Build a chatbot with Reinforced Learning Human Feedback (RLHF) and RAG
 
-> ⚡ **6,467 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **7,311 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

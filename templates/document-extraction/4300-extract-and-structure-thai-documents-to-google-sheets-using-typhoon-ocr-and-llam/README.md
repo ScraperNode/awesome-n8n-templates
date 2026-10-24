@@ -1,6 +1,6 @@
 # 🔬 Extract and structure Thai documents to Google Sheets using Typhoon OCR and Llama 3.1
 
-> ⚡ **3,545 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **3,863 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

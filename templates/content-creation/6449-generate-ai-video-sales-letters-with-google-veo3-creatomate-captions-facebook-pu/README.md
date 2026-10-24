@@ -1,6 +1,6 @@
-# 🎬 Generate AI video sales letters with Google VEO3, Creatomate captions & Facebook publishing
+# 🎬 Generate AI video sales letters with Google VEO3
 
-> ⚡ **183 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **209 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

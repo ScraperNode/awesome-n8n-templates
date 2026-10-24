@@ -1,6 +1,6 @@
 # 🎣 Automated lead generation & contact enrichment with Hunter.io and Perplexity AI
 
-> ⚡ **2,401 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **2,516 views** · 🎣 [Lead Generation & Enrichment](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >

@@ -1,6 +1,6 @@
 # 🔬 Send meeting summaries with Mailchimp and MongoDB
 
-> ⚡ **8 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **35 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

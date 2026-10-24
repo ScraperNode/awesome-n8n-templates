@@ -1,6 +1,6 @@
 # 🔬 Automated meeting recording & AI summaries with Google Calendar, Vexa & Llama 3.2
 
-> ⚡ **4,362 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **5,094 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

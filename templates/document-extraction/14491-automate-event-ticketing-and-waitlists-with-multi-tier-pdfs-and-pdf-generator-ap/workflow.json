@@ -1,0 +1,1692 @@
+{
+  "id": "Ajt6puMLs0M0Ae05",
+  "meta": {
+    "instanceId": "82c5bea520362e516241165c0caf720c8d29d2f0ba5e3cae2ba36d2c25d3b3b3",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Event registration system with waitlist and multi-tier PDFs (PDF Generator API)",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "9afefbd2-6a98-446d-91ce-553352cd2fcf",
+      "name": "\ud83d\udccb Setup Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "width": 952,
+        "height": 736,
+        "content": "## \ud83c\udfab Event Registration System with Waitlist & Multi-Tier PDFs\n### Powered by PDF Generator API\n\nAutomate end-to-end event registration: check capacity, generate tier-specific PDF tickets with QR codes, email attendees, and manage a waitlist with automatic promotion when a spot opens.\n\n## How it works\n\n**Flow A \u2014 New Registration**\n1. Attendee submits the registration form (name, email, event details, ticket tier)\n2. Current registrations are read from Google Sheets to check remaining capacity\n3. **Spots available \u2192** routes by tier (General / VIP / Backstage), generates a PDF ticket via PDF Generator API, emails it, logs to Sheets, and sends a Slack alert to the organizer\n4. **Event full \u2192** adds the attendee to the Waitlist tab and sends a waitlist confirmation email\n\n**Flow B \u2014 Cancellation & Promotion**\n1. A POST request hits the Cancellation Webhook with `{ \"ticket_id\": \"TKT-XXXXXXXX\" }`\n2. Ticket ID is validated and the registration is marked `CANCELED` in Sheets\n3. **Waitlist has entries \u2192** the first person is promoted: PDF ticket generated, emailed, logged in Registrations, and a Slack alert sent\n4. **Waitlist is empty \u2192** cancellation-only Slack alert is sent to the organizer\n\n---\n\n## Set up steps\n1. **PDF Generator API** \u2014 Create 3 ticket templates (General, VIP, Backstage) at [pdfgeneratorapi.com](https://pdfgeneratorapi.com). Use variables: `ticket_id`, `attendee_name`, `event_name`, `venue`, `event_date`, `seat_number`, `ticket_tier`, `issued_date`. Add a **QR Code** component bound to `{{ ticket_id }}`\n2. **Template IDs + Capacity** \u2014 In **\"Check Capacity & Prepare Data\"** (Flow A) and **\"Promote from Waitlist\"** (Flow B), replace the 3 placeholder template IDs and set `MAX_CAPACITY`\n3. **Google Sheets** \u2014 Create a spreadsheet with two tabs: **Registrations** and **Waitlist** (see the Sheets setup note on the right). Update the Spreadsheet ID in all Google Sheets nodes\n4. **Gmail** \u2014 Connect your Gmail (OAuth2) account in the 3 email nodes: Send Ticket, Send Waitlist Email, Send Promotion Email\n5. **Slack** \u2014 Connect your Slack account and update the recipient ID in all 3 Slack nodes\n6. **Cancellation** \u2014 Wire the Cancellation Webhook URL into your site with POST body: `{ \"ticket_id\": \"TKT-XXXXXXXX\" }`"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "55f6eb83-1590-444b-8ac0-209b0126cd51",
+      "name": "\ud83d\udcca Google Sheets Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        992,
+        0
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 400,
+        "height": 360,
+        "content": "### \ud83d\udcca Google Sheets Setup\n\nCreate one spreadsheet with **two tabs**:\n\n**Tab 1: Registrations**\nColumns: `Ticket ID` \u00b7 `Name` \u00b7 `Email` \u00b7 `Event` \u00b7 `Venue` \u00b7 `Date` \u00b7 `Seat` \u00b7 `Tier` \u00b7 `PDF URL` \u00b7 `Registered At`\n\n**Tab 2: Waitlist**\nColumns: `Position` \u00b7 `Name` \u00b7 `Email` \u00b7 `Event` \u00b7 `Venue` \u00b7 `Date` \u00b7 `Seat` \u00b7 `Tier` \u00b7 `Waitlisted At`\n\nConnect your Google Sheets account in all Sheets nodes and set the Spreadsheet ID.\n\n\ud83d\udca1 The **Position** column in Waitlist is auto-assigned. The first person added gets position 1, and promotion always picks the lowest position."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "777015dc-4829-45fc-86c8-8b4a899f6f73",
+      "name": "\ud83d\udd32 QR Code & Templates",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1440,
+        0
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 420,
+        "height": 400,
+        "content": "### \ud83d\udd32 QR Code & Multi-Tier Templates\n\nThe QR code is a **native component** inside your PDF Generator API templates \u2014 not generated externally by this workflow.\n\n**Setup per template (General, VIP, Backstage):**\n1. Open the template in the PDF Generator API editor\n2. Add a **QR Code** component\n3. Set its data source to `{{ ticket_id }}`\n\n**Why 3 templates?**\nEach tier can have a unique design, colour scheme, and perks section while sharing the same data variables. The Switch node routes to the correct template ID automatically.\n\n---\n**Output format:** `URL` \u2014 returns a hosted PDF link (valid 30 days).\nChange to `File` in the PDF Generator API nodes to attach the PDF directly to the email instead."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "42f4c5db-e16f-43e5-aa33-574c99ae5c22",
+      "name": "\ud83c\udd70\ufe0f Flow A",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        432,
+        1008
+      ],
+      "parameters": {
+        "width": 360,
+        "height": 200,
+        "content": "### \ud83c\udd70\ufe0f Flow A \u2014 New Registration\n\nTriggered by the **Event Registration Form**.\n\n1. **Check Capacity** \u2014 reads current Registrations from Sheets and compares the row count to `MAX_CAPACITY`\n2. **Event Full? (IF)** \u2014 True \u2192 Waitlist branch; False \u2192 ticket generation branch\n3. **Route by Tier (Switch)** \u2014 sends to the General, VIP, or Backstage path to attach the correct tier perks\n4. **Generate PDF** \u2014 calls PDF Generator API with the tier's template ID; returns a hosted PDF URL (valid 30 days)\n5. **Build & Send Email** \u2014 constructs an HTML email with event details and a download button; sends via Gmail\n6. **Log & Notify** \u2014 appends the registration to the Sheets Registrations tab; posts a Slack alert to the organizer\n7. **Waitlist path** \u2014 if full: appends to Waitlist tab and sends a waitlist confirmation email"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "bfba4f60-06e1-4062-a3e5-42894746540a",
+      "name": "\ud83c\udd71\ufe0f Flow B",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        384,
+        1488
+      ],
+      "parameters": {
+        "width": 416,
+        "height": 332,
+        "content": "### \ud83c\udd71\ufe0f Flow B \u2014 Cancellation & Waitlist Promotion\n\nTriggered by a **POST webhook**. Send:\n`POST <webhook-url>` with `{ \"ticket_id\": \"TKT-XXXXXXXX\" }`\n\n1. **Validate** \u2014 checks that `ticket_id` exists and matches the `TKT-XXXXXXXX` format; throws an error if invalid\n2. **Remove Registration** \u2014 updates the matching row in Sheets to `Status: CANCELED`\n3. **Check Waitlist (IF)** \u2014 if Waitlist tab is empty \u2192 sends a cancellation-only Slack alert and ends\n4. **Promote** \u2014 picks the first waitlisted attendee (lowest row), generates their ticket PDF, emails the promotion, logs to Registrations, marks as `PROMOTED` in Waitlist, and sends a Slack alert"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ec1295a9-4714-4ea1-a3ee-5d10ba5c33e7",
+      "name": "\ud83d\udd14 Slack Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1920,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 360,
+        "height": 280,
+        "content": "### \ud83d\udd14 Slack Notifications\n\nThe workflow sends three types of Slack alerts:\n\n1. **New Registration** \u2014 when a ticket is issued\n2. **Waitlist Promotion** \u2014 when a waitlisted attendee gets promoted\n3. **Cancellation Only** \u2014 when someone cancels and the waitlist is empty\n\n**Setup:** Connect Slack in each notification node and choose your channel (e.g. `#event-tickets`). Remove all Slack nodes if you don't use Slack."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c7d8e9f0-a1b2-4c3d-8e5f-6a7b8c9d0e1f",
+      "name": "\u2699\ufe0f Event Config",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2336,
+        0
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 492,
+        "height": 340,
+        "content": "### \u2699\ufe0f Required: Edit Before Running\n\nTwo **Code nodes** contain placeholder template IDs that must be replaced before the workflow will work:\n\n**\"Check Capacity & Prepare Data\"** (Flow A)\n**\"Promote from Waitlist\"** (Flow B)\n\nIn each node, update the `TEMPLATES` object:\n- `'General Admission': YOUR_TEMPLATE_ID`\n- `'VIP': YOUR_TEMPLATE_ID`\n- `'Backstage Pass': YOUR_TEMPLATE_ID`\n\nAlso set `MAX_CAPACITY` to your event size\n(currently `3` \u2014 demo only)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a1b1c1d1-e1f1-1111-a1b1-c1d1e1f11111",
+      "name": "cluster-form-capacity",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        864,
+        1024
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 700,
+        "height": 220,
+        "content": "## Form & Capacity Check"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a2b2c2d2-e2f2-2222-a2b2-c2d2e2f22222",
+      "name": "cluster-tier-routing",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1664,
+        768
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 872,
+        "height": 536,
+        "content": "## Ticket Tier Routing\nEvent full \u2192 Waitlist. Has spots \u2192 route by tier (General / VIP / Backstage) and attach tier perks."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a3b3c3d3-e3f3-3333-a3b3-c3d3e3f33333",
+      "name": "cluster-pdf-delivery",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2672,
+        912
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 1320,
+        "height": 252,
+        "content": "## PDF Generation & Delivery"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a4b4c4d4-e4f4-4444-a4b4-c4d4e4f44444",
+      "name": "cluster-waitlist-reg",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2032,
+        1328
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 764,
+        "height": 264,
+        "content": "## Waitlist Registration"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a5b5c5d5-e5f5-5555-a5b5-c5d5e5f55555",
+      "name": "cluster-cancel-validate",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        816,
+        1728
+      ],
+      "parameters": {
+        "width": 800,
+        "height": 280,
+        "content": "## Cancellation & Validation"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a6b6c6d6-e6f6-6666-a6b6-c6d6e6f66666",
+      "name": "cluster-waitlist-check",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1664,
+        1792
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 480,
+        "height": 216,
+        "content": "## Waitlist Check"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a7b7c7d7-e7f7-7777-a7b7-c7d7e7f77777",
+      "name": "cluster-promotion",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2192,
+        1696
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 1820,
+        "height": 444,
+        "content": "## Waitlist Promotion\nPromotes the first queued attendee: PDF ticket generated, emailed, logged, and removed from waitlist. Waitlist empty \u2192 cancellation-only Slack alert."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "58926685-e1d2-47a6-b2c4-fdca4e1cfd32",
+      "name": "Event Registration Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        944,
+        1104
+      ],
+      "webhookId": "ev-reg-00000001",
+      "parameters": {
+        "path": "ev-reg-+1234567890",
+        "options": {},
+        "formTitle": "\ud83c\udfab Event Registration",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Full Name",
+              "placeholder": "Jane Smith",
+              "requiredField": true
+            },
+            {
+              "fieldType": "email",
+              "fieldLabel": "Email Address",
+              "placeholder": "user@example.com",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Event Name",
+              "placeholder": "Summer Rock Festival 2025",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Venue",
+              "placeholder": "Madison Square Garden, New York",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Event Date",
+              "placeholder": "Saturday, July 5, 2025",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Seat Preference",
+              "placeholder": "Section A, Row 3, Seat 12",
+              "requiredField": true
+            },
+            {
+              "fieldType": "dropdown",
+              "fieldLabel": "Ticket Tier",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "General Admission"
+                  },
+                  {
+                    "option": "VIP"
+                  },
+                  {
+                    "option": "Backstage Pass"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "formDescription": "Register for the event. If the event is at capacity, you'll be added to the waitlist and automatically promoted when a spot opens."
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "d296e533-fb0a-406e-96c4-6c67f50846d9",
+      "name": "Get Current Registrations",
+      "type": "n8n-nodes-base.googleSheets",
+      "onError": "continueRegularOutput",
+      "position": [
+        1200,
+        1104
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s/edit#gid=0",
+          "cachedResultName": "Registrations"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s/edit?usp=drivesdk",
+          "cachedResultName": "Event Registration System"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "typeVersion": 4.7,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "9c624c4c-d866-4cbd-88b7-ee2b8ed4a96b",
+      "name": "Check Capacity & Prepare Data",
+      "type": "n8n-nodes-base.code",
+      "onError": "continueRegularOutput",
+      "position": [
+        1472,
+        1104
+      ],
+      "parameters": {
+        "jsCode": "// \u2500\u2500\u2500 CONFIG \u2500\u2500\u2500\n// \u26a0\ufe0f Replace these template IDs with your own from PDF Generator API.\nconst TEMPLATES = {\n  'General Admission': 1615251,\n  'VIP':               1615251,\n  'Backstage Pass':    1615251\n};\nconst MAX_CAPACITY = 3; // Set your event capacity here\n\n// \u2500\u2500\u2500 Count current registrations \u2500\u2500\u2500\nconst registrations = $('Get Current Registrations').all();\nconst currentCount = registrations.length;\nconst spotsLeft = MAX_CAPACITY - currentCount;\nconst isFull = spotsLeft <= 0;\n\n// \u2500\u2500\u2500 Form data \u2500\u2500\u2500\nconst form = $('Event Registration Form').item.json;\n\n// \u2500\u2500\u2500 Generate unique ticket ID \u2500\u2500\u2500\nconst chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';\nlet suffix = '';\nfor (let i = 0; i < 8; i++) {\n  suffix += chars[Math.floor(Math.random() * chars.length)];\n}\nconst ticketId = 'TKT-' + suffix;\n\nconst now = new Date();\nconst issuedDate = now.toLocaleDateString('en-US', {\n  year: 'numeric', month: 'long', day: 'numeric'\n});\nconst isoTimestamp = now.toISOString();\n\nconst ticketTier = form['Ticket Tier'] || 'General Admission';\nconst tierBadge = ticketTier === 'VIP' ? 'VIP'\n  : ticketTier === 'Backstage Pass' ? 'BACKSTAGE'\n  : 'GENERAL';\nconst tierColor = ticketTier === 'VIP' ? '#7B2FBE'\n  : ticketTier === 'Backstage Pass' ? '#C0392B'\n  : '#0f3460';\n\nconst templateId = TEMPLATES[ticketTier] || TEMPLATES['General Admission'];\n\nreturn [{\n  json: {\n    isFull,\n    currentCount,\n    spotsLeft,\n    maxCapacity: MAX_CAPACITY,\n    ticketId,\n    attendeeName:  form['Full Name'],\n    attendeeEmail: form['Email Address'],\n    eventName:     form['Event Name'],\n    venue:         form['Venue'],\n    eventDate:     form['Event Date'],\n    seatNumber:    form['Seat Preference'],\n    ticketTier,\n    tierBadge,\n    tierColor,\n    templateId,\n    issuedDate,\n    isoTimestamp,\n    outputName: `event-ticket-${ticketId}`,\n    templateData: {\n      ticket_id:     ticketId,\n      attendee_name: form['Full Name'],\n      event_name:    form['Event Name'],\n      venue:         form['Venue'],\n      event_date:    form['Event Date'],\n      seat_number:   form['Seat Preference'],\n      ticket_tier:   tierBadge,\n      issued_date:   issuedDate\n    }\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "2127188f-826d-40b7-a025-b61ff40ed508",
+      "name": "Event Full?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1728,
+        1104
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "condition-full",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.isFull }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "a3480aef-d04f-43fb-89bb-e3d5bc7e23d6",
+      "name": "Route by Ticket Tier",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1984,
+        944
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "General",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "d1e9b926-3756-40f2-86cb-40d79841b542",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.ticketTier }}",
+                    "rightValue": "General Admission"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "VIP",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "76777430-fa18-4455-aa6b-2b216666b0fc",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.ticketTier }}",
+                    "rightValue": "VIP"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "Backstage",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "119722f9-a20b-4dd3-a4ef-bc96da6463c0",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.ticketTier }}",
+                    "rightValue": "Backstage Pass"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "03ae8b1b-458a-4f81-9976-8a02bc2752ef",
+      "name": "General Admission Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2240,
+        832
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "set-perks-general",
+              "name": "tierPerks",
+              "type": "string",
+              "value": "Access to the main stage area and food court. Doors open 1 hour before showtime."
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "78d823e6-ca15-4920-87a4-9fe50eef904b",
+      "name": "VIP Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2240,
+        992
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "set-perks-vip",
+              "name": "tierPerks",
+              "type": "string",
+              "value": "Priority entry, VIP lounge access, complimentary drinks, and premium viewing area."
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "d53de589-4c58-4c8b-a619-9a472c1d7893",
+      "name": "Backstage Pass Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2240,
+        1152
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "set-perks-backstage",
+              "name": "tierPerks",
+              "type": "string",
+              "value": "All VIP perks plus backstage meet & greet, soundcheck access, and exclusive merchandise."
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "62ccd0d9-9ae9-468d-863b-ebdc03959344",
+      "name": "Generate Ticket PDF",
+      "type": "@pdfgeneratorapi/n8n-nodes-pdf-generator-api.pdfGeneratorApi",
+      "position": [
+        2768,
+        992
+      ],
+      "parameters": {
+        "data": "={{ JSON.stringify($json.templateData) }}",
+        "templateId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.templateId }}"
+        },
+        "documentOutput": "url",
+        "additionalFields": {
+          "outputName": "={{ $json.outputName }}"
+        }
+      },
+      "credentials": {
+        "pdfGeneratorApi": {
+          "id": "credential-id",
+          "name": "PDF Generator account 2"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "7a23c615-f9fe-435c-9432-9c2af341fb41",
+      "name": "Build Confirmation Email",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3024,
+        992
+      ],
+      "parameters": {
+        "jsCode": "const pdfData = $input.first().json;\nconst t = $('Check Capacity & Prepare Data').first().json;\nconst TIER_PERKS = {\n  'General Admission': 'Access to the main stage area and food court...',\n  'VIP': 'Priority entry, VIP lounge access...',\n  'Backstage Pass': 'All VIP perks plus backstage meet & greet...'\n};\nconst tierPerks = TIER_PERKS[t.ticketTier] || '';\n\nconst pdfUrl = pdfData.response || '';\nconst headerColor = t.tierColor || '#0f3460';\n\nconst emailHtml = ''\n  + '<!DOCTYPE html><html><body style=\"margin:0;padding:0;background:#f4f4f8;font-family:Arial,sans-serif\">'\n  + '<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"padding:24px 0\"><tr><td align=\"center\">'\n  + '<table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12)\">'\n\n  // Header\n  + '<tr><td style=\"background:' + headerColor + ';padding:36px 30px;text-align:center\">'\n  + '<div style=\"font-size:44px;line-height:1\">\ud83c\udfab</div>'\n  + '<h1 style=\"color:#fff;margin:10px 0 4px;font-size:24px;font-weight:700\">Registration Confirmed!</h1>'\n  + '<span style=\"display:inline-block;background:rgba(255,255,255,0.2);color:#fff;padding:4px 18px;border-radius:20px;font-size:11px;letter-spacing:2px;font-weight:700;margin-top:6px\">'\n  + t.tierBadge + '</span>'\n  + '</td></tr>'\n\n  // Body\n  + '<tr><td style=\"padding:32px 40px\">'\n  + '<p style=\"font-size:16px;color:#333;margin:0 0 10px\">Hi <strong>' + t.attendeeName + '</strong>,</p>'\n  + '<p style=\"color:#555;line-height:1.7;margin:0 0 20px\">Your <strong>' + t.ticketTier + '</strong> registration is confirmed! Your personalized PDF ticket with a unique QR code for entry is ready.</p>'\n\n  // Perks box\n  + '<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f9f9f9;border-left:4px solid ' + headerColor + ';border-radius:6px;margin-bottom:20px\"><tr><td style=\"padding:16px 20px\">'\n  + '<p style=\"margin:0 0 4px;font-weight:700;color:' + headerColor + ';font-size:13px\">YOUR ' + t.tierBadge + ' PERKS</p>'\n  + '<p style=\"margin:0;color:#555;font-size:14px;line-height:1.6\">' + tierPerks + '</p>'\n  + '</td></tr></table>'\n\n  // Event details card\n  + '<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:2px dashed ' + headerColor + ';border-radius:10px;margin-bottom:24px\"><tr><td style=\"padding:22px\">'\n  + '<h2 style=\"color:' + headerColor + ';margin:0 0 14px;font-size:19px\">\ud83c\udfb8 ' + t.eventName + '</h2>'\n  + '<p style=\"margin:6px 0;color:#555;font-size:14px\">\ud83d\udccd <strong>Venue:</strong> ' + t.venue + '</p>'\n  + '<p style=\"margin:6px 0;color:#555;font-size:14px\">\ud83d\udcc5 <strong>Date:</strong> ' + t.eventDate + '</p>'\n  + '<p style=\"margin:6px 0;color:#555;font-size:14px\">\ud83d\udcba <strong>Seat:</strong> ' + t.seatNumber + '</p>'\n  + '<p style=\"margin:6px 0;color:#555;font-size:14px\">\ud83c\udfab <strong>Ticket ID:</strong> <code style=\"background:#f0f0f0;padding:2px 7px;border-radius:4px;font-size:13px\">' + t.ticketId + '</code></p>'\n  + '<p style=\"margin:6px 0;color:#999;font-size:12px\">\ud83d\udcca Spots remaining: ' + (t.spotsLeft - 1) + ' / ' + t.maxCapacity + '</p>'\n  + '</td></tr></table>'\n\n  // Download button\n  + '<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\" style=\"padding-bottom:24px\">'\n  + '<a href=\"' + pdfUrl + '\" style=\"background:' + headerColor + ';color:#fff;padding:14px 44px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:700;display:inline-block\">\ud83d\udcc4 Download Your Ticket</a>'\n  + '</td></tr></table>'\n\n  + '<p style=\"color:#999;font-size:12px;text-align:center;margin:0 0 4px\">Your PDF contains a unique QR code for venue entry.</p>'\n  + '<p style=\"color:#bbb;font-size:11px;text-align:center;margin:0\">Please have it ready \u2014 printed or on your phone.</p>'\n  + '</td></tr>'\n\n  // Footer\n  + '<tr><td style=\"background:#f8f8f8;padding:16px 30px;text-align:center;border-top:1px solid #eee\">'\n  + '<p style=\"color:#bbb;font-size:11px;margin:0\">Ticket generated with <a href=\"https://pdfgeneratorapi.com\" style=\"color:' + headerColor + ';text-decoration:none\">PDF Generator API</a> \u00b7 Automated by <a href=\"https://n8n.io\" style=\"color:' + headerColor + ';text-decoration:none\">n8n</a></p>'\n  + '</td></tr>'\n  + '</table></td></tr></table></body></html>';\n\nreturn [{\n  json: {\n    attendeeEmail: t.attendeeEmail,\n    emailSubject: `\ud83c\udfab Registration Confirmed: ${t.ticketTier} \u2014 ${t.eventName} (${t.ticketId})`,\n    emailHtml,\n    pdfUrl,\n    ticketId: t.ticketId,\n    attendeeName: t.attendeeName,\n    eventName: t.eventName,\n    venue: t.venue,\n    eventDate: t.eventDate,\n    seatNumber: t.seatNumber,\n    ticketTier: t.ticketTier,\n    tierBadge: t.tierBadge,\n    isoTimestamp: t.isoTimestamp\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7d90331a-18e2-4525-bf3d-9b60965f69a0",
+      "name": "Send Ticket to Attendee",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        3280,
+        992
+      ],
+      "webhookId": "26d39d51-c3f1-4836-ae5e-614c7efed44c",
+      "parameters": {
+        "sendTo": "={{ $json.attendeeEmail }}",
+        "message": "={{ $json.emailHtml }}",
+        "options": {},
+        "subject": "={{ $json.emailSubject }}"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail account"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "a7bf80c6-dae5-4f75-8054-8626b8f31437",
+      "name": "Log Registration",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3552,
+        992
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Tier": "={{ $('Build Confirmation Email').item.json.ticketTier }}",
+            "ticketID": "={{ $('Build Confirmation Email').item.json.ticketId }}",
+            "eventName": "={{ $('Build Confirmation Email').item.json.eventName }}",
+            "atendeeName": "={{ $('Build Confirmation Email').item.json.attendeeName }}"
+          },
+          "schema": [
+            {
+              "id": "atendeeName",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "atendeeName",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ticketID",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "ticketID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "eventName",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "eventName",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tier",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Tier",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "id"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s/edit#gid=0",
+          "cachedResultName": "Registrations"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s/edit?usp=drivesdk",
+          "cachedResultName": "Event Registration System"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "d2588cb2-f8a6-4f4b-a043-f7be01e97eb1",
+      "name": "Notify: New Registration",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        3808,
+        992
+      ],
+      "webhookId": "6552c7d6-7013-46a4-8ca5-545a08bbf2aa",
+      "parameters": {
+        "text": "={{ '\ud83c\udfab *New Registration*\\n*' + $('Build Confirmation Email').item.json.tierBadge + '* \u2014 ' + $('Build Confirmation Email').item.json.eventName + '\\n\\n\ud83d\udc64 ' + $('Build Confirmation Email').item.json.attendeeName + '\\n\ud83d\udce7 ' + $('Build Confirmation Email').item.json.attendeeEmail + '\\n\ud83d\udcba ' + $('Build Confirmation Email').item.json.seatNumber + '\\n\ud83c\udf9f `' + $('Build Confirmation Email').item.json.ticketId + '`\\n\ud83d\udcc4 ' + $('Build Confirmation Email').item.json.pdfUrl }}",
+        "user": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U02P47JDS0J"
+        },
+        "select": "user",
+        "otherOptions": {}
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "credential-id",
+          "name": "Slack account 2"
+        }
+      },
+      "typeVersion": 2.4
+    },
+    {
+      "id": "6bdfc2fe-1ccc-4ea3-99a1-cfb919656a3d",
+      "name": "Add to Waitlist",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2080,
+        1408
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Name": "={{ $json.attendeeName }}",
+            "TicketID": "={{ $json.ticketId }}",
+            "atendeeEmail": "={{ $json.attendeeEmail }}"
+          },
+          "schema": [
+            {
+              "id": "Name",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TicketID",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "TicketID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "atendeeEmail",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "atendeeEmail",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 101672691,
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s/edit#gid=101672691",
+          "cachedResultName": "Waitlist"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s/edit?usp=drivesdk",
+          "cachedResultName": "Event Registration System"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "9bdcebcd-8ab0-4c7e-ad8c-8d6a837ebf19",
+      "name": "Build Waitlist Email",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2336,
+        1408
+      ],
+      "parameters": {
+        "jsCode": "const t = $('Check Capacity & Prepare Data').item.json;\nconst headerColor = '#6c757d';\n\nconst emailHtml = ''\n  + '<!DOCTYPE html><html><body style=\"margin:0;padding:0;background:#f4f4f8;font-family:Arial,sans-serif\">'\n  + '<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"padding:24px 0\"><tr><td align=\"center\">'\n  + '<table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12)\">'\n\n  + '<tr><td style=\"background:' + headerColor + ';padding:36px 30px;text-align:center\">'\n  + '<div style=\"font-size:44px;line-height:1\">\u23f3</div>'\n  + '<h1 style=\"color:#fff;margin:10px 0 4px;font-size:24px;font-weight:700\">You\\'re on the Waitlist</h1>'\n  + '</td></tr>'\n\n  + '<tr><td style=\"padding:32px 40px\">'\n  + '<p style=\"font-size:16px;color:#333;margin:0 0 10px\">Hi <strong>' + t.attendeeName + '</strong>,</p>'\n  + '<p style=\"color:#555;line-height:1.7;margin:0 0 20px\">Unfortunately, <strong>' + t.eventName + '</strong> is currently at full capacity. But don\\'t worry \u2014 you\\'ve been added to the waitlist!</p>'\n  + '<p style=\"color:#555;line-height:1.7;margin:0 0 20px\">If a spot opens up, we\\'ll <strong>automatically generate your ticket</strong> and email it to you. No action needed on your end.</p>'\n\n  + '<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:2px dashed ' + headerColor + ';border-radius:10px;margin-bottom:24px\"><tr><td style=\"padding:22px\">'\n  + '<h2 style=\"color:' + headerColor + ';margin:0 0 14px;font-size:19px\">\ud83d\udccb Your Waitlist Details</h2>'\n  + '<p style=\"margin:6px 0;color:#555;font-size:14px\">\ud83c\udfb8 <strong>Event:</strong> ' + t.eventName + '</p>'\n  + '<p style=\"margin:6px 0;color:#555;font-size:14px\">\ud83d\udccd <strong>Venue:</strong> ' + t.venue + '</p>'\n  + '<p style=\"margin:6px 0;color:#555;font-size:14px\">\ud83d\udcc5 <strong>Date:</strong> ' + t.eventDate + '</p>'\n  + '<p style=\"margin:6px 0;color:#555;font-size:14px\">\ud83c\udfab <strong>Requested Tier:</strong> ' + t.ticketTier + '</p>'\n  + '</td></tr></table>'\n\n  + '</td></tr>'\n\n  + '<tr><td style=\"background:#f8f8f8;padding:16px 30px;text-align:center;border-top:1px solid #eee\">'\n  + '<p style=\"color:#bbb;font-size:11px;margin:0\">Powered by <a href=\"https://pdfgeneratorapi.com\" style=\"color:' + headerColor + ';text-decoration:none\">PDF Generator API</a> \u00b7 <a href=\"https://n8n.io\" style=\"color:' + headerColor + ';text-decoration:none\">n8n</a></p>'\n  + '</td></tr>'\n  + '</table></td></tr></table></body></html>';\n\nreturn [{\n  json: {\n    attendeeEmail: t.attendeeEmail,\n    emailSubject: `\u23f3 Waitlisted: ${t.eventName} \u2014 We'll notify you when a spot opens`,\n    emailHtml\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "4b5bc3fa-974d-410a-a911-ac8fc58668fd",
+      "name": "Send Waitlist Email",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        2608,
+        1408
+      ],
+      "webhookId": "31f2d36c-82d3-47a0-9289-04c0964786bf",
+      "parameters": {
+        "sendTo": "={{ $json.attendeeEmail }}",
+        "message": "={{ $json.emailHtml }}",
+        "options": {},
+        "subject": "={{ $json.emailSubject }}"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail account"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "3d4f4409-b987-4a7b-81b3-2cd8d6449b55",
+      "name": "Cancellation Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        944,
+        1856
+      ],
+      "webhookId": "605b6faf-bcb4-4fe4-b32f-acc002687b03",
+      "parameters": {
+        "path": "ev-cancel-+1234567890",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "eaa3024b-9b66-41aa-ba11-f8d70f8addbe",
+      "name": "Validate Cancellation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1200,
+        1856
+      ],
+      "parameters": {
+        "jsCode": "const input = $input.item.json;\nconst ticketId = (input.body && input.body.ticket_id) || input.ticket_id || '';\n\nif (!ticketId || !ticketId.startsWith('TKT-')) {\n  throw new Error(`Invalid or missing ticket_id: \"${ticketId}\". Expected format: TKT-XXXXXXXX`);\n}\n\nreturn [{\n  json: {\n    ticketId\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "346ff3fe-3a60-4bc2-bf4e-71d381e43bc3",
+      "name": "Remove Registration",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1472,
+        1856
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Status": "CANCELED",
+            "ticketID": "={{ $json.ticketId }}"
+          },
+          "schema": [
+            {
+              "id": "atendeeName",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "atendeeName",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ticketID",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "ticketID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "eventName",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "eventName",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tier",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Tier",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "type": "number",
+              "display": true,
+              "removed": true,
+              "readOnly": true,
+              "required": false,
+              "displayName": "row_number",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "ticketID"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s/edit#gid=0",
+          "cachedResultName": "Registrations"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s/edit?usp=drivesdk",
+          "cachedResultName": "Event Registration System"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "d9dd07c5-f6ff-4723-a340-6b9cf0f70ea1",
+      "name": "Get Waitlist",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1728,
+        1856
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 101672691,
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s/edit#gid=101672691",
+          "cachedResultName": "Waitlist"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s/edit?usp=drivesdk",
+          "cachedResultName": "Event Registration System"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "0340e22d-0ab7-49f3-84fd-d25a58afbf28",
+      "name": "Waitlist Not Empty?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1984,
+        1856
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "condition-waitlist",
+              "operator": {
+                "name": "filter.operator.gt",
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "372dd21b-0412-4667-bb30-acabfb284fd1",
+      "name": "Promote from Waitlist",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2240,
+        1776
+      ],
+      "parameters": {
+        "jsCode": "// \u2500\u2500\u2500 CONFIG (must match Flow A) \u2500\u2500\u2500\nconst TEMPLATES = {\n  'General Admission': 1615251,\n  'VIP':               1615251,\n  'Backstage Pass':    1615251\n};\n\n// \u2500\u2500\u2500 Get first waitlisted person (lowest row number) \u2500\u2500\u2500\nconst waitlist = $input.all().map(i => i.json);\nwaitlist.sort((a, b) => Number(a.row_number) - Number(b.row_number));\nconst first = waitlist[0];\n\n// \u2500\u2500\u2500 Generate ticket ID for promoted attendee \u2500\u2500\u2500\nconst chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';\nlet suffix = '';\nfor (let i = 0; i < 8; i++) {\n  suffix += chars[Math.floor(Math.random() * chars.length)];\n}\nconst ticketId = 'TKT-' + suffix;\n\nconst now = new Date();\nconst issuedDate = now.toLocaleDateString('en-US', {\n  year: 'numeric', month: 'long', day: 'numeric'\n});\nconst isoTimestamp = now.toISOString();\n\n// \u2500\u2500\u2500 Read actual field names as stored in the Waitlist sheet \u2500\u2500\u2500\nconst ticketTier = first.ticketTier || 'General Admission';\nconst tierBadge = ticketTier === 'VIP' ? 'VIP'\n  : ticketTier === 'Backstage Pass' ? 'BACKSTAGE'\n  : 'GENERAL';\nconst tierColor = ticketTier === 'VIP' ? '#7B2FBE'\n  : ticketTier === 'Backstage Pass' ? '#C0392B'\n  : '#0f3460';\n\nconst templateId = TEMPLATES[ticketTier] || TEMPLATES['General Admission'];\n\nreturn [{\n  json: {\n    ticketId,\n    attendeeName:     first.attendeeName,\n    attendeeEmail:    first.attendeeEmail,\n    eventName:        first.eventName,\n    venue:            first.venue,\n    eventDate:        first.eventDate,\n    seatNumber:       first.seatNumber,\n    ticketTier,\n    tierBadge,\n    tierColor,\n    templateId,\n    issuedDate,\n    isoTimestamp,\n    waitlistPosition: first.row_number,\n    outputName: `event-ticket-promoted-${ticketId}`,\n    templateData: {\n      ticket_id:     ticketId,\n      attendee_name: first.attendeeName,\n      event_name:    first.eventName,\n      venue:         first.venue,\n      event_date:    first.eventDate,\n      seat_number:   first.seatNumber,\n      ticket_tier:   tierBadge,\n      issued_date:   issuedDate\n    }\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8f6bbf13-880f-4f39-bdca-189335b2c71c",
+      "name": "Generate Promoted Ticket PDF",
+      "type": "@pdfgeneratorapi/n8n-nodes-pdf-generator-api.pdfGeneratorApi",
+      "position": [
+        2512,
+        1776
+      ],
+      "parameters": {
+        "data": "={{ JSON.stringify($json.templateData) }}",
+        "templateId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.templateId }}"
+        },
+        "documentOutput": "url",
+        "additionalFields": {
+          "outputName": "={{ $json.outputName }}"
+        }
+      },
+      "credentials": {
+        "pdfGeneratorApi": {
+          "id": "credential-id",
+          "name": "PDF Generator account 2"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a124f738-5c7f-4b2c-b05a-8890fe873191",
+      "name": "Build Promotion Email",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2768,
+        1776
+      ],
+      "parameters": {
+        "jsCode": "const pdfData = $input.first().json;\nconst t = $('Promote from Waitlist').first().json;\nconst pdfUrl = pdfData.response || '';\nconst headerColor = t.tierColor || '#0f3460';\n\nconst emailHtml = ''\n  + '<!DOCTYPE html><html><body style=\"margin:0;padding:0;background:#f4f4f8;font-family:Arial,sans-serif\">'\n  + '<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"padding:24px 0\"><tr><td align=\"center\">'\n  + '<table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12)\">'\n\n  + '<tr><td style=\"background:' + headerColor + ';padding:36px 30px;text-align:center\">'\n  + '<div style=\"font-size:44px;line-height:1\">\ud83c\udf89</div>'\n  + '<h1 style=\"color:#fff;margin:10px 0 4px;font-size:24px;font-weight:700\">Great News \u2014 You\\'re In!</h1>'\n  + '<span style=\"display:inline-block;background:rgba(255,255,255,0.2);color:#fff;padding:4px 18px;border-radius:20px;font-size:11px;letter-spacing:2px;font-weight:700;margin-top:6px\">'\n  + t.tierBadge + '</span>'\n  + '</td></tr>'\n\n  + '<tr><td style=\"padding:32px 40px\">'\n  + '<p style=\"font-size:16px;color:#333;margin:0 0 10px\">Hi <strong>' + t.attendeeName + '</strong>,</p>'\n  + '<p style=\"color:#555;line-height:1.7;margin:0 0 20px\">A spot just opened up at <strong>' + t.eventName + '</strong> and you\\'ve been promoted from the waitlist! Your <strong>' + t.ticketTier + '</strong> ticket is ready.</p>'\n\n  + '<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:2px dashed ' + headerColor + ';border-radius:10px;margin-bottom:24px\"><tr><td style=\"padding:22px\">'\n  + '<h2 style=\"color:' + headerColor + ';margin:0 0 14px;font-size:19px\">\ud83c\udfb8 ' + t.eventName + '</h2>'\n  + '<p style=\"margin:6px 0;color:#555;font-size:14px\">\ud83d\udccd <strong>Venue:</strong> ' + t.venue + '</p>'\n  + '<p style=\"margin:6px 0;color:#555;font-size:14px\">\ud83d\udcc5 <strong>Date:</strong> ' + t.eventDate + '</p>'\n  + '<p style=\"margin:6px 0;color:#555;font-size:14px\">\ud83d\udcba <strong>Seat:</strong> ' + t.seatNumber + '</p>'\n  + '<p style=\"margin:6px 0;color:#555;font-size:14px\">\ud83c\udfab <strong>Ticket ID:</strong> <code style=\"background:#f0f0f0;padding:2px 7px;border-radius:4px;font-size:13px\">' + t.ticketId + '</code></p>'\n  + '</td></tr></table>'\n\n  + '<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\" style=\"padding-bottom:24px\">'\n  + '<a href=\"' + pdfUrl + '\" style=\"background:' + headerColor + ';color:#fff;padding:14px 44px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:700;display:inline-block\">\ud83d\udcc4 Download Your Ticket</a>'\n  + '</td></tr></table>'\n\n  + '<p style=\"color:#999;font-size:12px;text-align:center;margin:0\">Your PDF contains a unique QR code for venue entry.</p>'\n  + '</td></tr>'\n\n  + '<tr><td style=\"background:#f8f8f8;padding:16px 30px;text-align:center;border-top:1px solid #eee\">'\n  + '<p style=\"color:#bbb;font-size:11px;margin:0\">Ticket generated with <a href=\"https://pdfgeneratorapi.com\" style=\"color:' + headerColor + ';text-decoration:none\">PDF Generator API</a> \u00b7 Automated by <a href=\"https://n8n.io\" style=\"color:' + headerColor + ';text-decoration:none\">n8n</a></p>'\n  + '</td></tr>'\n  + '</table></td></tr></table></body></html>';\n\nreturn [{\n  json: {\n    attendeeEmail: t.attendeeEmail,\n    emailSubject: `\ud83c\udf89 You're in! ${t.ticketTier} ticket for ${t.eventName} (${t.ticketId})`,\n    emailHtml,\n    pdfUrl,\n    ticketId: t.ticketId,\n    attendeeName: t.attendeeName,\n    eventName: t.eventName,\n    venue: t.venue,\n    eventDate: t.eventDate,\n    seatNumber: t.seatNumber,\n    ticketTier: t.ticketTier,\n    tierBadge: t.tierBadge,\n    isoTimestamp: t.isoTimestamp,\n    waitlistPosition: t.waitlistPosition\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8d5cf466-0c85-4b91-a8af-2038e7b2d47e",
+      "name": "Send Promotion Email",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        3024,
+        1776
+      ],
+      "webhookId": "ec87ba37-3706-4112-9dad-4632b975bd32",
+      "parameters": {
+        "sendTo": "={{ $('Get Waitlist').item.json.atendeeEmail }}",
+        "message": "={{ $json.emailHtml }}",
+        "options": {},
+        "subject": "={{ $json.emailSubject }}"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail account"
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "e0951b6e-c28c-45e9-a2df-07966546a441",
+      "name": "Log Promoted Registration",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3280,
+        1776
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "ticketID": "={{ $('Get Waitlist').item.json.TicketID }}",
+            "atendeeName": "={{ $('Get Waitlist').item.json.Name }}"
+          },
+          "schema": [
+            {
+              "id": "atendeeName",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "atendeeName",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ticketID",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "ticketID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "eventName",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "eventName",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tier",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Tier",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultName": "Registrations"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s/edit?usp=drivesdk",
+          "cachedResultName": "Event Registration System"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "b81f9948-3596-4bb7-9ff6-b7e8e7cbba0f",
+      "name": "Remove from Waitlist",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3552,
+        1776
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Status": "PROMOTED",
+            "TicketID": "={{ $('Get Waitlist').item.json.TicketID }}"
+          },
+          "schema": [
+            {
+              "id": "Name",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TicketID",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "TicketID",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "atendeeEmail",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "atendeeEmail",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "type": "number",
+              "display": true,
+              "removed": true,
+              "readOnly": true,
+              "required": false,
+              "displayName": "row_number",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "TicketID"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 101672691,
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s/edit#gid=101672691",
+          "cachedResultName": "Waitlist"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1L0FOdxFBRwviw24jf_HlYPkpv6W5_N0thJH1LJraR3s/edit?usp=drivesdk",
+          "cachedResultName": "Event Registration System"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "credential-id",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "typeVersion": 4.7,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "6a1b00bb-fcbb-4253-92d9-b36ed4ab46e9",
+      "name": "Notify: Promotion",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        3808,
+        1776
+      ],
+      "webhookId": "59d748ac-a0b7-4f22-93ef-71ba59b1eb4c",
+      "parameters": {
+        "text": "={{ '\ud83c\udf89 *Waitlist Promotion*\\n\\nA cancellation opened a spot. The following attendee has been promoted:\\n\\n\ud83d\udc64 ' + $('Build Promotion Email').item.json.attendeeName + '\\n\ud83d\udce7 ' + $('Build Promotion Email').item.json.attendeeEmail + '\\n\ud83c\udfab ' + $('Build Promotion Email').item.json.tierBadge + ' \u2014 `' + $('Build Promotion Email').item.json.ticketId + '`\\n\ud83d\udccb Was waitlist position #' + $('Build Promotion Email').item.json.waitlistPosition + '\\n\ud83d\udcc4 ' + $('Build Promotion Email').item.json.pdfUrl }}",
+        "user": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U02P47JDS0J"
+        },
+        "select": "user",
+        "otherOptions": {}
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "credential-id",
+          "name": "Slack account 2"
+        }
+      },
+      "typeVersion": 2.4,
+      "alwaysOutputData": false
+    },
+    {
+      "id": "e2b2f448-7807-4dda-a3c1-172d9895c0a1",
+      "name": "Notify: Cancellation Only",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        2240,
+        1968
+      ],
+      "webhookId": "150e2e58-5122-422d-8111-b4a6d5d01a5c",
+      "parameters": {
+        "text": "={{ '\u274c *Ticket Cancelled*\\n\\nTicket `' + $('Validate Cancellation').item.json.ticketId + '` has been cancelled. No one was on the waitlist to promote.' }}",
+        "user": {
+          "__rl": true,
+          "mode": "id",
+          "value": "U02P47JDS0J"
+        },
+        "select": "user",
+        "otherOptions": {}
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "credential-id",
+          "name": "Slack account 2"
+        }
+      },
+      "typeVersion": 2.4
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "9192ca37-31eb-49be-b03c-16df5cbc6814",
+  "connections": {
+    "VIP Config": {
+      "main": [
+        [
+          {
+            "node": "Generate Ticket PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Event Full?": {
+      "main": [
+        [
+          {
+            "node": "Add to Waitlist",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route by Ticket Tier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Waitlist": {
+      "main": [
+        [
+          {
+            "node": "Waitlist Not Empty?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add to Waitlist": {
+      "main": [
+        [
+          {
+            "node": "Build Waitlist Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Registration": {
+      "main": [
+        [
+          {
+            "node": "Notify: New Registration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Ticket PDF": {
+      "main": [
+        [
+          {
+            "node": "Build Confirmation Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Registration": {
+      "main": [
+        [
+          {
+            "node": "Get Waitlist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Waitlist Not Empty?": {
+      "main": [
+        [
+          {
+            "node": "Promote from Waitlist",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify: Cancellation Only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Waitlist Email": {
+      "main": [
+        [
+          {
+            "node": "Send Waitlist Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cancellation Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Cancellation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove from Waitlist": {
+      "main": [
+        [
+          {
+            "node": "Notify: Promotion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Ticket Tier": {
+      "main": [
+        [
+          {
+            "node": "General Admission Config",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "VIP Config",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Backstage Pass Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Promotion Email": {
+      "main": [
+        [
+          {
+            "node": "Log Promoted Registration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Backstage Pass Config": {
+      "main": [
+        [
+          {
+            "node": "Generate Ticket PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Promotion Email": {
+      "main": [
+        [
+          {
+            "node": "Send Promotion Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Promote from Waitlist": {
+      "main": [
+        [
+          {
+            "node": "Generate Promoted Ticket PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Cancellation": {
+      "main": [
+        [
+          {
+            "node": "Remove Registration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Event Registration Form": {
+      "main": [
+        [
+          {
+            "node": "Get Current Registrations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Ticket to Attendee": {
+      "main": [
+        [
+          {
+            "node": "Log Registration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Confirmation Email": {
+      "main": [
+        [
+          {
+            "node": "Send Ticket to Attendee",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "General Admission Config": {
+      "main": [
+        [
+          {
+            "node": "Generate Ticket PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Current Registrations": {
+      "main": [
+        [
+          {
+            "node": "Check Capacity & Prepare Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Promoted Registration": {
+      "main": [
+        [
+          {
+            "node": "Remove from Waitlist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Promoted Ticket PDF": {
+      "main": [
+        [
+          {
+            "node": "Build Promotion Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Capacity & Prepare Data": {
+      "main": [
+        [
+          {
+            "node": "Event Full?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

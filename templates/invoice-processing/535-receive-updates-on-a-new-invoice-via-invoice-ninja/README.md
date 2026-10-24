@@ -1,6 +1,6 @@
 # 🧾 Receive updates on a new invoice via Invoice Ninja
 
-> ⚡ **1,651 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,780 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

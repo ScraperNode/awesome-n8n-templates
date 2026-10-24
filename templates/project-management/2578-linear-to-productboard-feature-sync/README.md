@@ -1,6 +1,6 @@
 # 📋 Linear to Productboard feature sync
 
-> ⚡ **660 views** · 📋 [Project Management](../)
+> ⚡ **673 views** · 📋 [Project Management](../)
 
 ## Description
 

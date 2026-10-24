@@ -1,6 +1,6 @@
 # 🔒 Automated APK security scanning & PDF reporting with MobSF, AI & Google Drive
 
-> ⚡ **143 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **395 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

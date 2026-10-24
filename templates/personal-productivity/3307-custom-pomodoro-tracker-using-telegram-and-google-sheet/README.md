@@ -1,6 +1,6 @@
 # ⚡ 🍅 Custom pomodoro tracker using Telegram and Google Sheet
 
-> ⚡ **1,765 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,805 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

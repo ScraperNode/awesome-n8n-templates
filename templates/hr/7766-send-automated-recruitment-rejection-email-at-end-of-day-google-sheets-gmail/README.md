@@ -1,6 +1,6 @@
 # 👥 Send automated recruitment rejection email at end-of-day (Google Sheets | Gmail)
 
-> ⚡ **386 views** · 👥 [HR & Recruitment](../)
+> ⚡ **490 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Google Play Store and SerpApi app rank & rating monitor
 
-> ⚡ **265 views** · 📊 [Market Research & Insights](../)
+> ⚡ **316 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

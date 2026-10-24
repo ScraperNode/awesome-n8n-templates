@@ -1,6 +1,6 @@
 # 💬 Create an intelligent Facebook Messenger chatbot with GPT-4o-mini & message memory
 
-> ⚡ **1,384 views** · 💬 [Support Chatbots](../)
+> ⚡ **4,699 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔒 New TheHive case Slack notification bot
 
-> ⚡ **694 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **720 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

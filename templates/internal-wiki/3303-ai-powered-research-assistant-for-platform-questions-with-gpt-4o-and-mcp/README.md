@@ -1,6 +1,6 @@
 # 📖 AI-powered research assistant for platform questions with GPT-4o and MCP
 
-> ⚡ **18,211 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **18,360 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 
@@ -10,6 +10,7 @@ This workflow empowers you to effortlessly get answers to your n8n platform ques
 
 &gt; **Note:** This workflow uses community nodes (n8n-nodes-mcp.mcpClientTool) and will only work on self-hosted n8n instances. You'll need to install the required community nodes before importing this workflow.
 
+!![image.png](fileId:1035)
 
 ## What does this workflow do?
 

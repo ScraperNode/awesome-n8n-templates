@@ -1,6 +1,6 @@
 # 🎬 Automatically generate burn-in video captions with json2video
 
-> ⚡ **4,694 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,056 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

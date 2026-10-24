@@ -1,6 +1,6 @@
 # 🎣 AI-powered lead qualification with Zoho CRM, People Data Labs and Google Gemini
 
-> ⚡ **232 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **405 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

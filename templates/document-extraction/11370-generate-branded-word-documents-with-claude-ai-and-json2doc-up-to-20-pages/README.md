@@ -1,6 +1,6 @@
 # 🔬 Generate branded word documents with Claude AI and Json2Doc (up to 20 pages)
 
-> ⚡ **757 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,473 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

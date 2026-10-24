@@ -1,6 +1,6 @@
-# 📱 Generate & publish social media content with Gemini, Kie.ai, and Late API
+# 📱 Generate and publish social posts with Gemini, Kie.ai, and Zernio API
 
-> ⚡ **1,562 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **3,403 views** · 📱 [Social Media & Email Marketing](../)
 
 > 💡 **Pro Tip** — Since TikTok doesn't have a public API, getting data usually means fragile HTTP scraping. [ScraperNode](https://scrapernode.com/tiktok) is a community node that gives you clean JSON for [TikTok profiles](https://scrapernode.com/tiktok/scrapers/profiles), [videos](https://scrapernode.com/tiktok/scrapers/posts), and [comments](https://scrapernode.com/tiktok/scrapers/comments) — drop it into your workflow and skip the parsing.
 >
@@ -8,55 +8,39 @@
 
 ## Description
 
-## 📘 Overview
-This workflow automates **end-to-end social media publishing** powered by **Late API**.  
-It generates text content with **Google Gemini**, creates branded visuals with **Kie.ai**, uploads media to **Late**, and publishes across multiple platforms (Facebook, Instagram, LinkedIn, TikTok).  
+## Quick overview
+Generate & publish social media content with Gemini, Kie.ai, and Zernio API
 
-It’s a production-ready automation for marketing teams who want to save hours of work by letting AI handle both copywriting and design — all inside n8n.
+## How it works
+1. Google Gemini (gemini-2.5-flash) generates platform-optimized copy for Facebook, Instagram, LinkedIn, and TikTok, returned as structured JSON with hashtags and a suggested posting time.
+2. Kie.ai Seedream v4 creates a branded 1080x1080 image; the workflow polls the task until the CDN image URL is ready.
+3. The image is uploaded to Zernio: direct multipart upload for files up to 4MB, presigned upload (init + PUT) for larger files up to 5GB.
+4. A post is created on each enabled platform through the Zernio posts endpoint, with the correct platform and accountId mapping, and published immediately.
+5. All platform responses are merged into one success report with ready-to-send messages for Slack, Discord, email, and webhook notifications.
 
-## ⚙️ How it works
-1. **Generate text content** → Google Gemini produces platform-optimized copy (tone & length adapted to each network).  
-2. **Generate visuals** → Kie.ai Seedream v4 creates branded 1080x1080 images.  
-3. **Upload to Late** → media is stored using Late’s upload API (small & large file handling).  
-4. **Publish** → posts are created via Late API on enabled platforms with correct `{ platform, accountId }` mapping.  
-5. **Notify** → success logs are sent via Slack, Discord, Email, and Webhook.  
+## Setup
+1. Google Gemini (gemini-2.5-flash) generates platform-optimized copy for Facebook, Instagram, LinkedIn, and TikTok, returned as structured JSON with hashtags and a suggested posting time.
+2. Kie.ai Seedream v4 creates a branded 1080x1080 image; the workflow polls the task until the CDN image URL is ready.
+3. The image is uploaded to Zernio: direct multipart upload for files up to 4MB, presigned upload (init + PUT) for larger files up to 5GB.
+4. A post is created on each enabled platform through the Zernio posts endpoint, with the correct platform and accountId mapping, and published immediately.
+5. All platform responses are merged into one success report with ready-to-send messages for Slack, Discord, email, and webhook notifications.
 
-## 🛠 Setup Steps
-- **Time to setup:** ~10–15 minutes  
-- **Steps:**
-  1. Add your **API keys** in n8n Credentials:
-     - Google Gemini API (PaLM)
-     - Kie.ai (Seedream)
-     - Late API
-  2. Insert your **Account IDs** (Facebook, Instagram, LinkedIn, TikTok) into the **Default Settings** node.
-  3. Choose which platforms to enable (`ENABLE_FACEBOOK`, `ENABLE_INSTAGRAM`, etc.).
-  4. Set your **Business Type** and **Content Topic** (e.g., “a tech company” / “new product launch”).
-  5. Execute the workflow.  
+## Requirements
+- Google Gemini (gemini-2.5-flash) generates platform-optimized copy for Facebook, Instagram, LinkedIn, and TikTok, returned as structured JSON with hashtags and a suggested posting time.
+- Kie.ai Seedream v4 creates a branded 1080x1080 image; the workflow polls the task until the CDN image URL is ready.
+- The image is uploaded to Zernio: direct multipart upload for files up to 4MB, presigned upload (init + PUT) for larger files up to 5GB.
+- A post is created on each enabled platform through the Zernio posts endpoint, with the correct platform and accountId mapping, and published immediately.
+- All platform responses are merged into one success report with ready-to-send messages for Slack, Discord, email, and webhook notifications.
 
-## 📝 Notes
-- **Sticky Notes** are included in the workflow to guide each section: Overview, Prerequisites, Default Settings, Content Generation, Image Generation, Media Upload, Publishing Logic, Notifications, Error Handling.  
-- All API keys are handled via **Credentials** (no hardcoding).  
-- Fallback content is included in case Gemini fails to parse.  
-- Large image files (&gt;4MB) are handled with Late’s multipart upload flow.  
+## Customization
+- Edit the Gemini prompt to change tone, language, platform mix, or content structure
+- Swap the image model or prompt in the Kie.ai node
+- Replace publishNow with scheduledFor (ISO 8601 UTC) to schedule posts instead of publishing instantly
+- Wire the prepared notification payload into your own Slack, Discord, or email nodes
+- Swap the manual trigger for a Schedule or Webhook trigger for full autopilot
 
-## 💸 Cost per Flow (Estimated)
-- **Late API**: $0.00 within Free/Unlimited plans, or ≈ $0.11/post on Build plan ($13/120 posts).  
-- **Google Gemini**: ~$0.0001–$0.0004 per post (≈200 tokens in/out).  
-- **Kie.ai (Seedream)**: ≈ $0.01–$0.02 per generated image.  
-
-➡️ **Total: ~$0.01 – $0.12 per post**, depending mainly on your Late plan & Kie.ai credits.
-
-## 🎯 Use cases
-- Marketing teams automating cross-platform campaigns.  
-- Solo founders posting content daily without design/copy effort.  
-- Agencies scaling social media management with AI + automation.  
-
-## 📢 Credits
-- Built by **Adrian (RoboMarketing)** for the **n8n Arena Challenge – September 2025**.  
-- Powered by:
-  - [Gemini API](https://ai.google.dev/gemini-api/docs/get-started)  
-  - [Kie.ai Seedream](https://kie.ai/seedream-api)  
-  - [Late API](https://getlate.dev/docs)
+## Additional info
+Sticky notes inside the workflow document every section: overview, credentials, content generation, image generation, media upload, publishing logic, notifications, and error handling. Fallback content is included in case Gemini returns unparseable JSON. Estimated cost per run: about $0.02 for one Seedream image, a fraction of a cent for Gemini text, and no per-post cost from Zernio (usage-based pricing). Built by Adrian (RoboMarketing) for the n8n Arena Challenge, September 2025; updated for the Late to Zernio rebrand with the new presigned upload flow.
 
 ## 🔗 Nodes Used
 

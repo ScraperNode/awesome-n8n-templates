@@ -1,6 +1,6 @@
 # 🎣 Extract Domain and verify email syntax on the go
 
-> ⚡ **1,368 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,402 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Automate video voiceover & subtitles with Whisper, OpenAI TTS & FFmpeg
 
-> ⚡ **272 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **398 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

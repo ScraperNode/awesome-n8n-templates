@@ -1,6 +1,6 @@
 # ⚙️ 🛠️ GitLab tool MCP server 💪 all 18 operations
 
-> ⚡ **311 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **375 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

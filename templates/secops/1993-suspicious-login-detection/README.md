@@ -1,6 +1,6 @@
 # 🔒 Suspicious login detection
 
-> ⚡ **7,242 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **7,411 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

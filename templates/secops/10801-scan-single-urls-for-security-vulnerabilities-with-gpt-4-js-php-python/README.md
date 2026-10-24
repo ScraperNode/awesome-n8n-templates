@@ -1,6 +1,6 @@
 # 🔒 Scan single URLs for security vulnerabilities with GPT-4 (JS, PHP, Python)
 
-> ⚡ **830 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,491 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

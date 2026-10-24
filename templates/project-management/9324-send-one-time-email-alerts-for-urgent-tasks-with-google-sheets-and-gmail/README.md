@@ -1,6 +1,6 @@
 # 📋 Send one-time email alerts for urgent tasks with Google Sheets and Gmail
 
-> ⚡ **104 views** · 📋 [Project Management](../)
+> ⚡ **168 views** · 📋 [Project Management](../)
 
 ## Description
 

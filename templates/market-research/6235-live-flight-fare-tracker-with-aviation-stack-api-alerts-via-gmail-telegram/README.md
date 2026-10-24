@@ -1,6 +1,6 @@
 # 📊 Live flight fare tracker with Aviation Stack API – alerts via Gmail & Telegram
 
-> ⚡ **907 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,164 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

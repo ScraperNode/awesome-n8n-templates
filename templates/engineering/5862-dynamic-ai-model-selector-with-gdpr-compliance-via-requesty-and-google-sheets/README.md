@@ -1,6 +1,6 @@
 # ⚒️ Dynamic AI model selector with GDPR compliance via Requesty and Google Sheets
 
-> ⚡ **1,078 views** · ⚒️ [Engineering](../)
+> ⚡ **1,408 views** · ⚒️ [Engineering](../)
 
 ## Description
 

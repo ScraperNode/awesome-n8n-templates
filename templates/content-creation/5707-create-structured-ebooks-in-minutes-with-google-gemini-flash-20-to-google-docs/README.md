@@ -1,6 +1,6 @@
 # 🎬 Create structured eBooks in minutes with Google Gemini Flash 2.0 to Google Docs
 
-> ⚡ **7,250 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **8,696 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

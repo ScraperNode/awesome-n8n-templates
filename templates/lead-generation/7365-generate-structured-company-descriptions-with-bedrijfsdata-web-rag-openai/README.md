@@ -1,6 +1,6 @@
 # 🎣 Generate structured company descriptions with Bedrijfsdata Web RAG & OpenAI
 
-> ⚡ **393 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **423 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

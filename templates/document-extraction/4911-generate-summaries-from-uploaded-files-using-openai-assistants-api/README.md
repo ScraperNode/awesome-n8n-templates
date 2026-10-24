@@ -1,6 +1,6 @@
 # 🔬 Generate summaries from uploaded files using OpenAI Assistants API
 
-> ⚡ **1,184 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,252 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎯 Daily swing trade ideas with GPT-4, Yahoo Finance, Google Sheets & Telegram
 
-> ⚡ **3,238 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **3,739 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

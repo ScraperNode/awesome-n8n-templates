@@ -1,6 +1,6 @@
 # ⚙️ Automated meta token renewal system with Graph API and data storage
 
-> ⚡ **244 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **457 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

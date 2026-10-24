@@ -1,6 +1,6 @@
 # 📱 Send bulk messages to chats in Telegram
 
-> ⚡ **10,053 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **10,922 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

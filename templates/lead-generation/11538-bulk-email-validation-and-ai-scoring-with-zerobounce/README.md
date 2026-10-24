@@ -1,6 +1,6 @@
 # 🎣 Bulk email validation and AI scoring with ZeroBounce
 
-> ⚡ **124 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **189 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

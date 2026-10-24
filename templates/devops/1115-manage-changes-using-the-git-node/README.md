@@ -1,6 +1,6 @@
 # ⚙️ Manage changes using the Git node
 
-> ⚡ **1,767 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,905 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

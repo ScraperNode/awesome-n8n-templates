@@ -1,6 +1,6 @@
 # 💬 Company website chatbot agent (RAG, calendar integrations)
 
-> ⚡ **11,356 views** · 💬 [Support Chatbots](../)
+> ⚡ **13,506 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,0 +1,570 @@
+{
+  "name": "Cut appointment no-shows with staged reminders, reply triage and waitlist backfill",
+  "nodes": [
+    {
+      "id": "a1000000-0000-4000-8000-000000000001",
+      "name": "Every 6 hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -340,
+        -300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000002",
+      "name": "Appointments (demo data)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -120,
+        -300
+      ],
+      "parameters": {
+        "jsCode": "// DEMO SOURCE so the template runs immediately. For production, disable\n// this node and read appointments from Google Sheets (columns listed here).\nconst demoRows = [\n  { appointment_id: 'APT-1041', customer_name: 'Anna de Vries', phone: '+316****5678', email: 'user@example.com', starts_at: new Date(Date.now() + 2 * 3600 * 1000).toISOString(), practitioner: 'Lisa', treatment: 'Haircut', channel_preference: 'whatsapp', status: 'unconfirmed', prior_no_shows: 0 },\n  { appointment_id: 'APT-1042', customer_name: 'Mark Jansen', phone: '+316****5432', email: 'user@example.com', starts_at: new Date(Date.now() + 20 * 3600 * 1000).toISOString(), practitioner: 'Dr. Bakker', treatment: 'Check-up', channel_preference: 'email', status: 'unconfirmed', prior_no_shows: 1 },\n  { appointment_id: 'APT-1043', customer_name: 'Fatima El Amrani', phone: '+316****3344', email: 'user@example.com', starts_at: new Date(Date.now() + 60 * 3600 * 1000).toISOString(), practitioner: 'Lisa', treatment: 'New client', channel_preference: 'whatsapp', status: 'confirmed', prior_no_shows: 0 },\n  { appointment_id: 'APT-1044', customer_name: 'Tom Willems', phone: '+316****5645', email: 'user@example.com', starts_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), practitioner: 'Emma', treatment: 'Balayage', channel_preference: 'whatsapp', status: 'no_show', prior_no_shows: 2 }\n];\nreturn demoRows.map((row) => ({ json: row }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000003",
+      "name": "Pick reminder stage",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        100,
+        -300
+      ],
+      "parameters": {
+        "jsCode": "// Pick the reminder stage for each appointment and deduplicate with\n// workflow static data: each appointment gets each stage at most once,\n// even if the schedule fires several times inside a band.\n// Bands: heads_up 48-72h, confirm_ask 8-48h, same_day 0.5-3h before start.\nconst BANDS = [\n  { stage: 'heads_up', minH: 48, maxH: 72 },\n  { stage: 'confirm_ask', minH: 8, maxH: 48 },\n  { stage: 'same_day', minH: 0.5, maxH: 3 }\n];\nconst staticData = $getWorkflowStaticData('global');\nstaticData.sent = staticData.sent || {};\nconst now = Date.now();\nconst out = [];\nfor (const item of $input.all()) {\n  const r = item.json;\n  const h = (new Date(r.starts_at).getTime() - now) / 3600000;\n  if (h < 0) continue; // already started\n  for (const b of BANDS) {\n    if (h >= b.minH && h < b.maxH) {\n      const key = r.appointment_id + ':' + b.stage;\n      if (staticData.sent[key]) break;\n      staticData.sent[key] = new Date().toISOString();\n      const dateStr = new Date(r.starts_at).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });\n      let message;\n      if (b.stage === 'same_day') {\n        message = 'Hi ' + r.customer_name + ', your ' + r.treatment + ' with ' + r.practitioner + ' is today at ' + dateStr + '. See you soon!';\n      } else if (b.stage === 'confirm_ask') {\n        message = 'Hi ' + r.customer_name + ', reminder: your ' + r.treatment + ' with ' + r.practitioner + ' is on ' + dateStr + '. Reply CONFIRM to keep it or RESCHEDULE to move it.';\n      } else {\n        message = 'Hi ' + r.customer_name + ', you are booked for ' + r.treatment + ' with ' + r.practitioner + ' on ' + dateStr + '. Need a different time? Reply RESCHEDULE.';\n      }\n      out.push({ json: {\n        appointment_id: r.appointment_id,\n        customer_name: r.customer_name,\n        to: r.channel_preference === 'email' ? r.email : r.phone,\n        channel: r.channel_preference === 'email' ? 'email' : 'whatsapp',\n        stage: b.stage,\n        hours_until: Math.round(h * 10) / 10,\n        message: message\n      }});\n      break;\n    }\n  }\n}\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000004",
+      "name": "Same-day stage?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        340,
+        -300
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.stage }}",
+              "rightValue": "same_day"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000005",
+      "name": "Dispatch same-day (replace me)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        340,
+        -60
+      ],
+      "parameters": {
+        "jsCode": "// Placeholder for your real send node (WhatsApp Business Cloud, SMS or\n// email). Same-day items arrive here; they can take a priority lane.\nconst items = $input.all();\nreturn items.map((item) => ({ json: { ...item.json, sent_at: new Date().toISOString(), transport: 'demo', lane: 'same_day' } }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000006",
+      "name": "Dispatch staged (replace me)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        100,
+        -60
+      ],
+      "parameters": {
+        "jsCode": "// Placeholder for your real send node (WhatsApp Business Cloud, SMS or\n// email) for the earlier reminder stages.\nconst items = $input.all();\nreturn items.map((item) => ({ json: { ...item.json, sent_at: new Date().toISOString(), transport: 'demo', lane: 'staged' } }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000001",
+      "name": "Webhook: customer reply",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        820,
+        -300
+      ],
+      "parameters": {
+        "path": "customer-reply",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000002",
+      "name": "Classify reply",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1040,
+        -300
+      ],
+      "parameters": {
+        "jsCode": "// Classify an inbound customer reply. Expected body (WhatsApp-style):\n// appointment_id (add it to your quick-reply link or lookup by From),\n// From, Body. English and Dutch keywords.\nconst b = $input.first().json.body || $input.first().json;\nconst text = String(b.Body || b.text || '').trim().toUpperCase();\nlet verdict = 'no_reply';\nif (/^(JA|J|YES|Y|OK|CONFIRM|C)([\\s!.,]|$)/.test(text)) verdict = 'confirmed';\nelse if (/^(NEE|N|NO|RESCHEDULE|CANCEL|WIJZIG)([\\s!.,]|$)/.test(text)) verdict = 'cancel_requested';\nelse if (text) verdict = 'unclear';\nreturn [{ json: {\n  appointment_id: b.appointment_id || '',\n  from: b.From || b.from || '',\n  raw_text: text,\n  verdict: verdict,\n  received_at: new Date().toISOString()\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000003",
+      "name": "Confirmed?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        820,
+        -60
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.verdict }}",
+              "rightValue": "confirmed"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000004",
+      "name": "Mark confirmed (replace me)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1040,
+        -60
+      ],
+      "parameters": {
+        "jsCode": "// Placeholder: mark the appointment confirmed in your sheet or calendar.\nconst items = $input.all();\nreturn items.map((item) => ({ json: { ...item.json, action: 'mark_confirmed', logged_at: new Date().toISOString() } }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000005",
+      "name": "Cancel requested?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1900,
+        -300
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.verdict }}",
+              "rightValue": "cancel_requested"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000006",
+      "name": "Load slot details (demo)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2120,
+        -300
+      ],
+      "parameters": {
+        "jsCode": "// DEMO lookup of the cancelled appointment's slot. For production,\n// replace with a Google Sheets or calendar lookup on appointment_id.\nconst cls = $('Classify reply').first().json;\nconst rows = [\n  { appointment_id: 'APT-1041', slot_start: new Date(Date.now() + 2 * 3600 * 1000).toISOString(), practitioner: 'Lisa', treatment: 'Haircut', duration_min: 45 },\n  { appointment_id: 'APT-1042', slot_start: new Date(Date.now() + 20 * 3600 * 1000).toISOString(), practitioner: 'Dr. Bakker', treatment: 'Check-up', duration_min: 30 }\n];\nconst hit = rows.find((r) => r.appointment_id === cls.appointment_id);\nreturn [{ json: { ok: !!hit, ...(hit || rows[0]) } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000007",
+      "name": "Waitlist (demo data)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1900,
+        -60
+      ],
+      "parameters": {
+        "jsCode": "// DEMO SOURCE. Replace with your waitlist sheet.\n// Columns: customer_name, phone, wanted_treatment, flexible (bool), priority_score\nconst demoWaitlist = [\n  { customer_name: 'Lisa Mertens', phone: '+316****5641', wanted_treatment: 'Haircut', flexible: true, priority_score: 9 },\n  { customer_name: 'Daan Cox', phone: '+316****5642', wanted_treatment: 'Balayage', flexible: false, priority_score: 6 },\n  { customer_name: 'Nina Blaauw', phone: '+316****5643', wanted_treatment: 'Haircut', flexible: true, priority_score: 7 }\n];\nreturn demoWaitlist.map((row) => ({ json: row }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000008",
+      "name": "Rank waitlist for slot",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2120,
+        -60
+      ],
+      "parameters": {
+        "jsCode": "// Rank the waitlist for the freed slot: treatment match first, flexible\n// entries next, then priority score. Top 3 get an offer at once; first\n// TAKE wins, the rest get a friendly note.\nconst slot = $('Load slot details (demo)').first().json;\nconst items = $('Waitlist (demo data)').all();\nconst ranked = items\n  .map((item) => {\n    const r = item.json;\n    let score = 0;\n    if (slot.treatment && r.wanted_treatment === slot.treatment) score += 50;\n    if (r.flexible) score += 20;\n    score += Number(r.priority_score) || 0;\n    return { json: { ...r, match_score: score } };\n  })\n  .sort((a, b) => b.json.match_score - a.json.match_score)\n  .slice(0, 3);\nconst slotStr = new Date(slot.slot_start).toLocaleString('en-GB', { weekday: 'long', hour: '2-digit', minute: '2-digit' });\nreturn ranked.map((entry, i) => ({ json: {\n  ...entry.json,\n  offer_position: i + 1,\n  slot_start: slot.slot_start,\n  freed_appointment: slot.appointment_id,\n  message: 'Hi ' + entry.json.customer_name + ', a spot just opened up ' + slotStr + ' with ' + slot.practitioner + '. You are on our waitlist. Want this spot? Reply TAKE within 30 minutes, after that it goes to the next person.'\n} }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000009",
+      "name": "Send offers (replace me)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2340,
+        -60
+      ],
+      "parameters": {
+        "jsCode": "// Placeholder for your real send node (WhatsApp Business Cloud / SMS).\nconst items = $input.all();\nreturn items.map((item) => ({ json: { ...item.json, sent_at: new Date().toISOString(), transport: 'demo' } }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000010",
+      "name": "Flag for staff (replace me)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2940,
+        -300
+      ],
+      "parameters": {
+        "jsCode": "// Placeholder: queue the unclear reply or silence for staff follow-up.\nconst items = $input.all();\nreturn items.map((item) => ({ json: { ...item.json, action: 'staff_followup', logged_at: new Date().toISOString() } }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f1000000-0000-4000-8000-000000000011",
+      "name": "Respond to reply",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        3160,
+        -300
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": true, \"verdict\": $json.verdict, \"offers\": $json.offer_position ? $input.all().length : 0 } }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-0000000000f1",
+      "name": "Sticky Note 00f1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1500,
+        -560
+      ],
+      "parameters": {
+        "width": 600,
+        "height": 900,
+        "content": "## Cut appointment no-shows end to end\n\n### How it works\n\nOne workflow, three connected stages. A schedule trigger reads upcoming appointments and picks a reminder stage per appointment: a heads-up at 48-72 hours, a confirm-or-reschedule ask at 8-48 hours, and a same-day final at 0.5-3 hours. Workflow static data deduplicates, so each appointment gets each stage at most once however often the schedule fires. When a customer answers, the reply webhook classifies the text (English and Dutch keywords) as confirmed, cancel_requested, unclear or no_reply. Confirmed replies mark the appointment. Cancel requests load the freed slot, rank your waitlist by treatment match, flexibility and priority, and send offers to the top three at once, so a cancellation becomes a refill instead of lost revenue.\n\n### Setup steps\n\n- [ ] Disable the demo data nodes and connect your appointment sheet and waitlist sheet (columns are listed in each node).\n- [ ] Replace the three placeholder send nodes with WhatsApp Business Cloud, SMS or email nodes.\n- [ ] Point your inbound reply webhook at the Webhook node and include appointment_id in the payload (a quick-reply link is the easy way).\n\n### Requirements\n\n- An appointment source with appointment_id, starts_at, channel_preference and contact fields.\n- A waitlist with wanted_treatment, flexible and priority_score columns.\n\n### Customization\n\nReminder bands, keyword regexes, ranking weights, the top-3 offer count and all message copy are plain values in the code nodes."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-0000000000f2",
+      "name": "Sticky Note 00f2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -400,
+        -420
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1080,
+        "height": 600,
+        "content": "## 1. Staged reminders\nThree time bands, static-data dedup, same-day split onto a priority lane."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-0000000000f3",
+      "name": "Sticky Note 00f3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        760,
+        -420
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 900,
+        "height": 600,
+        "content": "## 2. Reply triage\nOne webhook classifies EN/NL replies into confirmed, cancel, unclear, silent."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-0000000000f4",
+      "name": "Sticky Note 00f4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1840,
+        -420
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 940,
+        "height": 600,
+        "content": "## 3. Waitlist backfill\nCancel verdicts rank the waitlist for the freed slot; top 3 get offers."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cccc0000-0000-4000-8000-0000000000f5",
+      "name": "Sticky Note 00f5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2880,
+        -420
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 700,
+        "height": 600,
+        "content": "## 4. Edge cases and response\nUnclear or staff-flagged replies end here with a JSON response."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {
+    "Webhook: customer reply": [
+      {
+        "json": {
+          "body": {
+            "Body": "NO, please cancel",
+            "From": "+316****5678",
+            "appointment_id": "APT-1041"
+          }
+        }
+      }
+    ]
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Confirmed?": {
+      "main": [
+        [
+          {
+            "node": "Mark confirmed (replace me)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cancel requested?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 6 hours": {
+      "main": [
+        [
+          {
+            "node": "Appointments (demo data)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify reply": {
+      "main": [
+        [
+          {
+            "node": "Confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Same-day stage?": {
+      "main": [
+        [
+          {
+            "node": "Dispatch same-day (replace me)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Dispatch staged (replace me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cancel requested?": {
+      "main": [
+        [
+          {
+            "node": "Load slot details (demo)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Flag for staff (replace me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick reminder stage": {
+      "main": [
+        [
+          {
+            "node": "Same-day stage?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Waitlist (demo data)": {
+      "main": [
+        [
+          {
+            "node": "Rank waitlist for slot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rank waitlist for slot": {
+      "main": [
+        [
+          {
+            "node": "Send offers (replace me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: customer reply": {
+      "main": [
+        [
+          {
+            "node": "Classify reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appointments (demo data)": {
+      "main": [
+        [
+          {
+            "node": "Pick reminder stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load slot details (demo)": {
+      "main": [
+        [
+          {
+            "node": "Rank waitlist for slot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send offers (replace me)": {
+      "main": [
+        [
+          {
+            "node": "Respond to reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flag for staff (replace me)": {
+      "main": [
+        [
+          {
+            "node": "Respond to reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark confirmed (replace me)": {
+      "main": [
+        [
+          {
+            "node": "Respond to reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

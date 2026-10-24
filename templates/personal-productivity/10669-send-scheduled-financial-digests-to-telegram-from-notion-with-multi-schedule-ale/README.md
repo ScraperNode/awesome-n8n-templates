@@ -1,6 +1,6 @@
 # ⚡ Send scheduled financial digests to Telegram from Notion with multi-schedule alerts
 
-> ⚡ **33 views** · ⚡ [Personal Productivity](../)
+> ⚡ **47 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

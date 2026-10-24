@@ -1,6 +1,6 @@
 # 📊 Monitor lost backlinks with DataForSEO, Google Sheets and Gmail
 
-> ⚡ **28 views** · 📊 [Market Research & Insights](../)
+> ⚡ **84 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

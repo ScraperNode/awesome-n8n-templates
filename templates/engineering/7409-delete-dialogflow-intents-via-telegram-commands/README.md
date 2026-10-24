@@ -1,6 +1,6 @@
 # ⚒️ Delete Dialogflow intents via Telegram commands
 
-> ⚡ **185 views** · ⚒️ [Engineering](../)
+> ⚡ **205 views** · ⚒️ [Engineering](../)
 
 ## Description
 

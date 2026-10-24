@@ -1,6 +1,6 @@
 # ⚡ Weekly business & home task planner with Notion, email digests and Telegram
 
-> ⚡ **111 views** · ⚡ [Personal Productivity](../)
+> ⚡ **139 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

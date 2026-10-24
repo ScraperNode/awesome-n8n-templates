@@ -1,6 +1,6 @@
 # 💬 Automate real estate marketing with Llama AI, VAPI calls & Gmail campaigns
 
-> ⚡ **1,813 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,156 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

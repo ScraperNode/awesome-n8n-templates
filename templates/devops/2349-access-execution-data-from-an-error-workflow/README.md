@@ -1,6 +1,6 @@
 # ⚙️ Access execution data from an error workflow
 
-> ⚡ **2,238 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,319 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

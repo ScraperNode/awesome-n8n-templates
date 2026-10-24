@@ -1,6 +1,6 @@
 # 🔬 Transcribe & summarize Telegram voice notes with OpenAI and DeepSeek Chat to Google Docs
 
-> ⚡ **394 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **427 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

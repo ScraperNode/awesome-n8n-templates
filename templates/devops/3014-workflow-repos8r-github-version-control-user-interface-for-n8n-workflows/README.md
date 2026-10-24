@@ -1,6 +1,6 @@
 # ⚙️ 🔄 Workflow repos8r: Github version control user interface for n8n workflows
 
-> ⚡ **1,513 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,486 views** · ⚙️ [DevOps & CI/CD](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

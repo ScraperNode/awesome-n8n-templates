@@ -1,6 +1,6 @@
 # ⚡ Export all Strava activity data to Google Sheets
 
-> ⚡ **2,684 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,971 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

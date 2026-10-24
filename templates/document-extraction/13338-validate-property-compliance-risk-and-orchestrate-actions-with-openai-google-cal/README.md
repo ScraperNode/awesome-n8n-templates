@@ -1,6 +1,6 @@
 # 🔬 Validate property compliance risk and orchestrate actions with OpenAI, Google Calendar, Gmail, Slack, and Google Sheets
 
-> ⚡ **11 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **53 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

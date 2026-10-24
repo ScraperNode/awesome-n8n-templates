@@ -1,6 +1,6 @@
 # 🔬 Patient pre-registration system with email verification & QR health cards using Google Drive
 
-> ⚡ **176 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **377 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

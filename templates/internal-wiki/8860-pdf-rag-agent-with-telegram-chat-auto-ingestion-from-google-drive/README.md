@@ -1,6 +1,6 @@
 # 📖 Pdf RAG agent with Telegram chat & auto-ingestion from Google Drive
 
-> ⚡ **1,076 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **1,517 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

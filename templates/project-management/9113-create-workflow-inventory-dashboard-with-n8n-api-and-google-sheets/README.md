@@ -1,6 +1,6 @@
 # 📋 Create workflow inventory dashboard with n8n API and Google Sheets
 
-> ⚡ **937 views** · 📋 [Project Management](../)
+> ⚡ **1,585 views** · 📋 [Project Management](../)
 
 ## Description
 

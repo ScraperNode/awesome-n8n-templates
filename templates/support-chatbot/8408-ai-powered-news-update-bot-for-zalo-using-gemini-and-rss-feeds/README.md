@@ -1,6 +1,6 @@
 # 💬 AI-powered news update bot for Zalo using Gemini and RSS feeds
 
-> ⚡ **1,293 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,973 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

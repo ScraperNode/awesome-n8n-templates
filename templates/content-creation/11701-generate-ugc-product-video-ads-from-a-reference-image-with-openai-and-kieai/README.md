@@ -1,6 +1,6 @@
 # 🎬 Generate UGC product video ads from a reference image with OpenAI and Kie.ai
 
-> ⚡ **283 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **792 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

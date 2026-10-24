@@ -1,6 +1,6 @@
 # 🎬 Food image analysis for calorie estimation with Vision AI and Telegram
 
-> ⚡ **633 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **826 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

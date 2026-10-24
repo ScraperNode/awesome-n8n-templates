@@ -1,6 +1,6 @@
 # 🔧 Extract and decode Google News RSS URLs to clean article links
 
-> ⚡ **14,114 views** · 🔧 [Miscellaneous](../)
+> ⚡ **15,990 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

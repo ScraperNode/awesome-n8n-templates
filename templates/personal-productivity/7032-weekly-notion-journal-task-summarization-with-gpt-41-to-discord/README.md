@@ -1,6 +1,6 @@
 # ⚡ Weekly Notion journal & task summarization with GPT-4.1 to Discord
 
-> ⚡ **515 views** · ⚡ [Personal Productivity](../)
+> ⚡ **604 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

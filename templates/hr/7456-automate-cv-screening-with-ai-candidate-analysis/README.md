@@ -1,6 +1,6 @@
 # 👥 🤖 Automate CV screening with AI candidate analysis
 
-> ⚡ **23,972 views** · 👥 [HR & Recruitment](../)
+> ⚡ **46,270 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

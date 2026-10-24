@@ -1,6 +1,6 @@
 # ⚙️ Backup n8n workflows to Google Drive
 
-> ⚡ **6,635 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **7,109 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

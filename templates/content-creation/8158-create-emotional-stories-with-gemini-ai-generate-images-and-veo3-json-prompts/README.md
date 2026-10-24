@@ -1,6 +1,6 @@
 # 🎬 Create emotional stories with Gemini AI: Generate images and Veo3 JSON prompts
 
-> ⚡ **1,828 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,119 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

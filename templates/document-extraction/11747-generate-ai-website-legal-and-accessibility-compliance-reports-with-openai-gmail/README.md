@@ -1,6 +1,6 @@
 # 🔬 Generate AI website legal and accessibility compliance reports with OpenAI, Gmail and Google Drive
 
-> ⚡ **82 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **114 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

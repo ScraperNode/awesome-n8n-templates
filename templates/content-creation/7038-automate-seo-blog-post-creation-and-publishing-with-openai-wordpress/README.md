@@ -1,6 +1,6 @@
 # 🎬 Automate SEO blog post creation and publishing with OpenAI & WordPress
 
-> ⚡ **402 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **521 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

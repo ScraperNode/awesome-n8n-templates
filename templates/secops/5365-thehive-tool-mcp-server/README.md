@@ -1,6 +1,6 @@
 # 🔒 🛠️ TheHive tool MCP server
 
-> ⚡ **1,081 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,105 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

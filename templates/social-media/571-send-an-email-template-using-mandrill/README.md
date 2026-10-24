@@ -1,6 +1,6 @@
 # 📱 Send an email template using Mandrill
 
-> ⚡ **509 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **525 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

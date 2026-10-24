@@ -1,6 +1,6 @@
 # ⚡ Turn Telegram into an AI assistant with OpenAI voice, memory and tools
 
-> ⚡ **32 views** · ⚡ [Personal Productivity](../)
+> ⚡ **718 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

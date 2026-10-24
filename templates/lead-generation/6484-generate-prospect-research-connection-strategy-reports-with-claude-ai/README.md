@@ -1,6 +1,6 @@
 # 🎣 Generate prospect research & connection strategy reports with Claude AI
 
-> ⚡ **622 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **697 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

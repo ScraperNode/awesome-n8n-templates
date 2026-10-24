@@ -1,6 +1,6 @@
 # ⚡ 🧹 Archive (delete) duplicate items from a Notion database
 
-> ⚡ **1,064 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,179 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📁 Baserow campaign database to Shopify with image upload & dynamic template update
 
-> ⚡ **1,331 views** · 📁 [File Management](../)
+> ⚡ **1,355 views** · 📁 [File Management](../)
 
 ## Description
 

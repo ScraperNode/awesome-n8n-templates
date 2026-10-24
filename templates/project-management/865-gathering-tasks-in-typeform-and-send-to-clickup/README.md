@@ -1,6 +1,6 @@
 # 📋 Gathering tasks in Typeform and send to ClickUp
 
-> ⚡ **1,360 views** · 📋 [Project Management](../)
+> ⚡ **1,362 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate product mockups with Nano Banana (Gemini 2.5 Flash Image)
 
-> ⚡ **7,715 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **8,887 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

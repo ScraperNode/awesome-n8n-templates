@@ -1,6 +1,6 @@
 # 🤝 CallForge - 01 - filter Gong calls synced to Salesforce by opportunity stage
 
-> ⚡ **1,990 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,083 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

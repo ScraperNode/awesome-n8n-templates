@@ -1,6 +1,6 @@
 # 📊 Automate Dutch Public Procurement Data Collection with TenderNed
 
-> ⚡ **378 views** · 📊 [Market Research & Insights](../)
+> ⚡ **612 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Transform RSS feeds into blog articles with GPT-4, human review & Google Docs
 
-> ⚡ **383 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **756 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

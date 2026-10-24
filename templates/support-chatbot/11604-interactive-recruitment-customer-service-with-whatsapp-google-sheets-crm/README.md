@@ -1,6 +1,6 @@
 # 💬 Interactive recruitment customer service with WhatsApp, Google Sheets CRM
 
-> ⚡ **336 views** · 💬 [Support Chatbots](../)
+> ⚡ **797 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

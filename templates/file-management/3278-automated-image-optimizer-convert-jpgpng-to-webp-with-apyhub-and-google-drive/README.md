@@ -1,6 +1,6 @@
 # 📁 Automated image optimizer: convert JPG/PNG to WebP with APYHub and Google Drive
 
-> ⚡ **2,436 views** · 📁 [File Management](../)
+> ⚡ **2,605 views** · 📁 [File Management](../)
 
 ## Description
 

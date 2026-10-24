@@ -1,6 +1,6 @@
 # 🔬 AI-powered proposal automation using Google Slides
 
-> ⚡ **3,716 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,359 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

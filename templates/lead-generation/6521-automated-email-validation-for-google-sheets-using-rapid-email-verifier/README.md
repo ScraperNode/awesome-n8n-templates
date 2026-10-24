@@ -1,6 +1,6 @@
 # 🎣 Automated email validation for Google Sheets using Rapid Email Verifier
 
-> ⚡ **295 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **424 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

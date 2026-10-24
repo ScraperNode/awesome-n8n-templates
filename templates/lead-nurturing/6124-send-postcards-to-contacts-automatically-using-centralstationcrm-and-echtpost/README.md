@@ -1,6 +1,6 @@
 # 💬 Send postcards to contacts automatically using CentralStationCRM and EchtPost
 
-> ⚡ **128 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **157 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📁 Read a file from disk
 
-> ⚡ **9,381 views** · 📁 [File Management](../)
+> ⚡ **9,406 views** · 📁 [File Management](../)
 
 ## Description
 

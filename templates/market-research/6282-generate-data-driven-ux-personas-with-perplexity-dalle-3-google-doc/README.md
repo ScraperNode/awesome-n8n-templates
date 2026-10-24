@@ -1,6 +1,6 @@
 # 📊 Generate data-driven UX personas with Perplexity, DALL·E 3 & Google Doc
 
-> ⚡ **974 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,069 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

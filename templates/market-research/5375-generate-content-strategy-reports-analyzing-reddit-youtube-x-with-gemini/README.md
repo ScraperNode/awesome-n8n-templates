@@ -1,6 +1,6 @@
 # 📊 Generate content strategy reports analyzing Reddit, YouTube & X with Gemini
 
-> ⚡ **5,157 views** · 📊 [Market Research & Insights](../)
+> ⚡ **5,898 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — YouTube's API quotas can be a bottleneck when you're pulling data at scale. [ScraperNode](https://scrapernode.com/youtube) is a community node with dedicated scrapers for [channels](https://scrapernode.com/youtube/scrapers/channels), [videos](https://scrapernode.com/youtube/scrapers/videos), and [comments](https://scrapernode.com/youtube/scrapers/comments) — no quota limits, just structured data.
 >

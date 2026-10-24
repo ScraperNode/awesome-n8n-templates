@@ -1,6 +1,6 @@
 # 🎫 Triage Slack and Gmail requests with an AI-powered intake layer
 
-> ⚡ **86 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **520 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

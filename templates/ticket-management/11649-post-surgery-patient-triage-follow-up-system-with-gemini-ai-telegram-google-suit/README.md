@@ -1,6 +1,6 @@
 # 🎫 Post-surgery patient triage & follow-up system with Gemini AI, Telegram & Google Suite
 
-> ⚡ **70 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **113 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

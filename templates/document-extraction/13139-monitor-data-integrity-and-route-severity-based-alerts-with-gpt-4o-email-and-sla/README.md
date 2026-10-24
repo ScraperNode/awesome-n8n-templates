@@ -1,6 +1,6 @@
 # 🔬 Monitor data integrity and route severity-based alerts with GPT-4o, email and Slack
 
-> ⚡ **6 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **68 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

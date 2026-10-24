@@ -1,6 +1,6 @@
 # ⚒️ Validate clinical trial and lab signals with OpenAI for regulatory governance
 
-> ⚡ **18 views** · ⚒️ [Engineering](../)
+> ⚡ **135 views** · ⚒️ [Engineering](../)
 
 ## Description
 

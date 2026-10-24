@@ -1,6 +1,6 @@
 # ⚡ All-in-one Telegram/Baserow AI assistant 🤖🧠 Voice/Photo/Save notes/Long term mem
 
-> ⚡ **28,107 views** · ⚡ [Personal Productivity](../)
+> ⚡ **27,000 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Content farming - : AI-powered blog automation for WordPress
 
-> ⚡ **32,801 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **35,920 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 
@@ -12,6 +12,8 @@ ChatGPT 5, Inbound Links, Verified Outbound Links,YOAST seo integration, Company
 📝 Read the [New Articles published by Content Farming v4](https://articles.emp0.com/tag/v4/)
 
 🛒 View the [updated and improved v4 workflow](https://0emp0.gumroad.com/l/content-farming-v4)
+
+👻 No technical experience ? use [Ghost.Blog](https://ghost.blog)
 
 # Content Farming V2
 ## AI Powered Blog Automation for WordPress 

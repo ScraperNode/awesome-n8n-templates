@@ -1,6 +1,6 @@
 # 📁 Upload files via n8n form and save them to Digital Ocean Spaces
 
-> ⚡ **4,004 views** · 📁 [File Management](../)
+> ⚡ **4,172 views** · 📁 [File Management](../)
 
 ## Description
 

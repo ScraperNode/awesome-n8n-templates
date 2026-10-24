@@ -1,6 +1,6 @@
 # ⚙️ Monitor multiple Github repos via webhook
 
-> ⚡ **6,263 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **6,349 views** · ⚙️ [DevOps & CI/CD](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

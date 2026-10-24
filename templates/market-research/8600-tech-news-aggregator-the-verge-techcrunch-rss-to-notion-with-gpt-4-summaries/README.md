@@ -1,6 +1,6 @@
 # 📊 Tech news aggregator: The Verge & TechCrunch RSS to Notion with GPT-4 summaries
 
-> ⚡ **1,352 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,652 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Send personalized follow-up emails for Calendly bookings with GPT-4 and Outlook
 
-> ⚡ **760 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **852 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

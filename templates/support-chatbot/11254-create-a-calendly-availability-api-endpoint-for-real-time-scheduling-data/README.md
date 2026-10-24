@@ -1,6 +1,6 @@
 # 💬 Create a Calendly availability API endpoint for real-time scheduling data
 
-> ⚡ **698 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,255 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

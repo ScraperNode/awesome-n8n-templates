@@ -1,6 +1,6 @@
 # 👥 Bulk resume screening & JD matching with GPT-4 for HR teams
 
-> ⚡ **3,217 views** · 👥 [HR & Recruitment](../)
+> ⚡ **3,820 views** · 👥 [HR & Recruitment](../)
 
 > 💡 **Pro Tip** — Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.
 >

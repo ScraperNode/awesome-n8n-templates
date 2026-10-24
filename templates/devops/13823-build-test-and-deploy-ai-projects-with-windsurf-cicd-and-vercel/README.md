@@ -1,6 +1,6 @@
 # ⚙️ Build, test and deploy AI projects with Windsurf CI/CD and Vercel
 
-> ⚡ **6 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **162 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

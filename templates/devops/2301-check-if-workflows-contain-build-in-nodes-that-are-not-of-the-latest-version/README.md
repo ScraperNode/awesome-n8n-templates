@@ -1,6 +1,6 @@
 # ⚙️ Check if workflows contain build-in nodes that are not of the latest version
 
-> ⚡ **2,891 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **3,180 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Host your own JWT authentication system with Data Tables and token management
 
-> ⚡ **3,554 views** · ⚒️ [Engineering](../)
+> ⚡ **3,757 views** · ⚒️ [Engineering](../)
 
 ## Description
 

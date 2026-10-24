@@ -1,0 +1,1028 @@
+{
+  "id": "t0GmVr7hZdfcaAwU",
+  "meta": {
+    "instanceId": "0e55c3b513f5a0631c17003d0888549f0d93ecb7047b38aab307f5886a32dbd4"
+  },
+  "name": "Process Serving Agency \u2013 Attempt Escalation & Affidavit-of-Service Builder",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "52589e51-84d0-4344-ad09-aca8b3a06565",
+      "name": "New Service Attempt Submitted",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        -160,
+        288
+      ],
+      "webhookId": "4bcbddf3-61ea-4f72-9581-dc659933369c",
+      "parameters": {
+        "options": {},
+        "formTitle": "Service Attempt Log",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Case Number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Defendant Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Address Attempted",
+              "requiredField": true
+            },
+            {
+              "fieldType": "textarea",
+              "fieldLabel": "Outcome Notes",
+              "requiredField": true
+            },
+            {
+              "fieldType": "date",
+              "fieldLabel": "SOL Deadline"
+            }
+          ]
+        },
+        "formDescription": "Field process server attempt entry"
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "136b02c3-088c-4767-946e-fb95a27c8c17",
+      "name": "Get Case Record",
+      "type": "n8n-nodes-base.dataTable",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        208,
+        288
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "case_number",
+              "keyValue": "={{$json['Case Number']}}"
+            }
+          ]
+        },
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "process_serving_cases"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "4132f774-b9cb-4ded-a233-9e49dba4f3a3",
+      "name": "Compute Attempt Count & SOL Countdown",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        560,
+        288
+      ],
+      "parameters": {
+        "jsCode": "// Real jurisdiction escalation logic\nconst form = $('New Service Attempt Submitted').item.json;\nconst caseRows = $input.all().map(i => i.json);\nconst existing = caseRows[0] || {};\nconst priorAttempts = Number(existing.attempt_count || 0);\nconst attemptCount = priorAttempts + 1;\nconst solDate = existing.sol_deadline ? new Date(existing.sol_deadline)\n  : (form['SOL Deadline'] ? new Date(form['SOL Deadline']) : null);\nconst now = new Date();\nlet daysToSol = null;\nif (solDate) daysToSol = Math.ceil((solDate.getTime() - now.getTime()) / 86400000);\nconst firstAttemptDate = existing.first_attempt_date || now.toISOString();\nconst daysSinceFirst = Math.floor((now.getTime() - new Date(firstAttemptDate).getTime()) / 86400000);\n// Jurisdiction rule: 3+ attempts on different days within 30 days, still not served -> alt-service eligible\nconst altServiceEligible = attemptCount >= 3 && daysSinceFirst <= 30;\nconst solUrgent = daysToSol !== null && daysToSol <= 14;\nreturn { json: {\n  case_number: form['Case Number'], defendant: form['Defendant Name'],\n  address: form['Address Attempted'], outcome_notes: form['Outcome Notes'],\n  attempt_count: attemptCount, first_attempt_date: firstAttemptDate,\n  days_since_first: daysSinceFirst, sol_deadline: solDate ? solDate.toISOString() : null,\n  days_to_sol: daysToSol, sol_urgent: solUrgent, alt_service_eligible: altServiceEligible,\n  already_authorized: existing.alt_service_authorized === true,\n}};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "13487470-7985-490d-8126-edc2b622c3ef",
+      "name": "GPT-4o-mini for Outcome Classification",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        544,
+        832
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "fa8d25e2-7f45-4597-8ec3-f6903a7e29b3",
+      "name": "Classify Attempt Outcome",
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        928,
+        288
+      ],
+      "parameters": {
+        "options": {
+          "multiClass": false,
+          "systemPromptTemplate": "Classify the process-server field note into exactly one category."
+        },
+        "inputText": "=Case {{$json.case_number}}, attempt #{{$json.attempt_count}}. Field notes: {{$json.outcome_notes}}",
+        "categories": {
+          "categories": [
+            {
+              "category": "served_successfully",
+              "description": "Defendant was personally served the papers."
+            },
+            {
+              "category": "evasion_suspected",
+              "description": "Notes suggest defendant is deliberately avoiding service."
+            },
+            {
+              "category": "wrong_address",
+              "description": "Address is vacant, wrong, or defendant confirmed not to live there."
+            },
+            {
+              "category": "refused_service",
+              "description": "Someone was present and refused to accept documents."
+            },
+            {
+              "category": "no_answer",
+              "description": "No one answered, no other signal."
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "71bbc04d-1124-4066-89c5-f8abb2a159b7",
+      "name": "Is Alt-Service Eligible?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1456,
+        336
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{$json.alt_service_eligible}}",
+              "rightValue": true
+            },
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "false"
+              },
+              "leftValue": "={{$json.already_authorized}}",
+              "rightValue": true
+            },
+            {
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{$json.category}}",
+              "rightValue": "served_successfully"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "5db77e49-242a-4742-8581-b86dbe69eb4e",
+      "name": "Request Alt-Service Approval",
+      "type": "n8n-nodes-base.slack",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        1776,
+        272
+      ],
+      "webhookId": "316dfa0d-accb-4944-acdf-1b0cff9c67a6",
+      "parameters": {
+        "select": "channel",
+        "message": "=Case {{$json.case_number}} ({{$json.defendant}}): {{$json.attempt_count}} attempts in {{$json.days_since_first}} days, no personal service. SOL in {{$json.days_to_sol}} days. Approve substitute/alternate service?",
+        "options": {},
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#case-approvals"
+        },
+        "operation": "sendAndWait",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double"
+          }
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 2.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "aac3b9b3-f7ad-4891-9c9a-8061619efde3",
+      "name": "Was It Approved?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2096,
+        288
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{$json.data.approved}}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "0b2564a1-0d4f-456e-a8a5-8743ece808ec",
+      "name": "Finalize Case Status",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2368,
+        736
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "name": "case_status",
+              "type": "string",
+              "value": "={{$json.category === 'served_successfully' ? 'served' : ($json.data && $json.data.approved ? 'alt_service_authorized' : ($json.alt_service_eligible ? 'alt_service_pending_or_denied' : 'attempts_continuing'))}}"
+            },
+            {
+              "name": "alt_service_authorized",
+              "type": "boolean",
+              "value": "={{$json.data ? !!$json.data.approved : false}}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "4842377f-7881-4f09-8b74-7ffd7110c49e",
+      "name": "Update Case Record",
+      "type": "n8n-nodes-base.dataTable",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        2720,
+        288
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "mappingMode": "autoMapInputData"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "case_number",
+              "keyValue": "={{$json.case_number}}"
+            }
+          ]
+        },
+        "options": {},
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "process_serving_cases"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "9f1a1727-5570-49dc-9e11-e35b379a4546",
+      "name": "Is Case Ready to Close?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3088,
+        288
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{$json.case_status}}",
+              "rightValue": "attempts_continuing"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "d98ab115-d069-4930-a738-8912c89cc78d",
+      "name": "Generate Affidavit of Service Draft",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3440,
+        288
+      ],
+      "parameters": {
+        "jsCode": "// Real template-fill logic, no AI needed for a legal boilerplate document\nconst j = $input.item.json;\nconst method = j.case_status === 'served' ? 'personal service' : 'substitute/alternate service (court-authorized)';\nconst text = `AFFIDAVIT OF SERVICE\\n\\n`\n  + `Case No.: ${j.case_number}\\n`\n  + `Defendant: ${j.defendant}\\n`\n  + `Address: ${j.address}\\n`\n  + `Total attempts: ${j.attempt_count}\\n`\n  + `Method of service: ${method}\\n`\n  + `I certify the foregoing is true and correct under penalty of perjury.`;\nreturn { json: { ...j, affidavit_text: text, affidavit_filename: `affidavit_${j.case_number}.txt` } };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b22cc6f2-018f-4645-9024-e1d3556d92de",
+      "name": "Save Affidavit to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        3808,
+        288
+      ],
+      "parameters": {
+        "name": "={{$json.affidavit_filename}}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "options": {},
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "CASE_AFFIDAVITS_FOLDER_ID"
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "395c3684-d586-44ce-af83-7badece7a967",
+      "name": "Submit to Court E-Filing API",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        4160,
+        288
+      ],
+      "parameters": {
+        "url": "https://efile.courts.example/api/filings",
+        "method": "POST",
+        "options": {
+          "timeout": 10000
+        },
+        "sendBody": true,
+        "authentication": "genericCredentialType",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "case_number",
+              "value": "={{$json.case_number}}"
+            },
+            {
+              "name": "document_type",
+              "value": "affidavit_of_service"
+            },
+            {
+              "name": "status",
+              "value": "draft_ready_for_review"
+            }
+          ]
+        },
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "c7f5999f-4e41-4c30-8d30-6f442f367b48",
+      "name": "Merge Case Outcome",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        3776,
+        992
+      ],
+      "parameters": {},
+      "typeVersion": 3.2
+    },
+    {
+      "id": "50a65dbb-ac8a-473c-b803-8514861df5ce",
+      "name": "Post Case Status Update",
+      "type": "n8n-nodes-base.slack",
+      "onError": "continueRegularOutput",
+      "maxTries": 3,
+      "position": [
+        4992,
+        976
+      ],
+      "webhookId": "99512210-0765-4903-82a8-d5da6b766468",
+      "parameters": {
+        "text": "=Case {{$json.case_number}} ({{$json.defendant}}): attempt #{{$json.attempt_count}}, status={{$json.case_status}}, SOL in {{$json.days_to_sol}} days.",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#case-tracking"
+        },
+        "otherOptions": {}
+      },
+      "retryOnFail": true,
+      "typeVersion": 2.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "827dca3f-7fe1-4ac4-a040-4cb3d36180dd",
+      "name": "Panel \u2013 Workflow Details",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1088,
+        -96
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 572,
+        "height": 948,
+        "content": "\ud83d\udcd8 WORKFLOW DETAILS\n\nProcess Serving Agency \u2013 Attempt Escalation & Affidavit-of-Service Builder\n\nVALUE PROP: Every field attempt logged by a process server is scored against jurisdiction attempt-count rules and the case's statute-of-limitations deadline, routed for attorney sendAndWait approval when alternate service becomes eligible, and closed out with a deterministic affidavit-of-service draft staged into the court's e-filing queue.\n\nWHO / PROBLEM: Process servers log attempts in the field; paralegals have to track attempt counts per case, catch SOL deadlines, and know exactly when a case qualifies for substitute/posted service \u2014 a rule that varies and is easy to miss under caseload pressure. A missed SOL deadline can get a case dismissed.\n\nWALKTHROUGH:\n1. Field agent submits an attempt via form (case #, address, outcome notes).\n2. Case state is pulled and attempt count / SOL countdown are computed (Code).\n3. Outcome notes are classified into 5 categories by AI (multi-output, no If/Switch).\n4. If alt-service-eligible and not yet authorized, the workflow pauses (Slack send-and-wait) for attorney approval.\n5. Case status is finalized, case state is upserted (this run's watchdog state).\n6. Closed cases get a template-filled affidavit, saved to Drive and staged in the court e-filing API.\n7. Every attempt \u2014 closed or not \u2014 gets a Slack status update.\n\nNODE SUMMARY: Form Trigger, Data Table (x2), Code (x2), Text Classifier + Chat Model, If (x3), Slack sendAndWait, Set, Google Drive, HTTP Request, Merge (x2), Slack.\n\nEXPECTED I/O: In: one attempt-log form submission per attempt. Out: updated case row, Slack updates, and (on closure) an affidavit file + staged e-filing.\n\nSTICKY COLOUR LEGEND: 1 trigger (blue) \u00b7 2 transform (grey) \u00b7 3 AI (purple) \u00b7 4 branch (yellow) \u00b7 5 storage (green) \u00b7 6 notify (red)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "af0cce5e-9446-4594-9646-056a4d53010b",
+      "name": "Panel \u2013 Setup Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1088,
+        928
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 572,
+        "height": 716,
+        "content": "\u2699 SETUP GUIDE\n\n1. Import this JSON via n8n \u2192 Workflows \u2192 Import from File.\n2. Create the n8n Data Table \"process_serving_cases\" with columns: case_number, attempt_count, first_attempt_date, sol_deadline, alt_service_authorized, case_status (used by: Get Case Record, Update Case Record).\n3. Create credential \"Swapnil AI Labs \u2013 OpenAI\" (OpenAI API) on: GPT-4o-mini for Outcome Classification.\n4. Create credential \"Legal Ops \u2013 Slack\" (Slack API) on: Request Alt-Service Approval, Post Case Status Update.\n5. Create credential \"Legal Ops \u2013 Google Drive\" (Google Drive OAuth2) on: Save Affidavit to Drive.\n6. Create credential \"Court E-Filing API Key\" (Header Auth) on: Submit to Court E-Filing API.\n7. Replace CASE_AFFIDAVITS_FOLDER_ID with your real Drive folder ID.\n8. Set #case-approvals and #case-tracking to your real Slack channels.\n9. Adjust the jurisdiction rule (3 attempts / 30 days) in Compute Attempt Count & SOL Countdown to match your state.\n10. TEST: submit the form twice for the same fake case number, confirm attempt_count increments and the classifier routes correctly.\n\nEST. SETUP TIME: 35\u201345 minutes.\n\nSTATUS NOTE: Data Table and Slack sendAndWait parameter shapes were built from best-effort knowledge (live docs did not expose exact JSON) \u2014 confirm both nodes' fields on first import."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "be91f913-f2f5-4b20-9fca-1f53dcaf123d",
+      "name": "Panel \u2013 Customisation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1072,
+        1760
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 540,
+        "height": 404,
+        "content": "\ud83c\udfa8 CUSTOMISATION\n\n1. Compute Attempt Count & SOL Countdown (Code): change the 3-attempts/30-days rule to your jurisdiction's actual substitute-service statute.\n2. Classify Attempt Outcome (Text Classifier): add categories like \"hostile_dog\" or \"gated_community\" if your servers report those often.\n3. Request Alt-Service Approval (Slack): swap to Gmail sendAndWait if your firm's attorneys prefer email approvals.\n4. Generate Affidavit of Service Draft (Code): extend the template with your state's exact affidavit boilerplate language.\n5. Submit to Court E-Filing API (HTTP Request): point at your real e-filing vendor (Tyler/Odyssey, One Legal, etc.) and map their required fields."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8fc00e9d-59ca-4c0a-831f-86c71fb1748a",
+      "name": "Panel \u2013 Additional Information",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1056,
+        2272
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 492,
+        "height": 628,
+        "content": "\u2139 ADDITIONAL INFORMATION\n\nERROR HANDLING: External-call nodes (Slack, Google Drive, HTTP Request, OpenAI chat model) use onError=continueRegularOutput with retryOnFail, maxTries=3, waitBetweenTries=2000ms. Data Table, Code, Set, If, Merge and the Form Trigger are excluded \u2014 they are local/deterministic, not third-party API calls.\n\nAPI COST / RATE LIMITS: One classifier call per attempt (cheap, short input); Slack sendAndWait pauses execution indefinitely until answered \u2014 set a reminder/escalation policy on the approval message in production.\n\nDATA PRIVACY: Case data includes defendant names and addresses \u2014 treat the Data Table and Drive folder as containing PII/legal records; restrict access accordingly.\n\nN8N VERSION BUILT AGAINST: n8n 1.6x (nodes-base ~ Sept 2026), typeVersions as declared per node.\n\nKNOWN LIMITATIONS: Offline hand-authored build, not tested against a live n8n instance. Data Table and Slack sendAndWait parameter shapes should be re-checked against your instance's node UI on first import.\n\nCREATOR: Swapnil AI Labs \u2014 swapnil.mandloi7@gmail.com \u2014 swapnilailabs.netlify.app"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "37aa3369-9b1d-49fc-84bc-1c8f7b7ad35b",
+      "name": "Note: New Service Attempt Submitted",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -256,
+        -32
+      ],
+      "parameters": {
+        "width": 300,
+        "height": 214,
+        "content": "**New Service Attempt Submitted**\nField process server submits one form after every attempt, in-app or via phone.\nRequired: case #, defendant, address, outcome notes.\nThis is the only data-entry point for the entire case file."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8a25e1dc-b63d-4825-9c2e-0ea1017d57f0",
+      "name": "Note: Get Case Record",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        176,
+        0
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 300,
+        "height": 198,
+        "content": "**Get Case Record**\nLooks up this case's running attempt count, SOL deadline and prior status.\nMatch: case_number.\nWithout state, the escalation rule (3 attempts/30 days) can't be evaluated."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ffdb9857-940a-463f-bbe4-6697433a2946",
+      "name": "Note: Compute Attempt Count & SOL Countdown",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        528,
+        -48
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 300,
+        "height": 246,
+        "content": "**Compute Attempt Count & SOL Countdown**\nIncrements attempts, computes days-to-statute-of-limitations, applies the 3-attempts/30-days alt-service rule.\nRule: attempt_count>=3 AND <=30 days.\nGetting this wrong risks a case being dismissed for defective service."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ab80c43b-fdb3-41d5-b3c0-b18de2b83105",
+      "name": "Note: GPT-4o-mini for Outcome Classification",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        400,
+        1072
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 300,
+        "height": 182,
+        "content": "**GPT-4o-mini for Outcome Classification**\nChat model backing the attempt-outcome classifier.\nModel: gpt-4o-mini, temp 0.\nDeterministic classification matters more than creativity here."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5609c3be-9298-419a-b296-26f2ea72c3c8",
+      "name": "Note: Classify Attempt Outcome",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 316,
+        "height": 198,
+        "content": "**Classify Attempt Outcome**\nRoutes the free-text field note into one of 5 outcome categories (multi-output, no Switch/If used here).\nCategories: served / evasion / wrong-address / refused / no-answer.\nField notes are messy prose \u2014 this is the only reliable way to route them."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e5584515-c01c-4a1e-b3ce-5728305044bf",
+      "name": "Note: Is Alt-Service Eligible?",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1344,
+        -48
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 300,
+        "height": 278,
+        "content": "**Is Alt-Service Eligible?**\nBranch point 1: only cases past the attempt threshold, not yet authorized, and not already served reach approval.\nCondition: alt_service_eligible AND NOT already_authorized AND category != served.\nMost attempts just log and wait \u2014 this keeps the attorney's queue small."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "4a5103a9-9415-4b44-bb3b-cc92c99c3a78",
+      "name": "Note: Request Alt-Service Approval",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1680,
+        16
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 300,
+        "height": 198,
+        "content": "**Request Alt-Service Approval**\nPauses the workflow (send-and-wait) until the supervising attorney approves or denies alternate service.\nChannel: #case-approvals.\nA paralegal cannot authorize substitute/posted service \u2014 only the attorney of record can."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ce74db20-b537-424c-8e58-1c88f26265c4",
+      "name": "Note: Was It Approved?",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2064,
+        48
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 300,
+        "height": 182,
+        "content": "**Was It Approved?**\nBranch point 2: reads the attorney's Slack approval response.\nCondition: data.approved == true.\nDenied requests loop back to standard attempts instead of escalating service method."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5379e3c2-495b-4daa-a0e4-0069bfb0b3c1",
+      "name": "Note: Finalize Case Status",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2256,
+        976
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 348,
+        "height": 230,
+        "content": "**Finalize Case Status**\nSingle convergence point for every path (served / approved / denied / not-yet-eligible).\nDerives one case_status field from whichever branch fired.\nAvoids duplicating the same status logic three times downstream."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "60dfa167-e8eb-4b08-b192-795bdc268d3f",
+      "name": "Note: Update Case Record",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2608,
+        -16
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 300,
+        "height": 214,
+        "content": "**Update Case Record**\nUpserts the case state (attempt count, SOL countdown, status) \u2014 the state next run's escalation check reads.\nKey: case_number.\nThis is the primary storage sink: the paralegal's live case tracker."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a11b4a95-0184-4c1b-a994-bda8baeb236c",
+      "name": "Note: Is Case Ready to Close?",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3040,
+        0
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 316,
+        "height": 198,
+        "content": "**Is Case Ready to Close?**\nBranch point 3: only served / alt-service-authorized cases get an affidavit drafted.\nCondition: case_status != 'attempts_continuing'.\nDrafting affidavits for still-open cases would just create noise."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b5d5961e-0d9a-4cbd-b581-75f5bba8a7dc",
+      "name": "Note: Generate Affidavit of Service Draft",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3408,
+        -16
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 300,
+        "height": 214,
+        "content": "**Generate Affidavit of Service Draft**\nFills a deterministic affidavit template from case data \u2014 a legal document should not hallucinate.\nOutput: affidavit_text, affidavit_filename.\nThe court needs an exact, auditable record, not an AI paraphrase."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c7203ac4-cb09-4bed-b080-669f0a883141",
+      "name": "Note: Save Affidavit to Drive",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3776,
+        0
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 300,
+        "height": 198,
+        "content": "**Save Affidavit to Drive**\nStores the signed-ready affidavit draft as the durable document artifact.\nFolder: CASE_AFFIDAVITS_FOLDER_ID.\nGives the attorney a file to physically sign and file with the court."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1aa7a003-0a4e-445f-943c-220972eccfda",
+      "name": "Note: Submit to Court E-Filing API",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4128,
+        -16
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 300,
+        "height": 214,
+        "content": "**Submit to Court E-Filing API**\nStages the affidavit as a draft filing in the court's e-filing queue.\nEndpoint: /api/filings, status=draft_ready_for_review.\nStaged, not final \u2014 a human attorney still has to review and sign before it's actually filed."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6cab6bab-f152-40de-8467-53f70dd5ccd8",
+      "name": "Note: Merge Case Outcome",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3648,
+        1216
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 300,
+        "height": 198,
+        "content": "**Merge Case Outcome**\nReconverges the closed (affidavit-filed) path with the still-open path before the final status post.\nMode: append, 2 inputs.\nEvery attempt gets a status update regardless of whether the case closed."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9dd94f27-50ad-4413-a46e-594860d3d39c",
+      "name": "Note: Post Case Status Update",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4880,
+        672
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 300,
+        "height": 198,
+        "content": "**Post Case Status Update**\nPosts a one-line status update to the team's case-tracking channel after every attempt.\nChannel: #case-tracking.\nKeeps the whole team current without anyone opening the case tracker."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "01d047be-b328-4e4a-85b3-d67f79222b33",
+  "connections": {
+    "Get Case Record": {
+      "main": [
+        [
+          {
+            "node": "Compute Attempt Count & SOL Countdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Was It Approved?": {
+      "main": [
+        [
+          {
+            "node": "Finalize Case Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finalize Case Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Case Outcome": {
+      "main": [
+        [
+          {
+            "node": "Post Case Status Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Case Record": {
+      "main": [
+        [
+          {
+            "node": "Is Case Ready to Close?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Case Status": {
+      "main": [
+        [
+          {
+            "node": "Update Case Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Case Ready to Close?": {
+      "main": [
+        [
+          {
+            "node": "Generate Affidavit of Service Draft",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Case Outcome",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Save Affidavit to Drive": {
+      "main": [
+        [
+          {
+            "node": "Submit to Court E-Filing API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Attempt Outcome": {
+      "main": [
+        [
+          {
+            "node": "Is Alt-Service Eligible?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Alt-Service Eligible?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Alt-Service Eligible?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Alt-Service Eligible?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Alt-Service Eligible?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Alt-Service Eligible?": {
+      "main": [
+        [
+          {
+            "node": "Request Alt-Service Approval",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finalize Case Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Alt-Service Approval": {
+      "main": [
+        [
+          {
+            "node": "Was It Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit to Court E-Filing API": {
+      "main": [
+        [
+          {
+            "node": "Merge Case Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New Service Attempt Submitted": {
+      "main": [
+        [
+          {
+            "node": "Get Case Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Affidavit of Service Draft": {
+      "main": [
+        [
+          {
+            "node": "Save Affidavit to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Attempt Count & SOL Countdown": {
+      "main": [
+        [
+          {
+            "node": "Classify Attempt Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT-4o-mini for Outcome Classification": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Classify Attempt Outcome",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

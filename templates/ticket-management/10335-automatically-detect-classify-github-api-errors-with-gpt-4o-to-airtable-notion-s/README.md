@@ -1,6 +1,6 @@
 # 🎫 Automatically detect & classify GitHub API errors with GPT-4o to Airtable, Notion & Slack
 
-> ⚡ **60 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **83 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

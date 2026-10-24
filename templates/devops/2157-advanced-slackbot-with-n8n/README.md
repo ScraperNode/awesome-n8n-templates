@@ -1,6 +1,6 @@
 # ⚙️ 🤖 Advanced Slackbot with n8n
 
-> ⚡ **11,133 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **12,236 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

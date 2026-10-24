@@ -1,6 +1,6 @@
 # ⚙️ Deploy workflows from Google Drive to n8n instance
 
-> ⚡ **501 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **596 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

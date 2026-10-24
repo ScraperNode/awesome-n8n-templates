@@ -1,6 +1,6 @@
 # 📋 Track & alert team holidays across countries with Nager.Date API, Notion and Slack
 
-> ⚡ **48 views** · 📋 [Project Management](../)
+> ⚡ **54 views** · 📋 [Project Management](../)
 
 ## Description
 

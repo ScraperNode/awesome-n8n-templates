@@ -1,6 +1,6 @@
 # ⚡ Daily meetings summarization with Gemini AI
 
-> ⚡ **4,393 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,334 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔒 Parse DMARC reports, save them in database and notify on DKIM or SPF error
 
-> ⚡ **3,493 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **3,706 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

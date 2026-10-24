@@ -1,6 +1,6 @@
 # ⚡ AI agent : Google calendar assistant using OpenAI
 
-> ⚡ **68,493 views** · ⚡ [Personal Productivity](../)
+> ⚡ **71,202 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

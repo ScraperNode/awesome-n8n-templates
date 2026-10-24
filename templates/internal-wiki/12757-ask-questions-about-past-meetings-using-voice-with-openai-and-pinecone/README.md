@@ -1,6 +1,6 @@
 # 📖 Ask questions about past meetings using voice with OpenAI and Pinecone
 
-> ⚡ **86 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **115 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

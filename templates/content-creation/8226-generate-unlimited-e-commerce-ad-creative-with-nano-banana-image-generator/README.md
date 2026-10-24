@@ -1,6 +1,6 @@
 # 🎬 Generate unlimited e-commerce ad creative with Nano Banana Image Generator
 
-> ⚡ **4,446 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,999 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

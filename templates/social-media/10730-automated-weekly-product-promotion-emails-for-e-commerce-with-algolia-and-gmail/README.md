@@ -1,6 +1,6 @@
 # 📱 Automated weekly product promotion emails for e-commerce with Algolia and Gmail
 
-> ⚡ **105 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **132 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

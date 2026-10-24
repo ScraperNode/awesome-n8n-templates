@@ -1,6 +1,6 @@
 # ⚙️ Automatic email notifications for n8n version releases with Gmail
 
-> ⚡ **312 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **431 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

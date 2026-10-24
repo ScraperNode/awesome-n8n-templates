@@ -1,6 +1,6 @@
 # 🎬 Author and publish blog posts from Google Sheets
 
-> ⚡ **7,300 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **7,141 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

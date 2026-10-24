@@ -1,6 +1,6 @@
 # 💬 Automate WhatsApp lead follow-ups and nurturing with WATI, Airtable and OpenAI
 
-> ⚡ **30 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **428 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

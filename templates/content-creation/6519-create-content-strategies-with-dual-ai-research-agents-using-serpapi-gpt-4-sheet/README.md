@@ -1,6 +1,6 @@
 # 🎬 Create content strategies with dual AI research agents using SerpApi, GPT-4 & Sheets
 
-> ⚡ **105 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **130 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

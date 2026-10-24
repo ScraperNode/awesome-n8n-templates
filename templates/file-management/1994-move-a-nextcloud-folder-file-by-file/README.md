@@ -1,6 +1,6 @@
 # 📁 Move a Nextcloud folder file by file
 
-> ⚡ **3,475 views** · 📁 [File Management](../)
+> ⚡ **3,594 views** · 📁 [File Management](../)
 
 ## Description
 

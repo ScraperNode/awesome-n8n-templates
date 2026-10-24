@@ -1,6 +1,6 @@
 # 📖 Implement on-prem RAG with Qdrant and Ollama for a self-hosted KB
 
-> ⚡ **213 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **1,028 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Generate ideal customer profiles & find lookalike companies in Germany
 
-> ⚡ **259 views** · 📊 [Market Research & Insights](../)
+> ⚡ **500 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Execute a command that gives the hard disk memory used on the host machine
 
-> ⚡ **2,082 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,144 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

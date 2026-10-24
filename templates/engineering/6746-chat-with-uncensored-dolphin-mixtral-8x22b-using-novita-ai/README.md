@@ -1,6 +1,6 @@
 # ⚒️ Chat with uncensored Dolphin Mixtral 8x22B using Novita AI
 
-> ⚡ **1,298 views** · ⚒️ [Engineering](../)
+> ⚡ **3,044 views** · ⚒️ [Engineering](../)
 
 ## Description
 

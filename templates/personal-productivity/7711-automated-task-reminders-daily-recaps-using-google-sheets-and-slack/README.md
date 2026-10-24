@@ -1,6 +1,6 @@
 # ⚡ Automated task reminders & daily recaps using Google Sheets and Slack
 
-> ⚡ **517 views** · ⚡ [Personal Productivity](../)
+> ⚡ **605 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

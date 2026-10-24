@@ -1,6 +1,6 @@
 # ⚒️ Convert task ideas to implementation plans with GPT-4o, Slack & Google Sheets
 
-> ⚡ **825 views** · ⚒️ [Engineering](../)
+> ⚡ **1,442 views** · ⚒️ [Engineering](../)
 
 ## Description
 

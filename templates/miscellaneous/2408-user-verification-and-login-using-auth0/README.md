@@ -1,6 +1,6 @@
 # 🔧 User verification and login using Auth0
 
-> ⚡ **18,629 views** · 🔧 [Miscellaneous](../)
+> ⚡ **21,622 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

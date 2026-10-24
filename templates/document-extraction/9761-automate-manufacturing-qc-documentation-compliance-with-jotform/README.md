@@ -1,6 +1,6 @@
 # 🔬 Automate manufacturing QC documentation & compliance with Jotform
 
-> ⚡ **356 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **699 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

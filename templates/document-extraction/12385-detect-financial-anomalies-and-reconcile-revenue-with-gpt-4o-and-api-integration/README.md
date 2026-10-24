@@ -1,6 +1,6 @@
 # 🔬 Detect financial anomalies and reconcile revenue with GPT-4o and API integrations
 
-> ⚡ **235 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **321 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

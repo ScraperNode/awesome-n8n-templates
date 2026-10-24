@@ -1,6 +1,6 @@
 # 📁 Download Threads videos & log results in Google Sheets
 
-> ⚡ **359 views** · 📁 [File Management](../)
+> ⚡ **654 views** · 📁 [File Management](../)
 
 ## Description
 

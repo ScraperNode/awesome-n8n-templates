@@ -1,6 +1,6 @@
 # 🔬 Auto-generate developer invoices & compliance reminders with Jira and Gmail
 
-> ⚡ **97 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **117 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

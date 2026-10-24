@@ -1,6 +1,6 @@
 # 🧾 Automate real-time QuickBooks invoice alerts in Slack
 
-> ⚡ **486 views** · 🧾 [Invoice Processing](../)
+> ⚡ **523 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

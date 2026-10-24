@@ -1,6 +1,6 @@
 # 🤖 AI-powered mock job interview with voice, assessment & Gmail reporting
 
-> ⚡ **119 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **149 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

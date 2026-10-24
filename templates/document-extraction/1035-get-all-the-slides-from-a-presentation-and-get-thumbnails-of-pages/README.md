@@ -1,6 +1,6 @@
 # 🔬 Get all the slides from a presentation and get thumbnails of pages
 
-> ⚡ **2,939 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **3,102 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

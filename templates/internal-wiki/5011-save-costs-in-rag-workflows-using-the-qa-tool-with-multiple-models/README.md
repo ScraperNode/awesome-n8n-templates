@@ -1,6 +1,6 @@
 # 📖 Save Costs In RAG Workflows using the Q&A Tool With Multiple Models
 
-> ⚡ **9,844 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **10,760 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

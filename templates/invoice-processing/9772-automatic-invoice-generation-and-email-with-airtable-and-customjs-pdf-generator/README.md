@@ -1,6 +1,6 @@
 # 🧾 Automatic invoice generation and email with Airtable and CustomJS PDF generator
 
-> ⚡ **271 views** · 🧾 [Invoice Processing](../)
+> ⚡ **423 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

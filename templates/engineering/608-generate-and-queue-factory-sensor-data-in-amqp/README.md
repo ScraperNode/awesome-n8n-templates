@@ -1,6 +1,6 @@
 # ⚒️ Generate and queue factory sensor data in AMQP
 
-> ⚡ **692 views** · ⚒️ [Engineering](../)
+> ⚡ **717 views** · ⚒️ [Engineering](../)
 
 ## Description
 

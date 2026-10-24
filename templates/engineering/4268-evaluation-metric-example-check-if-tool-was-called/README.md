@@ -1,6 +1,6 @@
 # ⚒️ Evaluation metric example: Check if tool was called
 
-> ⚡ **1,255 views** · ⚒️ [Engineering](../)
+> ⚡ **1,519 views** · ⚒️ [Engineering](../)
 
 ## Description
 

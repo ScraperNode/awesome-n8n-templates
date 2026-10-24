@@ -1,6 +1,6 @@
 # 🔬 Extract links and URLs from PDF documents using PDF.co
 
-> ⚡ **339 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **390 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

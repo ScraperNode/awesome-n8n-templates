@@ -1,6 +1,6 @@
 # 🔧 Register users and authenticate with magic links using Google Sheets
 
-> ⚡ **11 views** · 🔧 [Miscellaneous](../)
+> ⚡ **85 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

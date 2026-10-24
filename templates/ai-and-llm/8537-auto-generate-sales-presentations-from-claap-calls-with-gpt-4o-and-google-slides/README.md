@@ -1,6 +1,6 @@
 # ✨ Auto-generate sales presentations from Claap calls with GPT-4o and Google Slides
 
-> ⚡ **205 views** · ✨ [AI & LLMs](../)
+> ⚡ **296 views** · ✨ [AI & LLMs](../)
 
 ## Description
 

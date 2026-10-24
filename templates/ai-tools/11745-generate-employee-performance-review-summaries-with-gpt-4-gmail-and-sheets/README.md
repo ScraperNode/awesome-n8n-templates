@@ -1,6 +1,6 @@
 # 🎯 Generate employee performance review summaries with GPT-4, Gmail and Sheets
 
-> ⚡ **43 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **103 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

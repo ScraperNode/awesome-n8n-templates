@@ -1,6 +1,6 @@
 # 🎫 Classify and auto-reply to emails with Outlook and GPT-4
 
-> ⚡ **908 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,280 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

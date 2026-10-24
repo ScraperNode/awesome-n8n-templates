@@ -1,6 +1,6 @@
 # 🔬 Extract business card data from Slack to Google Sheets with GPT-4o OCR
 
-> ⚡ **360 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **408 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

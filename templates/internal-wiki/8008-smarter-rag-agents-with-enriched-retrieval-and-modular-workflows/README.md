@@ -1,6 +1,6 @@
 # 📖 Smarter RAG agents with enriched retrieval and modular workflows
 
-> ⚡ **2,436 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **3,147 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

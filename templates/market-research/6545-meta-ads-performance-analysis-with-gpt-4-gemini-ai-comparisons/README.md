@@ -1,6 +1,6 @@
 # 📊 Meta Ads Performance Analysis with GPT-4 & Gemini AI Comparisons
 
-> ⚡ **2,747 views** · 📊 [Market Research & Insights](../)
+> ⚡ **3,019 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — If you've run into Facebook's Graph API permission restrictions, [ScraperNode](https://scrapernode.com/facebook) is a community node that scrapes [pages](https://scrapernode.com/facebook/scrapers/profiles), [groups](https://scrapernode.com/facebook/scrapers/groups), [posts](https://scrapernode.com/facebook/scrapers/posts), and [comments](https://scrapernode.com/facebook/scrapers/comments) directly — no app review needed.
 >

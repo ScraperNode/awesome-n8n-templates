@@ -1,6 +1,6 @@
 # 💬 Google calendar events with Gemini AI follow-up suggestions via WhatsApp & email
 
-> ⚡ **477 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **734 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 > 💡 **Pro Tip** — If you've run into Facebook's Graph API permission restrictions, [ScraperNode](https://scrapernode.com/facebook) is a community node that scrapes [pages](https://scrapernode.com/facebook/scrapers/profiles), [groups](https://scrapernode.com/facebook/scrapers/groups), [posts](https://scrapernode.com/facebook/scrapers/posts), and [comments](https://scrapernode.com/facebook/scrapers/comments) directly — no app review needed.
 >

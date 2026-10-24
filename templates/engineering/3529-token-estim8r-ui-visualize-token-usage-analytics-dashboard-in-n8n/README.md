@@ -1,6 +1,6 @@
 # ⚒️ 📊 Token Estim8r UI – visualize token usage analytics dashboard in n8n
 
-> ⚡ **357 views** · ⚒️ [Engineering](../)
+> ⚡ **459 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Forward Netflix emails to multiple email addresses with GMail and Mailjet
 
-> ⚡ **1,770 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,875 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

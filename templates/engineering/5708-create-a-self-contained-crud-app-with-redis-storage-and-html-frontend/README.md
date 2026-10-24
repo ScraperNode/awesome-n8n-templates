@@ -1,6 +1,6 @@
 # ⚒️ Create a self-contained CRUD app with Redis storage and HTML frontend
 
-> ⚡ **564 views** · ⚒️ [Engineering](../)
+> ⚡ **710 views** · ⚒️ [Engineering](../)
 
 ## Description
 

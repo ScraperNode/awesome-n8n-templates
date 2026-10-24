@@ -1,6 +1,6 @@
 # 🎫 Automatically Classify Zoho Desk Support Tickets using Gemini AI
 
-> ⚡ **388 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **549 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

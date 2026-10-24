@@ -1,6 +1,6 @@
 # 🔬 Automate student admission process with Excel, validation & email notifications
 
-> ⚡ **615 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **902 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

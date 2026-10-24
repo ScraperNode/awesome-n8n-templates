@@ -1,6 +1,6 @@
 # 📋 Generate sprint review summaries from transcripts with OpenAI and Google Sheets
 
-> ⚡ **115 views** · 📋 [Project Management](../)
+> ⚡ **168 views** · 📋 [Project Management](../)
 
 ## Description
 

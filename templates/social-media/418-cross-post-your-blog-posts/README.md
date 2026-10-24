@@ -1,6 +1,6 @@
 # 📱 Cross-post your blog posts
 
-> ⚡ **2,946 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **3,020 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

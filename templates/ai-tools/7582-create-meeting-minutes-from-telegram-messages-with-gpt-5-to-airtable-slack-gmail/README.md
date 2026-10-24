@@ -1,6 +1,6 @@
 # 🎯 Create meeting minutes from Telegram messages with GPT-5 to Airtable Slack Gmail
 
-> ⚡ **366 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **446 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

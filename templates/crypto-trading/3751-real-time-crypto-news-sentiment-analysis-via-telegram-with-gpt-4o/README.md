@@ -1,6 +1,6 @@
 # 📈 Real-time crypto news & sentiment analysis via Telegram with GPT-4o
 
-> ⚡ **13,990 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **14,854 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

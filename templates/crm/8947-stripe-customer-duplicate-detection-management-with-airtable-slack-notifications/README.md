@@ -1,6 +1,6 @@
 # 🤝 Stripe customer duplicate detection & management with Airtable & Slack notifications
 
-> ⚡ **59 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **97 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

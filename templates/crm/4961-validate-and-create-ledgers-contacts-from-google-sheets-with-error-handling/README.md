@@ -1,6 +1,6 @@
 # 🤝 Validate and create LEDGERS contacts from Google Sheets with error handling
 
-> ⚡ **122 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **133 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

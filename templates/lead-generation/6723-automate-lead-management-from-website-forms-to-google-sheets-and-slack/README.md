@@ -1,6 +1,6 @@
 # 🎣 Automate lead management from website forms to Google Sheets and Slack
 
-> ⚡ **417 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **584 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

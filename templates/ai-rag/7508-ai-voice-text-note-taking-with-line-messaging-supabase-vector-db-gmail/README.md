@@ -1,6 +1,6 @@
 # 🔍 Ai voice & text note-taking with LINE Messaging, Supabase Vector DB & Gmail
 
-> ⚡ **942 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **1,064 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Receive a Mattermost message when a user updates their profile on Facebook
 
-> ⚡ **5,189 views** · ⚡ [Personal Productivity](../)
+> ⚡ **5,405 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

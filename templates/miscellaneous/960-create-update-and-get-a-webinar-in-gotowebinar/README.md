@@ -1,6 +1,6 @@
 # 🔧 Create, update, and get a webinar in GoToWebinar
 
-> ⚡ **606 views** · 🔧 [Miscellaneous](../)
+> ⚡ **635 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

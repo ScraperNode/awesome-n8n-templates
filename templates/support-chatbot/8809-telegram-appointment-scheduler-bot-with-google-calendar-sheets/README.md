@@ -1,6 +1,6 @@
 # 💬 Telegram appointment scheduler bot with Google Calendar & Sheets
 
-> ⚡ **3,368 views** · 💬 [Support Chatbots](../)
+> ⚡ **4,970 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

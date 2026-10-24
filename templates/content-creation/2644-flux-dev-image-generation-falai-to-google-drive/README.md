@@ -1,6 +1,6 @@
 # 🎬 Flux dev image generation (Fal.ai) to Google Drive
 
-> ⚡ **9,676 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **9,760 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

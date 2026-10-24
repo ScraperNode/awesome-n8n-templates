@@ -1,6 +1,6 @@
 # 📋 Manage Slack channel and users automatically
 
-> ⚡ **1,195 views** · 📋 [Project Management](../)
+> ⚡ **1,220 views** · 📋 [Project Management](../)
 
 ## Description
 

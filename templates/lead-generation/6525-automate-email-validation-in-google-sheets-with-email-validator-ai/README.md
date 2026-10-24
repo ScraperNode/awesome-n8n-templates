@@ -1,6 +1,6 @@
 # 🎣 Automate email validation in Google Sheets with Email Validator AI
 
-> ⚡ **762 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **851 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

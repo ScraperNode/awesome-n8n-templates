@@ -1,6 +1,6 @@
 # 🔬 Receipt scanning & analysis workflow
 
-> ⚡ **15,186 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **20,041 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

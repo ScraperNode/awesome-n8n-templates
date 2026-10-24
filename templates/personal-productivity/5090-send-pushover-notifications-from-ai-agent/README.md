@@ -1,6 +1,6 @@
 # ⚡ Send pushover notifications from AI agent
 
-> ⚡ **153 views** · ⚡ [Personal Productivity](../)
+> ⚡ **200 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

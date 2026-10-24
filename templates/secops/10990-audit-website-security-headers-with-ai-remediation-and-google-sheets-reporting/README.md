@@ -1,6 +1,6 @@
 # 🔒 Audit Website Security Headers with AI Remediation and Google Sheets Reporting
 
-> ⚡ **42 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **72 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

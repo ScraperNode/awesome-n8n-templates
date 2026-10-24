@@ -1,6 +1,6 @@
 # 🎬 Automate video creation with Luma AI Dream Machine and Airtable (Part 2)
 
-> ⚡ **2,038 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,258 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

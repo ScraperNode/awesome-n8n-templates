@@ -1,6 +1,6 @@
 # 🎬 Generate AI Tweets Mimicking Any Twitter User's Style with OpenAI
 
-> ⚡ **953 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,031 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >

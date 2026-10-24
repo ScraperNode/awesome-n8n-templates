@@ -1,6 +1,6 @@
 # 🤝 Classify lemlist replies using OpenAI and automate reply handling
 
-> ⚡ **2,462 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,563 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

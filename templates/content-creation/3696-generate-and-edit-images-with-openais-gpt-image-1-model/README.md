@@ -1,6 +1,6 @@
 # 🎬 Generate and Edit Images with OpenAI's GPT-Image-1 Model
 
-> ⚡ **4,602 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,822 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

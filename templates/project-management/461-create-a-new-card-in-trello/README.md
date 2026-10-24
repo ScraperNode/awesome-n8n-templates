@@ -1,6 +1,6 @@
 # 📋 Create a new card in Trello
 
-> ⚡ **3,411 views** · 📋 [Project Management](../)
+> ⚡ **3,460 views** · 📋 [Project Management](../)
 
 ## Description
 

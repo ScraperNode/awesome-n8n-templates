@@ -1,6 +1,6 @@
 # 🎬 One-click YouTube shorts generator with Leonardo AI, GPT and ElevenLabs
 
-> ⚡ **21,185 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **25,871 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

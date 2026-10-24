@@ -1,6 +1,6 @@
 # ⚒️ Real-time IoT incident management with Jira & Slack technician alerts
 
-> ⚡ **43 views** · ⚒️ [Engineering](../)
+> ⚡ **125 views** · ⚒️ [Engineering](../)
 
 ## Description
 

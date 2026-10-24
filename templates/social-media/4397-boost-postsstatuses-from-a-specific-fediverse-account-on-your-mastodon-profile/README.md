@@ -1,6 +1,6 @@
 # 📱 Boost posts/statuses from a specific FediVerse account on your Mastodon profile
 
-> ⚡ **214 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **252 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

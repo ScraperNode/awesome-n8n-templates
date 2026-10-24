@@ -1,6 +1,6 @@
 # ⚡ Assignment deadline reminders with Notion and email for students & teachers
 
-> ⚡ **483 views** · ⚡ [Personal Productivity](../)
+> ⚡ **642 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

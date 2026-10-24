@@ -1,6 +1,6 @@
 # 💬 AI-powered lead research & personalized email generation with Groq & Google Sheets
 
-> ⚡ **9,751 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **13,139 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

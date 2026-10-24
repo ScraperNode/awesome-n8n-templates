@@ -1,6 +1,6 @@
 # ⚙️ Create an alert on SIGNL4
 
-> ⚡ **519 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **528 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

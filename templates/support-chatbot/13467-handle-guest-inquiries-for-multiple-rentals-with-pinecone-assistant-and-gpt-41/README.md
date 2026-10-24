@@ -1,10 +1,12 @@
 # 💬 Handle guest inquiries for multiple rentals with Pinecone Assistant and GPT-4.1
 
-> ⚡ **23 views** · 💬 [Support Chatbots](../)
+> ⚡ **226 views** · 💬 [Support Chatbots](../)
 
 ## Description
 
 # Vacation rental property manager with multiple Assistants
+
+🛠️ **Read about how multi-domain RAG works and other use cases by working through this tutorial on the n8n Blog [here](https://blog.n8n.io/build-multi-domain-rag-systems-with-specialized-knowledge-bases/).**
 
 This workflow shows you how a vacation rental property manager can manage multiple properties each with different information using Pinecone Assistant. Guests can ask questions about their property and get a personalized answer back.
 ### What is Pinecone Assistant?
@@ -15,7 +17,7 @@ This workflow shows you how a vacation rental property manager can manage multip
 
 ### Prerequisites
 
-* A [Pinecone account](https://app.pinecone.io/) and [API key](https://app.pinecone.io/organizations/-/projects/-/keys)
+* A [Pinecone account](https://app.pinecone.io/)
 * A GCP project with [Google Drive API enabled and configured](https://docs.n8n.io/integrations/builtin/credentials/google/oauth-single-service/)
 * An [Open AI account](https://auth.openai.com/create-account) and [API key](https://platform.openai.com/settings/organization/api-keys)
 
@@ -23,10 +25,10 @@ This workflow shows you how a vacation rental property manager can manage multip
 
 1. Create three Pinecone Assistants in the Pinecone Console [here](https://app.pinecone.io/organizations/-/projects/-/assistant) 
 	1. Name your Assistants `n8n-vacation-rental-property-lakeside`, `n8n-vacation-rental-property-birchwood`, `n8n-vacation-rental-property-hillcrest`
-	2. No need to configure a Chat model or Assistant instructions
-2. Setup your Google Drive OAuth2 API, Pinecone API, and OpenAI credentials in n8n
-3. Select your Assistant Name in each of the respective Pinecone Assistant nodes
-4. Ask Claude or ChatGPT to generate fictional data in markdown file(s) for each property. You'll use this data in the next step. Using this prompt:
+2. Use the Connect to Pinecone button to authenticate to Pinecone or if you self-host n8n, create a Pinecone credential and add your [Pinecone API key](https://app.pinecone.io/organizations/-/projects/-/keys) directly
+3. Setup your Google Drive OAuth2 API and OpenAI credentials in n8n
+4. Select your Assistant Name in each of the respective Pinecone Assistant nodes
+5. Ask Claude or ChatGPT to generate fictional data in markdown file(s) for each property. You'll use this data in the next step. Using this prompt:
 ```
 Generate fictional data in markdown format in multiple files for three fictional vacation rental properties in a fictional city. The rental property names are:
 - **Hillcrest Haven** – cozy hillside cottage
@@ -39,9 +41,9 @@ All addresses, cities, names, phone numbers should be fictional. Each set of fil
 ```
 **Note:** If you don't want to generate your own files, you can use [these files](https://github.com/pinecone-io/n8n-templates/tree/main/vacation-rental-property-manager-assistants/fictional-data).
 
-5. Add the files to three separate Drive folders named `lakeside`, `birchwood`, and `hillcrest`
-6. Activate the workflow to upload the documents to Pinecone
-7. Once the data is uploaded, ask questions in the chat about a property:
+6. Add the files to three separate Drive folders named `lakeside`, `birchwood`, and `hillcrest`
+7. Activate the workflow to upload the documents to Pinecone
+8. Once the data is uploaded, ask questions in the chat about a property:
 	1. `I need help with the coffee maker`
 	2. `The air fryer isn't working at the Lakeside property`
 

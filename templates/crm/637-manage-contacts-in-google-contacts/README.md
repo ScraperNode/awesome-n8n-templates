@@ -1,6 +1,6 @@
 # 🤝 Manage contacts in Google Contacts
 
-> ⚡ **8,442 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **8,559 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

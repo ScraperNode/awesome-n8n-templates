@@ -1,6 +1,6 @@
 # 📱 Automate RSS-to-social media with AI summaries and image generation
 
-> ⚡ **960 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,475 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

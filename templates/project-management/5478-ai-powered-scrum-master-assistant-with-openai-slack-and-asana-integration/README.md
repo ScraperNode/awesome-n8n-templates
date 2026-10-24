@@ -1,6 +1,6 @@
 # 📋 AI-powered Scrum Master assistant with OpenAI, Slack and Asana integration
 
-> ⚡ **5,073 views** · 📋 [Project Management](../)
+> ⚡ **6,493 views** · 📋 [Project Management](../)
 
 ## Description
 

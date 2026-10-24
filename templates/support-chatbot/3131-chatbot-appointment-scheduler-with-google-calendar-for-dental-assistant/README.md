@@ -1,6 +1,6 @@
 # 💬 Chatbot appointment scheduler with Google Calendar for dental assistant
 
-> ⚡ **24,389 views** · 💬 [Support Chatbots](../)
+> ⚡ **26,288 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

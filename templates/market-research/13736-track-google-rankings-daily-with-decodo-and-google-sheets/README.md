@@ -1,6 +1,6 @@
 # 📊 Track Google rankings daily with Decodo and Google Sheets
 
-> ⚡ **94 views** · 📊 [Market Research & Insights](../)
+> ⚡ **141 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
 >
@@ -8,27 +8,29 @@
 
 ## Description
 
-Automatically monitor your keyword positions on Google every day. This workflow uses Decodo to pull live search results and logs them straight into Google Sheets, no manual checking needed.
+Daily keyword tracking without the morning grind. This workflow pulls live Google results with Decodo every day and logs positions straight into Google Sheets. Set your keywords once, wake up to fresh ranking data.
+
+*Last updated: September 2026.*
 
 ## Why This Workflow?
 
-**Save Time:** No more spending an hour every morning checking rankings by hand. Everything runs on autopilot.  
-**Save Money:** Skip expensive SEO tools that charge per keyword for basic rank tracking.  
-**Accurate Data:** Every result — including meta descriptions and URLs — gets recorded without copy-paste mistakes.  
-**Easy to Scale:** Want to add more keywords, switch countries, or change devices? Just tweak one config node.
+**Save Time:** The hour you spent checking rankings by hand every morning? Gone. Everything runs on autopilot.  
+**Save Money:** Skip pricey SEO tools that charge per keyword for basic rank tracking.  
+**Accurate Data:** Every result, meta descriptions and URLs included, recorded without copy-paste mistakes.  
+**Easy to Scale:** More keywords, new countries, different devices? One config node handles it.
 
 ## Who Is This For?
 
-- **SEO Specialists:** Keep tabs on daily keyword movements for clients or internal projects.
-- **Content Marketers:** See how your latest content stacks up against competitors for target keywords.
-- **Digital Agencies:** Deliver automated ranking reports to clients without touching a spreadsheet manually.
+- **SEO Specialists:** Daily keyword movements for clients or internal projects.
+- **Content Marketers:** See how fresh content stacks up against competitors for target keywords.
+- **Digital Agencies:** Ranking reports for clients without touching a spreadsheet manually.
 
 ## How It Works
 
 1. **Scheduled Start:** The workflow kicks off every morning at 9:00 AM using the Schedule Trigger.
 2. **Set Parameters:** Keyword, country code (e.g., "id"), language ("en"), and device type are defined upfront.
 3. **Fetch Results:** The Decodo node runs a live Google search based on your settings.
-4. **Filter & Validate:** The workflow strips out ads, maps, and snippets — keeping only organic results with valid URLs.
+4. **Filter & Validate:** The workflow strips out ads, maps, and snippets, keeping only organic results with valid URLs.
 5. **Store Rankings:** Top results (e.g., Top 5) get appended to a "SERP_Results" tab in Google Sheets.
 6. **Log Issues:** If something goes wrong (API timeout, empty results), errors are recorded in a separate "SERP_Errors" tab.
 
@@ -36,15 +38,15 @@ Automatically monitor your keyword positions on Google every day. This workflow 
 
 | Requirement | Purpose |
 |-------------|---------|
-| [n8n instance](https://n8n.partnerlinks.io/khmuhtadin) | Platform to run the workflow |
-| [Decodo API](https://decodo.io) | Pulls live Google Search data |
+| [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin) | Platform to run the workflow |
+| [Decodo API](https://visit.decodo.com/1G9ox6) | Pulls live Google Search data |
 | Google Sheets | Stores ranking data and error logs |
 
 ## Setup Steps
 
-1. Import the JSON file into your [n8n instance](https://n8n.partnerlinks.io/khmuhtadin).
+1. Import the JSON file into your [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin).
 2. **Add your credentials:**
-   - **Decodo API:** Sign up at Decodo, grab your API key, and paste it into the Decodo Search node.
+   - **[Decodo API](https://visit.decodo.com/1G9ox6):** Sign up at Decodo, grab your API key, and paste it into the Decodo Search node.
    - **Google Sheets:** Connect your Google account via OAuth2. Make sure your spreadsheet has two tabs: `SERP_Results` and `SERP_Errors`.
 3. **Select your spreadsheet:** In the **Write SERP Results** and **Write SERP Errors** nodes, pick the spreadsheet you prepared.
 4. **Adjust your settings:** Open the **Set Search Input** node to change the keyword, country code, and how many results to track (`top_n`).
@@ -78,12 +80,23 @@ The workflow uses a **Split Out + Extract Organic** approach. Even when Google r
 
 ---
 
-**Created by:** [Khairul Muhtadin](https://khmuhtadin.com)  
+### Quick Answers
+**When does it check?**  
+Every morning at 9:00 AM. Switch the Schedule Trigger to hourly or weekly anytime.  
+**Which results are stored?**  
+Organic results only (Top N), with valid URLs. Ads and snippets are filtered out.  
+**Where do failures go?**  
+The `SERP_Errors` tab logs timeouts and empty results for troubleshooting.  
+
+**Made by:** [khmuhtadin](https://khmuhtadin.com)  
 **Category:** Marketing | **Tags:** SEO, SERP, Google Sheets, Decodo  
-**Need custom workflows?** [Contact us](https://khmuhtadin.com/contact)
+**Need custom workflows?** [Contact me](https://khmuhtadin.com/contact)
 
 **Connect with the creator:**  
 [Portfolio](https://khmuhtadin.com) • [Store](https://khaisa.studio/products/) • [LinkedIn](https://www.linkedin.com/in/khmuhtadin/) • [Medium](https://medium.com/@khaisastudio) • [Threads](https://www.threads.com/@khmuhtadin)
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

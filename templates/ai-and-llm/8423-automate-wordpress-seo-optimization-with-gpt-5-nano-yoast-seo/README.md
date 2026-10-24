@@ -1,6 +1,6 @@
 # ✨ Automate WordPress SEO optimization with GPT-5 nano + Yoast SEO
 
-> ⚡ **175 views** · ✨ [AI & LLMs](../)
+> ⚡ **216 views** · ✨ [AI & LLMs](../)
 
 ## Description
 

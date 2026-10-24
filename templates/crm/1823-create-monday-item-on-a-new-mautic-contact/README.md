@@ -1,6 +1,6 @@
 # 🤝 Create Monday item on a new Mautic contact
 
-> ⚡ **1,300 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,358 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

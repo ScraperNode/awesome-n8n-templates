@@ -1,6 +1,6 @@
 # 🤝 Find KlickTipp tags to remove by prefix
 
-> ⚡ **1 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **7 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

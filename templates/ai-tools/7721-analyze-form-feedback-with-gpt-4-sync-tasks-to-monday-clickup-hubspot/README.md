@@ -1,6 +1,6 @@
 # 🎯 Analyze form feedback with GPT-4 & sync tasks to Monday, ClickUp & HubSpot
 
-> ⚡ **179 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **228 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

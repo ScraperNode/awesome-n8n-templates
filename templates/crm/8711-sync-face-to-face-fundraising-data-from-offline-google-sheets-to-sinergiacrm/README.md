@@ -1,6 +1,6 @@
 # 🤝 Sync face-to-face fundraising data from offline Google Sheets to SinergiaCRM
 
-> ⚡ **34 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **38 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

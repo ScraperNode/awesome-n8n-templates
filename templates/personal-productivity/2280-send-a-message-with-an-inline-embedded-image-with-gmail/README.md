@@ -1,6 +1,6 @@
 # ⚡ Send a message with an inline embedded image with Gmail
 
-> ⚡ **3,839 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,021 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

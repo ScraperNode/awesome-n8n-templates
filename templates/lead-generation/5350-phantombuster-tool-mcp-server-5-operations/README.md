@@ -1,6 +1,6 @@
 # 🎣 🛠️ Phantombuster tool MCP server 💪 5 operations
 
-> ⚡ **133 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **148 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

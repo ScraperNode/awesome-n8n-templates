@@ -1,6 +1,6 @@
 # 💬 Build a restaurant voice assistant with VAPI and PostgreSQL for bookings & orders
 
-> ⚡ **4,325 views** · 💬 [Support Chatbots](../)
+> ⚡ **5,168 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

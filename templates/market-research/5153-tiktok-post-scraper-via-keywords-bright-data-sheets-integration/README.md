@@ -1,6 +1,6 @@
 # 📊 TikTok post scraper via keywords | Bright Data + Sheets integration
 
-> ⚡ **4,202 views** · 📊 [Market Research & Insights](../)
+> ⚡ **4,791 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — Since TikTok doesn't have a public API, getting data usually means fragile HTTP scraping. [ScraperNode](https://scrapernode.com/tiktok) is a community node that gives you clean JSON for [TikTok profiles](https://scrapernode.com/tiktok/scrapers/profiles), [videos](https://scrapernode.com/tiktok/scrapers/posts), and [comments](https://scrapernode.com/tiktok/scrapers/comments) — drop it into your workflow and skip the parsing.
 >

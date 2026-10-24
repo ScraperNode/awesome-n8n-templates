@@ -1,101 +1,52 @@
-# 📊 Forum pulse for Telegram: community monitoring with Gemini & Groq AI models
+# 📊 Monitor n8n community and Reddit discussions in Telegram with Gemini and Groq
 
-> ⚡ **341 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,984 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 
-# ForumPulse for n8n – Daily Pulse & On-demand Deep Dives
+![NguyenThieuToann8ntemplate 3.png](fileId:6384)
 
-**Author:** Nguyen Thieu Toan  
-**Category:** Community & Knowledge Automation  
-**Tags:** Telegram, Reddit, n8n Forum, AI Summarization, Gemini, Groq
-
----
+This n8n template automates the collection, storage, and summarization of technology news and discussions from the n8n Community and Reddit (r/n8n). If you like staying informed but want to reduce daily manual browsing distractions, *this workflow is perfect for you*. 
 
 ## How it works
 
-ForumPulse is an AI-powered assistant that keeps you connected to the latest discussions around **n8n**.  
-The workflow integrates **Reddit (r/n8n)** and the **n8n Community Forum**, fetches trending and recent posts, and uses **Gemini/Groq AI models** to generate clean, structured summaries.  
+* **User Intent Detection:** The workflow receives your Telegram message and uses an **AI Agent** (powered by Gemini/Groq) to intelligently classify your intent (Search, Deep-dive, or Casual Chat).
+* **Multi-Platform Scraping:** Automatically fetches the latest discussions, topics, and comments from the official **n8n Community** and **Reddit** via HTTP Requests.
+* **Smart Summarization:** Extracts complex HTML content and uses the AI to provide concise overviews, or deep-dives into specific forum threads with full contextual history. 
+* **Seamless Delivery:** Formats the AI's response into clean, chunked Telegram messages (handling limits smoothly) and delivers it straight to your chat.
+* **Daily Pulse:** A scheduled trigger automatically aggregates the hottest topics every morning to keep you updated.
 
-It works in two complementary modes:
+## How to use
 
-1. **Daily Pulse (Automated Digest):**  
-   Runs on schedule (default: 8:00 AM) to gather highlights and deliver a concise summary directly to your Telegram.
+1. Connect your **Telegram Bot** account to n8n.
+2. Connect your **Google Gemini** and **Groq** API credentials.
+3. *(Optional)* Connect your **MongoDB** instance if you want to enable long-term persistent chat memory.
+4. Update the `Chat ID` in the Telegram nodes to route the scheduled Daily Pulse directly to your personal account or group.
+5. Activate the workflow and start messaging your new AI assistant.
 
-2. **On-demand Deep Dive (Interactive):**  
-   Listens to Telegram queries in real-time, detects intent (search, deep dive, open link, or chat), and provides summaries, comments, and insights for any chosen post.  
+## Requirements
 
-When AI intent detection confidence drops below `0.7`, the bot automatically asks for clarification before proceeding—ensuring accuracy and transparency.
+* **n8n Version:** Built and tested on **n8n 2.9.4+**. *(Note: You may encounter errors on older versions. It is highly recommended to update to the latest n8n version to use this workflow effectively).*
+* **Telegram** Bot token.
+* **Google Gemini** & **Groq** API keys.
+* *(Optional)* **MongoDB** connection string.
 
----
+## Customizing this workflow
 
-## Step-by-step
-
-### 1. Setup & Prerequisites
-- **n8n instance** (cloud or self-hosted).  
-- **Telegram Bot** (created via BotFather).  
-- **MongoDB** (optional, for persistent memory).  
-- **API keys** for Gemini and Groq.  
-- **Your Telegram user ID** (to receive replies).  
-
-⚠️ Replace all test credentials and tokens with your own. Never commit real secrets into exported templates.
-
----
-
-### 2. Daily Pulse Automation
-- **Schedule Trigger** runs the workflow every morning at the configured time.  
-- **Reddit + Forum Search** collects hot/new topics.  
-- **Merge Results** combines both sources into a unified dataset.  
-- **AI Summarizer Overview** condenses the results into a short, engaging digest.  
-- **Telegram Output** delivers the digest, automatically split into safe chunks under 2000 characters.
+* **Change the AI Model:** Swap the Gemini or Groq nodes for OpenAI, Claude, or any other supported LLM.
+* **Expand the Sources:** Duplicate the HTTP Request nodes and adjust the HTML extractors to monitor other platforms like Discord or StackOverflow.
+* **Adjust the Schedule:** Prefer chat over daily emails? Change the Cron expression to receive weekly summaries or disable it entirely to rely purely on on-demand Telegram queries.
 
 ---
 
-### 3. On-demand Interaction
-- **Telegram Trigger** listens for incoming messages.  
-- **Intent Analysis (AI Agent)** classifies the query as *Search | Open Link | Deep Dive | Chitchat*.  
-- **Confidence Gate**: if confidence &lt; 0.7, sends a clarification prompt to the user.  
-- **Branch by Intent**:  
-  - *Search*: Query Reddit/Forum with filters.  
-  - *Open Link*: Fetch details of a specific post.  
-  - *Deep Dive*: Retrieve comments and metadata.  
-  - *Chitchat*: Respond conversationally.  
-- **AI Summarizer** structures the output, highlighting trends, issues, and takeaways.  
-- **Telegram Delivery** formats and sends the reply, respecting HTML tags and message length.
+## About the Author
 
----
-
-### 4. Deep Dive Details
-- **Post Extraction** fetches titles, authors, timestamps, and stats.  
-- **Comment Parsing** organizes replies into structured data.  
-- **Merge Post + Comments** builds a complete context package.  
-- **Summarizer** produces detailed, actionable insights.  
-
----
-
-### 5. Error Handling & Safety
-- **Confidence Check** prevents wrong answers by requiring clarification.  
-- **Error Paths** handle API downtime or unexpected formats gracefully.  
-- **Auto Chunking** avoids Telegram’s message length cap (2000 chars).  
-- **Safe Defaults** ensure fallback queries when inputs are missing or unclear.
-
----
-
-## Customization Options
-
-- **Sources**: Add or replace platforms by editing HTTP Request nodes.  
-- **Schedule**: Change the cron time in the Schedule Trigger (e.g., 7:30 AM).  
-- **Filters**: Adjust default sort order, time ranges, and result limits.  
-- **AI Persona**: Reword the `systemMessage` in AI Agent nodes to change tone (professional, casual, emoji-rich).  
-- **Languages**: Auto-detects user language, but you can force English or Vietnamese by editing prompt settings.  
-- **Memory**: Enable MongoDB nodes for persistent user context across sessions.  
-- **Integrations**: Extend beyond Telegram—send digests to Slack, Discord, or email.  
-- **Models**: Swap Gemini/Groq with other supported LLMs for experimentation.  
-
----
-
-✨ Crafted by **Nguyen Thieu Toan** with a focus on clarity, reliability, and community-driven insights.  
-This workflow is not just functional - it reflects a design philosophy: automation should feel natural, transparent, and genuinely useful.
+**Created by:** Nguyen Thieu Toan (Jay Nguyen)
+**Email:** me@nguyenthieutoan.com
+**Website:** [nguyenthieutoan.com](https://nguyenthieutoan.com)
+**Company:** CEO/Founder of GenStaff ([genstaff.net](https://genstaff.net)) - AI Staffing Solutions
+**Socials (Facebook / X / LinkedIn):** @nguyenthieutoan
+**More templates:** [n8n.io/creators/nguyenthieutoan](https://n8n.io/creators/nguyenthieutoan)
 
 ## 🔗 Nodes Used
 

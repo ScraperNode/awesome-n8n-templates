@@ -1,6 +1,6 @@
 # 🧾 Extract and organize receipt data for expense tracking with VLM Run and Google
 
-> ⚡ **1,386 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,488 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

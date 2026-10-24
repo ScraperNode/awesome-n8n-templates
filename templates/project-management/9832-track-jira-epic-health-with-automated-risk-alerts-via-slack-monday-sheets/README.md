@@ -1,6 +1,6 @@
 # 📋 Track Jira epic health with automated risk alerts via Slack, Monday & Sheets
 
-> ⚡ **170 views** · 📋 [Project Management](../)
+> ⚡ **210 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Generate AI-powered lease renewal offers with Ollama LLM, Supabase and Gmail
 
-> ⚡ **414 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **467 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

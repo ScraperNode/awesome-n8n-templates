@@ -1,6 +1,6 @@
 # 🎬 Fast-track VIP tickets with Google Sheets, ClickUp, and Telegram
 
-> ⚡ **111 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **136 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

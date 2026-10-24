@@ -1,6 +1,6 @@
 # 🎫 Update Zammad roles by Excel
 
-> ⚡ **565 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **578 views** · 🎫 [Ticket Management & Triage](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

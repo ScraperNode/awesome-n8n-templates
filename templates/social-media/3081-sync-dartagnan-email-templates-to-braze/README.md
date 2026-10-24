@@ -1,6 +1,6 @@
 # 📱 Sync Dartagnan email templates to Braze
 
-> ⚡ **433 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **502 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

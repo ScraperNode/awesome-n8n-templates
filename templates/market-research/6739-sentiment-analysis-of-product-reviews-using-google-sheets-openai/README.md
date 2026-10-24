@@ -1,6 +1,6 @@
 # 📊 Sentiment analysis of product reviews using Google Sheets & OpenAI
 
-> ⚡ **900 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,020 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

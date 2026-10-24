@@ -1,6 +1,6 @@
 # 💬 Automatically email great leads when they submit a form and record in HubSpot
 
-> ⚡ **3,934 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **3,997 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

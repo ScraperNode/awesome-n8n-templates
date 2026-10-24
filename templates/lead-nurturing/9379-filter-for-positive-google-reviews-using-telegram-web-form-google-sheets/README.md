@@ -1,6 +1,6 @@
 # 💬 Filter for positive Google reviews using Telegram, web form & Google Sheets
 
-> ⚡ **287 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **388 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

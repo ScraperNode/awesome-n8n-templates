@@ -1,6 +1,6 @@
 # ⚡ Time tracking with Notion and iOS shortcut
 
-> ⚡ **1,647 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,677 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

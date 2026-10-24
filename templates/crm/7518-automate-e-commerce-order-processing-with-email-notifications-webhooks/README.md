@@ -1,6 +1,6 @@
 # 🤝 Automate e-commerce order processing with email notifications & webhooks
 
-> ⚡ **1,674 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,153 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

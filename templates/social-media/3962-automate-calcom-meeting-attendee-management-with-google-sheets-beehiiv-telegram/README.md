@@ -1,6 +1,6 @@
 # 📱 Automate Cal.com meeting attendee management with Google Sheets, Beehiiv & Telegram
 
-> ⚡ **1,506 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,634 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

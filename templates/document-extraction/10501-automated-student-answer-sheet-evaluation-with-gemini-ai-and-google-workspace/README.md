@@ -1,6 +1,6 @@
 # 🔬 Automated student answer sheet evaluation with Gemini AI and Google Workspace
 
-> ⚡ **340 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **512 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

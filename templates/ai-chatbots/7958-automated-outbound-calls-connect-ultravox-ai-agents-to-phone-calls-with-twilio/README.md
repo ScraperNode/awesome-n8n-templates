@@ -1,6 +1,6 @@
 # 🤖 Automated outbound calls: connect Ultravox AI agents to phone calls with Twilio
 
-> ⚡ **2,503 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **3,023 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

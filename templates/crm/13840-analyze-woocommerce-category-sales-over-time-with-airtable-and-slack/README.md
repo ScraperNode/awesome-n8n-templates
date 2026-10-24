@@ -1,6 +1,6 @@
 # 🤝 Analyze WooCommerce category sales over time with Airtable and Slack
 
-> ⚡ **31 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,203 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

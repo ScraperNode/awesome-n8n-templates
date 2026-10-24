@@ -1,6 +1,6 @@
 # 📊 Enrich domains with SimilarWeb traffic analytics in Google Sheets & Airtable
 
-> ⚡ **306 views** · 📊 [Market Research & Insights](../)
+> ⚡ **366 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

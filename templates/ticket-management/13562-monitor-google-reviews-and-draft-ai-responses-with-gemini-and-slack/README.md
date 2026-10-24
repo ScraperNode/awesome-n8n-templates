@@ -1,6 +1,6 @@
 # 🎫 Monitor Google reviews and draft AI responses with Gemini and Slack
 
-> ⚡ **9 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **65 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

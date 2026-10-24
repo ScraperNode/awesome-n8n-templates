@@ -1,0 +1,571 @@
+{
+  "id": "YhEWgSK1GYb-b3rdvT85F",
+  "meta": {
+    "instanceId": "19d43a8cad94d007140e13e21de07af2d4119a87745d1049407d721b4880fabd"
+  },
+  "name": "KB Builder - Historical Emails",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "b224d508-20c1-49b4-9135-258aea9061c3",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -1504,
+        -16
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "5deb6f49-f268-4985-ab4b-3bf9e036c21e",
+      "name": "Fetch Emails",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        -1280,
+        -16
+      ],
+      "webhookId": "83700f7f-97ef-45c9-b0b0-59d3b3ace0fa",
+      "parameters": {
+        "limit": 500,
+        "simple": false,
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ],
+          "receivedBefore": "2025-10-31T14:27:54"
+        },
+        "options": {},
+        "operation": "getAll"
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "076f3260-8669-46f8-b541-1f1f1f0248c8",
+      "name": "Parse and Filter",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1056,
+        -16
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// \u2500\u2500\u2500 NODE 1: PARSE, FILTER, CHECK DUPLICATE \u2014 ALL IN ONE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\n// Handles all filtering + corrections table duplicate check\n// Keeps all fields on the item \u2014 no broken pairing\n\nconst item = $input.item.json;\n\n// \u2500\u2500 Extract fields\nconst emailId     = item.id || '';\nconst threadId    = item.threadId || '';\nconst messageId   = item.messageId || '';\nconst labelIds    = item.labelIds || [];\nconst date        = item.date || new Date().toISOString();\n\nconst fromAddress = (item.from?.value?.[0]?.address || '').toLowerCase().trim();\nconst fromName    = (item.from?.value?.[0]?.name || '').trim();\nconst replyTo     = (item.replyTo?.value?.[0]?.address || fromAddress).toLowerCase().trim();\nconst toAddress   = (item.to?.value?.[0]?.address || '').toLowerCase().trim();\nconst subject     = (item.subject || '(No Subject)').trim();\n\nconst rawText = item.text || item.snippet || '';\nconst body = rawText\n  .replace(/https?:\\/\\/\\S+/g, '')\n  .replace(/\\[.*?\\]/g, '')\n  .replace(/\\r\\n/g, '\\n')\n  .replace(/\\n{3,}/g, '\\n\\n')\n  .replace(/[ \\t]+/g, ' ')\n  .trim();\n\nconst headers   = item.headers || {};\nconst listUnsub = headers['list-unsubscribe'] || '';\n\n// \u2500\u2500 Filter: decide if this is a real customer email\nlet isCustomerEmail = true;\nlet skipReason = '';\n\nif (!threadId) {\n  isCustomerEmail = false;\n  skipReason = 'NO_THREAD_ID';\n}\n\nif (isCustomerEmail && (!body || body.length < 20)) {\n  isCustomerEmail = false;\n  skipReason = 'EMPTY_BODY';\n}\n\nconst marketingSignals = [\n  listUnsub !== '',\n  labelIds.includes('CATEGORY_PROMOTIONS'),\n  labelIds.includes('CATEGORY_UPDATES'),\n  labelIds.includes('CATEGORY_FORUMS'),\n  /unsubscribe|opt.out|mailing.list/i.test(body),\n  /no.reply|noreply|donotreply/i.test(fromAddress),\n];\nconst marketingScore = marketingSignals.filter(Boolean).length;\nconst hasNoreply = /no.?reply|noreply|donotreply/i.test(fromAddress);\nif (isCustomerEmail && (marketingScore >= 2 || hasNoreply)) {\n  isCustomerEmail = false;\n  skipReason = 'MARKETING_EMAIL';\n}\n\nif (isCustomerEmail && labelIds.includes('SPAM')) {\n  isCustomerEmail = false;\n  skipReason = 'SPAM';\n}\n\nconst bouncePatterns = [\n  /delivery (status notification|failed|failure)/i,\n  /message not delivered|undeliverable/i,\n  /mail delivery (failed|subsystem)/i,\n  /bounce|mailer.daemon/i,\n];\nif (isCustomerEmail && bouncePatterns.some(p => p.test(subject) || p.test(fromAddress))) {\n  isCustomerEmail = false;\n  skipReason = 'BOUNCE';\n}\n\nconst internalDomains = ['incredmoney.com', 'incred.com'];\nconst senderDomain = (fromAddress.split('@')[1] || '');\nif (isCustomerEmail && internalDomains.some(d => senderDomain.includes(d))) {\n  isCustomerEmail = false;\n  skipReason = 'INTERNAL_EMAIL';\n}\n\n// Skip emails that are in SENT folder \u2014 these are support replies not customer emails\nif (isCustomerEmail && labelIds.includes('SENT')) {\n  isCustomerEmail = false;\n  skipReason = 'SENT_ITEM_NOT_CUSTOMER';\n}\n\n// Add this after the internalDomains check\nconst automatedSenders = [\n  'digio.in',\n  'nsdl.co.in', \n  'cdslindia.com',\n  'karvy.com',\n  'kfintech.com',\n  'bseindia.com',\n  'nseindia.com',\n  'alerts.razorpay.com',\n  'hdfcbank.com',\n  'icicibank.com',\n  'axisbank.com',\n  'paytm.com',\n  'phonepe.com',\n];\nif (isCustomerEmail && automatedSenders.some(d => senderDomain.includes(d))) {\n  isCustomerEmail = false;\n  skipReason = 'AUTOMATED_SERVICE_EMAIL';\n}\n\nconst automatedSubjectPatterns = [\n  /document signed/i,\n  /signed successfully/i,\n  /esign|e-sign/i,\n  /otp for|your otp/i,\n  /transaction alert|transaction notification/i,\n  /payment (received|successful|failed|declined)/i,\n  /debit alert|credit alert/i,\n  /account (statement|summary)/i,\n  /kyc (verification|completed|approved|rejected)/i,\n  /welcome to|account (created|activated)/i,\n];\nif (isCustomerEmail && automatedSubjectPatterns.some(p => p.test(subject))) {\n  isCustomerEmail = false;\n  skipReason = 'AUTOMATED_SUBJECT';\n}\n\n// \u2500\u2500 Return with all fields intact\nreturn {\n  json: {\n    emailId,\n    threadId,\n    messageId,\n    fromAddress,\n    fromName,\n    replyTo,\n    toAddress,\n    subject,\n    body,\n    date,\n    labelIds,\n    isCustomerEmail,\n    skipReason,\n    marketingScore,\n    bodyLength: body.length,\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8025c47a-c37c-422c-8c12-445b64e1d363",
+      "name": "Is Customer Email",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -832,
+        -16
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-001",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.isCustomerEmail }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "6d305228-c763-43c3-9bfd-1c47f543bffe",
+      "name": "Check Duplicate in DB",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        -576,
+        -32
+      ],
+      "parameters": {
+        "query": "SELECT CASE WHEN EXISTS (\n  SELECT 1 FROM corrections WHERE gmail_thread_id = $1\n) THEN true ELSE false END AS already_processed;",
+        "options": {
+          "queryReplacement": "={{ [$json.threadId] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.6
+    },
+    {
+      "id": "b7a8282e-d264-4e14-8847-8317635e9b5d",
+      "name": "Merge Duplicate Result",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -384,
+        -32
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// \u2500\u2500\u2500 NODE 3: MERGE DUPLICATE CHECK RESULT WITH EMAIL FIELDS \u2500\u2500\u2500\u2500\n// $input.item.json = result from Postgres (has already_processed)\n// $('Is Customer Email').item.json = full email fields\n// Using IF node reference because IF nodes preserve pairing correctly\n\nconst dbResult    = $input.item.json;\nconst emailFields = $('Is Customer Email').item.json;\n\nreturn {\n  json: {\n    ...emailFields,\n    alreadyProcessed: dbResult.already_processed === true || dbResult.already_processed === 'true',\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b63923ba-cebf-4ed3-a4e1-ae0332bd3272",
+      "name": "Not Already Processed",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -176,
+        -32
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-002",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.alreadyProcessed }}",
+              "rightValue": false
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "efd29cb8-bcca-4c14-9518-2e3840f46bf6",
+      "name": "Assemble Thread",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        128,
+        -48
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// \u2500\u2500\u2500 ASSEMBLE THREAD \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst originalEmail = $input.item.json;\n\nconst cleanBody = (originalEmail.body || '')\n  .replace(/https?:\\/\\/\\S+/g, '')\n  .replace(/\\r\\n/g, '\\n')\n  .replace(/\\n{3,}/g, '\\n\\n')\n  .replace(/[ \\t]+/g, ' ')\n  .trim();\n\nconst conversationText = 'CUSTOMER (' + originalEmail.date + '):\\n' + cleanBody;\n\nreturn {\n  json: {\n    threadId:            originalEmail.threadId,\n    subject:             originalEmail.subject,\n    fromAddress:         originalEmail.fromAddress,\n    date:                originalEmail.date,\n    primaryCustomerBody: cleanBody,\n    latestSupportReply:  '',\n    conversationText,\n    hasSupportReply:     true,\n    totalMessages:       1,\n    customerMsgCount:    1,\n    supportReplyCount:   0,\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cf8b1c05-0da2-4b01-9887-487fca7deedb",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        240,
+        256
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0
+        },
+        "builtInTools": {}
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "93f69104-7307-4550-a25e-09b582ad01fa",
+      "name": "AI Extract KB Entries",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        336,
+        -48
+      ],
+      "parameters": {
+        "text": "=You are analyzing a customer support email for InCred Money, a platform for trading unlisted pre-IPO shares.\n\nThe email body below may contain a full conversation history as quoted text \u2014 read through the entire email including all quoted sections to understand the complete back-and-forth between the customer and support team.\n\nTHREAD SUBJECT: {{ $json.subject }}\n\nEMAIL BODY (may contain full conversation as quoted text):\n{{ $json.primaryCustomerBody }}\n\nBased on the ENTIRE conversation including all quoted sections, extract TWO types of knowledge:\n\nTYPE 1 \u2014 GENERIC KB ENTRY:\nA reusable Q&A that answers a common question any customer might ask.\nKeep the question generic \u2014 no personal details, amounts or order IDs.\n\nTYPE 2 \u2014 SCENARIO PATTERN:\nHow the support team handled this specific type of issue end to end.\nCapture the full flow \u2014 what customer complained about, what details support asked for, what data was checked, and how it was finally resolved.\nKeep situation description generic but keep example_response realistic and specific.\n\nReturn ONLY this JSON, no explanation, no markdown:\n{\n  \"kb_entries\": [\n    {\n      \"question\": \"Generic question a future customer might ask\",\n      \"answer\": \"Complete answer based on how support responded\",\n      \"category\": \"billing | technical | refund | general_inquiry | complaint | onboarding | liquidation | account\",\n      \"confidence\": 0.85\n    }\n  ],\n  \"scenario_patterns\": [\n    {\n      \"pattern_name\": \"Short name describing this scenario type\",\n      \"trigger_keywords\": [\"keyword1\", \"keyword2\"],\n      \"category\": \"billing | technical | refund | general_inquiry | complaint | onboarding | liquidation | account\",\n      \"situation\": \"Generic description of the customer situation \u2014 what type of issue they had\",\n      \"response_approach\": \"Step by step how support handled this \u2014 what they asked for, what they checked, how they resolved it\",\n      \"data_to_check\": \"What to look up \u2014 e.g. check transactions table for payment_status, admin_action, nsdl_checked, referral counts etc\",\n      \"example_response\": \"The actual or closely paraphrased response text the support team sent\",\n      \"confidence\": 0.85\n    }\n  ]\n}\n\nRules:\n- Read ALL quoted sections in the email \u2014 the full conversation history is there\n- kb_entries and scenario_patterns can each be empty arrays [] if nothing relevant found\n- Only include entries with confidence >= 0.7\n- If this is an automated notification with no real customer query return {\"kb_entries\": [], \"scenario_patterns\": []}\n- For scenario_patterns, capture the FULL resolution flow not just the final response",
+        "options": {
+          "maxIterations": 3
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 3.1
+    },
+    {
+      "id": "17d0b425-95d0-4220-ad14-3ad34ac49d16",
+      "name": "Parse KB Entries",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        688,
+        -32
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// \u2500\u2500\u2500 PARSE KB ENTRIES \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst item   = $input.item.json;\nconst thread = $('Assemble Thread').item.json;\n\nconst rawOutput = (item.output || '')\n  .replace(/```json/gi, '')\n  .replace(/```/g, '')\n  .trim();\n\nlet parsed = { kb_entries: [], scenario_patterns: [] };\ntry {\n  parsed = JSON.parse(rawOutput);\n  if (!parsed.kb_entries) parsed.kb_entries = [];\n  if (!parsed.scenario_patterns) parsed.scenario_patterns = [];\n} catch(e) {\n  parsed = { kb_entries: [], scenario_patterns: [] };\n}\n\n// Filter by confidence\nconst kbEntries = (parsed.kb_entries || []).filter(e => (e.confidence || 0) >= 0.7);\nconst scenarios = (parsed.scenario_patterns || []).filter(e => (e.confidence || 0) >= 0.7);\n\nconst hasAnything = kbEntries.length > 0 || scenarios.length > 0;\n\nif (!hasAnything) {\n  return {\n    json: {\n      hasEntries:          false,\n      threadId:            thread.threadId,\n      subject:             thread.subject,\n      fromAddress:         thread.fromAddress,\n      date:                thread.date,\n      primaryCustomerBody: thread.primaryCustomerBody,\n      latestSupportReply:  thread.latestSupportReply,\n    }\n  };\n}\n\n// Take best KB entry by confidence\nconst bestKB = kbEntries.length > 0\n  ? kbEntries.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0]\n  : null;\n\n// Take best scenario pattern by confidence\nconst bestScenario = scenarios.length > 0\n  ? scenarios.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0]\n  : null;\n\nreturn {\n  json: {\n    hasEntries:           true,\n    threadId:             thread.threadId,\n    subject:              thread.subject,\n    fromAddress:          thread.fromAddress,\n    date:                 thread.date,\n    primaryCustomerBody:  thread.primaryCustomerBody,\n    latestSupportReply:   thread.latestSupportReply,\n\n    // KB entry fields\n    hasKB:                !!bestKB,\n    question:             bestKB ? (bestKB.question || '').trim() : '',\n    answer:               bestKB ? (bestKB.answer || '').trim() : '',\n    category:             bestKB ? (bestKB.category || 'general_inquiry') : '',\n    kbConfidence:         bestKB ? (bestKB.confidence || 0) : 0,\n\n    // Scenario pattern fields\n    hasScenario:          !!bestScenario,\n    patternName:          bestScenario ? (bestScenario.pattern_name || '').trim() : '',\n    triggerKeywords:      bestScenario ? (bestScenario.trigger_keywords || []) : [],\n    scenarioCategory:     bestScenario ? (bestScenario.category || 'general_inquiry') : '',\n    situation:            bestScenario ? (bestScenario.situation || '').trim() : '',\n    responseApproach:     bestScenario ? (bestScenario.response_approach || '').trim() : '',\n    dataToCheck:          bestScenario ? (bestScenario.data_to_check || '').trim() : '',\n    exampleResponse:      bestScenario ? (bestScenario.example_response || '').trim() : '',\n    scenarioConfidence:   bestScenario ? (bestScenario.confidence || 0) : 0,\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f9ca0092-cd2c-409f-be27-a7e5818595c2",
+      "name": "Has KB Entries",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        864,
+        -32
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-has-entries",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.hasEntries }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "66ddab9f-ee72-4bcb-88f5-cae92afd8152",
+      "name": "Check KB Duplicate",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1104,
+        -48
+      ],
+      "parameters": {
+        "query": "SELECT CASE WHEN EXISTS (\n  SELECT 1 FROM kb_data WHERE LOWER(TRIM(question)) = LOWER(TRIM($1))\n) THEN true ELSE false END AS already_exists;",
+        "options": {
+          "queryReplacement": "={{ [$json.question] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.6
+    },
+    {
+      "id": "4b4d9b22-66bb-4432-bd6e-bb2275385821",
+      "name": "Merge KB Duplicate Result",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1280,
+        -48
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Merge duplicate check result with KB entry fields\n// Reference Has KB Entries IF node \u2014 IF nodes preserve pairing reliably\nconst dbResult = $input.item.json;\nconst kbEntry  = $('Has KB Entries').item.json;\n\nconst alreadyExists =\n  dbResult.already_exists === true ||\n  dbResult.already_exists === 'true' ||\n  dbResult.already_exists === 't' ||\n  String(dbResult.already_exists).toLowerCase() === 'true';\n\nreturn {\n  json: {\n    ...kbEntry,\n    alreadyExists,\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "3f3283eb-b23c-4ad0-b450-da5929d133bd",
+      "name": "KB Entry Is New",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1504,
+        -48
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-kb-new",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.alreadyExists }}",
+              "rightValue": false
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "ab00372e-7600-46a8-966b-1d941dd7d81f",
+      "name": "Process and Insert All",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1760,
+        -64
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\n\nconst OPENAI_API_KEY = 'YOUR_OPENAI_API_KEY';\n\n// \u2500\u2500 Helper: generate embedding \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nasync function getEmbedding(text) {\n  const response = await this.helpers.httpRequest({\n    method: 'POST',\n    url: 'https://api.openai.com/v1/embeddings',\n    headers: {\n      'Authorization': `Bearer ${OPENAI_API_KEY}`,\n      'Content-Type': 'application/json',\n    },\n    body: {\n      model: 'text-embedding-3-small',\n      input: text || '',\n    },\n    json: true,\n  });\n  return '[' + response.data[0].embedding.join(',') + ']';\n}\n\n// \u2500\u2500 Generate embeddings \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst kbEmbedding         = await getEmbedding(item.question + ' ' + item.answer);\nconst scenarioEmbedding   = await getEmbedding((item.situation || '') + ' ' + (item.responseApproach || ''));\nconst correctionEmbedding = await getEmbedding(item.primaryCustomerBody || '');\n\n// \u2500\u2500 Connect to Postgres \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst { Client } = require('pg');\nconst client = new Client({\n  host:     'YOUR_POSTGRES_HOST',\n  port:     5432,\n  database: 'YOUR_DATABASE_NAME',\n  user:     'YOUR_POSTGRES_USER',\n  password: 'YOUR_POSTGRES_PASSWORD',\n  ssl:      false,\n});\n\nawait client.connect();\n\ntry {\n  // Insert KB entry\n  await client.query(`\n    INSERT INTO kb_data (question, answer, embedding, updated_by, created_at, updated_at)\n    VALUES ($1, $2, $3::vector, 'historical_import', NOW(), NOW())\n    ON CONFLICT ON CONSTRAINT kb_data_question_unique \n    DO UPDATE SET updated_at = NOW()\n  `, [item.question, item.answer, kbEmbedding]);\n\n  // Insert Scenario Pattern\n  if (item.hasScenario && item.patternName) {\n    await client.query(`\n      INSERT INTO scenario_patterns (\n        pattern_name, category, situation, response_approach,\n        data_to_check, example_response, source_thread_id,\n        confidence, embedding, created_at, updated_at\n      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::vector, NOW(), NOW())\n      ON CONFLICT ON CONSTRAINT scenario_patterns_name_unique\n      DO UPDATE SET updated_at = NOW()\n    `, [\n      item.patternName,\n      item.scenarioCategory || 'general_inquiry',\n      item.situation || '',\n      item.responseApproach || '',\n      item.dataToCheck || '',\n      item.exampleResponse || '',\n      item.threadId,\n      item.scenarioConfidence || 0,\n      scenarioEmbedding,\n    ]);\n  }\n\n  // Insert Correction\n  await client.query(`\n    INSERT INTO corrections (\n      gmail_thread_id, original_email_body, human_sent_text,\n      classification, diff_summary, embedding, source, created_at\n    ) VALUES ($1, $2, $3, $4, $5, $6::vector, 'historical_import', NOW())\n  `, [\n    item.threadId,\n    item.primaryCustomerBody || '',\n    item.latestSupportReply || '',\n    item.category || 'general_inquiry',\n    'Historical import: ' + (item.subject || ''),\n    correctionEmbedding,\n  ]);\n\n  // Log to email_logs\n  await client.query(`\n    INSERT INTO email_logs (\n      gmail_thread_id, sender_email, subject,\n      classification, status, notes, processed_at\n    ) VALUES ($1, $2, $3, $4, 'kb_extracted', $5, NOW())\n    ON CONFLICT DO NOTHING\n  `, [\n    item.threadId,\n    item.fromAddress || '',\n    item.subject || '',\n    item.category || 'general_inquiry',\n    'KB inserted | confidence: ' + (item.kbConfidence || 0),\n  ]);\n\n} finally {\n  await client.end();\n}\n\nreturn {\n  json: {\n    threadId:    item.threadId,\n    subject:     item.subject,\n    question:    item.question,\n    hasScenario: item.hasScenario,\n    status:      'inserted',\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "bc09a0b4-b9b2-4982-9080-06419260acbd",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2064,
+        -400
+      ],
+      "parameters": {
+        "width": 464,
+        "height": 592,
+        "content": "**KB BUILDER \u2014 HISTORICAL EMAILS**\n\nThis workflow converts your existing Gmail support inbox into a structured, AI-searchable Knowledge Base. It processes historical email threads end-to-end \u2014 fetching, filtering, assembling full conversations, classifying with AI, generating vector embeddings, and writing clean records into PostgreSQL.\n\nThe KB it builds becomes the foundation for Workflow 2 (AI Draft Generator), which uses semantic similarity search to pull relevant past Q&A pairs and real support examples every time a new customer email arrives \u2014 so AI-generated drafts sound like your team, not a generic template.\n\nRun this workflow manually in batches. Start with limit = 5 to validate the pipeline, then increase to 50 or 100 for bulk import. It is safe to re-run \u2014 duplicate detection ensures already-processed threads are silently skipped every time.\n\n**What gets written to the database:**\n**kb_data** \u2014 One clean Q&A pair per thread. Used in Workflow 2 for semantic KB retrieval.\n**scenario_patterns** \u2014 One reusable handling pattern per scenario category.\n**corrections** \u2014 Raw customer message + actual human reply. More examples = better drafts."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "60129846-fc0a-4c1f-b2c6-c5486345cbea",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1584,
+        -224
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1152,
+        "height": 416,
+        "content": "**FETCH, FILTER & DEDUPLICATION**\n\nManually triggered. Fetches the last N emails from Gmail \u2014 adjust the limit before each run. Start with 5 to validate, then scale to 100.\nEach email is parsed and cleaned \u2014 outbound replies, automated senders, and empty bodies are dropped. Checks email_logs for threads already marked kb_extracted and skips them silently.\n\n\u26a0 Update: YOUR_DOMAIN in the Parse & Filter node \u00b7 Gmail OAuth2 credential required\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9f12c4ba-b370-4629-83b0-a8c0c3544b13",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -416,
+        -224
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1072,
+        "height": 416,
+        "content": "**THREAD ASSEMBLY & AI CLASSIFICATION**\nFetches the full Gmail thread and separates customer messages from support replies. Threads with no support reply are dropped \u2014 no resolution means no KB value.\nGPT-4o-mini then classifies the conversation and extracts a structured JSON output: category, Q&A pair, handling pattern, sentiment, and resolution status. Entries below 0.7 confidence are dropped before proceeding.\n\n\u26a0 Update: Scenario categories and profile context in the AI node system prompt \u00b7 OpenAI API key required"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c64bb252-e5f1-4b46-8d31-4189f5b5856e",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        672,
+        -224
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1296,
+        "height": 416,
+        "content": "**EMBEDDINGS, DEDUP & DB INSERTS**\nGenerates 1536-dimension vectors via text-embedding-3-small for semantic search. Runs cosine similarity checks before inserting into kb_data and scenario_patterns \u2014 threshold 0.92 blocks near-duplicates. corrections insert freely at the same threshold.\nWrites sequentially to: kb_data \u2192 scenario_patterns \u2192 corrections \u2192 email_logs.\n\n\u26a0 Config: Similarity threshold in duplicate check nodes \u00b7 PostgreSQL + pgvector required"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "a5ef7a5c-eafa-460a-a8f1-5d96524147eb",
+  "connections": {
+    "Fetch Emails": {
+      "main": [
+        [
+          {
+            "node": "Parse and Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has KB Entries": {
+      "main": [
+        [
+          {
+            "node": "Check KB Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Thread": {
+      "main": [
+        [
+          {
+            "node": "AI Extract KB Entries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KB Entry Is New": {
+      "main": [
+        [
+          {
+            "node": "Process and Insert All",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse KB Entries": {
+      "main": [
+        [
+          {
+            "node": "Has KB Entries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse and Filter": {
+      "main": [
+        [
+          {
+            "node": "Is Customer Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Customer Email": {
+      "main": [
+        [
+          {
+            "node": "Check Duplicate in DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Extract KB Entries",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check KB Duplicate": {
+      "main": [
+        [
+          {
+            "node": "Merge KB Duplicate Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Extract KB Entries": {
+      "main": [
+        [
+          {
+            "node": "Parse KB Entries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Duplicate in DB": {
+      "main": [
+        [
+          {
+            "node": "Merge Duplicate Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Not Already Processed": {
+      "main": [
+        [
+          {
+            "node": "Assemble Thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Duplicate Result": {
+      "main": [
+        [
+          {
+            "node": "Not Already Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge KB Duplicate Result": {
+      "main": [
+        [
+          {
+            "node": "KB Entry Is New",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

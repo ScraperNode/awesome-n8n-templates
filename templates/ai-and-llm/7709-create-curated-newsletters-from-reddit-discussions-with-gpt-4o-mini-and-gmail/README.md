@@ -1,6 +1,6 @@
 # ✨ Create curated newsletters from Reddit discussions with GPT-4o Mini and Gmail
 
-> ⚡ **399 views** · ✨ [AI & LLMs](../)
+> ⚡ **432 views** · ✨ [AI & LLMs](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Validate email font families from Gmail with Google Sheets
 
-> ⚡ **0 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **20 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

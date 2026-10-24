@@ -1,6 +1,6 @@
 # 🎬 Auto-generate FAQ answers in Vtiger CRM with DeepSeek LLM and LangChain
 
-> ⚡ **634 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **716 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

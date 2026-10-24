@@ -1,6 +1,6 @@
 # 📖 Two-stage document retrieval chatbot with OpenAI and Supabase vector search
 
-> ⚡ **1,318 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **1,413 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

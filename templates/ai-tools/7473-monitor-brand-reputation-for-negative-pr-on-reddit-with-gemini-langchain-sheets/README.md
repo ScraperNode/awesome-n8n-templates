@@ -1,6 +1,6 @@
 # 🎯 Monitor brand reputation for negative PR on Reddit with Gemini + LangChain + Sheets
 
-> ⚡ **95 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **114 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Triage and escalate HubSpot tickets to Jira with Slack SLA alerts
 
-> ⚡ **33 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **133 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

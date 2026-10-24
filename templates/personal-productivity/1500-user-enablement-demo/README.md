@@ -1,6 +1,6 @@
 # ⚡ User enablement demo
 
-> ⚡ **8,638 views** · ⚡ [Personal Productivity](../)
+> ⚡ **10,763 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

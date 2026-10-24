@@ -1,6 +1,6 @@
 # 🎬 Convert Japanese scripts to multilingual speech with GPT-4 and ElevenLabs
 
-> ⚡ **63 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **82 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

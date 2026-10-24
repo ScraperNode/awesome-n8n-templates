@@ -1,6 +1,6 @@
 # 🤝 Quick HubSpot contact lookup in Slack for sales & support teams
 
-> ⚡ **102 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **122 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Multi-department support bot with slash commands, Pinecone & Telegram
 
-> ⚡ **703 views** · 💬 [Support Chatbots](../)
+> ⚡ **727 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Notify about Google Sheet changes in Slack and email
 
-> ⚡ **2,368 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,360 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

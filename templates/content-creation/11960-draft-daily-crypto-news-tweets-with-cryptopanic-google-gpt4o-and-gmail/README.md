@@ -1,6 +1,6 @@
 # 🎬 Draft daily crypto news tweets with CryptoPanic, Google, GPT‑4o and Gmail
 
-> ⚡ **106 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **161 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Automate QuickBooks invoicing & customer creation from Airtable sales orders
 
-> ⚡ **241 views** · 🧾 [Invoice Processing](../)
+> ⚡ **330 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

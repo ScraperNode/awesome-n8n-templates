@@ -1,6 +1,6 @@
 # 🎬 Create Anki language flashcards with GPT-4, DALL-E and ElevenLabs
 
-> ⚡ **148 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **313 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

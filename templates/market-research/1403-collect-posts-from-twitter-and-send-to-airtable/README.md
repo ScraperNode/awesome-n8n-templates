@@ -1,6 +1,6 @@
 # 📊 Collect posts from Twitter and send to Airtable
 
-> ⚡ **4,053 views** · 📊 [Market Research & Insights](../)
+> ⚡ **4,070 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >

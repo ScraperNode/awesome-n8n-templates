@@ -1,6 +1,6 @@
 # 🔬 Generate visual resumes from Telegram using Google Gemini and BrowserAct
 
-> ⚡ **56 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **105 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

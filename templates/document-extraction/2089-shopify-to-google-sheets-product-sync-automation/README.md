@@ -1,6 +1,6 @@
 # 🔬 Shopify to Google Sheets Product Sync Automation
 
-> ⚡ **2,827 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,879 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

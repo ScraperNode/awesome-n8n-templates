@@ -1,6 +1,6 @@
 # 🎣 Validate and score email addresses with ZeroBounce AI
 
-> ⚡ **66 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **88 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

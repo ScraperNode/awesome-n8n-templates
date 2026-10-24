@@ -1,6 +1,6 @@
 # 💬 Personalized lead response with AI videos using Scout, GPT-4, and HeyGen
 
-> ⚡ **186 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **223 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

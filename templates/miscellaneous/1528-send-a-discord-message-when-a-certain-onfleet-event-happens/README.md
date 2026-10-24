@@ -1,6 +1,6 @@
 # 🔧 Send a Discord message when a certain Onfleet event happens
 
-> ⚡ **1,034 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,077 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

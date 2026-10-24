@@ -1,6 +1,6 @@
 # 🧾 One-way sync Stripe invoice PDFs to a S3 bucket
 
-> ⚡ **1,230 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,233 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

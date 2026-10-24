@@ -1,0 +1,368 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Raindrop Auto-Sorter",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "2dfe6fef-00c2-4237-a266-8c0461f84f84",
+      "name": "Every 15 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        2576,
+        3232
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "9530b11d-f8e8-486f-9b2a-3486bea3edea",
+      "name": "Get Collections",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        2800,
+        3232
+      ],
+      "parameters": {
+        "operation": "get",
+        "returnAll": true,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "collections"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "08bc1382-af27-4e01-baff-f0c527109fb5",
+      "name": "Config",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3024,
+        3232
+      ],
+      "parameters": {
+        "jsCode": "// CONFIG: settings come from the Setup Form. Collections come from the \"collections\" Data Table.\nconst defaults = {\n  inboxId: '',                 // collection_id bookmarks are read from (Setup Form)\n  fallbackId: '',              // collection_id for bookmarks the LLM can't place (Setup Form)\n  confidenceThreshold: 0.7,    // below this, the bookmark goes to the fallback\n  extraRules: '',              // optional extra instructions for the LLM (Setup Form)\n  telegramChatId: '',\n  llmProvider: 'ollama',       // 'ollama' or 'openai'\n  llmUrl: 'http://ollama:11434/api/chat',\n  llmModel: 'qwen3:8b',\n};\nconst settings = { ...defaults, ...($getWorkflowStaticData('global').config || {}) };\nif (!settings.inboxId || !settings.fallbackId) {\n  throw new Error('Run the Setup Form first: Inbox ID and Fallback ID are required');\n}\nconst collections = $('Get Collections').all().map(i => i.json)\n  .filter(r => r.collection_id !== undefined && r.collection_id !== null && r.collection_id !== '')\n  .map(r => ({ id: Number(r.collection_id), name: String(r.name || ''), description: String(r.description || '') }));\nconst ids = collections.map(c => String(c.id));\nif (!ids.includes(String(settings.inboxId))) throw new Error(`Inbox ID ${settings.inboxId} is not a collection_id in the collections table`);\nif (!ids.includes(String(settings.fallbackId))) throw new Error(`Fallback ID ${settings.fallbackId} is not a collection_id in the collections table`);\nif (String(settings.inboxId) === String(settings.fallbackId)) throw new Error('Inbox ID and Fallback ID must differ, or sorted bookmarks would loop');\nreturn [{ json: { ...settings, collections } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a661467f-ed5f-4141-8e0a-3361359b7276",
+      "name": "Get Inbox",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3248,
+        3232
+      ],
+      "parameters": {
+        "url": "=https://api.raindrop.io/rest/v1/raindrops/{{ $('Config').first().json.inboxId }}?perpage=50&sort=-created",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "f4dfd7ba-88ac-423d-9ded-14d9f4becaa9",
+      "name": "Split Items",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        3472,
+        3232
+      ],
+      "parameters": {
+        "options": {},
+        "fieldToSplitOut": "items"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ad7ff7ce-253d-4e15-8708-905807032b87",
+      "name": "Build Input",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3696,
+        3232
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const cfg = $('Config').first().json;\nconst list = cfg.collections.map(c => `${c.id} ${c.name}: ${c.description}`).join('\\n');\n\nconst SYSTEM = `You sort bookmarks into collections. Reply with ONE JSON object and nothing else. No prose, no markdown fences.\n\n# Input\nYou receive: title, url, description/excerpt (may be empty).\n\n# Collections (pick exactly one id)\n${list}\n\nNever output any other id. If several fit, pick the most specific one.\nIf none fits well, use the fallback collection ${cfg.fallbackId} and give a low confidence.\n${cfg.extraRules ? '\\n' + cfg.extraRules + '\\n' : ''}\n# Output shape\n{\"collection_id\": number, \"confidence\": number between 0 and 1, \"reason\": \"short reason\"}`;\n\nconst item = $json;\nconst user = `Title: ${item.title || ''}\\nURL: ${item.link || ''}\\nDescription: ${item.excerpt || item.note || ''}`;\nconst messages = [\n  { role: 'system', content: SYSTEM },\n  { role: 'user', content: user },\n];\nconst body = cfg.llmProvider === 'openai'\n  ? { model: cfg.llmModel, messages, response_format: { type: 'json_object' } }\n  : { model: cfg.llmModel, stream: false, format: 'json', messages };\n\nreturn { json: {\n  id: item._id,\n  title: item.title || '',\n  allowed: cfg.collections.map(c => Number(c.id)),\n  fallback: Number(cfg.fallbackId),\n  threshold: Number(cfg.confidenceThreshold),\n  provider: cfg.llmProvider,\n  url: cfg.llmUrl,\n  body,\n} };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "00a81ecd-a90d-4883-8f74-48d3b5fb0050",
+      "name": "LLM Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3920,
+        3232
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000
+        },
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "d6319500-0a1a-40db-8e79-95b7080650ff",
+      "name": "Validate",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4144,
+        3232
+      ],
+      "parameters": {
+        "jsCode": "const src = $('Build Input').item.json;\nconst reply = $input.first().json;\nconst text = src.provider === 'openai' ? reply.choices?.[0]?.message?.content : reply.message?.content;\nlet out = {};\ntry { out = JSON.parse(text); } catch (e) {}\nlet id = Number(out.collection_id);\nconst conf = Number(out.confidence) || 0;\nconst confident = src.allowed.includes(id) && conf >= src.threshold;\nif (!confident) id = src.fallback;\nreturn { json: {\n  id: src.id,\n  title: src.title,\n  collection: id,\n  confidence: conf,\n  reason: out.reason || (confident ? '' : 'low confidence or no valid collection'),\n  confident,\n} };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "20aef0a0-0bea-4506-b56b-7e1d1577a209",
+      "name": "Moved?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4368,
+        3232
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "551e9725-8a5b-4ab5-b9de-0cb028544c03",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.confident }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "abbfad8f-9bf5-45b1-ad25-a3edcb3c4008",
+      "name": "Move Bookmark",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        4592,
+        3136
+      ],
+      "parameters": {
+        "url": "=https://api.raindrop.io/rest/v1/raindrop/{{ $json.id }}",
+        "method": "PUT",
+        "options": {},
+        "jsonBody": "={{ JSON.stringify({ collection: { \"$id\": $json.collection } }) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {}
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "401c0dfd-7d9b-4ad7-95fe-a8dd390685c2",
+      "name": "Send Summary",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        4592,
+        3328
+      ],
+      "parameters": {
+        "text": "={{ $json.title }} was not confidently sorted, sent to fallback. Reason: {{ $json.reason }}",
+        "chatId": "={{ $('Config').first().json.telegramChatId }}",
+        "additionalFields": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "b6ad529b-07f3-4317-a3fa-06b41104921b",
+      "name": "Setup Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2432,
+        2480
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 620,
+        "height": 600,
+        "content": "## Raindrop Auto-Sorter\n\nRuns every 15 minutes. Each new bookmark in the Inbox is sent to an LLM, which picks the collection it belongs in. Bookmarks the LLM isn't confident about go to the fallback collection, and you get a Telegram alert for each one.\n\n## Setup (one time)\n1. Create a Data Table named `collections` with columns: collection_id (number), name (text), description (text).\n2. Add one row per collection. The description is what the LLM uses to choose it. Edit rows any time in the table view.\n3. Raindrop token: create it in Raindrop under Settings > Integrations > Developer. In n8n, add a Header Auth credential on Get Inbox and Move Bookmark: Name Authorization, Value Bearer YOUR_TOKEN.\n4. Run the Setup Form: Inbox ID, Fallback ID, Telegram chat ID, LLM settings, optional extra rules.\n5. Credentials: LLM Request (Ollama: any value) and Send Summary (Telegram). Delete Send Summary if you don't want alerts.\n6. Activate.\n\nExample rows: 10000001 | Work | Job postings, client research. 10000004 | Unsorted | Fallback for anything uncertain."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ba601e49-e554-4c26-9b3a-5f0c3a3ecdb8",
+      "name": "LLM Backend Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3312,
+        2864
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 600,
+        "height": 240,
+        "content": "## LLM Backend\n\nProvider \"ollama\" (local default): URL http://ollama:11434/api/chat. Resolves only on your local network. Pull a model first, e.g. ollama pull qwen2.5:7b.\n\nProvider \"openai\": any OpenAI-compatible chat API. URL example: https://api.openai.com/v1/chat/completions. Key: Header Auth on LLM Request.\n\nThe LLM is asked for one bookmark at a time and returns a collection and a confidence score. Scores below the threshold (default 0.7, set in Config) go to the fallback."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "executionOrder": "v1"
+  },
+  "nodeGroups": [],
+  "connections": {
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Get Inbox",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Moved?": {
+      "main": [
+        [
+          {
+            "node": "Move Bookmark",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Summary",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Move Bookmark",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate": {
+      "main": [
+        [
+          {
+            "node": "Moved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Inbox": {
+      "main": [
+        [
+          {
+            "node": "Split Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Input": {
+      "main": [
+        [
+          {
+            "node": "LLM Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Request": {
+      "main": [
+        [
+          {
+            "node": "Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Items": {
+      "main": [
+        [
+          {
+            "node": "Build Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 15 min": {
+      "main": [
+        [
+          {
+            "node": "Get Collections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Collections": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

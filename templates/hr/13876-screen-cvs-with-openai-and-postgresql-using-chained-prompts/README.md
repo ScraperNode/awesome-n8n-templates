@@ -1,6 +1,6 @@
 # 👥 Screen CVs with OpenAI and PostgreSQL using chained prompts
 
-> ⚡ **1 views** · 👥 [HR & Recruitment](../)
+> ⚡ **25 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

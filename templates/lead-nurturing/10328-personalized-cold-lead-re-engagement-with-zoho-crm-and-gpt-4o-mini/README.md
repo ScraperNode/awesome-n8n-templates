@@ -1,6 +1,6 @@
 # 💬 Personalized cold lead re-engagement with Zoho CRM and GPT-4o-mini
 
-> ⚡ **122 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **175 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

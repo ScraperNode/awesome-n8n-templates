@@ -1,6 +1,6 @@
 # 🎣 Receive updates when a form submission occurs in your Webflow website
 
-> ⚡ **1,011 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,024 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

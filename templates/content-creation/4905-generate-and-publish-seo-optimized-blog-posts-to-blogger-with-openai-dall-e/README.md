@@ -1,34 +1,36 @@
 # 🎬 Generate and publish SEO-optimized blog posts to Blogger with OpenAI & DALL-E
 
-> ⚡ **635 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **791 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 
 ![Screenshot 20250612 at 22.20.24.png](fileId:1512)
-This n8n workflow, **BlogBlizt: Blogger Edition**, automates the complete creation and publishing of long-form blog posts to Blogger, saving you hours of content creation time. Simply send a blog title via Telegram, and it generates comprehensive 10,000+ word articles with custom conceptual images and publishes everything to your Blogger site with proper SEO structure and custom URLs.
+Long-form Blogger posts without the grind. This [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) workflow, **BlogBlitz: Blogger Edition**, automates the complete creation and publishing of 10,000+ word articles to Blogger. Send a blog title via Telegram and it handles SEO metadata, full article writing, custom images, and publishing with proper URL structure.
+
+*Last updated: September 2026.*
 
 ## Who is this for?
-Blogger users, content creators, and digital marketers who want to automate high-quality, SEO-optimized blog content creation without manual writing or formatting. Perfect for those using Google's Blogger platform instead of WordPress.
+Blogger users, content creators, and digital marketers who want high-quality, SEO-optimized content without manual writing. Especially useful if you publish on Google's Blogger platform instead of WordPress.
 
 ## What problem is this workflow solving?
-Creating engaging, long-form content with proper SEO optimization is extremely time-consuming and requires expertise. Most automation tools focus on WordPress, leaving Blogger users behind. **BlogBlizt: Blogger Edition** solves this by automating the entire Blogger publishing process—from generating SEO metadata and writing comprehensive articles to creating custom images and publishing with proper URL structure.
+Long-form SEO content takes serious time and expertise, and most automation tools only serve WordPress, leaving Blogger users behind. **BlogBlitz: Blogger Edition** automates the full Blogger pipeline, from SEO metadata and article writing to custom images and publishing with clean URL structure.
 
 ## What this workflow does
 * **Triggers**: Receives blog title input via Telegram message
 * **AI-Powered Content**: Uses OpenAI GPT-4.1-mini to generate SEO metadata (title, slug, labels) and comprehensive articles
 * **Advanced Image Generation**: Creates custom conceptual images using DALL-E that visually represent your article's theme
 * **SEO Features**: Generates custom URLs with date structure, meta descriptions, and proper HTML formatting
-* **Reference Features**: Utilizing GPT 4.1 could reference valid and credible resource into great citation
-* **Blogger Integration**: Rare automated publishing directly to Blogger (not WordPress) with full API integration
+* **Reference Features**: GPT-4.1 references valid, credible resources with proper citations
+* **Blogger Integration**: Automated publishing directly to Blogger (not WordPress) with full API integration
 * **Image Hosting**: Automatically uploads generated images to Imgur and embeds them properly
 * **Instant Notifications**: Sends published blog link back via Telegram with mobile-optimized URLs
 
 ## Setup
-1. **[n8n Instance](https://n8n.partnerlinks.io/khaisastudio)**: Ensure you have a cloud or self-hosted n8n instance
+1. **[n8n Instance](https://n8n.partnerlinks.io/creator-khmuhtadin)**: Ensure you have a cloud or self-hosted [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance
 2. **Credentials**:
   * Google OAuth2: For Blogger API access with `https://www.googleapis.com/auth/blogger` scope
   * OpenAI API: For GPT-4.1-mini text generation and DALL-E image creation
-  * Telegram Bot: For receiving titles and sending notifications
+  * Telegram Bot: For receiving titles and sending notifications ([tutorial](https://core.telegram.org/bots/tutorial))
   * Imgur Client-ID: For image hosting and embedding
 3. **Google Cloud Configuration**:
   * Enable Blogger API in Google Cloud Console
@@ -48,7 +50,7 @@ Creating engaging, long-form content with proper SEO optimization is extremely t
 * **Content Categories**: Add automatic categorization and tagging based on topics
 
 ## Pre-Requirements
-* **n8n Instance**: Cloud or self-hosted with LangChain nodes available
+* **[n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) Instance**: Cloud or self-hosted with LangChain nodes available
 * **API Access**:
  * OpenAI API key for GPT-4.1-mini and DALL-E access
  * Google OAuth2 credentials with Blogger API enabled
@@ -62,10 +64,21 @@ Creating engaging, long-form content with proper SEO optimization is extremely t
 
 ---
 
-*Made by: [Khaisa Studio](https://khaisa.studio)*  
-*Tag: youtube, summarizer, telegram, openai*  
-*Category: AI Automation, Video Tools*
-**Need a custom?** contact me on **[LinkedIn](https://www.linkedin.com/in/khmuhtadin/)** or **[Web](khmuhtadin.com)**
+### Quick Answers
+**How long are the articles?**  
+10,000+ words by default. Lower the minimum word count to fit your needs.  
+**Where do images live?**  
+DALL-E generates them, Imgur hosts them, and they embed automatically in the post.  
+**How do I start a post?**  
+Send any blog title to the Telegram bot. The published link comes back to you.  
+
+*Made by: [khmuhtadin](https://khmuhtadin.com)*  
+*Tag: blogger, blog, seo, openai, telegram*  
+*Category: Marketing, Content Creation*
+**Need a custom?** contact me on **[LinkedIn](https://www.linkedin.com/in/khmuhtadin/)** or **[Web](https://khmuhtadin.com)**
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

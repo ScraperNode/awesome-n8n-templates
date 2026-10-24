@@ -1,6 +1,6 @@
 # 🧾 Track invoice spending vs budget from Google Drive with GPT-4o and Telegram alerts
 
-> ⚡ **45 views** · 🧾 [Invoice Processing](../)
+> ⚡ **150 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

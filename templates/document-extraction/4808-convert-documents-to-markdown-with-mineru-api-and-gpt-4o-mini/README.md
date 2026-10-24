@@ -1,6 +1,6 @@
 # 🔬 Convert documents to Markdown with MinerU API and GPT-4o-mini
 
-> ⚡ **1,525 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,809 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate LinkedIn posts using Google Gemini, MongoDB Atlas, Google Drive and Sheets
 
-> ⚡ **3 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **61 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

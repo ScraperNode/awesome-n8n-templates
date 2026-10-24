@@ -1,6 +1,6 @@
 # 🔒 Audit Google Drive file permissions for access control management
 
-> ⚡ **2,516 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,739 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

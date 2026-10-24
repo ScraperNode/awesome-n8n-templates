@@ -1,6 +1,6 @@
 # 📊 Generate AI search visibility datasets with Claude and GPT for tracking platforms
 
-> ⚡ **106 views** · 📊 [Market Research & Insights](../)
+> ⚡ **240 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

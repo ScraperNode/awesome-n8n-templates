@@ -1,6 +1,6 @@
 # 🧾 Automate invoice processing with Gmail, OCR.space, Slack & Xero
 
-> ⚡ **483 views** · 🧾 [Invoice Processing](../)
+> ⚡ **752 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

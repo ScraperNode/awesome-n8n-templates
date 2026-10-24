@@ -1,6 +1,6 @@
 # 🤝 Automate marketing leads import from Google Sheets to Airtable CRM
 
-> ⚡ **478 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **691 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

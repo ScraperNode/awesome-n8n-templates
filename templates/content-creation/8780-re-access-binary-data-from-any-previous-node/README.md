@@ -1,6 +1,6 @@
 # 🎬 🛠️ Re-Access Binary Data from Any Previous Node
 
-> ⚡ **1,566 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,520 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

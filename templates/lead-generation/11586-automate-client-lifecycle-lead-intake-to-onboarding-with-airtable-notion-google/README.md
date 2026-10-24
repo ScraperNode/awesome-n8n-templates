@@ -1,6 +1,6 @@
 # 🎣 Automate client lifecycle: lead intake to onboarding with Airtable, Notion & Google Calendar
 
-> ⚡ **349 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **569 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

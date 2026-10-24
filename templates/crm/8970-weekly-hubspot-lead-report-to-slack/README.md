@@ -1,6 +1,6 @@
 # 🤝 Weekly HubSpot lead report to Slack
 
-> ⚡ **1,420 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,701 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

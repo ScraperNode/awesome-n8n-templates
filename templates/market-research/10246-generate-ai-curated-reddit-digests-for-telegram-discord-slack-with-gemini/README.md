@@ -1,6 +1,6 @@
 # 📊 Generate AI-curated Reddit digests for Telegram, Discord & Slack with Gemini
 
-> ⚡ **571 views** · 📊 [Market Research & Insights](../)
+> ⚡ **765 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

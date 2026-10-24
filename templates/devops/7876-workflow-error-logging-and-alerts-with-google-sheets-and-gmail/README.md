@@ -1,6 +1,6 @@
 # ⚙️ Workflow error logging and alerts with Google Sheets and Gmail
 
-> ⚡ **1,195 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,398 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

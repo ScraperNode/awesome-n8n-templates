@@ -1,6 +1,6 @@
 # 🔍 Complete Zendesk API integration with MCP server for AI agents
 
-> ⚡ **388 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **427 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

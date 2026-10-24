@@ -1,6 +1,6 @@
 # 🔬 Generate M&A due diligence PDF reports with LlamaIndex, OpenAI, Pinecone, and S3
 
-> ⚡ **38 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **86 views** · 🔬 [Document Extraction & Analysis](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -8,20 +8,22 @@
 
 ## Description
 
-Streamline M&A due diligence with AI. This n8n workflow automatically parses financial documents using LlamaIndex, embeds data into Pinecone, and generates comprehensive, AI-driven reports with GPT-5-mini, saving hours of manual review and ensuring consistent, data-backed insights.
+Due diligence at machine speed. This [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) workflow reads financial documents with LlamaIndex, embeds them into Pinecone, and produces comprehensive AI-driven reports with GPT-5-mini. Manual review that took days now takes minutes, with consistent, data-backed output.
+
+*Last updated: September 2026.*
 
 ## Why Use This Workflow?
 
-**Time Savings:** Reduces manual document review and report generation from days to minutes.
-**Cost Reduction:** Minimizes reliance on expensive human analysts for initial data extraction and summary.
-**Error Prevention:** AI-driven analysis ensures consistent data extraction, reducing human error and oversight.
-**Scalability:** Effortlessly processes multiple documents and deals in parallel, scaling with your business needs.
+**Time Savings:** Document review and report generation drop from days to minutes.
+**Cost Reduction:** Far less dependence on expensive human analysts for initial extraction and summaries.
+**Error Prevention:** AI-driven extraction stays consistent, reducing human error and oversight.
+**Scalability:** Multiple documents and deals processed in parallel, scaling with your business.
 
 ## Ideal For
 
--   **Investment Analysts & Private Equity Firms:** Quickly evaluate target companies by automating the extraction of key financials, risks, and business models from deal documents.
--   **M&A Advisors:** Conduct preliminary due diligence efficiently, generating comprehensive overview reports for clients without extensive manual effort.
--   **Financial Professionals:** Accelerate research and analysis of company filings, investor presentations, and market reports for critical decision-making.
+-   **Investment Analysts & Private Equity Firms:** Evaluate targets fast by automating extraction of financials, risks, and business models from deal documents.
+-   **M&A Advisors:** Preliminary due diligence with comprehensive overviews, minus the manual effort.
+-   **Financial Professionals:** Accelerate research on filings, presentations, and market reports for critical decisions.
 
 ## How It Works
 
@@ -29,7 +31,7 @@ Streamline M&A due diligence with AI. This n8n workflow automatically parses fin
 2.  **Document Processing & Cache Check:** Files are split individually. The workflow first checks Pinecone to see if the deal's documents have been processed before (cache hit). If so, it skips parsing and embedding.
 3.  **Data Extraction (LlamaIndex):** For new deals, each document is sent to LlamaIndex for advanced parsing, extracting structured text content.
 4.  **Vectorization & Storage:** The parsed text is then converted into numerical vector embeddings using OpenAI and stored in Pinecone, our vector database, with relevant metadata.
-5.  **AI-Powered Analysis (Langchain Agent):** An n8n Langchain Agent, acting as a "Senior Investment Analyst," leverages GPT-5-mini to query Pinecone multiple times for specific information (e.g., company profile, financials, risks, business model). It synthesizes these findings into a structured JSON output.
+5.  **AI-Powered Analysis (Langchain Agent):** An [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) Langchain Agent, acting as a "Senior Investment Analyst," leverages GPT-5-mini to query Pinecone multiple times for specific information (e.g., company profile, financials, risks, business model). It synthesizes these findings into a structured JSON output.
 6.  **Report Generation:** The structured AI output is transformed into an HTML report, then converted into a professional PDF document.
 7.  **Secure Storage & Delivery:** The final PDF due diligence report is uploaded to an S3 bucket, and a public URL is returned via the initial webhook, providing instant access.
 
@@ -39,7 +41,7 @@ Streamline M&A due diligence with AI. This n8n workflow automatically parses fin
 
 | Requirement | Type | Purpose |
 | :---------- | :--- | :------ |
-| [n8n instance](https://n8n.partnerlinks.io/khmuhtadin) | Essential | Workflow execution platform |
+| [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin) | Essential | Workflow execution platform |
 | LlamaIndex API Key | Essential | For robust document parsing and text extraction |
 | OpenAI API Key | Essential | For creating text embeddings and powering the GPT-5-mini AI agent |
 | Pinecone API Key | Essential | For storing and retrieving vector embeddings |
@@ -47,7 +49,7 @@ Streamline M&A due diligence with AI. This n8n workflow automatically parses fin
 
 ### Installation Steps
 
-1.  Import the JSON file to your [n8n instance](https://n8n.partnerlinks.io/khmuhtadin).
+1.  Import the JSON file to your [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin).
 2.  **Configure credentials:**
     -   **LlamaIndex:** Create an "HTTP Header Auth" credential with `x-api-key` in the header and your LlamaIndex API key as the value.
     -   **OpenAI:** Create an "OpenAI API" credential with your OpenAI API key. Ensure the credential name is "Sumopod" or update the workflow nodes accordingly.
@@ -109,12 +111,23 @@ For analysis, a Langchain Agent, powered by GPT-5-mini, is instructed with a spe
 
 ---
 
-**Created by:** [Khmuhtadin](https://khmuhtadin.com)
+### Quick Answers
+**Which documents can it read?**  
+PDF, DOCX, and XLSX via webhook upload, parsed by LlamaIndex.  
+**How does caching work?**  
+A unique deal ID (from filenames) maps to a Pinecone namespace. Repeat uploads skip re-parsing.  
+**Where does the webhook listen?**  
+`/webhook/dd-ai`. POST sample documents there to test end to end.  
+
+**Made by:** [khmuhtadin](https://khmuhtadin.com)
 **Category:** AI | **Tags:** Due Diligence, AI, Automation, M&A, LlamaIndex, Pinecone, GPT-5-mini, Document Processing
-**Need custom workflows?** [Contact us](https://khaisa.studio/contact)
+**Need custom workflows?** [Contact me](https://khmuhtadin.com/contact)
 
 **Connect with the creator:**
 [Portfolio](https://khmuhtadin.com) • [Workflows](https://khaisa.studio/products/) • [LinkedIn](https://www.linkedin.com/in/khmuhtadin/) • [Medium](https://medium.com/@khaisastudio) • [Threads](https://www.threads.com/@khmuhtadin)
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

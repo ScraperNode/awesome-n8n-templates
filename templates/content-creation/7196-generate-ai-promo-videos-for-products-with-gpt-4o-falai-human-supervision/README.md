@@ -1,6 +1,6 @@
 # 🎬 Generate AI promo videos for products with GPT-4o, Fal.ai & human supervision
 
-> ⚡ **1,681 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,763 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

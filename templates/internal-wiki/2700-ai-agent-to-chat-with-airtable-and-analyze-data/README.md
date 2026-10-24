@@ -1,6 +1,6 @@
 # 📖 AI agent to chat with Airtable and analyze data
 
-> ⚡ **15,821 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **15,831 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

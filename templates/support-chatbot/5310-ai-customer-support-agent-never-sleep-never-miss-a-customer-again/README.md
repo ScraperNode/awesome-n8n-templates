@@ -1,6 +1,6 @@
 # 💬 🤖 AI customer support agent - never sleep, never miss a customer again!
 
-> ⚡ **3,997 views** · 💬 [Support Chatbots](../)
+> ⚡ **4,712 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Email support agent w/ Gemini & GPT fallback using Gmail + Google Sheets
 
-> ⚡ **27,918 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **37,022 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

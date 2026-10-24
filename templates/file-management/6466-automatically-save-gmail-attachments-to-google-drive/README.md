@@ -1,6 +1,6 @@
 # 📁 Automatically save Gmail attachments to Google Drive
 
-> ⚡ **2,433 views** · 📁 [File Management](../)
+> ⚡ **3,255 views** · 📁 [File Management](../)
 
 ## Description
 

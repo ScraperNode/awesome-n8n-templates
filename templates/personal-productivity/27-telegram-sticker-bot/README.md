@@ -1,6 +1,6 @@
 # ⚡ Telegram sticker bot
 
-> ⚡ **8,191 views** · ⚡ [Personal Productivity](../)
+> ⚡ **8,096 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

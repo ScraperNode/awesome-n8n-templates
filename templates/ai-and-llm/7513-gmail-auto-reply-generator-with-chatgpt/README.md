@@ -1,6 +1,6 @@
 # ✨ Gmail auto-reply generator with ChatGPT
 
-> ⚡ **2,003 views** · ✨ [AI & LLMs](../)
+> ⚡ **2,466 views** · ✨ [AI & LLMs](../)
 
 ## Description
 

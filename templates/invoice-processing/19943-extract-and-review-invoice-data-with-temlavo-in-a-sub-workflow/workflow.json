@@ -1,0 +1,965 @@
+{
+  "name": "Extract invoice data with Temlavo in a reusable sub-workflow",
+  "nodes": [
+    {
+      "id": "receive-invoice",
+      "name": "Receive invoice from caller",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "notes": "Accept all data preserves binary.invoice. Exactly one item per call.",
+      "position": [
+        -560,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "notesInFlow": true,
+      "typeVersion": 1.2
+    },
+    {
+      "id": "verify-fixture",
+      "name": "Validate invoice input",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -280,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Code node: JavaScript / Run Once for All Items.\n// Input: one persisted submission record and its original binary.invoice.\nconst items = $input.all();\nif (items.length !== 1) {\n  throw new Error('Provide exactly one invoice per execution; no API request was made.');\n}\nconst item = items[0];\nconst submission = item.json.temlavo_submission;\nconst binary = item.binary?.invoice;\nif (!submission || !binary) {\n  throw new Error('Provide temlavo_submission and binary.invoice; no API request was made.');\n}\nconst { idempotency_key, input_ref, filename, content_type, line_items } = submission;\n// This recipe uses opaque UUID-style tokens, never URLs or invoice identifiers.\nfor (const token of [idempotency_key, input_ref]) {\n  if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(token)) {\n    throw new Error('Provide the saved opaque submission tokens; no API request was made.');\n  }\n}\nif (typeof filename !== 'string' || filename.length < 1 || filename.length > 255) {\n  throw new Error('Provide the saved filename (1-255 characters); no API request was made.');\n}\nif (!['application/pdf', 'image/jpeg', 'image/png'].includes(content_type)) {\n  throw new Error('Provide a supported saved MIME type; no API request was made.');\n}\nif (!['advisory', 'review_on_failure', 'required'].includes(line_items)) {\n  throw new Error('Provide the saved line-item policy; no API request was made.');\n}\nconst bytes = await this.helpers.getBinaryDataBuffer(0, 'invoice');\nif (bytes.length < 1 || bytes.length > 20 * 1024 * 1024) {\n  throw new Error('The source must contain 1 byte through 20 MiB; no API request was made.');\n}\nreturn [{\n  json: {\n    api_root: 'https://api.temlavo.com',\n    idempotency_key,\n    input_ref,\n    create_body: {\n      filename,\n      content_type,\n      file_size_bytes: bytes.length,\n      policy: { required_fields: [], line_items },\n    },\n    create_attempt: 0,\n    confirm_attempt: 0,\n    put_count: 0,\n    poll_count: 0,\n  },\n  binary: { data: binary },\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "create-document",
+      "name": "Create Document",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        -40,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $json.api_root + \"/v1/documents\" }}",
+        "method": "POST",
+        "options": {
+          "timeout": 60000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ $json.create_body }}",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonHeaders": "={{ JSON.stringify({ \"Idempotency-Key\": $json.idempotency_key }) }}",
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "specifyHeaders": "json",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "normalize-create",
+      "name": "Normalize Create Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        180,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const MAX_CREATE_ATTEMPTS = 3;\nconst MAX_CONFIRM_ATTEMPTS = 3;\nconst MAX_POLLS = 20;\nconst terminal = new Set(['completed', 'needs_review', 'failed']);\nconst waiting = new Set(['queued', 'processing']);\nconst integer = (value) => Number.isInteger(Number(value)) ? Number(value) : null;\nconst safeCode = (value, fallback) => typeof value === 'string' && /^[a-z0-9_.-]+$/u.test(value) ? value : fallback;\nconst retryAfter = (headers) => {\n  const raw = headers?.['retry-after'] ?? headers?.['Retry-After'];\n  const value = integer(raw);\n  return value !== null && value >= 0 ? value : 5;\n};\nconst readApiError = (body) => body?.error && typeof body.error === 'object' ? body.error : {};\nconst makeStop = (operation, status, code, recoveryAction, context, headers = {}, requestId = null) => ({\n  schema_version: 'temlavo.n8n-safe-stop.v1',\n  operation,\n  http_status: status,\n  code: safeCode(code, 'unexpected_response'),\n  request_id: typeof requestId === 'string' ? requestId : typeof headers?.['x-request-id'] === 'string' ? headers['x-request-id'] : null,\n  document_id: typeof context.document_id === 'string' ? context.document_id : null,\n  idempotency_key: typeof context.idempotency_key === 'string' ? context.idempotency_key : null,\n  input_ref: typeof context.input_ref === 'string' ? context.input_ref : null,\n  retry_after_seconds: status === 429 || status === 503 ? retryAfter(headers) : null,\n  recovery_action: recoveryAction,\n});\nconst source = $('Validate invoice input').item;\nconst response = $input.first().json;\nconst status = integer(response.statusCode);\nconst headers = response.headers && typeof response.headers === 'object' ? response.headers : {};\nconst body = response.body && typeof response.body === 'object' ? response.body : {};\nconst api_error = readApiError(body);\nconst attempt = $runIndex + 1;\nconst operation = status === 200 || attempt > 1 ? 'create_replay' : 'create';\nconst context = {\n  ...source.json,\n  create_attempt: attempt,\n  document_id: typeof body.id === 'string' ? body.id : source.json.document_id ?? null,\n  upload: body.upload && typeof body.upload === 'object' ? body.upload : source.json.upload ?? null,\n};\nlet route_index = 5;\nlet safe_stop = null;\nlet retry_after_seconds = retryAfter(headers);\nif (status === 201 && body.status === 'awaiting_upload' && context.upload) route_index = 0;\nelse if (status === 200 && body.status === 'awaiting_upload') route_index = 1;\nelse if (status === 200 && waiting.has(body.status)) route_index = 2;\nelse if (status === 200 && terminal.has(body.status)) route_index = 3;\nelse if ((status === 429 || status === 503 || status === null) && attempt < MAX_CREATE_ATTEMPTS) route_index = 4;\nelse if (status === 402) safe_stop = makeStop(operation, status, api_error.code ?? 'billing_required', 'retry_same_create_after_billing', context, headers, api_error.request_id);\nelse if (status === 410 && operation === 'create_replay') safe_stop = makeStop(operation, status, api_error.code ?? 'upload_expired', 'start_new_logical_submission_after_expired_replay', context, headers, api_error.request_id);\nelse if (status === 429 || status === 503 || status === null) safe_stop = makeStop(operation, status, status === null ? 'transport_timeout' : api_error.code ?? 'retry_exhausted', 'retry_same_operation_later', context, headers, api_error.request_id);\nelse if (status !== null && status >= 300 && status < 400) safe_stop = makeStop(operation, status, 'redirect_refused', 'contact_support', context, headers);\nelse safe_stop = makeStop(operation, status, api_error.code ?? 'malformed_response', 'contact_support', context, headers, api_error.request_id);\nreturn [{ json: { ...context, operation, route_index, retry_after_seconds, safe_stop, document: body }, binary: source.binary }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "route-create",
+      "name": "Route Create",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        400,
+        0
+      ],
+      "parameters": {
+        "mode": "expression",
+        "output": "={{ $json.route_index }}",
+        "numberOutputs": 6
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "wait-create",
+      "name": "Wait before create replay",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        400,
+        360
+      ],
+      "parameters": {
+        "unit": "seconds",
+        "amount": "={{ Math.max(1, $json.retry_after_seconds || 5) }}",
+        "resume": "timeInterval"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "snapshot-put",
+      "name": "Snapshot signed PUT context",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        620,
+        -300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all();"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "signed-put",
+      "name": "Signed PUT (isolated)",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        860,
+        -300
+      ],
+      "parameters": {
+        "url": "={{ $json.upload.url }}",
+        "method": "={{ $json.upload.method }}",
+        "options": {
+          "timeout": 60000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "jsonHeaders": "={{ JSON.stringify($json.upload.headers) }}",
+        "sendHeaders": true,
+        "authentication": "none",
+        "specifyHeaders": "json",
+        "inputDataFieldName": "data"
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "normalize-put",
+      "name": "Normalize signed PUT",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1100,
+        -300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const MAX_CREATE_ATTEMPTS = 3;\nconst MAX_CONFIRM_ATTEMPTS = 3;\nconst MAX_POLLS = 20;\nconst terminal = new Set(['completed', 'needs_review', 'failed']);\nconst waiting = new Set(['queued', 'processing']);\nconst integer = (value) => Number.isInteger(Number(value)) ? Number(value) : null;\nconst safeCode = (value, fallback) => typeof value === 'string' && /^[a-z0-9_.-]+$/u.test(value) ? value : fallback;\nconst retryAfter = (headers) => {\n  const raw = headers?.['retry-after'] ?? headers?.['Retry-After'];\n  const value = integer(raw);\n  return value !== null && value >= 0 ? value : 5;\n};\nconst readApiError = (body) => body?.error && typeof body.error === 'object' ? body.error : {};\nconst makeStop = (operation, status, code, recoveryAction, context, headers = {}, requestId = null) => ({\n  schema_version: 'temlavo.n8n-safe-stop.v1',\n  operation,\n  http_status: status,\n  code: safeCode(code, 'unexpected_response'),\n  request_id: typeof requestId === 'string' ? requestId : typeof headers?.['x-request-id'] === 'string' ? headers['x-request-id'] : null,\n  document_id: typeof context.document_id === 'string' ? context.document_id : null,\n  idempotency_key: typeof context.idempotency_key === 'string' ? context.idempotency_key : null,\n  input_ref: typeof context.input_ref === 'string' ? context.input_ref : null,\n  retry_after_seconds: status === 429 || status === 503 ? retryAfter(headers) : null,\n  recovery_action: recoveryAction,\n});\nconst source = $('Snapshot signed PUT context').item;\nconst response = $input.first().json;\nconst status = integer(response.statusCode);\nconst headers = response.headers && typeof response.headers === 'object' ? response.headers : {};\nif (status !== null && status >= 300 && status < 400) {\n  return [{ json: { ...source.json, route_index: 1, safe_stop: makeStop('signed_put', status, 'redirect_refused', 'contact_support', source.json, headers) }, binary: source.binary }];\n}\n// Every successful, failed-looking, or transport-ambiguous PUT is confirmed.\nreturn [{ json: { ...source.json, route_index: 0, put_count: (source.json.put_count ?? 0) + 1, safe_stop: null }, binary: source.binary }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "route-put",
+      "name": "Route signed PUT",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1340,
+        -300
+      ],
+      "parameters": {
+        "mode": "expression",
+        "output": "={{ $json.route_index }}",
+        "numberOutputs": 2
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "snapshot-confirm",
+      "name": "Snapshot confirmation context",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1560,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all();"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "confirm-upload",
+      "name": "Confirm Upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $json.api_root + \"/v1/documents/\" + $json.document_id + \"/upload-complete\" }}",
+        "method": "POST",
+        "options": {
+          "timeout": 60000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "jsonBody": "={{ ({}) }}",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "normalize-confirm",
+      "name": "Normalize Upload Complete",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2040,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const MAX_CREATE_ATTEMPTS = 3;\nconst MAX_CONFIRM_ATTEMPTS = 3;\nconst MAX_POLLS = 20;\nconst terminal = new Set(['completed', 'needs_review', 'failed']);\nconst waiting = new Set(['queued', 'processing']);\nconst integer = (value) => Number.isInteger(Number(value)) ? Number(value) : null;\nconst safeCode = (value, fallback) => typeof value === 'string' && /^[a-z0-9_.-]+$/u.test(value) ? value : fallback;\nconst retryAfter = (headers) => {\n  const raw = headers?.['retry-after'] ?? headers?.['Retry-After'];\n  const value = integer(raw);\n  return value !== null && value >= 0 ? value : 5;\n};\nconst readApiError = (body) => body?.error && typeof body.error === 'object' ? body.error : {};\nconst makeStop = (operation, status, code, recoveryAction, context, headers = {}, requestId = null) => ({\n  schema_version: 'temlavo.n8n-safe-stop.v1',\n  operation,\n  http_status: status,\n  code: safeCode(code, 'unexpected_response'),\n  request_id: typeof requestId === 'string' ? requestId : typeof headers?.['x-request-id'] === 'string' ? headers['x-request-id'] : null,\n  document_id: typeof context.document_id === 'string' ? context.document_id : null,\n  idempotency_key: typeof context.idempotency_key === 'string' ? context.idempotency_key : null,\n  input_ref: typeof context.input_ref === 'string' ? context.input_ref : null,\n  retry_after_seconds: status === 429 || status === 503 ? retryAfter(headers) : null,\n  recovery_action: recoveryAction,\n});\nconst source = $('Snapshot confirmation context').item;\nconst response = $input.first().json;\nconst status = integer(response.statusCode);\nconst headers = response.headers && typeof response.headers === 'object' ? response.headers : {};\nconst body = response.body && typeof response.body === 'object' ? response.body : {};\nconst api_error = readApiError(body);\nconst attempt = $runIndex + 1;\nconst context = {\n  ...source.json,\n  confirm_attempt: attempt,\n  document_id: typeof body.id === 'string' ? body.id : source.json.document_id,\n  document: body,\n};\nlet route_index = 4;\nlet safe_stop = null;\nlet retry_after_seconds = retryAfter(headers);\nif ((status === 200 || status === 202) && waiting.has(body.status)) route_index = 0;\nelse if ((status === 200 || status === 202) && terminal.has(body.status)) route_index = 1;\nelse if ((status === 429 || status === 503 || status === null) && attempt < MAX_CONFIRM_ATTEMPTS) route_index = 2;\nelse if (status === 409 && api_error.code === 'upload_not_complete' && context.upload && (context.put_count ?? 0) < 2) route_index = 3;\nelse if (status === 402) safe_stop = makeStop('upload_complete', status, api_error.code ?? 'billing_required', 'retry_same_upload_complete_after_billing', context, headers, api_error.request_id);\nelse if (status === 410) safe_stop = makeStop('upload_complete', status, api_error.code ?? 'upload_expired', 'inspect_same_document', context, headers, api_error.request_id);\nelse if (status === 409 && api_error.code === 'upload_not_complete') safe_stop = makeStop('upload_complete', status, context.upload ? 'signed_put_retry_exhausted' : 'source_rehydration_required', context.upload ? 'retry_same_operation_later' : 'provide_original_submission_input', context, headers, api_error.request_id);\nelse if (status === 429 || status === 503 || status === null) safe_stop = makeStop('upload_complete', status, status === null ? 'transport_timeout' : api_error.code ?? 'retry_exhausted', 'retry_same_operation_later', context, headers, api_error.request_id);\nelse if (status !== null && status >= 300 && status < 400) safe_stop = makeStop('upload_complete', status, 'redirect_refused', 'contact_support', context, headers);\nelse safe_stop = makeStop('upload_complete', status, api_error.code ?? 'malformed_response', 'contact_support', context, headers, api_error.request_id);\nreturn [{ json: { ...context, route_index, retry_after_seconds, safe_stop }, binary: source.binary }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "route-confirm",
+      "name": "Route Upload Complete",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        2280,
+        0
+      ],
+      "parameters": {
+        "mode": "expression",
+        "output": "={{ $json.route_index }}",
+        "numberOutputs": 5
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "wait-confirm",
+      "name": "Wait before confirmation retry",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        2280,
+        300
+      ],
+      "parameters": {
+        "unit": "seconds",
+        "amount": "={{ Math.max(1, $json.retry_after_seconds || 5) }}",
+        "resume": "timeInterval"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "wait-poll",
+      "name": "Wait before poll",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        2520,
+        -300
+      ],
+      "parameters": {
+        "unit": "seconds",
+        "amount": "={{ Math.max(1, $json.retry_after_seconds || 5) }}",
+        "resume": "timeInterval"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "snapshot-poll",
+      "name": "Snapshot poll context",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2760,
+        -300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all();"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "get-document",
+      "name": "Get Document",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        3000,
+        -300
+      ],
+      "parameters": {
+        "url": "={{ $json.api_root + \"/v1/documents/\" + $json.document_id }}",
+        "method": "GET",
+        "options": {
+          "timeout": 60000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "normalize-poll",
+      "name": "Normalize Poll Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3240,
+        -300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const MAX_CREATE_ATTEMPTS = 3;\nconst MAX_CONFIRM_ATTEMPTS = 3;\nconst MAX_POLLS = 20;\nconst terminal = new Set(['completed', 'needs_review', 'failed']);\nconst waiting = new Set(['queued', 'processing']);\nconst integer = (value) => Number.isInteger(Number(value)) ? Number(value) : null;\nconst safeCode = (value, fallback) => typeof value === 'string' && /^[a-z0-9_.-]+$/u.test(value) ? value : fallback;\nconst retryAfter = (headers) => {\n  const raw = headers?.['retry-after'] ?? headers?.['Retry-After'];\n  const value = integer(raw);\n  return value !== null && value >= 0 ? value : 5;\n};\nconst readApiError = (body) => body?.error && typeof body.error === 'object' ? body.error : {};\nconst makeStop = (operation, status, code, recoveryAction, context, headers = {}, requestId = null) => ({\n  schema_version: 'temlavo.n8n-safe-stop.v1',\n  operation,\n  http_status: status,\n  code: safeCode(code, 'unexpected_response'),\n  request_id: typeof requestId === 'string' ? requestId : typeof headers?.['x-request-id'] === 'string' ? headers['x-request-id'] : null,\n  document_id: typeof context.document_id === 'string' ? context.document_id : null,\n  idempotency_key: typeof context.idempotency_key === 'string' ? context.idempotency_key : null,\n  input_ref: typeof context.input_ref === 'string' ? context.input_ref : null,\n  retry_after_seconds: status === 429 || status === 503 ? retryAfter(headers) : null,\n  recovery_action: recoveryAction,\n});\nconst create = $('Snapshot poll context').item.json;\nconst response = $input.first().json;\nconst status = integer(response.statusCode);\nconst headers = response.headers && typeof response.headers === 'object' ? response.headers : {};\nconst body = response.body && typeof response.body === 'object' ? response.body : {};\nconst api_error = readApiError(body);\nconst poll_count = $runIndex + 1;\nconst context = { ...create, document_id: typeof body.id === 'string' ? body.id : create.document_id, document: body, poll_count };\nlet route_index = 2;\nlet safe_stop = null;\nlet retry_after_seconds = retryAfter(headers);\nif (status === 200 && waiting.has(body.status) && poll_count < MAX_POLLS) route_index = 0;\nelse if (status === 200 && terminal.has(body.status)) route_index = 1;\nelse if ((status === 429 || status === 503 || status === null) && poll_count < MAX_POLLS) route_index = 0;\nelse if (poll_count >= MAX_POLLS && (waiting.has(body.status) || status === null)) safe_stop = makeStop('poll', status, 'poll_timeout', 'inspect_same_document', context, headers);\nelse if (status === 429 || status === 503) safe_stop = makeStop('poll', status, api_error.code ?? 'retry_exhausted', 'retry_same_operation_later', context, headers, api_error.request_id);\nelse if (status !== null && status >= 300 && status < 400) safe_stop = makeStop('poll', status, 'redirect_refused', 'contact_support', context, headers);\nelse safe_stop = makeStop('poll', status, api_error.code ?? 'malformed_response', 'contact_support', context, headers, api_error.request_id);\nreturn [{ json: { ...context, route_index, retry_after_seconds, safe_stop } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "route-poll",
+      "name": "Route Poll",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        3480,
+        -300
+      ],
+      "parameters": {
+        "mode": "expression",
+        "output": "={{ $json.route_index }}",
+        "numberOutputs": 3
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "prepare-terminal",
+      "name": "Prepare Terminal Branch",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2760,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const MAX_CREATE_ATTEMPTS = 3;\nconst MAX_CONFIRM_ATTEMPTS = 3;\nconst MAX_POLLS = 20;\nconst terminal = new Set(['completed', 'needs_review', 'failed']);\nconst waiting = new Set(['queued', 'processing']);\nconst integer = (value) => Number.isInteger(Number(value)) ? Number(value) : null;\nconst safeCode = (value, fallback) => typeof value === 'string' && /^[a-z0-9_.-]+$/u.test(value) ? value : fallback;\nconst retryAfter = (headers) => {\n  const raw = headers?.['retry-after'] ?? headers?.['Retry-After'];\n  const value = integer(raw);\n  return value !== null && value >= 0 ? value : 5;\n};\nconst readApiError = (body) => body?.error && typeof body.error === 'object' ? body.error : {};\nconst makeStop = (operation, status, code, recoveryAction, context, headers = {}, requestId = null) => ({\n  schema_version: 'temlavo.n8n-safe-stop.v1',\n  operation,\n  http_status: status,\n  code: safeCode(code, 'unexpected_response'),\n  request_id: typeof requestId === 'string' ? requestId : typeof headers?.['x-request-id'] === 'string' ? headers['x-request-id'] : null,\n  document_id: typeof context.document_id === 'string' ? context.document_id : null,\n  idempotency_key: typeof context.idempotency_key === 'string' ? context.idempotency_key : null,\n  input_ref: typeof context.input_ref === 'string' ? context.input_ref : null,\n  retry_after_seconds: status === 429 || status === 503 ? retryAfter(headers) : null,\n  recovery_action: recoveryAction,\n});\nconst context = $input.first().json;\nconst status = context.document?.status;\nconst route_index = status === 'completed' ? 0 : status === 'needs_review' ? 1 : status === 'failed' ? 2 : 3;\nconst safe_stop = route_index === 3 ? makeStop('poll', null, 'impossible_terminal_state', 'contact_support', context) : null;\nreturn [{ json: { ...context, route_index, safe_stop } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "route-terminal",
+      "name": "Route Terminal Status",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        3000,
+        200
+      ],
+      "parameters": {
+        "mode": "expression",
+        "output": "={{ $json.route_index }}",
+        "numberOutputs": 4
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "completed",
+      "name": "Completed",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3240,
+        100
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const document = $json.document;\nreturn [{ json: { status: document.status, document_id: document.id, document } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "needs-review",
+      "name": "Needs Review",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3240,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const document = $json.document;\nconst checks = Array.isArray(document.validation?.checks) ? document.validation.checks : [];\nconst review_reasons = checks\n  .filter((check) => check.severity === 'review' && check.status !== 'pass')\n  .map((check) => ({\n    code: typeof check.code === 'string' ? check.code : 'unknown_future_code',\n    status: typeof check.status === 'string' ? check.status : 'unknown',\n    severity: typeof check.severity === 'string' ? check.severity : 'unknown',\n    paths: Array.isArray(check.paths) ? check.paths : [],\n  }));\nreturn [{ json: { status: 'needs_review', document_id: document.id, review_reasons, document } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "failed",
+      "name": "Failed",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3240,
+        420
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const document = $json.document;\nreturn [{ json: { status: document.status, document_id: document.id, document } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "safe-stop",
+      "name": "Temlavo Safe Stop",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3480,
+        620
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const value = $json.safe_stop;\nif (!value || value.schema_version !== 'temlavo.n8n-safe-stop.v1') throw new Error('Missing structured safe stop.');\nreturn [{ json: {\n  schema_version: value.schema_version,\n  operation: value.operation,\n  http_status: value.http_status,\n  code: value.code,\n  request_id: value.request_id,\n  document_id: value.document_id,\n  idempotency_key: value.idempotency_key,\n  input_ref: value.input_ref,\n  retry_after_seconds: value.retry_after_seconds,\n  recovery_action: value.recovery_action,\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "return-to-caller",
+      "name": "Return to caller",
+      "type": "n8n-nodes-base.code",
+      "notes": "One output item. Caller branches on status, or on safe-stop schema_version.",
+      "position": [
+        3740,
+        260
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const result = $input.first().json;\n// Safe stops retain their strict schema; terminal results get an opaque correlation handle.\nif (result.schema_version === 'temlavo.n8n-safe-stop.v1') return [{ json: result }];\nconst source = $('Validate invoice input').first().json;\nreturn [{ json: { ...result, input_ref: source.input_ref } }];"
+      },
+      "notesInFlow": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "overview",
+      "name": "Start here \u2014 description and setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1700,
+        -660
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 1020,
+        "height": 880,
+        "content": "# Extract invoice data with Temlavo in a reusable sub-workflow\n\n## Who is this for?\nAutomation builders who receive invoice files through Gmail, Google Drive, webhooks, or other workflows and need structured accounting data with explicit review outcomes.\n\n## What it does\nThis reusable sub-workflow accepts one PDF, JPEG, or PNG invoice, creates a Temlavo document, uploads the file, confirms the upload, and polls for the result. It separates completed, needs_review, failed, and recovery-stop outcomes before returning one item to the calling workflow. Review results retain extracted data and review reasons. Completed means no blocking declared check, not independently verified accounting data.\n\n## Setup\nFirst [register at Temlavo](https://temlavo.com/sign-up), then open [API keys](https://temlavo.com/app/api-keys) and create a key. Copy the full key shown once; the shortened key hint will not work.\n\nImport and save this workflow in n8n. Create one HTTP Header Auth credential: Name Authorization; Value Bearer followed by one space and your full Temlavo API key. Select it on Create Document, Confirm Upload, and Get Document only.\n\nFrom your existing workflow, use Execute Sub-workflow with Wait for Sub-Workflow Completion enabled. Pass binary.invoice plus the temlavo_submission object described in the input sticky note. Keep the trigger on Accept all data so the file is preserved. Process one invoice per call.\n\n## Requirements and customization\nRequires a Temlavo account, API key, available usage, and a supported invoice up to 20 MiB. The template is free; Temlavo API usage follows [Temlavo pricing](https://temlavo.com/pricing), and your n8n hosting costs are separate. Connect the returned outcome to your own accounting, notification, or review steps. See the canvas notes for retries and data retention.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "input-contract",
+      "name": "Input \u2014 connect your Gmail, Drive, or webhook workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -640,
+        -660
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 960,
+        "height": 630,
+        "content": "## One invoice per call\nKeep **Accept all data** on the trigger. In the parent, use Execute Sub-workflow, **Run once with all items**, and **Wait for Sub-Workflow Completion**. For batches, use Loop Over Items with batch size 1.\n\nPass one item with **binary.invoice** and this JSON:\n\n```json\n{\n  \"temlavo_submission\": {\n    \"idempotency_key\": \"YOUR_SAVED_OPAQUE_TOKEN\",\n    \"input_ref\": \"YOUR_SAVED_RETRY_RECORD_TOKEN\",\n    \"filename\": \"invoice.pdf\",\n    \"content_type\": \"application/pdf\",\n    \"line_items\": \"advisory\"\n  }\n}\n```\n\nUse the actual filename/MIME. Supported MIME: application/pdf, image/jpeg, image/png. Both tokens must be 1\u2013128 letters, digits, underscores or hyphens; use UUIDs, never email addresses or invoice numbers. Save the tokens, original file, and options in your own system **before calling**. Reuse them for retries; choose new tokens only for a new logical submission. Do not generate a key inside a retry loop.\n\nFor Gmail, split attachments into individual items and map the selected attachment to binary.invoice. Ignore unrelated attachments explicitly in your parent; never pass several invoices in one call."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "upload-boundary",
+      "name": "Upload \u2014 credential isolation and replay safety",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        360,
+        -900
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 940,
+        "height": 320,
+        "content": "## Create \u2192 signed upload \u2192 confirmation\nSelect the same Temlavo HTTP Header Auth credential on **Create Document**, **Confirm Upload**, and **Get Document**. Leave **Signed PUT (isolated)** unauthenticated: it forwards only the API-returned upload headers.\n\nAn awaiting-upload replay confirms before sending bytes again. An ambiguous upload is also confirmed first. Retries keep the same saved submission identity.\n\nThe API origin is fixed in Validate invoice input; the caller cannot override it. Restrict who can call this sub-workflow in n8n workflow settings, because calls use your Temlavo account and allowance."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "outcome-contract",
+      "name": "Outputs \u2014 completed, review, failure, or recovery",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2540,
+        -950
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1150,
+        "height": 510,
+        "content": "## Route the returned item in your parent\n**status = completed:** full document, including warnings. Continue according to your business rules.\n**status = needs_review:** full document plus review_reasons. Preserve the result and send it to your review step. This is not a transport error.\n**status = failed:** terminal processing failure; do not treat it as an extracted result or automatically resubmit.\n**schema_version = temlavo.n8n-safe-stop.v1:** a bounded recovery stop (for example billing, rate limiting or polling timeout). Follow recovery_action using the saved input; never assume the document was cancelled.\n\nInput validation or n8n runtime failures fail the sub-workflow. Configure the parent Execute Sub-workflow node's **On Error \u2192 Continue (using error output)** to handle these separately. Keep the normal output and error output separate.\n\nTerminal results include input_ref for correlation; safe stops preserve their strict schema. Return to caller removes binary files and upload context."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "retention-and-limits",
+      "name": "Limits, policy, and data retention",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        800,
+        600
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1160,
+        "height": 350,
+        "content": "## Operational limits\nTarget n8n 2.36.7. Up to 3 create attempts, 3 confirmation attempts, 20 polls; HTTP timeout 60 seconds and workflow timeout 10 minutes. A timeout does not cancel Temlavo processing. Inspect the same document or recover with the same saved submission.\n\nline_items: **advisory** (default-style behavior), **review_on_failure**, or **required**. Required asks for minimum usable line items; it is not independent source verification.\n\nPortable execution-history saving is disabled. n8n may still persist running/waiting execution data and binary files. Configure pruning, binary retention, backups and logs on your instance and on parent workflows before real invoices. Temlavo deletion does not delete your n8n or downstream copies. Use synthetic data for demonstrations; never pin real invoices, credentials, or responses into a shared template."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 600,
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false,
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none"
+  },
+  "connections": {
+    "Failed": {
+      "main": [
+        [
+          {
+            "node": "Return to caller",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Completed": {
+      "main": [
+        [
+          {
+            "node": "Return to caller",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Poll": {
+      "main": [
+        [
+          {
+            "node": "Wait before poll",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Terminal Branch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Temlavo Safe Stop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Document": {
+      "main": [
+        [
+          {
+            "node": "Normalize Poll Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Review": {
+      "main": [
+        [
+          {
+            "node": "Return to caller",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Create": {
+      "main": [
+        [
+          {
+            "node": "Snapshot signed PUT context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Snapshot confirmation context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait before poll",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Terminal Branch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait before create replay",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Temlavo Safe Stop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm Upload": {
+      "main": [
+        [
+          {
+            "node": "Normalize Upload Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Document": {
+      "main": [
+        [
+          {
+            "node": "Normalize Create Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route signed PUT": {
+      "main": [
+        [
+          {
+            "node": "Snapshot confirmation context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Temlavo Safe Stop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait before poll": {
+      "main": [
+        [
+          {
+            "node": "Snapshot poll context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Temlavo Safe Stop": {
+      "main": [
+        [
+          {
+            "node": "Return to caller",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize signed PUT": {
+      "main": [
+        [
+          {
+            "node": "Route signed PUT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Terminal Status": {
+      "main": [
+        [
+          {
+            "node": "Completed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Needs Review",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Failed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Temlavo Safe Stop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Upload Complete": {
+      "main": [
+        [
+          {
+            "node": "Wait before poll",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Terminal Branch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait before confirmation retry",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Snapshot signed PUT context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Temlavo Safe Stop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signed PUT (isolated)": {
+      "main": [
+        [
+          {
+            "node": "Normalize signed PUT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snapshot poll context": {
+      "main": [
+        [
+          {
+            "node": "Get Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate invoice input": {
+      "main": [
+        [
+          {
+            "node": "Create Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Poll Response": {
+      "main": [
+        [
+          {
+            "node": "Route Poll",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Terminal Branch": {
+      "main": [
+        [
+          {
+            "node": "Route Terminal Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Create Response": {
+      "main": [
+        [
+          {
+            "node": "Route Create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Upload Complete": {
+      "main": [
+        [
+          {
+            "node": "Route Upload Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait before create replay": {
+      "main": [
+        [
+          {
+            "node": "Create Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive invoice from caller": {
+      "main": [
+        [
+          {
+            "node": "Validate invoice input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snapshot signed PUT context": {
+      "main": [
+        [
+          {
+            "node": "Signed PUT (isolated)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snapshot confirmation context": {
+      "main": [
+        [
+          {
+            "node": "Confirm Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait before confirmation retry": {
+      "main": [
+        [
+          {
+            "node": "Snapshot confirmation context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "description": "## Who is this for?\nAutomation builders who receive invoice files through Gmail, Google Drive, webhooks, or other workflows and need structured accounting data with explicit review outcomes.\n\n## What it does\nThis reusable sub-workflow accepts one PDF, JPEG, or PNG invoice, creates a Temlavo document, uploads the file, confirms the upload, and polls for the result. It separates completed, needs_review, failed, and recovery-stop outcomes before returning one item to the calling workflow. Review results retain extracted data and review reasons. Completed means no blocking declared check, not independently verified accounting data.\n\n## Setup\nFirst [register at Temlavo](https://temlavo.com/sign-up), then open [API keys](https://temlavo.com/app/api-keys) and create a key. Copy the full key shown once; the shortened key hint will not work.\n\nImport and save this workflow in n8n. Create one HTTP Header Auth credential: Name Authorization; Value Bearer followed by one space and your full Temlavo API key. Select it on Create Document, Confirm Upload, and Get Document only.\n\nFrom your existing workflow, use Execute Sub-workflow with Wait for Sub-Workflow Completion enabled. Pass binary.invoice plus the temlavo_submission object described in the input sticky note. Keep the trigger on Accept all data so the file is preserved. Process one invoice per call.\n\n## Requirements and customization\nRequires a Temlavo account, API key, available usage, and a supported invoice up to 20 MiB. The template is free; Temlavo API usage follows [Temlavo pricing](https://temlavo.com/pricing), and your n8n hosting costs are separate. Connect the returned outcome to your own accounting, notification, or review steps. See the canvas notes for retries and data retention.\n"
+}

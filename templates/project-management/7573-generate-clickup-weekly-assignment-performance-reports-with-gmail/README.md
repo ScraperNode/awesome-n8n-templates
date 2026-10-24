@@ -1,6 +1,6 @@
 # 📋 Generate ClickUp weekly assignment & performance reports with Gmail
 
-> ⚡ **66 views** · 📋 [Project Management](../)
+> ⚡ **90 views** · 📋 [Project Management](../)
 
 ## Description
 

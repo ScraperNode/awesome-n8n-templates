@@ -1,6 +1,6 @@
 # 🤝 Get notified on Gmail, Telegram and Slack on new Stripe purchase
 
-> ⚡ **1,039 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,104 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

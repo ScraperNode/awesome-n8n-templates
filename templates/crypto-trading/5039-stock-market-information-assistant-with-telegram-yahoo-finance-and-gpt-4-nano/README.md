@@ -1,6 +1,6 @@
 # 📈 Stock market information assistant with Telegram, Yahoo Finance, and GPT-4 Nano
 
-> ⚡ **1,339 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,646 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

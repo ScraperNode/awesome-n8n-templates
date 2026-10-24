@@ -1,6 +1,6 @@
 # 📈 Binance SM indicators webhook tool
 
-> ⚡ **4,173 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **4,356 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

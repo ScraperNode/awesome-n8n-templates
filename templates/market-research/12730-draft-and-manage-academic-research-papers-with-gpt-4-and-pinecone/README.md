@@ -1,6 +1,6 @@
 # 📊 Draft and manage academic research papers with GPT-4 and Pinecone
 
-> ⚡ **136 views** · 📊 [Market Research & Insights](../)
+> ⚡ **405 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

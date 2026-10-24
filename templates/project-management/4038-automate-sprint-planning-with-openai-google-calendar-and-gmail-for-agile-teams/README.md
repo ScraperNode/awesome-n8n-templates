@@ -1,6 +1,6 @@
 # 📋 Automate sprint planning with OpenAI, Google Calendar, and Gmail for agile teams
 
-> ⚡ **1,010 views** · 📋 [Project Management](../)
+> ⚡ **1,081 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Vectorize Medical Procedures for Semantic Search with TUSS, Gemini & pgVector
 
-> ⚡ **622 views** · ⚒️ [Engineering](../)
+> ⚡ **695 views** · ⚒️ [Engineering](../)
 
 ## Description
 

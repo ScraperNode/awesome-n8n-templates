@@ -1,6 +1,6 @@
 # ⚡ MCP AI agent Google Calendar - create, update & manage events
 
-> ⚡ **2,134 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,205 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

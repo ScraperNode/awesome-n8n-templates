@@ -1,6 +1,6 @@
 # 🎬 Generate cold emails & sales letters with OpenAI GPT & Google Docs via Chat
 
-> ⚡ **3,680 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,507 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

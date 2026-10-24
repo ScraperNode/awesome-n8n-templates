@@ -1,6 +1,6 @@
 # 📋 Receive updates for changes in the specified list in Trello
 
-> ⚡ **2,385 views** · 📋 [Project Management](../)
+> ⚡ **2,431 views** · 📋 [Project Management](../)
 
 ## Description
 

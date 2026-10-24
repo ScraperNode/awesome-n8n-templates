@@ -1,6 +1,6 @@
 # 🎬 Generate news cards from Spotify emotions with LLM, Google News and APITemplate.io
 
-> ⚡ **69 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **96 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

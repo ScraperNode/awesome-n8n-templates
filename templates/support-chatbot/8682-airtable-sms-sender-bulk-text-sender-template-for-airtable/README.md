@@ -1,6 +1,6 @@
 # 💬 Airtable SMS sender - bulk text sender template for Airtable
 
-> ⚡ **269 views** · 💬 [Support Chatbots](../)
+> ⚡ **301 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

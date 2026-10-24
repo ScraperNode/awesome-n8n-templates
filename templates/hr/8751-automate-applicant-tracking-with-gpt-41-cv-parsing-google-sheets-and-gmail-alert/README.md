@@ -1,6 +1,6 @@
 # 👥 Automate applicant tracking with GPT-4.1 CV parsing, Google Sheets and Gmail alerts
 
-> ⚡ **309 views** · 👥 [HR & Recruitment](../)
+> ⚡ **434 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

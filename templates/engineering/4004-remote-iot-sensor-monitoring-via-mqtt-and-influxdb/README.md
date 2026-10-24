@@ -1,6 +1,6 @@
 # ⚒️ Remote IOT sensor monitoring via MQTT and InfluxDB
 
-> ⚡ **2,119 views** · ⚒️ [Engineering](../)
+> ⚡ **2,366 views** · ⚒️ [Engineering](../)
 
 ## Description
 

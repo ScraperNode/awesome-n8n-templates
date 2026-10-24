@@ -1,6 +1,6 @@
 # 💬 Create a webhook-ready conversational assistant with Google Gemini and session memory
 
-> ⚡ **1,579 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,744 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

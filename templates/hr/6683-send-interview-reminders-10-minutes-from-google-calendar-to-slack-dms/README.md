@@ -1,6 +1,6 @@
 # 👥 Send interview reminders (10 minutes) from Google Calendar to Slack DMs
 
-> ⚡ **190 views** · 👥 [HR & Recruitment](../)
+> ⚡ **219 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

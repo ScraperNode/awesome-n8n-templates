@@ -1,6 +1,6 @@
 # 🤖 Manage Notion documents with Gemini AI: Fetch, summarize & update via Chat
 
-> ⚡ **38 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **42 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

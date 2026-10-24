@@ -1,6 +1,6 @@
 # 🎣 Generate personalized cold email icebreakers with GPT-4O-mini and Google Sheets
 
-> ⚡ **674 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **714 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

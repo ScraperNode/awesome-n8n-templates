@@ -1,6 +1,6 @@
 # 📊 Audit & monitor SEO performance with GPT-4 Advisor, PageSpeed Insights & Slack alerts
 
-> ⚡ **212 views** · 📊 [Market Research & Insights](../)
+> ⚡ **252 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

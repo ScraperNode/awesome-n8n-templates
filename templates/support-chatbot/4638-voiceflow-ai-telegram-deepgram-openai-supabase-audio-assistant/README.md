@@ -1,6 +1,6 @@
 # 💬 🎙️ VoiceFlow AI: Telegram + Deepgram + OpenAI + Supabase audio assistant
 
-> ⚡ **2,167 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,356 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

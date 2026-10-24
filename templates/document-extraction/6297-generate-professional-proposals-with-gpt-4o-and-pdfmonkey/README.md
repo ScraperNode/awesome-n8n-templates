@@ -1,6 +1,6 @@
 # 🔬 Generate professional proposals with GPT-4o and PDFMonkey
 
-> ⚡ **107 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **129 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

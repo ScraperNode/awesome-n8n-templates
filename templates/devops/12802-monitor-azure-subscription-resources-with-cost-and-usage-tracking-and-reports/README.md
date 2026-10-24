@@ -1,6 +1,6 @@
 # ⚙️ Monitor Azure subscription resources with cost and usage tracking and reports
 
-> ⚡ **37 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **166 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

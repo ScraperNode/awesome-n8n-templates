@@ -1,6 +1,6 @@
 # 🧾 Automate tax deduction processing with GPT-4 receipt analysis and Gmail reporting
 
-> ⚡ **32 views** · 🧾 [Invoice Processing](../)
+> ⚡ **81 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

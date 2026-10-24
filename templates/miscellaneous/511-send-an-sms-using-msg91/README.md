@@ -1,6 +1,6 @@
 # 🔧 Send an SMS using MSG91
 
-> ⚡ **567 views** · 🔧 [Miscellaneous](../)
+> ⚡ **585 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

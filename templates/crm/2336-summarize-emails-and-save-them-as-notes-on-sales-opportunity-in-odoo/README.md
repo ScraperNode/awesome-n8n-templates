@@ -1,6 +1,6 @@
 # 🤝 Summarize emails and save them as notes on sales opportunity in Odoo
 
-> ⚡ **10,562 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **11,309 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

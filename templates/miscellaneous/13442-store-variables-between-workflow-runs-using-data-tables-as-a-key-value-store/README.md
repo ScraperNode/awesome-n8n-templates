@@ -1,6 +1,6 @@
 # 🔧 Store variables between workflow runs using data tables as a key-value store
 
-> ⚡ **23 views** · 🔧 [Miscellaneous](../)
+> ⚡ **111 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

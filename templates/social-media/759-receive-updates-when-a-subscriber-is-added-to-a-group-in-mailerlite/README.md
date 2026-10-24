@@ -1,6 +1,6 @@
 # 📱 Receive updates when a subscriber is added to a group in MailerLite
 
-> ⚡ **653 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **678 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Automatically discover & enrich HubSpot buying groups with Surfe and Google Sheets
 
-> ⚡ **247 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **302 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

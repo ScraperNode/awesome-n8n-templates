@@ -1,6 +1,6 @@
 # 🎬 Create AI-generated books with GPT-4.1-mini, DALL-E, Google Drive and AWS S3
 
-> ⚡ **2,808 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,607 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

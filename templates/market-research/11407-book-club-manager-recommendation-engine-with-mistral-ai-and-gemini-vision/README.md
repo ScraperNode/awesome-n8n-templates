@@ -1,6 +1,6 @@
 # 📊 Book club manager & recommendation engine with Mistral AI and Gemini Vision
 
-> ⚡ **30 views** · 📊 [Market Research & Insights](../)
+> ⚡ **42 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

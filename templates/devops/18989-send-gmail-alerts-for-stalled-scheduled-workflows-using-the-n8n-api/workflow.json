@@ -1,0 +1,319 @@
+{
+  "name": "Silent failure check - alert when a scheduled workflow stops running",
+  "nodes": [
+    {
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "name": "Every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -464,
+        304
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "a1b2c3d4-0002-4000-8000-000000000002",
+      "name": "Settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -240,
+        304
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "n8nBaseUrl",
+              "type": "string",
+              "value": "https://n8n.example.com"
+            },
+            {
+              "id": "s2",
+              "name": "silentAfterMinutes",
+              "type": "number",
+              "value": 120
+            },
+            {
+              "id": "s3",
+              "name": "heartbeatUrl",
+              "type": "string",
+              "value": "https://hc-ping.com/your-uuid-here"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "a1b2c3d4-0003-4000-8000-000000000003",
+      "name": "Get active workflows",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        -16,
+        304
+      ],
+      "parameters": {
+        "url": "={{ $json.n8nBaseUrl }}/api/v1/workflows?active=true&limit=250",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "a1b2c3d4-0004-4000-8000-000000000004",
+      "name": "Get recent executions",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "maxTries": 3,
+      "position": [
+        208,
+        304
+      ],
+      "parameters": {
+        "url": "={{ $('Settings').first().json.n8nBaseUrl }}/api/v1/executions?limit=250",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "a1b2c3d4-0005-4000-8000-000000000005",
+      "name": "Find silent workflows",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        432,
+        304
+      ],
+      "parameters": {
+        "jsCode": "// Compare active workflows against recent executions.\n// A workflow that is active but has not finished a run recently is silent.\n// n8n does not raise an error for this: nothing failed, nothing ran.\n\nconst settings = $('Settings').first().json;\nconst silentAfterMs = Number(settings.silentAfterMinutes) * 60 * 1000;\nconst now = Date.now();\n\nconst workflows = $('Get active workflows').first().json.data || [];\nconst executions = $('Get recent executions').first().json.data || [];\n\n// Most recent stoppedAt per workflow id.\nconst lastRun = {};\nfor (const e of executions) {\n  const id = String(e.workflowId);\n  if (!e.stoppedAt) continue;\n  const stopped = Date.parse(e.stoppedAt);\n  if (!stopped) continue;\n  if (!lastRun[id] || stopped > lastRun[id]) lastRun[id] = stopped;\n}\n\n// Only workflows with a schedule or interval trigger are expected to run on\n// their own. Webhook-driven ones may legitimately sit idle.\nconst selfStarting = [\n  'n8n-nodes-base.scheduleTrigger',\n  'n8n-nodes-base.cron',\n  'n8n-nodes-base.interval',\n];\n\nconst silent = [];\nfor (const w of workflows) {\n  const id = String(w.id);\n\n  let scheduled = false;\n  const nodes = w.nodes || [];\n  for (const n of nodes) {\n    if (selfStarting.indexOf(n.type) !== -1) {\n      scheduled = true;\n      break;\n    }\n  }\n  if (!scheduled) continue;\n\n  const last = lastRun[id];\n\n  // No execution in the retention window is 'unknown', not 'broken'.\n  // Reporting it as a failure is how these checks train you to ignore them.\n  if (!last) continue;\n\n  const quietFor = now - last;\n  if (quietFor > silentAfterMs) {\n    silent.push({\n      workflowId: id,\n      name: w.name,\n      lastFinished: new Date(last).toISOString(),\n      quietForMinutes: Math.round(quietFor / 60000),\n    });\n  }\n}\n\nif (silent.length === 0) {\n  return [{ json: { workflowId: null, name: null, lastFinished: null, quietForMinutes: 0 } }];\n}\n\nconst out = [];\nfor (const row of silent) {\n  out.push({ json: row });\n}\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a1b2c3d4-0006-4000-8000-000000000006",
+      "name": "Anything silent?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        640,
+        304
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.workflowId }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "a1b2c3d4-0007-4000-8000-000000000007",
+      "name": "Alert",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        880,
+        208
+      ],
+      "parameters": {
+        "sendTo": "you@example.com",
+        "message": "=Workflow: {{ $json.name }}\nID: {{ $json.workflowId }}\nLast finished: {{ $json.lastFinished }}\nQuiet for: {{ $json.quietForMinutes }} minutes\n\nThis workflow is active and has a schedule trigger, but has not completed a run\nwithin the configured window. n8n did not raise an error, because nothing\nfailed - nothing ran.",
+        "options": {},
+        "subject": "=n8n: {{ $json.name }} has not run for {{ $json.quietForMinutes }} minutes",
+        "emailType": "text"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "a1b2c3d4-0008-4000-8000-000000000008",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -464,
+        -840
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 700,
+        "height": 1000,
+        "content": "## Silent failure check\n\nFinds workflows that are **active**, have a **schedule trigger**, and have quietly stopped running. n8n raises no error for this: the error workflow never fires, because nothing failed - nothing ran.\n\n**Setup.** In **Settings**, set **n8nBaseUrl**, **silentAfterMinutes**, and **heartbeatUrl** (a dead man's switch you control). Add an n8n API key to both HTTP Request nodes as Header Auth, header name **X-N8N-API-KEY**. Replace the two Gmail nodes with whatever you actually read.\n\n**Two exclusions, both deliberate.** Webhook-only workflows are skipped: they may sit idle for days, so silence there means nothing. A workflow with no execution history at all is skipped rather than alerted, because n8n prunes execution data on a retention schedule and treating pruned history as \"never ran\" fires on everything the moment history ages out.\n\n**It handles its own failure.** Each API call retries three times, then routes its error output to **Check could not run** - a check that fails silently is indistinguishable from a clean one. Both endings reach **Heartbeat**, so a crashed run pings nothing and an external dead man's switch notices. The heartbeat continues on error: a ping endpoint being down must never cost you a real finding.\n\n**What it does not catch:** the run that completes, reports success, and produced nothing. That needs output compared against a baseline, not a timestamp check."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a1b2c3d4-0009-4000-8000-000000000009",
+      "name": "Check could not run",
+      "type": "n8n-nodes-base.gmail",
+      "onError": "continueRegularOutput",
+      "position": [
+        660,
+        528
+      ],
+      "parameters": {
+        "sendTo": "you@example.com",
+        "message": "Silent failure check could not reach the n8n API. The check did not run, so its silence means nothing this hour.",
+        "options": {},
+        "subject": "Silent failure check could not reach the n8n API. The check did not run, so its silence means nothing this hour.",
+        "emailType": "text"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "a1b2c3d4-0010-4000-8000-000000000010",
+      "name": "Heartbeat",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        1104,
+        312
+      ],
+      "parameters": {
+        "url": "={{ $('Settings').first().json.heartbeatUrl }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Alert": {
+      "main": [
+        [
+          {
+            "node": "Heartbeat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Settings": {
+      "main": [
+        [
+          {
+            "node": "Get active workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every hour": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything silent?": {
+      "main": [
+        [
+          {
+            "node": "Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Heartbeat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get active workflows": {
+      "main": [
+        [
+          {
+            "node": "Get recent executions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check could not run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find silent workflows": {
+      "main": [
+        [
+          {
+            "node": "Anything silent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get recent executions": {
+      "main": [
+        [
+          {
+            "node": "Find silent workflows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check could not run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

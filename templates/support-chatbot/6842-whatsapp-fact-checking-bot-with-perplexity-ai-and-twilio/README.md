@@ -1,6 +1,6 @@
 # 💬 WhatsApp fact-checking bot with Perplexity AI and Twilio
 
-> ⚡ **919 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,013 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

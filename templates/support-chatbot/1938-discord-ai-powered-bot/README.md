@@ -1,6 +1,6 @@
 # 💬 Discord AI-powered bot
 
-> ⚡ **30,658 views** · 💬 [Support Chatbots](../)
+> ⚡ **33,893 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

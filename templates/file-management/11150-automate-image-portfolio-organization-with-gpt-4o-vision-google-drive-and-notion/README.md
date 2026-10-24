@@ -1,6 +1,6 @@
 # 📁 Automate image portfolio organization with GPT-4o Vision, Google Drive and Notion
 
-> ⚡ **295 views** · 📁 [File Management](../)
+> ⚡ **517 views** · 📁 [File Management](../)
 
 ## Description
 

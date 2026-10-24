@@ -1,6 +1,6 @@
 # 💬 AI email reply based on HubSpot data + Slack approval
 
-> ⚡ **2,376 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,590 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Send Telegram notifications for new Feedspace testimonials
 
-> ⚡ **22 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **46 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

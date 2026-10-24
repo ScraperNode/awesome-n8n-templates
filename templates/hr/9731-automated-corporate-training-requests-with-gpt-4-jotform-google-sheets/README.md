@@ -1,6 +1,6 @@
 # 👥 Automated corporate training requests with GPT-4, Jotform & Google Sheets
 
-> ⚡ **58 views** · 👥 [HR & Recruitment](../)
+> ⚡ **172 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

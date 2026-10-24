@@ -1,6 +1,6 @@
 # 🎬 Fully automate blog creation with GPT & publish to WordPress via Google Sheets
 
-> ⚡ **809 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **820 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

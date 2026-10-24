@@ -1,6 +1,6 @@
 # ⚙️ Bidirectional GitHub workflow sync & version control for n8n workflows
 
-> ⚡ **1,811 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,468 views** · ⚙️ [DevOps & CI/CD](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

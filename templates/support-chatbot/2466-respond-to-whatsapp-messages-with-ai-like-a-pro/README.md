@@ -1,6 +1,6 @@
 # 💬 Respond to WhatsApp messages with AI like a pro!
 
-> ⚡ **119,403 views** · 💬 [Support Chatbots](../)
+> ⚡ **126,236 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

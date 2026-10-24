@@ -1,6 +1,6 @@
 # 💬 WordPress content assistant: Article recommendations & Q&A with Mistral AI
 
-> ⚡ **107 views** · 💬 [Support Chatbots](../)
+> ⚡ **124 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

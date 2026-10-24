@@ -1,6 +1,6 @@
 # 📊 Log new Google top-10 keywords to Airtable with DataForSEO and Slack alerts
 
-> ⚡ **30 views** · 📊 [Market Research & Insights](../)
+> ⚡ **72 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

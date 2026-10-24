@@ -1,6 +1,6 @@
 # 🔬 Client proposal generator with GPT-4o, Tally.so, and Google Slides for agencies
 
-> ⚡ **363 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **439 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

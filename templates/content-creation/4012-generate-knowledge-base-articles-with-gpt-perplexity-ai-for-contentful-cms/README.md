@@ -1,6 +1,6 @@
 # 🎬 Generate knowledge base articles with GPT & Perplexity AI for Contentful CMS
 
-> ⚡ **5,906 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,927 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

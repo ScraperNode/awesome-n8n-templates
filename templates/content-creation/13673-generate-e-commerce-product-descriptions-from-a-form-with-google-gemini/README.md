@@ -1,6 +1,6 @@
 # 🎬 Generate e-commerce product descriptions from a form with Google Gemini
 
-> ⚡ **40 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **250 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

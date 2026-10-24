@@ -1,6 +1,6 @@
 # 🎬 List properties instantly with UploadToURL, OpenAI Vision, WordPress and Airtable
 
-> ⚡ **3 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **47 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

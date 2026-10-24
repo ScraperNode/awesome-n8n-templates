@@ -1,6 +1,6 @@
 # 📁 Manage folders automatically in Dropbox
 
-> ⚡ **1,530 views** · 📁 [File Management](../)
+> ⚡ **1,554 views** · 📁 [File Management](../)
 
 ## Description
 

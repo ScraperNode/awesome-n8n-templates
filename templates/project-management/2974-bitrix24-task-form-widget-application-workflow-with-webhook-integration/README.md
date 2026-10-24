@@ -1,6 +1,6 @@
 # 📋 Bitrix24 task form widget application workflow with webhook integration
 
-> ⚡ **2,209 views** · 📋 [Project Management](../)
+> ⚡ **2,469 views** · 📋 [Project Management](../)
 
 ## Description
 

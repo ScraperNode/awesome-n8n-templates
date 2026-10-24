@@ -1,6 +1,6 @@
 # ⚙️ Trigger a build using the TravisCI node
 
-> ⚡ **606 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **634 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Sync Google Calendar events to Google Sheets with Slack notifications
 
-> ⚡ **165 views** · ⚡ [Personal Productivity](../)
+> ⚡ **300 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

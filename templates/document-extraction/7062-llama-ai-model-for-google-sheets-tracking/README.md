@@ -1,6 +1,6 @@
 # 🔬 Llama AI model for Google Sheets tracking
 
-> ⚡ **372 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **394 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Custom branded QuickBooks invoices to PDF & email
 
-> ⚡ **421 views** · 🧾 [Invoice Processing](../)
+> ⚡ **551 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤖 Automating WhatsApp replies using Go High Level with Redis and Anthropic
 
-> ⚡ **949 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **1,171 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

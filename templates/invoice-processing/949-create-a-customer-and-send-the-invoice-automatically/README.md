@@ -1,6 +1,6 @@
 # 🧾 Create a customer and send the invoice automatically
 
-> ⚡ **4,296 views** · 🧾 [Invoice Processing](../)
+> ⚡ **4,451 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

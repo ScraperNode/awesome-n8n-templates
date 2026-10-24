@@ -1,6 +1,6 @@
 # 🎬 AI content creation and auto WordPress publishing with Pexels API image workflow
 
-> ⚡ **19,231 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **22,534 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

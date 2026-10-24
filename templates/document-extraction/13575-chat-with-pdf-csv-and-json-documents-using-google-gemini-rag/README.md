@@ -1,6 +1,6 @@
 # 🔬 Chat with PDF, CSV, and JSON documents using Google Gemini RAG
 
-> ⚡ **118 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **801 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

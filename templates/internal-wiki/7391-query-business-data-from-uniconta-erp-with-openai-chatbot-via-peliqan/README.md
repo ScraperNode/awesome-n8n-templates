@@ -1,6 +1,6 @@
 # 📖 Query business data from Uniconta ERP with OpenAI chatbot via Peliqan
 
-> ⚡ **395 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **455 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

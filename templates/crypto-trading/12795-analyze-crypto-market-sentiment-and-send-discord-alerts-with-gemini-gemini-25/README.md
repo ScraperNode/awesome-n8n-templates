@@ -1,6 +1,6 @@
 # 📈 Analyze crypto market sentiment and send Discord alerts with Gemini Gemini 2.5
 
-> ⚡ **39 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **64 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

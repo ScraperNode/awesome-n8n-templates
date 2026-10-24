@@ -1,6 +1,6 @@
 # 🎬 Create professional image watermarks with JSONCut API
 
-> ⚡ **388 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **438 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

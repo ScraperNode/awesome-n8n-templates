@@ -1,6 +1,6 @@
 # 📈 Generate AI stock reports w/ fundamental, technical, & news analysis (Free APIs)
 
-> ⚡ **1,437 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **5,589 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

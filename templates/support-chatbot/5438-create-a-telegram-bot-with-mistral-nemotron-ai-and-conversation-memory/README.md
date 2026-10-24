@@ -1,6 +1,6 @@
 # 💬 Create a Telegram bot with Mistral Nemotron AI and conversation memory
 
-> ⚡ **1,102 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,304 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

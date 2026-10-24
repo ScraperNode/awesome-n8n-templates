@@ -1,6 +1,6 @@
 # ⚒️ Create personal data vector store from Google Sheets with OpenAI & Gemini AI
 
-> ⚡ **1,192 views** · ⚒️ [Engineering](../)
+> ⚡ **1,324 views** · ⚒️ [Engineering](../)
 
 ## Description
 

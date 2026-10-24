@@ -1,6 +1,6 @@
 # 🤝 Update HubSpot contacts with Zendesk tickets
 
-> ⚡ **1,163 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,181 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

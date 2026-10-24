@@ -1,6 +1,6 @@
 # 📋 Generate student course schedules based on prerequisites with GPT and Google Sheets
 
-> ⚡ **616 views** · 📋 [Project Management](../)
+> ⚡ **832 views** · 📋 [Project Management](../)
 
 ## Description
 

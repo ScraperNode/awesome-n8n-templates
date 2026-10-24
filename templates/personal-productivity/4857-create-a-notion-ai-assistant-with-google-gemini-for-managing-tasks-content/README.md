@@ -1,6 +1,6 @@
 # ⚡ Create a Notion AI assistant with Google Gemini for managing tasks & content
 
-> ⚡ **1,354 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,491 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

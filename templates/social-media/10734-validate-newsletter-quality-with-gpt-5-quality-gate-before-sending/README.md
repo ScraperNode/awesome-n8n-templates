@@ -1,6 +1,6 @@
 # 📱 Validate newsletter quality with GPT-5 quality gate before sending
 
-> ⚡ **88 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **125 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 Assign values to variables using the Set node
 
-> ⚡ **6,154 views** · 🔧 [Miscellaneous](../)
+> ⚡ **6,142 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

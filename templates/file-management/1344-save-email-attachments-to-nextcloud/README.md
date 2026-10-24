@@ -1,6 +1,6 @@
 # 📁 Save email attachments to Nextcloud
 
-> ⚡ **9,963 views** · 📁 [File Management](../)
+> ⚡ **10,188 views** · 📁 [File Management](../)
 
 ## Description
 

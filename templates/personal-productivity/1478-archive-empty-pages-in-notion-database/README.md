@@ -1,6 +1,6 @@
 # ⚡ Archive empty pages in Notion database
 
-> ⚡ **1,999 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,007 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

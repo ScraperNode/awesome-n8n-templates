@@ -1,6 +1,6 @@
 # 💬 Telegram bot with Supabase memory and OpenAI assistant integration
 
-> ⚡ **10,353 views** · 💬 [Support Chatbots](../)
+> ⚡ **10,423 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

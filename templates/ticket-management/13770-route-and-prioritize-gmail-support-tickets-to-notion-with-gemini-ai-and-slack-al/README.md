@@ -1,6 +1,6 @@
 # 🎫 Route and prioritize Gmail support tickets to Notion with Gemini AI and Slack alerts
 
-> ⚡ **3 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **65 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

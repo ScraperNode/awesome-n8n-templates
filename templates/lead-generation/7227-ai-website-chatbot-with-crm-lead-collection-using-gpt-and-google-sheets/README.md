@@ -1,6 +1,6 @@
 # 🎣 AI website chatbot with CRM lead collection using GPT and Google Sheets
 
-> ⚡ **2,312 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **2,784 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

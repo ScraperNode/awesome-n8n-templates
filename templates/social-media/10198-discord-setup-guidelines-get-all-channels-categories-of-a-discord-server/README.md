@@ -1,6 +1,6 @@
 # 📱 Discord setup guidelines 📜 - get all channels & categories of a Discord server
 
-> ⚡ **510 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **826 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

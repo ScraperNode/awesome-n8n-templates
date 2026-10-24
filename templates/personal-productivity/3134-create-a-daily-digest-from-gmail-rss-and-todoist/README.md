@@ -1,6 +1,6 @@
 # ⚡ Create a daily digest from Gmail, RSS, and Todoist
 
-> ⚡ **4,039 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,654 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

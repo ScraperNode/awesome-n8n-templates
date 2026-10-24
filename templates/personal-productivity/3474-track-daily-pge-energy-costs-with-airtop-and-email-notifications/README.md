@@ -1,6 +1,6 @@
 # ⚡ Track daily PG&E energy costs with Airtop and email notifications
 
-> ⚡ **506 views** · ⚡ [Personal Productivity](../)
+> ⚡ **583 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

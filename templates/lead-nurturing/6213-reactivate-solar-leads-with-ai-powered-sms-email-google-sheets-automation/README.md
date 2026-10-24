@@ -1,6 +1,6 @@
 # 💬 Reactivate solar leads with AI-powered SMS, email & Google Sheets automation
 
-> ⚡ **207 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **253 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

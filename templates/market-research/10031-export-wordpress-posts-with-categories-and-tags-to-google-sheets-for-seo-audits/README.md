@@ -1,6 +1,6 @@
 # 📊 Export WordPress posts with categories and tags to Google Sheets for SEO audits
 
-> ⚡ **128 views** · 📊 [Market Research & Insights](../)
+> ⚡ **178 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

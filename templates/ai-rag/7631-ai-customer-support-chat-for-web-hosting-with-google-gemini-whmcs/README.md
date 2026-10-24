@@ -1,6 +1,6 @@
 # 🔍 AI Customer Support Chat for Web Hosting with Google Gemini & WHMCS
 
-> ⚡ **891 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **1,015 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

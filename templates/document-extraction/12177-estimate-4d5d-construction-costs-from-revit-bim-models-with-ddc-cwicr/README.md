@@ -1,6 +1,6 @@
 # 🔬 Estimate 4D/5D construction costs from Revit BIM models with DDC CWICR
 
-> ⚡ **96 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **435 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

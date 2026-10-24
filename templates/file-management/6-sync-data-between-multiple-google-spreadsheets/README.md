@@ -1,6 +1,6 @@
 # 📁 Sync data between multiple Google Spreadsheets
 
-> ⚡ **4,468 views** · 📁 [File Management](../)
+> ⚡ **5,080 views** · 📁 [File Management](../)
 
 ## Description
 

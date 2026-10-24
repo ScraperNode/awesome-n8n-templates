@@ -1,6 +1,6 @@
 # 👥 Turn HR news into policy update tasks and a weekly Gmail digest with RSS, Google Drive, Gemini, and GPT-5.2
 
-> ⚡ **62 views** · 👥 [HR & Recruitment](../)
+> ⚡ **91 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

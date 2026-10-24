@@ -1,6 +1,6 @@
 # 💬 Build a cost-efficient Lookio RAG chatbot with GPT-4.1 models for knowledge Q&A
 
-> ⚡ **13 views** · 💬 [Support Chatbots](../)
+> ⚡ **84 views** · 💬 [Support Chatbots](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

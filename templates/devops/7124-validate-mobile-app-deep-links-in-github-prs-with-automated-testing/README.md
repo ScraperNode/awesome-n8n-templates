@@ -1,6 +1,6 @@
 # ⚙️ Validate mobile app deep links in GitHub PRs with automated testing
 
-> ⚡ **197 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **214 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 Receive updates for events in Jira
 
-> ⚡ **7,699 views** · 📋 [Project Management](../)
+> ⚡ **8,090 views** · 📋 [Project Management](../)
 
 ## Description
 

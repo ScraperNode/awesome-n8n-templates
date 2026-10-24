@@ -1,6 +1,6 @@
 # 📊 Generate & distribute market reports with Google Docs, Sheets, and Gmail
 
-> ⚡ **94 views** · 📊 [Market Research & Insights](../)
+> ⚡ **111 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

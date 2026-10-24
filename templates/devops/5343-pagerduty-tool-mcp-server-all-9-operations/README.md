@@ -1,6 +1,6 @@
 # ⚙️ 🛠️ PagerDuty tool MCP server 💪 all 9 operations
 
-> ⚡ **460 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **493 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

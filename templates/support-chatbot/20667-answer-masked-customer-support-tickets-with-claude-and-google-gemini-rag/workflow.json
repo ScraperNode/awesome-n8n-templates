@@ -1,0 +1,1087 @@
+{
+  "name": "Answer support inquiries with Claude and learn from staff answers (RAG with personal data masked)",
+  "nodes": [
+    {
+      "id": "note1",
+      "name": "Overview and setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -120,
+        -620
+      ],
+      "parameters": {
+        "width": 880,
+        "height": 560,
+        "content": "## Customer support RAG that learns from your staff\nAuto-replies only what past staff answers can settle, hands everything else to staff, and learns from the answers staff give (with personal data masked).\n\n**1. Inquiry** `POST /webhook/cs-rag-inquiry` with `{name, email, message}`\nThe message is masked, then similar past Q&A are searched. Claude replies automatically only when the similarity is above the threshold AND Claude says the reference answers are enough. Everything else is logged as waiting for staff, so it fails on the safe side.\n\n**2. Staff answer, then learning** `POST /webhook/cs-rag-answer` with `{case_id, answer, staff, learn?}`\nRegex masking, an AI masking pass, then a check for leftover patterns. Only Q&A that pass are added to the vector store. If personal data may remain, nothing is learned and the case is marked for review.\n\n**3. Rebuild** `POST /webhook/cs-rag-reindex`\nThe in-memory vector store is lost when n8n restarts. This restores it from the learned rows of the Data Table.\n\n**Set up**\n1. Create a Data Table `cs_rag_cases` with string columns `case_id`, `status`, `received_at`, `customer_name`, `customer_email`, `question_raw`, `question_masked`, `answer_raw`, `answer_masked`, `auto_answer`, `staff`, `learned_at` and a number column `match_score`. Select it in every Data table node.\n2. Create credentials: Anthropic, Google Gemini (PaLM) API (used for embeddings), and Header Auth for the three webhooks (for example header `X-API-Key`).\n3. Publish. The system starts empty: send a few inquiries, answer them through the Staff answer webhook, and similar questions will then be answered automatically.\n4. Tune `THRESHOLD` in **Check similarity** with your own data."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "wh_a",
+      "name": "Webhook: New inquiry",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "path": "cs-rag-inquiry",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "authentication": "headerAuth"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "norm",
+      "name": "Normalize and mask input",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        272,
+        0
+      ],
+      "parameters": {
+        "jsCode": "function maskPII(text, known) {\n  let s = String(text ?? '');\n  const hits = {};\n  const rep = (re, label) => { s = s.replace(re, () => { hits[label] = (hits[label] || 0) + 1; return '[' + label + ']'; }); };\n  for (const [v, label] of known) { if (v && v.length >= 2 && s.includes(v)) { hits[label] = (hits[label] || 0) + 1; s = s.split(v).join('[' + label + ']'); } }\n  rep(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}/g, 'EMAIL');\n  rep(/\\b\\d(?:[ -]?\\d){12,15}\\b/g, 'CARD');\n  rep(/(?<!\\d)\\(?\\d{3}\\)?[-.\\s]\\d{3}[-.\\s]\\d{4}(?!\\d)/g, 'PHONE');\n  rep(/\\+\\d{1,3}[-\\s]?\\(?\\d{1,4}\\)?[-\\s]?\\d{2,4}[-\\s]?\\d{3,4}\\b/g, 'PHONE');\n  rep(/(?<![\\d-])\u3012?\\s?\\d{3}-\\d{4}(?![\\d-])/g, 'POSTAL');\n  rep(/(?:\\+81[-\\s]?|\\b0)\\d{1,4}[-\\s]?\\d{1,4}[-\\s]?\\d{3,4}\\b/g, 'PHONE');\n  rep(/(?<=(?:\u6ce8\u6587|\u53d7\u4ed8|\u4f1a\u54e1|\u5951\u7d04|\u304a\u5ba2\u69d8|order|account|member|contract|customer|reservation)\\s?(?:\u756a\u53f7|No\\.?|ID|number|#)[:\uff1a\\s#]*)[A-Za-z0-9-]{5,}/gi, 'ID');\n  return { text: s, hits };\n}\n\nconst b = $input.first().json.body ?? $input.first().json;\nconst message = String(b.message ?? '').trim();\nif (!message) throw new Error('message is required');\nconst name = String(b.name ?? '').trim();\nconst email = String(b.email ?? '').trim();\nconst known = [[name, 'NAME'], [email, 'EMAIL'], ...name.split(/[\\s\u3000]+/).map(p => [p, 'NAME'])];\nconst m = maskPII(message, known);\nreturn [{ json: {\n  case_id: 'C-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),\n  received_at: new Date().toISOString(),\n  customer_name: name,\n  customer_email: email,\n  question_raw: message,\n  question_masked: m.text,\n  pii_hits: m.hits\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "vs_load",
+      "name": "Search similar Q&A",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "position": [
+        528,
+        0
+      ],
+      "parameters": {
+        "mode": "load",
+        "topK": 3,
+        "prompt": "={{ $json.question_masked }}",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "id",
+          "value": "cs_rag_kb"
+        }
+      },
+      "typeVersion": 1.3,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "judge",
+      "name": "Check similarity",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        784,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Similarity threshold. 0.75 is only a starting value. Scores depend on the embedding model,\n// so tune it with your own data (look at wrong auto-replies and missed matches).\nconst THRESHOLD = 0.75;\nconst base = $('Normalize and mask input').first().json;\nconst hits = $input.all()\n  .map(i => i.json)\n  .filter(j => j.document)\n  .map(j => ({ score: j.score, q: j.document.pageContent, a: j.document.metadata?.answer_masked, case_id: j.document.metadata?.case_id }))\n  .sort((x, y) => y.score - x.score);\nconst top = hits[0];\nconst refs = hits.filter(h => h.score >= THRESHOLD && h.a).slice(0, 2);\nreturn [{ json: {\n  ...base,\n  top_score: top ? top.score : 0,\n  threshold: THRESHOLD,\n  matched: refs.length > 0,\n  refs,\n  refs_text: refs.map((r, i) => 'Reference ' + (i + 1) + ' (similarity ' + r.score.toFixed(2) + ')\\nQ: ' + r.q + '\\nA: ' + r.a).join('\\n\\n')\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "if_match",
+      "name": "Similar answer found?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1040,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.matched }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "ai_ans",
+      "name": "AI: Draft the reply",
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "position": [
+        1312,
+        -128
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "claude-haiku-4-5-20251001"
+        },
+        "options": {
+          "maxTokens": 1500,
+          "temperature": 0
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "=You are a customer support agent. Using ONLY the reference Q&A below (answers that staff gave in the past), write the reply body for the new inquiry.\n\n# Rules\n- Do not add facts, prices, numbers of days or URLs that are not in the reference Q&A.\n- Include every fact from the reference Q&A that is needed to answer the question, such as amounts, times and conditions. Do not leave them out or replace them with vague wording.\n- If the reference Q&A does not answer the new inquiry, or the case needs individual checking, set can_answer to false.\n- Never include bracketed placeholders such as [NAME] or [EMAIL] in the output.\n- No greeting and no signature. Write only the body, politely, in the same language as the new inquiry.\n- Output JSON only (no explanation, no code block).\n\n# Output schema\n{\"can_answer\": true or false, \"reply\": \"reply body (empty string if can_answer is false)\"}\n\n# New inquiry\n{{ $json.question_masked }}\n\n# Reference Q&A\n{{ $json.refs_text }}"
+            }
+          ]
+        },
+        "resource": "text",
+        "simplify": true,
+        "operation": "message"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "chk_ans",
+      "name": "Validate the draft",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1568,
+        -128
+      ],
+      "parameters": {
+        "jsCode": "const base = $('Check similarity').first().json;\nlet can = false, reply = '';\ntry {\n  const rawText = $json.content?.[0]?.text ?? $json.text;\n  // Claude has no JSON mode, so it may wrap the JSON in a code fence. Strip it before parsing.\n  const t = String(rawText ?? '').replace(/^\\s*```(?:json)?\\s*/i, '').replace(/\\s*```\\s*$/, '').trim();\n  const o = JSON.parse(t);\n  can = o.can_answer === true;\n  reply = String(o.reply ?? '').trim();\n} catch (e) { can = false; }\n// Never auto-send an empty reply or one that still contains a placeholder\nif (!reply || /\\[[A-Z_]+\\]/.test(reply)) can = false;\nconst greeting = (base.customer_name ? 'Dear ' + base.customer_name + ',\\n\\n' : '') + 'Thank you for contacting us.\\n\\n';\nconst footer = '\\n\\nThis is an automated reply based on past answers. If it does not solve your problem, just reply to this message and a staff member will help.';\nreturn [{ json: { ...base, can_answer: can, auto_answer: can ? greeting + reply + footer : '' } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "if_can",
+      "name": "Safe to auto-reply?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1824,
+        -128
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c2",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.can_answer }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "log_auto",
+      "name": "Log: auto-answered",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        2080,
+        -224
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "status": "auto_answered",
+            "case_id": "={{ $json.case_id }}",
+            "auto_answer": "={{ $json.auto_answer }}",
+            "match_score": "={{ $json.top_score }}",
+            "received_at": "={{ $json.received_at }}",
+            "customer_name": "={{ $json.customer_name }}",
+            "customer_email": "={{ $json.customer_email }}",
+            "question_masked": "={{ $json.question_masked }}"
+          },
+          "schema": [],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "res_auto",
+      "name": "Respond: auto-reply",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2352,
+        -224
+      ],
+      "parameters": {
+        "jsCode": "const d = $('Validate the draft').first().json;\nreturn [{ json: {\n  status: 'auto_answered',\n  case_id: d.case_id,\n  answer: d.auto_answer,\n  match_score: d.top_score,\n  matched_questions: d.refs.map(r => r.q)\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "log_pend",
+      "name": "Log: waiting for staff",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        2080,
+        64
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "status": "pending",
+            "case_id": "={{ $json.case_id }}",
+            "match_score": "={{ $json.top_score }}",
+            "received_at": "={{ $json.received_at }}",
+            "question_raw": "={{ $json.question_raw }}",
+            "customer_name": "={{ $json.customer_name }}",
+            "customer_email": "={{ $json.customer_email }}"
+          },
+          "schema": [],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "res_pend",
+      "name": "Respond: escalated to staff",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2352,
+        64
+      ],
+      "parameters": {
+        "jsCode": "const d = $('Check similarity').first().json;\nreturn [{ json: {\n  status: 'pending',\n  case_id: d.case_id,\n  message: 'A staff member will review your inquiry and reply.',\n  match_score: d.top_score\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "wh_b",
+      "name": "Webhook: Staff answer",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        0,
+        608
+      ],
+      "parameters": {
+        "path": "cs-rag-answer",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "authentication": "headerAuth"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "get_case",
+      "name": "Get the case",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        272,
+        608
+      ],
+      "parameters": {
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "case_id",
+              "keyValue": "={{ $json.body.case_id }}"
+            }
+          ]
+        },
+        "matchType": "allConditions",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "mask_rx",
+      "name": "Validate and mask with regex",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        528,
+        608
+      ],
+      "parameters": {
+        "jsCode": "function maskPII(text, known) {\n  let s = String(text ?? '');\n  const hits = {};\n  const rep = (re, label) => { s = s.replace(re, () => { hits[label] = (hits[label] || 0) + 1; return '[' + label + ']'; }); };\n  for (const [v, label] of known) { if (v && v.length >= 2 && s.includes(v)) { hits[label] = (hits[label] || 0) + 1; s = s.split(v).join('[' + label + ']'); } }\n  rep(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}/g, 'EMAIL');\n  rep(/\\b\\d(?:[ -]?\\d){12,15}\\b/g, 'CARD');\n  rep(/(?<!\\d)\\(?\\d{3}\\)?[-.\\s]\\d{3}[-.\\s]\\d{4}(?!\\d)/g, 'PHONE');\n  rep(/\\+\\d{1,3}[-\\s]?\\(?\\d{1,4}\\)?[-\\s]?\\d{2,4}[-\\s]?\\d{3,4}\\b/g, 'PHONE');\n  rep(/(?<![\\d-])\u3012?\\s?\\d{3}-\\d{4}(?![\\d-])/g, 'POSTAL');\n  rep(/(?:\\+81[-\\s]?|\\b0)\\d{1,4}[-\\s]?\\d{1,4}[-\\s]?\\d{3,4}\\b/g, 'PHONE');\n  rep(/(?<=(?:\u6ce8\u6587|\u53d7\u4ed8|\u4f1a\u54e1|\u5951\u7d04|\u304a\u5ba2\u69d8|order|account|member|contract|customer|reservation)\\s?(?:\u756a\u53f7|No\\.?|ID|number|#)[:\uff1a\\s#]*)[A-Za-z0-9-]{5,}/gi, 'ID');\n  return { text: s, hits };\n}\n\nconst row = $input.first().json;\nconst req = $('Webhook: Staff answer').first().json.body ?? {};\nconst answer = String(req.answer ?? '').trim();\nlet reject = '';\nif (!row.case_id) reject = 'No case matches this case_id';\nelse if (row.status !== 'pending') reject = 'This case is not waiting for staff (status=' + row.status + ')';\nelse if (!answer) reject = 'answer is required';\nif (reject) return [{ json: { ok: false, reject_reason: reject, case_id: req.case_id ?? null } }];\n\nconst name = row.customer_name || '';\nconst email = row.customer_email || '';\nconst known = [[name, 'NAME'], [email, 'EMAIL'], ...name.split(/[\\s\u3000]+/).map(p => [p, 'NAME'])];\nconst q = maskPII(row.question_raw, known);\nconst a = maskPII(answer, known);\nreturn [{ json: {\n  ok: true,\n  case_id: row.case_id,\n  staff: String(req.staff ?? ''),\n  learn: req.learn !== false,\n  answer_raw: answer,\n  question_rx: q.text,\n  answer_rx: a.text,\n  pii_hits: { question: q.hits, answer: a.hits }\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "if_ok",
+      "name": "Accepted?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        784,
+        608
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c3",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "res_rej",
+      "name": "Respond: rejected",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1040,
+        784
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { status: 'rejected', case_id: $json.case_id, reason: $json.reject_reason } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ai_mask",
+      "name": "AI: Mask remaining personal data",
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "position": [
+        1040,
+        528
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "claude-haiku-4-5-20251001"
+        },
+        "options": {
+          "maxTokens": 3000,
+          "temperature": 0
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "=Replace personally identifiable information in the customer support question (Q) and staff answer (A) below with placeholders.\n\n# Replace\n- Personal names -> [NAME]\n- Addresses or place names that identify a private home -> [ADDRESS]\n- Phone numbers -> [PHONE], email addresses -> [EMAIL]\n- Birth dates -> [BIRTHDAY]\n- Bank account or card numbers -> [ACCOUNT]\n- Order, member or contract numbers and other IDs tied to a person -> [ID]\n\n# Rules\n- Keep existing placeholders such as [NAME] or [EMAIL] as they are.\n- Keep general information such as product names, service names, steps, prices and numbers of days exactly as written. Never summarize, paraphrase or add anything.\n- Keep the original language of the text.\n- Output JSON only (no explanation, no code block).\n\n# Output schema\n{\"question\": \"Q after replacement\", \"answer\": \"A after replacement\"}\n\n# Q\n{{ $json.question_rx }}\n\n# A\n{{ $json.answer_rx }}"
+            }
+          ]
+        },
+        "resource": "text",
+        "simplify": true,
+        "operation": "message"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "chk_mask",
+      "name": "Check the masking result",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1312,
+        528
+      ],
+      "parameters": {
+        "jsCode": "function maskPII(text, known) {\n  let s = String(text ?? '');\n  const hits = {};\n  const rep = (re, label) => { s = s.replace(re, () => { hits[label] = (hits[label] || 0) + 1; return '[' + label + ']'; }); };\n  for (const [v, label] of known) { if (v && v.length >= 2 && s.includes(v)) { hits[label] = (hits[label] || 0) + 1; s = s.split(v).join('[' + label + ']'); } }\n  rep(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}/g, 'EMAIL');\n  rep(/\\b\\d(?:[ -]?\\d){12,15}\\b/g, 'CARD');\n  rep(/(?<!\\d)\\(?\\d{3}\\)?[-.\\s]\\d{3}[-.\\s]\\d{4}(?!\\d)/g, 'PHONE');\n  rep(/\\+\\d{1,3}[-\\s]?\\(?\\d{1,4}\\)?[-\\s]?\\d{2,4}[-\\s]?\\d{3,4}\\b/g, 'PHONE');\n  rep(/(?<![\\d-])\u3012?\\s?\\d{3}-\\d{4}(?![\\d-])/g, 'POSTAL');\n  rep(/(?:\\+81[-\\s]?|\\b0)\\d{1,4}[-\\s]?\\d{1,4}[-\\s]?\\d{3,4}\\b/g, 'PHONE');\n  rep(/(?<=(?:\u6ce8\u6587|\u53d7\u4ed8|\u4f1a\u54e1|\u5951\u7d04|\u304a\u5ba2\u69d8|order|account|member|contract|customer|reservation)\\s?(?:\u756a\u53f7|No\\.?|ID|number|#)[:\uff1a\\s#]*)[A-Za-z0-9-]{5,}/gi, 'ID');\n  return { text: s, hits };\n}\n\nconst base = $('Validate and mask with regex').first().json;\nlet q = '', a = '', reason = '';\ntry {\n  const rawText = $json.content?.[0]?.text ?? $json.text;\n  // Claude has no JSON mode, so it may wrap the JSON in a code fence. Strip it before parsing.\n  const t = String(rawText ?? '').replace(/^\\s*```(?:json)?\\s*/i, '').replace(/\\s*```\\s*$/, '').trim();\n  const o = JSON.parse(t);\n  q = String(o.question ?? '');\n  a = String(o.answer ?? '');\n} catch (e) { reason = 'The AI output could not be read as JSON'; }\nif (!reason) {\n  if (!q.trim() || !a.trim()) reason = 'The AI output is empty';\n  else if (q.length < base.question_rx.length * 0.5 || a.length < base.answer_rx.length * 0.5) reason = 'The AI output is much shorter than the input (possible summary or loss)';\n  else {\n    const r = maskPII(q + '\\n' + a, []);\n    const left = Object.keys(r.hits);\n    if (left.length) reason = 'Personal data patterns remain after masking: ' + left.join(',');\n  }\n}\nif (!reason && !base.learn) reason = 'Staff chose not to learn this answer';\nreturn [{ json: { ...base, learn_ok: !reason, mask_note: reason, question_masked: q, answer_masked: a } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "if_learn",
+      "name": "OK to learn?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1568,
+        528
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c4",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.learn_ok }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "vs_ins",
+      "name": "Learn: add to vector store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "position": [
+        1824,
+        432
+      ],
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "id",
+          "value": "cs_rag_kb"
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "log_learned",
+      "name": "Log: learned",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        2080,
+        432
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "staff": "={{ $('Check the masking result').first().json.staff }}",
+            "status": "learned",
+            "answer_raw": "",
+            "learned_at": "={{ $now.toISO() }}",
+            "question_raw": "",
+            "answer_masked": "={{ $('Check the masking result').first().json.answer_masked }}",
+            "question_masked": "={{ $('Check the masking result').first().json.question_masked }}"
+          },
+          "schema": [],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "case_id",
+              "keyValue": "={{ $('Check the masking result').first().json.case_id }}"
+            }
+          ]
+        },
+        "options": {},
+        "matchType": "allConditions",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "res_learned",
+      "name": "Respond: learned",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2352,
+        432
+      ],
+      "parameters": {
+        "jsCode": "const d = $('Check the masking result').first().json;\nreturn [{ json: {\n  status: 'learned',\n  case_id: d.case_id,\n  masked_question: d.question_masked,\n  masked_answer: d.answer_masked,\n  pii_hits: d.pii_hits\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "log_review",
+      "name": "Log: needs review (not learned)",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        1824,
+        640
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "staff": "={{ $json.staff }}",
+            "status": "answered_not_learned",
+            "answer_raw": "={{ $json.answer_raw }}"
+          },
+          "schema": [],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "case_id",
+              "keyValue": "={{ $json.case_id }}"
+            }
+          ]
+        },
+        "options": {},
+        "matchType": "allConditions",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "res_skip",
+      "name": "Respond: not learned",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2080,
+        640
+      ],
+      "parameters": {
+        "jsCode": "const d = $('Check the masking result').first().json;\nreturn [{ json: { status: 'answered_not_learned', case_id: d.case_id, reason: d.mask_note } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "emb",
+      "name": "Embeddings Google Gemini",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "position": [
+        1568,
+        880
+      ],
+      "parameters": {
+        "modelName": "models/gemini-embedding-001"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "loader",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        1824,
+        880
+      ],
+      "parameters": {
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "answer_masked",
+                "value": "={{ $json.answer_masked }}"
+              },
+              {
+                "name": "case_id",
+                "value": "={{ $json.case_id }}"
+              }
+            ]
+          }
+        },
+        "jsonData": "={{ $json.question_masked }}",
+        "jsonMode": "expressionData"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "wh_d",
+      "name": "Webhook: Rebuild index",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        0,
+        1200
+      ],
+      "parameters": {
+        "path": "cs-rag-reindex",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "authentication": "headerAuth"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "get_learned",
+      "name": "Get learned Q&A",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        272,
+        1200
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "keyValue": "learned"
+            }
+          ]
+        },
+        "matchType": "allConditions",
+        "operation": "get",
+        "returnAll": true,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "drop_empty",
+      "name": "Drop empty rows",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        528,
+        1200
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().filter(i => i.json.question_masked && i.json.answer_masked);"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "vs_re",
+      "name": "Rebuild: add to vector store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "position": [
+        784,
+        1200
+      ],
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "id",
+          "value": "cs_rag_kb"
+        },
+        "clearStore": true
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "res_re",
+      "name": "Respond: rebuilt",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1040,
+        1200
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { status: 'reindexed', documents: $('Drop empty rows').all().length } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "note2",
+      "name": "Production notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        800,
+        -620
+      ],
+      "parameters": {
+        "width": 760,
+        "height": 560,
+        "content": "## Before going to production\n- **Input:** replace the webhooks with your real entry point (Gmail trigger, a form, LINE, etc.).\n- **Sending:** this template only returns the reply. Connect the sending of auto-replies and staff answers (Gmail, Zendesk, etc.), and a notification for cases waiting for staff (Slack, email).\n- **Vector store:** the in-memory Simple Vector Store is for development. For production use Qdrant, Pinecone, Supabase or similar; only three nodes need to change. If you change the embedding model, rebuild the index and re-tune the threshold.\n- **Masking is best-effort.** The final check only looks for patterns (email, phone, card, postal code, IDs). It cannot tell whether a name was missed by the AI. Test with your own data and decide how long raw questions and answers are kept.\n- **Authentication:** keep Header Auth on all three webhooks. The staff answer webhook can change what the system learns.\n- **Duplicated code:** the masking function is copied into three Code nodes. In production, move it into a sub-workflow."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Accepted?": {
+      "main": [
+        [
+          {
+            "node": "AI: Mask remaining personal data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get the case": {
+      "main": [
+        [
+          {
+            "node": "Validate and mask with regex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log: learned": {
+      "main": [
+        [
+          {
+            "node": "Respond: learned",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OK to learn?": {
+      "main": [
+        [
+          {
+            "node": "Learn: add to vector store",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log: needs review (not learned)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drop empty rows": {
+      "main": [
+        [
+          {
+            "node": "Rebuild: add to vector store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get learned Q&A": {
+      "main": [
+        [
+          {
+            "node": "Drop empty rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check similarity": {
+      "main": [
+        [
+          {
+            "node": "Similar answer found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log: auto-answered": {
+      "main": [
+        [
+          {
+            "node": "Respond: auto-reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search similar Q&A": {
+      "main": [
+        [
+          {
+            "node": "Check similarity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate the draft": {
+      "main": [
+        [
+          {
+            "node": "Safe to auto-reply?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Draft the reply": {
+      "main": [
+        [
+          {
+            "node": "Validate the draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Learn: add to vector store",
+            "type": "ai_document",
+            "index": 0
+          },
+          {
+            "node": "Rebuild: add to vector store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Safe to auto-reply?": {
+      "main": [
+        [
+          {
+            "node": "Log: auto-answered",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log: waiting for staff",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: New inquiry": {
+      "main": [
+        [
+          {
+            "node": "Normalize and mask input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Similar answer found?": {
+      "main": [
+        [
+          {
+            "node": "AI: Draft the reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log: waiting for staff",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Staff answer": {
+      "main": [
+        [
+          {
+            "node": "Get the case",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log: waiting for staff": {
+      "main": [
+        [
+          {
+            "node": "Respond: escalated to staff",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Rebuild index": {
+      "main": [
+        [
+          {
+            "node": "Get learned Q&A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the masking result": {
+      "main": [
+        [
+          {
+            "node": "OK to learn?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Search similar Q&A",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Learn: add to vector store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Rebuild: add to vector store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize and mask input": {
+      "main": [
+        [
+          {
+            "node": "Search similar Q&A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Learn: add to vector store": {
+      "main": [
+        [
+          {
+            "node": "Log: learned",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rebuild: add to vector store": {
+      "main": [
+        [
+          {
+            "node": "Respond: rebuilt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and mask with regex": {
+      "main": [
+        [
+          {
+            "node": "Accepted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log: needs review (not learned)": {
+      "main": [
+        [
+          {
+            "node": "Respond: not learned",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Mask remaining personal data": {
+      "main": [
+        [
+          {
+            "node": "Check the masking result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

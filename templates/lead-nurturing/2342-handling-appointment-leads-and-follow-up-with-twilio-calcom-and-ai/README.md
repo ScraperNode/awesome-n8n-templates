@@ -1,6 +1,6 @@
 # 💬 Handling appointment leads and follow-up with Twilio, Cal.com and AI
 
-> ⚡ **28,321 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **29,321 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

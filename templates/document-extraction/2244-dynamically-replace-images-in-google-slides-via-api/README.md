@@ -1,6 +1,6 @@
 # 🔬 Dynamically replace images in Google Slides via API
 
-> ⚡ **3,923 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **3,941 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

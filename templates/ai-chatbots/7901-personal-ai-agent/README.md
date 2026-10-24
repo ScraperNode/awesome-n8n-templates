@@ -1,6 +1,6 @@
 # 🤖 Personal AI agent
 
-> ⚡ **1,552 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **2,251 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

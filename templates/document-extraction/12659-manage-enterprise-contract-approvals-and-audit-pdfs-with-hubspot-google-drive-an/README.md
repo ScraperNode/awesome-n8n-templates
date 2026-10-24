@@ -1,6 +1,6 @@
 # 🔬 Manage enterprise contract approvals and audit PDFs with HubSpot, Google Drive and Slack
 
-> ⚡ **7 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **41 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

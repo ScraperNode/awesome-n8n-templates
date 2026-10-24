@@ -1,6 +1,6 @@
 # 💬 Connect AI to any chats in Kommo
 
-> ⚡ **3,455 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,613 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

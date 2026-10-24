@@ -1,6 +1,6 @@
 # ⚙️ Docker registry cleanup workflow
 
-> ⚡ **3,743 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **3,806 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

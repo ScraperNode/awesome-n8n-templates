@@ -1,6 +1,6 @@
 # 📊 SEO On-site Audit
 
-> ⚡ **3,191 views** · 📊 [Market Research & Insights](../)
+> ⚡ **3,616 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

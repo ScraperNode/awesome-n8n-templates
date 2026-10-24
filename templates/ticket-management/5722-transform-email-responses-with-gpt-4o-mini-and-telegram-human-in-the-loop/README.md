@@ -1,6 +1,6 @@
 # 🎫 Transform email responses with GPT-4O Mini and Telegram human-in-the-loop
 
-> ⚡ **492 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **565 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

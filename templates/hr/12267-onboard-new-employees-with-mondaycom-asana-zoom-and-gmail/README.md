@@ -1,6 +1,6 @@
 # 👥 Onboard new employees with Monday.com, Asana, Zoom, and Gmail
 
-> ⚡ **61 views** · 👥 [HR & Recruitment](../)
+> ⚡ **125 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

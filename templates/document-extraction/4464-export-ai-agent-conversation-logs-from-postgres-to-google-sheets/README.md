@@ -1,6 +1,6 @@
 # 🔬 Export AI agent conversation logs from Postgres to Google Sheets
 
-> ⚡ **1,071 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,201 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

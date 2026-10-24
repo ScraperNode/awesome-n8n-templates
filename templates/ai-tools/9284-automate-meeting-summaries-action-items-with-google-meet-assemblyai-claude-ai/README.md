@@ -1,6 +1,6 @@
 # 🎯 Automate meeting summaries & action items with Google Meet, AssemblyAI & Claude AI
 
-> ⚡ **551 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **948 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

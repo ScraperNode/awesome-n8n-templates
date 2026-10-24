@@ -1,6 +1,6 @@
 # 🔬 PPC campaign intelligence & optimization with Google Ads, Sheets & Slack
 
-> ⚡ **7,690 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **11,828 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

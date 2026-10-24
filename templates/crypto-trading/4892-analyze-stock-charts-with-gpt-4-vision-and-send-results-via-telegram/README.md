@@ -1,6 +1,6 @@
 # 📈 Analyze stock charts with GPT-4 Vision and send results via Telegram
 
-> ⚡ **7,090 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **7,740 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

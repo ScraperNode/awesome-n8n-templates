@@ -1,6 +1,6 @@
 # 🔍 Close tickets faster 🛠️ Zammad tool MCP server 💪 all 20 operations
 
-> ⚡ **447 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **494 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Auto expense tracker from LINE messages with GPT-4 and Google Sheets
 
-> ⚡ **813 views** · ⚡ [Personal Productivity](../)
+> ⚡ **926 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

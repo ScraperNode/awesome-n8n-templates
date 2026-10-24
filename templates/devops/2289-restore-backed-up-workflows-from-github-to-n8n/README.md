@@ -1,6 +1,6 @@
 # ⚙️ Restore backed up workflows from GitHub to n8n
 
-> ⚡ **5,597 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **5,694 views** · ⚙️ [DevOps & CI/CD](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

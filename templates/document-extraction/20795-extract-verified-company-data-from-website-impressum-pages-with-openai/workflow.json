@@ -1,0 +1,450 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "name": "Extract Company Data from a Website Impressum",
+  "nodes": [
+    {
+      "id": "e59545ea-1988-401a-9ba1-71f48ccdb98b",
+      "name": "Receive Website URL",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "8206d50f-ab2a-4c6a-97e0-0e0bc3e14340",
+      "parameters": {
+        "path": "impressum-enrichment",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9f80cd5e-a170-4d34-9938-c61615adc7af",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst b = $input.first().json.body || {};\nconst reply = (o) => [{ json: o }];\nlet site = String(b.website || '').trim();\nif (!site) return reply({ valid: false, error: 'Field \"website\" is required.' });\nif (!/^https?:\\/\\//i.test(site)) site = 'https://' + site;\n// No URL class here: parse by regex so it also works in the task runner sandbox.\nconst m = site.match(/^(https?:\\/\\/)([^\\/?#:@\\s]+)(:\\d+)?([\\/?#].*)?$/i);\nif (!m) return reply({ valid: false, error: '\"website\" is not a valid URL.' });\nconst h = m[2].toLowerCase();\nconst local = h === 'localhost' || !h.includes('.') ||\n  /^(127|10|0)\\./.test(h) || /^192\\.168\\./.test(h) || /^169\\.254\\./.test(h) ||\n  /^172\\.(1[6-9]|2\\d|3[01])\\./.test(h);\nif (local) return reply({ valid: false, error: 'Private or local addresses are not allowed.' });\nreturn reply({\n  valid: true,\n  website: site,\n  origin: m[1].toLowerCase() + h + (m[3] || ''),\n  organization: String(b.organization || '').trim(),\n  reference_id: b.reference_id === undefined ? null : b.reference_id,\n});\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b40b5e8a-49b0-42ad-99e4-fe5ca6aa0c81",
+      "name": "Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "239ed565",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.valid }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "ed7781af-c9ce-4646-9759-ecd75aa69d46",
+      "name": "Respond with Input Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        660,
+        240
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 400
+        },
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'error', error: $json.error }) }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "28271453-2ef1-4ef0-88aa-14c11fba5437",
+      "name": "Fetch Homepage",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $json.website }}",
+        "options": {
+          "timeout": 10000,
+          "redirect": {
+            "redirect": {
+              "maxRedirects": 3
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; ImpressumLookup/1.0)"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "695284cd-71fe-4cf9-8fdc-5e43579fa4c4",
+      "name": "Find Impressum URL",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\n// Find the Impressum link. Three strategies, last one is a guess.\nconst html = String($input.first().json.data || $input.first().json.body || '');\nconst v = $('Validate Input').first().json;\nconst origin = v.origin;\nconst abs = (u) => u.startsWith('http') ? u : (u.startsWith('//') ? 'https:' + u\n  : (u.startsWith('/') ? origin + u : origin + '/' + u));\n\nlet url = null;\n// 1) normal links, href containing impressum / imprint / legal notice\nconst re = /href=[\"']([^\"']*(?:impressum|imprint|legal-notice|rechtliches)[^\"']*)[\"']/gi;\nlet m;\nwhile ((m = re.exec(html)) !== null) {\n  if (!/^(mailto|tel|javascript):/i.test(m[1])) { url = abs(m[1]); break; }\n}\n// 2) JSON-embedded links on SPA sites: URL near the word \"Impressum\"\nif (!url) {\n  const idx = html.toLowerCase().indexOf('impressum');\n  if (idx >= 0) {\n    const win = html.substring(Math.max(0, idx - 500), idx + 500);\n    const found = win.match(/https?:\\/\\/[^\\s\"\\\\,})]+/g);\n    if (found && found.length) url = found[0];\n  }\n}\n// 3) guess\nif (!url) url = origin + '/impressum';\n\nreturn [{ json: { impressum_url: url } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "975f6eff-2bf1-4ba9-92d0-21e2478911d3",
+      "name": "Fetch Impressum Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $json.impressum_url }}",
+        "options": {
+          "timeout": 10000,
+          "redirect": {
+            "redirect": {
+              "maxRedirects": 3
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; ImpressumLookup/1.0)"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "3b13e4f4-daf5-42b2-aee9-dff3eac5e44f",
+      "name": "Clean Page Text",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\n// HTML -> plain text, capped for the LLM.\nconst html = String($input.first().json.data || $input.first().json.body || '');\nconst text = html\n  .replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '')\n  .replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '')\n  .replace(/<br\\s*\\/?>/gi, '\\n')\n  .replace(/<[^>]+>/g, '\\n')\n  .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')\n  .replace(/&nbsp;/g, ' ').replace(/&#\\d+;/g, '')\n  .replace(/[ \\t]+/g, ' ')\n  .replace(/\\n\\s*\\n+/g, '\\n')\n  .trim();\n\nconst ok = text.length >= 50;\nreturn [{ json: {\n  has_content: ok,\n  impressum_text: ok ? text.slice(0, 8000) : '',\n  impressum_url: $('Find Impressum URL').first().json.impressum_url,\n} }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9ff9c500-c65d-4537-89ac-2a8457b3c276",
+      "name": "Page Has Content?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "1298866c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.has_content }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "84083bf8-1960-48aa-91f5-bc63d970b904",
+      "name": "Extract Company Data with AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1760,
+        -60
+      ],
+      "parameters": {
+        "url": "https://api.openai.com/v1/chat/completions",
+        "body": "={{ JSON.stringify({ model: 'gpt-4o-mini', temperature: 0, response_format: { type: 'json_object' }, messages: [ { role: 'system', content: \"You extract structured company data from the text of a website Impressum (legal notice). Return ONE JSON object, nothing else.\\n\\nMOST IMPORTANT RULE: never invent data. If a field is not clearly stated in the text, leave it out. An empty object {} is a valid answer.\\n\\nCopy every value exactly as written on the page. Do not translate, shorten or reformat it.\\n\\nFields (only include what is clearly present):\\n- company_name: legal name of the company, e.g. \\\"Mueller GmbH\\\"\\n- legal_form: e.g. GmbH, UG, AG, e.K., GbR, KG\\n- representatives: array of {name, role}. Role is the function (Managing Director, Owner), never the name.\\n- street, postal_code, city, country\\n- email: main address (prefer info@ or kontakt@)\\n- phone: main number (prefer landline or switchboard)\\n- vat_id: VAT ID, e.g. DE123456789\\n- register_court and register_number: commercial register, e.g. Amtsgericht Augsburg, HRB 12345\\n\\nCountry: if not stated, derive it from the postal code format (5 digits = Germany, 4 digits = Austria or Switzerland) and the domain ending (.de, .at, .ch). When unsure, omit it.\" }, { role: 'user', content: 'Company hint: ' + ($('Validate Input').first().json.organization || 'none') + '\\nWebsite: ' + $('Validate Input').first().json.website + '\\nImpressum URL: ' + $json.impressum_url + '\\n\\nImpressum text:\\n' + $json.impressum_text } ] }) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "contentType": "raw",
+        "authentication": "predefinedCredentialType",
+        "rawContentType": "application/json",
+        "nodeCredentialType": "openAiApi"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "970eec3a-49ba-48fe-a43f-67a605971727",
+      "name": "Verify Against Page Text",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\n// Keep only values that literally appear in the page text.\nconst v = $('Validate Input').first().json;\nconst page = $('Clean Page Text').first().json;\nconst reply = (o) => [{ json: Object.assign({\n  status: 'ok', reference_id: v.reference_id, website: v.website,\n  impressum_url: page.impressum_url || null }, o) }];\n\nif (!page.has_content) {\n  return reply({ data: {}, dropped_fields: [], reason: 'no_content' });\n}\n\nlet raw = {};\ntry {\n  const ai = $input.first().json;\n  const content = (ai.choices && ai.choices[0] && ai.choices[0].message && ai.choices[0].message.content) || '{}';\n  raw = JSON.parse(content);\n} catch (e) { raw = {}; }\n\nconst text = page.impressum_text;\nconst norm = (s) => String(s).toLowerCase().replace(/[^\\p{L}\\p{N}]+/gu, '');\nconst hay = norm(text);\nconst hayDigits = text.replace(/\\D/g, '');\nconst hayCompact = text.toUpperCase().replace(/\\s+/g, '');\n\nconst checks = {\n  company_name: (x) => hay.includes(norm(x)),\n  legal_form: (x) => hay.includes(norm(x)),\n  street: (x) => hay.includes(norm(x)),\n  postal_code: (x) => hayDigits.includes(String(x).replace(/\\D/g, '')) && String(x).replace(/\\D/g, '').length >= 4,\n  city: (x) => hay.includes(norm(x)),\n  country: () => true,\n  // must look like an address AND appear in the text (\"[email protected]\" placeholders fail the first test)\n  email: (x) => /^[^@\\s]+@[^@\\s]+\\.[A-Za-z]{2,}$/.test(String(x)) &&\n    text.toLowerCase().includes(String(x).toLowerCase()),\n  phone: (x) => {\n    const d = String(x).replace(/\\D/g, '').replace(/^(00)?49/, '').replace(/^0+/, '');\n    return d.length >= 6 && hayDigits.includes(d);\n  },\n  vat_id: (x) => hayCompact.includes(String(x).toUpperCase().replace(/\\s+/g, '')),\n  register_court: (x) => hay.includes(norm(x)),\n  register_number: (x) => {\n    const d = (String(x).match(/\\d{3,}/) || [''])[0];\n    return d !== '' && hayDigits.includes(d);\n  },\n};\n\nconst data = {};\nconst dropped = [];\nfor (const [k, fn] of Object.entries(checks)) {\n  if (raw[k] === undefined || raw[k] === null || raw[k] === '') continue;\n  if (fn(raw[k])) data[k] = raw[k]; else dropped.push(k);\n}\nif (Array.isArray(raw.representatives)) {\n  const reps = [];\n  for (const r of raw.representatives) {\n    if (r && r.name && hay.includes(norm(r.name))) {\n      reps.push({ name: String(r.name), role: r.role ? String(r.role) : null });\n    } else if (r && r.name) {\n      dropped.push('representatives: ' + r.name);\n    }\n  }\n  if (reps.length) data.representatives = reps;\n}\n\nreturn reply({ data, dropped_fields: dropped, reason: Object.keys(data).length ? null : 'nothing_verified' });\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7913bc1d-0662-4c0e-b137-32fda6abf85b",
+      "name": "Respond with Company Data",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "b7e55188-b6ef-4017-8586-050f955a8d9b",
+      "name": "Note -780x-380",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -780,
+        -380
+      ],
+      "parameters": {
+        "width": 500,
+        "height": 820,
+        "content": "## Extract company data from a website's Impressum (legal notice)\n\n**How it works**\n- A webhook receives a `website` and optionally `organization` and `reference_id`.\n- The workflow loads the homepage, finds the Impressum or imprint link (HTML links, embedded JSON, `/impressum` fallback) and converts the page to clean text.\n- An LLM extracts company name, legal form, representatives, address, phone, email, VAT ID and commercial register entry.\n- A verification step drops every value that does not literally appear in the page text, so invented data never reaches your CRM.\n- The JSON response holds `data`, `dropped_fields` and the Impressum URL.\n\n**Setup steps**\n1. Create an **OpenAI** credential and attach it to \"Extract Company Data with AI\". Any OpenAI-compatible endpoint works if you change URL and model.\n2. Protect the webhook with Header Auth before you expose it.\n3. POST `{\"website\": \"example.de\", \"organization\": \"Example GmbH\"}` to the webhook.\n\n**Good to know**\n- Business websites in Germany, Austria and Switzerland must publish an Impressum, which makes it a reliable source.\n- Sites that render the Impressum only with JavaScript return `no_content`.\n- Private and local addresses are rejected."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "59563600-87d4-4045-850e-13444dd6bb55",
+      "name": "Note -20x-180",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -20,
+        -180
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1060,
+        "height": 560,
+        "content": "## 1. Validate and find the Impressum\nCheck the URL, block local addresses, load the homepage and locate the Impressum link with three fallback strategies."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "26e8af4c-aeb8-4c97-8638-8d7de92a9b08",
+      "name": "Note 1060x-180",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1060,
+        -180
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 640,
+        "height": 400,
+        "content": "## 2. Read and extract\nFetch the page, strip it to plain text and let the LLM return strict JSON. Empty or unreadable pages skip the AI call."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2dbf0bf8-c1b8-4dda-9402-71b1d0d117cb",
+      "name": "Note 1720x-180",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1720,
+        -180
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 700,
+        "height": 400,
+        "content": "## 3. Verify and respond\nEvery extracted value must appear in the page text, otherwise it is dropped and listed. Only verified data is returned."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Homepage",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond with Input Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Homepage": {
+      "main": [
+        [
+          {
+            "node": "Find Impressum URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Page Text": {
+      "main": [
+        [
+          {
+            "node": "Page Has Content?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page Has Content?": {
+      "main": [
+        [
+          {
+            "node": "Extract Company Data with AI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Verify Against Page Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Impressum URL": {
+      "main": [
+        [
+          {
+            "node": "Fetch Impressum Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive Website URL": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Impressum Page": {
+      "main": [
+        [
+          {
+            "node": "Clean Page Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Against Page Text": {
+      "main": [
+        [
+          {
+            "node": "Respond with Company Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Company Data with AI": {
+      "main": [
+        [
+          {
+            "node": "Verify Against Page Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # 💬 Build a WhatsApp customer support bot with OpenAI and CRM integration
 
-> ⚡ **123 views** · 💬 [Support Chatbots](../)
+> ⚡ **220 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

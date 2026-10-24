@@ -1,6 +1,6 @@
 # 🧾 Generate invoices for customers with Jotform and QuickBooks
 
-> ⚡ **109 views** · 🧾 [Invoice Processing](../)
+> ⚡ **113 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

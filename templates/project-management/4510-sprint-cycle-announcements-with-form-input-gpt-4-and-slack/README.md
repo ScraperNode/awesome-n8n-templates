@@ -1,6 +1,6 @@
 # 📋 Sprint cycle announcements with Form Input, GPT-4 and Slack
 
-> ⚡ **273 views** · 📋 [Project Management](../)
+> ⚡ **282 views** · 📋 [Project Management](../)
 
 ## Description
 

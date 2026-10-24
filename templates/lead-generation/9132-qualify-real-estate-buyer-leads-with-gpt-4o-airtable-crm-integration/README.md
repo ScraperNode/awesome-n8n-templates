@@ -1,6 +1,6 @@
 # 🎣 Qualify real estate buyer leads with GPT-4o & Airtable CRM integration
 
-> ⚡ **650 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **783 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Generate PDF business proposals with Google Gemini and PDF Generator API
 
-> ⚡ **33 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **146 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

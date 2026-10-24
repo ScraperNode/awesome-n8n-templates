@@ -1,6 +1,6 @@
 # ⚡ Daily podcast summary
 
-> ⚡ **15,897 views** · ⚡ [Personal Productivity](../)
+> ⚡ **15,884 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

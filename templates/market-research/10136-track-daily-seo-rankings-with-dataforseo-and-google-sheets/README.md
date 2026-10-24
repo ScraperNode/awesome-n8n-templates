@@ -1,6 +1,6 @@
 # 📊 Track daily SEO rankings with DataForSEO and Google Sheets
 
-> ⚡ **839 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,121 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 Starred Slack messages to Notion database with AI auto-tagging
 
-> ⚡ **293 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **310 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

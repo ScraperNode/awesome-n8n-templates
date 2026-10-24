@@ -1,6 +1,6 @@
 # 🔬 Sync Zendesk how-to tickets to Google Sheets knowledge base
 
-> ⚡ **176 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **205 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

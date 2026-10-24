@@ -1,6 +1,6 @@
 # 📁 Gmail to Google Drive email export workflow
 
-> ⚡ **1,768 views** · 📁 [File Management](../)
+> ⚡ **1,905 views** · 📁 [File Management](../)
 
 ## Description
 

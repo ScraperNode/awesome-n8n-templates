@@ -1,6 +1,6 @@
 # ⚒️ Automate Power BI dataset refreshes with history monitoring
 
-> ⚡ **2,808 views** · ⚒️ [Engineering](../)
+> ⚡ **4,058 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,0 +1,1049 @@
+{
+  "id": "ootyBFBSyEd6YCue",
+  "name": "Stop AI hallucinations with a sovereign truth gate, local Ollama and data tables",
+  "nodes": [
+    {
+      "id": "76c0315c-651e-4635-818c-8d392b6029c9",
+      "name": "Truth Gate Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "584fe697-bb63-4007-9c7a-1099a09ea4f4",
+      "parameters": {
+        "path": "truth-gate",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "1f8d6f8b-551f-4eb5-8d40-5b650f304622",
+      "name": "Test With Sample",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        520
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "2c248137-fc11-41d2-9677-1ca8e10097b2",
+      "name": "Sample AI Output",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        220,
+        520
+      ],
+      "parameters": {
+        "jsCode": "// A test text with true, false and unverifiable claims. Add the matching trusted fact\n// \"Acme Robotics was founded in Lisbon in 2012.\" to the truth_facts table to see VERIFIED from your own facts.\nreturn [{ json: {\n  source: 'manual-test',\n  text: 'The Eiffel Tower is in Paris and was completed in 1889. It is about 900 metres tall. '\n      + 'Acme Robotics was founded in Lisbon in 2012. I think this is a great place to visit in spring.'\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "823c709f-227e-45b1-909b-85ab5f0f351c",
+      "name": "Read Request & Config",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        460,
+        400
+      ],
+      "parameters": {
+        "jsCode": "// ===== CONFIG - everything you may want to change lives here =====\nconst CONFIG = {\n  LLM_URL: 'http://localhost:11434/v1/chat/completions', // any OpenAI-compatible endpoint. Default: your own local Ollama (no API key)\n  LLM_MODEL: 'qwen3:4b-instruct',   // a model you have pulled in Ollama (ollama pull qwen3:4b-instruct)\n  USE_WIKIPEDIA: true,              // false = fully offline: only your own trusted facts are used as evidence\n  WIKI_LANG: 'en',                  // Wikipedia language edition used for evidence\n  MAX_CLAIMS: 8,                    // checkable claims verified per request\n  MAX_TEXT_CHARS: 8000,             // longer texts are cut\n  FLAG_RATIO: 0.34,                 // FLAG when more than this share of claims is UNSUPPORTED\n  BLOCK_ON_CONTRADICTED: true       // BLOCK when any claim is CONTRADICTED by the evidence\n};\nconst item = $input.first().json;\nconst fromWebhook = item.body !== undefined;\nconst body = fromWebhook ? (item.body || {}) : item;\nconst text = String(body.text || '').trim().slice(0, CONFIG.MAX_TEXT_CHARS);\nif (!text) throw new Error('Send a JSON body with a \"text\" field that contains the AI output to check.');\nreturn [{ json: {\n  request_id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),\n  source: String(body.source || 'unknown').slice(0, 80),\n  text,\n  via: fromWebhook ? 'webhook' : 'manual',\n  received_at: new Date().toISOString(),\n  cfg: CONFIG\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "6bf21c99-36fa-4127-aaea-ea9a3803d204",
+      "name": "Load Trusted Facts",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        700,
+        400
+      ],
+      "parameters": {
+        "operation": "get",
+        "returnAll": true,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "truth_facts"
+        }
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "ffe939e5-8f1d-4674-acaf-ed163c6a5f7a",
+      "name": "Build Claim Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        940,
+        400
+      ],
+      "parameters": {
+        "jsCode": "const req = $('Read Request & Config').first().json;\n// Your own trusted facts (empty rows are ignored)\nconst facts = $input.all().map(i => i.json).filter(r => r && r.fact)\n  .map(r => ({ fact: String(r.fact), topic: String(r.topic || '') }));\nconst system = 'You extract checkable factual claims from a text. A claim is checkable when it states a fact about the world: '\n  + 'names, numbers, dates, places, events, definitions, quotes, product or company facts. '\n  + 'Ignore opinions, feelings, advice, questions and promises. '\n  + 'Rewrite each claim as one short standalone sentence that can be checked without the rest of the text, '\n  + 'and give its main subject: only the name of the person, place, organisation or thing, without the property being claimed '\n  + '(for example \"Mount Everest\", not \"Mount Everest height\"). '\n  + 'Return JSON only, exactly: {\"claims\":[{\"claim\":\"...\",\"search\":\"...\"}]}. If nothing is checkable return {\"claims\":[]}.';\nreturn [{ json: { ...req, facts, llm_request: {\n  model: req.cfg.LLM_MODEL, temperature: 0, stream: false, response_format: { type: 'json_object' },\n  messages: [ { role: 'system', content: system }, { role: 'user', content: 'Text to analyse:\\n<text>\\n' + req.text + '\\n</text>' } ]\n} } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "82884191-2184-436e-8786-8452d3b62dac",
+      "name": "Extract Claims (LLM)",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        1180,
+        400
+      ],
+      "parameters": {
+        "url": "={{ $json.cfg.LLM_URL }}",
+        "method": "POST",
+        "options": {
+          "timeout": 600000
+        },
+        "jsonBody": "={{ JSON.stringify($json.llm_request) }}",
+        "sendBody": true,
+        "specifyBody": "json"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "86778850-47d1-41ac-afe6-87deae70b79e",
+      "name": "Plan Evidence",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1420,
+        400
+      ],
+      "parameters": {
+        "jsCode": "function parseJson(s) {\n  s = String(s || '').replace(/<think>[\\s\\S]*?<\\/think>/g, '').trim();\n  const a = s.indexOf('{'), b = s.lastIndexOf('}');\n  if (a < 0 || b < a) return null;\n  try { return JSON.parse(s.slice(a, b + 1)); } catch (e) { return null; }\n}\nfunction llmText(res) {\n  if (res && res.choices && res.choices[0] && res.choices[0].message) return res.choices[0].message.content;\n  if (res && res.message) return res.message.content;\n  return '';\n}\n\nconst req = $('Build Claim Request').first().json;\nconst parsed = parseJson(llmText($input.first().json));\n// Fail closed: if the model cannot analyse the text, the gate FLAGs it instead of letting it pass\nif (!parsed) return [{ json: { no_claims: true, extract_failed: true, use_wiki: false } }];\nconst seen = new Set();\nconst claims = (Array.isArray(parsed.claims) ? parsed.claims : [])\n  .map(c => ({ claim: String((c && c.claim) || (typeof c === 'string' ? c : '') || '').trim(), search: String((c && c.search) || '').trim() }))\n  .filter(c => c.claim.length > 8 && !seen.has(c.claim) && seen.add(c.claim))\n  .slice(0, req.cfg.MAX_CLAIMS);\n// Match each claim with your own trusted facts by shared words (4+ letters)\nconst words = s => String(s).toLowerCase().match(/[\\p{L}\\p{N}]{4,}/gu) || [];\n// The subject to search is taken from the claim itself when it names one (the longest run of capitalised words),\n// because small models often add the property to the search term (\"Eiffel Tower height\") and miss the main page\nconst entity = s => (String(s).match(/\\p{Lu}[\\p{L}\\p{N}'\\u2019-]*(?:\\s+\\p{Lu}[\\p{L}\\p{N}'\\u2019-]*)*/gu) || [])\n  .map(x => x.replace(/^(The|A|An)\\s+/, '').trim()).filter(x => x.length >= 3 && !/^(The|This|That|It|They|We|He|She|There)$/.test(x))\n  .sort((a, b) => b.length - a.length)[0] || '';\nconst out = claims.map(({ claim, search }, i) => {\n  const cw = new Set(words(claim));\n  const trusted = req.facts.map(f => ({ f, s: words(f.fact).filter(w => cw.has(w)).length }))\n    .filter(x => x.s >= 2).sort((a, b) => b.s - a.s).slice(0, 3).map(x => x.f.fact);\n  return { json: { id: i + 1, claim, search: (entity(claim) || search || claim).slice(0, 120), trusted, use_wiki: req.cfg.USE_WIKIPEDIA, wiki_lang: req.cfg.WIKI_LANG } };\n});\nreturn out.length ? out : [{ json: { no_claims: true, extract_failed: false, use_wiki: false } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "20ec1069-edd8-4fd9-8536-6557c068e272",
+      "name": "Search Wikipedia?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1660,
+        400
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "f6a79fb5-aceb-4e26-8e35-4bcf233673a3",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.use_wiki }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "28857257-3d98-4063-ade5-ef5193f9ea74",
+      "name": "Search Wikipedia",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        1900,
+        300
+      ],
+      "parameters": {
+        "url": "=https://{{ $json.wiki_lang }}.wikipedia.org/w/api.php",
+        "options": {
+          "timeout": 20000,
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 500
+            }
+          }
+        },
+        "sendQuery": true,
+        "sendHeaders": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "query"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            },
+            {
+              "name": "generator",
+              "value": "search"
+            },
+            {
+              "name": "gsrsearch",
+              "value": "={{ $json.search }}"
+            },
+            {
+              "name": "gsrlimit",
+              "value": "2"
+            },
+            {
+              "name": "prop",
+              "value": "extracts"
+            },
+            {
+              "name": "exintro",
+              "value": "1"
+            },
+            {
+              "name": "explaintext",
+              "value": "1"
+            },
+            {
+              "name": "exlimit",
+              "value": "2"
+            },
+            {
+              "name": "redirects",
+              "value": "1"
+            }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "SovereignTruthGate/1.0 (n8n workflow template)"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "65409b70-eb9b-4ae2-9828-dab21f5feaf4",
+      "name": "Collect Evidence",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2140,
+        400
+      ],
+      "parameters": {
+        "jsCode": "const req = $('Build Claim Request').first().json;\nconst plan = $('Plan Evidence').all().map(i => i.json);\nconst incoming = $input.all().map(i => i.json);   // Wikipedia answers in the same order, or the plan itself when Wikipedia is off\nif (plan[0] && plan[0].no_claims) {\n  return [{ json: { skip_judge: true, extract_failed: !!plan[0].extract_failed, claims: [] } }];\n}\nconst claims = plan.map((p, idx) => {\n  const r = incoming[idx] || {};\n  const wiki = (r.query && r.query.pages) ? Object.values(r.query.pages)\n    .map(pg => ({ title: pg.title, text: String(pg.extract || '').replace(/\\s+/g, ' ').slice(0, 1200) })).filter(w => w.text) : [];\n  const evidence = (p.trusted || []).map((t, k) => '[T' + (k + 1) + '] (trusted fact) ' + t)\n    .concat(wiki.map((w, k) => '[W' + (k + 1) + '] (Wikipedia: ' + w.title + ') ' + w.text));\n  return { id: p.id, claim: p.claim, search: p.search || '', evidence };\n});\nconst block = claims.map(c => 'CLAIM ' + c.id + ': ' + c.claim + '\\nEVIDENCE:\\n' + (c.evidence.length ? c.evidence.join('\\n') : '(none)')).join('\\n\\n');\nconst system = 'You are a strict fact verification judge. Judge each claim ONLY from the evidence given below it, never from your own knowledge. '\n  + 'VERIFIED: the evidence clearly supports the claim. CONTRADICTED: the evidence clearly states the opposite. '\n  + 'UNSUPPORTED: every other case, including no evidence. '\n  + 'For VERIFIED and CONTRADICTED copy a short exact quote (at most 30 words) from that claim\\'s evidence, character for character, '\n  + 'and the quote must contain the words that prove or disprove this exact claim. '\n  + 'Return JSON only, exactly: {\"verdicts\":[{\"id\":1,\"verdict\":\"VERIFIED|UNSUPPORTED|CONTRADICTED\",\"quote\":\"exact words or empty\",\"reason\":\"one short sentence\"}]}';\nreturn [{ json: { skip_judge: false, extract_failed: false, claims, llm_url: req.cfg.LLM_URL, llm_request: {\n  model: req.cfg.LLM_MODEL, temperature: 0, stream: false, response_format: { type: 'json_object' },\n  messages: [ { role: 'system', content: system }, { role: 'user', content: block } ]\n} } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b6b43806-8d05-4ae0-ba16-f1ea7717b19c",
+      "name": "Anything to Judge?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2380,
+        400
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "95e23ae8-0efc-4f5c-bd7b-04d2d47dff57",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.skip_judge }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "da1aefc0-c9ad-450d-bcc4-9c344edb797f",
+      "name": "Judge Claims (LLM)",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        2620,
+        300
+      ],
+      "parameters": {
+        "url": "={{ $json.llm_url }}",
+        "method": "POST",
+        "options": {
+          "timeout": 600000
+        },
+        "jsonBody": "={{ JSON.stringify($json.llm_request) }}",
+        "sendBody": true,
+        "specifyBody": "json"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "4919d92d-f69b-47e5-9029-551ff04cbf7a",
+      "name": "Apply Policy & Verify Quotes",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2860,
+        400
+      ],
+      "parameters": {
+        "jsCode": "function parseJson(s) {\n  s = String(s || '').replace(/<think>[\\s\\S]*?<\\/think>/g, '').trim();\n  const a = s.indexOf('{'), b = s.lastIndexOf('}');\n  if (a < 0 || b < a) return null;\n  try { return JSON.parse(s.slice(a, b + 1)); } catch (e) { return null; }\n}\nfunction llmText(res) {\n  if (res && res.choices && res.choices[0] && res.choices[0].message) return res.choices[0].message.content;\n  if (res && res.message) return res.message.content;\n  return '';\n}\n\nconst req = $('Build Claim Request').first().json;\nconst ev = $('Collect Evidence').first().json;\nconst cfg = req.cfg;\nlet verdicts = [];\nlet judgeFailed = false;\nif (!ev.skip_judge) {\n  const parsed = parseJson(llmText($input.first().json));\n  verdicts = parsed && Array.isArray(parsed.verdicts) ? parsed.verdicts : [];\n  judgeFailed = !parsed || !Array.isArray(parsed.verdicts);\n}\n// THE JUDGE CANNOT LIE EITHER. A VERIFIED or CONTRADICTED verdict counts only when its quote is\n// (1) grounded: at least 6 words in a row (or the whole quote) appear word for word in the evidence, covering 75% of the quote, and\n// (2) relevant: a VERIFIED proof contains all numbers of the claim and half of its other words; a CONTRADICTED proof speaks about the same thing.\nconst toks = s => String(s || '').toLowerCase().match(/[\\p{L}\\p{N}]+/gu) || [];\nfunction grounded(quote, evidence) {\n  const q = toks(quote), e = toks(evidence);\n  if (q.length < 4) return null;\n  let best = { len: 0, start: 0 };\n  for (let i = 0; i < q.length; i++) for (let j = 0; j < e.length; j++) {\n    let k = 0; while (i + k < q.length && j + k < e.length && q[i + k] === e[j + k]) k++;\n    if (k > best.len) best = { len: k, start: i };\n  }\n  if (best.len < Math.min(6, q.length) || best.len / q.length < 0.75) return null;\n  return q.slice(best.start, best.start + best.len);\n}\nconst claims = ev.claims.map(c => {\n  const v = verdicts.find(x => Number(x.id) === c.id) || {};\n  let verdict = String(v.verdict || 'UNSUPPORTED').toUpperCase();\n  if (!['VERIFIED', 'UNSUPPORTED', 'CONTRADICTED'].includes(verdict)) verdict = 'UNSUPPORTED';\n  const quote = String(v.quote || '').trim();\n  let reason = String(v.reason || '');\n  if (verdict !== 'UNSUPPORTED') {\n    const span = grounded(quote, c.evidence.join(' '));\n    const subject = new Set(toks(c.search));\n    const keys = toks(c.claim).filter(w => !subject.has(w) && (w.length >= 4 || /\\d/.test(w)));\n    const nums = keys.filter(w => /\\d/.test(w)), words = keys.filter(w => !/\\d/.test(w));\n    let relevant = false;\n    if (!span) relevant = false;\n    else if (verdict === 'VERIFIED') {\n      // proof of a claim must contain all of its numbers, and at least half of its other words\n      relevant = nums.every(n => span.includes(n)) && (!words.length || words.filter(w => span.includes(w)).length >= Math.ceil(words.length / 2));\n    } else {\n      // proof against a claim must speak about the same thing: a number when the claim has numbers, and one of its words\n      relevant = (!nums.length || span.some(w => /\\d/.test(w))) && (!words.length || span.some(w => words.includes(w)));\n    }\n    if (!span) { reason = 'Downgraded: the judge quote is not found word for word in the evidence. ' + reason; verdict = 'UNSUPPORTED'; }\n    else if (keys.length && !relevant) { reason = 'Downgraded: the judge quote does not prove what this claim asserts. ' + reason; verdict = 'UNSUPPORTED'; }\n  }\n  if (verdict === 'UNSUPPORTED' && !reason.trim()) reason = judgeFailed ? 'The judge model gave no valid answer. Treated as unsupported (fail closed).' : 'No supporting evidence found.';\n  return { id: c.id, claim: c.claim, verdict, quote: verdict === 'UNSUPPORTED' ? '' : quote, reason,\n           evidence: c.evidence.map(e => e.slice(0, 4)).join(' ') || 'none' };\n});\nconst n = k => claims.filter(c => c.verdict === k).length;\nconst total = claims.length, verified = n('VERIFIED'), unsupported = n('UNSUPPORTED'), contradicted = n('CONTRADICTED');\nconst reasons = [];\nlet decision = 'PASS';\nif (ev.extract_failed) { decision = 'FLAG'; reasons.push('The model could not analyse the text (no valid JSON). Failing closed.'); }\nif (contradicted > 0 && cfg.BLOCK_ON_CONTRADICTED) { decision = 'BLOCK'; reasons.push(contradicted + ' claim(s) contradicted by evidence.'); }\nelse if (total > 0 && unsupported / total > cfg.FLAG_RATIO) { decision = 'FLAG'; reasons.push(unsupported + ' of ' + total + ' claims unsupported by evidence.'); }\nif (!total && !ev.extract_failed) reasons.push('No checkable factual claims found.');\nconst truth_score = ev.extract_failed ? 0 : (total ? Math.round(verified / total * 100) : 100);\nconst lines = claims.filter(c => c.verdict !== 'VERIFIED').map(c => '- [' + c.verdict + '] ' + c.claim + (c.quote ? '\\n  Evidence: \"' + c.quote + '\"' : '') + (c.reason ? '\\n  ' + c.reason : ''));\nreturn [{ json: {\n  request_id: req.request_id, source: req.source, via: req.via, checked_at: new Date().toISOString(),\n  decision, truth_score, claims_total: total, verified, unsupported, contradicted, reasons, claims,\n  text_excerpt: req.text.slice(0, 300),\n  alert_text: 'TRUTH GATE: ' + decision + '\\n\\nSource: ' + req.source + '\\nTruth score: ' + truth_score + '%\\nReasons: ' + reasons.join(' ')\n    + '\\n\\nClaims that need attention:\\n' + (lines.join('\\n') || '(none)') + '\\n\\nText (start):\\n' + req.text.slice(0, 600)\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "4482a36f-b9b9-4109-86d4-d843048d345c",
+      "name": "Log Check",
+      "type": "n8n-nodes-base.dataTable",
+      "onError": "continueRegularOutput",
+      "position": [
+        3100,
+        420
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "source": "={{ $json.source }}",
+            "details": "={{ JSON.stringify($json.claims).slice(0, 20000) }}",
+            "decision": "={{ $json.decision }}",
+            "verified": "={{ $json.verified }}",
+            "checked_at": "={{ $json.checked_at }}",
+            "request_id": "={{ $json.request_id }}",
+            "truth_score": "={{ $json.truth_score }}",
+            "unsupported": "={{ $json.unsupported }}",
+            "claims_total": "={{ $json.claims_total }}",
+            "contradicted": "={{ $json.contradicted }}",
+            "text_excerpt": "={{ $json.text_excerpt }}"
+          },
+          "schema": [
+            {
+              "id": "checked_at",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "checked_at",
+              "defaultMatch": false
+            },
+            {
+              "id": "request_id",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "request_id",
+              "defaultMatch": false
+            },
+            {
+              "id": "source",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "source",
+              "defaultMatch": false
+            },
+            {
+              "id": "decision",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "decision",
+              "defaultMatch": false
+            },
+            {
+              "id": "truth_score",
+              "type": "number",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "truth_score",
+              "defaultMatch": false
+            },
+            {
+              "id": "claims_total",
+              "type": "number",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "claims_total",
+              "defaultMatch": false
+            },
+            {
+              "id": "verified",
+              "type": "number",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "verified",
+              "defaultMatch": false
+            },
+            {
+              "id": "unsupported",
+              "type": "number",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "unsupported",
+              "defaultMatch": false
+            },
+            {
+              "id": "contradicted",
+              "type": "number",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "contradicted",
+              "defaultMatch": false
+            },
+            {
+              "id": "text_excerpt",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "text_excerpt",
+              "defaultMatch": false
+            },
+            {
+              "id": "details",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "displayName": "details",
+              "defaultMatch": false
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "truth_checks"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "3269517e-a0cc-4dc8-a0d2-fcde204ecb5e",
+      "name": "Came From Webhook?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3100,
+        220
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "e9244f0d-955f-4288-a262-7cedbe09c9bd",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.via }}",
+              "rightValue": "webhook"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "e9f6e451-0643-4dcd-b27f-7f02c273cdea",
+      "name": "Return Verdict",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        3340,
+        220
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ decision: $json.decision, truth_score: $json.truth_score, reasons: $json.reasons, claims: $json.claims, request_id: $json.request_id }) }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "72cae8f1-470c-46c4-abc6-983fde4371a1",
+      "name": "Needs Alert?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3100,
+        600
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "acc112b0-c29d-4518-8307-c6d2e9b79aff",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "PASS"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "46c3b06f-9e4f-4941-8c1f-1185574ec6ff",
+      "name": "Send Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "onError": "continueRegularOutput",
+      "position": [
+        3340,
+        600
+      ],
+      "webhookId": "6f3741e5-be5c-4163-b6af-ccf2accebc7d",
+      "parameters": {
+        "text": "={{ $json.alert_text }}",
+        "options": {
+          "appendAttribution": false
+        },
+        "subject": "=Truth Gate {{ $json.decision }}: {{ $json.source }} ({{ $json.truth_score }}%)",
+        "toEmail": "you@example.com",
+        "fromEmail": "user@example.com",
+        "emailFormat": "text"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "cdbb94ad-76a1-4575-9498-95a2f9ef5ecf",
+      "name": "Weekly Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        1000
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "13b7cfb4-56be-4d48-a649-1fe87948f9d0",
+      "name": "Load Check Log",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        240,
+        1000
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "createdAt",
+              "keyValue": "={{ $now.minus({ days: 14 }).toISO() }}",
+              "condition": "gte"
+            }
+          ]
+        },
+        "matchType": "allConditions",
+        "operation": "get",
+        "returnAll": true,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "truth_checks"
+        }
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "1ce6b72c-cdc3-4111-8122-38d8a78a8487",
+      "name": "Build Weekly Report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        480,
+        1000
+      ],
+      "parameters": {
+        "jsCode": "// Weekly truth score per AI source: this week versus last week, plus the latest contradicted claims\nconst rows = $input.all().map(i => i.json).filter(r => r && r.checked_at);\nconst now = Date.now(), WEEK = 7 * 864e5;\nconst age = r => now - Date.parse(r.checked_at);\nconst cur = rows.filter(r => age(r) <= WEEK), prev = rows.filter(r => age(r) > WEEK && age(r) <= 2 * WEEK);\nconst avg = a => a.length ? Math.round(a.reduce((s, r) => s + Number(r.truth_score || 0), 0) / a.length) : null;\nconst sources = [...new Set(cur.map(r => r.source))].sort();\nconst esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));\nconst rowsHtml = sources.map(s => {\n  const c = cur.filter(r => r.source === s), p = prev.filter(r => r.source === s);\n  const a = avg(c), b = avg(p);\n  const trend = b === null ? 'new' : (a > b ? '+' + (a - b) : a < b ? '-' + (b - a) : '=');\n  return '<tr><td>' + esc(s) + '</td><td>' + c.length + '</td><td><b>' + a + '%</b></td><td>' + trend + '</td><td>'\n    + c.filter(r => r.decision === 'BLOCK').length + '</td><td>' + c.filter(r => r.decision === 'FLAG').length + '</td></tr>';\n}).join('');\nconst worst = [];\nfor (const r of cur.slice().sort((x, y) => Date.parse(y.checked_at) - Date.parse(x.checked_at))) {\n  let d = []; try { d = JSON.parse(r.details || '[]'); } catch (e) {}\n  for (const c of d) if (c.verdict === 'CONTRADICTED' && worst.length < 5) worst.push('<li>' + esc(c.claim) + ' <i>(' + esc(r.source) + ')</i></li>');\n}\nconst overall = avg(cur);\nconst status = overall === null ? 'NO CHECKS' : overall >= 80 ? 'HEALTHY' : 'ATTENTION';\nconst html = '<h2>Truth Gate - weekly report: ' + status + '</h2><p>Checks this week: ' + cur.length + ' | Overall truth score: '\n  + (overall === null ? '-' : overall + '%') + '</p><table border=\"1\" cellpadding=\"6\" cellspacing=\"0\"><tr><th>AI source</th><th>Checks</th>'\n  + '<th>Truth score</th><th>vs last week</th><th>Blocked</th><th>Flagged</th></tr>' + (rowsHtml || '<tr><td colspan=\"6\">No checks this week</td></tr>')\n  + '</table><h3>Latest contradicted claims</h3><ul>' + (worst.join('') || '<li>None</li>') + '</ul>';\nreturn [{ json: { subject: 'Truth Gate weekly report: ' + status + (overall === null ? '' : ' (' + overall + '%)'), html } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "124f1146-d990-404c-95df-6c137fa6d6a7",
+      "name": "Send Weekly Report",
+      "type": "n8n-nodes-base.emailSend",
+      "onError": "continueRegularOutput",
+      "position": [
+        720,
+        1000
+      ],
+      "webhookId": "079f97e8-2e10-48cc-90ff-9e100f281e95",
+      "parameters": {
+        "html": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        },
+        "subject": "={{ $json.subject }}",
+        "toEmail": "you@example.com",
+        "fromEmail": "user@example.com",
+        "emailFormat": "html"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "b9e860bf-4a3b-4d5c-ba50-45f0279c2f6e",
+      "name": "Prune Old Checks",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        960,
+        1000
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "createdAt",
+              "keyValue": "={{ $now.minus({ days: 90 }).toISO() }}",
+              "condition": "lt"
+            }
+          ]
+        },
+        "options": {},
+        "matchType": "allConditions",
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "truth_checks"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 1.1
+    },
+    {
+      "id": "12ab840e-809e-4cff-b9b6-0e500fee55fa",
+      "name": "Note dc8ca170",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -560,
+        -120
+      ],
+      "parameters": {
+        "width": 520,
+        "height": 1060,
+        "content": "## \ud83d\udee1 Sovereign Truth Gate \u2014 stop AI hallucinations before a human sees them\n\nSend any AI output to this gate and get back **PASS**, **FLAG** or **BLOCK**, with a verdict for every factual claim.\n\n**Why it is different**\n- **The judge cannot lie either:** a VERIFIED or CONTRADICTED verdict counts only if its quote is found word for word in the evidence and proves this exact claim (including its numbers). Otherwise it is downgraded.\n- **Sovereign by default:** runs on your own local model (Ollama). No API key, no cloud.\n- **Your facts first:** evidence comes from your own trusted facts table, then Wikipedia (optional, no key).\n- **Fails closed:** if the model cannot analyse a text, it is FLAGGED, never passed.\n\n## Setup\n1. Install Ollama and pull a model: `ollama pull qwen3:4b-instruct`.\n2. In **Read Request & Config**, set `LLM_URL`. Docker n8n on Linux reaches the host with `http://host.docker.internal:11434/v1/chat/completions` (start n8n with `--add-host=host.docker.internal:host-gateway`).\n3. Create two Data Tables:\n   - `truth_facts`: fact (string), topic (string)\n   - `truth_checks`: checked_at, request_id, source, decision, text_excerpt, details (string); truth_score, claims_total, verified, unsupported, contradicted (number)\n4. The workflow finds both tables by name, so no table selection is needed.\n5. Add an SMTP credential to **Send Alert** and **Send Weekly Report** and set your addresses. No email account? Deactivate both email nodes, otherwise every alert run ends marked as error (the verdict and the log still work).\n6. Click **Test workflow** to run the sample, then activate.\n\n## Use it\n`POST /webhook/truth-gate` with `{\"text\": \"AI output\", \"source\": \"my-support-bot\"}`.\n\nPrefer a cloud model? Point `LLM_URL` to any OpenAI-compatible API and add a Header Auth credential to both LLM nodes."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a1ea85dd-bb6f-45b7-a1c5-19fa9970f505",
+      "name": "Note 1773639f",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        180
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 700,
+        "height": 500,
+        "content": "## 1. Receive\nThe **webhook** takes AI output from any app. **Test With Sample** runs a built-in example with true, false and unverifiable claims.\n\nAll settings live at the top of **Read Request & Config**."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a7e2c0f6-e3bd-41db-b321-f55cdb409949",
+      "name": "Note cbdb9da0",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        680,
+        180
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 720,
+        "height": 500,
+        "content": "## 2. Extract claims\nYour **trusted facts** are loaded, then the model lists only the checkable factual claims (names, numbers, dates, events).\n\nOpinions and advice are ignored. Invalid model output makes the gate fail closed."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0e94d7a3-a12b-4714-a305-44f90ff1b9f9",
+      "name": "Note 045c8a13",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1400,
+        180
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 720,
+        "height": 500,
+        "content": "## 3. Gather evidence\nEach claim is matched with your trusted facts, then searched on **Wikipedia** (one request per claim, polite pacing).\n\nSet `USE_WIKIPEDIA: false` to run fully offline."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "42f93d52-7276-41d1-967d-99acfb407365",
+      "name": "Note 907fa2d5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2120,
+        180
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 920,
+        "height": 500,
+        "content": "## 4. Judge and verify the judge\nOne model call judges every claim **only from its evidence**.\n\nThen plain code checks that each quote really exists in the evidence and proves this exact claim, numbers included. No exact, relevant quote: no verification.\n\nPolicy: any CONTRADICTED claim = **BLOCK**. Too many UNSUPPORTED = **FLAG**."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ba00cb73-7071-4ced-a4a7-812eb0b8bbd0",
+      "name": "Note b0d853ae",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3060,
+        60
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 520,
+        "height": 760,
+        "content": "## 5. Deliver\nEvery check is logged to `truth_checks`.\n\nThe verdict returns to the caller as JSON. BLOCK and FLAG also send an email alert."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6e093f2a-d254-486e-a9bc-942fa6adf9a5",
+      "name": "Note e71e9c2c",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        860
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 1240,
+        "height": 380,
+        "content": "## 6. Weekly truth score\nEvery Monday at 08:00: truth score per AI source, this week versus last week, blocked and flagged counts, and the latest contradicted claims.\n\nIt shows which of your AI workflows invents the most. Checks older than 90 days are then deleted."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Needs Alert?": {
+      "main": [
+        [
+          {
+            "node": "Send Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan Evidence": {
+      "main": [
+        [
+          {
+            "node": "Search Wikipedia?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Check Log": {
+      "main": [
+        [
+          {
+            "node": "Build Weekly Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly Trigger": {
+      "main": [
+        [
+          {
+            "node": "Load Check Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Evidence": {
+      "main": [
+        [
+          {
+            "node": "Anything to Judge?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sample AI Output": {
+      "main": [
+        [
+          {
+            "node": "Read Request & Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Wikipedia": {
+      "main": [
+        [
+          {
+            "node": "Collect Evidence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test With Sample": {
+      "main": [
+        [
+          {
+            "node": "Sample AI Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Wikipedia?": {
+      "main": [
+        [
+          {
+            "node": "Search Wikipedia",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Collect Evidence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything to Judge?": {
+      "main": [
+        [
+          {
+            "node": "Judge Claims (LLM)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Apply Policy & Verify Quotes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Came From Webhook?": {
+      "main": [
+        [
+          {
+            "node": "Return Verdict",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Judge Claims (LLM)": {
+      "main": [
+        [
+          {
+            "node": "Apply Policy & Verify Quotes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Trusted Facts": {
+      "main": [
+        [
+          {
+            "node": "Build Claim Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Weekly Report": {
+      "main": [
+        [
+          {
+            "node": "Prune Old Checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Truth Gate Webhook": {
+      "main": [
+        [
+          {
+            "node": "Read Request & Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Claim Request": {
+      "main": [
+        [
+          {
+            "node": "Extract Claims (LLM)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Weekly Report": {
+      "main": [
+        [
+          {
+            "node": "Send Weekly Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Claims (LLM)": {
+      "main": [
+        [
+          {
+            "node": "Plan Evidence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Request & Config": {
+      "main": [
+        [
+          {
+            "node": "Load Trusted Facts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Policy & Verify Quotes": {
+      "main": [
+        [
+          {
+            "node": "Came From Webhook?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Check",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Needs Alert?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

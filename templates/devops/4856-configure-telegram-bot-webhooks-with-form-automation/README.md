@@ -1,6 +1,6 @@
 # ⚙️ Configure Telegram bot webhooks with form automation
 
-> ⚡ **1,683 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,146 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Smart Customer Support System with GPT-4o, Gmail, Slack & Drive Knowledge Base'
 
-> ⚡ **478 views** · 💬 [Support Chatbots](../)
+> ⚡ **545 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

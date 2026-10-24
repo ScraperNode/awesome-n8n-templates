@@ -1,6 +1,6 @@
 # 🎬 Create long-form documents from simple titles with GPT-5 and Google Docs
 
-> ⚡ **301 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **447 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

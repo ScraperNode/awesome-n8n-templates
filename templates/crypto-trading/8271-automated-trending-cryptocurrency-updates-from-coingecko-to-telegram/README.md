@@ -1,6 +1,6 @@
 # 📈 Automated trending cryptocurrency updates from CoinGecko to Telegram
 
-> ⚡ **483 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **576 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

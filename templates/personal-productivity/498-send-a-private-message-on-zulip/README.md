@@ -1,6 +1,6 @@
 # ⚡ Send a private message on Zulip
 
-> ⚡ **730 views** · ⚡ [Personal Productivity](../)
+> ⚡ **756 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

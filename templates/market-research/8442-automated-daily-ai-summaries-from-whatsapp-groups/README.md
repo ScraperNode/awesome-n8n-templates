@@ -1,6 +1,6 @@
 # 📊 Automated daily AI summaries from WhatsApp groups
 
-> ⚡ **976 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,008 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

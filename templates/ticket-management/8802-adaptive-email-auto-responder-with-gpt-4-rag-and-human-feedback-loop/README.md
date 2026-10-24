@@ -1,6 +1,6 @@
 # 🎫 Adaptive email auto-responder with GPT-4, RAG and human feedback loop
 
-> ⚡ **80 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **119 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

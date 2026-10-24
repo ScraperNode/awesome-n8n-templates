@@ -1,6 +1,6 @@
 # 📖 Query and answer questions from Excel spreadsheets with GPT-4 Mini
 
-> ⚡ **252 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **328 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

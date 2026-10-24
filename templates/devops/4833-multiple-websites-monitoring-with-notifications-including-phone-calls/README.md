@@ -1,6 +1,6 @@
 # ⚙️ Multiple websites monitoring with notifications including phone calls
 
-> ⚡ **18,054 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **24,343 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

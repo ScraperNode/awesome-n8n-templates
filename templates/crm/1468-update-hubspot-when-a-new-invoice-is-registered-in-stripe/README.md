@@ -1,6 +1,6 @@
 # 🤝 Update HubSpot when a new invoice is registered in Stripe
 
-> ⚡ **6,410 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **6,780 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

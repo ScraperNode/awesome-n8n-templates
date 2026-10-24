@@ -1,6 +1,6 @@
 # 🤝 Connect Pipedrive deal outcomes to GA4 & Google Ads via Measurement Protocol
 
-> ⚡ **75 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **93 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

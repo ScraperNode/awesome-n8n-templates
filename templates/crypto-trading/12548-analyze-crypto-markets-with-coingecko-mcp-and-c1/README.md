@@ -1,6 +1,6 @@
 # 📈 Analyze crypto markets with CoinGecko MCP and C1
 
-> ⚡ **107 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **159 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

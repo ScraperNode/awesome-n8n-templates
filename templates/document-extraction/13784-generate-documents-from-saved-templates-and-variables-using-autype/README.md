@@ -1,6 +1,6 @@
 # 🔬 Generate documents from saved templates and variables using Autype
 
-> ⚡ **8 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **78 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

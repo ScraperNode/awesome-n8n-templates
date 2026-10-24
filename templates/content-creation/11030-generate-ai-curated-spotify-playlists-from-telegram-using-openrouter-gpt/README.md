@@ -1,6 +1,6 @@
 # 🎬 Generate AI-curated Spotify playlists from Telegram using OpenRouter GPT
 
-> ⚡ **158 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **233 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

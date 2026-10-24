@@ -1,6 +1,6 @@
 # 📋 Automate event planning & budget optimization with Claude AI and Google Sheets
 
-> ⚡ **299 views** · 📋 [Project Management](../)
+> ⚡ **492 views** · 📋 [Project Management](../)
 
 ## Description
 

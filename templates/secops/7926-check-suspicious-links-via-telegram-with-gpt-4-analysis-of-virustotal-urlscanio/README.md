@@ -1,6 +1,6 @@
 # 🔒 Check suspicious links via Telegram with GPT-4 analysis of VirusTotal & urlscan.io results
 
-> ⚡ **690 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **917 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

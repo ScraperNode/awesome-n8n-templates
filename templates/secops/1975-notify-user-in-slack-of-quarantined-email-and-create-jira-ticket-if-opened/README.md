@@ -1,6 +1,6 @@
 # 🔒 Notify user in Slack of quarantined email and create Jira ticket if opened
 
-> ⚡ **2,005 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **2,059 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

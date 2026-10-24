@@ -1,6 +1,6 @@
 # 🔬 Generate PRDs and test scenarios with GPT/Claude and PDF export
 
-> ⚡ **962 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,327 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

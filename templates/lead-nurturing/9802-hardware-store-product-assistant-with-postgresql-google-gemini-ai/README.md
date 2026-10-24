@@ -1,6 +1,6 @@
 # 💬 Hardware store product assistant with PostgreSQL & Google Gemini AI
 
-> ⚡ **376 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **442 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

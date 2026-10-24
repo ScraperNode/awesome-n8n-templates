@@ -1,6 +1,6 @@
 # 📊 Automate news intelligence with Gemini AI for RSS feeds to Notion and Slack
 
-> ⚡ **635 views** · 📊 [Market Research & Insights](../)
+> ⚡ **806 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

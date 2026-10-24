@@ -1,6 +1,6 @@
 # 🔒 🗲 Creating a Secure Webhook - MUST HAVE
 
-> ⚡ **5,599 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **6,046 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

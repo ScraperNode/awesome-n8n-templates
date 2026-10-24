@@ -1,6 +1,6 @@
 # 🎬 Generate Shopify product listings from images with Gemini AI and Airtable
 
-> ⚡ **1,803 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,880 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

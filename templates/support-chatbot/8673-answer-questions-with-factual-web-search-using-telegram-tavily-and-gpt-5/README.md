@@ -1,6 +1,6 @@
 # 💬 Answer questions with factual web search using Telegram, Tavily and GPT-5
 
-> ⚡ **523 views** · 💬 [Support Chatbots](../)
+> ⚡ **587 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

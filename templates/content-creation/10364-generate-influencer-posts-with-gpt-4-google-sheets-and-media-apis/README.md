@@ -1,6 +1,6 @@
 # 🎬 Generate influencer posts with GPT-4, Google Sheets, and Media APIs
 
-> ⚡ **812 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,036 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ 🎓 Learn evaluate tool. Tutorial for beginners with Gemini and Google Sheets
 
-> ⚡ **569 views** · ⚒️ [Engineering](../)
+> ⚡ **800 views** · ⚒️ [Engineering](../)
 
 ## Description
 

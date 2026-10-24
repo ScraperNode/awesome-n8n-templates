@@ -1,6 +1,6 @@
 # 🎬 Automate AI video production & distribution with Veo3, YouTube & Google Suite
 
-> ⚡ **2,959 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,339 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — YouTube's API quotas can be a bottleneck when you're pulling data at scale. [ScraperNode](https://scrapernode.com/youtube) is a community node with dedicated scrapers for [channels](https://scrapernode.com/youtube/scrapers/channels), [videos](https://scrapernode.com/youtube/scrapers/videos), and [comments](https://scrapernode.com/youtube/scrapers/comments) — no quota limits, just structured data.
 >

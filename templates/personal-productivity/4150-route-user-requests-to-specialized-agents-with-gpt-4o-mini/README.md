@@ -1,6 +1,6 @@
 # ⚡ Route user requests to specialized agents with GPT-4o Mini
 
-> ⚡ **837 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,011 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

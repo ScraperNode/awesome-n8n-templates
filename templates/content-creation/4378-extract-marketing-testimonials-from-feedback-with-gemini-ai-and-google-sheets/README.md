@@ -1,6 +1,6 @@
 # 🎬 Extract marketing testimonials from feedback with Gemini AI and Google Sheets
 
-> ⚡ **404 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **412 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

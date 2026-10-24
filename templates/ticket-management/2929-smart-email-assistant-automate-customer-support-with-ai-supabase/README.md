@@ -1,6 +1,6 @@
 # 🎫 Smart email assistant: automate customer support with AI & Supabase
 
-> ⚡ **6,573 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **6,102 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

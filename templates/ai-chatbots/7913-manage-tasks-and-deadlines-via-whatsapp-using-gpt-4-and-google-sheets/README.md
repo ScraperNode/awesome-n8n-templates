@@ -1,6 +1,6 @@
 # 🤖 Manage tasks and deadlines via WhatsApp using GPT-4 and Google Sheets
 
-> ⚡ **653 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **996 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

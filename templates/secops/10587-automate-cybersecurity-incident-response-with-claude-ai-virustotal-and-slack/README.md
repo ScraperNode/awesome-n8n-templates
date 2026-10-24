@@ -1,6 +1,6 @@
 # 🔒 Automate cybersecurity incident response with Claude AI, VirusTotal and Slack
 
-> ⚡ **131 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **888 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

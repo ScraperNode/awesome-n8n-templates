@@ -1,6 +1,6 @@
 # 🎯 Generate curated local news digests with Gemini AI for Discord
 
-> ⚡ **503 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **614 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

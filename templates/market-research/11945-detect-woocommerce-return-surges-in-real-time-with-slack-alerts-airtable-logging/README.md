@@ -1,6 +1,6 @@
 # 📊 Detect WooCommerce return surges in real-time with Slack alerts & Airtable logging
 
-> ⚡ **4 views** · 📊 [Market Research & Insights](../)
+> ⚡ **15 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

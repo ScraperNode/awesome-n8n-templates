@@ -1,6 +1,6 @@
 # 🎬 AI-driven WooCommerce product importer from Google Sheet with Yoast SEO meta
 
-> ⚡ **4,891 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,407 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

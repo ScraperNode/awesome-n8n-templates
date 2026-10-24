@@ -1,6 +1,6 @@
 # 🎬 Generate social content pillars, calendars and posts using Google Sheets and OpenAI
 
-> ⚡ **271 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **441 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Post unassigned Zendesk tickets to Slack
 
-> ⚡ **984 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,008 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 👥 AI recruiter – analyze multiple CVs vs job description using OpenAI GPT
 
-> ⚡ **785 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,194 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

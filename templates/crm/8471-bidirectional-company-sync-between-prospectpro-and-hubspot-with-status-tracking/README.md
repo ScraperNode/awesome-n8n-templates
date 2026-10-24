@@ -1,6 +1,6 @@
 # 🤝 Bidirectional company sync between ProspectPro and HubSpot with status tracking
 
-> ⚡ **135 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **189 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

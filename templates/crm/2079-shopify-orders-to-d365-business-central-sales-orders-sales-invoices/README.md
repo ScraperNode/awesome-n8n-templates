@@ -1,6 +1,6 @@
 # 🤝 Shopify orders to D365 Business Central sales orders / sales invoices
 
-> ⚡ **3,661 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **3,755 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

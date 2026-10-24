@@ -1,6 +1,6 @@
 # 📱 Send messages from AI agents with Mandrill tool MCP Server
 
-> ⚡ **308 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **320 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

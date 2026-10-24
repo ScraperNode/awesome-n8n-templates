@@ -1,6 +1,6 @@
 # 👥 Send employee leave alerts from Google Sheets via Slack and Gmail
 
-> ⚡ **72 views** · 👥 [HR & Recruitment](../)
+> ⚡ **343 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

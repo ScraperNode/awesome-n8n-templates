@@ -1,6 +1,6 @@
 # 🎬 Customer onboarding help requests (Typeform to Gmail & Sheets)
 
-> ⚡ **298 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **378 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

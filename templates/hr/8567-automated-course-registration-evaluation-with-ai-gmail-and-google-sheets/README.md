@@ -1,6 +1,6 @@
 # 👥 Automated course registration evaluation with AI, Gmail, and Google Sheets
 
-> ⚡ **181 views** · 👥 [HR & Recruitment](../)
+> ⚡ **311 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

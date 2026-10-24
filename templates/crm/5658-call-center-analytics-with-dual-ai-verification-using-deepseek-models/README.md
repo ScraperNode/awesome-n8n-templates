@@ -1,6 +1,6 @@
 # 🤝 Call center analytics with dual-AI verification using DeepSeek models
 
-> ⚡ **6,464 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **6,637 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

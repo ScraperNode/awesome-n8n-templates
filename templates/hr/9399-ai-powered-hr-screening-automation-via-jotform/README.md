@@ -1,6 +1,6 @@
 # 👥 AI-powered HR screening automation via Jotform
 
-> ⚡ **510 views** · 👥 [HR & Recruitment](../)
+> ⚡ **794 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

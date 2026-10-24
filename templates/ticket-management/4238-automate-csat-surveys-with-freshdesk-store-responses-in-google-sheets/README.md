@@ -1,6 +1,6 @@
 # 🎫 Automate CSAT surveys with Freshdesk & store responses in Google Sheets
 
-> ⚡ **1,216 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,322 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

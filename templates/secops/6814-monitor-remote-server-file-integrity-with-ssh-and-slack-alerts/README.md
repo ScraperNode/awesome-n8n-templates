@@ -1,6 +1,6 @@
 # 🔒 Monitor remote server file integrity with SSH and Slack alerts
 
-> ⚡ **334 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **437 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

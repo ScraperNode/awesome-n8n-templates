@@ -1,6 +1,6 @@
 # 🎬 Generate AI short-form videos with Creatomate, ElevenLabs & Pexels Stock
 
-> ⚡ **114 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **225 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

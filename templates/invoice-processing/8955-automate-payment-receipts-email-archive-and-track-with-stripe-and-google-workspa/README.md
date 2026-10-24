@@ -1,6 +1,6 @@
 # 🧾 Automate payment receipts: Email, archive, and track with Stripe and Google Workspace
 
-> ⚡ **213 views** · 🧾 [Invoice Processing](../)
+> ⚡ **280 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate recipes from fridge photos using GPT-4 Vision & Telegram
 
-> ⚡ **529 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **647 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

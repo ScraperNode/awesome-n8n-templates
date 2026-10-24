@@ -1,6 +1,6 @@
 # ⚙️ Conversational Kubernetes management with GPT-4o and MCP integration
 
-> ⚡ **3,968 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **4,331 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

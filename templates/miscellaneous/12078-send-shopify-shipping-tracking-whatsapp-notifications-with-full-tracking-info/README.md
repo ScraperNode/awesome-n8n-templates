@@ -1,6 +1,6 @@
 # 🔧 Send Shopify shipping tracking WhatsApp notifications with full tracking info
 
-> ⚡ **71 views** · 🔧 [Miscellaneous](../)
+> ⚡ **252 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

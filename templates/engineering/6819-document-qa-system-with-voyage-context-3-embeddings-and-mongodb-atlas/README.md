@@ -1,6 +1,6 @@
 # ⚒️ Document Q&A system with Voyage-Context-3 embeddings and MongoDB Atlas
 
-> ⚡ **1,267 views** · ⚒️ [Engineering](../)
+> ⚡ **1,382 views** · ⚒️ [Engineering](../)
 
 ## Description
 

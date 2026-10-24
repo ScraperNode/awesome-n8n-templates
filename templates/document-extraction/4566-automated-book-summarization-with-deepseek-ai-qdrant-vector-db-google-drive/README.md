@@ -1,6 +1,6 @@
 # 🔬 Automated book summarization with DeepSeek AI, Qdrant Vector DB & Google Drive
 
-> ⚡ **1,329 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,540 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

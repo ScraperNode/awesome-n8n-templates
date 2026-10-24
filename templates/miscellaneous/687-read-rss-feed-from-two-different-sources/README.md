@@ -1,6 +1,6 @@
 # 🔧 Read RSS feed from two different sources
 
-> ⚡ **13,107 views** · 🔧 [Miscellaneous](../)
+> ⚡ **13,261 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

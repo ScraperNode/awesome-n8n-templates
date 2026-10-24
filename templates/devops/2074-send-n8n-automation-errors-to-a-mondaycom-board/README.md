@@ -1,6 +1,6 @@
 # ⚙️ Send n8n automation errors to a Monday.com board
 
-> ⚡ **1,649 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,668 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

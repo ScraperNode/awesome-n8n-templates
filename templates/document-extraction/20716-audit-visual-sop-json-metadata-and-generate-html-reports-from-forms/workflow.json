@@ -1,0 +1,364 @@
+{
+  "name": "Audit visual SOP metadata in n8n Forms with Code",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "manual",
+      "name": "Execute Manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "demo",
+      "name": "Load Example SOP Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [{json: {sop: {\"schema_version\":\"1.0\",\"title\":\"Demo: prepare a weekly operations report\",\"video\":{\"duration_seconds\":120,\"source_label\":\"Fictional training recording\"},\"review\":{\"status\":\"pending\"},\"steps\":[{\"id\":1,\"title\":\"Open the report template\",\"instruction\":\"Open the weekly report template in your document editor.\",\"start_seconds\":0,\"end_seconds\":25,\"evidence_text\":\"First, open the weekly report template.\",\"screenshot\":{\"at_seconds\":12,\"file_name\":\"step-01.png\",\"caption\":\"Report template selection\"}},{\"id\":2,\"title\":\"Add the reporting period\",\"instruction\":\"Enter the week start and end dates in the report header.\",\"start_seconds\":25,\"end_seconds\":60,\"evidence_text\":\"Enter the dates for the week being reported.\"},{\"id\":3,\"title\":\"Save the report draft\",\"instruction\":\"Save the report as a draft for review.\",\"start_seconds\":60,\"end_seconds\":120,\"evidence_text\":\"Save this as a draft so the team can review it.\",\"screenshot\":{\"at_seconds\":135,\"file_name\":\"step-03.png\",\"caption\":\"Draft save confirmation\"}}]}}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "form",
+      "name": "Form Submission Trigger",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "nuvetra-visual-sop-quality-gate",
+      "parameters": {
+        "options": {
+          "appendAttribution": true
+        },
+        "formTitle": "Visual SOP quality gate",
+        "formFields": {
+          "values": [
+            {
+              "fieldName": "sop_json",
+              "fieldType": "textarea",
+              "fieldLabel": "SOP JSON",
+              "placeholder": "Paste your SOP JSON object here",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "formDescription": "Paste a structured SOP document. This tool checks metadata, not video or image contents. Use the fictional example first."
+      },
+      "typeVersion": 2.4
+    },
+    {
+      "id": "normalize",
+      "name": "Normalize SOP Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        440,
+        150
+      ],
+      "parameters": {
+        "jsCode": "function normalizeInput(input) {\n  input = input || {};\n  var isForm = Object.prototype.hasOwnProperty.call(input, 'sop_json');\n  var raw = isForm ? input.sop_json : (input.sop !== undefined && input.sop !== null ? input.sop : input);\n  function fail(code, message) { return { source: isForm ? 'form' : 'manual', sop: null, inputError: { code: code, message: message } }; }\n  try {\n    if (typeof raw === 'string' && raw.length > 100000) return fail('INPUT_TOO_LARGE', 'Input exceeds 100,000 characters.');\n    var sop = typeof raw === 'string' ? JSON.parse(raw) : raw;\n    if (!sop || typeof sop !== 'object' || Array.isArray(sop)) return fail('INVALID_DOCUMENT', 'Provide one SOP JSON object.');\n    if (JSON.stringify(sop).length > 100000) return fail('INPUT_TOO_LARGE', 'Input exceeds 100,000 characters.');\n    return { source: isForm ? 'form' : 'manual', sop: sop, inputError: null };\n  } catch (e) {\n    return fail('INVALID_JSON', 'JSON could not be parsed. Check commas, quotation marks and brackets.');\n  }\n}\nreturn $input.all().map(function(item) { return {json: normalizeInput(item.json)}; });"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "audit",
+      "name": "Audit Evidence and Timestamps",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        688,
+        144
+      ],
+      "parameters": {
+        "jsCode": "function auditSop(input) {\n  var issues = [];\n  function add(severity, code, field, message, step) { issues.push({ severity: severity, code: code, field: field, message: message, step: step === undefined ? null : step }); }\n  function obj(v) { return v !== null && typeof v === 'object' && !Array.isArray(v); }\n  function text(v, max) { return typeof v === 'string' && v.trim().length > 0 && v.length <= max; }\n  function num(v) { return typeof v === 'number' && Number.isFinite(v); }\n  function isoDate(v) {\n    if (typeof v !== 'string') return false;\n    var m = v.match(/^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.\\d+)?(?:Z|([+-])(\\d{2}):(\\d{2}))$/);\n    if (!m) return false;\n    var y=+m[1], month=+m[2], day=+m[3], h=+m[4], min=+m[5], sec=+m[6], zh=m[8], zm=m[9];\n    return month >= 1 && month <= 12 && day >= 1 && day <= new Date(Date.UTC(y,month,0)).getUTCDate() && h <= 23 && min <= 59 && sec <= 59 && (!zh || (+zh <= 23 && +zm <= 59)) && Number.isFinite(Date.parse(v));\n  }\n  var sop = input.sop, stepCount=0, screenshotCount=0, evidenceCount=0;\n  if (input.inputError) add('error', input.inputError.code, 'document', input.inputError.message);\n  else {\n    if (sop.schema_version !== '1.0') add('error', 'SCHEMA_VERSION', 'schema_version', 'Set schema_version to \"1.0\".');\n    if (!text(sop.title,160)) add('error','TITLE_REQUIRED','title','Provide a title of 1\u2013160 characters.');\n    var duration = sop.video && sop.video.duration_seconds;\n    if (!num(duration) || duration <= 0 || duration > 7200) add('error','VIDEO_DURATION','video.duration_seconds','Duration must be a number greater than 0 and at most 7,200 seconds.');\n    var steps=sop.steps;\n    if (!Array.isArray(steps) || steps.length < 1 || steps.length > 100) add('error','STEP_COUNT','steps','Provide between 1 and 100 steps.');\n    else {\n      stepCount=steps.length;\n      var ids=Object.create(null), titles=Object.create(null), hashes=Object.create(null), files=Object.create(null), previousStart=null, previousEnd=null;\n      for (var i=0;i<steps.length;i++) {\n        var step=steps[i], n=i+1, field='steps['+i+']';\n        if (!obj(step)) { add('error','STEP_OBJECT',field,'Step must be an object.',n); continue; }\n        if (!Number.isInteger(step.id) || step.id < 1) add('error','STEP_ID',field+'.id','Use a positive integer ID.',n);\n        else if (ids[step.id]) add('error','DUPLICATE_ID',field+'.id','Each step ID must be unique.',n);\n        else ids[step.id]=true;\n        if (!text(step.title,160)) add('error','STEP_TITLE',field+'.title','Provide a title of 1\u2013160 characters.',n);\n        else { var key=step.title.trim().toLowerCase().replace(/\\s+/g,' '); if(titles[key]) add('warning','REPEATED_TITLE',field+'.title','Repeated title: check whether these are separate actions.',n); titles[key]=true; }\n        if (!text(step.instruction,3000)) add('error','STEP_INSTRUCTION',field+'.instruction','Provide an instruction of 1\u20133,000 characters.',n);\n        var start=step.start_seconds, end=step.end_seconds;\n        var validRange=num(start)&&num(end)&&start>=0&&end>start&&num(duration)&&end<=duration;\n        if (!validRange) add('error','STEP_TIME_RANGE',field,'Step timestamps must be numeric, start >= 0, end > start, and end <= video duration.',n);\n        else { if(previousStart!==null&&start<previousStart)add('error','STEP_ORDER',field+'.start_seconds','Steps must be ordered by start time.',n); if(previousEnd!==null&&start<previousEnd)add('warning','OVERLAPPING_STEPS',field,'Step overlaps the preceding valid interval; review intentional overlap.',n); previousStart=start;previousEnd=end; }\n        if(text(step.evidence_text,2000))evidenceCount++;else add('warning','MISSING_EVIDENCE_TEXT',field+'.evidence_text','Add the source transcript excerpt supporting this step (up to 2,000 characters).',n);\n        var shot=step.screenshot;\n        if(!obj(shot))add('warning','MISSING_SCREENSHOT',field+'.screenshot','No screenshot metadata. Add a real source frame or explain why it is unnecessary.',n);\n        else {\n          screenshotCount++;\n          if(!num(shot.at_seconds)||!validRange||shot.at_seconds<start||shot.at_seconds>end)add('error','SCREENSHOT_TIME',field+'.screenshot.at_seconds','Screenshot timestamp must lie inside this step interval.',n);\n          if(!text(shot.file_name,120)||!/^[A-Za-z0-9][A-Za-z0-9_.-]*\\.(png|jpe?g|webp)$/i.test(shot.file_name)||shot.file_name.includes('..'))add('error','SCREENSHOT_FILE',field+'.screenshot.file_name','Use a simple PNG/JPEG/WebP filename; no paths or URLs.',n);\n          else { if(files[shot.file_name])add('warning','REUSED_SCREENSHOT_FILE',field+'.screenshot.file_name','Same filename as step '+files[shot.file_name]+'; verify that reuse is intentional.',n);else files[shot.file_name]=n; }\n          if(!text(shot.caption,500))add('warning','SCREENSHOT_CAPTION',field+'.screenshot.caption','Add a descriptive caption of 1\u2013500 characters.',n);\n          if(shot.sha256!==undefined){if(typeof shot.sha256!=='string'||!/^[a-f0-9]{64}$/i.test(shot.sha256))add('error','SCREENSHOT_HASH',field+'.screenshot.sha256','sha256 must contain exactly 64 hexadecimal characters.',n);else{var hash=shot.sha256.toLowerCase();if(hashes[hash])add('warning','REPEATED_SCREENSHOT_HASH',field+'.screenshot.sha256','Same declared image hash as step '+hashes[hash]+'; verify whether this frame supports both actions.',n);else hashes[hash]=n;}}\n        }\n      }\n    }\n    var review=sop.review;\n    if(!obj(review)||['pending','approved','rejected'].indexOf(review.status)===-1)add('warning','REVIEW_STATUS','review.status','Set review.status to pending, approved or rejected.');\n    else if(review.status==='rejected')add('error','HUMAN_REJECTED','review.status','Human reviewer rejected this SOP. Resolve their feedback before release.');\n    else if(review.status!=='approved')add('warning','HUMAN_REVIEW_PENDING','review.status','Human review is still pending.');\n    else { if(!text(review.reviewer,120))add('warning','REVIEWER_REQUIRED','review.reviewer','An approved review needs a reviewer name or internal ID.');if(!isoDate(review.reviewed_at))add('warning','REVIEW_DATE','review.reviewed_at','An approved review needs a valid ISO 8601 timestamp with timezone.'); }\n  }\n  var errors=issues.filter(function(i){return i.severity==='error';}).length, warnings=issues.length-errors;\n  return {report_version:'1.0',source:input.source,title:text(sop&&sop.title,160)?sop.title.trim():'Untitled SOP',status:errors?'blocked':warnings?'needs_review':'checks_passed',summary:{steps:stepCount,screenshot_metadata:screenshotCount,evidence_excerpts:evidenceCount,errors:errors,warnings:warnings},issues:issues,limitations:['Metadata checks only. This workflow does not open videos, read image files, compute hashes, or verify transcript claims.','A checks_passed result is not a guarantee of factual correctness, visual quality, safety, or permission to publish.','Review names, timestamps, evidence text and hashes are supplied by the caller and are not authenticated.']};\n}\nreturn $input.all().map(function(item) { return {json: auditSop(item.json)}; });"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "render",
+      "name": "Render Review Report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        912,
+        144
+      ],
+      "parameters": {
+        "jsCode": "function renderReport(report) {\n  function esc(v){return String(v).replace(/[&<>\"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c];});}\n  var rows=report.issues.map(function(i){return '<tr><td data-label=\"Severity\"><span class=\"'+i.severity+'\">'+esc(i.severity)+'</span></td><td data-label=\"Step\">'+(i.step===null?'\u2014':i.step)+'</td><td data-label=\"Check\"><b>'+esc(i.code)+'</b><br><small>'+esc(i.field)+'</small></td><td data-label=\"Action\">'+esc(i.message)+'</td></tr>';}).join('');\n  var style=\"*{box-sizing:border-box}body{margin:0;background:#eef2f5;color:#172938;font:16px/1.55 system-ui,sans-serif}.page{max-width:1040px;margin:40px auto;padding:40px;background:white;border-radius:18px}.brand{font-size:12px;font-weight:750;letter-spacing:2px;color:#426f73}h1{font-size:32px;line-height:1.2;margin:12px 0}h2{font-size:20px}p{margin:10px 0}.status{display:inline-block;padding:6px 12px;border-radius:30px;background:#e7f0f0;font-weight:700}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:26px 0}.metric{padding:18px;background:#f5f7f9;border-radius:10px}.metric strong{display:block;font-size:28px}.metric span{font-size:13px}table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}th{text-align:left;background:#f5f7f9}td,th{padding:12px;border-bottom:1px solid #dee5e9;vertical-align:top;overflow-wrap:anywhere}th:nth-child(1){width:100px}th:nth-child(2){width:65px}th:nth-child(3){width:240px}.error{color:#9b2533}.warning{color:#815810}.note{margin-top:28px;padding:18px;border-left:4px solid #426f73;background:#f5f8f8}small,footer{color:#566a76}footer{font-size:12px;margin-top:30px}@media(max-width:650px){.page{margin:0;padding:20px;border-radius:0}.metrics{grid-template-columns:1fr}h1{font-size:26px}.table-wrap{overflow:visible}table,tbody,tr,td{display:block}thead{display:none}tr{border:1px solid #dee5e9;border-radius:10px;margin:12px 0;padding:8px}td{border:0;padding:7px;width:auto}td:before{content:attr(data-label);display:block;font-size:11px;font-weight:700;color:#566a76;text-transform:uppercase}}@media print{body{background:white}.page{padding:0;margin:0;max-width:none}tr,.note{break-inside:avoid}thead{display:table-header-group}h1{font-size:24px}.metrics{grid-template-columns:repeat(3,1fr)}}\";\n  var html='<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src \\'none\\'; style-src \\'unsafe-inline\\'; img-src \\'none\\'; base-uri \\'none\\'; form-action \\'none\\'\"><title>Visual SOP quality report</title><style>'+style+'</style></head><body><main class=\"page\"><div class=\"brand\">NUVETRA AUTOMATION LAB</div><h1>Visual SOP quality report</h1><p>'+esc(report.title)+'</p><span class=\"status\">'+esc(report.status.replace(/_/g,' '))+'</span><div class=\"metrics\"><div class=\"metric\"><strong>'+report.summary.steps+'</strong><span>Steps in supplied document</span></div><div class=\"metric\"><strong>'+report.summary.screenshot_metadata+'</strong><span>Screenshot metadata entries</span></div><div class=\"metric\"><strong>'+report.summary.errors+' / '+report.summary.warnings+'</strong><span>Errors / warnings</span></div></div><h2>Review findings</h2>'+(rows?'<div class=\"table-wrap\"><table><thead><tr><th>Severity</th><th>Step</th><th>Check</th><th>Action</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<p>No issues found in the supported metadata checks.</p>')+'<div class=\"note\"><b>Scope of this report</b><ul>'+report.limitations.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div><footer>Original free workflow | Report version '+esc(report.report_version)+' | Save this HTML file and open it in a browser. Browser Print to Save as PDF is a manual export.</footer></main></body></html>';\n  return html;\n}\nreturn $input.all().map(function(item) { var report = item.json; report.html = renderReport(report); return {json: report}; });"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "download",
+      "name": "Convert to Downloadable HTML",
+      "type": "n8n-nodes-base.convertToFile",
+      "position": [
+        1136,
+        144
+      ],
+      "parameters": {
+        "options": {
+          "fileName": "visual-sop-quality-report.html"
+        },
+        "operation": "toText",
+        "sourceProperty": "html"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "route",
+      "name": "Check Form Submission Status",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1360,
+        144
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "form-check",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $('Render Review Report').item.json.source }}",
+              "rightValue": "form"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "finish",
+      "name": "Submit Form for Report Download",
+      "type": "n8n-nodes-base.form",
+      "position": [
+        1584,
+        48
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "completion",
+        "respondWith": "returnBinary",
+        "completionTitle": "Your quality report",
+        "completionMessage": "Download and open the HTML report. A passed check does not verify video content.",
+        "inputDataFieldName": "data"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "manual-output",
+      "name": "Review and Download Report Data",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1584,
+        304
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "note1",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -608,
+        -160
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 480,
+        "height": 784,
+        "content": "## Audit visual SOP metadata in n8n Forms with Code\n\n### How it works\n\nThis workflow audits visual SOP metadata supplied either from a fictional demo run or pasted through an n8n Form. It normalizes and limits the incoming SOP JSON, checks evidence and timestamp metadata, then formats the findings as an HTML review report. The report is converted into a downloadable file and routed either back to the form submitter or to a manual inspection output.\n\n### Setup steps\n\n- Configure the n8n Form trigger fields so users can paste SOP JSON in the expected input field.\n- Review the Code nodes to ensure the SOP schema, size limits, evidence checks, and timestamp rules match your metadata requirements.\n- Ensure the Convert to File node outputs the HTML report with the desired binary property name and filename.\n- Test both entry paths: the manual fictional example and the form submission path.\n\n### Customization\n\nAdjust the audit rules in the evidence/timestamp Code node and update the report template in the formatting Code node to match your organization\u2019s SOP standards."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "note2",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -48,
+        -160
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 640,
+        "height": 624,
+        "content": "## Collect SOP input\n\nHandles both input paths: a manual fictional example and a form-based SOP JSON submission, then parses and limits the incoming data before audit processing."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "note3",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        640,
+        0
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 416,
+        "height": 320,
+        "content": "## Audit and format\n\nChecks the normalized SOP metadata for evidence and timestamp issues, then prepares a human-readable review report."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "note4",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1088,
+        -32
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 416,
+        "height": 336,
+        "content": "## Create and route file\n\nConverts the formatted report into downloadable HTML and determines whether the run originated from a form submission or manual execution."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "note5",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1536,
+        -144
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 240,
+        "height": 608,
+        "content": "## Deliver review report\n\nProvides the final report either as a form download for submitters or as a manual output for inspection and binary download."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false,
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "all"
+  },
+  "connections": {
+    "Execute Manually": {
+      "main": [
+        [
+          {
+            "node": "Load Example SOP Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize SOP Data": {
+      "main": [
+        [
+          {
+            "node": "Audit Evidence and Timestamps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render Review Report": {
+      "main": [
+        [
+          {
+            "node": "Convert to Downloadable HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Example SOP Data": {
+      "main": [
+        [
+          {
+            "node": "Normalize SOP Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Form Submission Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize SOP Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Form Submission Status": {
+      "main": [
+        [
+          {
+            "node": "Submit Form for Report Download",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Review and Download Report Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to Downloadable HTML": {
+      "main": [
+        [
+          {
+            "node": "Check Form Submission Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audit Evidence and Timestamps": {
+      "main": [
+        [
+          {
+            "node": "Render Review Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # 🎬 Generate AI videos from text or images with Sora 2/Pro & GPT-5 enhancement
 
-> ⚡ **2,294 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,670 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

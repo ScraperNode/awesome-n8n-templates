@@ -1,6 +1,6 @@
 # 🎯 Automated ticket triage for HaloPSA with Gemini AI summary generation
 
-> ⚡ **491 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **583 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

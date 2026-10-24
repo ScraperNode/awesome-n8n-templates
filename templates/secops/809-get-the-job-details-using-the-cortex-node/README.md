@@ -1,6 +1,6 @@
 # 🔒 Get the job details using the Cortex node
 
-> ⚡ **909 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **979 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

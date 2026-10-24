@@ -1,6 +1,6 @@
 # 💬 WhatsApp customer support with Claude AI, Google Docs & multilingual capabilities
 
-> ⚡ **1,795 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,285 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

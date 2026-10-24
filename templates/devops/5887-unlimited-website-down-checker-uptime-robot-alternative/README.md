@@ -1,6 +1,6 @@
 # ⚙️ Unlimited website down checker - Uptime Robot alternative
 
-> ⚡ **2,438 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,866 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

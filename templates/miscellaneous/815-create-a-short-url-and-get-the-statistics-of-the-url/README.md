@@ -1,6 +1,6 @@
 # 🔧 Create a short URL and get the statistics of the URL
 
-> ⚡ **1,091 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,130 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

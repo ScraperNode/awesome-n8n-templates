@@ -1,6 +1,6 @@
 # 📋 Sync Productboard features to Linear issues with Telegram notifications
 
-> ⚡ **104 views** · 📋 [Project Management](../)
+> ⚡ **111 views** · 📋 [Project Management](../)
 
 ## Description
 

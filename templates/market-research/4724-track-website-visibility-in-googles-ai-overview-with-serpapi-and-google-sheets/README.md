@@ -1,6 +1,6 @@
 # 📊 Track Website Visibility in Google's AI Overview with SerpAPI and Google Sheets
 
-> ⚡ **955 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,070 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

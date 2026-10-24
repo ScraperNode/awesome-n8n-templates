@@ -1,6 +1,6 @@
 # 🔬 Automating SAP B1 journal entries using JSON, Google Sheets, and GPT-4o
 
-> ⚡ **392 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **514 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

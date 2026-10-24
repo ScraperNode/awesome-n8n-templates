@@ -1,6 +1,6 @@
 # 💬 Discord AI ChatBot : Context-Aware, Replies to Mentions AND also DMs
 
-> ⚡ **1,157 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,235 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

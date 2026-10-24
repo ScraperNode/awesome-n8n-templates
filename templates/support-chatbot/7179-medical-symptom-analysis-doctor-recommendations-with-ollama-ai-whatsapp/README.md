@@ -1,6 +1,6 @@
 # 💬 Medical symptom analysis & doctor recommendations with Ollama AI & WhatsApp
 
-> ⚡ **1,935 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,493 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

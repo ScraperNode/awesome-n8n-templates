@@ -1,6 +1,6 @@
 # 🔧 Streamline your Zoom meetings with secure, automated Stripe payments
 
-> ⚡ **2,720 views** · 🔧 [Miscellaneous](../)
+> ⚡ **2,744 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

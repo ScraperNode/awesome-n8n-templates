@@ -1,6 +1,6 @@
 # 💬 Advanced Telegram bot, ticketing system, liveChat, user management, broadcasting
 
-> ⚡ **25,123 views** · 💬 [Support Chatbots](../)
+> ⚡ **25,390 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

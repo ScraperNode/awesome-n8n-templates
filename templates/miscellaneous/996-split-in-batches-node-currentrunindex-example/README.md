@@ -1,6 +1,6 @@
 # 🔧 Split in batches node currentRunIndex example
 
-> ⚡ **3,161 views** · 🔧 [Miscellaneous](../)
+> ⚡ **3,211 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

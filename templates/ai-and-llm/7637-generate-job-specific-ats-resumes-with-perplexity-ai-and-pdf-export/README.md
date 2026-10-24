@@ -1,6 +1,6 @@
 # ✨ Generate Job-Specific ATS Resumes with Perplexity AI and PDF Export
 
-> ⚡ **1,588 views** · ✨ [AI & LLMs](../)
+> ⚡ **2,333 views** · ✨ [AI & LLMs](../)
 
 ## Description
 

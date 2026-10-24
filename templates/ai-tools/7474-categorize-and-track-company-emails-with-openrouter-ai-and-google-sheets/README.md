@@ -1,6 +1,6 @@
 # 🎯 Categorize and track company emails with OpenRouter AI and Google Sheets
 
-> ⚡ **48 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **56 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

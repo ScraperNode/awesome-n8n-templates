@@ -1,6 +1,6 @@
 # 📱 Automated Stripe to KlickTipp: send purchase confirmation emails via tagging
 
-> ⚡ **240 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **248 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Sync Google Drive files to an InfraNodus Knowledge Graph
 
-> ⚡ **533 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **544 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

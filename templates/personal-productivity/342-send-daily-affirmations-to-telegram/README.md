@@ -1,6 +1,6 @@
 # ⚡ Send daily affirmations to Telegram
 
-> ⚡ **2,524 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,467 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

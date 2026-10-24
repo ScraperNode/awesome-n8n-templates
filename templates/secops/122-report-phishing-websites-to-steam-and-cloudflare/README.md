@@ -1,6 +1,6 @@
 # 🔒 Report phishing websites to Steam and CloudFlare
 
-> ⚡ **1,713 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,786 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

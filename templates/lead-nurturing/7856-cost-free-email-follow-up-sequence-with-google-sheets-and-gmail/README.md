@@ -1,6 +1,6 @@
 # 💬 Cost-free email follow-up sequence with Google Sheets and Gmail
 
-> ⚡ **100 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **148 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

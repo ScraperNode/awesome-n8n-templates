@@ -1,6 +1,6 @@
 # 💬 AI-powered outreach & follow-up automation (GPT-4o + Gmail + Google Sheets)
 
-> ⚡ **226 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **506 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

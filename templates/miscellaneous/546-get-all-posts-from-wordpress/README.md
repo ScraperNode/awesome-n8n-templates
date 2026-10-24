@@ -1,6 +1,6 @@
 # 🔧 Get all posts from Wordpress
 
-> ⚡ **4,663 views** · 🔧 [Miscellaneous](../)
+> ⚡ **4,662 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

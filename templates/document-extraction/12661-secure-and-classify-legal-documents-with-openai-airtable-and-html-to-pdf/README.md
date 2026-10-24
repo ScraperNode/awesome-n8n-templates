@@ -1,6 +1,6 @@
 # 🔬 Secure and classify legal documents with OpenAI, Airtable and HTML to PDF
 
-> ⚡ **25 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **53 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

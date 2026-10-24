@@ -1,6 +1,6 @@
 # 📱 Create AI-generated social media posts from RSS feeds with GPT-5 and JsonCut
 
-> ⚡ **494 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **563 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

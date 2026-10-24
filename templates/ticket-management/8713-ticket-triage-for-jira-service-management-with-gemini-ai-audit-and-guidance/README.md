@@ -1,6 +1,6 @@
 # 🎫 Ticket triage for Jira Service Management with Gemini AI audit and guidance
 
-> ⚡ **305 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **398 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

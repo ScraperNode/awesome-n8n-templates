@@ -1,6 +1,6 @@
 # 🔬 Marketing analytics reports with Google Analytics, Sheets, Slides & email alerts
 
-> ⚡ **431 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **658 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

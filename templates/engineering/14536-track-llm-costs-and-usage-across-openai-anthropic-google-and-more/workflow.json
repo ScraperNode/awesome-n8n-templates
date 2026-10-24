@@ -1,0 +1,423 @@
+{
+  "id": "4M68K9KGz1RzEj94",
+  "meta": {
+    "instanceId": "a7c0f12ea72c5a4ec960f66f9f6c9ae9ea3b8968874ee7ccf139689cc6982e78",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "LLM Cost Monitor - AI Usage Tracker",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "name": "When Called By Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        64,
+        368
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "trigger-2",
+      "name": "Test with Execution ID",
+      "type": "n8n-nodes-base.code",
+      "disabled": true,
+      "position": [
+        80,
+        160
+      ],
+      "parameters": {
+        "jsCode": "// Manual test trigger - paste an execution ID here to test\nconst testExecutionId = 'PASTE_EXECUTION_ID_HERE';\n\nreturn [{ json: { executionId: testExecutionId } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "extract-id",
+      "name": "Extract Execution ID",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        224,
+        304
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "exec-id",
+              "name": "executionId",
+              "type": "string",
+              "value": "={{ $json.executionId || $json.body?.executionId || $json.query?.executionId || $execution.id }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "get-exec",
+      "name": "Get Execution Data",
+      "type": "n8n-nodes-base.n8n",
+      "position": [
+        448,
+        304
+      ],
+      "parameters": {
+        "data": "eyJ_YOUR_JWT_TOKEN_HERE",
+        "name": "n8n",
+        "resource": "credential",
+        "requestOptions": {},
+        "credentialTypeName": "n8nApi"
+      },
+      "credentials": {
+        "n8nApi": {
+          "id": "credential-id",
+          "name": "n8n account 2"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "extract-usage",
+      "name": "Extract Token Usage",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        672,
+        208
+      ],
+      "parameters": {
+        "jsCode": "// ============================================================\n// EXTRACT TOKEN USAGE - Deep recursive extraction\n// Finds ALL LLM token usage from any nesting level\n// ============================================================\n\nconst executionData = $input.first().json;\nconst workflowName = executionData.workflowData?.name || 'Unknown Workflow';\nconst workflowId = executionData.workflowData?.id || 'unknown';\nconst executionId = executionData.id || 'unknown';\nconst executionStatus = executionData.status || executionData.finished ? 'success' : 'error';\n\nconst llmCalls = [];\n\nfunction extractTokenUsage(obj, nodeName, nodeType, path, depth) {\n  if (!obj || typeof obj !== 'object' || depth > 20) return;\n  \n  // Check for token usage patterns\n  if (obj.tokenUsage || obj.usage) {\n    const usage = obj.tokenUsage || obj.usage;\n    const promptTokens = usage.promptTokens || usage.prompt_tokens || usage.input_tokens || 0;\n    const completionTokens = usage.completionTokens || usage.completion_tokens || usage.output_tokens || 0;\n    const totalTokens = usage.totalTokens || usage.total_tokens || (promptTokens + completionTokens);\n    \n    if (totalTokens > 0) {\n      const model = obj.model || obj.response?.model || obj.modelName || '';\n      const finishReason = obj.finish_reason || obj.response?.choices?.[0]?.finish_reason || obj.finishReason || '';\n      const executionTime = obj.executionTime || obj.execution_time || 0;\n      const startTime = obj.startTime || obj.start_time || '';\n      \n      // Get content preview\n      let outputPreview = '';\n      try {\n        const content = obj.response?.choices?.[0]?.message?.content || obj.text || obj.output || obj.content || '';\n        outputPreview = String(content).substring(0, 100);\n      } catch(e) {}\n      \n      let inputPreview = '';\n      try {\n        const input = obj.prompt || obj.input || obj.messages?.[0]?.content || '';\n        inputPreview = String(input).substring(0, 100);\n      } catch(e) {}\n      \n      // Get model parameters\n      const temperature = obj.temperature ?? obj.options?.temperature ?? null;\n      const maxTokens = obj.maxTokens || obj.max_tokens || obj.options?.maxTokens || null;\n      const timeout = obj.timeout || obj.options?.timeout || null;\n      const retryCount = obj.retryCount || obj.options?.retryCount || null;\n      \n      llmCalls.push({\n        model: model,\n        nodeName: nodeName,\n        nodeType: nodeType,\n        promptTokens: promptTokens,\n        completionTokens: completionTokens,\n        totalTokens: totalTokens,\n        finishReason: finishReason,\n        executionTime: executionTime,\n        startTime: startTime,\n        outputPreview: outputPreview,\n        inputPreview: inputPreview,\n        temperature: temperature,\n        maxTokens: maxTokens,\n        timeout: timeout,\n        retryCount: retryCount,\n        path: path,\n        workflowName: workflowName,\n        workflowId: workflowId,\n        executionId: executionId,\n        executionStatus: executionStatus\n      });\n      return; // Don't recurse further into this branch\n    }\n  }\n  \n  // Recurse into arrays and objects\n  if (Array.isArray(obj)) {\n    obj.forEach((item, i) => extractTokenUsage(item, nodeName, nodeType, `${path}[${i}]`, depth + 1));\n  } else {\n    for (const key of Object.keys(obj)) {\n      if (key === 'binary' || key === 'pairedItem') continue;\n      extractTokenUsage(obj[key], nodeName, nodeType, `${path}.${key}`, depth + 1);\n    }\n  }\n}\n\n// Process all nodes in the execution\nconst runData = executionData.data?.resultData?.runData || {};\n\nfor (const [nodeName, nodeRuns] of Object.entries(runData)) {\n  if (!Array.isArray(nodeRuns)) continue;\n  \n  for (const run of nodeRuns) {\n    const nodeType = run.source?.[0]?.previousNode || '';\n    const actualNodeType = executionData.workflowData?.nodes?.find(n => n.name === nodeName)?.type || '';\n    \n    // Search in main data\n    if (run.data?.main) {\n      for (const outputSet of run.data.main) {\n        if (!outputSet) continue;\n        for (const item of outputSet) {\n          extractTokenUsage(item.json || item, nodeName, actualNodeType, nodeName, 0);\n        }\n      }\n    }\n    \n    // Search in inputOverride (for sub-nodes like LLM chains)\n    if (run.inputOverride) {\n      extractTokenUsage(run.inputOverride, nodeName, actualNodeType, `${nodeName}.inputOverride`, 0);\n    }\n  }\n}\n\nif (llmCalls.length === 0) {\n  return [{ json: { error: 'No LLM calls detected in this execution', workflowName, executionId, executionStatus } }];\n}\n\nreturn llmCalls.map(call => ({ json: call }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "find-nodes",
+      "name": "Find Nodes with LLM Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        672,
+        400
+      ],
+      "parameters": {
+        "jsCode": "// ============================================================\n// FIND NODES WITH LLM DATA - Identifies all LLM-related nodes\n// Provides node-level metadata for analytics\n// ============================================================\n\nconst executionData = $input.first().json;\nconst workflowNodes = executionData.workflowData?.nodes || [];\nconst runData = executionData.data?.resultData?.runData || {};\nconst connections = executionData.workflowData?.connections || {};\n\nconst llmNodeTypes = [\n  '@n8n/n8n-nodes-langchain.lmChatOpenAi',\n  '@n8n/n8n-nodes-langchain.lmChatAnthropic',\n  '@n8n/n8n-nodes-langchain.lmChatGoogleGemini',\n  '@n8n/n8n-nodes-langchain.lmChatOllama',\n  '@n8n/n8n-nodes-langchain.lmChatAzureOpenAi',\n  '@n8n/n8n-nodes-langchain.lmChatMistralCloud',\n  '@n8n/n8n-nodes-langchain.lmChatGroq',\n  '@n8n/n8n-nodes-langchain.lmChatDeepSeek',\n  '@n8n/n8n-nodes-langchain.lmChatHuggingFace',\n  '@n8n/n8n-nodes-langchain.lmChatAwsBedrock',\n  '@n8n/n8n-nodes-langchain.agent',\n  '@n8n/n8n-nodes-langchain.chainLlm',\n  '@n8n/n8n-nodes-langchain.chainSummarization',\n  '@n8n/n8n-nodes-langchain.chainRetrievalQa',\n  '@n8n/n8n-nodes-langchain.openAi',\n  'n8n-nodes-base.openAi'\n];\n\nconst nodeDetails = [];\n\nfor (const node of workflowNodes) {\n  const isLLMNode = llmNodeTypes.some(t => node.type?.includes(t)) || \n                    node.type?.toLowerCase().includes('llm') ||\n                    node.type?.toLowerCase().includes('openai') ||\n                    node.type?.toLowerCase().includes('anthropic') ||\n                    node.type?.toLowerCase().includes('gemini') ||\n                    node.type?.toLowerCase().includes('agent');\n  \n  if (isLLMNode || runData[node.name]) {\n    // Find previous nodes chain\n    const prevNodes = [];\n    function findPrevious(nodeName, depth) {\n      if (depth > 10) return;\n      for (const [connName, connData] of Object.entries(connections)) {\n        if (!connData.main) continue;\n        for (const outputs of connData.main) {\n          if (!outputs) continue;\n          for (const conn of outputs) {\n            if (conn.node === nodeName) {\n              prevNodes.push(connName);\n              findPrevious(connName, depth + 1);\n            }\n          }\n        }\n      }\n    }\n    findPrevious(node.name, 0);\n    \n    const nodeRun = runData[node.name];\n    const executionTime = nodeRun?.[0]?.executionTime || 0;\n    const startTime = nodeRun?.[0]?.startTime || '';\n    \n    nodeDetails.push({\n      nodeName: node.name,\n      nodeType: node.type,\n      isLLMNode: isLLMNode,\n      executionTime: executionTime,\n      startTime: startTime,\n      previousNodes: prevNodes.reverse().join(' \u2192 '),\n      position: node.position\n    });\n  }\n}\n\nreturn nodeDetails.map(d => ({ json: d }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "standardize",
+      "name": "Standardize Names",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        880,
+        208
+      ],
+      "parameters": {
+        "jsCode": "// ============================================================\n// STANDARDIZE MODEL NAMES\n// Maps raw API model names to canonical names\n// Covers 120+ model variations across 10 providers\n// ============================================================\n\nconst items = $input.all();\n\n// If this is an error item (no LLM calls found), pass through\nif (items.length === 1 && items[0].json.error) {\n  return items;\n}\n\nconst standardize_names_dic = {\n  // ===== OpenAI GPT-5.x Family =====\n  'gpt-5.4': 'gpt-5.4',\n  'gpt-5.4-mini': 'gpt-5.4-mini',\n  'gpt-5.4-nano': 'gpt-5.4-nano',\n  'gpt-5.4-pro': 'gpt-5.4-pro',\n  'gpt-5.3-chat-latest': 'gpt-5.3',\n  'gpt-5.3-codex': 'gpt-5.3-codex',\n  'gpt-5.3': 'gpt-5.3',\n  'gpt-5.2': 'gpt-5.2',\n  'gpt-5.2-0301': 'gpt-5.2',\n  'gpt-5': 'gpt-5',\n  'gpt-5-0125': 'gpt-5',\n  'gpt-5-mini': 'gpt-5-mini',\n  'gpt-5-mini-0125': 'gpt-5-mini',\n  'gpt-5-nano': 'gpt-5-nano',\n\n  // ===== OpenAI GPT-4.1 Family =====\n  'gpt-4.1': 'gpt-4.1',\n  'gpt-4.1-2025-04-14': 'gpt-4.1',\n  'gpt-4.1-mini': 'gpt-4.1-mini',\n  'gpt-4.1-mini-2025-04-14': 'gpt-4.1-mini',\n  'gpt-4.1-nano': 'gpt-4.1-nano',\n  'gpt-4.1-nano-2025-04-14': 'gpt-4.1-nano',\n\n  // ===== OpenAI GPT-4o Family =====\n  'gpt-4o': 'gpt-4o',\n  'gpt-4o-2024-05-13': 'gpt-4o',\n  'gpt-4o-2024-08-06': 'gpt-4o',\n  'gpt-4o-2024-11-20': 'gpt-4o',\n  'chatgpt-4o-latest': 'gpt-4o',\n  'gpt-4o-mini': 'gpt-4o-mini',\n  'gpt-4o-mini-2024-07-18': 'gpt-4o-mini',\n  'gpt-4o-audio-preview': 'gpt-4o',\n  'gpt-4o-realtime-preview': 'gpt-4o',\n  'gpt-4o-transcribe': 'gpt-4o-transcribe',\n  'gpt-4o-mini-transcribe': 'gpt-4o-mini-transcribe',\n\n  // ===== OpenAI GPT-4 Family =====\n  'gpt-4': 'gpt-4',\n  'gpt-4-0613': 'gpt-4',\n  'gpt-4-0314': 'gpt-4',\n  'gpt-4-32k': 'gpt-4-32k',\n  'gpt-4-32k-0613': 'gpt-4-32k',\n  'gpt-4-turbo': 'gpt-4-turbo',\n  'gpt-4-turbo-2024-04-09': 'gpt-4-turbo',\n  'gpt-4-turbo-preview': 'gpt-4-turbo',\n  'gpt-4-1106-preview': 'gpt-4-turbo',\n  'gpt-4-0125-preview': 'gpt-4-turbo',\n  'gpt-4-vision-preview': 'gpt-4-turbo',\n\n  // ===== OpenAI GPT-3.5 Family =====\n  'gpt-3.5-turbo': 'gpt-3.5-turbo',\n  'gpt-3.5-turbo-0125': 'gpt-3.5-turbo',\n  'gpt-3.5-turbo-1106': 'gpt-3.5-turbo',\n  'gpt-3.5-turbo-0613': 'gpt-3.5-turbo',\n  'gpt-3.5-turbo-16k': 'gpt-3.5-turbo',\n  'gpt-3.5-turbo-16k-0613': 'gpt-3.5-turbo',\n  'gpt-3.5-turbo-instruct': 'gpt-3.5-turbo',\n\n  // ===== OpenAI o-series (Reasoning) =====\n  'o1': 'o1',\n  'o1-2024-12-17': 'o1',\n  'o1-preview': 'o1',\n  'o1-preview-2024-09-12': 'o1',\n  'o1-mini': 'o1-mini',\n  'o1-mini-2024-09-12': 'o1-mini',\n  'o1-pro': 'o1-pro',\n  'o3': 'o3',\n  'o3-2025-04-16': 'o3',\n  'o3-mini': 'o3-mini',\n  'o3-mini-2025-01-31': 'o3-mini',\n  'o3-pro': 'o3-pro',\n  'o3-deep-research': 'o3-deep-research',\n  'o4-mini': 'o4-mini',\n  'o4-mini-2025-04-16': 'o4-mini',\n  'o4-mini-deep-research': 'o4-mini-deep-research',\n\n  // ===== OpenAI Specialized =====\n  'computer-use-preview': 'computer-use-preview',\n  'gpt-oss-120b': 'gpt-oss-120b',\n  'gpt-oss-20b': 'gpt-oss-20b',\n  'gpt-realtime-1.5': 'gpt-realtime-1.5',\n  'gpt-realtime-mini': 'gpt-realtime-mini',\n  'gpt-image-1.5': 'gpt-image-1.5',\n  'gpt-image-1-mini': 'gpt-image-1-mini',\n\n  // ===== Anthropic Claude 4.x =====\n  'claude-sonnet-4-6': 'claude-sonnet-4-6',\n  'claude-sonnet-4-6-20260201': 'claude-sonnet-4-6',\n  'claude-opus-4-6': 'claude-opus-4-6',\n  'claude-opus-4-6-20260201': 'claude-opus-4-6',\n  'claude-opus-4-5': 'claude-opus-4-5',\n  'claude-opus-4-5-20250520': 'claude-opus-4-5',\n  'claude-sonnet-4-5': 'claude-sonnet-4-5',\n  'claude-sonnet-4-5-20250514': 'claude-sonnet-4-5',\n  'claude-opus-4': 'claude-opus-4',\n  'claude-opus-4-20250514': 'claude-opus-4',\n  'claude-sonnet-4': 'claude-sonnet-4',\n  'claude-sonnet-4-20250514': 'claude-sonnet-4',\n  'claude-haiku-4.5': 'claude-haiku-4.5',\n  'claude-haiku-4-5-20250514': 'claude-haiku-4.5',\n\n  // ===== Anthropic Claude 3.x =====\n  'claude-3-7-sonnet-latest': 'claude-sonnet-3.7',\n  'claude-3-7-sonnet-20250219': 'claude-sonnet-3.7',\n  'claude-sonnet-3.7': 'claude-sonnet-3.7',\n  'claude-3-5-sonnet-latest': 'claude-sonnet-3.5',\n  'claude-3-5-sonnet-20241022': 'claude-sonnet-3.5',\n  'claude-3-5-sonnet-20240620': 'claude-sonnet-3.5',\n  'claude-sonnet-3.5': 'claude-sonnet-3.5',\n  'claude-3-5-haiku-latest': 'claude-haiku-3.5',\n  'claude-3-5-haiku-20241022': 'claude-haiku-3.5',\n  'claude-haiku-3.5': 'claude-haiku-3.5',\n  'claude-3-opus-latest': 'claude-opus-3',\n  'claude-3-opus-20240229': 'claude-opus-3',\n  'claude-opus-3': 'claude-opus-3',\n  'claude-3-sonnet-20240229': 'claude-sonnet-3',\n  'claude-3-haiku-20240307': 'claude-haiku-3',\n  'claude-haiku-3': 'claude-haiku-3',\n\n  // ===== Google Gemini 3.x =====\n  'gemini-3.1-pro-preview': 'gemini-3.1-pro',\n  'gemini-3.1-flash-lite-preview': 'gemini-3.1-flash-lite',\n  'gemini-3-pro-preview': 'gemini-3-pro',\n  'gemini-3-flash-preview': 'gemini-3-flash',\n\n  // ===== Google Gemini 2.x =====\n  'gemini-2.5-pro': 'gemini-2.5-pro',\n  'gemini-2.5-pro-latest': 'gemini-2.5-pro',\n  'gemini-2.5-pro-preview-0325': 'gemini-2.5-pro',\n  'gemini-2.5-flash': 'gemini-2.5-flash',\n  'gemini-2.5-flash-latest': 'gemini-2.5-flash',\n  'gemini-2.5-flash-preview-04-17': 'gemini-2.5-flash',\n  'gemini-2.5-flash-lite': 'gemini-2.5-flash-lite',\n  'gemini-2.0-flash': 'gemini-2.0-flash',\n  'gemini-2.0-flash-exp': 'gemini-2.0-flash',\n  'gemini-2.0-flash-lite': 'gemini-2.0-flash-lite',\n  'gemini-2.0-flash-thinking-exp': 'gemini-2.0-flash',\n\n  // ===== Google Gemini 1.x =====\n  'gemini-1.5-pro': 'gemini-1.5-pro',\n  'gemini-1.5-pro-latest': 'gemini-1.5-pro',\n  'gemini-1.5-pro-002': 'gemini-1.5-pro',\n  'gemini-1.5-flash': 'gemini-1.5-flash',\n  'gemini-1.5-flash-latest': 'gemini-1.5-flash',\n  'gemini-1.5-flash-002': 'gemini-1.5-flash',\n  'gemini-1.0-pro': 'gemini-1.0-pro',\n  'gemini-pro': 'gemini-1.0-pro',\n\n  // ===== DeepSeek =====\n  'deepseek-v3.2': 'deepseek-v3.2',\n  'deepseek-v3.1': 'deepseek-v3.1',\n  'deepseek-v3.1-terminus': 'deepseek-v3.1-terminus',\n  'deepseek-v3': 'deepseek-v3',\n  'deepseek-v3-turbo': 'deepseek-v3-turbo',\n  'deepseek-chat': 'deepseek-v3',\n  'deepseek-r1': 'deepseek-r1',\n  'deepseek-r1-turbo': 'deepseek-r1-turbo',\n  'deepseek-r1-distill-llama-70b': 'deepseek-r1-distill-70b',\n  'deepseek-reasoner': 'deepseek-r1',\n  'deepseek-prover-v2': 'deepseek-prover-v2',\n  'deepseek-ocr-2': 'deepseek-ocr-2',\n  'deepseek-coder': 'deepseek-v3',\n\n  // ===== Meta Llama =====\n  'llama-4-scout': 'llama-4-scout',\n  'llama-4-maverick': 'llama-4-maverick',\n  'llama-3.3-70b': 'llama-3.3-70b',\n  'llama-3.3-70b-instruct': 'llama-3.3-70b',\n  'llama-3.2-90b-vision': 'llama-3.2-90b-vision',\n  'llama-3.2-90b-vision-instruct': 'llama-3.2-90b-vision',\n  'llama-3.2-11b-vision': 'llama-3.2-11b-vision',\n  'llama-3.2-11b-vision-instruct': 'llama-3.2-11b-vision',\n  'llama-3.1-405b-instruct': 'llama-3.1-405b',\n  'llama-3.1-70b-instruct': 'llama-3.1-70b',\n  'llama-3.1-8b-instruct': 'llama-3.1-8b',\n  'llama-3.1-8b': 'llama-3.1-8b',\n  'llama-3-70b': 'llama-3-70b',\n  'llama-3-70b-instruct': 'llama-3-70b',\n  'llama-3-8b': 'llama-3-8b',\n  'llama-3-8b-instruct': 'llama-3-8b',\n  'meta-llama/llama-3-70b-instruct': 'llama-3-70b',\n  'meta-llama/llama-3.1-8b-instruct': 'llama-3.1-8b',\n  'meta-llama/llama-3.3-70b-instruct': 'llama-3.3-70b',\n\n  // ===== Mistral =====\n  'magistral-medium': 'magistral-medium',\n  'magistral-medium-latest': 'magistral-medium',\n  'magistral-small': 'magistral-small',\n  'magistral-small-latest': 'magistral-small',\n  'mistral-medium-3': 'mistral-medium-3',\n  'mistral-medium-latest': 'mistral-medium-3',\n  'mistral-large': 'mistral-large',\n  'mistral-large-latest': 'mistral-large',\n  'mistral-large-2411': 'mistral-large',\n  'mistral-small-3.2': 'mistral-small-3.2',\n  'mistral-small-latest': 'mistral-small-3.2',\n  'mistral-nemo': 'mistral-nemo',\n  'open-mistral-nemo': 'mistral-nemo',\n  'codestral': 'codestral',\n  'codestral-latest': 'codestral',\n  'devstral-medium': 'devstral-medium',\n  'devstral-small': 'devstral-small',\n  'pixtral-large': 'pixtral-large',\n  'pixtral-large-latest': 'pixtral-large',\n  'pixtral-12b': 'pixtral-12b',\n  'pixtral-12b-2409': 'pixtral-12b',\n\n  // ===== xAI Grok =====\n  'grok-4-0709': 'grok-4',\n  'grok-4': 'grok-4',\n  'grok-4-1-fast-non-reasoning': 'grok-4.1-fast',\n  'grok-4-1-fast-reasoning': 'grok-4.1-fast',\n  'grok-4-fast-non-reasoning': 'grok-4-fast',\n  'grok-4-fast-reasoning': 'grok-4-fast',\n  'grok-3': 'grok-3',\n  'grok-3-latest': 'grok-3',\n  'grok-3-mini': 'grok-3-mini',\n  'grok-3-mini-latest': 'grok-3-mini',\n  'grok-code-fast-1': 'grok-code-fast-1',\n  'grok-2': 'grok-2',\n  'grok-2-latest': 'grok-2',\n  'grok-beta': 'grok-2',\n\n  // ===== Cohere =====\n  'command-a-03-2025': 'command-a',\n  'command-r-08-2024': 'command-r',\n  'command-r-plus-08-2024': 'command-r-plus',\n  'command-r7b-12-2024': 'command-r7b',\n  'command-r': 'command-r',\n  'command-r-plus': 'command-r-plus',\n\n  // ===== Alibaba Qwen =====\n  'qwen3.5-flash': 'qwen3.5-flash',\n  'qwen3.5-plus': 'qwen3.5-plus',\n  'qwen3-max': 'qwen3-max',\n  'qwen3-next-80b-a3b-instruct': 'qwen3-next-80b',\n  'qwen3-next-80b-a3b-thinking': 'qwen3-next-80b',\n  'qwen3-coder-480b-a35b': 'qwen3-coder-480b',\n  'qwen3-coder-next': 'qwen3-coder-next',\n  'qwen3-coder-30b-a3b': 'qwen3-coder-30b',\n  'qwen2.5-72b': 'qwen2.5-72b',\n  'qwen2.5-72b-instruct': 'qwen2.5-72b',\n  'qwen2.5-7b': 'qwen2.5-7b',\n  'qwen2.5-7b-instruct': 'qwen2.5-7b',\n\n  // ===== Moonshot Kimi =====\n  'kimi-k2': 'kimi-k2',\n  'kimi-k2.5': 'kimi-k2.5',\n  'kimi-k2-thinking': 'kimi-k2-thinking',\n\n  // ===== Google Gemma =====\n  'gemma-3-27b-it': 'gemma-3-27b',\n  'gemma-3-12b-it': 'gemma-3-12b',\n  'gemma-3-4b': 'gemma-3-4b',\n  'gemma-3-1b': 'gemma-3-1b'\n};\n\nconst results = items.map(item => {\n  const data = { ...item.json };\n  const rawModel = (data.model || '').toLowerCase().trim();\n  \n  if (standardize_names_dic[rawModel]) {\n    data.standardizedModel = standardize_names_dic[rawModel];\n    data.modelKnown = true;\n  } else {\n    // Try partial matching for versioned model names\n    let matched = false;\n    for (const [key, value] of Object.entries(standardize_names_dic)) {\n      if (rawModel.startsWith(key) || rawModel.includes(key)) {\n        data.standardizedModel = value;\n        data.modelKnown = true;\n        matched = true;\n        break;\n      }\n    }\n    if (!matched) {\n      data.standardizedModel = rawModel || 'unknown';\n      data.modelKnown = false;\n    }\n  }\n  \n  data.rawModel = rawModel;\n  return { json: data };\n});\n\nreturn results;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "check-models",
+      "name": "All Models Defined?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1104,
+        208
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "check-known",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.modelKnown }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "stop-error",
+      "name": "Stop and Error",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1328,
+        368
+      ],
+      "parameters": {
+        "jsCode": "// ============================================================\n// STOP AND ERROR - Unknown model detected\n// Lists all unknown models so user can add them\n// ============================================================\n\nconst items = $input.all();\nconst unknownModels = items\n  .filter(item => !item.json.modelKnown)\n  .map(item => item.json.rawModel);\n\nconst uniqueUnknown = [...new Set(unknownModels)];\n\nthrow new Error(\n  `Unknown model(s) detected: ${uniqueUnknown.join(', ')}\\n\\n` +\n  `Please add these models to:\\n` +\n  `1. The \"Standardize Names\" node (standardize_names_dic)\\n` +\n  `2. The \"Model Prices\" node (MODEL_PRICES)\\n\\n` +\n  `Then re-run the workflow.`\n);"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "merger",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        1328,
+        112
+      ],
+      "parameters": {
+        "mode": "combine",
+        "options": {},
+        "joinMode": "enrichInput1"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "model-prices",
+      "name": "Model Prices",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1552,
+        112
+      ],
+      "parameters": {
+        "jsCode": "// ============================================================\n// MODEL PRICES - Comprehensive pricing dictionary\n// Prices per 1 MILLION tokens (USD)\n// Last updated: March 2026\n// Covers 10 providers, 100+ models\n// ============================================================\n\nconst MODEL_PRICES = {\n  // ===== OpenAI GPT-5.x =====\n  'gpt-5.4':           { input: 2.50,   output: 15.00 },\n  'gpt-5.4-mini':      { input: 0.75,   output: 4.50 },\n  'gpt-5.4-nano':      { input: 0.20,   output: 1.25 },\n  'gpt-5.4-pro':       { input: 30.00,  output: 180.00 },\n  'gpt-5.3':           { input: 1.75,   output: 14.00 },\n  'gpt-5.3-codex':     { input: 1.75,   output: 14.00 },\n  'gpt-5.2':           { input: 1.75,   output: 14.00 },\n  'gpt-5':             { input: 1.25,   output: 10.00 },\n  'gpt-5-mini':        { input: 0.25,   output: 2.00 },\n  'gpt-5-nano':        { input: 0.05,   output: 0.40 },\n\n  // ===== OpenAI GPT-4.1 =====\n  'gpt-4.1':           { input: 2.00,   output: 8.00 },\n  'gpt-4.1-mini':      { input: 0.40,   output: 1.60 },\n  'gpt-4.1-nano':      { input: 0.10,   output: 0.40 },\n\n  // ===== OpenAI GPT-4o =====\n  'gpt-4o':            { input: 2.50,   output: 10.00 },\n  'gpt-4o-mini':       { input: 0.15,   output: 0.60 },\n  'gpt-4o-transcribe': { input: 2.50,   output: 10.00 },\n  'gpt-4o-mini-transcribe': { input: 1.25, output: 5.00 },\n\n  // ===== OpenAI GPT-4 =====\n  'gpt-4':             { input: 30.00,  output: 60.00 },\n  'gpt-4-32k':         { input: 60.00,  output: 120.00 },\n  'gpt-4-turbo':       { input: 10.00,  output: 30.00 },\n\n  // ===== OpenAI GPT-3.5 =====\n  'gpt-3.5-turbo':     { input: 0.50,   output: 1.50 },\n\n  // ===== OpenAI o-series (Reasoning) =====\n  'o1':                { input: 15.00,  output: 60.00 },\n  'o1-mini':           { input: 3.00,   output: 12.00 },\n  'o1-pro':            { input: 150.00, output: 600.00 },\n  'o3':                { input: 2.00,   output: 8.00 },\n  'o3-mini':           { input: 1.10,   output: 4.40 },\n  'o3-pro':            { input: 20.00,  output: 80.00 },\n  'o3-deep-research':  { input: 10.00,  output: 40.00 },\n  'o4-mini':           { input: 1.10,   output: 4.40 },\n  'o4-mini-deep-research': { input: 2.00, output: 8.00 },\n\n  // ===== OpenAI Specialized =====\n  'computer-use-preview': { input: 1.50, output: 6.00 },\n  'gpt-oss-120b':      { input: 0.05,   output: 0.25 },\n  'gpt-oss-20b':       { input: 0.04,   output: 0.15 },\n  'gpt-realtime-1.5':  { input: 4.00,   output: 16.00 },\n  'gpt-realtime-mini': { input: 0.60,   output: 2.40 },\n  'gpt-image-1.5':     { input: 5.00,   output: 10.00 },\n  'gpt-image-1-mini':  { input: 2.00,   output: 8.00 },\n\n  // ===== Anthropic Claude 4.x =====\n  'claude-sonnet-4-6':  { input: 3.00,  output: 15.00 },\n  'claude-opus-4-6':    { input: 5.00,  output: 25.00 },\n  'claude-opus-4-5':    { input: 5.00,  output: 25.00 },\n  'claude-sonnet-4-5':  { input: 3.00,  output: 15.00 },\n  'claude-opus-4':      { input: 15.00, output: 75.00 },\n  'claude-sonnet-4':    { input: 3.00,  output: 15.00 },\n  'claude-haiku-4.5':   { input: 1.00,  output: 5.00 },\n\n  // ===== Anthropic Claude 3.x =====\n  'claude-sonnet-3.7':  { input: 3.00,  output: 15.00 },\n  'claude-sonnet-3.5':  { input: 3.00,  output: 15.00 },\n  'claude-haiku-3.5':   { input: 0.80,  output: 4.00 },\n  'claude-opus-3':      { input: 15.00, output: 75.00 },\n  'claude-sonnet-3':    { input: 3.00,  output: 15.00 },\n  'claude-haiku-3':     { input: 0.25,  output: 1.25 },\n\n  // ===== Google Gemini 3.x =====\n  'gemini-3.1-pro':       { input: 2.00,  output: 12.00 },\n  'gemini-3.1-flash-lite': { input: 0.25, output: 1.50 },\n  'gemini-3-pro':         { input: 2.00,  output: 12.00 },\n  'gemini-3-flash':       { input: 0.50,  output: 3.00 },\n\n  // ===== Google Gemini 2.x =====\n  'gemini-2.5-pro':       { input: 1.25,  output: 10.00 },\n  'gemini-2.5-flash':     { input: 0.30,  output: 2.50 },\n  'gemini-2.5-flash-lite': { input: 0.10, output: 0.40 },\n  'gemini-2.0-flash':     { input: 0.10,  output: 0.40 },\n  'gemini-2.0-flash-lite': { input: 0.08, output: 0.30 },\n\n  // ===== Google Gemini 1.x =====\n  'gemini-1.5-pro':       { input: 1.25,  output: 5.00 },\n  'gemini-1.5-flash':     { input: 0.08,  output: 0.30 },\n  'gemini-1.0-pro':       { input: 0.50,  output: 1.50 },\n\n  // ===== DeepSeek =====\n  'deepseek-v3.2':        { input: 0.27,  output: 0.40 },\n  'deepseek-v3.1':        { input: 0.27,  output: 1.00 },\n  'deepseek-v3.1-terminus': { input: 0.27, output: 1.00 },\n  'deepseek-v3':          { input: 0.27,  output: 1.12 },\n  'deepseek-v3-turbo':    { input: 0.40,  output: 1.30 },\n  'deepseek-r1':          { input: 0.70,  output: 2.50 },\n  'deepseek-r1-turbo':    { input: 0.70,  output: 2.50 },\n  'deepseek-r1-distill-70b': { input: 0.80, output: 0.80 },\n  'deepseek-prover-v2':   { input: 0.70,  output: 2.50 },\n  'deepseek-ocr-2':       { input: 0.03,  output: 0.03 },\n\n  // ===== Meta Llama =====\n  'llama-4-scout':        { input: 0.17,  output: 0.65 },\n  'llama-4-maverick':     { input: 0.25,  output: 0.95 },\n  'llama-3.3-70b':        { input: 0.14,  output: 0.40 },\n  'llama-3.2-90b-vision': { input: 1.20,  output: 1.20 },\n  'llama-3.2-11b-vision': { input: 0.18,  output: 0.18 },\n  'llama-3.1-405b':       { input: 3.00,  output: 3.00 },\n  'llama-3.1-70b':        { input: 0.50,  output: 0.50 },\n  'llama-3.1-8b':         { input: 0.02,  output: 0.05 },\n  'llama-3-70b':          { input: 0.51,  output: 0.74 },\n  'llama-3-8b':           { input: 0.04,  output: 0.04 },\n\n  // ===== Mistral =====\n  'magistral-medium':     { input: 2.00,  output: 5.00 },\n  'magistral-small':      { input: 0.50,  output: 1.50 },\n  'mistral-medium-3':     { input: 0.40,  output: 2.00 },\n  'mistral-large':        { input: 2.00,  output: 6.00 },\n  'mistral-small-3.2':    { input: 0.10,  output: 0.30 },\n  'mistral-nemo':         { input: 0.04,  output: 0.17 },\n  'codestral':            { input: 0.30,  output: 0.90 },\n  'devstral-medium':      { input: 0.40,  output: 2.00 },\n  'devstral-small':       { input: 0.10,  output: 0.30 },\n  'pixtral-large':        { input: 2.00,  output: 6.00 },\n  'pixtral-12b':          { input: 0.15,  output: 0.15 },\n\n  // ===== xAI Grok =====\n  'grok-4':               { input: 3.00,  output: 15.00 },\n  'grok-4.1-fast':        { input: 0.20,  output: 0.50 },\n  'grok-4-fast':          { input: 0.20,  output: 0.50 },\n  'grok-3':               { input: 3.00,  output: 15.00 },\n  'grok-3-mini':          { input: 0.30,  output: 0.50 },\n  'grok-code-fast-1':     { input: 0.20,  output: 1.50 },\n  'grok-2':               { input: 2.00,  output: 10.00 },\n\n  // ===== Cohere =====\n  'command-a':            { input: 2.50,  output: 10.00 },\n  'command-r':            { input: 0.15,  output: 0.60 },\n  'command-r-plus':       { input: 2.50,  output: 10.00 },\n  'command-r7b':          { input: 0.04,  output: 0.15 },\n\n  // ===== Alibaba Qwen =====\n  'qwen3.5-flash':        { input: 0.25,  output: 2.00 },\n  'qwen3.5-plus':         { input: 0.40,  output: 2.40 },\n  'qwen3-max':            { input: 1.20,  output: 6.00 },\n  'qwen3-next-80b':       { input: 0.15,  output: 1.50 },\n  'qwen3-coder-480b':     { input: 0.30,  output: 1.30 },\n  'qwen3-coder-next':     { input: 0.20,  output: 1.50 },\n  'qwen3-coder-30b':      { input: 0.07,  output: 0.27 },\n  'qwen2.5-72b':          { input: 0.38,  output: 0.40 },\n  'qwen2.5-7b':           { input: 0.07,  output: 0.07 },\n\n  // ===== Moonshot Kimi =====\n  'kimi-k2':              { input: 0.57,  output: 2.30 },\n  'kimi-k2.5':            { input: 0.60,  output: 3.00 },\n  'kimi-k2-thinking':     { input: 0.60,  output: 2.50 },\n\n  // ===== Google Gemma =====\n  'gemma-3-27b':          { input: 0.12,  output: 0.20 },\n  'gemma-3-12b':          { input: 0.06,  output: 0.10 },\n  'gemma-3-4b':           { input: 0.03,  output: 0.05 },\n  'gemma-3-1b':           { input: 0.01,  output: 0.02 }\n};\n\nconst items = $input.all();\n\nconst results = items.map(item => {\n  const data = { ...item.json };\n  const model = data.standardizedModel || 'unknown';\n  const pricing = MODEL_PRICES[model];\n  \n  if (pricing) {\n    data.promptCost = (data.promptTokens / 1000000) * pricing.input;\n    data.completionCost = (data.completionTokens / 1000000) * pricing.output;\n    data.totalCost = data.promptCost + data.completionCost;\n    data.inputPricePerM = pricing.input;\n    data.outputPricePerM = pricing.output;\n    data.pricingFound = true;\n  } else {\n    // Fallback pricing for truly unknown models\n    data.promptCost = (data.promptTokens / 1000000) * 1.00;\n    data.completionCost = (data.completionTokens / 1000000) * 3.00;\n    data.totalCost = data.promptCost + data.completionCost;\n    data.inputPricePerM = 1.00;\n    data.outputPricePerM = 3.00;\n    data.pricingFound = false;\n  }\n  \n  // Round to 6 decimal places\n  data.promptCost = Math.round(data.promptCost * 1000000) / 1000000;\n  data.completionCost = Math.round(data.completionCost * 1000000) / 1000000;\n  data.totalCost = Math.round(data.totalCost * 1000000) / 1000000;\n  \n  return { json: data };\n});\n\nreturn results;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "summary",
+      "name": "Generate Summary",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1760,
+        112
+      ],
+      "parameters": {
+        "jsCode": "// ============================================================\n// GENERATE SUMMARY - Comprehensive analytics output\n// Produces per-call details + aggregated summary statistics\n// ============================================================\n\nconst items = $input.all();\n\nif (items.length === 0) {\n  return [{ json: { error: 'No data to summarize' } }];\n}\n\nconst details = items.map(item => item.json);\n\n// Calculate summary statistics\nlet totalCost = 0;\nlet totalPromptTokens = 0;\nlet totalCompletionTokens = 0;\nlet totalTokens = 0;\nlet totalExecutionTime = 0;\nconst modelBreakdown = {};\nconst nodeBreakdown = {};\n\nfor (const call of details) {\n  totalCost += call.totalCost || 0;\n  totalPromptTokens += call.promptTokens || 0;\n  totalCompletionTokens += call.completionTokens || 0;\n  totalTokens += call.totalTokens || 0;\n  totalExecutionTime += call.executionTime || 0;\n  \n  // Model breakdown\n  const model = call.standardizedModel || 'unknown';\n  if (!modelBreakdown[model]) {\n    modelBreakdown[model] = { calls: 0, cost: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0 };\n  }\n  modelBreakdown[model].calls++;\n  modelBreakdown[model].cost += call.totalCost || 0;\n  modelBreakdown[model].promptTokens += call.promptTokens || 0;\n  modelBreakdown[model].completionTokens += call.completionTokens || 0;\n  modelBreakdown[model].totalTokens += call.totalTokens || 0;\n  \n  // Node breakdown\n  const node = call.nodeName || 'unknown';\n  if (!nodeBreakdown[node]) {\n    nodeBreakdown[node] = { calls: 0, cost: 0, model: model, promptTokens: 0, completionTokens: 0 };\n  }\n  nodeBreakdown[node].calls++;\n  nodeBreakdown[node].cost += call.totalCost || 0;\n  nodeBreakdown[node].promptTokens += call.promptTokens || 0;\n  nodeBreakdown[node].completionTokens += call.completionTokens || 0;\n}\n\n// Round summary values\nfor (const m of Object.values(modelBreakdown)) {\n  m.cost = Math.round(m.cost * 1000000) / 1000000;\n}\nfor (const n of Object.values(nodeBreakdown)) {\n  n.cost = Math.round(n.cost * 1000000) / 1000000;\n}\n\nconst summary = {\n  workflowName: details[0]?.workflowName || 'Unknown',\n  workflowId: details[0]?.workflowId || 'unknown',\n  executionId: details[0]?.executionId || 'unknown',\n  executionStatus: details[0]?.executionStatus || 'unknown',\n  totalLLMCalls: details.length,\n  totalCost: Math.round(totalCost * 1000000) / 1000000,\n  totalPromptTokens: totalPromptTokens,\n  totalCompletionTokens: totalCompletionTokens,\n  totalTokens: totalTokens,\n  averageCostPerCall: Math.round((totalCost / details.length) * 1000000) / 1000000,\n  totalExecutionTimeMs: totalExecutionTime,\n  modelBreakdown: modelBreakdown,\n  nodeBreakdown: nodeBreakdown,\n  timestamp: new Date().toISOString()\n};\n\nreturn [{ json: { summary: summary, details: details } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "note-1",
+      "name": "Sticky Note - Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -368,
+        16
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 380,
+        "height": 556,
+        "content": "##  Installation Steps\n\n1. Go to **Settings \u2192 n8n API** and create an API key\n2. Add it as credential for the **Get Execution Data** node\n3. Review model mappings in **Standardize Names** node\n4. Review pricing in **Model Prices** node\n\n##  To Monitor a Workflow\n\n1. Add **Execute Workflow** node at the end of your target workflow\n2. Select this monitoring workflow\n3. **Turn OFF** \"Wait For Sub-Workflow Completion\"\n4. Pass `{ \"executionId\": \"{{ $execution.id }}\" }` as input\n\n## \u26a0\ufe0f Prerequisites\n\nEnable **\"Return Intermediate Steps\"** in your AI Agent settings for best results."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "note-2",
+      "name": "Sticky Note - Output",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1920,
+        -80
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 300,
+        "height": 516,
+        "content": "## \ud83d\udcca Output Data\n\n### Per LLM Call\n- Cost Breakdown (prompt, completion, total USD)\n- Token Metrics (prompt, completion, total)\n- Performance (execution time, finish reason)\n- Content Preview (first 100 chars I/O)\n- Model Parameters (temp, max tokens, timeout)\n- Execution Context (workflow, node, status)\n- Flow Tracking (previous nodes chain)\n\n### Summary Statistics\n- Total executions and costs\n- Breakdown by model type\n- Breakdown by node\n- Average cost per call\n- Total execution time"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "note-3",
+      "name": "Sticky Note - User Config",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        816,
+        -208
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 400,
+        "height": 352,
+        "content": "## \u2699\ufe0f Defined by User\n\n1. Define the model names in **standardize_names_dic**\n2. If you want to use custom prices, update **MODEL_PRICES**\n3. Set the costs of the model\n4. Prices are per **1 million tokens**\n\n### When You See Errors\nIf the workflow enters the error path, it means an **undefined model** was detected. Simply:\n1. Add the model name to **standardize_names_dic**\n2. Add its pricing to **MODEL_PRICES**\n3. Re-run the workflow"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "note-4",
+      "name": "Sticky Note - Providers",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -368,
+        608
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 380,
+        "height": 284,
+        "content": "## \ud83c\udfaf Supported Providers \n\n**OpenAI** \u00b7 **Anthropic** \u00b7 **Google** \u00b7 **DeepSeek** \u00b7 **Meta** \u00b7 **Mistral** \u00b7 **xAI** \u00b7 **Cohere** \u00b7 **Alibaba Qwen** \u00b7 **Moonshot Kimi**\n\n### 120+ Model Variations Mapped\nIncludes all versioned variants (e.g., gpt-4o-2024-08-06 \u2192 gpt-4o)\n\nPrices sourced from official provider pages (March 2026)"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "note-5",
+      "name": "Sticky Note - Next Steps",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1536,
+        304
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 340,
+        "height": 232,
+        "content": "## \ud83d\udca1 You can do anything with this data!\n\n- Store in a database for historical tracking\n- Send to Teams as a cost alert\n- Build dashboards with the summary data\n- Set budget thresholds and trigger warnings\n- Export to Google Sheets for reporting"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": true,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "bf13ef3a-2cb5-4ce0-80e7-a5846c450514",
+  "connections": {
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Model Prices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Model Prices": {
+      "main": [
+        [
+          {
+            "node": "Generate Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Standardize Names": {
+      "main": [
+        [
+          {
+            "node": "All Models Defined?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Execution Data": {
+      "main": [
+        [
+          {
+            "node": "Extract Token Usage",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Find Nodes with LLM Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "All Models Defined?": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Token Usage": {
+      "main": [
+        [
+          {
+            "node": "Standardize Names",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Execution ID": {
+      "main": [
+        [
+          {
+            "node": "Get Execution Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test with Execution ID": {
+      "main": [
+        [
+          {
+            "node": "Extract Execution ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Nodes with LLM Data": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "When Called By Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Extract Execution ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

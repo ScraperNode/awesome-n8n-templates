@@ -1,6 +1,6 @@
 # 🔍 Smart knowledge base with Google Docs, Discord & GPT-4o-mini
 
-> ⚡ **397 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **404 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

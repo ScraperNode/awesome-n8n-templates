@@ -1,6 +1,6 @@
 # 🤝 Chat with your HubSpot data
 
-> ⚡ **2,945 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **3,034 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

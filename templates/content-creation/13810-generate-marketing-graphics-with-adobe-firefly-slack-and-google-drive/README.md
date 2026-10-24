@@ -1,6 +1,6 @@
 # 🎬 Generate marketing graphics with Adobe Firefly, Slack and Google Drive
 
-> ⚡ **22 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **395 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ N8N backup flow to Nextcloud (7-day retention)
 
-> ⚡ **1,274 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,513 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

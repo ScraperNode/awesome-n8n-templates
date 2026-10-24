@@ -1,6 +1,6 @@
 # 🎣 OpenAI GPT-3: Company enrichment from website content
 
-> ⚡ **90,308 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **97,356 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

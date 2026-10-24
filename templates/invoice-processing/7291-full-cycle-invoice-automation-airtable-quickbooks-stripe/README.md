@@ -1,6 +1,6 @@
 # 🧾 Full-cycle invoice automation: Airtable, QuickBooks & Stripe
 
-> ⚡ **1,407 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,626 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

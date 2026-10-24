@@ -1,6 +1,6 @@
 # 🔒 AI-powered security analysis for n8n with Google Gemini and n8n audit API
 
-> ⚡ **244 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **345 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

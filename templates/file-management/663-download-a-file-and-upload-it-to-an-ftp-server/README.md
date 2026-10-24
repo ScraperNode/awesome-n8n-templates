@@ -1,6 +1,6 @@
 # 📁 Download a file and upload it to an FTP Server
 
-> ⚡ **11,282 views** · 📁 [File Management](../)
+> ⚡ **11,585 views** · 📁 [File Management](../)
 
 ## Description
 

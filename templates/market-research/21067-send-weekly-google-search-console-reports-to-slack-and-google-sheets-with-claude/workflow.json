@@ -1,0 +1,595 @@
+{
+  "name": "Send a weekly Google Search Console report to Slack with Claude observations checked by code",
+  "nodes": [
+    {
+      "id": "ae75efef-c16c-47da-89a8-0c717b241ac2",
+      "name": "Every Monday",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        -100
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 9,
+              "weeksInterval": 1
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "17ceb7f4-d4f3-4729-8787-ddd711084745",
+      "name": "Run now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        150
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "1467fd35-d541-4954-8a82-f0490f5a41a9",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "site_url",
+              "type": "string",
+              "value": "sc-domain:example.com"
+            },
+            {
+              "id": "c2",
+              "name": "days",
+              "type": "number",
+              "value": 7
+            },
+            {
+              "id": "c3",
+              "name": "lag_days",
+              "type": "number",
+              "value": 3
+            },
+            {
+              "id": "c4",
+              "name": "min_impressions",
+              "type": "number",
+              "value": 1
+            },
+            {
+              "id": "c5",
+              "name": "top_n",
+              "type": "number",
+              "value": 10
+            },
+            {
+              "id": "c6",
+              "name": "output_language",
+              "type": "string",
+              "value": "English"
+            }
+          ]
+        },
+        "includeOtherFields": false
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "e600b594-3639-40c9-80f5-2337f1451a49",
+      "name": "Plan requests",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// ---- Search Console weekly report: all numbers by code ----------------------------------------------\nconst nfkc = (s) => String(s ?? '').normalize('NFKC');\nconst iso = (d) => d.toISOString().slice(0, 10);\nconst addDays = (d, n) => new Date(d.getTime() + n * 86400000);\nconst r1 = (x) => Math.round(x * 10) / 10;\n\n// the two periods: the last full days that Search Console has (lag days back), and the same number of days before\nfunction periods(todayIso, lagDays, days) {\n  const t = new Date(todayIso + 'T00:00:00Z');\n  const end = addDays(t, -lagDays);\n  const start = addDays(end, -(days - 1));\n  const pEnd = addDays(start, -1);\n  const pStart = addDays(pEnd, -(days - 1));\n  return { cur: { start: iso(start), end: iso(end) }, prev: { start: iso(pStart), end: iso(pEnd) } };\n}\n\n// the six API requests: totals, by query, by page, for each period\nfunction requests(p) {\n  const out = [];\n  for (const period of ['cur', 'prev']) for (const dim of ['total', 'query', 'page']) {\n    const body = { startDate: p[period].start, endDate: p[period].end, rowLimit: dim === 'total' ? 1 : 1000, dataState: 'final' };\n    if (dim !== 'total') body.dimensions = [dim];\n    out.push({ period, dim, body: JSON.stringify(body) });\n  }\n  return out;\n}\n\nconst totalsOf = (rows) => {\n  const r = rows?.[0];\n  return r ? { clicks: r.clicks, impressions: r.impressions, ctr: r.ctr * 100, position: r.position } : { clicks: 0, impressions: 0, ctr: 0, position: null };\n};\nconst mapOf = (rows) => new Map((rows ?? []).map((r) => [r.keys[0], r]));\n\n// facts = a numbered list of statements with their numbers; the only things Claude may use\nfunction buildFacts(res, cfg) {\n  const min = Number(cfg.min_impressions) || 1, topN = Number(cfg.top_n) || 10;\n  const facts = [];\n  const add = (kind, label, values) => { const id = 'F' + (facts.length + 1); facts.push({ id, kind, label, values }); return id; };\n  const c = totalsOf(res.cur.total), p = totalsOf(res.prev.total);\n  const pct = (a, b) => (b > 0 ? r1(((a - b) / b) * 100) : null);\n  add('total', 'clicks', { this_week: c.clicks, last_week: p.clicks, change: c.clicks - p.clicks, change_pct: pct(c.clicks, p.clicks) });\n  add('total', 'impressions', { this_week: c.impressions, last_week: p.impressions, change: c.impressions - p.impressions, change_pct: pct(c.impressions, p.impressions) });\n  add('total', 'ctr_percent', { this_week: r1(c.ctr), last_week: r1(p.ctr), change: r1(c.ctr - p.ctr) });\n  add('total', 'average_position', { this_week: c.position === null ? null : r1(c.position), last_week: p.position === null ? null : r1(p.position),\n    change: c.position !== null && p.position !== null ? r1(c.position - p.position) : null, note: 'lower is better' });\n\n  // Google hides rare queries: say how many impressions have a known query, so a sum of queries is not read as the whole\n  const known = (res.cur.query ?? []).reduce((a, r) => a + r.impressions, 0);\n  add('total', 'impressions_with_a_known_query', { this_week: known, all_impressions: c.impressions, note: 'Search Console does not show every query' });\n  for (const dim of ['query', 'page']) {\n    const cur = mapOf(res.cur[dim]), prev = mapOf(res.prev[dim]);\n    const top = [...cur.values()].filter((r) => r.impressions >= min).sort((a, b) => b.impressions - a.impressions || a.position - b.position).slice(0, topN);\n    for (const r of top) {\n      const q = prev.get(r.keys[0]);\n      add('top_' + dim, r.keys[0], { impressions: r.impressions, clicks: r.clicks, position: r1(r.position),\n        last_week_impressions: q ? q.impressions : 0, last_week_position: q ? r1(q.position) : null });\n    }\n    const fresh = [...cur.values()].filter((r) => !prev.has(r.keys[0]) && r.impressions >= min).sort((a, b) => b.impressions - a.impressions).slice(0, topN);\n    for (const r of fresh) add('new_' + dim, r.keys[0], { impressions: r.impressions, clicks: r.clicks, position: r1(r.position) });\n    const lost = [...prev.values()].filter((r) => !cur.has(r.keys[0]) && r.impressions >= min).sort((a, b) => b.impressions - a.impressions).slice(0, topN);\n    for (const r of lost) add('lost_' + dim, r.keys[0], { last_week_impressions: r.impressions, last_week_position: r1(r.position) });\n  }\n  return facts;\n}\n\n// every number a fact contains, written the ways a sentence may write it (12, 12.0, 12.5, -3.2 -> 3.2)\nfunction numbersOfFacts(facts) {\n  const s = new Set();\n  for (const f of facts) {\n    for (const v of Object.values(f.values)) if (typeof v === 'number' && Number.isFinite(v)) {\n      for (const x of [v, Math.abs(v)]) { s.add(String(x)); s.add(String(r1(x))); if (Number.isInteger(x)) s.add(x.toFixed(1)); }\n    }\n    for (const m of nfkc(f.label).match(/\\d+(?:\\.\\d+)?/g) ?? []) s.add(m); // numbers that are part of a query or URL\n  }\n  return s;\n}\n\n// raw = Claude's text; returns the observations with a status each\nfunction checkObservations(raw, facts) {\n  let ai = null;\n  try {\n    const t = String(raw ?? '').replace(/^\\s*```(?:json)?\\s*/i, '').replace(/\\s*```\\s*$/, '').trim();\n    const a = t.indexOf('{'), z = t.lastIndexOf('}');\n    ai = JSON.parse(a >= 0 && z > a ? t.slice(a, z + 1) : t);\n  } catch (e) { ai = null; }\n  if (!ai) return { ok: false, problem: 'the AI output could not be read as JSON', items: [] };\n  const byId = new Map(facts.map((f) => [f.id, f]));\n  const items = (Array.isArray(ai.observations) ? ai.observations : []).slice(0, 6).map((o) => {\n    const text = String(o?.text ?? '').trim();\n    const ids = (Array.isArray(o?.fact_ids) ? o.fact_ids : []).map(String);\n    const problems = [];\n    if (!text) problems.push('empty');\n    const unknown = ids.filter((id) => !byId.has(id));\n    if (unknown.length) problems.push('unknown facts ' + unknown.join(', '));\n    const used = ids.filter((id) => byId.has(id)).map((id) => byId.get(id));\n    if (!used.length) problems.push('no fact referenced');\n    // every number in the sentence must be a number of the facts it cites (thousands separators and % are ignored)\n    const allowed = numbersOfFacts(used);\n    const nums = nfkc(text).replace(/(?<=\\d),(?=\\d{3}(?!\\d))/g, '').match(/\\d+(?:\\.\\d+)?/g) ?? [];\n    const bad = [...new Set(nums)].filter((n) => !allowed.has(n) && !allowed.has(String(Number(n))));\n    if (bad.length) problems.push('numbers not in the cited facts: ' + bad.join(', '));\n    // a quoted query or page must be one of the cited facts\n    for (const q of text.match(/[\u300c\"\u201c]([^\u300d\"\u201d]+)[\u300d\"\u201d]/g) ?? []) {\n      const inner = q.slice(1, -1);\n      if (inner.length > 2 && !used.some((f) => nfkc(f.label).toLowerCase().includes(nfkc(inner).toLowerCase()))) problems.push('quoted \"' + inner + '\" is not in the cited facts');\n    }\n    return { text, fact_ids: ids, ok: problems.length === 0, problems: problems.join('; ') };\n  });\n  return { ok: true, problem: '', items };\n}\n\n// the Slack text: the code's numbers first, then the observations with a mark\nfunction report(p, facts, checked, site) {\n  const f = (label) => facts.find((x) => x.kind === 'total' && x.label === label)?.values ?? {};\n  const sign = (v) => (v === null || v === undefined ? '-' : (v > 0 ? '+' : '') + v);\n  const cl = f('clicks'), im = f('impressions'), ct = f('ctr_percent'), po = f('average_position');\n  const kq = f('impressions_with_a_known_query');\n  const lines = [\n    '*Search Console weekly* - ' + site + ' (' + p.cur.start + ' .. ' + p.cur.end + ' vs ' + p.prev.start + ' .. ' + p.prev.end + ')',\n    'Clicks ' + cl.this_week + ' (' + sign(cl.change) + ')  |  Impressions ' + im.this_week + ' (' + sign(im.change) + ')  |  CTR ' + ct.this_week + '% (' + sign(ct.change) + ')  |  Avg position ' + (po.this_week ?? '-') + ' (' + sign(po.change) + ', lower is better)',\n    '_Queries are known for ' + kq.this_week + ' of ' + kq.all_impressions + ' impressions (Search Console does not show every query)._',\n  ];\n  const list = (kind, title, fmt) => { const rows = facts.filter((x) => x.kind === kind); if (rows.length) lines.push('*' + title + '*\\n' + rows.slice(0, 5).map(fmt).join('\\n')); };\n  list('top_query', 'Top queries', (x) => '\u2022 ' + x.label + ' - ' + x.values.impressions + ' impr, ' + x.values.clicks + ' clicks, pos ' + x.values.position);\n  list('new_query', 'New queries', (x) => '\u2022 ' + x.label + ' - ' + x.values.impressions + ' impr, pos ' + x.values.position);\n  list('lost_query', 'Queries gone', (x) => '\u2022 ' + x.label + ' - last week ' + x.values.last_week_impressions + ' impr');\n  list('top_page', 'Top pages', (x) => '\u2022 ' + x.label + ' - ' + x.values.impressions + ' impr, ' + x.values.clicks + ' clicks');\n  if (!checked.ok) lines.push(':warning: AI observations not available: ' + checked.problem);\n  else if (checked.items.length) lines.push('*Observations (AI, checked by code)*\\n' + checked.items.map((o) => (o.ok ? '\u2713 ' : ':warning: ') + o.text + (o.ok ? '' : '  _(' + o.problems + ')_')).join('\\n'));\n  return lines.join('\\n');\n}\n\nconst cfg = $('Config').first().json;\nconst p = periods($now.toFormat('yyyy-MM-dd'), Number(cfg.lag_days), Number(cfg.days));\nreturn requests(p).map((r) => ({ json: { ...r, periods: p } }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "92c15015-26f5-4475-8eba-bc9e9d45ff6b",
+      "name": "Query Search Console",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        820,
+        0
+      ],
+      "parameters": {
+        "url": "=https://www.googleapis.com/webmasters/v3/sites/{{ encodeURIComponent($('Config').first().json.site_url) }}/searchAnalytics/query",
+        "method": "POST",
+        "options": {
+          "timeout": 30000
+        },
+        "jsonBody": "={{ $json.body }}",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api"
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "2527d615-ec5b-494e-8f8b-244cdc4af353",
+      "name": "Build facts",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// ---- Search Console weekly report: all numbers by code ----------------------------------------------\nconst nfkc = (s) => String(s ?? '').normalize('NFKC');\nconst iso = (d) => d.toISOString().slice(0, 10);\nconst addDays = (d, n) => new Date(d.getTime() + n * 86400000);\nconst r1 = (x) => Math.round(x * 10) / 10;\n\n// the two periods: the last full days that Search Console has (lag days back), and the same number of days before\nfunction periods(todayIso, lagDays, days) {\n  const t = new Date(todayIso + 'T00:00:00Z');\n  const end = addDays(t, -lagDays);\n  const start = addDays(end, -(days - 1));\n  const pEnd = addDays(start, -1);\n  const pStart = addDays(pEnd, -(days - 1));\n  return { cur: { start: iso(start), end: iso(end) }, prev: { start: iso(pStart), end: iso(pEnd) } };\n}\n\n// the six API requests: totals, by query, by page, for each period\nfunction requests(p) {\n  const out = [];\n  for (const period of ['cur', 'prev']) for (const dim of ['total', 'query', 'page']) {\n    const body = { startDate: p[period].start, endDate: p[period].end, rowLimit: dim === 'total' ? 1 : 1000, dataState: 'final' };\n    if (dim !== 'total') body.dimensions = [dim];\n    out.push({ period, dim, body: JSON.stringify(body) });\n  }\n  return out;\n}\n\nconst totalsOf = (rows) => {\n  const r = rows?.[0];\n  return r ? { clicks: r.clicks, impressions: r.impressions, ctr: r.ctr * 100, position: r.position } : { clicks: 0, impressions: 0, ctr: 0, position: null };\n};\nconst mapOf = (rows) => new Map((rows ?? []).map((r) => [r.keys[0], r]));\n\n// facts = a numbered list of statements with their numbers; the only things Claude may use\nfunction buildFacts(res, cfg) {\n  const min = Number(cfg.min_impressions) || 1, topN = Number(cfg.top_n) || 10;\n  const facts = [];\n  const add = (kind, label, values) => { const id = 'F' + (facts.length + 1); facts.push({ id, kind, label, values }); return id; };\n  const c = totalsOf(res.cur.total), p = totalsOf(res.prev.total);\n  const pct = (a, b) => (b > 0 ? r1(((a - b) / b) * 100) : null);\n  add('total', 'clicks', { this_week: c.clicks, last_week: p.clicks, change: c.clicks - p.clicks, change_pct: pct(c.clicks, p.clicks) });\n  add('total', 'impressions', { this_week: c.impressions, last_week: p.impressions, change: c.impressions - p.impressions, change_pct: pct(c.impressions, p.impressions) });\n  add('total', 'ctr_percent', { this_week: r1(c.ctr), last_week: r1(p.ctr), change: r1(c.ctr - p.ctr) });\n  add('total', 'average_position', { this_week: c.position === null ? null : r1(c.position), last_week: p.position === null ? null : r1(p.position),\n    change: c.position !== null && p.position !== null ? r1(c.position - p.position) : null, note: 'lower is better' });\n\n  // Google hides rare queries: say how many impressions have a known query, so a sum of queries is not read as the whole\n  const known = (res.cur.query ?? []).reduce((a, r) => a + r.impressions, 0);\n  add('total', 'impressions_with_a_known_query', { this_week: known, all_impressions: c.impressions, note: 'Search Console does not show every query' });\n  for (const dim of ['query', 'page']) {\n    const cur = mapOf(res.cur[dim]), prev = mapOf(res.prev[dim]);\n    const top = [...cur.values()].filter((r) => r.impressions >= min).sort((a, b) => b.impressions - a.impressions || a.position - b.position).slice(0, topN);\n    for (const r of top) {\n      const q = prev.get(r.keys[0]);\n      add('top_' + dim, r.keys[0], { impressions: r.impressions, clicks: r.clicks, position: r1(r.position),\n        last_week_impressions: q ? q.impressions : 0, last_week_position: q ? r1(q.position) : null });\n    }\n    const fresh = [...cur.values()].filter((r) => !prev.has(r.keys[0]) && r.impressions >= min).sort((a, b) => b.impressions - a.impressions).slice(0, topN);\n    for (const r of fresh) add('new_' + dim, r.keys[0], { impressions: r.impressions, clicks: r.clicks, position: r1(r.position) });\n    const lost = [...prev.values()].filter((r) => !cur.has(r.keys[0]) && r.impressions >= min).sort((a, b) => b.impressions - a.impressions).slice(0, topN);\n    for (const r of lost) add('lost_' + dim, r.keys[0], { last_week_impressions: r.impressions, last_week_position: r1(r.position) });\n  }\n  return facts;\n}\n\n// every number a fact contains, written the ways a sentence may write it (12, 12.0, 12.5, -3.2 -> 3.2)\nfunction numbersOfFacts(facts) {\n  const s = new Set();\n  for (const f of facts) {\n    for (const v of Object.values(f.values)) if (typeof v === 'number' && Number.isFinite(v)) {\n      for (const x of [v, Math.abs(v)]) { s.add(String(x)); s.add(String(r1(x))); if (Number.isInteger(x)) s.add(x.toFixed(1)); }\n    }\n    for (const m of nfkc(f.label).match(/\\d+(?:\\.\\d+)?/g) ?? []) s.add(m); // numbers that are part of a query or URL\n  }\n  return s;\n}\n\n// raw = Claude's text; returns the observations with a status each\nfunction checkObservations(raw, facts) {\n  let ai = null;\n  try {\n    const t = String(raw ?? '').replace(/^\\s*```(?:json)?\\s*/i, '').replace(/\\s*```\\s*$/, '').trim();\n    const a = t.indexOf('{'), z = t.lastIndexOf('}');\n    ai = JSON.parse(a >= 0 && z > a ? t.slice(a, z + 1) : t);\n  } catch (e) { ai = null; }\n  if (!ai) return { ok: false, problem: 'the AI output could not be read as JSON', items: [] };\n  const byId = new Map(facts.map((f) => [f.id, f]));\n  const items = (Array.isArray(ai.observations) ? ai.observations : []).slice(0, 6).map((o) => {\n    const text = String(o?.text ?? '').trim();\n    const ids = (Array.isArray(o?.fact_ids) ? o.fact_ids : []).map(String);\n    const problems = [];\n    if (!text) problems.push('empty');\n    const unknown = ids.filter((id) => !byId.has(id));\n    if (unknown.length) problems.push('unknown facts ' + unknown.join(', '));\n    const used = ids.filter((id) => byId.has(id)).map((id) => byId.get(id));\n    if (!used.length) problems.push('no fact referenced');\n    // every number in the sentence must be a number of the facts it cites (thousands separators and % are ignored)\n    const allowed = numbersOfFacts(used);\n    const nums = nfkc(text).replace(/(?<=\\d),(?=\\d{3}(?!\\d))/g, '').match(/\\d+(?:\\.\\d+)?/g) ?? [];\n    const bad = [...new Set(nums)].filter((n) => !allowed.has(n) && !allowed.has(String(Number(n))));\n    if (bad.length) problems.push('numbers not in the cited facts: ' + bad.join(', '));\n    // a quoted query or page must be one of the cited facts\n    for (const q of text.match(/[\u300c\"\u201c]([^\u300d\"\u201d]+)[\u300d\"\u201d]/g) ?? []) {\n      const inner = q.slice(1, -1);\n      if (inner.length > 2 && !used.some((f) => nfkc(f.label).toLowerCase().includes(nfkc(inner).toLowerCase()))) problems.push('quoted \"' + inner + '\" is not in the cited facts');\n    }\n    return { text, fact_ids: ids, ok: problems.length === 0, problems: problems.join('; ') };\n  });\n  return { ok: true, problem: '', items };\n}\n\n// the Slack text: the code's numbers first, then the observations with a mark\nfunction report(p, facts, checked, site) {\n  const f = (label) => facts.find((x) => x.kind === 'total' && x.label === label)?.values ?? {};\n  const sign = (v) => (v === null || v === undefined ? '-' : (v > 0 ? '+' : '') + v);\n  const cl = f('clicks'), im = f('impressions'), ct = f('ctr_percent'), po = f('average_position');\n  const kq = f('impressions_with_a_known_query');\n  const lines = [\n    '*Search Console weekly* - ' + site + ' (' + p.cur.start + ' .. ' + p.cur.end + ' vs ' + p.prev.start + ' .. ' + p.prev.end + ')',\n    'Clicks ' + cl.this_week + ' (' + sign(cl.change) + ')  |  Impressions ' + im.this_week + ' (' + sign(im.change) + ')  |  CTR ' + ct.this_week + '% (' + sign(ct.change) + ')  |  Avg position ' + (po.this_week ?? '-') + ' (' + sign(po.change) + ', lower is better)',\n    '_Queries are known for ' + kq.this_week + ' of ' + kq.all_impressions + ' impressions (Search Console does not show every query)._',\n  ];\n  const list = (kind, title, fmt) => { const rows = facts.filter((x) => x.kind === kind); if (rows.length) lines.push('*' + title + '*\\n' + rows.slice(0, 5).map(fmt).join('\\n')); };\n  list('top_query', 'Top queries', (x) => '\u2022 ' + x.label + ' - ' + x.values.impressions + ' impr, ' + x.values.clicks + ' clicks, pos ' + x.values.position);\n  list('new_query', 'New queries', (x) => '\u2022 ' + x.label + ' - ' + x.values.impressions + ' impr, pos ' + x.values.position);\n  list('lost_query', 'Queries gone', (x) => '\u2022 ' + x.label + ' - last week ' + x.values.last_week_impressions + ' impr');\n  list('top_page', 'Top pages', (x) => '\u2022 ' + x.label + ' - ' + x.values.impressions + ' impr, ' + x.values.clicks + ' clicks');\n  if (!checked.ok) lines.push(':warning: AI observations not available: ' + checked.problem);\n  else if (checked.items.length) lines.push('*Observations (AI, checked by code)*\\n' + checked.items.map((o) => (o.ok ? '\u2713 ' : ':warning: ') + o.text + (o.ok ? '' : '  _(' + o.problems + ')_')).join('\\n'));\n  return lines.join('\\n');\n}\n\nconst cfg = $('Config').first().json;\nconst plan = $('Plan requests').all().map((i) => i.json);\nconst res = { cur: {}, prev: {} };\nconst errors = [];\n$input.all().forEach((it, i) => {\n  const j = it.json;\n  if (j.error) errors.push(plan[i].period + '/' + plan[i].dim + ': ' + (j.error.message ?? JSON.stringify(j.error)).slice(0, 300));\n  res[plan[i].period][plan[i].dim] = j.rows ?? [];\n});\n// an API error (no access, API not enabled, wrong site) must not look like \"0 clicks\"\nif (errors.length) throw new Error('Search Console API error. Check site_url in Config, that the Google account can see the property, and that the Search Console API is enabled in the Google Cloud project of the credential. ' + errors[0]);\nconst facts = buildFacts(res, cfg);\nreturn [{ json: { periods: plan[0].periods, facts, queries: (res.cur.query ?? []).length } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "fe473870-161e-4e59-86c3-2023131b4f93",
+      "name": "AI: Write observations",
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "onError": "continueRegularOutput",
+      "position": [
+        1580,
+        0
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "claude-haiku-4-5-20251001"
+        },
+        "options": {
+          "maxTokens": 1500,
+          "temperature": 0
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "=You write short observations about a website's Google Search Console numbers for this week. The numbered facts below were computed by code. Use ONLY these facts.\n\n# Rules\n- Write 3 to 5 observations, each one or two sentences, in {{ $(\"Config\").first().json.output_language }}.\n- Each observation lists the ids of the facts it uses in \"fact_ids\". Copy every number exactly as it appears in those facts (you may drop a minus sign and say \"down\" instead). Do not calculate new numbers (no sums, no ratios, no percentages that are not in the facts).\n- When you name a query or a page, put it in quotes exactly as in the fact.\n- Average position: lower is better. Do not call a higher position number an improvement. With few impressions (fewer than 100), one impression at a far position moves the average a lot: then do not present a change of the average position as a real trend.\n- Queries are not shown for every impression (see the fact impressions_with_a_known_query): do not add up queries as if they were the whole.\n- Do not guess causes as facts. If you mention a possible cause, say it is a possibility. If the numbers are small, say so.\n- Output JSON only (no explanation, no code block): {\"observations\": [{\"text\": \"...\", \"fact_ids\": [\"F1\"]}]}\n\n# Facts (JSON)\n{{ JSON.stringify($json.facts) }}"
+            }
+          ]
+        },
+        "resource": "text",
+        "simplify": true,
+        "operation": "message"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "26bff448-a204-4da7-8537-071e6a85c9b2",
+      "name": "Check and report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// ---- Search Console weekly report: all numbers by code ----------------------------------------------\nconst nfkc = (s) => String(s ?? '').normalize('NFKC');\nconst iso = (d) => d.toISOString().slice(0, 10);\nconst addDays = (d, n) => new Date(d.getTime() + n * 86400000);\nconst r1 = (x) => Math.round(x * 10) / 10;\n\n// the two periods: the last full days that Search Console has (lag days back), and the same number of days before\nfunction periods(todayIso, lagDays, days) {\n  const t = new Date(todayIso + 'T00:00:00Z');\n  const end = addDays(t, -lagDays);\n  const start = addDays(end, -(days - 1));\n  const pEnd = addDays(start, -1);\n  const pStart = addDays(pEnd, -(days - 1));\n  return { cur: { start: iso(start), end: iso(end) }, prev: { start: iso(pStart), end: iso(pEnd) } };\n}\n\n// the six API requests: totals, by query, by page, for each period\nfunction requests(p) {\n  const out = [];\n  for (const period of ['cur', 'prev']) for (const dim of ['total', 'query', 'page']) {\n    const body = { startDate: p[period].start, endDate: p[period].end, rowLimit: dim === 'total' ? 1 : 1000, dataState: 'final' };\n    if (dim !== 'total') body.dimensions = [dim];\n    out.push({ period, dim, body: JSON.stringify(body) });\n  }\n  return out;\n}\n\nconst totalsOf = (rows) => {\n  const r = rows?.[0];\n  return r ? { clicks: r.clicks, impressions: r.impressions, ctr: r.ctr * 100, position: r.position } : { clicks: 0, impressions: 0, ctr: 0, position: null };\n};\nconst mapOf = (rows) => new Map((rows ?? []).map((r) => [r.keys[0], r]));\n\n// facts = a numbered list of statements with their numbers; the only things Claude may use\nfunction buildFacts(res, cfg) {\n  const min = Number(cfg.min_impressions) || 1, topN = Number(cfg.top_n) || 10;\n  const facts = [];\n  const add = (kind, label, values) => { const id = 'F' + (facts.length + 1); facts.push({ id, kind, label, values }); return id; };\n  const c = totalsOf(res.cur.total), p = totalsOf(res.prev.total);\n  const pct = (a, b) => (b > 0 ? r1(((a - b) / b) * 100) : null);\n  add('total', 'clicks', { this_week: c.clicks, last_week: p.clicks, change: c.clicks - p.clicks, change_pct: pct(c.clicks, p.clicks) });\n  add('total', 'impressions', { this_week: c.impressions, last_week: p.impressions, change: c.impressions - p.impressions, change_pct: pct(c.impressions, p.impressions) });\n  add('total', 'ctr_percent', { this_week: r1(c.ctr), last_week: r1(p.ctr), change: r1(c.ctr - p.ctr) });\n  add('total', 'average_position', { this_week: c.position === null ? null : r1(c.position), last_week: p.position === null ? null : r1(p.position),\n    change: c.position !== null && p.position !== null ? r1(c.position - p.position) : null, note: 'lower is better' });\n\n  // Google hides rare queries: say how many impressions have a known query, so a sum of queries is not read as the whole\n  const known = (res.cur.query ?? []).reduce((a, r) => a + r.impressions, 0);\n  add('total', 'impressions_with_a_known_query', { this_week: known, all_impressions: c.impressions, note: 'Search Console does not show every query' });\n  for (const dim of ['query', 'page']) {\n    const cur = mapOf(res.cur[dim]), prev = mapOf(res.prev[dim]);\n    const top = [...cur.values()].filter((r) => r.impressions >= min).sort((a, b) => b.impressions - a.impressions || a.position - b.position).slice(0, topN);\n    for (const r of top) {\n      const q = prev.get(r.keys[0]);\n      add('top_' + dim, r.keys[0], { impressions: r.impressions, clicks: r.clicks, position: r1(r.position),\n        last_week_impressions: q ? q.impressions : 0, last_week_position: q ? r1(q.position) : null });\n    }\n    const fresh = [...cur.values()].filter((r) => !prev.has(r.keys[0]) && r.impressions >= min).sort((a, b) => b.impressions - a.impressions).slice(0, topN);\n    for (const r of fresh) add('new_' + dim, r.keys[0], { impressions: r.impressions, clicks: r.clicks, position: r1(r.position) });\n    const lost = [...prev.values()].filter((r) => !cur.has(r.keys[0]) && r.impressions >= min).sort((a, b) => b.impressions - a.impressions).slice(0, topN);\n    for (const r of lost) add('lost_' + dim, r.keys[0], { last_week_impressions: r.impressions, last_week_position: r1(r.position) });\n  }\n  return facts;\n}\n\n// every number a fact contains, written the ways a sentence may write it (12, 12.0, 12.5, -3.2 -> 3.2)\nfunction numbersOfFacts(facts) {\n  const s = new Set();\n  for (const f of facts) {\n    for (const v of Object.values(f.values)) if (typeof v === 'number' && Number.isFinite(v)) {\n      for (const x of [v, Math.abs(v)]) { s.add(String(x)); s.add(String(r1(x))); if (Number.isInteger(x)) s.add(x.toFixed(1)); }\n    }\n    for (const m of nfkc(f.label).match(/\\d+(?:\\.\\d+)?/g) ?? []) s.add(m); // numbers that are part of a query or URL\n  }\n  return s;\n}\n\n// raw = Claude's text; returns the observations with a status each\nfunction checkObservations(raw, facts) {\n  let ai = null;\n  try {\n    const t = String(raw ?? '').replace(/^\\s*```(?:json)?\\s*/i, '').replace(/\\s*```\\s*$/, '').trim();\n    const a = t.indexOf('{'), z = t.lastIndexOf('}');\n    ai = JSON.parse(a >= 0 && z > a ? t.slice(a, z + 1) : t);\n  } catch (e) { ai = null; }\n  if (!ai) return { ok: false, problem: 'the AI output could not be read as JSON', items: [] };\n  const byId = new Map(facts.map((f) => [f.id, f]));\n  const items = (Array.isArray(ai.observations) ? ai.observations : []).slice(0, 6).map((o) => {\n    const text = String(o?.text ?? '').trim();\n    const ids = (Array.isArray(o?.fact_ids) ? o.fact_ids : []).map(String);\n    const problems = [];\n    if (!text) problems.push('empty');\n    const unknown = ids.filter((id) => !byId.has(id));\n    if (unknown.length) problems.push('unknown facts ' + unknown.join(', '));\n    const used = ids.filter((id) => byId.has(id)).map((id) => byId.get(id));\n    if (!used.length) problems.push('no fact referenced');\n    // every number in the sentence must be a number of the facts it cites (thousands separators and % are ignored)\n    const allowed = numbersOfFacts(used);\n    const nums = nfkc(text).replace(/(?<=\\d),(?=\\d{3}(?!\\d))/g, '').match(/\\d+(?:\\.\\d+)?/g) ?? [];\n    const bad = [...new Set(nums)].filter((n) => !allowed.has(n) && !allowed.has(String(Number(n))));\n    if (bad.length) problems.push('numbers not in the cited facts: ' + bad.join(', '));\n    // a quoted query or page must be one of the cited facts\n    for (const q of text.match(/[\u300c\"\u201c]([^\u300d\"\u201d]+)[\u300d\"\u201d]/g) ?? []) {\n      const inner = q.slice(1, -1);\n      if (inner.length > 2 && !used.some((f) => nfkc(f.label).toLowerCase().includes(nfkc(inner).toLowerCase()))) problems.push('quoted \"' + inner + '\" is not in the cited facts');\n    }\n    return { text, fact_ids: ids, ok: problems.length === 0, problems: problems.join('; ') };\n  });\n  return { ok: true, problem: '', items };\n}\n\n// the Slack text: the code's numbers first, then the observations with a mark\nfunction report(p, facts, checked, site) {\n  const f = (label) => facts.find((x) => x.kind === 'total' && x.label === label)?.values ?? {};\n  const sign = (v) => (v === null || v === undefined ? '-' : (v > 0 ? '+' : '') + v);\n  const cl = f('clicks'), im = f('impressions'), ct = f('ctr_percent'), po = f('average_position');\n  const kq = f('impressions_with_a_known_query');\n  const lines = [\n    '*Search Console weekly* - ' + site + ' (' + p.cur.start + ' .. ' + p.cur.end + ' vs ' + p.prev.start + ' .. ' + p.prev.end + ')',\n    'Clicks ' + cl.this_week + ' (' + sign(cl.change) + ')  |  Impressions ' + im.this_week + ' (' + sign(im.change) + ')  |  CTR ' + ct.this_week + '% (' + sign(ct.change) + ')  |  Avg position ' + (po.this_week ?? '-') + ' (' + sign(po.change) + ', lower is better)',\n    '_Queries are known for ' + kq.this_week + ' of ' + kq.all_impressions + ' impressions (Search Console does not show every query)._',\n  ];\n  const list = (kind, title, fmt) => { const rows = facts.filter((x) => x.kind === kind); if (rows.length) lines.push('*' + title + '*\\n' + rows.slice(0, 5).map(fmt).join('\\n')); };\n  list('top_query', 'Top queries', (x) => '\u2022 ' + x.label + ' - ' + x.values.impressions + ' impr, ' + x.values.clicks + ' clicks, pos ' + x.values.position);\n  list('new_query', 'New queries', (x) => '\u2022 ' + x.label + ' - ' + x.values.impressions + ' impr, pos ' + x.values.position);\n  list('lost_query', 'Queries gone', (x) => '\u2022 ' + x.label + ' - last week ' + x.values.last_week_impressions + ' impr');\n  list('top_page', 'Top pages', (x) => '\u2022 ' + x.label + ' - ' + x.values.impressions + ' impr, ' + x.values.clicks + ' clicks');\n  if (!checked.ok) lines.push(':warning: AI observations not available: ' + checked.problem);\n  else if (checked.items.length) lines.push('*Observations (AI, checked by code)*\\n' + checked.items.map((o) => (o.ok ? '\u2713 ' : ':warning: ') + o.text + (o.ok ? '' : '  _(' + o.problems + ')_')).join('\\n'));\n  return lines.join('\\n');\n}\n\nconst cfg = $('Config').first().json;\nconst b = $('Build facts').first().json;\nconst raw = $input.first().json.content?.[0]?.text ?? $input.first().json.text;\nconst checked = checkObservations(raw, b.facts);\nconst text = report(b.periods, b.facts, checked, cfg.site_url);\nconst t = (label) => b.facts.find((f) => f.kind === 'total' && f.label === label).values;\nreturn [{ json: { text, row: { week_end: b.periods.cur.end, week_start: b.periods.cur.start,\n  clicks: t('clicks').this_week, clicks_change: t('clicks').change, impressions: t('impressions').this_week, impressions_change: t('impressions').change,\n  ctr_percent: t('ctr_percent').this_week, avg_position: t('average_position').this_week ?? '', avg_position_change: t('average_position').change ?? '',\n  queries: b.queries, new_queries: b.facts.filter((f) => f.kind === 'new_query').length,\n  observations_ok: checked.items.filter((o) => o.ok).length, observations_flagged: checked.items.filter((o) => !o.ok).length, checked_at: $now.toISO() } } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e7c0d6d7-d436-436e-87dc-4277e60e8012",
+      "name": "To week row",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2180,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: $input.first().json.row }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c908f383-3a70-41f0-8b38-34bf492cfa83",
+      "name": "Add to Weekly tab",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2400,
+        -100
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [
+            "week_end"
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "GSC weekly"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "afcff341-264c-44a9-88a2-7a631cf03b10",
+      "name": "Post to Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        2400,
+        150
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "select": "channel",
+        "resource": "message",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "operation": "post",
+        "messageType": "text",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "typeVersion": 2.7
+    },
+    {
+      "id": "a00c4626-e5fc-495b-8829-51bf71dc1c70",
+      "name": "Run once: set up the sheet",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        800
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "a716b9e8-0355-4b03-8de0-db510937b5c2",
+      "name": "Add the GSC weekly tab",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        440,
+        800
+      ],
+      "parameters": {
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $(\"Spreadsheet ID\").first().json.spreadsheet_id }}:batchUpdate",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={\"requests\":[{\"addSheet\":{\"properties\":{\"title\":\"GSC weekly\"}}}]}",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api"
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "72e2d21b-1b8d-41d5-8108-eda566fe182c",
+      "name": "Write the header row",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        660,
+        800
+      ],
+      "parameters": {
+        "url": "=https://sheets.googleapis.com/v4/spreadsheets/{{ $(\"Spreadsheet ID\").first().json.spreadsheet_id }}/values:batchUpdate",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={\"valueInputOption\":\"RAW\",\"data\":[{\"range\":\"'GSC weekly'!A1\",\"values\":[[\"week_end\",\"week_start\",\"clicks\",\"clicks_change\",\"impressions\",\"impressions_change\",\"ctr_percent\",\"avg_position\",\"avg_position_change\",\"queries\",\"new_queries\",\"observations_ok\",\"observations_flagged\",\"checked_at\"]]}]}",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api"
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "b0b0b0b0-0000-4000-8000-0000000000a6",
+      "name": "Spreadsheet ID",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        800
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sid1",
+              "name": "spreadsheet_id",
+              "type": "string",
+              "value": "PASTE_YOUR_SPREADSHEET_ID_HERE"
+            }
+          ]
+        },
+        "includeOtherFields": false
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "sticky-2-e35c3b03",
+      "name": "Section 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        -284
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 420,
+        "height": 604,
+        "content": "## 1. Triggers and settings\nWeekly on Monday, or on demand. Config holds the property, the period, the data lag and the language."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-3-b7995ef6",
+      "name": "Section 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        540,
+        -184
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 420,
+        "height": 354,
+        "content": "## 2. Ask Search Console\nSix requests: totals, by query and by page, for this week and the week before."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-4-c2d5372c",
+      "name": "Section 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1140,
+        -314
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 200,
+        "height": 484,
+        "content": "## 3. Code computes the facts\nEvery number and change is computed here and numbered. An API error stops the run with a clear message instead of reporting zeros."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-5-5bc4185d",
+      "name": "Section 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1520,
+        -210
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 420,
+        "height": 380,
+        "content": "## 4. Claude writes, code checks\nClaude may only use the facts. Code checks the numbers and quoted names of each observation and marks the ones that fail."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-6-c6cf68bf",
+      "name": "Section 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2120,
+        -258
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 420,
+        "height": 578,
+        "content": "## 5. Save and post\nOne row per week in Google Sheets, and the report in Slack."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-7-cd5846a0",
+      "name": "Section 6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        642
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 860,
+        "height": 328,
+        "content": "## Run once: set up the sheet\nPaste your spreadsheet ID, run this branch once, and it adds the tab and the header row."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-1-ba246963",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -130,
+        -1394
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 780,
+        "height": 940,
+        "content": "## Search Console weekly, with numbers you can trust\nEvery Monday the workflow pulls last week and the week before from the Google Search Console API. **Code computes every number** (clicks, impressions, CTR, average position, top / new / lost queries and pages) as a numbered list of facts. Claude writes 3\u20135 short observations from those facts only, and **code checks each one**: every number must be in the facts it cites, every quoted query or page must exist. The report goes to Slack and one row per week to Google Sheets.\n\n### How it works\n1. Six API calls (totals, by query, by page, for both weeks). Data is 3 days behind, so the week ends 3 days ago.\n2. Code builds the facts, and says how many impressions have a known query (Search Console hides rare ones).\n3. Claude writes observations with the fact ids it used. A failed check is shown with a warning, never hidden.\n\n### Setup\n1. In Google Cloud, enable the **Google Search Console API** in the project of your OAuth client.\n2. Create a **Google OAuth2 API** credential with the scope `https://www.googleapis.com/auth/webmasters.readonly`.\n3. Put your property in **Config** (`sc-domain:example.com` or `https://www.example.com/`).\n4. Blank Google Sheet: paste its ID in **Spreadsheet ID**, run **Run once**, select the sheet. Pick a Slack channel.\n\n### Customization\nChange the language, the period, the minimum impressions and the list length in **Config**."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Plan requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run now": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build facts": {
+      "main": [
+        [
+          {
+            "node": "AI: Write observations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "To week row": {
+      "main": [
+        [
+          {
+            "node": "Add to Weekly tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Monday": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan requests": {
+      "main": [
+        [
+          {
+            "node": "Query Search Console",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Spreadsheet ID": {
+      "main": [
+        [
+          {
+            "node": "Add the GSC weekly tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check and report": {
+      "main": [
+        [
+          {
+            "node": "To week row",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Post to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Search Console": {
+      "main": [
+        [
+          {
+            "node": "Build facts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Write observations": {
+      "main": [
+        [
+          {
+            "node": "Check and report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add the GSC weekly tab": {
+      "main": [
+        [
+          {
+            "node": "Write the header row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run once: set up the sheet": {
+      "main": [
+        [
+          {
+            "node": "Spreadsheet ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

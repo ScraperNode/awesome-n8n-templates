@@ -1,6 +1,6 @@
 # 🔬 Extract text from receipts with OCR.space table recognition
 
-> ⚡ **1,084 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,405 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

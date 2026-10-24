@@ -1,6 +1,6 @@
 # 📖 Local document question answering with Ollama AI, Agentic RAG & PGVector
 
-> ⚡ **7,039 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **10,630 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

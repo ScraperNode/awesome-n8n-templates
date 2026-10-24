@@ -1,6 +1,6 @@
 # 💬 Autonomous customizable support chatbot on Intercom + Discord thread reports
 
-> ⚡ **610 views** · 💬 [Support Chatbots](../)
+> ⚡ **657 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

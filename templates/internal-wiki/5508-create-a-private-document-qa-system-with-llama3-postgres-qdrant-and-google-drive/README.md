@@ -1,6 +1,6 @@
 # 📖 Create a private document Q&A system with Llama3, Postgres, Qdrant and Google Drive
 
-> ⚡ **3,606 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **4,034 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

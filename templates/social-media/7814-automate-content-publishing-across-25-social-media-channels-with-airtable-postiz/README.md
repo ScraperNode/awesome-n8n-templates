@@ -1,6 +1,6 @@
 # 📱 Automate content publishing across 25 social media channels with Airtable & Postiz
 
-> ⚡ **974 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,142 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

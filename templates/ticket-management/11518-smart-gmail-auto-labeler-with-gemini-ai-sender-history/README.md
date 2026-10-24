@@ -1,6 +1,6 @@
 # 🎫 Smart Gmail auto-labeler with Gemini AI & sender history
 
-> ⚡ **142 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **226 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

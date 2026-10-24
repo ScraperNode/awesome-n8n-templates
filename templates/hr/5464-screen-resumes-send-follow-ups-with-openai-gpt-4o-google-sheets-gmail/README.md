@@ -1,6 +1,6 @@
 # 👥 Screen resumes & send follow-ups with OpenAI GPT-4o, Google Sheets & Gmail
 
-> ⚡ **1,311 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,425 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

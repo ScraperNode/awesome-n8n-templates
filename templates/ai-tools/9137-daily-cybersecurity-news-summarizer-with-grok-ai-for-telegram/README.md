@@ -1,6 +1,6 @@
 # 🎯 Daily cybersecurity news summarizer with Grok AI for Telegram
 
-> ⚡ **847 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **1,192 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Get data from multiple RSS feeds to Telegram
 
-> ⚡ **17,525 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **17,888 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

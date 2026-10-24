@@ -1,6 +1,6 @@
 # ⚒️ Build your own SQLite MCP server
 
-> ⚡ **2,677 views** · ⚒️ [Engineering](../)
+> ⚡ **2,895 views** · ⚒️ [Engineering](../)
 
 ## Description
 

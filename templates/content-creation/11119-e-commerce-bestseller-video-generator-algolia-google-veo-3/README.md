@@ -1,6 +1,6 @@
 # 🎬 E-commerce bestseller video generator (Algolia + Google VEO 3)
 
-> ⚡ **225 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **346 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

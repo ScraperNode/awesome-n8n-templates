@@ -1,6 +1,6 @@
 # 📱 Daily govt exam quiz by Gopal Debnath (mrtechyguru)
 
-> ⚡ **512 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **539 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

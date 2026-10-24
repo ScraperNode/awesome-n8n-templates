@@ -1,6 +1,6 @@
 # 📱 Track WhatsApp group message activity with Airtable database
 
-> ⚡ **445 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **609 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

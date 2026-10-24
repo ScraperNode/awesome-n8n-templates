@@ -1,6 +1,6 @@
 # 📋 Summarize Trello board activity with Gemini and send updates to Slack
 
-> ⚡ **24 views** · 📋 [Project Management](../)
+> ⚡ **143 views** · 📋 [Project Management](../)
 
 ## Description
 

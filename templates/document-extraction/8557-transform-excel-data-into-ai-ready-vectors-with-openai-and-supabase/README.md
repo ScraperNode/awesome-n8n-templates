@@ -1,6 +1,6 @@
 # 🔬 Transform Excel data into AI-ready vectors with OpenAI and Supabase
 
-> ⚡ **1,796 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,463 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 Report number of weekly created records in an app
 
-> ⚡ **2,308 views** · 📋 [Project Management](../)
+> ⚡ **2,317 views** · 📋 [Project Management](../)
 
 ## Description
 

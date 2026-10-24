@@ -1,6 +1,6 @@
 # ⚡ Manage Google Calendar events via WhatsApp with Gemini AI
 
-> ⚡ **160 views** · ⚡ [Personal Productivity](../)
+> ⚡ **201 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

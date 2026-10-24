@@ -1,6 +1,6 @@
 # 🤖 Update Dialogflow intent responses via Telegram bot commands
 
-> ⚡ **314 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **334 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

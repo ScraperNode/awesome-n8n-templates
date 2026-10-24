@@ -1,6 +1,6 @@
 # 💬 Create a pizza ordering chatbot with GPT-3.5 - Menu, orders & status tracking
 
-> ⚡ **7,806 views** · 💬 [Support Chatbots](../)
+> ⚡ **8,201 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

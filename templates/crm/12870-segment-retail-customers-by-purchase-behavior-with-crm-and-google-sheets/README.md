@@ -1,6 +1,6 @@
 # 🤝 Segment retail customers by purchase behavior with CRM and Google Sheets
 
-> ⚡ **32 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **138 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

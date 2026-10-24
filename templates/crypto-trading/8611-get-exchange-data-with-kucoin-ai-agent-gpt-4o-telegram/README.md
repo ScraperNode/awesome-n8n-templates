@@ -1,6 +1,6 @@
 # 📈 Get exchange data with KuCoin AI Agent | GPT-4o + Telegram
 
-> ⚡ **250 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **283 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Automate Telegram message processing - separate text and files 💬📁
 
-> ⚡ **1,582 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,256 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

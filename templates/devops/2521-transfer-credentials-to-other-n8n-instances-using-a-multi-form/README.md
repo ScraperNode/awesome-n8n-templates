@@ -1,6 +1,6 @@
 # ⚙️ Transfer credentials to other n8n instances using a multi-form
 
-> ⚡ **3,178 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **3,345 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

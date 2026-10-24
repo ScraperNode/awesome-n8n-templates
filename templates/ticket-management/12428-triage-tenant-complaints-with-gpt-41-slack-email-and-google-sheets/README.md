@@ -1,6 +1,6 @@
 # 🎫 Triage tenant complaints with GPT-4.1, Slack, email and Google Sheets
 
-> ⚡ **40 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **45 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

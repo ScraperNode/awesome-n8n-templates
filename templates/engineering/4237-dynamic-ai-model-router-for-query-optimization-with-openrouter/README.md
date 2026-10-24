@@ -1,6 +1,6 @@
 # ⚒️ Dynamic AI model router for query optimization with OpenRouter
 
-> ⚡ **4,768 views** · ⚒️ [Engineering](../)
+> ⚡ **5,132 views** · ⚒️ [Engineering](../)
 
 ## Description
 

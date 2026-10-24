@@ -1,6 +1,6 @@
 # ⚒️ Flexible currency rate uploads for SAP B1 with AI validation & multiple sources
 
-> ⚡ **1,870 views** · ⚒️ [Engineering](../)
+> ⚡ **2,264 views** · ⚒️ [Engineering](../)
 
 ## Description
 

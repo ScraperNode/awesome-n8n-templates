@@ -1,6 +1,6 @@
 # 💬 MCP Supabase server for AI agent with RAG & multi-tenant CRUD
 
-> ⚡ **14,494 views** · 💬 [Support Chatbots](../)
+> ⚡ **14,757 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

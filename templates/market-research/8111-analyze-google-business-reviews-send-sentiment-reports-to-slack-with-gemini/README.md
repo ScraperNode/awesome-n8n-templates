@@ -1,6 +1,6 @@
 # 📊 Analyze Google Business Reviews & send sentiment reports to Slack with Gemini
 
-> ⚡ **1,497 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,965 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

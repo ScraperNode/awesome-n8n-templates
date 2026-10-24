@@ -1,6 +1,6 @@
 # 📱 Automate personalized email campaigns with Google Docs, Sheets and SMTP
 
-> ⚡ **1,481 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,926 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ Export Wordpress to PineCone vector store
 
-> ⚡ **419 views** · ⚒️ [Engineering](../)
+> ⚡ **432 views** · ⚒️ [Engineering](../)
 
 ## Description
 

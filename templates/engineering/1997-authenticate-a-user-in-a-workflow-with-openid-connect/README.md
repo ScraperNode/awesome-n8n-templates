@@ -1,6 +1,6 @@
 # ⚒️ Authenticate a user in a workflow with OpenID Connect
 
-> ⚡ **8,201 views** · ⚒️ [Engineering](../)
+> ⚡ **8,416 views** · ⚒️ [Engineering](../)
 
 ## Description
 

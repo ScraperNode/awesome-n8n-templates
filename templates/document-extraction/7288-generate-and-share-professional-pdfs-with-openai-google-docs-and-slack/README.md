@@ -1,6 +1,6 @@
 # 🔬 Generate and share professional PDFs with OpenAI, Google Docs, and Slack
 
-> ⚡ **3,442 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,417 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

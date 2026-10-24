@@ -1,6 +1,6 @@
 # 🔬 📦 AI-powered damage reporting tool for logistics with Gmail, Telegram and GPT
 
-> ⚡ **406 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **796 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

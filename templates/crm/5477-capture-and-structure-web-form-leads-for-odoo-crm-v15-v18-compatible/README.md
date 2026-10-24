@@ -1,6 +1,6 @@
 # 🤝 Capture and structure web form leads for Odoo CRM (v15-v18 compatible)
 
-> ⚡ **333 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **390 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Monitor AI budgets and optimize costs with Anthropic Claude and Slack alerts
 
-> ⚡ **8 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **56 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📁 Organize Gmail attachments in Google Drive folders based on sender’s email
 
-> ⚡ **1,163 views** · 📁 [File Management](../)
+> ⚡ **1,307 views** · 📁 [File Management](../)
 
 ## Description
 

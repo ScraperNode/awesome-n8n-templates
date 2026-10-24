@@ -1,6 +1,6 @@
 # 🔒 Malicious file detection & response: Wazuh to VirusTotal with Slack alerts
 
-> ⚡ **2,643 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **3,310 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

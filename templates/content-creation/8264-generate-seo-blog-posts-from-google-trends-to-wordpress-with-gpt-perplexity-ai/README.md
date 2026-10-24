@@ -1,6 +1,6 @@
 # 🎬 Generate SEO blog posts from Google Trends to WordPress with GPT & Perplexity AI
 
-> ⚡ **1,996 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,376 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

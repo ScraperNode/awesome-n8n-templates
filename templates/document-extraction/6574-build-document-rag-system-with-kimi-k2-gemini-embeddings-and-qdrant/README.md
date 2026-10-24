@@ -1,6 +1,6 @@
 # 🔬 Build document RAG system with Kimi-K2, Gemini embeddings and Qdrant
 
-> ⚡ **2,035 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,250 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

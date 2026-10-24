@@ -1,6 +1,6 @@
 # 📊 UTM marketing attribution reports with Google Sheets, GPT-4o & Gmail
 
-> ⚡ **186 views** · 📊 [Market Research & Insights](../)
+> ⚡ **200 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

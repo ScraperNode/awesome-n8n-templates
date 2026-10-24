@@ -1,6 +1,6 @@
 # 🎬 Generate dynamic images with text & templates using ImageKit.
 
-> ⚡ **1,045 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,169 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

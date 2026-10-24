@@ -1,6 +1,6 @@
 # 📈 Get blockchain insights from chat using GPT-4 and Nansen MCP
 
-> ⚡ **876 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **922 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

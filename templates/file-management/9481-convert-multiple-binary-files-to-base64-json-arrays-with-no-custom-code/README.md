@@ -1,6 +1,6 @@
 # 📁 Convert multiple binary files to base64 JSON arrays with no custom code
 
-> ⚡ **403 views** · 📁 [File Management](../)
+> ⚡ **543 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 AI-powered Amazon product recommendations with Gemini 2.5 Flash via Telegram
 
-> ⚡ **164 views** · 📊 [Market Research & Insights](../)
+> ⚡ **288 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -8,21 +8,23 @@
 
 ## Description
 
-Decodo Amazon Product Recommender delivers instant, AI-powered shopping recommendations directly through Telegram. Send any product name and receive Amazon product analysis featuring price comparisons, ratings, sales data, and categorized recommendations (budget, premium, best value) in under 40 seconds—eliminating hours of manual research.
+Send a product name, get back smart Amazon picks. The Decodo Amazon Product Recommender delivers AI-powered shopping recommendations through Telegram: price comparisons, ratings, sales data, and categorized picks (budget, premium, best value) in under 40 seconds. No more hours of manual research.
+
+*Last updated: September 2026.*
 
 ## Why Use This Workflow?
 
-**Time Savings:** Reduce product research from 45+ minutes to under 30 seconds  
+**Time Savings:** Product research drops from 45+ minutes to under 30 seconds.
 
-**Decision Quality:** Compare 20+ products automatically with AI-curated recommendations 
+**Decision Quality:** 20+ products compared automatically with AI-curated recommendations.
 
-**Zero Manual Work:** Complete automation from message input to formatted recommendations
+**Zero Manual Work:** Full automation from message input to formatted recommendations.
 
 ## Ideal For
 
-- **E-commerce Entrepreneurs:** Quickly research competitor products, pricing strategies, and market trends for inventory decisions
-- **Smart Shoppers & Deal Hunters:** Get instant product comparisons with sales volume data and discount tracking before purchasing
-- **Product Managers & Researchers:** Analyze Amazon marketplace positioning, customer sentiment, and pricing ranges for competitive intelligence
+- **E-commerce Entrepreneurs:** Research competitor products, pricing, and market trends for inventory decisions.
+- **Smart Shoppers & Deal Hunters:** Instant comparisons with sales volume data and discount tracking before buying.
+- **Product Managers & Researchers:** Amazon marketplace positioning, customer sentiment, and pricing ranges for competitive intelligence.
 
 ## How It Works
 
@@ -40,15 +42,15 @@ Decodo Amazon Product Recommender delivers instant, AI-powered shopping recommen
 
 | Requirement | Type | Purpose |
 |-------------|------|---------|
-| [n8n instance](https://n8n.partnerlinks.io/khmuhtadin) | Essential | Workflow execution platform |
+| [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin) | Essential | Workflow execution platform |
 | [Decodo Account](https://decodo.com) | Essential | Amazon product data scraping |
 | Telegram Bot Token | Essential | Chat interface for user interactions |
-| Google Gemini API | Essential | AI-powered product validation and recommendations |
+| Google Gemini API | Essential | AI-powered product validation and recommendations ([get a key](https://makersuite.google.com/app/apikey)) |
 | Telegram Account | Optional | Admin error notifications |
 
 ### Installation Steps
 
-1. Import the JSON file to your [n8n instance](https://n8n.partnerlinks.io/khmuhtadin)
+1. Import the JSON file to your [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin)
 2. **Configure credentials:**
    - **Decodo API**: Sign up at [decodo.com](https://decodo.com) → Dashboard → Scraping APIs → Web Advanced → Copy BASIC AUTH TOKEN
    - **Telegram Bot**: Message @BotFather on Telegram → `/newbot` → Copy HTTP API token (format: `123456789:ABCdefGHI...`)
@@ -100,13 +102,24 @@ Decodo Amazon Product Recommender delivers instant, AI-powered shopping recommen
 
 ---
 
-**Created by:** [Khaisa Studio](https://khaisa.studio)  
+### Quick Answers
+**How are products grouped?**  
+Budget, premium, best value, and most popular, each with direct purchase links.  
+**What if something fails?**  
+Admin gets notified on a separate Telegram channel for monitoring.  
+**How long are the messages?**  
+2500 characters by default (Telegram max is 4096). Adjustable in the AI prompt.  
+
+**Made by:** [khmuhtadin](https://khmuhtadin.com)  
 **Category:** AI | Productivity | E-commerce | **Tags:** amazon, telegram, ai, product-research, shopping, automation, gemini
 
-**Need custom workflows?** [Contact us](https://khaisa.studio/contact)
+**Need custom workflows?** [Contact me](https://khmuhtadin.com/contact)
 
 **Connect with the creator:**  
 [Portfolio](https://khmuhtadin.com) • [Workflows](https://khaisa.studio/products/) • [LinkedIn](https://www.linkedin.com/in/khmuhtadin/) • [Medium](https://medium.com/@khaisastudio) • [Threads](https://www.threads.com/@khmuhtadin)
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

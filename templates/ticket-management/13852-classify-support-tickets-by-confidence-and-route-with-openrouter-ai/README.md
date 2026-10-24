@@ -1,6 +1,6 @@
-# 🎫 Classify support tickets by confidence and route with OpenRouter AI
+# 🎫 Production AI Playbook: Deterministic Steps & AI Steps (3 of 5)
 
-> ⚡ **0 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **122 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 
@@ -17,6 +17,10 @@ Combine AI classification with confidence-based routing and category-based fan-o
 
 **Why it matters**
 Not every AI classification deserves the same level of trust. High-confidence results can be auto-routed. Medium ones get flagged for review. Low ones go straight to a human. This lets you phase in automation gradually while keeping quality high.
+
+This template is a learning companion to the Production AI Playbook, a series that explores strategies, shares best practices, and provides practical examples for building reliable AI systems in n8n.  
+
+[https://go.n8n.io/PAP-D&A-Blog](https://go.n8n.io/PAP-D&A-Blog)
 
 ## 🔗 Nodes Used
 

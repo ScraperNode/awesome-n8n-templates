@@ -1,6 +1,6 @@
 # 🧾 Automate QuickBooks sales receipts & customer creation from Stripe payments
 
-> ⚡ **291 views** · 🧾 [Invoice Processing](../)
+> ⚡ **352 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

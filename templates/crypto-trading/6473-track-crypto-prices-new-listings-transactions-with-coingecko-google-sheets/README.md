@@ -1,6 +1,6 @@
 # 📈 Track crypto prices, new listings & transactions with CoinGecko & Google Sheets
 
-> ⚡ **103 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **118 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

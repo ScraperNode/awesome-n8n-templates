@@ -1,6 +1,6 @@
 # 💬 Automate loan pre-approvals with Jotform, GPT-4 analysis & Gmail notifications
 
-> ⚡ **360 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **666 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

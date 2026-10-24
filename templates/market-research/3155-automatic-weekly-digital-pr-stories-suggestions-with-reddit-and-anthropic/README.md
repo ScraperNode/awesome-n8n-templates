@@ -1,6 +1,6 @@
 # 📊 Automatic weekly digital PR stories suggestions with Reddit and Anthropic
 
-> ⚡ **3,529 views** · 📊 [Market Research & Insights](../)
+> ⚡ **3,701 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

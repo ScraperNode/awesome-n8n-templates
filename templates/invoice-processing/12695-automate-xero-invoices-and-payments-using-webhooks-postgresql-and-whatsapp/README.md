@@ -1,6 +1,6 @@
 # 🧾 Automate Xero invoices and payments using webhooks, PostgreSQL and WhatsApp
 
-> ⚡ **26 views** · 🧾 [Invoice Processing](../)
+> ⚡ **168 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

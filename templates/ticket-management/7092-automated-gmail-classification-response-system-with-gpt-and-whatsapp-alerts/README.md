@@ -1,6 +1,6 @@
 # 🎫 Automated Gmail classification & response system with GPT and WhatsApp alerts
 
-> ⚡ **8,701 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **22,344 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

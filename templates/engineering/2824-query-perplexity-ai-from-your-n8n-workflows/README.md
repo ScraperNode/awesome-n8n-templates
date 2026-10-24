@@ -1,6 +1,6 @@
 # ⚒️ Query Perplexity AI from your n8n workflows
 
-> ⚡ **24,791 views** · ⚒️ [Engineering](../)
+> ⚡ **24,746 views** · ⚒️ [Engineering](../)
 
 ## Description
 

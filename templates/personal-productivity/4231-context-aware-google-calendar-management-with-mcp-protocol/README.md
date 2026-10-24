@@ -1,6 +1,6 @@
 # ⚡ Context-aware Google Calendar management with MCP protocol
 
-> ⚡ **13,873 views** · ⚡ [Personal Productivity](../)
+> ⚡ **14,501 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

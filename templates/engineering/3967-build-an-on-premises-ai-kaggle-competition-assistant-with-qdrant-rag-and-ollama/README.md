@@ -1,6 +1,6 @@
 # ⚒️ Build an on-premises AI Kaggle competition assistant with Qdrant RAG and Ollama
 
-> ⚡ **4,776 views** · ⚒️ [Engineering](../)
+> ⚡ **5,195 views** · ⚒️ [Engineering](../)
 
 ## Description
 

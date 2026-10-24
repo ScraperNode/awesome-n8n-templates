@@ -1,6 +1,6 @@
 # 🔬 Create professional proposals using Dual AI and Google Docs templates
 
-> ⚡ **201 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **300 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

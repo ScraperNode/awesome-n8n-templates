@@ -1,197 +1,54 @@
 # 🎬 AI SEO Blog Automation for WordPress with featured images-End-to-End
 
-> ⚡ **4,501 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,692 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 
-🧠 Automate end-to-end SEO blog creation and WordPress publishing using a GPT-5 multi-agent workflow with real-time research, metadata generation, and optional featured images.
+## Quick overview
+One n8n workflow that turns a keyword into a publish-ready WordPress draft: live SERP research, a section-by-section article with real citations and internal links from your own sitemap, a 100-point SEO score with automatic revision, plus tags, category, excerpt and a featured image.
 
+## How it works
+1. You submit a built-in n8n form with your keyword, target word count, number of sections, writing style, site URL, and a short description of your site and audience.
+2. A keyword strategist agent turns that keyword into a plan: search intent, content type, content angle, and three secondary, five long-tail and five semantic keywords.
+3. A research agent running on a live-search model reads what actually ranks today, collects five real questions searchers ask, and answers them with genuine source URLs it retrieved.
+4. An outline planner assigns each keyword and each research question to exactly one section, so nothing is repeated and nothing is stuffed.
+5. Each section is written by its own model call with only its own assignments, its own word budget and its own sources, using a whitelist of safe HTML tags.
+6. An editor fetches your site's sitemap, links three to six genuinely relevant internal pages inside the text, then writes the introduction, the conclusion and a Resources list of every cited source.
+7. A grader scores the finished HTML from 0 to 100 across keywords, structure, links, readability and length, and returns a specific fix list for every point lost.
+8. Anything below your threshold gets one revision pass, then the post is published to WordPress as a draft with its category, four get-or-create tags, excerpt and optional featured image already attached.
 
+## Setup
+1. Create an OpenRouter API key with some credit on it, and generate a WordPress Application Password for a user with the Editor or Administrator role.
+2. Import the single workflow JSON file into n8n; all 64 nodes and the eight sticky notes that document each stage arrive together.
+3. Attach your OpenRouter credential to the two model nodes, Mini LM and Research LM, and set Mini LM's model explicitly to a mini-class model.
+4. Attach your WordPress credential to the nine publish nodes: get-tags, set-tags, Upload Image To WP, Update Media Meta, both Post Blog nodes, Set Featured Image and both Set Excerpt nodes.
+5. Open the configuration node and set min_seo_score, the score below which an article gets a revision pass; 75 is a good starting point.
+6. Run a test, open the form URL, and submit a keyword plus your site URL with a trailing slash, which every WordPress call depends on.
+7. Check WordPress drafts for the finished post, then activate the workflow so the production form URL goes live.
 
-## 🧠 AI-Powered SEO Blog Automation for WordPress — n8n + GPT-5
+## Requirements
+- n8n (Cloud or self-hosted) with the AI/LangChain nodes available
+- An OpenRouter API key with credit — runs every writing and research agent
+- A WordPress site with a reachable REST API and an Application Password
+- An SEO plugin generating a sitemap (Yoast, Rank Math or WordPress core) for internal linking
+- An OpenAI API key with a verified organisation — only if you want AI featured images
+- A Google account — only for the optional scheduled Google Sheets queue
 
-**Category:** WordPress . Content Creation · Marketing Automation · AI Agents · Publishing  
-**Use Case:** End-to-End SEO Blog Generation & Publishing
+## Customization
+- Swap the model on the Mini LM node to change quality and cost for all nine writing agents at once; keep Research LM on a live-search model
+- Raise `min_seo_score` in the configuration node for a stricter quality bar, or lower it to skip revisions entirely
+- Change the sitemap filename in the Internal Links tool to match your SEO plugin, or point it at post-sitemap.xml to link to articles instead of pages
+- Switch both Post Blog nodes from `draft` to `publish` for fully automated posting once you trust the output
+- Edit any agent's system message to change tone, tag count or scoring weights — keep the output JSON shape intact for the parsers
+- Enable the Schedule Trigger and the Google Sheets queue to publish one planned post per day without touching the form
 
-This **production-ready n8n workflow** automates the entire blog content lifecycle — from keyword input to WordPress draft publishing — using a **multi-agent GPT-5 orchestration architecture**.
-
-Designed for **content teams, SEO professionals, agencies, and founders**, the workflow transforms structured inputs into **fact-checked, SEO-optimized, publication-ready blog posts** with metadata, tags, excerpts, and optional featured images.
-
-Simply copy, paste, and configure — no custom coding required.
-
----
-
-## 🚀 What This Workflow Does
-
-This workflow automates **content creation at scale** by coordinating specialized AI agents that each handle a single responsibility in a strict execution order.
-
-It supports both **manual content requests** and **scheduled batch publishing**, making it suitable for editorial pipelines, programmatic SEO, and marketing automation.
-
----
-
-## ✨ Key Features & Capabilities
-
-### 🧠 AI Content Creation (GPT-5 Optimized)
-- Multi-agent content pipeline with clearly defined roles
-- SEO-driven outline and section planning
-- Expert-level long-form writing
-- Inline citations and verified sources
-- Final editorial HTML polishing
-
-### 🔍 Real-Time Web Research
-- Live Q&A and fact retrieval (OpenRouter / Perplexity Sonar)
-- Context-aware, up-to-date information
-- Reduced hallucinations and outdated content
-
-### 📝 SEO & Publishing Automation
-- SEO-optimized titles, slugs, excerpts, and meta descriptions
-- Automatic WordPress category selection
-- Dynamic tag creation and updates
-- Draft publishing via WordPress REST API
-
-### 🖼️ Optional Featured Image Pipeline
-- AI-generated realistic cover image prompts
-- Alt-text generation for accessibility and SEO
-- Image upload, resizing, and WordPress attachment
-
-### 📊 Workflow Tracking
-- Google Sheets integration for batch automation
-- Automatic status update (`created = yes`)
-- Suitable for editorial calendars and content tracking
-
----
-
-## 🔁 Supported Triggers
-
-### 1️⃣ Form Trigger (Manual Publishing)
-
-Collects:
-- Keywords
-- Target word count
-- Number of sections
-- Writing style
-- Website URL
-- Website context
-- Featured image toggle
-
-### 2️⃣ Google Sheets + Schedule Trigger (Batch Publishing)
-
-Automatically processes rows containing:
-- Keywords
-- Word count
-- Sections count
-- Writing style
-- Website
-- Website context
-- Featured image toggle
-- `created` status flag (auto-updated after publishing)
-
----
-
-## 🧠 AI Agent Orchestration (GPT-5)
-
-A central **Orchestration Agent** coordinates specialized sub-agents:
-
-- **GetOnlineInfo** — Live research and Q&A
-- **OutlinePlanner** — SEO-structured table of contents
-- **createSections** — Detailed section definitions
-- **SectionsWriter** — Expert-level content drafting
-- **Editor** — Final HTML refinement and compliance checks
-- **MetaInfo** — Title, slug, excerpt, and category selection
-- **Tags Agent** — SEO-friendly WordPress tag creation and updates
-- **ImagePrompt** — Cover image prompt and alt text (optional)
-
-Each agent executes **once, deterministically**, ensuring consistent and predictable output quality.
-
----
-
-## ✍️ End-to-End Writing Flow
-
-1. Input parsing (Form or Google Sheets)
-2. Real-time data retrieval
-3. SEO-optimized outline generation
-4. Section-by-section expert writing
-5. Editorial refinement into valid HTML
-6. Metadata and excerpt generation
-7. Tag creation and update in WordPress
-8. Optional image generation and upload
-9. Draft post publishing to WordPress
-10. Google Sheets row update (`created = yes`)
-
----
-
-## 📦 Output Structure (Validated JSON)
-
-```json
-{
-  "toc": "Table of Contents",
-  "post_html": "&lt;final HTML content&gt;",
-  "meta_data": {
-    "title": "...",
-    "slug": "...",
-    "excerpt": "...",
-    "category_id": 0
-  },
-  "image_data": {
-    "image_prompt": "...",
-    "alt_text": "..."
-  },
-  "tags": [
-    { "name": "...", "description": "..." }
-  ],
-  "ready": true
-}
-```
-
----
-
-## 🌐 WordPress Integration
-
-- REST API endpoints:
-  - `/wp-json/wp/v2/posts`
-  - `/wp-json/wp/v2/media`
-  - `/wp-json/wp/v2/tags`
-- Draft publishing with author and category assignment
-- Automatic excerpt and tag updates
-- Featured image handling (optional)
-
----
-
-## 🧩 Setup Requirements
-
-### 🔑 Required Credentials
-- WordPress API credentials
-- OpenAI API key
-- OpenRouter API key (optional)
-- Google Sheets API credentials (optional)
-
-### 🧠 Required Sub-Workflows
-- OutlinePlanner
-- createSections
-- SectionsWriter
-- Editor
-- MetaInfo
-- Tags Agent
-- ImagePrompt (optional)
-
----
-
-## 💡 Why Use This Workflow?
-
-- Purpose-built for **WordPress Automation and Content Creation**
-- Eliminates manual writing, formatting, and publishing steps
-- Scales from single posts to batch content pipelines
-- Modular design for easy testing and customization
-- Suitable for SEO blogs, SaaS content, affiliate sites, and agencies
-
----
-
-## 🏁 Production-Ready
-
-- Copy-paste deployable
-- Validated HTML, JSON, tags, and excerpts
-- Modular and debuggable architecture
-- Optimized for GPT-5 quality, consistency, and reliability
+## Additional info
+- Keyword data is AI-derived from live SERP research, not from a search-volume API, so use it to structure articles rather than to replace a keyword tool
+- The grader is an LLM scoring a strict on-page checklist, which is a real quality floor rather than a ranking prediction
+- Posts are created as drafts on purpose; the workflow sets the WordPress excerpt, which most themes reuse as the meta description
+- Internal links come only from your live sitemap and citations only from retrieved URLs, so neither can be invented
+- A full run makes roughly 10 to 15 model calls and takes three to six minutes, with one revision pass at most so cost stays capped
+- Not affiliated with or endorsed by WordPress, Automattic, OpenAI, OpenRouter, Perplexity, Google or n8n
 
 ## 🔗 Nodes Used
 

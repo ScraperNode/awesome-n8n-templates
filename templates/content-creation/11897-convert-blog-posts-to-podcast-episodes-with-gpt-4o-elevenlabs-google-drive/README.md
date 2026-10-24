@@ -1,6 +1,6 @@
 # 🎬 Convert blog posts to podcast episodes with GPT-4o, ElevenLabs & Google Drive
 
-> ⚡ **54 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **83 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

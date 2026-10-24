@@ -1,6 +1,6 @@
 # 📱 Create multi-platform social media content with Sonnet 4.5, GoToHuman approval & Sheets
 
-> ⚡ **469 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **659 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Capture and Store CRM Contacts with Telegram & Gemini AI
 
-> ⚡ **157 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **287 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

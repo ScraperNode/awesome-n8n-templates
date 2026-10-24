@@ -1,6 +1,6 @@
 # 📱 LinkedIn engagement automator with GPT-4o/Claude, human review & multilingual comments
 
-> ⚡ **1,899 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,110 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

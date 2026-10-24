@@ -1,6 +1,6 @@
 # 🎯 Auto-categorize Outlook emails into color categories with GPT-4o
 
-> ⚡ **836 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **944 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

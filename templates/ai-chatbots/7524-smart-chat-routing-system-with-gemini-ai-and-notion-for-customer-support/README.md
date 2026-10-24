@@ -1,6 +1,6 @@
 # 🤖 Smart chat routing system with Gemini AI and Notion for customer support
 
-> ⚡ **819 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **849 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

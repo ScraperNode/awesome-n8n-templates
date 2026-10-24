@@ -1,6 +1,6 @@
 # 📁 Scheduled FTP/SFTP to MinIO backup with preserved folder structure
 
-> ⚡ **349 views** · 📁 [File Management](../)
+> ⚡ **400 views** · 📁 [File Management](../)
 
 ## Description
 

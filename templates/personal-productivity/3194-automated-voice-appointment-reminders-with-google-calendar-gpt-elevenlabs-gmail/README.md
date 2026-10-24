@@ -1,6 +1,6 @@
 # ⚡ Automated voice appointment reminders with Google Calendar GPT ElevenLabs Gmail
 
-> ⚡ **6,057 views** · ⚡ [Personal Productivity](../)
+> ⚡ **6,265 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

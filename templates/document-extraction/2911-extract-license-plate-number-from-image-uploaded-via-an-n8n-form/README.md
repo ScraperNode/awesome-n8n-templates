@@ -1,6 +1,6 @@
 # 🔬 Extract license plate number from image uploaded via an n8n form
 
-> ⚡ **2,801 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,796 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

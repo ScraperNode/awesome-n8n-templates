@@ -1,6 +1,6 @@
 # ⚡ Personal portfolio CV  Rag chatbot - with conversation store and email summary
 
-> ⚡ **4,551 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,639 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

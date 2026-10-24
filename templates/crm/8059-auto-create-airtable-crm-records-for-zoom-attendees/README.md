@@ -1,6 +1,6 @@
 # 🤝 Auto-create Airtable CRM records for Zoom attendees
 
-> ⚡ **159 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **178 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

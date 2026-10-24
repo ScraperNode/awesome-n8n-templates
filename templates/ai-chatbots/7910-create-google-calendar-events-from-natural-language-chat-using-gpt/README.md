@@ -1,6 +1,6 @@
 # 🤖 Create Google Calendar events from natural language chat using GPT
 
-> ⚡ **650 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **828 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

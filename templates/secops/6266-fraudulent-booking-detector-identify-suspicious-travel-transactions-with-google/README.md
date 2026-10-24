@@ -1,6 +1,6 @@
 # 🔒 Fraudulent booking detector: Identify suspicious travel transactions with Google Gemini
 
-> ⚡ **810 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **914 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

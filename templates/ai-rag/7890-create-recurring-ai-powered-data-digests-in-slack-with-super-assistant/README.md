@@ -1,6 +1,6 @@
 # 🔍 Create recurring AI-powered data digests in Slack with Super Assistant
 
-> ⚡ **112 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **119 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

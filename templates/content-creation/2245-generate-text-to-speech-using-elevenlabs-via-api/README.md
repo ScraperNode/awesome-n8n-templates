@@ -1,6 +1,6 @@
 # 🎬 Generate Text-to-Speech Using Elevenlabs via API
 
-> ⚡ **40,301 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **41,284 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

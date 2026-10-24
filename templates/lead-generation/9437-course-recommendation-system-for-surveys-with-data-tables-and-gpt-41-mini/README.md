@@ -1,6 +1,6 @@
 # 🎣 Course recommendation system for surveys with data tables and GPT-4.1-Mini
 
-> ⚡ **3,545 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **3,862 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

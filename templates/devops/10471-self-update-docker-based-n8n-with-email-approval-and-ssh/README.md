@@ -1,6 +1,6 @@
 # ⚙️ Self update Docker-based n8n with email approval and SSH
 
-> ⚡ **462 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **607 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

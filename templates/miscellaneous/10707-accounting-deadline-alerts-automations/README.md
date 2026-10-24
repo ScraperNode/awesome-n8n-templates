@@ -1,72 +1,40 @@
 # 🔧 Accounting Deadline Alerts Automations
 
-> ⚡ **77 views** · 🔧 [Miscellaneous](../)
+> ⚡ **201 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 
-## 🎯 Accounting Alerts Automation
+## Quick overview
+This is the free DIY version of Deadline Autopilot: Automatically track Companies House filing deadlines for every client in your UK accounting practice. Daily API checks, colour-coded email alerts, and Google Sheets audit trail — so no filing ever slips. https://ihsanops.ai/deadline-management 
 
-**Purpose:** Automatically track Companies House filing deadlines for UK accounting firms and prevent costly penalties (£150-£1,500 per missed deadline).
+## How it works
+1. A schedule trigger runs the workflow automatically every weekday at 5 PM, so deadline checks happen without anyone remembering to run them.
+2. The workflow reads your full client list from Google Sheets, then queries the Companies House API for each company to pull its live accounts and confirmation-statement filing deadlines.
+3. Latest deadline dates are written straight back to the tracking sheet, keeping your single source of truth current.
+4. An HTML email is built with colour-coded urgency (Red/Orange/Yellow/Green by days remaining), a table sortable by due date, and a Yes/No confirmation button per company, then sent to your team via Gmail.
+5. When a recipient clicks Yes or No, a webhook records that response and a timestamp back into Google Sheets and shows a confirmation page — giving you a full audit trail of who confirmed what and when.
 
-**How it works:**
-- Daily automated checks pull live deadline data from Companies House API
-- Color-coded email alerts (Red/Orange/Yellow/Green) prioritize urgent deadlines
-- Interactive "Yes/No" buttons let recipients confirm completion status
-- All data syncs back to Google Sheets for complete audit trail
+## Setup
+1. Create a Google Sheet with these columns: company_number, company_name, accounts_due, confirmation_due, confirmation_submitted, last_updated. Manually enter company_number and company_name for each client; the rest auto-populate.
+2. Get a free Companies House API key from api.company-information.service.gov.uk and add it as a credential in n8n.
+3. Connect your Google Sheets OAuth (read/write) and Gmail OAuth (sending) credentials.
+4. Open the Build Interactive Email node and update the webhook URL to match your own n8n instance.
+5. Activate the workflow. The daily check now runs Monday to Friday at 5 PM. Total setup time is roughly 15 minutes once credentials are ready.
 
-**Value:** Saves 2-3 hours/week per firm while eliminating manual tracking errors.
-
-## ⚙️ Daily Deadline Check & Alert System
-
-**Runs:** Every weekday at 5 PM (Mon-Fri)
-
-**What happens:**
-1. **Read Company Database** - Fetches all tracked companies from Google Sheets
-2. **Get Company Data** - Pulls live filing deadlines from Companies House API for each company
-3. **Update Due Dates** - Syncs latest deadline data back to the tracking sheet
-4. **Build Interactive Email** - Creates HTML email with:
-   - Color-coded urgency indicators (days remaining)
-   - Sortable table by due date
-   - Clickable Yes/No confirmation buttons for each company
-5. **Send via Gmail** - Delivers consolidated report to accounting team
-
-**Why automated:** Manual deadline checking across 10-50+ companies is time-consuming and error-prone. This ensures nothing falls through the cracks.
-
-
-## ✅ Email Response Handler (Webhook Flow)
-
-**Triggered when:** Recipient clicks "Yes" or "No" button in the alert email
-
-**What happens:**
-1. **Webhook** - Receives confirmation status (company_number, company_name, yes/no)
-2. **Process Data** - Extracts response details from the webhook payload
-3. **Update Sheet** - Records confirmation status in Google Sheets with timestamp
-4. **Confirmation Page** - Displays success message to user
-
-**Why this matters:** Provides instant feedback to the user and creates an audit trail of who confirmed what and when. No separate tracking system needed—everything updates automatically in the same spreadsheet.
-
-**Result:** Accountability without administrative burden.
-
-## 📋 Setup Requirements
-
-**Google Sheets Database Structure:**
-Create a sheet with these columns:
-- company_number (manually entered)
-- company_name (manually entered)  
-- accounts_due (auto-updated)
-- confirmation_due (auto-updated)
-- confirmation_submitted (updated via email clicks)
-- last_updated (auto-timestamp)
-
-**Required Credentials:**
-- Google Sheets OAuth (for reading/writing data)
+## Requirements
 - Companies House API key (free from api.company-information.service.gov.uk)
-- Gmail OAuth (for sending alerts)
+- Google Sheets OAuth credential (read/write access)
+- Gmail OAuth credential (for sending alerts)
+- A Google Sheet with the columns listed in Setup
 
-**Webhook Configuration:**
-Update webhook URL in "Build Interactive Email" node to match your n8n instance.
+## Customization
+- Change the run schedule in the trigger node (e.g. a morning send instead of 5 PM)
+- Adjust the colour-coding thresholds to match how far ahead your practice likes to work
+- Swap Gmail for Outlook or SMTP, or route alerts to Slack instead of email
+- Extend the sheet to track additional filing types beyond accounts and confirmation statements
 
-**Time to Setup:** ~15 minutes once credentials are configured.
+## Additional info
+Saves 2–3 hours per week per firm and eliminates manual tracking errors across 10–50+ companies — no filing falls through the cracks. Built by Ali Amin, founder of Ihsan Ops, practical automation for UK accounting practices and SMEs. Want it installed and tuned for your firm, or a custom workflow built? ihsanops.ai — Less admin. More growth.
 
 ## 🔗 Nodes Used
 

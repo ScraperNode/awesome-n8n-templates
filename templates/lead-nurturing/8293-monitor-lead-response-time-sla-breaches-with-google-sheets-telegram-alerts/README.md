@@ -1,6 +1,6 @@
 # 💬 Monitor lead response time SLA breaches with Google Sheets & Telegram alerts
 
-> ⚡ **170 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **219 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

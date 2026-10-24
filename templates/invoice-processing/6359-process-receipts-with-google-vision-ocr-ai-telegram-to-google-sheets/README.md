@@ -1,6 +1,6 @@
 # 🧾 Process receipts with Google Vision OCR, AI & Telegram to Google Sheets
 
-> ⚡ **3,499 views** · 🧾 [Invoice Processing](../)
+> ⚡ **4,032 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

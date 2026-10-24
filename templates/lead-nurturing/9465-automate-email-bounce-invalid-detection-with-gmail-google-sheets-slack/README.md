@@ -1,6 +1,6 @@
 # 💬 Automate email bounce & invalid detection with Gmail, Google Sheets & Slack
 
-> ⚡ **117 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **205 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

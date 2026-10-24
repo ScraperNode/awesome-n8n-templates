@@ -1,6 +1,6 @@
 # 💬 Populate Retell dynamic variables with Google Sheets data for call handling
 
-> ⚡ **1,264 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,387 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

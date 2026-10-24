@@ -1,6 +1,6 @@
 # 📊 Let AI agents get campaigns with 🛠️ Google Ads tool MCP server
 
-> ⚡ **2,576 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,988 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 CSV to HubSpot Uploader with Dynamic Field Mapping and Google Sheets Integration
 
-> ⚡ **574 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **591 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

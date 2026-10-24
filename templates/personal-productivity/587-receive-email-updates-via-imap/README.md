@@ -1,6 +1,6 @@
 # ⚡ Receive email updates via IMAP
 
-> ⚡ **3,558 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,624 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

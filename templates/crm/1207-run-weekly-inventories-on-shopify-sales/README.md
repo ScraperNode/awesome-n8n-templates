@@ -1,6 +1,6 @@
 # 🤝 Run weekly inventories on Shopify sales
 
-> ⚡ **5,239 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **5,450 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

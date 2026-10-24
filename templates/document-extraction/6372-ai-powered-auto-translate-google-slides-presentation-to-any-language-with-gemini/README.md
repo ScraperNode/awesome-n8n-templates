@@ -1,6 +1,6 @@
 # 🔬 AI-powered auto-translate Google Slides presentation to any language with Gemini
 
-> ⚡ **1,208 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,310 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

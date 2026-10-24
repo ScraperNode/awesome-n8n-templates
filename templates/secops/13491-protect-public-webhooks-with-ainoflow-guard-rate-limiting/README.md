@@ -1,6 +1,6 @@
 # 🔒 Protect public webhooks with Ainoflow Guard rate limiting
 
-> ⚡ **14 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **36 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

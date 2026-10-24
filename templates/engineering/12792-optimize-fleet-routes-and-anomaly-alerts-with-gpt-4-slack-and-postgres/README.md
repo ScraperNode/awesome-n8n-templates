@@ -1,6 +1,6 @@
 # ⚒️ Optimize fleet routes and anomaly alerts with GPT-4, Slack and Postgres
 
-> ⚡ **23 views** · ⚒️ [Engineering](../)
+> ⚡ **40 views** · ⚒️ [Engineering](../)
 
 ## Description
 

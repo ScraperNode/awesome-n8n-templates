@@ -1,6 +1,6 @@
 # 🎬 📸 Automate photo background removal with Photoroom API and Google Drive
 
-> ⚡ **1,226 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,484 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

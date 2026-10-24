@@ -1,6 +1,6 @@
 # 💬 Automated meeting prep with GPT-5 & Gemini research from calendar to Slack via Attio CRM
 
-> ⚡ **327 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **436 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 AI-powered Upwork cover letter generator – Pinecone, Groq, Google Gemin, SerpAPI
 
-> ⚡ **948 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **988 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

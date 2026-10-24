@@ -1,6 +1,6 @@
 # 🔬 Track government grants with OpenRouter AI, RSS feeds, Google Sheets & Gmail
 
-> ⚡ **320 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **406 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

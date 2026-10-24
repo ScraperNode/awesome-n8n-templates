@@ -1,0 +1,399 @@
+{
+  "name": "Audit campaign landing pages with HTTP Request and deliver prioritized CSV and email reports",
+  "nodes": [
+    {
+      "id": "9f1c9f56-91f8-4896-bcc6-1f7513916327",
+      "name": "Run launch audit",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "4961fd3f-e575-458a-a077-dade3b27b91c",
+      "name": "Campaign audit settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        230,
+        0
+      ],
+      "parameters": {
+        "mode": "raw",
+        "options": {},
+        "jsonOutput": "{\n  \"campaign\": \"example_launch\",\n  \"source\": \"linkedin\",\n  \"medium\": \"social\",\n  \"approvedHosts\": [\n    \"example.com\"\n  ],\n  \"placements\": [\n    {\n      \"label\": \"Main offer\",\n      \"url\": \"https://example.com/\",\n      \"expectedText\": \"Example Domain\"\n    },\n    {\n      \"label\": \"Second placement same destination\",\n      \"url\": \"https://example.com/\",\n      \"expectedText\": \"Example Domain\",\n      \"content\": \"second_post\"\n    }\n  ],\n  \"maxBodyCharacters\": 500000,\n  \"sendEmail\": false,\n  \"fromEmail\": \"\",\n  \"toEmail\": \"\"\n}"
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "5da329f2-6e44-4fc0-a3e0-d9fd2b16c800",
+      "name": "Validate manifest and build tracking links",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        470,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "\nconst s=$input.first().json;\nfor(const k of ['campaign','source','medium'])if(typeof s[k]!=='string'||!s[k].trim()||s[k].length>150)throw Error(k+' must have 1\u2013150 characters');\nif(!Array.isArray(s.placements)||!s.placements.length||s.placements.length>50)throw Error('Provide 1\u201350 placements');\nif(!Array.isArray(s.approvedHosts)||!s.approvedHosts.length)throw Error('Set approvedHosts to public domains you control');\nif(!Number.isInteger(s.maxBodyCharacters)||s.maxBodyCharacters<1000||s.maxBodyCharacters>1000000)throw Error('maxBodyCharacters must be 1000\u20131000000');\nif(typeof s.sendEmail!=='boolean')throw Error('sendEmail must be true or false');\nif(s.sendEmail&&(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(s.fromEmail)||!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(s.toEmail)))throw Error('Set sender and recipient before enabling email');\nconst hosts=new Set(s.approvedHosts.map(x=>String(x).trim().toLowerCase()));const groups=new Map();\nfor(const [i,p]of s.placements.entries()){\n if(!p||typeof p.url!=='string'||p.url.length>4000||/[\\s\\\\\\u0000-\\u001f]/.test(p.url))throw Error('Invalid URL at row '+(i+1));\n const m=/^https:\\/\\/([a-z0-9.-]+)(\\/[^?#]*)?(\\?[^#]*)?(#.*)?$/i.exec(p.url);\n if(!m)throw Error('Use HTTPS URLs without ports, credentials or IP literals at row '+(i+1));\n const host=m[1].toLowerCase();if(!/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\\.[a-z]{2,63}$/.test(host)||host.split('.').some(x=>!x||x.startsWith('-')||x.endsWith('-'))||/(^|\\.)(localhost|local|internal|test|invalid|onion|home|lan)$/.test(host)||!hosts.has(host))throw Error('Unapproved public hostname at row '+(i+1));\n const base='https://'+host+(m[2]||'/');const parts=(m[3]||'').slice(1).split('&').filter(Boolean).filter(v=>{try{return !decodeURIComponent(v.split('=')[0].replace(/\\+/g,' ')).toLowerCase().startsWith('utm_');}catch{throw Error('Malformed URL encoding at row '+(i+1));}});\n const destination=base+(parts.length?'?'+parts.join('&'):'');const utm={source:s.source,medium:s.medium,campaign:s.campaign,content:p.content||String(i+1)};\n const tracking=destination+(parts.length?'&':'?')+Object.entries(utm).map(([k,v])=>'utm_'+k+'='+encodeURIComponent(String(v).trim())).join('&')+(m[4]||'');\n const placement={row:i+1,label:String(p.label||'Placement '+(i+1)),trackingUrl:tracking,expectedText:String(p.expectedText||'').slice(0,500)};\n if(!groups.has(destination))groups.set(destination,{destination,placements:[],maxBodyCharacters:s.maxBodyCharacters});groups.get(destination).placements.push(placement);\n}\nreturn [...groups.values()].map(json=>({json}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b2917662-2ad9-4099-8baf-0a8464e89622",
+      "name": "Fetch approved landing pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        730,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $json.destination }}",
+        "options": {
+          "timeout": 15000,
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1000
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.3
+    },
+    {
+      "id": "15e2d614-d49d-4bcb-a395-a4d5961af8d5",
+      "name": "Classify page findings",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        970,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "\nreturn $input.all().flatMap((item,i)=>{\n const plan=$('Validate manifest and build tracking links').itemMatching(i).json,r=item.json;\n const status=Number(r.statusCode||0),h=Object.fromEntries(Object.entries(r.headers||{}).map(([k,v])=>[k.toLowerCase(),String(v)]));const raw=typeof r.body==='string'?r.body:typeof r.data==='string'?r.data:'';\n const oversized=raw.length>plan.maxBodyCharacters,body=raw.slice(0,plan.maxBodyCharacters);const title=(/<title\\b[^>]*>([\\s\\S]*?)<\\/title>/i.exec(body)||[])[1]?.replace(/\\s+/g,' ').trim()||'';\n const tags=body.match(/<(?:meta|link)\\b[^>]*>/gi)||[];const attr=(tag,name)=>{const m=new RegExp('\\\\b'+name+'\\\\s*=\\\\s*[\"\\x27]([^\"\\x27]*)[\"\\x27]','i').exec(tag);return m?m[1]:'';};\n const noindex=/noindex/i.test(h['x-robots-tag']||'')||tags.some(t=>/^(robots|googlebot)$/i.test(attr(t,'name'))&&/noindex/i.test(attr(t,'content')));\n const canonical=tags.filter(t=>attr(t,'rel').toLowerCase().split(/\\s+/).includes('canonical')).map(t=>attr(t,'href')).filter(Boolean).join(' | ');\n return plan.placements.map(p=>{const issues=[];let priority='PASS';const add=(level,message)=>{if(level==='BLOCKER'||priority==='PASS')priority=level;issues.push(message);};\n if(!status)add('BLOCKER','Request failed or timed out');else if(status>=300&&status<400)add('BLOCKER','Redirect: use the verified final destination');else if(status<200||status>=400)add('BLOCKER','HTTP '+status);\n if(status>=200&&status<300){if(!/text\\/html|application\\/xhtml\\+xml/i.test(h['content-type']||''))add('REVIEW','Response is not declared HTML');if(!title)add('REVIEW','Title not found in returned HTML');if(noindex)add('REVIEW','Noindex directive: confirm this is intentional');if(p.expectedText&&!body.toLowerCase().includes(p.expectedText.toLowerCase()))add('REVIEW','Expected text absent from returned HTML');if(oversized)add('REVIEW','Body analysis truncated at configured character limit');}\n return {json:{...p,destination:plan.destination,httpStatus:status,priority,issues:issues.join('; '),title:title.slice(0,300),canonical:canonical.slice(0,1000),redirectLocation:(h.location||'').slice(0,1000),nextAction:priority==='BLOCKER'?'Fix destination before launch':priority==='REVIEW'?'Review page evidence':'Ready for manual launch review'}};\n });\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9b787e2c-ca4d-4fe6-9672-3313be917922",
+      "name": "Build prioritized launch report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1210,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));const safe=v=>typeof v==='string'&&/^[=+@\\-\\t\\r]/.test(v)?\"'\"+v:v;\nconst rows=$input.all().map(x=>x.json).sort((a,b)=>({BLOCKER:0,REVIEW:1,PASS:2}[a.priority]-{BLOCKER:0,REVIEW:1,PASS:2}[b.priority])||a.row-b.row);const s=$('Campaign audit settings').first().json;\nconst counts=rows.reduce((a,r)=>(a[r.priority]++,a),{BLOCKER:0,REVIEW:0,PASS:0});const uniqueRequests=new Set(rows.map(r=>r.destination)).size;\nconst html='<!doctype html><meta charset=\"utf-8\"><title>Campaign launch audit</title><h1>'+esc(s.campaign)+'</h1><p>'+rows.length+' placements, '+uniqueRequests+' unique destinations. '+counts.BLOCKER+' blockers; '+counts.REVIEW+' review items.</p><table border=\"1\" cellpadding=\"8\"><tr><th>Placement</th><th>Priority</th><th>Status</th><th>Findings</th><th>Next action</th></tr>'+rows.map(r=>'<tr><td>'+esc(r.label)+'</td><td>'+r.priority+'</td><td>'+r.httpStatus+'</td><td>'+esc(r.issues||'No configured checks failed')+'</td><td>'+esc(r.nextAction)+'</td></tr>').join('')+'</table><p>Snapshot only. Not a browser, conversion or security audit. Redirect targets were not fetched.</p>';\nreturn [{json:{campaign:s.campaign,rows,counts,uniqueRequests,html,sendEmail:s.sendEmail,fromEmail:s.fromEmail,toEmail:s.toEmail,subject:'Launch audit: '+s.campaign+' \u2014 '+counts.BLOCKER+' blockers'}}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9cfea570-4aeb-421d-9213-b9e6aa57762e",
+      "name": "Prepare placement CSV",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1450,
+        -60
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));const safe=v=>typeof v==='string'&&/^[=+@\\-\\t\\r]/.test(v)?\"'\"+v:v;return $input.first().json.rows.map(r=>({json:Object.fromEntries(Object.entries(r).map(([k,v])=>[k,safe(v)]))}));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "d685b5dc-f8f7-4b5b-8efc-107b1a82ef57",
+      "name": "Download placement audit CSV",
+      "type": "n8n-nodes-base.convertToFile",
+      "position": [
+        1690,
+        -60
+      ],
+      "parameters": {
+        "options": {
+          "fileName": "campaign-audit.csv",
+          "headerRow": true
+        },
+        "operation": "csv"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "773b07a0-c7c7-42e9-96ee-1cf7816ef25b",
+      "name": "Download HTML launch report",
+      "type": "n8n-nodes-base.convertToFile",
+      "position": [
+        1450,
+        180
+      ],
+      "parameters": {
+        "options": {
+          "fileName": "campaign-audit.html"
+        },
+        "operation": "toText",
+        "sourceProperty": "html",
+        "binaryPropertyName": "data"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "45190860-8137-4b31-90b1-eafb55fd2adc",
+      "name": "Email explicitly enabled?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1450,
+        420
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ee7e63d1-4c2a-4630-9e81-04c5a5b67f3a",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.sendEmail }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "5577e22d-2939-4a8b-b133-510289c11cbd",
+      "name": "Send launch audit summary",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        1690,
+        360
+      ],
+      "parameters": {
+        "html": "={{ $json.html }}",
+        "options": {},
+        "subject": "={{ $json.subject }}",
+        "toEmail": "={{ $json.toEmail }}",
+        "fromEmail": "={{ $json.fromEmail }}",
+        "emailFormat": "html"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "e3b4a6ce-5e74-4fe2-9c61-b79a7807b834",
+      "name": "Keep audit local",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1690,
+        560
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all();"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e5ffd98d-2b48-41a9-8ad2-5570840601df",
+      "name": "Start here",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -650,
+        -150
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 600,
+        "height": 1100,
+        "content": "# Campaign launch audit\n\n## Who is this for?\nMarketing teams checking campaign landing pages before a launch.\n\n## How it works\nThe workflow validates a campaign manifest and limits requests to explicitly approved HTTPS hosts. It builds consistent UTM links, removes duplicate destinations before fetching, and sends rate-limited HTTP requests with redirects disabled. It then joins the results back to every campaign placement and reports HTTP failures, redirects, unexpected content types, missing titles, noindex hints, canonical tags, expected-copy checks and oversized responses. Each placement receives a priority and next action. It produces a spreadsheet-ready CSV plus an escaped HTML launch report. An optional SMTP branch sends a summary only when explicitly enabled.\n\n## Setup\nEdit Campaign audit settings: enter your own approvedHosts and placements, UTM values and expected text. Use only public websites you own or are authorized to check. Execute manually and download both reports. Inspect blockers before launch. HTTP statuses are observations, not proof of conversion performance.\n\n## Requirements and limits\nBuilt-in nodes only. No paid APIs. SMTP credentials are needed only for optional email; sending is off by default. Maximum 50 placements, 15-second request timeout, one request per second, no automatic retries. Redirects are reported for manual correction rather than followed. JavaScript-rendered content, login-only pages, DNS rebinding protection and browser-level analytics testing are outside this workflow. Use n8n's network protections when handling untrusted hosts. No private or IP-literal hosts are accepted. Changes are made only to reports, never websites."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5893d791-ddb8-4ffe-8a1c-e7b95fa52dae",
+      "name": "Request scope",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -320
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 860,
+        "height": 240,
+        "content": "## 1. Configure and fetch\nEdit only the settings node. Exact approved hosts only; GET requests are limited to 50 placements, deduplicated per destination. No redirects or automatic retries. Use trusted public sites. Query values are transmitted to those sites. An invalid manifest stops before requests."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "7027d22b-9416-416d-a625-9b8050744b10",
+      "name": "Evidence and decisions",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        970,
+        -320
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 500,
+        "height": 240,
+        "content": "## 2. Inspect and prioritize\nTransport errors and HTTP failures become blockers. Missing content/title, noindex and non-HTML responses become review items. Canonical and redirect values are evidence, never followed automatically. HTML inspection is heuristic, not browser rendering."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6770ced9-ea58-4386-969b-d2babea0f786",
+      "name": "Reports and optional delivery",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1550,
+        -320
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 520,
+        "height": 240,
+        "content": "## 3. Download or email\nCSV contains every placement, including duplicates sharing one fetch. HTML is escaped. Email is OFF by default. To enable it, configure SMTP credentials on Send launch audit summary and set sender, recipient and sendEmail=true. No credentials are included."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Run launch audit": {
+      "main": [
+        [
+          {
+            "node": "Campaign audit settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare placement CSV": {
+      "main": [
+        [
+          {
+            "node": "Download placement audit CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify page findings": {
+      "main": [
+        [
+          {
+            "node": "Build prioritized launch report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Campaign audit settings": {
+      "main": [
+        [
+          {
+            "node": "Validate manifest and build tracking links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email explicitly enabled?": {
+      "main": [
+        [
+          {
+            "node": "Send launch audit summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Keep audit local",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch approved landing pages": {
+      "main": [
+        [
+          {
+            "node": "Classify page findings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build prioritized launch report": {
+      "main": [
+        [
+          {
+            "node": "Prepare placement CSV",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Download HTML launch report",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email explicitly enabled?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate manifest and build tracking links": {
+      "main": [
+        [
+          {
+            "node": "Fetch approved landing pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

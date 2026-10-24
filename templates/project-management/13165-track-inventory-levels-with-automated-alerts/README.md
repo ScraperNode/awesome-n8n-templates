@@ -1,6 +1,6 @@
 # 📋 Track inventory levels with automated alerts
 
-> ⚡ **5 views** · 📋 [Project Management](../)
+> ⚡ **35 views** · 📋 [Project Management](../)
 
 ## Description
 

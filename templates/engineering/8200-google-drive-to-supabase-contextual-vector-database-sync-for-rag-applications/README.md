@@ -1,6 +1,6 @@
 # ⚒️ Google Drive to Supabase contextual vector database sync for RAG applications
 
-> ⚡ **872 views** · ⚒️ [Engineering](../)
+> ⚡ **1,017 views** · ⚒️ [Engineering](../)
 
 ## Description
 

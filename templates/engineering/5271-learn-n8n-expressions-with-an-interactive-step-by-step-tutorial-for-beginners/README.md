@@ -1,6 +1,6 @@
 # ⚒️ 🎓 Learn n8n expressions with an interactive step-by-step tutorial for beginners
 
-> ⚡ **53,136 views** · ⚒️ [Engineering](../)
+> ⚡ **55,752 views** · ⚒️ [Engineering](../)
 
 ## Description
 

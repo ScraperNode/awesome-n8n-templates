@@ -1,6 +1,6 @@
 # ⚡ Google calendar MCP server for AI agent with dynamic scheduling
 
-> ⚡ **3,820 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,043 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

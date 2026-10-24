@@ -1,6 +1,6 @@
 # 🤝 Store new orders to Airtable and summarize daily orders through email
 
-> ⚡ **1,741 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,735 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

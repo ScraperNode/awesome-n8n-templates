@@ -1,6 +1,6 @@
 # 🎣 Secure web form to Odoo CRM lead creation with UTM tracking
 
-> ⚡ **2,310 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **3,067 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

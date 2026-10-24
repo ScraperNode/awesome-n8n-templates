@@ -1,6 +1,6 @@
 # 📈 Receive Bitcoin, Etherium, Solana, Binance data with Gecko Coin and Gmail
 
-> ⚡ **536 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **557 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

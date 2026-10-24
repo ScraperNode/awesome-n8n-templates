@@ -1,6 +1,6 @@
 # 🎬 Convert image to text using GROQ LLaVA V1.5 7B
 
-> ⚡ **11,606 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **11,837 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

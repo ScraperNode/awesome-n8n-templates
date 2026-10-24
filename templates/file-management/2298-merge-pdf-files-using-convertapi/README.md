@@ -1,6 +1,6 @@
 # 📁 Merge PDF files using ConvertAPI
 
-> ⚡ **2,175 views** · 📁 [File Management](../)
+> ⚡ **2,324 views** · 📁 [File Management](../)
 
 ## Description
 

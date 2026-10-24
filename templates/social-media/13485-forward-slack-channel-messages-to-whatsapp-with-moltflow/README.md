@@ -1,6 +1,6 @@
 # 📱 Forward Slack channel messages to WhatsApp with MoltFlow
 
-> ⚡ **2 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **29 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

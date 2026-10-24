@@ -1,6 +1,6 @@
 # 🎣 Lead tracking system for HubSpot with automated notifications via Gmail & Slack
 
-> ⚡ **1,375 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,508 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

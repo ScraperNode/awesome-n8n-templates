@@ -1,6 +1,6 @@
 # 🎣 Lead enrichment pipeline: Leadfeeder to Apollo to Google Sheets
 
-> ⚡ **98 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **117 views** · 🎣 [Lead Generation & Enrichment](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >
@@ -8,7 +8,13 @@
 
 ## Description
 
-## 🎯 What This Does
+Fresh enriched leads in your Sheet every morning. This automation pulls yesterday's website visitors from Leadfeeder, enriches them with Apollo.io company data, deduplicates smartly into Google Sheets, and pings your team on Telegram when attention is needed.
+
+![cover.png](fileId:2131)
+
+*Last updated: September 2026.*
+
+## What This Does
 
 This automation creates a seamless daily pipeline that:
 - **Pulls** yesterday's website visitors from Leadfeeder
@@ -16,32 +22,30 @@ This automation creates a seamless daily pipeline that:
 - **Delivers** enriched leads to your Google Sheets with smart deduplication
 - **Alerts** your team via Telegram when something needs attention
 
-![cover.png](fileId:2131)
+## Why Automate Your Lead Enrichment?
 
-## 💡 Why Automate Your Lead Enrichment?
-
-**⏰ Reclaim Your Time**  
+**Reclaim Your Time**  
 Stop the copy-paste busywork.
 
-**🎯 Never Miss a Hot Lead**  
-Automatically captures yesterday's visitors and enriches.
+**Never Miss a Hot Lead**  
+Yesterday's visitors captured and enriched automatically.
 
-**🚀 Enable Faster Outreach**  
-Enriched records mean your SDRs can reach out the same day with full context—faster follow-up leads to higher conversion rates.
+**Enable Faster Outreach**  
+Enriched records mean SDRs reach out the same day with full context. Faster follow-up, higher conversion.
 
-**🛡️ API-Friendly Design**  
+**API-Friendly Design**  
 Built-in pagination, rate limiting (40s delay), and smart stop logic prevent API throttling and account issues.
 
-## ⚡ Perfect For These Teams
+## Perfect For These Teams
 
-**📈 Growth Marketers**  
-Maintain a daily pipeline of enriched accounts for targeted campaigns and ABM strategies.
+**Growth Marketers**  
+A daily pipeline of enriched accounts for targeted campaigns and ABM strategies.
 
-**📊 Sales Ops & SDR Managers**  
-Ensure your reps start each day with high-quality, enriched leads in a shared workspace.
+**Sales Ops & SDR Managers**  
+Reps start each day with high-quality, enriched leads in a shared workspace.
 
-**🔍 Data & BI Teams**  
-Create a lightweight source-of-truth for lead activity without building complex ETL pipelines.
+**Data & BI Teams**  
+A lightweight source-of-truth for lead activity without complex ETL pipelines.
 
 ## Workflow Overview
 ```
@@ -49,10 +53,10 @@ Daily Trigger (9 AM) → Fetch Account → Generate Pages → Retrieve Leads →
 Enrich with Apollo → Update Google Sheets → Send Alerts
 ```
 
-**🕘 Trigger**  
+**Trigger**  
 Runs automatically every day at 9:00 AM server time
 
-**📋 Process Flow**  
+**Process Flow**  
 1. Fetch your Leadfeeder Account ID
 2. Generate smart pagination (up to 50 pages with safety cap)
 3. Retrieve yesterday's leads in batches of 100
@@ -60,24 +64,24 @@ Runs automatically every day at 9:00 AM server time
 5. Enrich each company using Apollo's database
 6. Append or update rows in Google Sheets with deduplication
 
-**🧠 Smart Logic**  
+**Smart Logic**  
 - Pre-generates page sequences with safety limits
 - Stops automatically when pages return &lt;100 results
 - Normalizes website URLs and handles Apollo field fallbacks
 - Implements intelligent rate limiting to respect API limits
 
-**📤 Output**  
+**Output**  
 - Clean, enriched data in your Google Sheets
 - Telegram alerts for any workflow errors
 - Automatic deduplication using ID matching
 
-## 🚀 Quick Setup Guide
+## Quick Setup Guide
 
 ### 1. Import & Configure
-Import the JSON workflow file to your n8n instance
+Import the JSON workflow file to your [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance
 
 ### 2. Add Your Credentials
-Set up these integrations in n8n:
+Set up these integrations in [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin):
 - **Leadfeeder**: HTTP Header Auth with Bearer token
 - **Apollo**: HTTP Header Auth with API key  
 - **Google Sheets**: OAuth2 with edit permissions
@@ -88,16 +92,16 @@ Set up these integrations in n8n:
 - Set correct `sheetName` (gid) in Google Sheets nodes
 - Verify column mapping matches your sheet structure
 
-### 5. Test Your Setup
+### 4. Test Your Setup
 Run a test with yesterday's date to confirm:
-- ✅ Leads are retrieved from Leadfeeder
-- ✅ Apollo enrichment populates correctly  
-- ✅ Rows append/update in Google Sheets
-- ✅ Telegram alerts work for errors
+- Leads are retrieved from Leadfeeder
+- Apollo enrichment populates correctly  
+- Rows append/update in Google Sheets
+- Telegram alerts work for errors
 
 
 
-## 🛠️ Level Up Your Automation
+## Level Up Your Automation
 
 ### CRM Integration
 Push enriched leads directly into HubSpot, Salesforce, or Pipedrive for automatic sequences and follow-up campaigns.
@@ -115,14 +119,25 @@ Each lead goes through this enrichment pipeline:
 2. **Apollo Enrichment**: Industry, size, revenue, contact info, social profiles
 3. **Sheet Update**: Merged data with smart deduplication and timestamp tracking
 
+### Quick Answers
+**When does it run?**  
+Daily at 9:00 AM server time, pulling yesterday's visitors.  
+**When does it stop paging?**  
+Automatically, once a page returns fewer than 100 results (50-page safety cap).  
+**How are duplicates handled?**  
+ID-based matching appends or updates rows instead of duplicating them.  
+
 
 
 ## Support
 
-**Created by:** [khaisa Studio](https://khaisa.studio)  
-**Support:** [Contact for Custom Work](https://khaisa.studio/contact)  
+**Made by:** [khmuhtadin](https://khmuhtadin.com)  
+**Support:** [Contact for Custom Work](https://khmuhtadin.com/contact)  
 **Category:** Sales Automation, Lead Generation, Data Enrichment  
-**Tags:** `lead-generation`, `leadfeeder`, `apollo`, `google-sheets`, `lead-enrichment`, `sales-automation`
+**Tags:** lead-generation, leadfeeder, apollo, google-sheets, lead-enrichment, sales-automation
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

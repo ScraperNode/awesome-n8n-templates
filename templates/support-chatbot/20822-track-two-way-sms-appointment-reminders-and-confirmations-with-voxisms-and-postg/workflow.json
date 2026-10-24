@@ -1,0 +1,695 @@
+{
+  "name": "Track appointment confirmations and two-way SMS reminders with VoxiSMS and PostgreSQL",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "b0ef844f-201d-8a6c-58db-81141fcc471c",
+      "name": "Start here",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -900,
+        -1120
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 950,
+        "height": 1050,
+        "content": "## Two-way appointment reminders and confirmation tracking\n\n### Who is this for?\n\nSalons and service businesses that need SMS confirmations and a staff queue for booking requests.\n\n### How it works\n\nAuthenticated booking webhooks update PostgreSQL. Every five minutes, the workflow checks local sending hours, consent and opt-outs, then reserves one reminder attempt per booking revision before sending through VoxiSMS.\n\nYES with a reference confirms; CANCEL and RESCHEDULE create staff requests. STOP suppresses future reminders. Bare replies match only one eligible appointment; ambiguous replies go to staff. Event deduplication and atomic reservations protect against repeated processing and overlapping runs.\n\n### Setup and requirements\n\nFollow the [setup guide](https://voxisms.com/integrations/n8n/appointment-reminders) and install the [SQL schema](https://voxisms.com/downloads/n8n/appointment-reminders/v1/schema.sql). Select PostgreSQL credentials on all six database nodes, VoxiSMS credentials on both SMS nodes, and Header Auth on booking intake.\n\nRequires PostgreSQL 15+ with verified TLS, the verified VoxiSMS node, and an Android SMS line. Supports self-hosted n8n and n8n Cloud where verified community nodes are enabled. Database, n8n, VoxiSMS and carrier charges may apply.\n\n### Customize and launch\n\nSet businessId in all three configuration nodes; adjust database reminder windows and sending hours. Start in dry run, complete the guide\u2019s controlled tests, and assign staff to monitor the queue before activation.\n\nStaff must process cancellation/rescheduling in the booking system. API acceptance is not delivery; uncertain sends are held without automatic retries."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "64e6f3ee-f25a-8089-2c3f-ec297d7f4318",
+      "name": "Booking explanation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        100,
+        -700
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1080,
+        "height": 300,
+        "content": "## 1. Keep booking state current\nPOST externalId, customerName, phone, startsAt, timezone, smsConsent and sourceUpdatedAt. The booking system must send authenticated updates for new bookings, time/phone changes, cancellation and completion. Timestamps require an offset; phones require international E.164 format.\n\nOlder updates are ignored. Changed time/phone rotates the reply reference. CANCEL by SMS is only a request; the booking source sends action=cancel after staff processes it. Dry run validates but does not store bookings."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f21fddfb-5611-b9f0-2fdb-33b971be6f10",
+      "name": "Booking intake",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        160,
+        -200
+      ],
+      "webhookId": "bb50d145-898f-be84-d3ae-02c0f9889b1d",
+      "parameters": {
+        "path": "voxisms-appointment-intake",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1ed3d9f3-83d5-7cf3-60be-76a6a5720333",
+      "name": "Booking configuration",
+      "type": "n8n-nodes-base.set",
+      "notes": "Set the same businessId in all three configuration nodes. Keep dryRun true until controlled testing. The database also defaults to live_enabled=false.",
+      "position": [
+        440,
+        -200
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8891b681-60f5-7b64-886d-25dd838bd4f3",
+              "name": "businessId",
+              "type": "string",
+              "value": "default"
+            },
+            {
+              "id": "50eb87d7-6970-a6be-918b-e80ba1d57ba0",
+              "name": "dryRun",
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "notesInFlow": true,
+      "typeVersion": 3.4
+    },
+    {
+      "id": "e14742a2-5145-711a-e158-987d7aa1c4be",
+      "name": "Validate and store booking",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        720,
+        -200
+      ],
+      "parameters": {
+        "query": "SELECT voxisms_appts.ingest($1, $2::jsonb, $3::boolean) AS result;",
+        "options": {
+          "queryBatching": "independently",
+          "queryReplacement": "={{ [$json.businessId, $json.body, $json.dryRun] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "retryOnFail": false,
+      "typeVersion": 2.6
+    },
+    {
+      "id": "8bae4065-3362-4d7e-61f7-cc45ec3e15d2",
+      "name": "Return booking result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1000,
+        -200
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        },
+        "respondWith": "json",
+        "responseBody": "={{ $json.result }}"
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "19fd495d-f700-8790-bca0-8dd73b1d94fe",
+      "name": "Reminder explanation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -580,
+        60
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 650,
+        "height": 460,
+        "content": "## 2. Send once, then reconcile\nEvery five minutes: identify due bookings within local sending hours and create staff issues for unconfirmed appointments or interrupted sends. Process at most 100 candidates, one at a time, with an atomic eligibility recheck immediately before each send.\n\nBoth dryRun=false and database live_enabled=true are required to send. The manual trigger follows the same configuration; leave dryRun true to preview.\n\nNo automatic SMS retries. API acceptance is not handset delivery. Failed or interrupted attempts remain in the outbox for staff reconciliation. Never retry a failed execution directly from the SMS node. A STOP or cancellation after reservation cannot recall an SMS already in flight."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2d7fbdc8-214a-6270-0e2a-ad5aaa912c4c",
+      "name": "Every five minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        160,
+        100
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "60409df9-190d-e968-8549-8ac3d5ebf72b",
+      "name": "Run reminder check",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        160,
+        340
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "45f117da-2563-db08-802d-f27c6c5f10ab",
+      "name": "Reminder configuration",
+      "type": "n8n-nodes-base.set",
+      "notes": "Set the same businessId in all three configuration nodes. Keep dryRun true until controlled testing. The database also defaults to live_enabled=false.",
+      "position": [
+        440,
+        220
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9dcd4a4e-a053-97de-1966-2bf4dcc470f6",
+              "name": "businessId",
+              "type": "string",
+              "value": "default"
+            },
+            {
+              "id": "e31cd086-14e7-b019-ec57-7c985aff45f3",
+              "name": "dryRun",
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "notesInFlow": true,
+      "typeVersion": 3.4
+    },
+    {
+      "id": "7df673b8-2d1c-c9aa-da3d-6ded90d1af5e",
+      "name": "Plan reminders and flag exceptions",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        720,
+        220
+      ],
+      "parameters": {
+        "query": "SELECT * FROM voxisms_appts.plan($1, $2::boolean);",
+        "options": {
+          "queryBatching": "independently",
+          "queryReplacement": "={{ [$json.businessId, $json.dryRun] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "retryOnFail": false,
+      "typeVersion": 2.6
+    },
+    {
+      "id": "18f77d4e-7a00-d366-1f94-4ee287117fd5",
+      "name": "One appointment at a time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        1000,
+        220
+      ],
+      "parameters": {
+        "options": {},
+        "batchSize": 1
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "9b1c7f2c-e877-c484-0f38-cc1220d29c50",
+      "name": "Reserve one reminder",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1280,
+        300
+      ],
+      "parameters": {
+        "query": "SELECT * FROM voxisms_appts.reserve($1, $2::uuid, $3::integer, $4::boolean);",
+        "options": {
+          "queryBatching": "independently",
+          "queryReplacement": "={{ [$('Reminder configuration').first().json.businessId, $json.appointment_id, $json.revision, $json.dry_run] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "retryOnFail": false,
+      "typeVersion": 2.6
+    },
+    {
+      "id": "52680911-7ef2-c30a-73d0-d18626313d5e",
+      "name": "Send authorized",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1560,
+        300
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ca349ba9-0c3f-cabf-20c7-2f7b2dac6762",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.send }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "088ad8f2-0d74-855a-06cc-b3daf6753148",
+      "name": "Send VoxiSMS reminder",
+      "type": "@voxiness/n8n-nodes-voxisms.voxiSms",
+      "notes": "One reserved attempt. Keep retries disabled. The custom message ID supports reconciliation; this template does not assume provider-side idempotency.",
+      "onError": "continueErrorOutput",
+      "position": [
+        1840,
+        220
+      ],
+      "parameters": {
+        "id": "={{ $json.outbox_id }}",
+        "message": "={{ $json.message }}",
+        "resource": "sms",
+        "operation": "send",
+        "recipient": "={{ $json.recipient }}"
+      },
+      "notesInFlow": true,
+      "retryOnFail": false,
+      "typeVersion": 1
+    },
+    {
+      "id": "a1a6e098-d23e-99ad-8b11-c287da2dec15",
+      "name": "Record API acceptance",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        2140,
+        120
+      ],
+      "parameters": {
+        "query": "SELECT voxisms_appts.record_send($1::uuid, $2::uuid, true, $3::text) AS result;",
+        "options": {
+          "queryBatching": "independently",
+          "queryReplacement": "={{ [$('Reserve one reminder').item.json.outbox_id, $('Reserve one reminder').item.json.claim_token, $json.messageId || null] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "retryOnFail": false,
+      "typeVersion": 2.6
+    },
+    {
+      "id": "8a48de4b-9e76-3384-9b02-1ee0ad4ae5cd",
+      "name": "Flag uncertain send",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        2140,
+        420
+      ],
+      "parameters": {
+        "query": "SELECT voxisms_appts.record_send($1::uuid, $2::uuid, false, NULL) AS result;",
+        "options": {
+          "queryBatching": "independently",
+          "queryReplacement": "={{ [$('Reserve one reminder').item.json.outbox_id, $('Reserve one reminder').item.json.claim_token] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "retryOnFail": false,
+      "typeVersion": 2.6
+    },
+    {
+      "id": "9f75136b-f9b1-b161-9ef2-4a56288c31ae",
+      "name": "Preview or skipped",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1840,
+        660
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "0d1ebf33-e524-0112-6170-945d1189b477",
+      "name": "Reminder run complete",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1280,
+        40
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "3aae06e7-3cf2-89b5-d5a9-5b41bf692ded",
+      "name": "Reply explanation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -580,
+        840
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 650,
+        "height": 520,
+        "content": "## 3. Match replies safely\nThe verified VoxiSMS Trigger checks the webhook signature. SQL additionally checks the customer ID and receiving line, then de-duplicates eventId in the same transaction as the booking update.\n\nYES + reference confirms. CANCEL / RESCHEDULE + reference creates a staff request. STOP suppresses future reminders on this business line. Commands are case-insensitive; extra prose goes to staff.\n\nA bare command matches only one future, recently reminded appointment for the sender. Multiple matches are escalated. Old references, wrong senders and out-of-order replies cannot overwrite bookings. No automatic reply SMS is sent.\n\nMonitor failed n8n executions as well as the staff queue. Provider retries are not a substitute for handling downstream database errors."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5f76a0ea-6a2b-27e0-0adf-b4b1112d1339",
+      "name": "Verified incoming SMS",
+      "type": "@voxiness/n8n-nodes-voxisms.voxiSmsTrigger",
+      "position": [
+        160,
+        1160
+      ],
+      "webhookId": "6ee873b0-cb35-770e-53d5-fa58db90bf29",
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "29746b3f-b44a-985a-b508-f1f943730a6b",
+      "name": "Reply configuration",
+      "type": "n8n-nodes-base.set",
+      "notes": "Set the same businessId in all three configuration nodes. Keep dryRun true until controlled testing. The database also defaults to live_enabled=false.",
+      "position": [
+        440,
+        1160
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c0f33ec5-3702-979f-6249-d82e79d4c67d",
+              "name": "businessId",
+              "type": "string",
+              "value": "default"
+            },
+            {
+              "id": "54a9cadd-b7ca-ef9f-379f-829b555568d5",
+              "name": "dryRun",
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "notesInFlow": true,
+      "typeVersion": 3.4
+    },
+    {
+      "id": "4b393e2b-43ed-033b-6ad9-29e6c20e1b8b",
+      "name": "Match reply and update tracking",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        720,
+        1160
+      ],
+      "parameters": {
+        "query": "SELECT voxisms_appts.process_reply($1, $2::jsonb, $3::boolean) AS result;",
+        "options": {
+          "queryBatching": "independently",
+          "queryReplacement": "={{ [$json.businessId, $json, $json.dryRun] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "retryOnFail": false,
+      "typeVersion": 2.6
+    },
+    {
+      "id": "84164fbc-e133-4b5d-d6e1-067a65ec9f30",
+      "name": "Reply result",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1000,
+        1160
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "61e624ef-3144-ab38-8ec9-a2d70f90e91d",
+      "name": "Staff operations",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1280,
+        900
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1050,
+        "height": 440,
+        "content": "## Staff queue and operating limits\nUse the open_staff_queue view in the voxisms_appts schema. The [setup guide](https://voxisms.com/integrations/n8n/appointment-reminders) includes a query that joins unmatched replies to their sender and message. Assign someone to monitor it, or connect your preferred internal alerting channel before launch.\n\nResolve cancellation/rescheduling in your booking system and send an authenticated update back here. Uncertain SMS sends stay visible even after a booking changes. Do not delete outbox rows to force resends.\n\nSet retention for phone numbers, message content and n8n execution data. Review multipart SMS costs for your business name/timezone. One business line per workflow instance. PostgreSQL role grants and a controlled two-way test are required before production.\n\nSetup, queue queries and recovery: https://voxisms.com/integrations/n8n/appointment-reminders"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "timezone": "Europe/Brussels",
+    "executionOrder": "v1",
+    "saveManualExecutions": false,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none"
+  },
+  "connections": {
+    "Booking intake": {
+      "main": [
+        [
+          {
+            "node": "Booking configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send authorized": {
+      "main": [
+        [
+          {
+            "node": "Send VoxiSMS reminder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preview or skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every five minutes": {
+      "main": [
+        [
+          {
+            "node": "Reminder configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preview or skipped": {
+      "main": [
+        [
+          {
+            "node": "One appointment at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run reminder check": {
+      "main": [
+        [
+          {
+            "node": "Reminder configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flag uncertain send": {
+      "main": [
+        [
+          {
+            "node": "One appointment at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply configuration": {
+      "main": [
+        [
+          {
+            "node": "Match reply and update tracking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve one reminder": {
+      "main": [
+        [
+          {
+            "node": "Send authorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Booking configuration": {
+      "main": [
+        [
+          {
+            "node": "Validate and store booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record API acceptance": {
+      "main": [
+        [
+          {
+            "node": "One appointment at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send VoxiSMS reminder": {
+      "main": [
+        [
+          {
+            "node": "Record API acceptance",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Flag uncertain send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verified incoming SMS": {
+      "main": [
+        [
+          {
+            "node": "Reply configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reminder configuration": {
+      "main": [
+        [
+          {
+            "node": "Plan reminders and flag exceptions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One appointment at a time": {
+      "main": [
+        [
+          {
+            "node": "Reminder run complete",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve one reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and store booking": {
+      "main": [
+        [
+          {
+            "node": "Return booking result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match reply and update tracking": {
+      "main": [
+        [
+          {
+            "node": "Reply result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan reminders and flag exceptions": {
+      "main": [
+        [
+          {
+            "node": "One appointment at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

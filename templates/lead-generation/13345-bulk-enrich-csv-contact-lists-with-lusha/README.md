@@ -1,6 +1,6 @@
 # 🎣 Bulk enrich CSV contact lists with Lusha
 
-> ⚡ **36 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **126 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

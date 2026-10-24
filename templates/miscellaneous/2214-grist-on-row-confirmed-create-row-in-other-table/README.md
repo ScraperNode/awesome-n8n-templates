@@ -1,6 +1,6 @@
 # 🔧 Grist: On row confirmed, create row in other table
 
-> ⚡ **1,127 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,204 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

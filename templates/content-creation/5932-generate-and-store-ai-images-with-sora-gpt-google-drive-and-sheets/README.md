@@ -1,6 +1,6 @@
 # 🎬 Generate and store AI images with Sora GPT, Google Drive and Sheets
 
-> ⚡ **2,431 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,545 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

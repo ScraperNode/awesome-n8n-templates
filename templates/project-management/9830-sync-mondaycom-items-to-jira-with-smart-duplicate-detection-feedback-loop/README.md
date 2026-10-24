@@ -1,6 +1,6 @@
 # 📋 Sync Monday.com items to Jira with smart duplicate detection & feedback loop
 
-> ⚡ **123 views** · 📋 [Project Management](../)
+> ⚡ **151 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 Detect toxic language in Telegram messages
 
-> ⚡ **2,413 views** · 🔧 [Miscellaneous](../)
+> ⚡ **2,435 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

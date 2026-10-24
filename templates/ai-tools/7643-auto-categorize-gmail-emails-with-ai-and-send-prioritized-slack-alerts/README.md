@@ -1,6 +1,6 @@
 # 🎯 Auto-categorize Gmail emails with AI and send prioritized Slack alerts
 
-> ⚡ **488 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **563 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

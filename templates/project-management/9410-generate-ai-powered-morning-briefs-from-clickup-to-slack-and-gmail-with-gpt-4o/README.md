@@ -1,6 +1,6 @@
 # 📋 Generate AI-powered morning briefs from ClickUp to Slack and Gmail with GPT-4o
 
-> ⚡ **170 views** · 📋 [Project Management](../)
+> ⚡ **211 views** · 📋 [Project Management](../)
 
 ## Description
 

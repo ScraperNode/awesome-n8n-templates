@@ -1,6 +1,6 @@
 # ⚒️ Get execute command data and transfer to JSON
 
-> ⚡ **2,801 views** · ⚒️ [Engineering](../)
+> ⚡ **2,951 views** · ⚒️ [Engineering](../)
 
 ## Description
 

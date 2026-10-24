@@ -1,6 +1,6 @@
 # 🎬 Auto-generate and post Instagram reels with Veo3, OpenAI, and Blotato
 
-> ⚡ **21,770 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **26,301 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

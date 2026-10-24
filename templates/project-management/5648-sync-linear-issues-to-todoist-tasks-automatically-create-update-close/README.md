@@ -1,6 +1,6 @@
 # 📋 Sync Linear issues to Todoist tasks automatically (create, update, close)
 
-> ⚡ **910 views** · 📋 [Project Management](../)
+> ⚡ **1,162 views** · 📋 [Project Management](../)
 
 ## Description
 

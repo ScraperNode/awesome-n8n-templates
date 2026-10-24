@@ -1,6 +1,6 @@
 # 📱 Automate product launch sequence with Notion, Mailchimp, Buffer, Google Calendar & Telegram
 
-> ⚡ **71 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **82 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

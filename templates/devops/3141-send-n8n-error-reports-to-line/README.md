@@ -1,6 +1,6 @@
 # ⚙️ Send n8n error reports to LINE
 
-> ⚡ **604 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **631 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔒 Check phishing URL reputation with VirusTotal and log to Google Sheets
 
-> ⚡ **69 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **274 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

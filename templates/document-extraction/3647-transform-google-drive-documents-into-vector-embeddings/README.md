@@ -1,6 +1,6 @@
 # 🔬 📥 Transform Google Drive documents into vector embeddings
 
-> ⚡ **8,454 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **8,965 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

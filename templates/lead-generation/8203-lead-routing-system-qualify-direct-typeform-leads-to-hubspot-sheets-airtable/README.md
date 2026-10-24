@@ -1,6 +1,6 @@
 # 🎣 Lead routing system: Qualify & direct Typeform leads to HubSpot, Sheets & Airtable
 
-> ⚡ **219 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **280 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

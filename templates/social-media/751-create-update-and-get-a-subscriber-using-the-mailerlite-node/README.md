@@ -1,6 +1,6 @@
 # 📱 Create, update and get a subscriber using the MailerLite node
 
-> ⚡ **859 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **881 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

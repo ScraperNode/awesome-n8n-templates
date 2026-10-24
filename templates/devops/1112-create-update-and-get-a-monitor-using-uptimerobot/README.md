@@ -1,6 +1,6 @@
 # ⚙️ Create, update, and get a monitor using UptimeRobot
 
-> ⚡ **1,973 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,980 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

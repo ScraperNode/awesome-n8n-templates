@@ -1,6 +1,6 @@
 # 📖 RAG Starter Template using Simple Vector Stores, Form trigger and OpenAI
 
-> ⚡ **93,496 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **116,209 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

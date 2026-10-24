@@ -1,6 +1,6 @@
 # 📁 Create 2 XML files: with and without XML attributes
 
-> ⚡ **1,598 views** · 📁 [File Management](../)
+> ⚡ **1,672 views** · 📁 [File Management](../)
 
 ## Description
 

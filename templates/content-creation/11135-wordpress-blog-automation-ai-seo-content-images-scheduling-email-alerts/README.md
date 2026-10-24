@@ -1,6 +1,6 @@
 # 🎬 WordPress blog automation: AI SEO content, images, scheduling & email alerts
 
-> ⚡ **2,834 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,732 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

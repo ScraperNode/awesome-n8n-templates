@@ -1,6 +1,6 @@
 # 🎫 Automate consent dispute handling with GPT-4o, Google Sheets, Gmail & Slack
 
-> ⚡ **58 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **105 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

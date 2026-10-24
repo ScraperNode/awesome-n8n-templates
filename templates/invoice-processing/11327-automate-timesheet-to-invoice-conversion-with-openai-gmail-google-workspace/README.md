@@ -1,6 +1,6 @@
 # 🧾 Automate timesheet to invoice conversion with OpenAI, Gmail & Google Workspace
 
-> ⚡ **74 views** · 🧾 [Invoice Processing](../)
+> ⚡ **109 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

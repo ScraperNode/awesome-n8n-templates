@@ -1,6 +1,6 @@
 # ⚡ Daily morning briefing with Google Calendar, weather, and news to Slack
 
-> ⚡ **464 views** · ⚡ [Personal Productivity](../)
+> ⚡ **693 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

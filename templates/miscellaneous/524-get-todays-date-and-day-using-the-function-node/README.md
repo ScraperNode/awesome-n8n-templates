@@ -1,6 +1,6 @@
 # 🔧 Get today's date and day using the Function node
 
-> ⚡ **6,378 views** · 🔧 [Miscellaneous](../)
+> ⚡ **6,440 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

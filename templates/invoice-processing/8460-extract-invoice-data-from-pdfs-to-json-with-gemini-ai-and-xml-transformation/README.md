@@ -1,6 +1,6 @@
 # 🧾 Extract invoice data from PDFs to JSON with Gemini AI and XML transformation
 
-> ⚡ **1,302 views** · 🧾 [Invoice Processing](../)
+> ⚡ **1,894 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

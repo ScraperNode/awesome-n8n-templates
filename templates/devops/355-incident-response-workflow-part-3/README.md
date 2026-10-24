@@ -1,6 +1,6 @@
 # ⚙️ Incident response workflow - Part 3
 
-> ⚡ **2,046 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,072 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

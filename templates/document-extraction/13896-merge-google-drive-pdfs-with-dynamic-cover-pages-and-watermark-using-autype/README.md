@@ -1,6 +1,6 @@
 # 🔬 Merge Google Drive PDFs with dynamic cover pages and watermark using Autype
 
-> ⚡ **9 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **37 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

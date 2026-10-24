@@ -1,6 +1,6 @@
 # 🎣 Get information about a company with UpLead
 
-> ⚡ **589 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **604 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

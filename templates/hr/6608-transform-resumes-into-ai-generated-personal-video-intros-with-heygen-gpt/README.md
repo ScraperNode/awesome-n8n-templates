@@ -1,6 +1,6 @@
 # 👥 Transform resumes into AI-generated personal video intros with HeyGen & GPT
 
-> ⚡ **1,280 views** · 👥 [HR & Recruitment](../)
+> ⚡ **1,404 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

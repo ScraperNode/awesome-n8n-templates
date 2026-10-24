@@ -1,6 +1,6 @@
 # 📊 Generating new keywords and their search volumes using the Google Ads API
 
-> ⚡ **14,629 views** · 📊 [Market Research & Insights](../)
+> ⚡ **14,943 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

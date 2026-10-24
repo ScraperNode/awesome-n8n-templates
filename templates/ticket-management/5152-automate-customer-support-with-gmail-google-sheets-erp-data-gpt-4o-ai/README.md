@@ -1,6 +1,6 @@
 # 🎫 Automate customer support with Gmail, Google Sheets, ERP data & GPT-4o AI
 
-> ⚡ **5,077 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **5,631 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

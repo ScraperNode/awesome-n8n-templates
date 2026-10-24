@@ -1,6 +1,6 @@
 # 🔍 Forget Trello 🛠️ Wekan (open source) tool MCP server 💪 all 24 operations
 
-> ⚡ **133 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **155 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

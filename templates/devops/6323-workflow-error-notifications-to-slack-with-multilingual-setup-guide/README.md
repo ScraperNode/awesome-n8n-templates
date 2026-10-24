@@ -1,6 +1,6 @@
 # ⚙️ Workflow error notifications to Slack with multilingual setup guide
 
-> ⚡ **210 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **222 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

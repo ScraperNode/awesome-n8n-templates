@@ -1,6 +1,6 @@
 # 🎣 Perform a domain search  with Icypeas (single)
 
-> ⚡ **784 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **813 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

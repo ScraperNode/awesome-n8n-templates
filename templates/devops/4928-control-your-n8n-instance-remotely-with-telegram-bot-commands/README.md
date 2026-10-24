@@ -1,6 +1,6 @@
 # ⚙️ Control your n8n instance remotely with Telegram bot commands
 
-> ⚡ **9,791 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **13,286 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

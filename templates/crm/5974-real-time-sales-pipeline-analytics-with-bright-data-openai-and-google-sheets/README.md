@@ -1,6 +1,6 @@
 # 🤝 Real-time sales pipeline analytics with Bright Data, OpenAI, and Google Sheets
 
-> ⚡ **867 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **995 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

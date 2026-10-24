@@ -1,6 +1,6 @@
 # 📱 Automated daily posting to 9 social platforms with Google Sheets, Drive and Blotato
 
-> ⚡ **1,065 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,444 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Create script-to-video avatar videos with GPT-4.1-mini, HeyGen, Google Drive, Gmail and Slack
 
-> ⚡ **86 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **136 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

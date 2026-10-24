@@ -1,6 +1,6 @@
 # 💬 Automated client journey appointment reminders & follow-ups with Twilio
 
-> ⚡ **350 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **417 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

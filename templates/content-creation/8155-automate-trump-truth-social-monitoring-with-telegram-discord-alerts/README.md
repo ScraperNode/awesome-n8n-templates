@@ -1,6 +1,6 @@
 # 🎬 Automate Trump Truth social monitoring with Telegram & Discord alerts
 
-> ⚡ **119 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **248 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

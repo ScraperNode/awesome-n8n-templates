@@ -1,6 +1,6 @@
 # ⚙️ Track Azure API and Service Bus failures with Application Insights correlation
 
-> ⚡ **20 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **56 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

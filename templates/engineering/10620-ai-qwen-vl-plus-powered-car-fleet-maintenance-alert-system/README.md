@@ -1,6 +1,6 @@
 # ⚒️ AI Qwen-Vl-Plus powered car fleet maintenance alert system
 
-> ⚡ **196 views** · ⚒️ [Engineering](../)
+> ⚡ **359 views** · ⚒️ [Engineering](../)
 
 ## Description
 

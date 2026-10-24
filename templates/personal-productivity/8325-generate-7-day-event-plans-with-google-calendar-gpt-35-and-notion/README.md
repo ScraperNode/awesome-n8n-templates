@@ -1,6 +1,6 @@
 # ⚡ Generate 7-day event plans with Google Calendar, GPT-3.5 and Notion
 
-> ⚡ **59 views** · ⚡ [Personal Productivity](../)
+> ⚡ **67 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎯 Qualify and Enrich Leads with Octave's Contextual Insights and Slack Alerts
 
-> ⚡ **83 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **87 views** · 🎯 [AI Summarization & Classification](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

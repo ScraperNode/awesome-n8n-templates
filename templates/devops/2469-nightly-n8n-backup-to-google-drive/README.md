@@ -1,6 +1,6 @@
 # ⚙️ Nightly n8n backup to Google Drive
 
-> ⚡ **7,749 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **7,880 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

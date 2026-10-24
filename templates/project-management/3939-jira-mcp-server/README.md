@@ -1,6 +1,6 @@
 # 📋 Jira MCP server
 
-> ⚡ **1,362 views** · 📋 [Project Management](../)
+> ⚡ **1,468 views** · 📋 [Project Management](../)
 
 ## Description
 

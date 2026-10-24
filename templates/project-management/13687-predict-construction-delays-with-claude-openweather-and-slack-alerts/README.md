@@ -1,6 +1,6 @@
 # 📋 Predict construction delays with Claude, OpenWeather and Slack alerts
 
-> ⚡ **51 views** · 📋 [Project Management](../)
+> ⚡ **237 views** · 📋 [Project Management](../)
 
 ## Description
 

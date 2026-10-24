@@ -1,6 +1,6 @@
 # 🤝 Automate digital product sales & delivery with Stripe and Email
 
-> ⚡ **197 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **258 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

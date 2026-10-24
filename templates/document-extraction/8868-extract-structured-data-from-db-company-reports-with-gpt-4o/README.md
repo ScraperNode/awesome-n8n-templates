@@ -1,6 +1,6 @@
 # 🔬 Extract structured data from D&B company reports with GPT-4o
 
-> ⚡ **232 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **289 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

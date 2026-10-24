@@ -1,6 +1,6 @@
 # 🎣 Lonescale hiring signal - send leads to lemlist and Hubspot
 
-> ⚡ **1,143 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,185 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

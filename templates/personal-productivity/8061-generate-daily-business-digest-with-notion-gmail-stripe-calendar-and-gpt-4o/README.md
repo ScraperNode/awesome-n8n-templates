@@ -1,6 +1,6 @@
 # ⚡ Generate daily business digest with Notion, Gmail, Stripe, Calendar, and GPT-4o
 
-> ⚡ **106 views** · ⚡ [Personal Productivity](../)
+> ⚡ **133 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

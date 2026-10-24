@@ -1,6 +1,6 @@
 # 🤝 Sync Adobe Commerce Customer Data to KlickTipp with Value-Based Tagging
 
-> ⚡ **137 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **206 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

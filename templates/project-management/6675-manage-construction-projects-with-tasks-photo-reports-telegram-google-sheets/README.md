@@ -1,6 +1,6 @@
 # 📋 Manage construction projects with tasks, photo reports, Telegram & Google Sheets
 
-> ⚡ **3,497 views** · 📋 [Project Management](../)
+> ⚡ **4,914 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 Escalate unresolved maintenance requests with GPT-4o, Google Sheets and Slack
 
-> ⚡ **7 views** · 📋 [Project Management](../)
+> ⚡ **20 views** · 📋 [Project Management](../)
 
 ## Description
 

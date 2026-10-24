@@ -1,6 +1,6 @@
 # 📱 WhatsApp group onboarding with automated welcome messages & Airtable point system
 
-> ⚡ **514 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **763 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

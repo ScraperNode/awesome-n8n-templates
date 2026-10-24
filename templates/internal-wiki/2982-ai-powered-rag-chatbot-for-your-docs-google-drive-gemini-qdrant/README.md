@@ -1,6 +1,6 @@
 # 📖 🤖 AI powered RAG chatbot for your docs + Google Drive + Gemini + Qdrant
 
-> ⚡ **84,791 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **86,580 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

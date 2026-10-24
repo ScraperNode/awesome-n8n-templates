@@ -1,6 +1,6 @@
 # 📋 Track construction site progress with Google Gemini AI, drive photos and Sheets
 
-> ⚡ **1,148 views** · 📋 [Project Management](../)
+> ⚡ **1,340 views** · 📋 [Project Management](../)
 
 ## Description
 

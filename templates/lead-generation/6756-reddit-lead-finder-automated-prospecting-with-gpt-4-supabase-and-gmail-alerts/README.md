@@ -1,6 +1,6 @@
 # 🎣 Reddit lead finder: Automated prospecting with GPT-4, Supabase and Gmail alerts
 
-> ⚡ **1,287 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,567 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

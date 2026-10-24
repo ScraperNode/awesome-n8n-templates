@@ -1,6 +1,6 @@
 # 🔬 Build a financial documents assistant using Qdrant and Mistral.ai
 
-> ⚡ **19,128 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **19,151 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

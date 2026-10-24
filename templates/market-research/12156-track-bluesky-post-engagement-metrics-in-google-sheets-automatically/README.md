@@ -1,6 +1,6 @@
 # 📊 Track BlueSky post engagement metrics in Google Sheets automatically
 
-> ⚡ **6 views** · 📊 [Market Research & Insights](../)
+> ⚡ **16 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

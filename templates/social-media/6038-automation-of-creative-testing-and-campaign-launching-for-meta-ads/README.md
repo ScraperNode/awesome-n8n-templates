@@ -1,6 +1,6 @@
 # 📱 Automation of creative testing and campaign launching for Meta ads
 
-> ⚡ **3,334 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **4,803 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

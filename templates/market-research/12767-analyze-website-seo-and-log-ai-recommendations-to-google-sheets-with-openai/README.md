@@ -1,6 +1,6 @@
 # 📊 Analyze website SEO and log AI recommendations to Google Sheets with OpenAI
 
-> ⚡ **133 views** · 📊 [Market Research & Insights](../)
+> ⚡ **507 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

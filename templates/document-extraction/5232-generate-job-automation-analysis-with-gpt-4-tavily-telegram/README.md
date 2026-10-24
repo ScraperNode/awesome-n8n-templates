@@ -1,6 +1,6 @@
 # 🔬 Generate job automation analysis with GPT-4, Tavily & Telegram
 
-> ⚡ **500 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **566 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

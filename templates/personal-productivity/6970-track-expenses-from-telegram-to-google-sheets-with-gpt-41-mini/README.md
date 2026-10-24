@@ -1,6 +1,6 @@
 # ⚡ Track expenses from Telegram to Google Sheets with GPT-4.1 Mini
 
-> ⚡ **2,768 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,344 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

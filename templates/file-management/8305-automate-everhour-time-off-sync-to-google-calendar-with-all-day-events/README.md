@@ -1,6 +1,6 @@
 # 📁 Automate Everhour time-off sync to Google Calendar with all-day events
 
-> ⚡ **133 views** · 📁 [File Management](../)
+> ⚡ **163 views** · 📁 [File Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Pdf to markdown converter with LlamaCloud parser
 
-> ⚡ **456 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,532 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

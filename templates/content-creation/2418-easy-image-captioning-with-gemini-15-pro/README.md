@@ -1,6 +1,6 @@
 # 🎬 Easy image captioning with Gemini 1.5 Pro
 
-> ⚡ **14,174 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **14,424 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

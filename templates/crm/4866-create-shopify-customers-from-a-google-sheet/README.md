@@ -1,6 +1,6 @@
 # 🤝 Create Shopify customers from a Google Sheet
 
-> ⚡ **316 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **366 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

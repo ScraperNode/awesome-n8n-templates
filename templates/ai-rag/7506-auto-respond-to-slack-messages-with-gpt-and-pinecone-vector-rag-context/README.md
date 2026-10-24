@@ -1,6 +1,6 @@
 # 🔍 Auto-respond to Slack messages with GPT and Pinecone Vector RAG context
 
-> ⚡ **815 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **845 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

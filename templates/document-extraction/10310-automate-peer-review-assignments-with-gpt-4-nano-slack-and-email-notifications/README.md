@@ -1,6 +1,6 @@
 # 🔬 Automate peer review assignments with GPT-4-nano, Slack and email notifications
 
-> ⚡ **47 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **89 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

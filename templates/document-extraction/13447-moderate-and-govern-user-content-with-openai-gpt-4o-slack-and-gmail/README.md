@@ -1,6 +1,6 @@
 # 🔬 Moderate and govern user content with OpenAI GPT-4o, Slack and Gmail
 
-> ⚡ **19 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **40 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

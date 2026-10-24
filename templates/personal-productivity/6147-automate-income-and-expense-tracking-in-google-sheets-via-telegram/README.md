@@ -1,6 +1,6 @@
 # ⚡ Automate income and expense tracking in Google Sheets via Telegram
 
-> ⚡ **252 views** · ⚡ [Personal Productivity](../)
+> ⚡ **306 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

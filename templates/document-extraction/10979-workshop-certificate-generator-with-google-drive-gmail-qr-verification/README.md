@@ -1,6 +1,6 @@
 # 🔬 Workshop certificate generator with Google Drive, Gmail & QR verification
 
-> ⚡ **92 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **139 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

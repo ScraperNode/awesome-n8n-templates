@@ -1,6 +1,6 @@
 # ⚙️ Subscribe to new releases of a Github repository via Gmail
 
-> ⚡ **1,064 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,080 views** · ⚙️ [DevOps & CI/CD](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

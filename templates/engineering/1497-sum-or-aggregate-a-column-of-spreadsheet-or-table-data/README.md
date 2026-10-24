@@ -1,6 +1,6 @@
 # ⚒️ Sum or aggregate a column of spreadsheet or table data
 
-> ⚡ **1,451 views** · ⚒️ [Engineering](../)
+> ⚡ **1,488 views** · ⚒️ [Engineering](../)
 
 ## Description
 

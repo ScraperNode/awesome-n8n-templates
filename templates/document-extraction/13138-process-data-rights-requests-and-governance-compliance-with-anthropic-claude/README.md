@@ -1,6 +1,6 @@
 # 🔬 Process data rights requests and governance compliance with Anthropic Claude
 
-> ⚡ **20 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **114 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

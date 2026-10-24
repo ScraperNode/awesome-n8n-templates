@@ -1,6 +1,6 @@
 # ⚡ Automatically create daily list of todos in Todoist
 
-> ⚡ **2,512 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,563 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

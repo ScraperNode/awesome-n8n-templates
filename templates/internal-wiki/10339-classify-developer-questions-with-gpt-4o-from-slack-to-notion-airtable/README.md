@@ -1,6 +1,6 @@
 # 📖 Classify developer questions with GPT-4o from Slack to Notion & Airtable
 
-> ⚡ **61 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **86 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

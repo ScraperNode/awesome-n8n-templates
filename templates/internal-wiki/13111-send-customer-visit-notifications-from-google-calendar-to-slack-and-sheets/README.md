@@ -1,6 +1,6 @@
 # 📖 Send customer visit notifications from Google Calendar to Slack and Sheets
 
-> ⚡ **21 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **63 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Manage contacts via Autopilot
 
-> ⚡ **611 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **629 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Turn text into cinematic videos using GPT-4, Dumpling FLUX.1 Pro, and Veo 3
 
-> ⚡ **579 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **627 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Release a new version via Telegram bot command
 
-> ⚡ **1,992 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,056 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

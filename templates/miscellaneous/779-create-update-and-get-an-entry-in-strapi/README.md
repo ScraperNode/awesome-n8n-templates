@@ -1,6 +1,6 @@
 # 🔧 Create, update, and get an entry in Strapi
 
-> ⚡ **3,283 views** · 🔧 [Miscellaneous](../)
+> ⚡ **3,343 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

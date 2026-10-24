@@ -1,6 +1,6 @@
 # 💬 Qualify real estate leads via SMS with GPT-4o, Twilio, and Google Sheets
 
-> ⚡ **4,958 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **6,499 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

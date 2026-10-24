@@ -1,6 +1,6 @@
 # 💬 Facebook Messenger chatbot with GPT-4.1 & human escalation support
 
-> ⚡ **396 views** · 💬 [Support Chatbots](../)
+> ⚡ **541 views** · 💬 [Support Chatbots](../)
 
 > 💡 **Pro Tip** — If you've run into Facebook's Graph API permission restrictions, [ScraperNode](https://scrapernode.com/facebook) is a community node that scrapes [pages](https://scrapernode.com/facebook/scrapers/profiles), [groups](https://scrapernode.com/facebook/scrapers/groups), [posts](https://scrapernode.com/facebook/scrapers/posts), and [comments](https://scrapernode.com/facebook/scrapers/comments) directly — no app review needed.
 >

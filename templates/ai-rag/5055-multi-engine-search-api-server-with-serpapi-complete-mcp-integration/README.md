@@ -1,6 +1,6 @@
 # 🔍 Multi-engine search API server with SerpApi - complete MCP integration
 
-> ⚡ **211 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **219 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

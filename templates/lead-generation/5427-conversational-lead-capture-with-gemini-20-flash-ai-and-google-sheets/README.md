@@ -1,6 +1,6 @@
 # 🎣 Conversational lead capture with Gemini 2.0 Flash AI and Google Sheets
 
-> ⚡ **1,300 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,507 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

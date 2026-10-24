@@ -1,6 +1,6 @@
 # 🔧 Send Onfleet driver signup messages in Slack
 
-> ⚡ **476 views** · 🔧 [Miscellaneous](../)
+> ⚡ **495 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

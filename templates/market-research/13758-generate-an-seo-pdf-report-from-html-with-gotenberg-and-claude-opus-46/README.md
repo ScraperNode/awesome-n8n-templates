@@ -1,6 +1,6 @@
 # 📊 Generate an SEO PDF report from HTML with Gotenberg and Claude Opus 4.6
 
-> ⚡ **5 views** · 📊 [Market Research & Insights](../)
+> ⚡ **201 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

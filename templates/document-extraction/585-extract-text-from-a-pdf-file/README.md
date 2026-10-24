@@ -1,6 +1,6 @@
 # 🔬 Extract text from a PDF file
 
-> ⚡ **149,582 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **157,377 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

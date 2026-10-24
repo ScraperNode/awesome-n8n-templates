@@ -1,6 +1,6 @@
 # 💬 AI real estate agent: end-to-end ops automation (web, data, voice)
 
-> ⚡ **4,820 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **5,560 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

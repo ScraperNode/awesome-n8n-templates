@@ -1,6 +1,6 @@
 # 🔬 Automate FAQ generation from Stack Overflow to Notion using GPT-4o-mini with Slack alerts
 
-> ⚡ **72 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **79 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

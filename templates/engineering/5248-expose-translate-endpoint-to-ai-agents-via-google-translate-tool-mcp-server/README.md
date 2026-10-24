@@ -1,6 +1,6 @@
 # ⚒️ Expose translate endpoint to AI Agents via 🛠️ Google Translate Tool MCP Server
 
-> ⚡ **226 views** · ⚒️ [Engineering](../)
+> ⚡ **265 views** · ⚒️ [Engineering](../)
 
 ## Description
 

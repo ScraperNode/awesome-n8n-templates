@@ -1,6 +1,6 @@
 # 🎬 Generate end-to-end blog content from Slack with Gemini AI and RSS feeds
 
-> ⚡ **162 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **189 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

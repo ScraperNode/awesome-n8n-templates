@@ -1,6 +1,6 @@
 # ⚙️ Prevent simultaneous workflow executions with Redis
 
-> ⚡ **1,492 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,544 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

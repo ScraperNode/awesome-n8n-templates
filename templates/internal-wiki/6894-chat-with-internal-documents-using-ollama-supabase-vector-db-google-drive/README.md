@@ -1,6 +1,6 @@
 # 📖 Chat with internal documents using Ollama, Supabase Vector DB & Google Drive
 
-> ⚡ **2,220 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **2,481 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

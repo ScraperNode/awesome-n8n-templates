@@ -1,6 +1,6 @@
 # 🎬 Configure your own image creation API using OpenAI DALLE-3
 
-> ⚡ **6,345 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **6,401 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

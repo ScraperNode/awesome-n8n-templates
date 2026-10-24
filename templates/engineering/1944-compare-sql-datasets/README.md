@@ -1,6 +1,6 @@
 # ⚒️ Compare SQL datasets
 
-> ⚡ **2,978 views** · ⚒️ [Engineering](../)
+> ⚡ **3,032 views** · ⚒️ [Engineering](../)
 
 ## Description
 

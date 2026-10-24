@@ -1,6 +1,6 @@
 # 📱 Verify Telegram channel subscriptions with access control using Postgres
 
-> ⚡ **398 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **426 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

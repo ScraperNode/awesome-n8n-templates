@@ -1,6 +1,6 @@
 # 🎯 Daily financial markets summaries with SerpAPI and OpenAI GPT
 
-> ⚡ **288 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **320 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

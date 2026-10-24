@@ -1,6 +1,6 @@
 # 📊 Utm link creator & QR code generator with scheduled Google Analytics reports
 
-> ⚡ **1,748 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,735 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

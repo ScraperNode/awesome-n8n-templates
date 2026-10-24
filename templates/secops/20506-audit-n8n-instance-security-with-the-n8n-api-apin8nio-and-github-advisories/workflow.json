@@ -1,0 +1,380 @@
+{
+  "name": "Audit n8n instance security with n8n API, api.n8n.io and GitHub advisories",
+  "nodes": [
+    {
+      "id": "3e542fd7-6402-482b-8b1d-5afb29c26517",
+      "name": "Every Morning at 7am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "48f4aa90-1d77-4074-8643-59ea7cde8835",
+      "name": "When Clicking Execute Workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        200
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "d7d18644-72db-4815-9b4c-2558c93b0235",
+      "name": "Set Sentinel Settings",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        240,
+        100
+      ],
+      "parameters": {
+        "jsCode": "// ===== SETTINGS - edit these values =====\nreturn [{ json: {\n  INSTANCE_NAME: 'my n8n',\n  N8N_URL: 'http://localhost:5678',   // this n8n instance, as n8n itself reaches it\n  VERSION_OVERRIDE: '',               // leave empty: auto-detected. Set e.g. '2.42.1' only if you run a beta/next build\n  WEEKLY_REPORT_DAY: '1',             // 0=Sun ... 6=Sat: full report even when nothing is new. '' = off\n  ALWAYS_SEND: false                  // true = email every run (useful while testing)\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e36c011c-bddb-429d-8f81-5eb53139bdd0",
+      "name": "Run n8n Security Audit",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        480,
+        100
+      ],
+      "parameters": {
+        "url": "={{ $json.N8N_URL }}/api/v1/audit",
+        "method": "POST",
+        "options": {
+          "timeout": 120000
+        },
+        "jsonBody": "{}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "credential-id",
+          "name": "n8n API key (X-N8N-API-KEY)"
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "97df216f-307c-486a-9a34-bf7fb7953a87",
+      "name": "Fetch Stable n8n Versions",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        720,
+        100
+      ],
+      "parameters": {
+        "url": "https://api.n8n.io/api/versions/1.0.0",
+        "options": {
+          "timeout": 30000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "n8n-instance-id",
+              "value": "n8n-sentinel"
+            }
+          ]
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "c41129b5-c0f4-484d-8958-b59cd2498583",
+      "name": "Fetch GitHub Security Advisories",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "position": [
+        960,
+        100
+      ],
+      "parameters": {
+        "url": "https://api.github.com/repos/n8n-io/n8n/security-advisories",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "sendHeaders": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "per_page",
+              "value": "100"
+            }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-sentinel"
+            }
+          ]
+        }
+      },
+      "executeOnce": true,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "672da1af-e8d6-46a9-86ad-eec9924b628c",
+      "name": "Score Risk and Build Report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1200,
+        100
+      ],
+      "parameters": {
+        "jsCode": "// n8n SENTINEL - core logic (pure function; the same code goes into the workflow's Code node).\n// Inputs: n8n security audit report, n8n stable versions list, GitHub security advisories for n8n-io/n8n,\n// optional VERSION_OVERRIDE, and the previous run (for \"new since last time\").\n// Branch-aware: a fix backported to your own version line (same major.minor) counts as patched.\n// (c) 2026 Spiridon Tsakonas (Cyrus Nash) - Light in the Dark Solutions - All Rights Reserved\n\nconst parseV = s => { const m = String(s || '').trim().match(/^v?(\\d+)\\.(\\d+)\\.(\\d+)/); return m ? [+m[1], +m[2], +m[3]] : null; };\nconst cmp = (a, b) => (a[0] - b[0]) || (a[1] - b[1]) || (a[2] - b[2]);\n// \"< 2.42.1\", \">= 2.0.0, < 2.41.4\", \"<= 1.2.3\", \"= 1.0.0\"\nfunction inRange(v, range) {\n  if (!range) return false;\n  return range.split(',').map(x => x.trim()).filter(Boolean).every(cond => {\n    const m = cond.match(/^(<=|>=|<|>|=)?\\s*v?(\\d+\\.\\d+\\.\\d+)/); if (!m) return false;\n    const c = cmp(v, parseV(m[2])), op = m[1] || '=';\n    return op === '<' ? c < 0 : op === '<=' ? c <= 0 : op === '>' ? c > 0 : op === '>=' ? c >= 0 : c === 0;\n  });\n}\nfunction patchedOnMyLine(v, patchedList) {\n  return patchedList.some(p => { const pv = parseV(String(p).replace(/^[^\\d]*/, '')); return pv && pv[0] === v[0] && pv[1] === v[1] && cmp(v, pv) >= 0; });\n}\nfunction isAffected(version, advisory) {\n  const v = parseV(version); if (!v) return { affected: null, reason: 'unknown version' };\n  const vulns = (advisory.vulnerabilities || []).filter(x => !x.package || x.package.name === 'n8n');\n  const hit = vulns.filter(x => inRange(v, x.vulnerable_version_range));\n  if (!hit.length) return { affected: false, reason: 'version outside every affected range' };\n  const patched = vulns.map(x => x.patched_versions).filter(Boolean).flatMap(p => p.split(','));\n  if (patchedOnMyLine(v, patched)) return { affected: false, reason: 'fix backported to your ' + v[0] + '.' + v[1] + '.x line' };\n  const fixes = patched.map(p => p.trim()).filter(Boolean);\n  return { affected: true, reason: 'in range ' + hit.map(x => x.vulnerable_version_range).join(' | '), fixes };\n}\nfunction detectVersion({ audit, versions, override }) {\n  if (parseV(override)) return { version: parseV(override).join('.'), source: 'VERSION_OVERRIDE' };\n  const inst = (audit && audit['Instance Risk Report'] && audit['Instance Risk Report'].sections) || [];\n  for (const s of inst) { const m = String(s.description || '').match(/Currently at version (\\d+\\.\\d+\\.\\d+)/); if (m) return { version: m[1], source: 'security audit (instance is outdated)' }; }\n  const names = (versions || []).map(x => x.name).filter(parseV).sort((a, b) => cmp(parseV(b), parseV(a)));\n  if (names.length) return { version: names[0], source: 'n8n stable release list (audit reports no missing updates)' };\n  return { version: null, source: 'unknown - set VERSION_OVERRIDE' };\n}\nconst SEV_POINTS = { critical: 40, high: 25, medium: 10, low: 3 };\nfunction analyze({ audit, versions, advisories, override, previous }) {\n  const ver = detectVersion({ audit, versions, override });\n  const open = [];\n  for (const a of advisories || []) {\n    if (a.state && a.state !== 'published') continue;\n    const r = isAffected(ver.version, a);\n    if (r.affected) open.push({ id: a.ghsa_id, severity: a.severity || 'unknown', summary: a.summary, url: a.html_url, published: (a.published_at || '').slice(0, 10), fixes: r.fixes });\n  }\n  const findings = [];\n  for (const [report, body] of Object.entries(audit || {})) {\n    for (const s of (body && body.sections) || []) {\n      if (s.title === 'Security settings') continue;\n      const n = Array.isArray(s.location) ? s.location.length : (s.nextVersions ? s.nextVersions.length : 1);\n      findings.push({ id: report + ' / ' + s.title, report, title: s.title, count: n, recommendation: s.recommendation || '',\n        where: (s.location || []).slice(0, 5).map(l => l.workflowName ? `${l.workflowName} -> ${l.nodeName || l.name || ''}` : (l.name || l.kind || '')).filter(Boolean) });\n    }\n  }\n  // BROKEN BY POLICY: workflows that use a node this instance has disabled (nodesExclude / nodesInclude) - they cannot run.\n  const sec = (((audit || {})['Instance Risk Report'] || {}).sections || []).find(s => s.settings && s.settings.nodes);\n  if (sec) {\n    const list = v => String(v || '').split(',').map(x => x.trim()).filter(x => x && x !== 'none');\n    const excl = new Set(list(sec.settings.nodes.nodesExclude)), incl = new Set(list(sec.settings.nodes.nodesInclude));\n    const blocked = t => excl.has(t) || (incl.size > 0 && !incl.has(t));\n    const locs = (((audit || {})['Nodes Risk Report'] || {}).sections || []).flatMap(s => s.location || []);\n    const seen = new Set(), hits = [];\n    for (const l of locs) { const k = l.workflowId + '/' + l.nodeId; if (l.nodeType && blocked(l.nodeType) && !seen.has(k)) { seen.add(k); hits.push(l); } }\n    if (hits.length) {\n      const wf = [...new Set(hits.map(h => h.workflowId))];\n      findings.push({ id: 'Policy / Workflows using disabled nodes', report: 'Policy', title: 'Workflows using disabled nodes', count: wf.length,\n        recommendation: 'These workflows cannot run on this instance. Replace the disabled node, or remove it from NODES_EXCLUDE if you accept the risk.',\n        where: wf.slice(0, 10).map(id => { const hs = hits.filter(h => h.workflowId === id); return `\"${hs[0].workflowName}\" [id ${id}]: ${hs.map(h => h.nodeName).join(', ')} (${[...new Set(hs.map(h => h.nodeType.replace('n8n-nodes-base.', '')))].join(', ')})`; }) });\n    }\n  }\n  let score = 0;\n  for (const o of open) score += SEV_POINTS[o.severity] || 5;\n  for (const f of findings) {\n    if (/outdated/i.test(f.title)) score += 15;\n    else if (/disabled nodes/i.test(f.title)) score += Math.min(30, 10 * f.count);\n    else if (/webhook/i.test(f.title)) score += Math.min(20, 5 * f.count);\n    else if (/credential/i.test(f.title)) score += Math.min(10, 2 * f.count);\n    else if (/risky nodes|community/i.test(f.title)) score += Math.min(10, Math.ceil(f.count / 5));\n    else score += Math.min(10, f.count);\n  }\n  score = Math.min(100, score);\n  const grade = score === 0 ? 'A' : score <= 10 ? 'B' : score <= 25 ? 'C' : score <= 50 ? 'D' : 'F';\n  const prevIds = new Set((previous && previous.openIds) || []), prevF = new Set((previous && previous.findingIds) || []);\n  const newAdvisories = open.filter(o => !prevIds.has(o.id));\n  const newFindings = findings.filter(f => !prevF.has(f.id));\n  const urgent = newAdvisories.filter(o => ['critical', 'high'].includes(o.severity));\n  // the plan: deterministic, ordered by danger - no AI guessing in security advice\n  const plan = [];\n  if (open.length) {\n    const fixes = [...new Set(open.flatMap(o => o.fixes || []))];\n    plan.push(`Upgrade n8n: ${open.length} published advisory(ies) affect version ${ver.version}. Fixed in: ${fixes.join(' or ')}.`);\n  }\n  for (const f of findings.filter(x => /disabled nodes/i.test(x.title))) plan.push(`Fix ${f.count} workflow(s) that cannot run - they use nodes disabled on this instance: ${f.where.join('; ')}`);\n  for (const f of findings.filter(x => /webhook/i.test(x.title))) plan.push(`Protect ${f.count} webhook(s) without authentication: ${f.where.join('; ')}`);\n  for (const f of findings.filter(x => /outdated/i.test(x.title))) plan.push('Update this instance: the audit reports missing updates.');\n  for (const f of findings.filter(x => /credential/i.test(x.title))) plan.push(`Review ${f.count} credential(s) not used by any active workflow - delete what you no longer need.`);\n  for (const f of findings.filter(x => /risky nodes|community/i.test(x.title))) plan.push(`Review ${f.count} use(s) of nodes that can run code on the server (${f.title}).`);\n  return { checked_at: new Date().toISOString(), version: ver.version, version_source: ver.source, score, grade,\n    open_advisories: open, findings, new_advisories: newAdvisories, new_findings: newFindings,\n    alert: urgent.length > 0 || newFindings.some(f => /webhook|outdated|disabled nodes/i.test(f.title)), plan,\n    memory: { openIds: open.map(o => o.id), findingIds: findings.map(f => f.id) } };\n}\n\n// ---------------- n8n glue ----------------\nconst cfg = $('Set Sentinel Settings').first().json;\nconst auditRaw = $('Run n8n Security Audit').first().json || {};\nconst auditOk = !auditRaw.error && (Object.keys(auditRaw).length === 0 || Object.keys(auditRaw).some(k => /Risk Report$/.test(k)));\nconst audit = auditOk ? auditRaw : {};\nconst versions = $('Fetch Stable n8n Versions').all().map(i => i.json).filter(v => v && v.name);\nconst advItems = $('Fetch GitHub Security Advisories').all().map(i => i.json);\nconst advisoriesOk = advItems.length > 0 && advItems.every(a => a && a.ghsa_id);\nconst store = $getWorkflowStaticData('global');\nconst r = analyze({ audit, versions, advisories: advisoriesOk ? advItems : [], override: cfg.VERSION_OVERRIDE, previous: store.last });\nconst problems = [];\nif (!auditOk) problems.push('The n8n security audit FAILED (' + String(auditRaw.error && (auditRaw.error.message || auditRaw.error) || 'unexpected answer').slice(0, 200) + '). Check N8N_URL and the API key credential.');\nif (!advisoriesOk) problems.push('Security advisories could not be fetched from GitHub - advisory check SKIPPED this run (not \"0 advisories\").');\nif (!r.version) problems.push('Instance version unknown - set VERSION_OVERRIDE in Set Sentinel Settings. Advisory matching was not possible.');\nstore.last = r.memory;\nstore.history = (store.history || []).concat([{ date: r.checked_at.slice(0, 10), score: r.score, grade: r.grade }]).slice(-30);\nconst trend = store.history.map(h => `${h.date} ${h.grade} (${h.score})`).join(' | ');\nconst weekly = cfg.WEEKLY_REPORT_DAY !== '' && new Date().getDay() === Number(cfg.WEEKLY_REPORT_DAY);\nconst send = problems.length > 0 || r.alert || weekly || cfg.ALWAYS_SEND === true;\nconst newCount = r.new_advisories.length + r.new_findings.length;\nconst L = [];\nL.push(`n8n SENTINEL - security report for ${cfg.INSTANCE_NAME}`);\nL.push(`Checked: ${r.checked_at}`);\nL.push(`Version: ${r.version || 'unknown'} (from ${r.version_source})`);\nL.push(`Risk score: ${r.score}/100 - grade ${r.grade}   (0 = clean, A best, F worst)`);\nif (problems.length) { L.push('', '!! CHECK PROBLEMS'); problems.forEach(p => L.push(' - ' + p)); }\nL.push('', `NEW SINCE LAST RUN: ${newCount}`);\nr.new_advisories.forEach(o => L.push(` - [${o.severity.toUpperCase()}] ${o.summary} (${o.id}) ${o.url}`));\nr.new_findings.forEach(f => L.push(` - ${f.title} (${f.count})`));\nL.push('', `OPEN ADVISORIES AFFECTING YOUR VERSION: ${r.open_advisories.length}`);\nr.open_advisories.slice(0, 25).forEach(o => L.push(` - [${o.severity.toUpperCase()}] ${o.summary} - fixed in ${(o.fixes || []).join(' or ')} - ${o.url}`));\nL.push('', 'AUDIT FINDINGS:');\nr.findings.forEach(f => { L.push(` - ${f.title} (${f.count})`); f.where.slice(0, 5).forEach(w => L.push(`     ${w}`)); });\nL.push('', 'FIX PLAN (most dangerous first):');\n(r.plan.length ? r.plan : ['Nothing to fix today.']).forEach((p, i) => L.push(` ${i + 1}. ${p}`));\nL.push('', 'TREND: ' + trend);\nL.push('', 'Version matching is branch-aware: a fix backported to your own version line counts as patched.');\nreturn [{ json: { ...r, problems, send, weekly, trend,\n  subject: `n8n Sentinel: grade ${r.grade} (${r.score}/100)` + (problems.length ? ' - CHECK PROBLEM' : newCount ? ` - ${newCount} new` : weekly ? ' - weekly report' : ''),\n  report_text: L.join('\\n') } }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "35926f5c-ca95-407a-8450-d28a65b9716b",
+      "name": "If Report Is Needed",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1440,
+        100
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c21896c6-0617-489a-8494-3c60d917b8ff",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.send }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "23ae4cb8-94c8-4d33-b0d2-1a5584a27e0e",
+      "name": "Send Report Email",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        1680,
+        40
+      ],
+      "parameters": {
+        "text": "={{ $json.report_text }}",
+        "options": {
+          "appendAttribution": false
+        },
+        "subject": "={{ $json.subject }}",
+        "toEmail": "you@example.com",
+        "fromEmail": "user@example.com",
+        "emailFormat": "text"
+      },
+      "credentials": {
+        "smtp": {
+          "id": "credential-id",
+          "name": "SMTP account"
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "b3bd4d16-0222-44dd-ab02-d26fc26abb71",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -752,
+        -144
+      ],
+      "parameters": {
+        "width": 624,
+        "height": 848,
+        "content": "## Audit n8n instance security with n8n API, api.n8n.io and GitHub advisories\n\n### How it works\n\n1. Every morning, or on a manual run, the workflow runs n8n's built-in security audit through the n8n API.\n2. It fetches the stable n8n versions from api.n8n.io and n8n's published security advisories from GitHub.\n3. It matches each advisory to your exact version, branch-aware: a fix backported to your own version line counts as patched.\n4. It flags unused credentials, risky nodes and workflows that use nodes your instance has disabled.\n5. It scores the risk from 0 to 100, grades it A to F and writes a fix plan from fixed rules, not AI.\n6. It emails you only when something new appears, plus a weekly report. A source it cannot reach is reported as skipped.\n\n### Setup steps\n\n- [ ] Create an n8n API key in Settings > n8n API (the Instance operations scope is enough).\n- [ ] In Run n8n Security Audit, add a Header Auth credential: name `X-N8N-API-KEY`, value your key.\n- [ ] In Send Report Email, add your SMTP credential and set From and To.\n- [ ] In Set Sentinel Settings, set INSTANCE_NAME and check N8N_URL.\n- [ ] Set ALWAYS_SEND to `true`, run the workflow once, check the email, then set it back to `false` and publish.\n\n### Customization\n\nChange the hour in Every Morning at 7am. On a beta build, set VERSION_OVERRIDE in Set Sentinel Settings."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "48a4049e-6783-43ce-8536-98086b74f732",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -48,
+        -144
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 432,
+        "height": 512,
+        "content": "## Start and settings\n\nRuns every morning or on a manual run. All options live in Set Sentinel Settings."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "908026aa-0b90-4b62-8897-f9161f7afd00",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        432,
+        -144
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 672,
+        "height": 512,
+        "content": "## Collect security data\n\nRuns n8n's security audit and fetches the stable versions and the GitHub security advisories."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "df354a67-1a2a-48fd-b694-e6d1f3fdfb9b",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1152,
+        -144
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 672,
+        "height": 512,
+        "content": "## Score and email the report\n\nMatches advisories to your version, scores the risk, writes the fix plan and emails you when something is new."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "If Report Is Needed": {
+      "main": [
+        [
+          {
+            "node": "Send Report Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Morning at 7am": {
+      "main": [
+        [
+          {
+            "node": "Set Sentinel Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Sentinel Settings": {
+      "main": [
+        [
+          {
+            "node": "Run n8n Security Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run n8n Security Audit": {
+      "main": [
+        [
+          {
+            "node": "Fetch Stable n8n Versions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Stable n8n Versions": {
+      "main": [
+        [
+          {
+            "node": "Fetch GitHub Security Advisories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score Risk and Build Report": {
+      "main": [
+        [
+          {
+            "node": "If Report Is Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Clicking Execute Workflow": {
+      "main": [
+        [
+          {
+            "node": "Set Sentinel Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch GitHub Security Advisories": {
+      "main": [
+        [
+          {
+            "node": "Score Risk and Build Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

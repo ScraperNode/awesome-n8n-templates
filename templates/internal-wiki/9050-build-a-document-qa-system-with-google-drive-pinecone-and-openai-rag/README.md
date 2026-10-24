@@ -1,6 +1,6 @@
 # 📖 Build a document QA system with Google Drive, Pinecone, and OpenAI RAG
 
-> ⚡ **441 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **651 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

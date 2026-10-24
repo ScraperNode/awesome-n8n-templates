@@ -1,6 +1,6 @@
 # 🎣 Qualify & route leads with GPT-4o, Clearbit, HubSpot CRM & Slack alerts
 
-> ⚡ **237 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **316 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

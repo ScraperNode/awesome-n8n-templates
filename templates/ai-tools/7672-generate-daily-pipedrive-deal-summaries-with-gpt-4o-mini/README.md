@@ -1,6 +1,6 @@
 # 🎯 Generate daily Pipedrive deal summaries with GPT-4o-mini
 
-> ⚡ **732 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **965 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

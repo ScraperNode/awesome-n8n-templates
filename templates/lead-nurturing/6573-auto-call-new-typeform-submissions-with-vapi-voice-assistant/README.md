@@ -1,6 +1,6 @@
 # 💬 Auto-call new Typeform submissions with Vapi voice assistant
 
-> ⚡ **584 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **635 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Automatic subscriber creation in Beehiiv from Systeme.io funnel optins
 
-> ⚡ **367 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **487 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

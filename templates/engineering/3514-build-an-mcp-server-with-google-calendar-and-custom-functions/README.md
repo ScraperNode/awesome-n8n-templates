@@ -1,6 +1,6 @@
 # ⚒️ Build an MCP server with Google Calendar and custom functions
 
-> ⚡ **71,420 views** · ⚒️ [Engineering](../)
+> ⚡ **73,672 views** · ⚒️ [Engineering](../)
 
 ## Description
 

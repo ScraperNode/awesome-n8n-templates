@@ -1,6 +1,6 @@
 # ⚒️ Create custom reasoning patterns for AI agents with GraphRAG & knowledge ontology
 
-> ⚡ **1,303 views** · ⚒️ [Engineering](../)
+> ⚡ **1,565 views** · ⚒️ [Engineering](../)
 
 ## Description
 

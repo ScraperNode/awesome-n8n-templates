@@ -1,6 +1,6 @@
 # ⚒️ Automate ISO 26262 compliance with GPT-4 for automotive safety analysis
 
-> ⚡ **696 views** · ⚒️ [Engineering](../)
+> ⚡ **867 views** · ⚒️ [Engineering](../)
 
 ## Description
 

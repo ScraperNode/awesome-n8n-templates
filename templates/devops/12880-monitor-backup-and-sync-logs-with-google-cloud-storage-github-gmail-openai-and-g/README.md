@@ -1,54 +1,53 @@
 # ⚙️ Monitor backup and sync logs with Google Cloud Storage, GitHub, Gmail, OpenAI, and GLPI
 
-> ⚡ **22 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **65 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 
-## Reliable Backup & Sync Execution Validation (Log-Driven)
+## Quick overview
+Monitor backup and synchronization jobs by validating structured execution logs rather than remotely executing the jobs. The workflow checks expected daily evidence, identifies missing or failed runs, and can route operational alerts through configured notification and ticketing services.
 
-This workflow monitors filesystem sync and backup jobs by **validating their execution logs**, not by running or inspecting the jobs themselves.
+## How it works
+1. External job execution — rsync, rclone, or compatible jobs run independently from n8n and produce structured logs using the expected lifecycle contract.
+2. Log collection — Execution logs are uploaded to the configured Google Cloud Storage location for centralized validation.
+3. Expected-job validation — The workflow compares expected jobs against available logs for the relevant execution period.
+4. Lifecycle validation — Log contents can be inspected for required events such as START, transfer completion, SUMMARY, and END.
+5. Failure classification — Missing, incomplete, warning, or non-zero execution evidence is classified for downstream handling.
+6. Alerting and ticketing — Detected problems can be routed through Gmail and GLPI, with additional workflow logic available for analysis and notification.
 
-After purchase, you will receive a complete package including:
-- **`workflow.json`** – ready to be imported into n8n
-- **Shell script templates (`.sh`)** – reference sync job templates designed to generate structured logs fully compatible with the workflow
-- **Complete setup documentation** – step-by-step guide covering configuration, deployment, and operational requirements
+## Setup
+1. Purchase the complete package — Obtain the n8n workflow, reference shell scripts, and complete deployment documentation.
+2. Define monitored jobs — Configure the expected backup/sync jobs and their log filenames according to the supplied documentation.
+3. Deploy the logging contract — Adapt the included rsync/rclone shell templates or make existing jobs emit compatible lifecycle events.
+4. Configure log storage — Connect the Google Cloud Storage location used to collect execution logs.
+5. Configure integrations — Add the Google Cloud, Gmail, GLPI, GitHub, and AI credentials required by the purchased workflow configuration.
+6. Test failure scenarios — Validate successful, missing, incomplete, warning, and non-zero-return-code cases before relying on production alerts.
 
-### How it works (high level)
+## Requirements
+- n8n instance
+- Backup or synchronization jobs capable of producing compatible structured logs
+- Google Cloud Storage bucket and credentials
+- Configuration describing the expected jobs/log filenames
+- Credentials for the notification or ticketing integrations enabled in the workflow
+- Included rsync job template (optional)
+- Included rclone job template (optional)
+- Gmail notifications (optional)
+- GLPI ticket creation (optional)
+- GitHub integration (optional)
+- AI-assisted analysis where configured (optional)
 
-* Sync jobs are executed externally using standardized shell templates:
+## Customization
+- Job inventory — Add or remove expected jobs and their corresponding log names.
+- Log producers — Adapt the supplied shell templates for your existing rsync, rclone, backup, or synchronization processes.
+- Validation rules — Change lifecycle markers, warning handling, return-code interpretation, or freshness requirements.
+- Alert routing — Customize which conditions generate email, ticket, or other notification actions.
+- Storage — Adapt the ingestion logic if execution logs are stored somewhere other than Google Cloud Storage.
+- Operational metadata — Extend alerts with host, environment, job category, owner, or remediation information.
 
-  * `rsync_job-Template.sh`
-  * `rclone_job-Template.sh`
-* Each job produces **one deterministic log file per run**
-* Logs are uploaded daily to **Google Cloud Storage**
-* This workflow runs on a schedule and:
-
-  * Verifies that all expected logs exist for the day (UTC)
-  * Optionally inspects their contents
-  * Sends alerts if logs are missing or report failures
-
-### Key design principles
-
-* **Log-driven monitoring** (evidence-based, not assumption-based)
-* **One job = one log = one source of truth**
-* **No SSH, no server access, no execution coupling**
-* Safe to run in untrusted or restricted environments
-
-### Logging contract (required)
-
-Each log file must contain the following lifecycle events, in order:
-
-1. `event=START`
-2. `event=RSYNC_END` or `event=RCLONE_END`
-3. `event=SUMMARY`
-4. `event=END`
-
-If the `END` event is missing, the job is considered **failed or interrupted**.
-
-### Configuration
-
-Expected jobs and log filenames are defined in `sync-jobs.json`.
-This workflow only validates presence and state of logs — it never assumes job success.
+## Additional info
+Reference scripts are preserved under job-templates/: rsync_job-Template.sh and rclone_job-Template.sh.
+The monitoring design is intentionally decoupled from job execution: n8n validates evidence produced by external jobs rather than connecting to servers to run them.
+The complete purchased package includes the workflow and detailed deployment/configuration documentation.
 
 ## 🔗 Nodes Used
 

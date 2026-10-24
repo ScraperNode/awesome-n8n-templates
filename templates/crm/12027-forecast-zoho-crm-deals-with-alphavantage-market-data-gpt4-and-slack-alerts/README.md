@@ -1,6 +1,6 @@
 # 🤝 Forecast Zoho CRM deals with AlphaVantage market data, GPT‑4 and Slack alerts
 
-> ⚡ **36 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **77 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

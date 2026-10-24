@@ -1,6 +1,6 @@
 # 📱 Launch WhatsApp bulk campaigns from Google Sheets with MoltFlow
 
-> ⚡ **38 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **231 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

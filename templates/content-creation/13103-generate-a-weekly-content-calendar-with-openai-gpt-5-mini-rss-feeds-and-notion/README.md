@@ -1,6 +1,6 @@
 # 🎬 Generate a weekly content calendar with OpenAI GPT-5-mini, RSS feeds, and Notion
 
-> ⚡ **80 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **347 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

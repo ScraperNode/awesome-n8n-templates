@@ -1,6 +1,6 @@
 # 📖 Ai-powered degree audit system with Google Sheets and GPT-5
 
-> ⚡ **538 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **787 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

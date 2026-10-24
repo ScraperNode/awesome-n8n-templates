@@ -1,6 +1,6 @@
 # 📋 Monitor stuck tasks in Monday.com with automated Slack alerts
 
-> ⚡ **234 views** · 📋 [Project Management](../)
+> ⚡ **287 views** · 📋 [Project Management](../)
 
 ## Description
 

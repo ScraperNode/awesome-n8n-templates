@@ -1,6 +1,6 @@
 # ⚡ Clean out unwanted emails from Gmail
 
-> ⚡ **8,118 views** · ⚡ [Personal Productivity](../)
+> ⚡ **8,425 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

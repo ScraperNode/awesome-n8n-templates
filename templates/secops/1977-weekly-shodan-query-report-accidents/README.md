@@ -1,6 +1,6 @@
 # 🔒 Weekly Shodan query - report accidents
 
-> ⚡ **14,399 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **19,267 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

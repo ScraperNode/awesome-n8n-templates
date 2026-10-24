@@ -1,6 +1,6 @@
 # 📱 Automated animal advocacy news research & weekly digest using Claude AI & Serper
 
-> ⚡ **457 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **522 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

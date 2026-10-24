@@ -1,6 +1,6 @@
 # 🔧 Manage room members in Matrix
 
-> ⚡ **1,119 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,180 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

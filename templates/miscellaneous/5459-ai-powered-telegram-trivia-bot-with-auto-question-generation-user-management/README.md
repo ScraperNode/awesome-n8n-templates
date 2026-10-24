@@ -1,6 +1,6 @@
 # 🔧 Ai-powered Telegram trivia bot with auto question generation & user management
 
-> ⚡ **3,474 views** · 🔧 [Miscellaneous](../)
+> ⚡ **3,838 views** · 🔧 [Miscellaneous](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

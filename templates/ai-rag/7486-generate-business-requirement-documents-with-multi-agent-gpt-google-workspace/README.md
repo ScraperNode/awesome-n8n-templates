@@ -1,6 +1,6 @@
 # 🔍 Generate business requirement documents with Multi-agent GPT & Google Workspace
 
-> ⚡ **1,460 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **2,087 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Build a cost estimation chatbot with Mistral AI, OCR & Supabase
 
-> ⚡ **233 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **365 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

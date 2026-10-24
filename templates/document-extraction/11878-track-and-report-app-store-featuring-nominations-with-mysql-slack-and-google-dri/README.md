@@ -1,6 +1,6 @@
 # 🔬 Track and report App Store featuring nominations with MySQL, Slack and Google Drive
 
-> ⚡ **35 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **81 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

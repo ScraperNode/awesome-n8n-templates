@@ -1,6 +1,6 @@
 # ⚒️ Enforce pre-release compliance with Jira, Monday.com, and Slack alerts
 
-> ⚡ **270 views** · ⚒️ [Engineering](../)
+> ⚡ **370 views** · ⚒️ [Engineering](../)
 
 ## Description
 

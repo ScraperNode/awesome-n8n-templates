@@ -1,6 +1,6 @@
 # 🔬 Automate conference travel approvals with Deepseek AI, Gmail and Google Sheets
 
-> ⚡ **160 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **356 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

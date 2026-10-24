@@ -1,6 +1,6 @@
 # 📱 Automate event registration and reminder emails with Forms, Sheets & Gmail
 
-> ⚡ **149 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **300 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

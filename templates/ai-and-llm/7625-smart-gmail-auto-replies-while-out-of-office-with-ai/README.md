@@ -1,6 +1,6 @@
 # ✨ Smart Gmail auto-replies while out of office with AI
 
-> ⚡ **482 views** · ✨ [AI & LLMs](../)
+> ⚡ **581 views** · ✨ [AI & LLMs](../)
 
 ## Description
 

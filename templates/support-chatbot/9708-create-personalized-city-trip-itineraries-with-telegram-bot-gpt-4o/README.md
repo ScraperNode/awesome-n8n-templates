@@ -1,6 +1,6 @@
 # 💬 Create personalized city trip itineraries with Telegram Bot & GPT-4o
 
-> ⚡ **181 views** · 💬 [Support Chatbots](../)
+> ⚡ **204 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

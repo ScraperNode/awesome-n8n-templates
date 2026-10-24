@@ -1,6 +1,6 @@
 # 🎫 Escalate negative Facebook Page reviews to Slack and Supabase tickets
 
-> ⚡ **4 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **34 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

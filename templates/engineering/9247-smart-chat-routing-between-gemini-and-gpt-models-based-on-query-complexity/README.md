@@ -1,6 +1,6 @@
 # ⚒️ Smart chat routing between Gemini and GPT models based on query complexity
 
-> ⚡ **369 views** · ⚒️ [Engineering](../)
+> ⚡ **463 views** · ⚒️ [Engineering](../)
 
 ## Description
 

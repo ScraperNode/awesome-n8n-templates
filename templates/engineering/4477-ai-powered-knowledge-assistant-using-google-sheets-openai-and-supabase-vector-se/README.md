@@ -1,6 +1,6 @@
 # ⚒️ AI-powered knowledge assistant using Google Sheets, OpenAI, and Supabase Vector Search
 
-> ⚡ **817 views** · ⚒️ [Engineering](../)
+> ⚡ **924 views** · ⚒️ [Engineering](../)
 
 ## Description
 

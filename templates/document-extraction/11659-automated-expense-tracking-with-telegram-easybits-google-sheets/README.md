@@ -1,6 +1,6 @@
 # 🔬 Automated expense tracking with Telegram, easybits & Google Sheets
 
-> ⚡ **139 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **238 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

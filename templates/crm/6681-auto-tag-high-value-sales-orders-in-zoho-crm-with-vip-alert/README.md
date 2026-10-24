@@ -1,6 +1,6 @@
 # 🤝 Auto-tag high-value sales orders in Zoho CRM with VIP alert
 
-> ⚡ **433 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **443 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

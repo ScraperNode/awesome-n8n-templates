@@ -1,6 +1,6 @@
 # 🎣 Validate & score leads with ZeroBounce AI before sending Gmail emails
 
-> ⚡ **100 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **160 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

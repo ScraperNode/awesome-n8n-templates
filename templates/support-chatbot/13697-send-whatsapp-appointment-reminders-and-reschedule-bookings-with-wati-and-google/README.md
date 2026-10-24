@@ -1,6 +1,6 @@
 # 💬 Send WhatsApp appointment reminders and reschedule bookings with Wati and Google Sheets
 
-> ⚡ **23 views** · 💬 [Support Chatbots](../)
+> ⚡ **656 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

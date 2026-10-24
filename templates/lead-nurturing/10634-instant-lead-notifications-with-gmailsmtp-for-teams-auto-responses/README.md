@@ -1,6 +1,6 @@
 # 💬 Instant lead notifications with Gmail/SMTP for teams & auto-responses
 
-> ⚡ **82 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **148 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

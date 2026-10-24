@@ -1,6 +1,6 @@
 # 🧾 Handle failed payment renewals with AI analysis, Jira tickets and Slack alerts
 
-> ⚡ **28 views** · 🧾 [Invoice Processing](../)
+> ⚡ **50 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

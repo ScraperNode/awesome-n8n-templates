@@ -1,6 +1,6 @@
 # 📱 Create threads on Bluesky
 
-> ⚡ **1,714 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,804 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Automate Google Business reviews with AI responses, Slack alerts & sheets logging
 
-> ⚡ **5,169 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **7,859 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

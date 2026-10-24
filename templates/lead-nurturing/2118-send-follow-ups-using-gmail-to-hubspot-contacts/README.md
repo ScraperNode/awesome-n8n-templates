@@ -1,6 +1,6 @@
 # 💬 Send follow-ups using Gmail to Hubspot contacts
 
-> ⚡ **2,852 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,834 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

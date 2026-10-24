@@ -1,6 +1,6 @@
 # 🧾 Categorize Airtable invoices with OpenAI and TOON token optimization
 
-> ⚡ **6 views** · 🧾 [Invoice Processing](../)
+> ⚡ **23 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

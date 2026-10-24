@@ -1,6 +1,6 @@
 # 🎬 Generate UGC video ads from product images with Kie.ai Sora 2 + Tavily Research
 
-> ⚡ **2,992 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,853 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

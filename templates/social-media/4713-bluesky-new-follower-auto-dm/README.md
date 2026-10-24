@@ -1,6 +1,6 @@
 # 📱 🦋 Bluesky new follower auto DM
 
-> ⚡ **122 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **139 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

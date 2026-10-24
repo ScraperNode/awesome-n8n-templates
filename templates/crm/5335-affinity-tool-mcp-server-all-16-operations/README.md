@@ -1,6 +1,6 @@
 # 🤝 🛠️ Affinity tool MCP server 💪 all 16 operations
 
-> ⚡ **185 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **214 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

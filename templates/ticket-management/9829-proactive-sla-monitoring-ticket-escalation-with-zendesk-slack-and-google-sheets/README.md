@@ -1,6 +1,6 @@
 # 🎫 Proactive SLA monitoring & ticket escalation with Zendesk, Slack and Google Sheets
 
-> ⚡ **129 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **199 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

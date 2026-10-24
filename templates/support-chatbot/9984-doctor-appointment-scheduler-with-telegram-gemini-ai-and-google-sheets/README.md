@@ -1,6 +1,6 @@
 # 💬 Doctor appointment scheduler with Telegram, Gemini AI, and Google Sheets
 
-> ⚡ **1,202 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,878 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

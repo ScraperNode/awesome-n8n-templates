@@ -1,6 +1,6 @@
 # ⚒️ Generate n8n forms from Airtable and BaseRow tables
 
-> ⚡ **2,765 views** · ⚒️ [Engineering](../)
+> ⚡ **2,983 views** · ⚒️ [Engineering](../)
 
 ## Description
 

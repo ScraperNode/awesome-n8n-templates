@@ -1,6 +1,6 @@
 # 🔬 Generate verified gym trial passes with QR code, email & PDF export
 
-> ⚡ **255 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **511 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

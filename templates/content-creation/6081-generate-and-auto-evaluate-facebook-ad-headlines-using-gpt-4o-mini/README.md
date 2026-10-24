@@ -1,6 +1,6 @@
 # 🎬 Generate and auto-evaluate Facebook ad headlines using GPT-4o-mini
 
-> ⚡ **536 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **558 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

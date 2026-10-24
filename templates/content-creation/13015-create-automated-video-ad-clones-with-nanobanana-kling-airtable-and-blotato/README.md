@@ -1,6 +1,6 @@
 # 🎬 Create automated video ad clones with NanoBanana, Kling, Airtable and Blotato
 
-> ⚡ **1,342 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,337 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

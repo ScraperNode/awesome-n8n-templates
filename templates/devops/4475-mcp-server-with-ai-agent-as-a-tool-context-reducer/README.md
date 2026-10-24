@@ -1,6 +1,6 @@
 # ⚙️ MCP server with AI agent as a tool context reducer
 
-> ⚡ **2,426 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,658 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

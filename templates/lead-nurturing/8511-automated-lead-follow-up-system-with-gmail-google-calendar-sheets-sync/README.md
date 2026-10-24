@@ -1,6 +1,6 @@
 # 💬 Automated lead follow-up system with Gmail, Google Calendar & Sheets sync
 
-> ⚡ **120 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **161 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

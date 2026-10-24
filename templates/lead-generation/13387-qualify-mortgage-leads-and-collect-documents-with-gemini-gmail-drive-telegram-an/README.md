@@ -1,6 +1,6 @@
 # 🎣 Qualify mortgage leads and collect documents with Gemini, Gmail, Drive, Telegram, and Supabase
 
-> ⚡ **23 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **241 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

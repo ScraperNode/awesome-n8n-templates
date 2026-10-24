@@ -1,6 +1,6 @@
 # 🎬 Voice-powered marketing assistant with ElevenLabs, OpenAI & content generation
 
-> ⚡ **3,707 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,403 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

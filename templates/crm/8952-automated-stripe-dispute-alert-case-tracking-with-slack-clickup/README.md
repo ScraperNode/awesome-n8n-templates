@@ -1,6 +1,6 @@
 # 🤝 Automated Stripe dispute alert & case tracking with Slack + ClickUp
 
-> ⚡ **60 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **78 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

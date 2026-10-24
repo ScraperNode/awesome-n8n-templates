@@ -1,6 +1,6 @@
 # 🤝 Sync contacts, consent, and segments between KlickTipp and Salesforce
 
-> ⚡ **18 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **43 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

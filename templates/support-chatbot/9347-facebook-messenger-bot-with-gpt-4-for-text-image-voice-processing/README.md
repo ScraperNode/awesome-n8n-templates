@@ -1,6 +1,6 @@
 # 💬 Facebook Messenger Bot with GPT-4 for Text, Image & Voice Processing
 
-> ⚡ **3,794 views** · 💬 [Support Chatbots](../)
+> ⚡ **6,388 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

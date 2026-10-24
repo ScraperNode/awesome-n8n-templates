@@ -1,6 +1,6 @@
 # 🎬 Turn BBC News articles into podcasts using Hugging Face and Google Gemini
 
-> ⚡ **5,365 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,509 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

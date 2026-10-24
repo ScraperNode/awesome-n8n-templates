@@ -1,6 +1,6 @@
 # 📊 Bright Data-powered competitive price lookup and report generator
 
-> ⚡ **558 views** · 📊 [Market Research & Insights](../)
+> ⚡ **578 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

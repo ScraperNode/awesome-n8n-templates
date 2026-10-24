@@ -1,6 +1,6 @@
 # 🎬 Content Farming v4 - Blog Automation for Wordpress using ChatGPT 5 and Gemini
 
-> ⚡ **474 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **584 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >
@@ -14,6 +14,8 @@
 [![Watch the video](https://img.youtube.com/vi/lCJVUkv9oZw/maxresdefault.jpg)](https://www.youtube.com/watch?v=lCJVUkv9oZw)
 
 This is the most advanced AI-powered blog content generation and distribution workflow ever built for the n8n automation platform. Version 4 introduces groundbreaking improvements including GPT-5 model integration, 50-70% cost reduction, intelligent internal linking, automatic FAQ generation, and enterprise-grade content validation. It's designed for solo founders, creators, indie hackers, marketers, SEO consultants, or lean startup teams who want to dominate their niche with high-quality, search-optimized articles that drive traffic and conversions.
+
+&gt; No technical experience ? use [Ghost.Blog](https://ghost.blog)
 
 ![V4 Article Quality - Full-Length Professional Content](https://articles.emp0.com/wp-content/uploads/2025/10/content-generator-v4-article-quality.png)
 
@@ -356,7 +358,7 @@ Need to customize this workflow for your niche? Or need help setting it up? We o
 
 - ⭐ Read [Customer Reviews](https://0emp0.gumroad.com/l/content-farming-v3) (V3 reviews - V4 reviews coming soon)
 - ✍️ Write to us: [tools@emp0.com](mailto:tools@emp0.com)
-- ?? Join AI + Automation Discord: https://discord.gg/qg3qVfFchV
+- ⭐ Join AI + Automation [Discord]( https://discord.gg/qg3qVfFchV)
 
 ---
 

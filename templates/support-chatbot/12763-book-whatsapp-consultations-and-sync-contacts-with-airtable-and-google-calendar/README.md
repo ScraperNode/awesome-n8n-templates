@@ -1,6 +1,6 @@
 # 💬 Book WhatsApp consultations and sync contacts with Airtable and Google Calendar
 
-> ⚡ **99 views** · 💬 [Support Chatbots](../)
+> ⚡ **532 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

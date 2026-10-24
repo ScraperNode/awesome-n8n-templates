@@ -1,6 +1,6 @@
 # 💬 AI-powered Gmail customer support with OpenRouter & Pinecone knowledge base
 
-> ⚡ **236 views** · 💬 [Support Chatbots](../)
+> ⚡ **371 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

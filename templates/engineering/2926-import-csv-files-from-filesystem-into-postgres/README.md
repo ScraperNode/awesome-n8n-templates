@@ -1,6 +1,6 @@
 # ⚒️ Import CSV files from filesystem into Postgres
 
-> ⚡ **5,923 views** · ⚒️ [Engineering](../)
+> ⚡ **6,051 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚒️ n8n subworkflow dependency graph & auto-tagging
 
-> ⚡ **2,541 views** · ⚒️ [Engineering](../)
+> ⚡ **2,635 views** · ⚒️ [Engineering](../)
 
 ## Description
 

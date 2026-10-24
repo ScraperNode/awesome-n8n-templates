@@ -1,6 +1,6 @@
 # 🎫 Automate customer support with Mintlify documentation & Zendesk AI agent
 
-> ⚡ **1,394 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,636 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

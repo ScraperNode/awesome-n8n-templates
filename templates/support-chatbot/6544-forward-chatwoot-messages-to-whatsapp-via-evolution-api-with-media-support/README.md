@@ -1,6 +1,6 @@
 # 💬 Forward Chatwoot Messages to WhatsApp via Evolution API with Media Support
 
-> ⚡ **1,405 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,745 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

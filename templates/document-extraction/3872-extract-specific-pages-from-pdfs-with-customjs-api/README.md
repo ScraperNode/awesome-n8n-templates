@@ -1,6 +1,6 @@
 # 🔬 Extract specific pages from PDFs with CustomJS API
 
-> ⚡ **671 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **714 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

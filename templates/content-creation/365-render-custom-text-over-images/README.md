@@ -1,6 +1,6 @@
 # 🎬 Render custom text over images
 
-> ⚡ **1,969 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,063 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

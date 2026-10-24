@@ -1,6 +1,6 @@
 # 🤖 Autonomous email management with GPT-5-mini & human-in-the-loop for Outlook
 
-> ⚡ **1,760 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **2,716 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

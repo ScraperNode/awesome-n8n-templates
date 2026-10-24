@@ -1,6 +1,6 @@
 # 🎬 Optimize & update Printify title and description workflow
 
-> ⚡ **3,422 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,533 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

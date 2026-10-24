@@ -1,6 +1,6 @@
 # 💬 Create a branded AI-powered website chatbot
 
-> ⚡ **147,622 views** · 💬 [Support Chatbots](../)
+> ⚡ **163,571 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Create adaptive RAG chat agent with Google Gemini and Qdrant
 
-> ⚡ **5,484 views** · 💬 [Support Chatbots](../)
+> ⚡ **6,051 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Track receipt expenses via LINE with OpenAI GPT-4o-mini and Google Sheets
 
-> ⚡ **22 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **90 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

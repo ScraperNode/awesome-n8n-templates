@@ -1,6 +1,6 @@
 # 🔒 Prevent prompt injection attacks with a GPT-4O security defense system
 
-> ⚡ **1,015 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **1,250 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

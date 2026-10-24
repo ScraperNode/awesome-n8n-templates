@@ -1,6 +1,6 @@
 # 🧾 Extract expenses from emails and add to Google Sheets
 
-> ⚡ **22,705 views** · 🧾 [Invoice Processing](../)
+> ⚡ **30,478 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

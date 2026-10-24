@@ -1,6 +1,6 @@
 # 👥 Build an OpenAI HR assistant for Telegram attendance and salary reports
 
-> ⚡ **6 views** · 👥 [HR & Recruitment](../)
+> ⚡ **356 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

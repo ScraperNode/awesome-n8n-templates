@@ -1,6 +1,6 @@
 # ⚡ Check for bargain flights and get notified using Amadeus and Gmail
 
-> ⚡ **7,913 views** · ⚡ [Personal Productivity](../)
+> ⚡ **8,093 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

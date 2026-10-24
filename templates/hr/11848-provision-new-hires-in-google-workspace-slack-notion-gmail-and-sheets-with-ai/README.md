@@ -1,6 +1,6 @@
 # 👥 Provision new hires in Google Workspace, Slack, Notion, Gmail and Sheets with AI
 
-> ⚡ **28 views** · 👥 [HR & Recruitment](../)
+> ⚡ **114 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

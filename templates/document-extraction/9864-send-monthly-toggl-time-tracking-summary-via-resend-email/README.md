@@ -1,6 +1,6 @@
 # 🔬 Send monthly Toggl time tracking summary via Resend email
 
-> ⚡ **166 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **173 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

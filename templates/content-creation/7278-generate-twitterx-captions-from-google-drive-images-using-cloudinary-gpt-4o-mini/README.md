@@ -1,6 +1,6 @@
 # 🎬 Generate Twitter/X captions from Google Drive images using Cloudinary & GPT-4o-mini
 
-> ⚡ **199 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **250 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

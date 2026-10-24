@@ -1,6 +1,6 @@
 # 🎣 Qualify replies from Pipedrive persons with AI
 
-> ⚡ **1,992 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **2,009 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

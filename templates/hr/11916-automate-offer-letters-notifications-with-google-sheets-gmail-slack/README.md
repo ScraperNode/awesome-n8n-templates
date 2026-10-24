@@ -1,6 +1,6 @@
 # 👥 Automate offer letters & notifications with Google Sheets, Gmail & Slack
 
-> ⚡ **56 views** · 👥 [HR & Recruitment](../)
+> ⚡ **115 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

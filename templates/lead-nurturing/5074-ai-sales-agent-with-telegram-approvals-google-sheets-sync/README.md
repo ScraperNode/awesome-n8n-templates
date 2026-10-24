@@ -1,6 +1,6 @@
 # 💬 AI sales agent with Telegram approvals & Google Sheets sync
 
-> ⚡ **9,916 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **11,887 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

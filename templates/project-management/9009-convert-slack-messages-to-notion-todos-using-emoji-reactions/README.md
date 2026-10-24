@@ -1,6 +1,6 @@
 # 📋 Convert Slack messages to Notion todos using 📝 emoji reactions
 
-> ⚡ **341 views** · 📋 [Project Management](../)
+> ⚡ **446 views** · 📋 [Project Management](../)
 
 ## Description
 

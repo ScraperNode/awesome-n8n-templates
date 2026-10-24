@@ -1,6 +1,6 @@
 # 🤝 Analyze lost HubSpot deals and generate revival strategies with OpenAI
 
-> ⚡ **144 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **228 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

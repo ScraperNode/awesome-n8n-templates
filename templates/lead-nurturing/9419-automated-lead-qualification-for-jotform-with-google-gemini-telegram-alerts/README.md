@@ -1,6 +1,6 @@
 # 💬 Automated lead qualification for JotForm with Google Gemini & Telegram alerts
 
-> ⚡ **64 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **104 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

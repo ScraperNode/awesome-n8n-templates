@@ -1,6 +1,6 @@
 # 📊 Automated SEO performance collection from Google Search Console to NocoDB
 
-> ⚡ **1,727 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,959 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

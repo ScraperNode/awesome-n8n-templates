@@ -1,6 +1,6 @@
 # ⚡ 🛠️ Google Tasks tool MCP server 💪 all 5 operations
 
-> ⚡ **157 views** · ⚡ [Personal Productivity](../)
+> ⚡ **185 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

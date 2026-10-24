@@ -1,6 +1,6 @@
 # 🎬 Generate Shopify product images using AI Agent and deAPI
 
-> ⚡ **74 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **607 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 
@@ -27,14 +27,14 @@ Creating professional product images is time-consuming and expensive. This workf
 ## Setup
 
 ### Requirements
-- **Self-hosted n8n instance** (deAPI node is not yet available on n8n Cloud)
+- **n8n instance** (self-hosted or n8n Cloud)
 - [deAPI](https://deapi.ai) account for image generation and prompt boosting
 - Shopify scopes: `read_products`, `write_products`, `write_files`
 - Anthropic account for the AI Agent
 
 ### Installing the deAPI Node
-1. Go to **Settings** → **Community Nodes**
-2. Install `n8n-nodes-deapi`
+- **n8n Cloud**: Go to **Settings** → **Community Nodes** and toggle the "Verified Community Nodes" option
+- **Self-hosted**: Go to **Settings** → **Community Nodes** and install `n8n-nodes-deapi`
 
 ### Configuration
 1. Add your deAPI credentials (API key + webhook secret)

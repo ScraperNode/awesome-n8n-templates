@@ -1,6 +1,6 @@
 # 🤝 Sync Fathom meeting summaries and action items with GoHighLevel contacts
 
-> ⚡ **62 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **244 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 One-way sync Shopify customers to Baserow using GraphQL
 
-> ⚡ **115 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **144 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

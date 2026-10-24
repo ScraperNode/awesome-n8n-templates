@@ -1,6 +1,6 @@
 # 📊 Discord daily digest for multiple Google Analytics accounts
 
-> ⚡ **529 views** · 📊 [Market Research & Insights](../)
+> ⚡ **683 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

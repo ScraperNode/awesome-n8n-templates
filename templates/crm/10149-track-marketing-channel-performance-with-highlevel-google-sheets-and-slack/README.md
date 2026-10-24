@@ -1,6 +1,6 @@
 # 🤝 Track marketing channel performance with HighLevel, Google Sheets, and Slack
 
-> ⚡ **245 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **408 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

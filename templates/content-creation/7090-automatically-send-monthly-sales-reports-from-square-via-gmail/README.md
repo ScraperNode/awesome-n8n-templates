@@ -1,6 +1,6 @@
 # 🎬 Automatically send monthly sales reports from Square via Gmail
 
-> ⚡ **502 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **557 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

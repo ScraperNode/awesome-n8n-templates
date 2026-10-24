@@ -1,6 +1,6 @@
 # 🤝 Monitor and alert stalled deals in Zoho CRM with Gemini AI and Gmail
 
-> ⚡ **22 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **46 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Send Slack notifications when a new release is published for public GitHub repos
 
-> ⚡ **1,837 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,887 views** · ⚙️ [DevOps & CI/CD](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

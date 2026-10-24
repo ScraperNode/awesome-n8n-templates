@@ -1,6 +1,6 @@
 # 💬 Beautiful web UI for GPT-4 multi-agent chat with specialized assistants
 
-> ⚡ **1,755 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,155 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Track and sync workflow status in Notion from the n8n API
 
-> ⚡ **18 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **88 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Conversational travel booker: Automate flight & hotel reservations with GPT-3.5
 
-> ⚡ **3,351 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,965 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

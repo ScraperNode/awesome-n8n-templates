@@ -1,6 +1,6 @@
 # 🎬 LinkedIn content factory: Auto-generate posts with GPT-5, DALL·E & Google Sheets
 
-> ⚡ **1,814 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,863 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Generate UTM-tagged Bitly links from Slack with GPT-4o-mini and Google Sheets logging
 
-> ⚡ **291 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **355 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

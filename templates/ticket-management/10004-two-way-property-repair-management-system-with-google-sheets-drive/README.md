@@ -1,6 +1,6 @@
 # 🎫 Two-way property repair management system with Google Sheets & Drive
 
-> ⚡ **250 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **375 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

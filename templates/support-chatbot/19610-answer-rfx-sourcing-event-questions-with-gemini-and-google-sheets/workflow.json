@@ -1,0 +1,1508 @@
+{
+  "id": "kWwYRqcwCCgZvz1U",
+  "meta": {
+    "instanceId": "9f24379abd1ca05a3f590fdaa874ca82fbc5e1188798d609d51d2a8f6bacb662"
+  },
+  "name": "Sourcing FAQ Assistant Workflow",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "71487e6d-0541-40e2-afe3-d7bf92d6c3f3",
+      "name": "Receive RFx Question",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "position": [
+        -192,
+        928
+      ],
+      "webhookId": "rfx-sourcing-faq-assistant",
+      "parameters": {},
+      "typeVersion": 1.5
+    },
+    {
+      "id": "1e3b73a0-2f59-4be0-ad76-5b6767ba694f",
+      "name": "Configure RFx Assistant",
+      "type": "n8n-nodes-base.set",
+      "notes": "Edit the workbook ID, sourcing-manager email, and optional thresholds directly in this Set node. No n8n Variables are required.",
+      "position": [
+        32,
+        928
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b0c12ab6-3d6b-449a-80fb-13be5ef37ca6",
+              "name": "received_at",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            },
+            {
+              "id": "9efb59d8-1de8-4735-a363-c82429a41a35",
+              "name": "session_id",
+              "type": "string",
+              "value": "={{ $json.sessionId || ('session-' + $execution.id) }}"
+            },
+            {
+              "id": "eb2d8934-57fe-42bd-ada7-bffba8f37cad",
+              "name": "query_input",
+              "type": "string",
+              "value": "={{ $json.chatInput || '' }}"
+            },
+            {
+              "id": "cfg-workbook-direct",
+              "name": "workbook_id",
+              "type": "string",
+              "value": "YOUR_GOOGLE_SHEET_ID_HERE"
+            },
+            {
+              "id": "cfg-answer-threshold-direct",
+              "name": "answer_confidence_threshold",
+              "type": "number",
+              "value": 0.72
+            },
+            {
+              "id": "cfg-coverage-threshold-direct",
+              "name": "faq_coverage_threshold",
+              "type": "number",
+              "value": 0.32
+            },
+            {
+              "id": "cfg-repeat-threshold-direct",
+              "name": "repeat_question_threshold",
+              "type": "number",
+              "value": 3
+            },
+            {
+              "id": "cfg-lookback-direct",
+              "name": "repeat_lookback_days",
+              "type": "number",
+              "value": 30
+            },
+            {
+              "id": "cfg-manager-email-direct",
+              "name": "sourcing_manager_email",
+              "type": "string",
+              "value": "YOUR_TEST_EMAIL@example.com"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "d118324e-ef43-41ed-b2be-fa5d2ec5e908",
+      "name": "Normalize and Precheck Inquiry",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        256,
+        928
+      ],
+      "parameters": {
+        "jsCode": "\nconst cfg = $json;\nconst raw = String(cfg.query_input || '').trim();\nconst normalized = raw.replace(/\\s+/g, ' ').trim();\nconst lower = normalized.toLowerCase();\n\nconst eventMatch = normalized.match(/\\bRF[XPIQ]?\\s*[-#:]?\\s*\\d{3,8}(?:[-]\\d{2,6})?\\b/i)\n  || normalized.match(/\\bRFx[-\\s]?\\d{4}[-\\s]?\\d{3}\\b/i);\n\nlet eventIdHint = '';\nif (eventMatch) {\n  eventIdHint = eventMatch[0].toUpperCase().replace(/\\s+/g, '-').replace(/[:#]/g,'');\n}\n\nconst explicitSupplier = /\\b(i am|i'm|we are|we're|as a|our company is a)\\s+(supplier|vendor|bidder)\\b/i.test(normalized);\nconst explicitInternal = /\\b(i am|i'm|we are|we're|as an?|our team is)\\s+(buyer|procurement|sourcing|internal|category manager|stakeholder)\\b/i.test(normalized);\n\nconst deterministicSensitive = [\n  /\\b(other|competitor|another)\\s+(bid|bidder|supplier).*(price|score|proposal|submission)\\b/i,\n  /\\b(rank|ranking|score|scoring)\\b.*\\b(other|competitor|bidder|supplier)\\b/i,\n  /\\bnegotiat(e|ion|ing)\\b.*\\b(price|commercial|contract)\\b/i,\n  /\\blegal advice\\b/i,\n  /\\bconfidential\\b.*\\b(bid|evaluation|score|proposal)\\b/i\n].some(r => r.test(normalized));\n\nconst tokens = [...new Set(lower\n  .replace(/[^a-z0-9\\s-]/g,' ')\n  .split(/\\s+/)\n  .filter(t => t.length > 2 && !['the','and','for','with','from','this','that','what','when','where','how','can','are','our','your','you'].includes(t)))];\n\nreturn [{\n  json: {\n    ...cfg,\n    queryText: normalized,\n    queryLower: lower,\n    queryTokens: tokens,\n    eventIdHint,\n    explicitRequestorType: explicitSupplier ? 'supplier' : (explicitInternal ? 'internal' : 'unknown'),\n    deterministicSensitive,\n    inputValid: normalized.length >= 3,\n    interaction_id: 'INT-' + $execution.id + '-' + Date.now()\n  }\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "bd1dae1e-a98f-4d1e-b782-ca3abe4149c9",
+      "name": "Build Inquiry Classification Prompt",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        480,
+        928
+      ],
+      "parameters": {
+        "jsCode": "\nconst d = $json;\nconst prompt = `You classify RFx sourcing-event questions. Return ONLY valid JSON, no markdown.\n\nSchema:\n{\n  \"requestor_type\": \"supplier|internal|unknown\",\n  \"intent\": \"deadline|submission|eligibility|evaluation|documents|pricing|timeline|communication|amendment|confidentiality|general\",\n  \"sensitivity\": \"none|competitor_bid|confidential_evaluation|negotiation|legal\",\n  \"event_id\": \"\",\n  \"needs_identity_clarification\": false,\n  \"reason\": \"short reason\"\n}\n\nRules:\n- Do not invent an event ID.\n- If the person clearly identifies as supplier/vendor/bidder, requestor_type=supplier.\n- If clearly procurement/sourcing/buyer/internal stakeholder, requestor_type=internal.\n- Otherwise use unknown.\n- Questions requesting another bidder's price, score, ranking, proposal, confidential evaluation detail, negotiation strategy, or legal advice are sensitive.\n- \"What are the published evaluation criteria?\" is not sensitive by itself.\n- Classification only. Do not answer the sourcing question.\n\nQuestion: ${JSON.stringify(d.queryText)}\nExplicit deterministic requestor hint: ${d.explicitRequestorType}\nEvent ID hint: ${d.eventIdHint || 'none'}`;\n\nreturn [{json:{...d, classificationPrompt:prompt}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1d1726e3-76e3-4f4e-bdff-e371cad1e355",
+      "name": "Gemini - Classify RFx Inquiry",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        656,
+        928
+      ],
+      "parameters": {
+        "text": "={{ $json.classificationPrompt }}",
+        "promptType": "define"
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "ecd7971f-4e7e-4432-acec-6f35ebceadf1",
+      "name": "Gemini Chat Model - Classification",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        688,
+        1136
+      ],
+      "parameters": {
+        "options": {
+          "temperature": 0.1,
+          "maxOutputTokens": 800
+        },
+        "modelName": "models/gemini-3.5-flash-lite"
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "33FrMvULTwg001u9",
+          "name": "Google Gemini (MaryPhelps) AiStudio Builder AWS"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "71b2ad92-9101-4fe6-8329-49e9e38c5659",
+      "name": "Validate Inquiry Classification",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1040,
+        928
+      ],
+      "parameters": {
+        "jsCode": "\nconst base = $('Normalize and Precheck Inquiry').first().json;\nconst raw = String($json.text || $json.response || $json.output || '').replace(/```json|```/gi,'').trim();\nlet p = {};\ntry { p = JSON.parse(raw); } catch(e) { p = {}; }\n\nconst allowedTypes = ['supplier','internal','unknown'];\nconst allowedIntents = ['deadline','submission','eligibility','evaluation','documents','pricing','timeline','communication','amendment','confidentiality','general'];\nconst allowedSensitivity = ['none','competitor_bid','confidential_evaluation','negotiation','legal'];\n\nlet requestorType = allowedTypes.includes(String(p.requestor_type)) ? String(p.requestor_type) : 'unknown';\nif (base.explicitRequestorType !== 'unknown') requestorType = base.explicitRequestorType;\n\nlet intent = allowedIntents.includes(String(p.intent)) ? String(p.intent) : 'general';\nlet sensitivity = allowedSensitivity.includes(String(p.sensitivity)) ? String(p.sensitivity) : 'none';\nif (base.deterministicSensitive && sensitivity === 'none') sensitivity = 'confidential_evaluation';\n\nconst aiEventId = String(p.event_id || '').trim().toUpperCase();\nconst eventIdHint = base.eventIdHint || aiEventId;\n\nreturn [{\n  json:{\n    ...base,\n    requestorType,\n    intent,\n    sensitivity,\n    eventIdHint,\n    classification_parse_ok: Object.keys(p).length > 0,\n    needsIdentityClarification: requestorType === 'unknown',\n    classifierReason: String(p.reason || '')\n  }\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "038dc101-9ab2-4b92-a600-725704c4017a",
+      "name": "Fetch RFx Events",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1296,
+        928
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "RFx_Events"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configure RFx Assistant').first().json.workbook_id }}"
+        }
+      },
+      "typeVersion": 4.7,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "c8ecddc0-956a-4b7c-be9b-44f7a9dd6ce4",
+      "name": "Fetch FAQ Rules",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1504,
+        928
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "FAQ_Rules"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configure RFx Assistant').first().json.workbook_id }}"
+        }
+      },
+      "typeVersion": 4.7,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "fe6d18e6-26e5-4836-b442-6c647d928b03",
+      "name": "Fetch FAQ Usage History",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1200,
+        1200
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "FAQ_Usage_Log"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configure RFx Assistant').first().json.workbook_id }}"
+        }
+      },
+      "typeVersion": 4.7,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "10a83abe-af87-4f53-abfe-8b6c6e855cd6",
+      "name": "Resolve Event and Policy Context",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1504,
+        1200
+      ],
+      "parameters": {
+        "jsCode": "\nconst base = $('Validate Inquiry Classification').first().json;\nconst events = $('Fetch RFx Events').all().map(i => i.json || {}).filter(r => Object.keys(r).length);\nconst faqs = $('Fetch FAQ Rules').all().map(i => i.json || {}).filter(r => Object.keys(r).length);\nconst history = $('Fetch FAQ Usage History').all().map(i => i.json || {}).filter(r => Object.keys(r).length);\n\nconst s = v => v === null || v === undefined ? '' : String(v).trim();\nconst lower = v => s(v).toLowerCase();\nconst activeEvents = events.filter(e => !e.Status || ['active','open','published'].includes(lower(e.Status)));\n\nlet candidates = activeEvents.length ? activeEvents : events;\nlet resolved = null;\nlet resolution = 'unresolved';\n\nif (base.eventIdHint) {\n  resolved = candidates.find(e => lower(e.Event_ID) === lower(base.eventIdHint)) || null;\n  resolution = resolved ? 'exact_id' : 'event_id_not_found';\n} else {\n  const q = lower(base.queryText);\n  const named = candidates.filter(e => {\n    const name = lower(e.Event_Name);\n    return name && (q.includes(name) || name.split(/\\s+/).filter(t=>t.length>4).filter(t=>q.includes(t)).length >= 2);\n  });\n  if (named.length === 1) {\n    resolved = named[0];\n    resolution = 'name_match';\n  } else if (candidates.length === 1) {\n    resolved = candidates[0];\n    resolution = 'single_active_event';\n  } else if (named.length > 1 || candidates.length > 1) {\n    resolution = 'ambiguous';\n  }\n}\n\nconst eventStage = resolved ? s(resolved.Stage || 'Unknown') : 'Unknown';\nconst eventStatus = resolved ? s(resolved.Status || '') : '';\n\nconst sensitive = base.sensitivity !== 'none';\nlet route = 'answer';\nlet routeReason = '';\n\nif (!base.inputValid) {\n  route = 'clarify';\n  routeReason = 'The question is empty or too short.';\n} else if (base.needsIdentityClarification) {\n  route = 'clarify';\n  routeReason = 'Requestor type is not clear enough to apply supplier/internal access rules.';\n} else if (sensitive) {\n  route = 'escalate';\n  routeReason = `Sensitive sourcing topic detected: ${base.sensitivity}.`;\n} else if (!resolved) {\n  route = resolution === 'ambiguous' ? 'clarify' : 'clarify';\n  routeReason = resolution === 'event_id_not_found'\n    ? `The referenced event ${base.eventIdHint} was not found.`\n    : 'The sourcing event could not be resolved uniquely.';\n}\n\nreturn [{\n  json:{\n    ...base,\n    route,\n    routeReason,\n    eventResolution: resolution,\n    resolvedEventId: resolved ? s(resolved.Event_ID) : '',\n    resolvedEventName: resolved ? s(resolved.Event_Name) : '',\n    eventStage,\n    eventStatus,\n    eventRecord: resolved || {},\n    eventCount: events.length,\n    activeEventCount: activeEvents.length,\n    faqCount: faqs.length,\n    historyCount: history.length\n  }\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "4eef02ce-217f-4165-98a9-d4215d961b8e",
+      "name": "Safe for Automated Answer?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1808,
+        832
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "55825656-f396-4ff4-8468-a85a3aac4f73",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.route === 'answer' }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "161e8e79-25ea-4953-ae6a-8c4a007b3f95",
+      "name": "Requires Human Escalation?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2048,
+        976
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "b9deb182-d28f-4e2d-84d9-6f39ba316d4d",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.route === 'escalate' }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "b1985dd3-27c1-4ee0-a73c-d652565ceb2b",
+      "name": "Retrieve Authorized FAQ Context",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2064,
+        784
+      ],
+      "parameters": {
+        "jsCode": "\nconst d = $json;\nconst faqs = $('Fetch FAQ Rules').all().map(i => i.json || {}).filter(r => Object.keys(r).length);\nconst s = v => v === null || v === undefined ? '' : String(v).trim();\nconst lower = v => s(v).toLowerCase();\nconst truthy = v => ['true','1','yes','y','active'].includes(lower(v));\nconst qTokens = new Set(d.queryTokens || []);\nconst stage = lower(d.eventStage);\nconst intent = lower(d.intent);\nconst eventId = lower(d.resolvedEventId);\nconst audience = lower(d.requestorType);\n\nconst scored = [];\nfor (const f of faqs) {\n  if (f.Active !== undefined && s(f.Active) !== '' && !truthy(f.Active)) continue;\n\n  const rowAudience = lower(f.Audience || 'both');\n  const audienceAllowed = ['both','all',''].includes(rowAudience) || rowAudience === audience;\n  if (!audienceAllowed) continue;\n\n  const rowEvent = lower(f.Event_ID || 'all');\n  if (rowEvent && !['all','*'].includes(rowEvent) && rowEvent !== eventId) continue;\n\n  const rowStage = lower(f.Event_Stage || 'all');\n  if (rowStage && !['all','*'].includes(rowStage) && rowStage !== stage) continue;\n\n  const answer = audience === 'internal'\n    ? s(f.Answer_Internal || f.Answer)\n    : s(f.Answer_Supplier || f.Answer);\n  if (!answer) continue;\n\n  const text = [f.Question, f.Keywords, f.Category].map(lower).join(' ');\n  const rowTokens = new Set(text.replace(/[^a-z0-9\\s-]/g,' ').split(/\\s+/).filter(t => t.length > 2));\n  let overlap = 0;\n  for (const t of qTokens) if (rowTokens.has(t)) overlap++;\n\n  const tokenScore = qTokens.size ? overlap / qTokens.size : 0;\n  const categoryBonus = lower(f.Category) === intent ? 0.30 : 0;\n  const stageBonus = rowStage === stage ? 0.15 : 0;\n  const eventBonus = rowEvent === eventId ? 0.20 : 0;\n  const priorityBonus = lower(f.Priority) === 'high' ? 0.08 : lower(f.Priority) === 'medium' ? 0.04 : 0;\n  const score = Math.min(1, tokenScore + categoryBonus + stageBonus + eventBonus + priorityBonus);\n\n  scored.push({\n    faq_id: s(f.FAQ_ID || f.Faq_ID || f.ID || ''),\n    category: s(f.Category),\n    question: s(f.Question),\n    answer,\n    stage: s(f.Event_Stage || 'All'),\n    event_id: s(f.Event_ID || 'All'),\n    priority: s(f.Priority || ''),\n    score: Number(score.toFixed(3))\n  });\n}\n\nscored.sort((a,b) => b.score - a.score);\nconst top = scored.slice(0,5);\nconst best = top[0]?.score || 0;\n\n// Event fields can directly support common factual questions even when FAQ coverage is modest.\nconst eventFacts = d.eventRecord || {};\nconst eventFactIntents = ['deadline','submission','eligibility','timeline','communication','evaluation'];\nconst hasDirectEventFacts = eventFactIntents.includes(intent) && Object.keys(eventFacts).length > 0;\nconst threshold = Number(d.faq_coverage_threshold || 0.32);\nconst coverageSufficient = best >= threshold || hasDirectEventFacts;\n\nreturn [{\n  json:{\n    ...d,\n    authorizedFaqMatches: top,\n    authorizedFaqIds: top.map(x=>x.faq_id).filter(Boolean),\n    faqBestScore: best,\n    faqCoverageSufficient: coverageSufficient,\n    hasDirectEventFacts,\n    retrievalCount: top.length\n  }\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "137506d7-3f47-473f-b19c-389ca510c8a4",
+      "name": "Analyze Repeat Question Demand",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2304,
+        784
+      ],
+      "parameters": {
+        "jsCode": "\nconst d = $json;\nconst history = $('Fetch FAQ Usage History').all().map(i => i.json || {}).filter(r => Object.keys(r).length);\nconst s = v => v === null || v === undefined ? '' : String(v).trim();\nconst normalize = v => s(v).toLowerCase().replace(/[^a-z0-9\\s]/g,' ').replace(/\\s+/g,' ').trim();\nconst tokens = txt => new Set(normalize(txt).split(' ').filter(t => t.length > 2 && !['the','and','for','with','from','this','that','what','when','where','how','can','are'].includes(t)));\nconst a = tokens(d.queryText);\nconst lookbackMs = Number(d.repeat_lookback_days || 30) * 86400000;\nconst cutoff = Date.now() - lookbackMs;\n\nlet similar = 0;\nfor (const row of history) {\n  const dt = new Date(row.Timestamp || row.timestamp || row.Created_At || 0).getTime();\n  if (dt && dt < cutoff) continue;\n  const q = row.Question_Asked || row.question || row.Query || '';\n  const b = tokens(q);\n  if (!a.size || !b.size) continue;\n  let inter = 0;\n  for (const t of a) if (b.has(t)) inter++;\n  const union = new Set([...a,...b]).size;\n  const sim = union ? inter / union : 0;\n  if (sim >= 0.55) similar++;\n}\n\nconst repeatCountIncludingCurrent = similar + 1;\nreturn [{\n  json:{\n    ...d,\n    similarQuestionCount: similar,\n    repeatQuestionCount: repeatCountIncludingCurrent,\n    repeatedQuestion: repeatCountIncludingCurrent >= Number(d.repeat_question_threshold || 3)\n  }\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8098a03d-84f1-49fa-bb77-7f2828c310fb",
+      "name": "Knowledge Coverage Sufficient?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2528,
+        784
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "e64c406a-bc0e-45b7-827f-771ae94f0865",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.faqCoverageSufficient === true }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "36f36406-deb4-41cd-ace5-262e99222c73",
+      "name": "Build Grounded Answer Prompt",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2976,
+        608
+      ],
+      "parameters": {
+        "jsCode": "\nconst d = $json;\nconst event = d.eventRecord || {};\nconst faq = d.authorizedFaqMatches || [];\n\nconst eventContext = {\n  Event_ID: event.Event_ID || '',\n  Event_Name: event.Event_Name || '',\n  Event_Type: event.Event_Type || '',\n  Status: event.Status || '',\n  Stage: event.Stage || '',\n  Start_Date: event.Start_Date || '',\n  Submission_Deadline: event.Submission_Deadline || '',\n  Evaluation_Start: event.Evaluation_Start || '',\n  Award_Date: event.Award_Date || '',\n  Contact_Person: event.Contact_Person || '',\n  Contact_Email: event.Contact_Email || '',\n  Eligibility_Criteria: event.Eligibility_Criteria || '',\n  Submission_Format: event.Submission_Format || '',\n  Description: event.Description || ''\n};\n\nconst prompt = `You are a grounded RFx sourcing FAQ assistant. Return ONLY valid JSON.\n\nOutput schema:\n{\n  \"answer\": \"concise answer, max 220 words\",\n  \"used_faq_ids\": [\"FAQ-...\"],\n  \"confidence\": 0.0,\n  \"needs_human\": false,\n  \"follow_up\": \"\",\n  \"grounding_note\": \"short explanation of which supplied facts support the answer\"\n}\n\nNON-NEGOTIABLE RULES:\n1. Use ONLY EVENT_CONTEXT and AUTHORIZED_FAQ_CONTEXT below.\n2. Never invent dates, requirements, links, evaluation details, pricing, contacts, or contract terms.\n3. The authoritative event stage is EVENT_CONTEXT.Stage. Do not infer a different stage from the user's wording.\n4. You are answering a ${d.requestorType.toUpperCase()}. Do not reveal information for the other audience.\n5. Only cite FAQ IDs that exist in AUTHORIZED_FAQ_CONTEXT.\n6. If the supplied context is insufficient, set needs_human=true and explain the gap instead of guessing.\n7. Do not disclose competitor bids, bidder scores/rankings, confidential evaluation detail, negotiation strategy, or legal advice.\n8. Adapt the wording to the current event stage: ${d.eventStage}.\n9. If a deadline/date is included, copy it exactly from EVENT_CONTEXT.\n\nEVENT_CONTEXT:\n${JSON.stringify(eventContext)}\n\nAUTHORIZED_FAQ_CONTEXT:\n${JSON.stringify(faq)}\n\nUSER_QUESTION:\n${JSON.stringify(d.queryText)}`;\n\nreturn [{json:{...d, answerPrompt:prompt}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "fe97aeca-84f7-41d8-af2d-153fec63c443",
+      "name": "Gemini - Generate Grounded RFx Answer",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        3200,
+        544
+      ],
+      "parameters": {
+        "text": "={{ $json.answerPrompt }}",
+        "promptType": "define"
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "7e5eec7b-a07c-4574-9ae0-5382d9b43f29",
+      "name": "Gemini Chat Model - Grounded Answer",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        3200,
+        720
+      ],
+      "parameters": {
+        "options": {
+          "temperature": 0.2,
+          "maxOutputTokens": 1800
+        },
+        "modelName": "models/gemini-3.5-flash-lite"
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "33FrMvULTwg001u9",
+          "name": "Google Gemini (MaryPhelps) AiStudio Builder AWS"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "63240470-b9f7-4e8e-a746-7d378308c626",
+      "name": "Validate Grounded Answer",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3504,
+        544
+      ],
+      "parameters": {
+        "jsCode": "\nconst base = $('Analyze Repeat Question Demand').first().json;\nconst raw = String($json.text || $json.response || $json.output || '').replace(/```json|```/gi,'').trim();\nlet p = {};\ntry { p = JSON.parse(raw); } catch(e) { p = {}; }\n\nconst answer = String(p.answer || '').trim();\nconst confidence = Number(p.confidence);\nconst used = Array.isArray(p.used_faq_ids) ? p.used_faq_ids.map(String) : [];\nconst allowed = new Set((base.authorizedFaqIds || []).map(String));\nconst invalidCitations = used.filter(id => !allowed.has(id));\n\nconst forbiddenPatterns = [\n  /\\bcompetitor\\b.*\\b(price|bid|score|ranking)\\b/i,\n  /\\bother bidder\\b.*\\b(price|score|ranking|proposal)\\b/i\n];\nconst forbiddenContent = base.requestorType === 'supplier' && forbiddenPatterns.some(r => r.test(answer));\n\nconst parseOk = Object.keys(p).length > 0;\nconst confidenceOk = Number.isFinite(confidence) && confidence >= Number(base.answer_confidence_threshold || 0.72);\nconst citationsOk = invalidCitations.length === 0;\nconst answerPresent = answer.length >= 20;\nconst modelNeedsHuman = p.needs_human === true;\n\nconst answerValid = parseOk && confidenceOk && citationsOk && answerPresent && !forbiddenContent && !modelNeedsHuman;\nconst reasons = [];\nif (!parseOk) reasons.push('Gemini response was not valid JSON');\nif (!answerPresent) reasons.push('No usable grounded answer was returned');\nif (!confidenceOk) reasons.push(`Answer confidence ${Number.isFinite(confidence)?confidence:'invalid'} is below threshold`);\nif (!citationsOk) reasons.push('Gemini referenced FAQ IDs outside the authorized retrieval set');\nif (forbiddenContent) reasons.push('Potential restricted supplier-facing content detected');\nif (modelNeedsHuman) reasons.push('Gemini explicitly requested human review');\n\nreturn [{\n  json:{\n    ...base,\n    generatedAnswer: answer,\n    usedFaqIds: used,\n    answerConfidence: Number.isFinite(confidence) ? confidence : 0,\n    answerValid,\n    answerValidationReason: reasons.join('; '),\n    followUp: String(p.follow_up || ''),\n    groundingNote: String(p.grounding_note || ''),\n    escalationReason: reasons.join('; ') || 'Grounded answer validation failed'\n  }\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "aaca1778-faa6-4544-996f-a5d54599f459",
+      "name": "Answer Passes Guardrails?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3680,
+        544
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ec66f279-28c1-4ae8-852c-d03b20d16ba4",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.answerValid === true }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "f64a6452-96d2-4731-8171-0f854ea3c5cf",
+      "name": "Prepare Answer Interaction Log",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4208,
+        528
+      ],
+      "parameters": {
+        "jsCode": "\nconst d = $json;\nconst finalResponse = d.followUp ? `${d.generatedAnswer}\\n\\n${d.followUp}` : d.generatedAnswer;\nreturn [{json:{\n  Interaction_ID:d.interaction_id,\n  Timestamp:d.received_at,\n  Session_ID:d.session_id,\n  Question_Asked:d.queryText,\n  Requestor_Type:d.requestorType,\n  Intent:d.intent,\n  Event_ID:d.resolvedEventId,\n  Event_Stage:d.eventStage,\n  Route:'ANSWERED',\n  FAQ_Best_Score:d.faqBestScore,\n  FAQ_IDs_Used:(d.usedFaqIds||[]).join(', '),\n  AI_Confidence:d.answerConfidence,\n  Repeat_Question_Count:d.repeatQuestionCount,\n  Was_Escalated:'No',\n  Escalation_Reason:'',\n  Answer_Given:finalResponse,\n  Grounding_Note:d.groundingNote,\n  final_response:finalResponse\n}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a65731bb-e3b4-4dfa-9a4e-68878ad82325",
+      "name": "Log FAQ Usage - Answer",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        4448,
+        528
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": []
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "FAQ_Usage_Log"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configure RFx Assistant').first().json.workbook_id }}"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "8a63a4b1-82b1-4a29-9931-8cb4b0a5b192",
+      "name": "Respond with Grounded Answer",
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "position": [
+        4688,
+        528
+      ],
+      "webhookId": "7a186080-880b-40b0-8338-cf8f67f486ae",
+      "parameters": {
+        "message": "={{ $('Prepare Answer Interaction Log').item.json.final_response }}",
+        "options": {},
+        "waitUserReply": false
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "0806a6a5-b591-4e6f-86bb-04342cd0f9ec",
+      "name": "Prepare Knowledge Gap",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2944,
+        1200
+      ],
+      "parameters": {
+        "jsCode": "\nconst d = $json;\nconst gapId = 'GAP-' + $execution.id + '-' + Date.now();\nconst isRepeat = d.repeatedQuestion === true;\nconst response = `I don't have enough approved RFx information to answer this confidently for ${d.resolvedEventName || d.resolvedEventId}. I've routed the question for sourcing-team review rather than guessing.`;\nreturn [{json:{\n  ...d,\n  gap_id:gapId,\n  gap_status:'Pending Review',\n  gap_priority:isRepeat ? 'High' : 'Normal',\n  is_repeat_gap:isRepeat,\n  escalationReason:`Knowledge coverage below threshold. Best FAQ score: ${d.faqBestScore}.`,\n  proposed_response:response,\n  final_response:response\n}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "61254bb9-c632-4dc9-9b7d-dc4c9951c8a7",
+      "name": "Prepare Knowledge Gap Log Row",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3168,
+        1200
+      ],
+      "parameters": {
+        "jsCode": "\nconst d=$json;\nreturn [{json:{\n  Gap_ID:d.gap_id,\n  Timestamp:d.received_at,\n  Session_ID:d.session_id,\n  Event_ID:d.resolvedEventId,\n  Event_Stage:d.eventStage,\n  Requestor_Type:d.requestorType,\n  Intent:d.intent,\n  Question:d.queryText,\n  Best_FAQ_Score:d.faqBestScore,\n  Repeat_Question_Count:d.repeatQuestionCount,\n  Priority:d.gap_priority,\n  Status:d.gap_status\n}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "89d93cc0-a017-4bde-8ecd-40eeb8c26299",
+      "name": "Log Knowledge Gap",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3360,
+        1200
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": []
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Knowledge_Gap_Log"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configure RFx Assistant').first().json.workbook_id }}"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "9db0576a-f7c0-4661-a5e7-3d8b6fa2f9b0",
+      "name": "Repeated Knowledge Gap?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3536,
+        1200
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "72e99843-b45c-4395-8a04-cc59187a5793",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $('Prepare Knowledge Gap').item.json.is_repeat_gap === true }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "592f1e69-9798-4534-90c1-87deefac3148",
+      "name": "Prepare FAQ Candidate",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3760,
+        1136
+      ],
+      "parameters": {
+        "jsCode": "\nconst d=$('Prepare Knowledge Gap').item.json;\nreturn [{json:{\n  Candidate_ID:'FAQ-CAND-' + $execution.id + '-' + Date.now(),\n  Created_At:d.received_at,\n  Event_ID:d.resolvedEventId,\n  Event_Stage:d.eventStage,\n  Requestor_Type:d.requestorType,\n  Intent:d.intent,\n  Repeated_Question:d.queryText,\n  Frequency:d.repeatQuestionCount,\n  Suggested_Category:d.intent,\n  Status:'Needs Sourcing Review',\n  Proposed_Action:'Review repeated unanswered question and add an approved FAQ entry if appropriate.'\n}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1e2e7514-56cf-4d21-ae30-7cc96d57ce6b",
+      "name": "Log FAQ Candidate for Review",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3968,
+        1120
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": []
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "FAQ_Candidate_Log"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configure RFx Assistant').first().json.workbook_id }}"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "ac06a1c7-1e36-40e2-8c8c-0353b2f0374c",
+      "name": "Prepare Safe Clarification",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3008,
+        1776
+      ],
+      "parameters": {
+        "jsCode": "\nconst d=$json;\nlet response='';\nif (d.needsIdentityClarification) {\n  response='Before I answer, please tell me whether you are a supplier/vendor or an internal procurement/sourcing team member. This is required because RFx guidance can differ by audience.';\n} else if (d.eventResolution === 'event_id_not_found') {\n  response=`I could not find ${d.eventIdHint} in the active RFx event data. Please check the event ID and send it again.`;\n} else {\n  response='I found more than one possible RFx event. Please include the RFx event ID (for example, RFx-2026-001) so I can use the correct deadlines, stage, and rules.';\n}\nreturn [{json:{\n  ...d,\n  final_response:response,\n  clarificationReason:d.routeReason || 'More context is required before applying RFx rules.'\n}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "bea5bd5e-2e6b-462d-842f-79e7beee3730",
+      "name": "Prepare Clarification Interaction Log",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3200,
+        1776
+      ],
+      "parameters": {
+        "jsCode": "\nconst d=$json;\nreturn [{json:{\n  Interaction_ID:d.interaction_id,\n  Timestamp:d.received_at,\n  Session_ID:d.session_id,\n  Question_Asked:d.queryText,\n  Requestor_Type:d.requestorType,\n  Intent:d.intent,\n  Event_ID:d.resolvedEventId || d.eventIdHint || '',\n  Event_Stage:d.eventStage,\n  Route:'CLARIFICATION',\n  FAQ_Best_Score:'',\n  FAQ_IDs_Used:'',\n  AI_Confidence:'',\n  Repeat_Question_Count:'',\n  Was_Escalated:'No',\n  Escalation_Reason:d.clarificationReason,\n  Answer_Given:d.final_response,\n  Grounding_Note:'No answer generated until identity/event context is resolved.',\n  final_response:d.final_response\n}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "03144365-4932-4e12-8d9d-e28c031d0d82",
+      "name": "Log FAQ Usage - Clarification",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3392,
+        1776
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": []
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "FAQ_Usage_Log"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configure RFx Assistant').first().json.workbook_id }}"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "83cca5a4-ffbd-40d7-883f-b69ab8e030c5",
+      "name": "Respond with Clarification",
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "position": [
+        3584,
+        1776
+      ],
+      "webhookId": "a51c1cd8-0734-4b4e-b4c2-a1fa19a6bebc",
+      "parameters": {
+        "message": "={{ $('Prepare Clarification Interaction Log').item.json.final_response }}",
+        "options": {},
+        "waitUserReply": false
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "766fb518-1e27-4126-80be-43e601b0785d",
+      "name": "Prepare Sourcing Escalation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4608,
+        960
+      ],
+      "parameters": {
+        "jsCode": "\nlet d=$json;\nif (!d.queryText) {\n  try {\n    const gap = $('Prepare Knowledge Gap').item.json;\n    if (gap && gap.queryText) d = gap;\n  } catch(e) {}\n}\nconst reason = d.escalationReason || d.routeReason || d.answerValidationReason || 'Human sourcing review required.';\nconst response = d.final_response || d.proposed_response || 'This question requires sourcing-team review because it is sensitive or cannot be answered safely from the approved RFx information. I have routed it for review.';\nreturn [{json:{\n  ...d,\n  escalation_id:'ESC-' + $execution.id + '-' + Date.now(),\n  escalationReason:reason,\n  escalationStatus:'Pending',\n  manager_email:d.sourcing_manager_email || '',\n  final_response:response\n}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e4f24f04-c989-41ba-85e0-0931938b232e",
+      "name": "Prepare Escalation Log Row",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4800,
+        960
+      ],
+      "parameters": {
+        "jsCode": "\nconst d=$json;\nreturn [{json:{\n  Escalation_ID:d.escalation_id,\n  Timestamp:d.received_at,\n  Session_ID:d.session_id,\n  Event_ID:d.resolvedEventId || d.eventIdHint || '',\n  Event_Stage:d.eventStage || '',\n  Requestor_Type:d.requestorType || 'unknown',\n  Intent:d.intent || 'general',\n  Question_Asked:d.queryText,\n  Reason:d.escalationReason,\n  AI_Confidence:d.answerConfidence ?? '',\n  FAQ_Best_Score:d.faqBestScore ?? '',\n  Status:d.escalationStatus,\n  Assigned_To:'Sourcing Manager',\n  Resolution_Notes:''\n}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b755d78f-9dd9-41ce-b252-be999f0d0e9e",
+      "name": "Log Sourcing Escalation",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        5024,
+        960
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": []
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Escalation_Log"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configure RFx Assistant').first().json.workbook_id }}"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "031253c6-4f1e-4d39-9bf5-a7acfa3c4edf",
+      "name": "Build Sourcing Manager Notification",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5248,
+        960
+      ],
+      "parameters": {
+        "jsCode": "\nconst d=$('Prepare Sourcing Escalation').item.json;\nconst subject=`RFx FAQ escalation: ${d.resolvedEventId || d.eventIdHint || 'event clarification'} - ${d.intent || 'general'}`;\nconst html=`<div style=\"font-family:Arial,sans-serif;line-height:1.5\">\n<h2>RFx FAQ Assistant Escalation</h2>\n<p><strong>Event:</strong> ${d.resolvedEventName || ''} (${d.resolvedEventId || d.eventIdHint || 'Unresolved'})</p>\n<p><strong>Stage:</strong> ${d.eventStage || 'Unknown'}</p>\n<p><strong>Requestor:</strong> ${d.requestorType || 'unknown'}</p>\n<p><strong>Intent:</strong> ${d.intent || 'general'}</p>\n<p><strong>Question:</strong> ${d.queryText}</p>\n<p><strong>Reason:</strong> ${d.escalationReason}</p>\n<p><strong>Interaction ID:</strong> ${d.interaction_id}</p>\n</div>`;\nreturn [{json:{...d,email_subject:subject,email_body:html}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b46ff0a0-5dbc-4f55-9348-650309833ba7",
+      "name": "Notify Sourcing Manager",
+      "type": "n8n-nodes-base.gmail",
+      "onError": "continueRegularOutput",
+      "position": [
+        5456,
+        960
+      ],
+      "webhookId": "d6ad7935-e543-441b-9723-0881779798db",
+      "parameters": {
+        "sendTo": "={{ $json.manager_email }}",
+        "message": "={{ $json.email_body }}",
+        "options": {},
+        "subject": "={{ $json.email_subject }}"
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "7d4f8eb2-9c24-491c-bec3-28d730c70ea3",
+      "name": "Prepare Escalated Interaction Log",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5744,
+        960
+      ],
+      "parameters": {
+        "jsCode": "\nconst d=$('Prepare Sourcing Escalation').item.json;\nreturn [{json:{\n  Interaction_ID:d.interaction_id,\n  Timestamp:d.received_at,\n  Session_ID:d.session_id,\n  Question_Asked:d.queryText,\n  Requestor_Type:d.requestorType || 'unknown',\n  Intent:d.intent || 'general',\n  Event_ID:d.resolvedEventId || d.eventIdHint || '',\n  Event_Stage:d.eventStage || '',\n  Route:'ESCALATED',\n  FAQ_Best_Score:d.faqBestScore ?? '',\n  FAQ_IDs_Used:(d.usedFaqIds||[]).join(', '),\n  AI_Confidence:d.answerConfidence ?? '',\n  Repeat_Question_Count:d.repeatQuestionCount ?? '',\n  Was_Escalated:'Yes',\n  Escalation_Reason:d.escalationReason,\n  Answer_Given:d.final_response,\n  Grounding_Note:'Human review required; no unsupported RFx answer was released.',\n  final_response:d.final_response\n}}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "2b9c40aa-2027-424e-9ac8-c024e0261f81",
+      "name": "Log FAQ Usage - Escalated",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        5968,
+        960
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": []
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "FAQ_Usage_Log"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configure RFx Assistant').first().json.workbook_id }}"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "92939209-e021-4cda-b25c-96598e8fa56e",
+      "name": "Respond with Escalation Notice",
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "position": [
+        6176,
+        960
+      ],
+      "webhookId": "25716693-d66d-47fc-8bf1-4bd398b85c53",
+      "parameters": {
+        "message": "={{ $('Prepare Escalated Interaction Log').item.json.final_response }}",
+        "options": {},
+        "waitUserReply": false
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f958e790-299a-487d-8bc7-c9cbfa8afc06",
+      "name": "Sticky Note - Workflow Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1472,
+        704
+      ],
+      "parameters": {
+        "width": 1176,
+        "height": 668,
+        "content": "## Sourcing FAQ Assistant Workflow (Procurement Industry)\n\nThis n8n workflow provides a procurement-focused conversational assistant for answering RFx sourcing-event questions from suppliers and internal stakeholders.\n\nRFx event data, approved FAQ rules, interaction history, escalations, knowledge gaps, and FAQ candidates are managed through Google Sheets. Google Gemini is used to classify the inquiry and generate a grounded answer from authorized context. Deterministic workflow logic resolves the authoritative RFx event and stage, filters FAQ content by audience, checks knowledge coverage, validates AI confidence and FAQ references, detects sensitive questions, and decides whether the workflow should answer, clarify, or escalate.\n\nThe workflow does not allow Gemini to independently decide what procurement information is authorized. Unsupported or sensitive questions are routed for human sourcing review, while repeated knowledge gaps can become FAQ candidates for manual review.\n\n### Setup steps\n1. Create one Google workbook with `RFx_Events`, `FAQ_Rules`, `FAQ_Usage_Log`, `Escalation_Log`, `Knowledge_Gap_Log`, and `FAQ_Candidate_Log`.\n2. Open `Configure RFx Assistant` and set the `workbook_id` and `sourcing_manager_email`. Adjust the thresholds there if needed. No n8n Variables are required.\n3. Connect Google Sheets, Google Gemini, and Gmail credentials.\n4. Populate event and FAQ data, then test supplier, internal, ambiguous-event, sensitive, repeated-gap, and low-confidence scenarios.\n5. Activate the workflow and use the n8n Chat URL."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2789cc61-933a-4806-a797-7e5204ea4a23",
+      "name": "Sticky Note - Intake and Classification",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -256,
+        704
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1192,
+        "height": 668,
+        "content": "## Intake & AI Classification\n\nCaptures and normalizes the RFx question, extracts deterministic hints, and uses Gemini to classify requestor type, intent, and sensitivity before procurement data is accessed."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b1d59f33-24bc-4145-baf2-fa8296b42a60",
+      "name": "Sticky Note - Event and Policy Resolution",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        976,
+        704
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 736,
+        "height": 664,
+        "content": "## Event & Policy Resolution\n\nLoads RFx events, approved FAQ rules, and interaction history. Validates classification and resolves the authoritative sourcing event and current stage from source data."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "11610f9d-4fe0-433d-8740-42de2a7ba69d",
+      "name": "Sticky Note - Authorized Retrieval and Demand",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4144,
+        384
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 736,
+        "height": 336,
+        "content": "## Approved Answer & Audit\n\nOnly answers that pass all guardrails reach this branch. The interaction, confidence, FAQ references, and grounding details are logged before the approved response is returned."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6fd08926-3f9f-4e85-acba-84fca206fcd7",
+      "name": "Sticky Note - Grounded AI and Guardrails",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2928,
+        384
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1024,
+        "height": 538,
+        "content": "## Grounded AI & Guardrails\n\nGemini receives only the resolved event and authorized FAQ matches. Post-generation validation checks JSON structure, confidence, FAQ citations, restricted content, and model-requested human review before releasing an answer."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d4876077-fd33-4038-81c7-9cec905dc868",
+      "name": "Sticky Note - Audit Escalation and Response",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2928,
+        1040
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1200,
+        "height": 468,
+        "content": "## Knowledge Gap & FAQ Improvement\n\nUnsupported questions are logged as knowledge gaps. Historical demand identifies repeated gaps and creates proposed FAQ candidates for sourcing-team review instead of automatically publishing AI-generated knowledge."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "7d2108a3-5fb7-48a2-8e9c-e5f72e65337c",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1744,
+        656
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 992,
+        "height": 544,
+        "content": "## Safety Routing & FAQ Retrieval\n\nApplies deterministic safety routing before answering. Approved FAQ content is filtered by event, stage, and audience, while historical usage identifies repeated questions and insufficient knowledge coverage."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "75c02c4a-369b-4d1a-aa8d-828f6ae04cd3",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2928,
+        1600
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 912,
+        "height": 400,
+        "content": "## Safe Clarification\n\nAmbiguous requestor identity, unresolved event IDs, or multiple possible RFx events trigger clarification instead of guessing. The clarification is logged before being returned to the user."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a6659887-c37f-44aa-b7d5-aef86ab89571",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4576,
+        768
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1040,
+        "height": 448,
+        "content": "## Sourcing Manager Escalation\n\nSensitive questions, insufficient knowledge, and failed AI guardrails enter controlled human review. An escalation record is created and the sourcing manager is notified by email."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b4e4b84b-b954-4343-97a1-191a92f20749",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        5664,
+        768
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 704,
+        "height": 448,
+        "content": "## Escalation Audit & Response\n\nRecords the final escalated interaction in the FAQ usage log and returns a safe notice confirming that sourcing-team review is required."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "d2dbefe2-ed06-47e4-ac6e-16056972d31a",
+  "nodeGroups": [],
+  "connections": {
+    "Fetch FAQ Rules": {
+      "main": [
+        [
+          {
+            "node": "Fetch FAQ Usage History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch RFx Events": {
+      "main": [
+        [
+          {
+            "node": "Fetch FAQ Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Knowledge Gap": {
+      "main": [
+        [
+          {
+            "node": "Repeated Knowledge Gap?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare FAQ Candidate": {
+      "main": [
+        [
+          {
+            "node": "Log FAQ Candidate for Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Knowledge Gap": {
+      "main": [
+        [
+          {
+            "node": "Prepare Knowledge Gap Log Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log FAQ Usage - Answer": {
+      "main": [
+        [
+          {
+            "node": "Respond with Grounded Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure RFx Assistant": {
+      "main": [
+        [
+          {
+            "node": "Normalize and Precheck Inquiry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch FAQ Usage History": {
+      "main": [
+        [
+          {
+            "node": "Resolve Event and Policy Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Sourcing Escalation": {
+      "main": [
+        [
+          {
+            "node": "Build Sourcing Manager Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Sourcing Manager": {
+      "main": [
+        [
+          {
+            "node": "Prepare Escalated Interaction Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repeated Knowledge Gap?": {
+      "main": [
+        [
+          {
+            "node": "Prepare FAQ Candidate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Sourcing Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Grounded Answer": {
+      "main": [
+        [
+          {
+            "node": "Answer Passes Guardrails?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer Passes Guardrails?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Answer Interaction Log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Sourcing Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log FAQ Usage - Escalated": {
+      "main": [
+        [
+          {
+            "node": "Respond with Escalation Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Escalation Log Row": {
+      "main": [
+        [
+          {
+            "node": "Log Sourcing Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Safe Clarification": {
+      "main": [
+        [
+          {
+            "node": "Prepare Clarification Interaction Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Requires Human Escalation?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Sourcing Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Safe Clarification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Safe for Automated Answer?": {
+      "main": [
+        [
+          {
+            "node": "Retrieve Authorized FAQ Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Requires Human Escalation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Sourcing Escalation": {
+      "main": [
+        [
+          {
+            "node": "Prepare Escalation Log Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Grounded Answer Prompt": {
+      "main": [
+        [
+          {
+            "node": "Gemini - Generate Grounded RFx Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log FAQ Candidate for Review": {
+      "main": [
+        [
+          {
+            "node": "Prepare Sourcing Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini - Classify RFx Inquiry": {
+      "main": [
+        [
+          {
+            "node": "Validate Inquiry Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log FAQ Usage - Clarification": {
+      "main": [
+        [
+          {
+            "node": "Respond with Clarification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Knowledge Gap Log Row": {
+      "main": [
+        [
+          {
+            "node": "Log Knowledge Gap",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Repeat Question Demand": {
+      "main": [
+        [
+          {
+            "node": "Knowledge Coverage Sufficient?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Knowledge Coverage Sufficient?": {
+      "main": [
+        [
+          {
+            "node": "Build Grounded Answer Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Knowledge Gap",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize and Precheck Inquiry": {
+      "main": [
+        [
+          {
+            "node": "Build Inquiry Classification Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Answer Interaction Log": {
+      "main": [
+        [
+          {
+            "node": "Log FAQ Usage - Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Authorized FAQ Context": {
+      "main": [
+        [
+          {
+            "node": "Analyze Repeat Question Demand",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Inquiry Classification": {
+      "main": [
+        [
+          {
+            "node": "Fetch RFx Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Event and Policy Context": {
+      "main": [
+        [
+          {
+            "node": "Safe for Automated Answer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Escalated Interaction Log": {
+      "main": [
+        [
+          {
+            "node": "Log FAQ Usage - Escalated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Chat Model - Classification": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Gemini - Classify RFx Inquiry",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Inquiry Classification Prompt": {
+      "main": [
+        [
+          {
+            "node": "Gemini - Classify RFx Inquiry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Sourcing Manager Notification": {
+      "main": [
+        [
+          {
+            "node": "Notify Sourcing Manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Chat Model - Grounded Answer": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Gemini - Generate Grounded RFx Answer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini - Generate Grounded RFx Answer": {
+      "main": [
+        [
+          {
+            "node": "Validate Grounded Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Clarification Interaction Log": {
+      "main": [
+        [
+          {
+            "node": "Log FAQ Usage - Clarification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

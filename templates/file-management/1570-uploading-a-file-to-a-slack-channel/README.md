@@ -1,6 +1,6 @@
 # 📁 Uploading a file to a Slack channel
 
-> ⚡ **2,970 views** · 📁 [File Management](../)
+> ⚡ **3,065 views** · 📁 [File Management](../)
 
 ## Description
 

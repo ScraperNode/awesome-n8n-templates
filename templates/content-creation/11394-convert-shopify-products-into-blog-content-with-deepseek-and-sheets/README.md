@@ -1,6 +1,6 @@
 # 🎬 Convert Shopify products into Blog content with DeepSeek and Sheets
 
-> ⚡ **837 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,067 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

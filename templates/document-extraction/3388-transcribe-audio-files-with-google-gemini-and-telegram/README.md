@@ -1,6 +1,6 @@
 # 🔬 Transcribe audio files with Google Gemini and Telegram
 
-> ⚡ **3,960 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,061 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

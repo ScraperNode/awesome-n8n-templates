@@ -1,6 +1,6 @@
 # 💬 Gmail campaign sender: Bulk-send emails and follow up automatically if no reply
 
-> ⚡ **57,867 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **77,314 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

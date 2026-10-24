@@ -1,6 +1,6 @@
 # ✨ Automate LinkedIn comment replies with GPT-3.5 & track in Google Sheets
 
-> ⚡ **1,197 views** · ✨ [AI & LLMs](../)
+> ⚡ **1,604 views** · ✨ [AI & LLMs](../)
 
 ## Description
 

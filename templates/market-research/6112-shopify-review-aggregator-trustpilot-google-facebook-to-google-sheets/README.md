@@ -1,6 +1,6 @@
 # 📊 Shopify review aggregator: Trustpilot, Google, Facebook to Google Sheets
 
-> ⚡ **232 views** · 📊 [Market Research & Insights](../)
+> ⚡ **257 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

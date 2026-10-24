@@ -1,6 +1,6 @@
 # 🎬 Auto-generate WordPress blog posts from Reddit RSS with Groq AI & Pexels images
 
-> ⚡ **2,150 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,387 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

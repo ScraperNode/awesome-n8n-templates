@@ -1,6 +1,6 @@
 # 🔒 Monitor cybersecurity compliance and send weekly reports via SIEM, Jira, PostgreSQL, Slack and email
 
-> ⚡ **91 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **321 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

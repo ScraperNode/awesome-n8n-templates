@@ -1,6 +1,6 @@
 # 📁 Scheduled Google Sheets data backup to Google Drive
 
-> ⚡ **214 views** · 📁 [File Management](../)
+> ⚡ **288 views** · 📁 [File Management](../)
 
 ## Description
 

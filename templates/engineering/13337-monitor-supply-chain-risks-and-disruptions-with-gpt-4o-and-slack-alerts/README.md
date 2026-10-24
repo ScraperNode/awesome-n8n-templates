@@ -1,6 +1,6 @@
 # ⚒️ Monitor supply chain risks and disruptions with GPT-4o and Slack alerts
 
-> ⚡ **15 views** · ⚒️ [Engineering](../)
+> ⚡ **131 views** · ⚒️ [Engineering](../)
 
 ## Description
 

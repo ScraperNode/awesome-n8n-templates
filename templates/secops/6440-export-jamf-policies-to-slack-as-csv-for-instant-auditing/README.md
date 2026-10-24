@@ -1,6 +1,6 @@
 # 🔒 Export Jamf policies to Slack as CSV for instant auditing
 
-> ⚡ **133 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **155 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

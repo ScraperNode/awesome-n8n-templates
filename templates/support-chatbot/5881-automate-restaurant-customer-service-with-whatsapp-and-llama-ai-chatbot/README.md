@@ -1,6 +1,6 @@
 # 💬 Automate restaurant customer service with WhatsApp and Llama AI chatbot
 
-> ⚡ **27,109 views** · 💬 [Support Chatbots](../)
+> ⚡ **39,809 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

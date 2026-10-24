@@ -1,6 +1,6 @@
 # 🔬 🛠️ Create PDF from HTML with Gotenberg
 
-> ⚡ **4,653 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **5,816 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

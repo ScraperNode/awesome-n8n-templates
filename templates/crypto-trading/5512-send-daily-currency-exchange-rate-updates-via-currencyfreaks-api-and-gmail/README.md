@@ -1,6 +1,6 @@
 # 📈 Send daily currency exchange rate updates via CurrencyFreaks API and Gmail
 
-> ⚡ **290 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **355 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

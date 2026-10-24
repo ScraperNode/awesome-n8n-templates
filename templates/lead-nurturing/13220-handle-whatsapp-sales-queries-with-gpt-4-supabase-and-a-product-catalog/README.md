@@ -1,6 +1,6 @@
 # 💬 Handle WhatsApp sales queries with GPT-4, Supabase, and a product catalog
 
-> ⚡ **778 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,474 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

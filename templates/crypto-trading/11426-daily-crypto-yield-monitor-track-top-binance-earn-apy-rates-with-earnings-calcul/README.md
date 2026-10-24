@@ -1,6 +1,6 @@
 # 📈 Daily crypto yield monitor: Track top Binance Earn APY rates with earnings calculator
 
-> ⚡ **562 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,016 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Automatically send daily sales summary reports from Square via Microsoft Outlook
 
-> ⚡ **199 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **250 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

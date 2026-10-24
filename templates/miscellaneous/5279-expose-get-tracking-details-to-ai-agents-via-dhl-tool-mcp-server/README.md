@@ -1,6 +1,6 @@
 # 🔧 Expose get tracking details to AI agents via 🛠️ DHL tool MCP server
 
-> ⚡ **250 views** · 🔧 [Miscellaneous](../)
+> ⚡ **290 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📁 Create a new folder in Box
 
-> ⚡ **875 views** · 📁 [File Management](../)
+> ⚡ **927 views** · 📁 [File Management](../)
 
 ## Description
 

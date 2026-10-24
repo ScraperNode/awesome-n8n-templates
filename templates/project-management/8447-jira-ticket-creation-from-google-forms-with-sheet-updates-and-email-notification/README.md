@@ -1,6 +1,6 @@
 # 📋 Jira ticket creation from Google Forms with sheet updates and email notifications
 
-> ⚡ **528 views** · 📋 [Project Management](../)
+> ⚡ **621 views** · 📋 [Project Management](../)
 
 ## Description
 

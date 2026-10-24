@@ -1,6 +1,6 @@
 # 🤝 AI-generated account briefs with MadKudu, OpenAI & Salesforce for Outreach
 
-> ⚡ **312 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **377 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

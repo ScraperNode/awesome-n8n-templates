@@ -1,6 +1,6 @@
 # 🔬 Automate receipt processing for expense tracking with Google Drive, VLM Run & Airtable
 
-> ⚡ **227 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **265 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

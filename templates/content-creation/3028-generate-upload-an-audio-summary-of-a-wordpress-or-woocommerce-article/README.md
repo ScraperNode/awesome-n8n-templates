@@ -1,6 +1,6 @@
 # 🎬 Generate & upload an audio summary of a WordPress (or Woocommerce) article
 
-> ⚡ **3,119 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,027 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

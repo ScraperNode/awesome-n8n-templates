@@ -1,6 +1,6 @@
 # 📊 Research organizations with GPT‑5, Gemini, CourtListener, LegiScan and OSINT web sources
 
-> ⚡ **98 views** · 📊 [Market Research & Insights](../)
+> ⚡ **411 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

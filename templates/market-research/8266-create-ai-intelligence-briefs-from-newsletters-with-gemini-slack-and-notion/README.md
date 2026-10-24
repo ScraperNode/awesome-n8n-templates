@@ -1,6 +1,6 @@
 # 📊 Create AI intelligence briefs from newsletters with Gemini, Slack, and Notion
 
-> ⚡ **377 views** · 📊 [Market Research & Insights](../)
+> ⚡ **407 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

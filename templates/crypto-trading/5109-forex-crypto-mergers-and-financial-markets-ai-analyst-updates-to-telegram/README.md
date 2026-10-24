@@ -1,6 +1,6 @@
 # 📈 Forex, crypto, mergers and financial markets AI analyst updates to Telegram
 
-> ⚡ **447 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **513 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📁 Track MPESA and Airtel mobile payments in a fundraising WhatsApp group
 
-> ⚡ **72 views** · 📁 [File Management](../)
+> ⚡ **471 views** · 📁 [File Management](../)
 
 ## Description
 

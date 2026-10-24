@@ -1,6 +1,6 @@
 # 💬 AI-powered meeting minutes with GPT-4, task assignment & multichannel distribution
 
-> ⚡ **284 views** · 💬 [Support Chatbots](../)
+> ⚡ **423 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

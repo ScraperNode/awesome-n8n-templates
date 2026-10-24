@@ -1,6 +1,6 @@
 # ⚒️ Monitor AI chat interactions with Gemini 2.5 and Langfuse tracing
 
-> ⚡ **1,279 views** · ⚒️ [Engineering](../)
+> ⚡ **1,523 views** · ⚒️ [Engineering](../)
 
 ## Description
 

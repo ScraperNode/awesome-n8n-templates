@@ -1,6 +1,6 @@
 # 🔬 Convert HTML to PDF & extract text from PDFs with CustomJS API
 
-> ⚡ **2,650 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,921 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

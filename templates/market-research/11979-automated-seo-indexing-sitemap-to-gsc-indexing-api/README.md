@@ -1,6 +1,6 @@
 # 📊 Automated SEO indexing: sitemap to GSC & indexing API
 
-> ⚡ **496 views** · 📊 [Market Research & Insights](../)
+> ⚡ **850 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

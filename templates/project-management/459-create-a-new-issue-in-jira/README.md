@@ -1,6 +1,6 @@
 # 📋 Create a new issue in Jira
 
-> ⚡ **11,410 views** · 📋 [Project Management](../)
+> ⚡ **11,923 views** · 📋 [Project Management](../)
 
 ## Description
 

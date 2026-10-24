@@ -1,6 +1,6 @@
 # 🔬 5 ways to process images & PDFs with Gemini AI in n8n
 
-> ⚡ **25,701 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **26,445 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Automated meeting summaries: Google Meet to Slack with Vexa.ai and GPT-4o
 
-> ⚡ **885 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **987 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

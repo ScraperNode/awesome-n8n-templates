@@ -1,6 +1,6 @@
 # 👥 Find perfect jobs & generate tailored cover letters with Gemini & Google Jobs
 
-> ⚡ **2,245 views** · 👥 [HR & Recruitment](../)
+> ⚡ **3,114 views** · 👥 [HR & Recruitment](../)
 
 > 💡 **Pro Tip** — Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.
 >
@@ -8,57 +8,68 @@
 
 ## Description
 
-Say goodbye to endless applications and hello to more time for perfecting your interview skills!
-
-The JOB Hunter Agent uses the power of Google Gemini and SerpAPI to find the perfect job match and generate a personalized cover letter. 
+Stop drowning in job applications. The JOB Hunter Agent uses Google Gemini and SerpAPI to find your best job match and writes a cover letter tailored to it, so you can spend your energy preparing for interviews instead.
 
 Result example:
 ![Screenshot 20250911 at 23.54.20.png](fileId:2612)
 
-## 💡 Why Use JOB Hunter Agent?
-**Save Precious Time:** Stop sifting through countless job boards; this agent does the heavy lifting, saving you hours every week.
+*Last updated: September 2026.*
 
-**Land Your Dream Job Faster:** Get laser-focused job matches and a custom-crafted cover letter that speaks directly to the hiring manager, increasing your chances of getting noticed.
+## Why Use JOB Hunter Agent?
+**Save Precious Time:** Skip endless job boards. This agent does the searching for you and saves hours every week.
 
-**Never Miss an Opportunity:** Your personal AI assistant works 24/7, ensuring you're always on top of the latest openings, even while you sleep!
+**Land Your Dream Job Faster:** Focused job matches plus a custom cover letter written for the hiring manager help you get noticed.
 
-**Stand Out from the Crowd:** A perfectly tailored cover letter generated on the fly gives you an edge over generic applications, making you look like a superstar.
+**Never Miss an Opportunity:** Your personal AI assistant works 24/7, so the latest openings reach you even while you sleep.
 
-## ⚡ Perfect For
-**Job Seekers:** Anyone actively looking for a new role who wants to streamline their application process.
-**Busy Professionals:** Those with limited time who need an efficient way to find relevant opportunities.
-**Career Changers:** Individuals exploring new industries who need a helping hand in crafting compelling applications.
+**Stand Out from the Crowd:** A tailored cover letter beats generic applications every time.
 
-## 🔧 How It Works
-**⏱ Trigger:** You submit your CV and job preferences through a simple n8n form.
-**📎 Process:** Your CV is extracted from the PDF, and your preferences (location, job type, salary, email) are neatly organized.
-**🤖 Smart Logic:** The "Job Hunter Agent" uses Google Gemini and SerpAPI to find the single best job match for you and then drafts a bespoke cover letter based on your CV and the job description. It's like magic, but with more code!
-**💌 Output:** A beautifully formatted HTML email containing your profile summary, the best job match, your personalized cover letter, and handy application tips is sent straight to your inbox.
-**🗂 Storage:** All the initial data from your form submission is processed and used to craft your perfect job application package.
+## Perfect For
+**Job Seekers:** Anyone actively applying who wants a faster, smoother process.
+**Busy Professionals:** People with limited time who still want relevant opportunities.
+**Career Changers:** Anyone moving industries who needs help writing compelling applications.
 
-## 🔐 Quick Setup
-1. Import JSON file to your [n8n instances](https://n8n.partnerlinks.io/khmuhtadin)
+## How It Works
+* **Trigger:** You submit your CV and job preferences through a simple [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) form.
+* **Process:** Your CV is extracted from the PDF, and your preferences (location, job type, salary, email) are neatly organized.
+* **Smart Logic:** The "Job Hunter Agent" uses Google Gemini and SerpAPI to find the single best job match for you, then drafts a cover letter based on your CV and the job description.
+* **Output:** A formatted HTML email with your profile summary, the best job match, your personalized cover letter, and application tips, sent straight to your inbox.
+* **Storage:** Your form data is processed and used to build the application package.
+
+## Quick Setup
+1. Import JSON file to your [n8n instances](https://n8n.partnerlinks.io/creator-khmuhtadin)
 2. **Add credentials:** Google Gemini (Gemini 2.5 Pro model) and SerpAPI
 3. **Customize:** Adjust the system prompt in the "Job Hunter Agent" to fine-tune the cover letter tone or length, update the email footer, and expand job filters.
 4. **Update:** Ensure your Gmail OAuth2 credentials are valid for sending emails.
-5. **Test:** Run the workflow with your own CV and preferences to see the magic happen!
+5. **Test:** Run the workflow with your own CV and preferences to see it in action.
 
-## 🧩 You'll Need
-- Active [n8n instances](https://n8n.partnerlinks.io/khmuhtadin)
+## You'll Need
+- Active [n8n instances](https://n8n.partnerlinks.io/creator-khmuhtadin)
 - Google Gemini API key (for Gemini 2.5 Pro)
 - SerpAPI account for Google Jobs search results
 - A Gmail account for sending personalized job match emails
 
-## 🛠️ Level Up Ideas
+## Level Up Ideas
 - Integrate with LinkedIn, Jobstreet, or Indeed APIs for a wider range of job sources.
 - Allow the agent to find multiple job matches and present them as a curated list.
 - Add an option to attach a parsed CV summary as a PDF to the email for quick reference.
 
+### Quick Answers
+**What do I need to provide?**  
+Your CV and job preferences through the built-in form. That is all it takes to start.  
+**Which AI writes the cover letter?**  
+Google Gemini (2.5 Pro model), guided by your CV and the job description.  
+**Where does the result go?**  
+An HTML email with your profile summary, best match, and cover letter lands in your inbox.  
+
 ---
-**Made by:** [khaisa Studio](https://khaisa.studio)  
+**Made by:** [khmuhtadin](https://khmuhtadin.com)  
 **Tags:** AI, Gemini, Google Jobs, Job Search, Automation, Cover Letter  
-**Category:** `job hunter`  
+**Category:** Job Hunter  
 **Need custom work?** [Contact me](https://khmuhtadin.com/contact)
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

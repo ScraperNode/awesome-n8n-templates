@@ -1,6 +1,6 @@
 # 🎯 Daily email & calendar summaries to Slack using Gemini AI & Google Workspace
 
-> ⚡ **290 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **382 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

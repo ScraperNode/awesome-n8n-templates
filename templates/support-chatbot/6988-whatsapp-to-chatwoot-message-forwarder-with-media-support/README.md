@@ -1,6 +1,6 @@
 # 💬 WhatsApp to Chatwoot message forwarder with media support
 
-> ⚡ **3,178 views** · 💬 [Support Chatbots](../)
+> ⚡ **4,149 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

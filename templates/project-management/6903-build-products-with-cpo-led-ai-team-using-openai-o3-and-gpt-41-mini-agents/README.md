@@ -1,6 +1,6 @@
 # 📋 Build products with CPO-led AI team using OpenAI O3 and GPT-4.1-mini agents
 
-> ⚡ **1,327 views** · 📋 [Project Management](../)
+> ⚡ **1,394 views** · 📋 [Project Management](../)
 
 > 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
 >

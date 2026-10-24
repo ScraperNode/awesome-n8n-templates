@@ -1,6 +1,6 @@
 # 📱 Automatic email unsubscribe handler: Outlook to BigQuery integration
 
-> ⚡ **793 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **935 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

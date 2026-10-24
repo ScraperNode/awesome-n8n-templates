@@ -1,6 +1,6 @@
 # 👥 Generate and track offer letters with Google Sheets, Docs, Drive and Gmail
 
-> ⚡ **9 views** · 👥 [HR & Recruitment](../)
+> ⚡ **134 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

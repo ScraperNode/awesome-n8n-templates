@@ -1,0 +1,1458 @@
+{
+  "id": "a7ldLty8xYKwUCqw",
+  "meta": {
+    "instanceId": "dd69efaf8212c74ad206700d104739d3329588a6f3f8381a46a481f34c9cc281",
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Persistent AI Agent Memory (Postgres + Redis + Vector Search)",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "462ab978-5a98-4370-9f74-d251755f6e9a",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1008,
+        16
+      ],
+      "parameters": {
+        "width": 1096,
+        "height": 1500,
+        "content": "## Persistent AI Agent Memory (PostgreSQL + Redis + pgvector)\n\n### How it works\n\nThree memory tiers work together:\n\n- **Working memory (Redis):** the recent turns of each session, stored per user and session with a TTL, so replies stay coherent inside a conversation.\n- **Long-term memory (PostgreSQL + pgvector):** durable facts, preferences, goals and events about each user, stored with an embedding, an importance score and access statistics.\n- **Cache (Redis):** query embeddings are cached so repeated or similar-cost lookups skip the embedding API.\n\nOn each chat message the workflow loads session history, embeds the message, runs a vector search over the user's memories and re-ranks candidates by similarity, importance and recency. The best memories are injected into Claude's prompt. The reply is returned to the caller immediately. After that, in the background, the session history is saved, Claude extracts new durable memories from the exchange, they are embedded, and each one is stored (or merged into a near-duplicate that already exists).\n\nA daily maintenance run decays the importance of unused memories and prunes stale, low-value or expired ones. A forget endpoint deletes one memory or all memories for a user.\n\n### Setup steps\n\n1. Install the pgvector extension on your PostgreSQL server (v0.5+ for HNSW), then run the manual trigger **When Schema Setup Initiates** once. The vector size in the table (1024) must match your embedding model.\n2. Create credentials: Postgres, Redis, and two HTTP Header Auth credentials (Anthropic `x-api-key`; embeddings `Authorization: Bearer ...`). Select them on the Postgres, Redis, Claude and Embedding nodes.\n3. Update the Config node: models, embedding URL/model/dimensions, TTLs, retrieval and memory-quality thresholds.\n4. Put authentication in front of both webhooks (Header Auth on the Webhook nodes). userId comes from the request body and scopes every query, so it must come from a trusted caller.\n\n### Endpoints\n\n- `POST /agent-memory-chat` with `{ \"userId\": \"u1\", \"sessionId\": \"s1\", \"message\": \"...\" }`\n- `POST /agent-memory-forget` with `{ \"userId\": \"u1\", \"memoryId\": \"<uuid>\" }` or `{ \"userId\": \"u1\", \"confirmDeleteAll\": true }`\n\n### Customization\n\n- Embeddings: Anthropic has no embeddings API, so this uses Voyage AI (voyage-3.5, 1024 dims). For an OpenAI-compatible provider, change URL, model and dimensions, and remove `input_type` from the two embedding request bodies.\n- Ranking weights (0.6 similarity / 0.25 importance / 0.15 recency) live in the Postgres search query.\n- With many users on one HNSW index, filtered searches can return fewer rows than expected. On pgvector 0.8+ consider `SET hnsw.iterative_scan = relaxed_order` or partitioning by user."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "39c862cf-40e2-4710-b9ee-eae93b99db28",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        336,
+        48
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1250,
+        "height": 560,
+        "content": "## Receive and validate message\n\nAccepts a chat message from the webhook (or a manual test run), validates userId, sessionId and message, builds the Redis session key (scoped to the user), and applies configuration."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b0ef0053-65b5-42ad-af85-3c30ca08bb3b",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1664,
+        48
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1120,
+        "height": 470,
+        "content": "## Working memory and query embedding\n\nLoads the recent turns from Redis, then gets the query embedding from the Redis cache or the embedding API (and caches it)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a2b71274-3d32-40ca-a447-80df79068a9c",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2816,
+        48
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 720,
+        "height": 470,
+        "content": "## Long-term recall\n\nVector search in PostgreSQL over the user's memories, re-ranked by similarity, importance and recency. Retrieved memories get their access statistics bumped."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "10dbfe2b-3530-4d32-9f7d-01fdfe54444e",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3552,
+        48
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 720,
+        "height": 470,
+        "content": "## Reply\n\nClaude answers using the recalled memories and recent turns. The reply is returned to the caller right away; everything after that runs in the background."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "eb2454cc-96cb-4dfe-ad9e-8ad02cab7968",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3552,
+        544
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 2100,
+        "height": 300,
+        "content": "## Memory formation (background)\n\nSaves the updated session to Redis, has Claude extract durable memories from the exchange, embeds them in one batch, and upserts each into PostgreSQL, merging near-duplicates instead of storing them twice."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "40d18491-2b2f-4846-8886-b0133f79f8e5",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        336,
+        704
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1000,
+        "height": 230,
+        "content": "## Schema and daily maintenance\n\nOne-time schema setup, plus a daily job that decays the importance of unused memories and prunes stale, low-value or expired ones."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3e11919f-03dd-462d-b953-f497a493872c",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        336,
+        1056
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1400,
+        "height": 380,
+        "content": "## Forget endpoint\n\nDeletes a single memory or all of a user's memories (explicit confirmation required for delete-all) and clears the Redis session."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a78c249b-b5ba-4c44-993b-2ec1aa3650fd",
+      "name": "When Chat Message Received",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        384,
+        208
+      ],
+      "webhookId": "agent-memory-chat-0001",
+      "parameters": {
+        "path": "agent-memory-chat",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "57edd455-4fb3-46f9-b2e0-c00bab3f5b63",
+      "name": "When Manual Test Run Initiates",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        384,
+        368
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "c95ad70b-7eaf-4256-8516-685fce37d5ff",
+      "name": "Normalize Chat Input",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        608,
+        208
+      ],
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst p = raw.body || raw;\nconst isEmpty = !p || Object.keys(p).length === 0;\n\n// Manual test runs have no payload - use a sample message so the workflow is testable end to end\nconst sample = { userId: 'demo-user', sessionId: 'demo-session', message: 'Hi! I am Priya, a backend engineer. I prefer Go over Java and I am preparing for a conference talk next month.' };\nconst src = isEmpty ? sample : p;\n\nconst ID_RE = /^[A-Za-z0-9_.@-]{1,128}$/;\nconst userId = String(src.userId || '').trim();\nconst sessionId = String(src.sessionId || 'default').trim();\nconst message = typeof src.message === 'string' ? src.message.trim() : '';\n\nlet error = null;\nif (!ID_RE.test(userId)) error = 'userId is required (letters, numbers, . _ @ - only, max 128 chars)';\nelse if (!ID_RE.test(sessionId)) error = 'sessionId may only contain letters, numbers, . _ @ - (max 128 chars)';\nelse if (!message) error = 'message is required';\nelse if (message.length > 4000) error = 'message is too long (max 4000 characters)';\n\nreturn [{\n  json: {\n    inputValid: !error,\n    validationError: error,\n    requestId: 'req-' + Date.now(),\n    userId,\n    sessionId,\n    sessionKey: 'session:' + userId + ':' + sessionId,\n    message,\n    startedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "26e0d5e4-1d68-4751-a14e-9fcb2cf90aed",
+      "name": "If Input Is Valid",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        832,
+        208
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.inputValid }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "89dc037d-1c71-4d9a-95fb-08eaafe75cc3",
+      "name": "Respond with Validation Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "onError": "continueRegularOutput",
+      "position": [
+        1056,
+        400
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 400
+        },
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: $json.validationError }) }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "47aa2a13-f611-4a8d-9bcf-21aa2f7aea38",
+      "name": "Set Configuration Parameters",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1056,
+        208
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f6e8d9d8-778d-40ba-bae0-6455cf46c81c",
+              "name": "anthropicApiUrl",
+              "type": "string",
+              "value": "https://api.anthropic.com/v1/messages"
+            },
+            {
+              "id": "69297e30-61f6-48f9-88a5-c3dd03a7999b",
+              "name": "chatModel",
+              "type": "string",
+              "value": "claude-sonnet-4-6"
+            },
+            {
+              "id": "148a543e-7595-4dec-8296-fac1b5e97a3c",
+              "name": "extractionModel",
+              "type": "string",
+              "value": "claude-haiku-4-5-20251001"
+            },
+            {
+              "id": "d1001860-f566-49c9-bd15-4a0d9935eacb",
+              "name": "embeddingApiUrl",
+              "type": "string",
+              "value": "https://api.voyageai.com/v1/embeddings"
+            },
+            {
+              "id": "013a82c4-e710-49e9-a54e-4036695127ca",
+              "name": "embeddingModel",
+              "type": "string",
+              "value": "voyage-3.5"
+            },
+            {
+              "id": "24d2410b-feb8-44ea-bc68-7db77e722068",
+              "name": "embeddingDimensions",
+              "type": "number",
+              "value": 1024
+            },
+            {
+              "id": "f7893287-b80d-4fda-89be-c9b5c3f39881",
+              "name": "sessionTtlSeconds",
+              "type": "number",
+              "value": 3600
+            },
+            {
+              "id": "43d313a9-8516-4a3f-91f5-edd56cb8ae3b",
+              "name": "embeddingCacheTtlSeconds",
+              "type": "number",
+              "value": 86400
+            },
+            {
+              "id": "d298fa7c-3250-4979-ad73-d7b0414c2a32",
+              "name": "shortTermMaxTurns",
+              "type": "number",
+              "value": 10
+            },
+            {
+              "id": "8d7cb087-4d6d-4c1a-8a0e-66903679d9ae",
+              "name": "retrievalCandidates",
+              "type": "number",
+              "value": 50
+            },
+            {
+              "id": "7ceb8a4f-f38a-4dc5-8289-c0ea8dd9ac5b",
+              "name": "retrievalTopK",
+              "type": "number",
+              "value": 5
+            },
+            {
+              "id": "17f1fad5-c9d1-4eab-9263-6d9d790fd2ab",
+              "name": "minSimilarity",
+              "type": "number",
+              "value": 0.25
+            },
+            {
+              "id": "6b582ca8-4585-4a7b-a867-55ea37f5b3e9",
+              "name": "recencyDecayDays",
+              "type": "number",
+              "value": 30
+            },
+            {
+              "id": "8f3e2a1b-907c-4a24-8ca2-6b98c3431e86",
+              "name": "maxMemoriesPerTurn",
+              "type": "number",
+              "value": 5
+            },
+            {
+              "id": "e1352858-f646-4461-99fb-bfe817919e01",
+              "name": "minImportanceToStore",
+              "type": "number",
+              "value": 0.3
+            },
+            {
+              "id": "9a3810fb-4f9d-41be-bccd-220e52cb4f41",
+              "name": "dedupeSimilarityThreshold",
+              "type": "number",
+              "value": 0.92
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "cb623ba3-3c8e-4554-8e7e-d1d2a49927c2",
+      "name": "Load Session History from Redis",
+      "type": "n8n-nodes-base.redis",
+      "onError": "continueRegularOutput",
+      "position": [
+        1280,
+        208
+      ],
+      "parameters": {
+        "key": "={{ $json.sessionKey }}",
+        "keyType": "string",
+        "options": {},
+        "operation": "get",
+        "propertyName": "history"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c79e7520-0d76-4bc9-b111-2570b6d9e8c2",
+      "name": "Parse Session History",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1504,
+        208
+      ],
+      "parameters": {
+        "jsCode": "const state = $('Set Configuration Parameters').first().json;\nconst r = $input.first().json;\n\nlet history = [];\ntry {\n  const v = r.history;\n  history = Array.isArray(v) ? v : (v ? JSON.parse(v) : []);\n} catch (e) { history = []; }\nhistory = history.filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string');\n\n// Cheap deterministic hash of the message for the embedding cache key\nfunction djb2(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }\nfunction sdbm(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (s.charCodeAt(i) + (h << 6) + (h << 16) - h) | 0; return (h >>> 0).toString(36); }\nconst embeddingCacheKey = 'emb:' + state.embeddingModel + ':' + state.message.length + ':' + djb2(state.message) + sdbm(state.message);\n\nreturn [{ json: { ...state, history, embeddingCacheKey } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "3810fb8b-612a-4f39-a41e-9f9d8150b61c",
+      "name": "Get Cached Query Embedding",
+      "type": "n8n-nodes-base.redis",
+      "onError": "continueRegularOutput",
+      "position": [
+        1728,
+        208
+      ],
+      "parameters": {
+        "key": "={{ $json.embeddingCacheKey }}",
+        "keyType": "string",
+        "options": {},
+        "operation": "get",
+        "propertyName": "cachedEmbedding"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "8d8835b0-e07e-4ca2-b688-eae3251a6d23",
+      "name": "Resolve Cached Embedding",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1952,
+        208
+      ],
+      "parameters": {
+        "jsCode": "const state = $('Parse Session History').first().json;\nconst r = $input.first().json;\n\nlet emb = null;\ntry {\n  const v = r.cachedEmbedding;\n  emb = Array.isArray(v) ? v : (v ? JSON.parse(v) : null);\n} catch (e) { emb = null; }\nconst ok = Array.isArray(emb) && emb.length > 0 && emb.every(x => typeof x === 'number');\n\nreturn [{ json: { ...state, queryEmbedding: ok ? emb : null, embeddingCacheHit: ok } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1c117cff-b8d1-4543-9000-d08372c2e588",
+      "name": "If Embedding Cached",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2176,
+        208
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.embeddingCacheHit }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "ae563376-e2d2-4fd4-9a16-61c3f3fb8311",
+      "name": "Embed Query",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        2400,
+        320
+      ],
+      "parameters": {
+        "url": "={{ $json.embeddingApiUrl }}",
+        "method": "POST",
+        "options": {
+          "timeout": 60000
+        },
+        "jsonBody": "={{ JSON.stringify({ model: $json.embeddingModel, input: [$json.message], input_type: 'query' }) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "464e1d6d-07c9-4bcb-9eb9-021e70682dc9",
+      "name": "Extract Query Embedding",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2624,
+        320
+      ],
+      "parameters": {
+        "jsCode": "const state = $('Resolve Cached Embedding').first().json;\nconst r = $input.first().json;\nconst emb = r.data && r.data[0] && r.data[0].embedding;\nconst ok = Array.isArray(emb) && emb.length > 0;\n\nreturn [{ json: { ...state, queryEmbedding: ok ? emb : null, embeddingCacheHit: false } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "442eac7f-73d2-4cd4-8a35-e5802bd24717",
+      "name": "Cache Query Embedding in Redis",
+      "type": "n8n-nodes-base.redis",
+      "onError": "continueRegularOutput",
+      "position": [
+        2848,
+        432
+      ],
+      "parameters": {
+        "key": "={{ $json.embeddingCacheKey }}",
+        "ttl": "={{ $json.embeddingCacheTtlSeconds }}",
+        "value": "={{ JSON.stringify($json.queryEmbedding) }}",
+        "expire": true,
+        "keyType": "string",
+        "operation": "set"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5eb902cf-fd58-4282-a1e9-0eab1548c8f4",
+      "name": "Build Memory Search Query",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2848,
+        208
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nconst { queryEmbedding, ...rest } = s;\n\nconst dim = Number(s.embeddingDimensions) || 1024;\nconst hasEmb = Array.isArray(queryEmbedding) && queryEmbedding.length === dim;\n\n// Graceful degradation: without a usable embedding, search with a zero vector and 0 candidates\n// so the agent still replies (just without long-term recall).\nconst vec = hasEmb ? queryEmbedding : new Array(dim).fill(0);\nconst literal = '[' + vec.join(',') + ']';\n\nreturn [{\n  json: {\n    ...rest,\n    memorySearchDegraded: !hasEmb,\n    searchParams: [\n      s.userId,\n      literal,\n      hasEmb ? s.retrievalCandidates : 0,\n      s.minSimilarity,\n      s.retrievalTopK,\n      s.recencyDecayDays\n    ]\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1bbc02e0-a0fd-46e4-ac2f-8bc6849f9b75",
+      "name": "Search Memories in Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "onError": "continueRegularOutput",
+      "position": [
+        3072,
+        208
+      ],
+      "parameters": {
+        "query": "WITH candidates AS (\n  SELECT id, content, memory_type, importance, created_at, last_accessed_at,\n         1 - (embedding <=> $2::vector) AS similarity\n  FROM agent_memories\n  WHERE user_id = $1::text\n    AND (expires_at IS NULL OR expires_at > NOW())\n  ORDER BY embedding <=> $2::vector\n  LIMIT $3::int\n)\nSELECT id, content, memory_type, importance, created_at, similarity,\n       ( similarity * 0.6\n         + importance * 0.25\n         + EXP(-EXTRACT(EPOCH FROM (NOW() - COALESCE(last_accessed_at, created_at))) / 86400.0 / $6::float) * 0.15\n       ) AS score\nFROM candidates\nWHERE similarity >= $4::float\nORDER BY score DESC\nLIMIT $5::int;",
+        "options": {
+          "queryReplacement": "={{ $json.searchParams }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "56d44770-0a38-4175-a1cf-e61d34cd0d2a",
+      "name": "Format Retrieved Memories",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3296,
+        208
+      ],
+      "parameters": {
+        "jsCode": "const state = $('Build Memory Search Query').first().json;\nconst rows = $input.all().map(i => i.json).filter(r => r && r.id);\n\nconst memories = rows.map(r => ({\n  id: r.id,\n  content: r.content,\n  type: r.memory_type,\n  importance: Number(r.importance),\n  similarity: Number(Number(r.similarity).toFixed(3)),\n  score: Number(Number(r.score).toFixed(3)),\n  createdAt: r.created_at\n}));\n\nconst memoryBlock = memories\n  .map(m => '- [' + m.type + ', saved ' + String(m.createdAt).slice(0, 10) + '] ' + m.content)\n  .join('\\n') || 'No relevant long-term memories yet.';\n\nreturn [{\n  json: {\n    ...state,\n    memories,\n    memoryBlock,\n    memoryIdsLiteral: '{' + memories.map(m => m.id).join(',') + '}'\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "92233f83-9eba-4bac-86d3-d61055f9914b",
+      "name": "Update Memory Access Stats",
+      "type": "n8n-nodes-base.postgres",
+      "onError": "continueRegularOutput",
+      "position": [
+        3520,
+        112
+      ],
+      "parameters": {
+        "query": "UPDATE agent_memories\nSET last_accessed_at = NOW(), access_count = access_count + 1\nWHERE user_id = $2::text AND id = ANY($1::uuid[]);",
+        "options": {
+          "queryReplacement": "={{ [$json.memoryIdsLiteral, $json.userId] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "18a55f06-7d85-459c-a742-b29d397b4ae7",
+      "name": "Build Reply Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3520,
+        208
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\n\nconst turns = (s.history || []).slice(-(s.shortTermMaxTurns * 2)).map(m => ({ role: m.role, content: m.content }));\nconst messages = [...turns, { role: 'user', content: s.message }];\nwhile (messages.length > 1 && messages[0].role !== 'user') messages.shift();\n\nconst system = [\n  'You are a helpful assistant with persistent memory of this user across conversations.',\n  'Use the long-term memories below when they are relevant, naturally and without listing them or mentioning a database. If a memory conflicts with what the user just said, trust the user and the newer information. If you are unsure whether a remembered detail still applies, ask. Never invent memories.',\n  'Long-term memories about the user:\\n' + s.memoryBlock\n].join('\\n\\n');\n\nreturn [{ json: { ...s, replyRequest: { model: s.chatModel, max_tokens: 1200, system, messages } } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b046d518-8547-42d9-8542-354ed8678605",
+      "name": "Generate Reply with Claude",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        3744,
+        208
+      ],
+      "parameters": {
+        "url": "={{ $json.anthropicApiUrl }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000
+        },
+        "jsonBody": "={{ JSON.stringify($json.replyRequest) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "f832be4b-f431-4ce4-8472-dcdaa01eeb73",
+      "name": "Build Chat Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3968,
+        208
+      ],
+      "parameters": {
+        "jsCode": "const s = $('Build Reply Request').first().json;\nconst r = $input.first().json;\nconst { replyRequest, ...rest } = s;\n\nconst text = Array.isArray(r.content)\n  ? r.content.filter(b => b.type === 'text').map(b => b.text).join('\\n').trim()\n  : '';\nconst replyFailed = !text;\nconst reply = replyFailed ? 'Sorry, I could not generate a reply right now. Please try again.' : text;\n\nconst maxMsgs = s.shortTermMaxTurns * 2;\nconst newHistory = replyFailed\n  ? s.history\n  : [...s.history, { role: 'user', content: s.message }, { role: 'assistant', content: reply }].slice(-maxMsgs);\n\nreturn [{\n  json: {\n    ...rest,\n    reply,\n    replyFailed,\n    newHistory,\n    webhookResponse: {\n      requestId: s.requestId,\n      userId: s.userId,\n      sessionId: s.sessionId,\n      reply,\n      memoryContext: {\n        retrieved: s.memories.length,\n        degraded: s.memorySearchDegraded,\n        memories: s.memories.map(m => ({ id: m.id, type: m.type, content: m.content, similarity: m.similarity }))\n      },\n      durationMs: Date.now() - new Date(s.startedAt).getTime()\n    }\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "97ef94b1-bc9c-4aea-864d-da70f124c931",
+      "name": "Respond with Reply via Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "onError": "continueRegularOutput",
+      "position": [
+        4192,
+        112
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.webhookResponse) }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "7866c261-bf43-4d6e-bccc-8cb6bbd0add8",
+      "name": "Save Session History to Redis",
+      "type": "n8n-nodes-base.redis",
+      "onError": "continueRegularOutput",
+      "position": [
+        4192,
+        208
+      ],
+      "parameters": {
+        "key": "={{ $json.sessionKey }}",
+        "ttl": "={{ $json.sessionTtlSeconds }}",
+        "value": "={{ JSON.stringify($json.newHistory) }}",
+        "expire": true,
+        "keyType": "string",
+        "operation": "set"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "bea5369b-afa9-4567-b011-ae1de0a56e38",
+      "name": "Build Memory Extraction Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4192,
+        656
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nif (s.replyFailed) return [];\n\nconst shape = JSON.stringify({\n  memories: [{ content: 'short self-contained statement about the user', type: 'fact | preference | goal | event | relationship', importance: 0.5 }]\n});\n\nconst system = [\n  'You maintain the long-term memory of an AI assistant. From the latest exchange, extract only durable, useful information about the user: stable facts, preferences, goals, decisions, relationships and important events.',\n  'Ignore small talk, one-off questions, and anything the assistant said that the user did not confirm. Never store sensitive data such as passwords, payment details or government IDs. Do not repeat anything already in the known memories.',\n  'Write each memory as a short third-person statement, for example: The user prefers TypeScript over JavaScript. Set importance from 0 to 1 (1 = critical to remember). Return an empty list if nothing is worth keeping.',\n  'Respond ONLY with valid JSON, no prose, matching exactly this shape: ' + shape\n].join('\\n\\n');\n\nconst recent = (s.history || []).slice(-6).map(m => m.role + ': ' + m.content.slice(0, 500)).join('\\n') || 'None';\nconst user = 'Known memories:\\n' + s.memoryBlock\n  + '\\n\\nRecent conversation:\\n' + recent\n  + '\\n\\nLatest exchange:\\nuser: ' + s.message + '\\nassistant: ' + s.reply;\n\nreturn [{ json: { ...s, extractionRequest: { model: s.extractionModel, max_tokens: 800, system, messages: [{ role: 'user', content: user }] } } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a6192983-7db6-455b-9c2d-7604562488a4",
+      "name": "Extract Memories with Claude",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        4416,
+        656
+      ],
+      "parameters": {
+        "url": "={{ $json.anthropicApiUrl }}",
+        "method": "POST",
+        "options": {
+          "timeout": 120000
+        },
+        "jsonBody": "={{ JSON.stringify($json.extractionRequest) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "f74703e7-8857-4565-a352-1459f0fb0714",
+      "name": "Parse Extracted Memories",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4640,
+        656
+      ],
+      "parameters": {
+        "jsCode": "const s = $('Build Memory Extraction Request').first().json;\nconst r = $input.first().json;\n\nlet list = [];\ntry {\n  const raw = Array.isArray(r.content) ? r.content.filter(b => b.type === 'text').map(b => b.text).join('') : '{}';\n  const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());\n  list = Array.isArray(parsed.memories) ? parsed.memories : [];\n} catch (e) { list = []; }\n\nconst TYPES = ['fact', 'preference', 'goal', 'event', 'relationship'];\nconst seen = new Set();\nconst newMemories = [];\nfor (const m of list) {\n  if (!m) continue;\n  const content = String(m.content || '').trim();\n  const key = content.toLowerCase();\n  let importance = Number(m.importance);\n  if (!Number.isFinite(importance)) importance = 0.5;\n  importance = Math.min(1, Math.max(0, importance));\n  if (content.length < 5 || content.length > 500) continue;\n  if (importance < s.minImportanceToStore || seen.has(key)) continue;\n  seen.add(key);\n  newMemories.push({ content, type: TYPES.includes(m.type) ? m.type : 'fact', importance });\n  if (newMemories.length >= s.maxMemoriesPerTurn) break;\n}\n\nreturn [{ json: { ...s, newMemories, hasNewMemories: newMemories.length > 0 } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "aa22d2c4-2788-41b5-b015-230bd755d6c5",
+      "name": "If New Memories Found",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4864,
+        656
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.hasNewMemories }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "55e65507-5f5a-4d11-b503-7d6c2d70e875",
+      "name": "Embed New Memories",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueRegularOutput",
+      "maxTries": 2,
+      "position": [
+        5088,
+        656
+      ],
+      "parameters": {
+        "url": "={{ $json.embeddingApiUrl }}",
+        "method": "POST",
+        "options": {
+          "timeout": 60000
+        },
+        "jsonBody": "={{ JSON.stringify({ model: $json.embeddingModel, input: $json.newMemories.map(m => m.content), input_type: 'document' }) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "aa6fe9b9-849d-4017-8ec7-aa69d18c1816",
+      "name": "Build Memory Records",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5312,
+        656
+      ],
+      "parameters": {
+        "jsCode": "const s = $('Parse Extracted Memories').first().json;\nconst r = $input.first().json;\n\nconst data = (Array.isArray(r.data) ? r.data : []).slice().sort((a, b) => (a.index || 0) - (b.index || 0));\nconst dim = Number(s.embeddingDimensions) || 1024;\n\nconst out = [];\ns.newMemories.forEach((m, i) => {\n  const emb = data[i] && data[i].embedding;\n  if (!Array.isArray(emb) || emb.length !== dim) return; // skip anything we could not embed correctly\n  out.push({\n    json: {\n      upsertParams: [s.userId, m.content, '[' + emb.join(',') + ']', m.type, m.importance, s.dedupeSimilarityThreshold, s.sessionId]\n    }\n  });\n});\n\nreturn out;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "298e9f7f-d003-4edc-8a78-7802899ec7f3",
+      "name": "Upsert Memory in Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "onError": "continueRegularOutput",
+      "position": [
+        5536,
+        656
+      ],
+      "parameters": {
+        "query": "WITH dup AS (\n  SELECT id FROM agent_memories\n  WHERE user_id = $1::text\n    AND 1 - (embedding <=> $3::vector) >= $6::float\n  ORDER BY embedding <=> $3::vector\n  LIMIT 1\n), reinforced AS (\n  UPDATE agent_memories m\n  SET importance = GREATEST(m.importance, $5::float),\n      last_accessed_at = NOW(),\n      access_count = m.access_count + 1\n  FROM dup\n  WHERE m.id = dup.id\n  RETURNING m.id\n)\nINSERT INTO agent_memories (user_id, content, memory_type, importance, embedding, source_session_id)\nSELECT $1::text, $2::text, $4::text, $5::float, $3::vector, $7::text\nWHERE NOT EXISTS (SELECT 1 FROM dup)\nRETURNING id;",
+        "options": {
+          "queryReplacement": "={{ $json.upsertParams }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "91450972-0bd8-4356-aba8-c7d7e83356d2",
+      "name": "When Daily Memory Maintenance Initiates",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        384,
+        864
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "5d05f242-dbae-4bb4-aaac-6f3901d18727",
+      "name": "Set Maintenance Configuration",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        608,
+        864
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e3bdcd1d-fdaa-49b4-80e8-109d45097590",
+              "name": "decayFactor",
+              "type": "number",
+              "value": 0.99
+            },
+            {
+              "id": "a4b7da5e-2bff-4e27-a8b8-b83177577cd5",
+              "name": "decayAfterDays",
+              "type": "number",
+              "value": 30
+            },
+            {
+              "id": "7c750f29-139c-469b-8fa2-98eabdcdf757",
+              "name": "minImportanceToKeep",
+              "type": "number",
+              "value": 0.35
+            },
+            {
+              "id": "5738cfe3-f811-42f6-8c3c-0ad8ed860c4e",
+              "name": "staleAfterDays",
+              "type": "number",
+              "value": 90
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "7237b8c0-3896-4ddc-ab39-5defcd21b51c",
+      "name": "Decay Unused Memory Importance",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        832,
+        864
+      ],
+      "parameters": {
+        "query": "WITH d AS (\n  UPDATE agent_memories\n  SET importance = importance * $1::float\n  WHERE COALESCE(last_accessed_at, created_at) < NOW() - ($2::int * INTERVAL '1 day')\n  RETURNING id\n)\nSELECT COUNT(*)::int AS decayed FROM d;",
+        "options": {
+          "queryReplacement": "={{ [$json.decayFactor, $json.decayAfterDays] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "7453cc8e-3fe1-48c4-a997-3d6f4d5d9c3d",
+      "name": "Prune Stale Memories",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1056,
+        864
+      ],
+      "parameters": {
+        "query": "WITH deleted AS (\n  DELETE FROM agent_memories\n  WHERE (expires_at IS NOT NULL AND expires_at < NOW())\n     OR (importance < $1::float\n         AND COALESCE(last_accessed_at, created_at) < NOW() - ($2::int * INTERVAL '1 day'))\n  RETURNING id\n)\nSELECT COUNT(*)::int AS pruned FROM deleted;",
+        "options": {
+          "queryReplacement": "={{ [$('Set Maintenance Configuration').first().json.minImportanceToKeep, $('Set Maintenance Configuration').first().json.staleAfterDays] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "e0d4300b-bd27-45b1-8d2b-f661fe92d9fd",
+      "name": "When Forget Request Received",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        384,
+        1152
+      ],
+      "webhookId": "agent-memory-forget-0001",
+      "parameters": {
+        "path": "agent-memory-forget",
+        "options": {},
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a0245291-9fce-4fb2-af9a-3b73c00b0fc8",
+      "name": "Normalize Forget Input",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        608,
+        1152
+      ],
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst p = raw.body || raw;\n\nconst ID_RE = /^[A-Za-z0-9_.@-]{1,128}$/;\nconst UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\n\nconst userId = String(p.userId || '').trim();\nconst sessionId = String(p.sessionId || 'default').trim();\nconst memoryId = p.memoryId ? String(p.memoryId).trim() : null;\nconst confirmDeleteAll = p.confirmDeleteAll === true;\n\nlet error = null;\nif (!ID_RE.test(userId)) error = 'userId is required (letters, numbers, . _ @ - only, max 128 chars)';\nelse if (!ID_RE.test(sessionId)) error = 'sessionId may only contain letters, numbers, . _ @ - (max 128 chars)';\nelse if (memoryId && !UUID_RE.test(memoryId)) error = 'memoryId must be a UUID';\nelse if (!memoryId && !confirmDeleteAll) error = 'Provide a memoryId, or set confirmDeleteAll to true to delete all memories for this user';\n\nreturn [{\n  json: {\n    forgetValid: !error,\n    validationError: error,\n    userId,\n    memoryId,\n    sessionKey: 'session:' + userId + ':' + sessionId\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "4ecaa376-3bbd-44f9-b291-75160790259b",
+      "name": "If Forget Request Is Valid",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        832,
+        1152
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "leftValue": "={{ $json.forgetValid }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "1ea6b581-3c68-4610-811b-b8f478317398",
+      "name": "Respond with Forget Validation Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "onError": "continueRegularOutput",
+      "position": [
+        1056,
+        1312
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 400
+        },
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: $json.validationError }) }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "73c7d6d4-0bec-4000-abd0-a43b8b95e78d",
+      "name": "Delete Memories in Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1056,
+        1152
+      ],
+      "parameters": {
+        "query": "WITH d AS (\n  DELETE FROM agent_memories\n  WHERE user_id = $1::text\n    AND ($2::text IS NULL OR id::text = $2::text)\n  RETURNING id\n)\nSELECT COUNT(*)::int AS deleted FROM d;",
+        "options": {
+          "queryReplacement": "={{ [$json.userId, $json.memoryId] }}"
+        },
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.5
+    },
+    {
+      "id": "e2b44b48-7196-491c-9e96-a8a7aa121ead",
+      "name": "Clear Session in Redis",
+      "type": "n8n-nodes-base.redis",
+      "onError": "continueRegularOutput",
+      "position": [
+        1280,
+        1152
+      ],
+      "parameters": {
+        "key": "={{ $('Normalize Forget Input').first().json.sessionKey }}",
+        "operation": "delete"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "bd01a3c7-4133-40d4-9d72-e6be887705c4",
+      "name": "Respond with Forget Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "onError": "continueRegularOutput",
+      "position": [
+        1504,
+        1152
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ userId: $('Normalize Forget Input').first().json.userId, deletedMemories: $('Delete Memories in Postgres').first().json.deleted, sessionCleared: true }) }}"
+      },
+      "typeVersion": 1.1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "versionId": "376c2e5e-e50d-4a8b-a8f2-27ed1a884cda",
+  "nodeGroups": [],
+  "connections": {
+    "Embed Query": {
+      "main": [
+        [
+          {
+            "node": "Extract Query Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Input Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Set Configuration Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond with Validation Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embed New Memories": {
+      "main": [
+        [
+          {
+            "node": "Build Memory Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Chat Response": {
+      "main": [
+        [
+          {
+            "node": "Respond with Reply via Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Save Session History to Redis",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build Memory Extraction Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Reply Request": {
+      "main": [
+        [
+          {
+            "node": "Generate Reply with Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Embedding Cached": {
+      "main": [
+        [
+          {
+            "node": "Build Memory Search Query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Embed Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Memory Records": {
+      "main": [
+        [
+          {
+            "node": "Upsert Memory in Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Chat Input": {
+      "main": [
+        [
+          {
+            "node": "If Input Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If New Memories Found": {
+      "main": [
+        [
+          {
+            "node": "Embed New Memories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Session History": {
+      "main": [
+        [
+          {
+            "node": "Get Cached Query Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear Session in Redis": {
+      "main": [
+        [
+          {
+            "node": "Respond with Forget Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Forget Input": {
+      "main": [
+        [
+          {
+            "node": "If Forget Request Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Query Embedding": {
+      "main": [
+        [
+          {
+            "node": "Build Memory Search Query",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Cache Query Embedding in Redis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Extracted Memories": {
+      "main": [
+        [
+          {
+            "node": "If New Memories Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Cached Embedding": {
+      "main": [
+        [
+          {
+            "node": "If Embedding Cached",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Memory Search Query": {
+      "main": [
+        [
+          {
+            "node": "Search Memories in Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Retrieved Memories": {
+      "main": [
+        [
+          {
+            "node": "Build Reply Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Memory Access Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Reply with Claude": {
+      "main": [
+        [
+          {
+            "node": "Build Chat Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Cached Query Embedding": {
+      "main": [
+        [
+          {
+            "node": "Resolve Cached Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Forget Request Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Delete Memories in Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond with Forget Validation Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Chat Message Received": {
+      "main": [
+        [
+          {
+            "node": "Normalize Chat Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Memories in Postgres": {
+      "main": [
+        [
+          {
+            "node": "Clear Session in Redis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Memories in Postgres": {
+      "main": [
+        [
+          {
+            "node": "Format Retrieved Memories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Memories with Claude": {
+      "main": [
+        [
+          {
+            "node": "Parse Extracted Memories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Configuration Parameters": {
+      "main": [
+        [
+          {
+            "node": "Load Session History from Redis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Forget Request Received": {
+      "main": [
+        [
+          {
+            "node": "Normalize Forget Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Maintenance Configuration": {
+      "main": [
+        [
+          {
+            "node": "Decay Unused Memory Importance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decay Unused Memory Importance": {
+      "main": [
+        [
+          {
+            "node": "Prune Stale Memories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Manual Test Run Initiates": {
+      "main": [
+        [
+          {
+            "node": "Normalize Chat Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Memory Extraction Request": {
+      "main": [
+        [
+          {
+            "node": "Extract Memories with Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Session History from Redis": {
+      "main": [
+        [
+          {
+            "node": "Parse Session History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Daily Memory Maintenance Initiates": {
+      "main": [
+        [
+          {
+            "node": "Set Maintenance Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

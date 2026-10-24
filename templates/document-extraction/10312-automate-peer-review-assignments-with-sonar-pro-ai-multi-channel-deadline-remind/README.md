@@ -1,6 +1,6 @@
 # 🔬 Automate peer review assignments with Sonar Pro AI & multi-channel deadline reminders
 
-> ⚡ **331 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **503 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

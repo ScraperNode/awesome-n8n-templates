@@ -1,6 +1,6 @@
 # 👥 Screen applicants with AI, notify HR and save them in a Google Sheet
 
-> ⚡ **6,338 views** · 👥 [HR & Recruitment](../)
+> ⚡ **6,409 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

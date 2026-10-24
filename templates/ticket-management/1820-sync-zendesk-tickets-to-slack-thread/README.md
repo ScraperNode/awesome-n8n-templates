@@ -1,6 +1,6 @@
 # 🎫 Sync Zendesk tickets to Slack thread
 
-> ⚡ **1,888 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,904 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

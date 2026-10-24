@@ -1,6 +1,6 @@
 # ⚡ Learn anything from HN - get top resource recommendations from Hacker News
 
-> ⚡ **4,572 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,769 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

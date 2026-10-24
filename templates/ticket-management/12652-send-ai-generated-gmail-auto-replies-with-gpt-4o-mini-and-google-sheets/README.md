@@ -1,6 +1,6 @@
 # 🎫 Send AI-generated Gmail auto replies with GPT-4o-mini and Google Sheets
 
-> ⚡ **147 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **312 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

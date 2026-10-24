@@ -1,6 +1,6 @@
 # 📖 Upsert huge documents in a vector store with Supabase and Notion
 
-> ⚡ **14,145 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **14,248 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

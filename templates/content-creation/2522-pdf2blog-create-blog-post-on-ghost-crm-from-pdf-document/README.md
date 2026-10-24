@@ -1,6 +1,6 @@
 # 🎬 📄🌐PDF2Blog - create blog post on Ghost CRM from PDF document
 
-> ⚡ **7,271 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **7,376 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

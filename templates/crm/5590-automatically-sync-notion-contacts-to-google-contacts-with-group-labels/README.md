@@ -1,6 +1,6 @@
 # 🤝 Automatically sync Notion contacts to Google Contacts with group labels
 
-> ⚡ **515 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **660 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

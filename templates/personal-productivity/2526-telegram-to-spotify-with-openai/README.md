@@ -1,6 +1,6 @@
 # ⚡ Telegram to Spotify with OpenAI
 
-> ⚡ **2,737 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,833 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

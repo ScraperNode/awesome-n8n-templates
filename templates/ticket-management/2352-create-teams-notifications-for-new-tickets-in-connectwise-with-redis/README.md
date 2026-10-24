@@ -1,6 +1,6 @@
 # 🎫 Create Teams notifications for new tickets in ConnectWise with Redis
 
-> ⚡ **4,904 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **4,990 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

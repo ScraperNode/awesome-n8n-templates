@@ -1,6 +1,6 @@
 # 📊 Automated agentic news event monitoring with perplexity.ai
 
-> ⚡ **8,236 views** · 📊 [Market Research & Insights](../)
+> ⚡ **8,201 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate social media ad images for FB/IG/Pinterest with Google Gemini Imagen
 
-> ⚡ **176 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **201 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

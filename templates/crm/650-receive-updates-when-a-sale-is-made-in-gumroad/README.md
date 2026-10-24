@@ -1,6 +1,6 @@
 # 🤝 Receive updates when a sale is made in Gumroad
 
-> ⚡ **608 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **640 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

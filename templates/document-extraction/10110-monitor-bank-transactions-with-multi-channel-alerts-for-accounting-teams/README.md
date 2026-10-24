@@ -1,6 +1,6 @@
 # 🔬 Monitor bank transactions with multi-channel alerts for accounting teams
 
-> ⚡ **457 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **701 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

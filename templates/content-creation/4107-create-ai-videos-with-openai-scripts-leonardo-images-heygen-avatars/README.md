@@ -1,6 +1,6 @@
 # 🎬 Create AI videos with OpenAI scripts, Leonardo images & HeyGen avatars
 
-> ⚡ **6,358 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **6,424 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋  Trello to Slack Notification Trigger: Task/Card Move Alerts 
 
-> ⚡ **261 views** · 📋 [Project Management](../)
+> ⚡ **323 views** · 📋 [Project Management](../)
 
 ## Description
 

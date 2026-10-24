@@ -1,6 +1,6 @@
 # 🔬 Parse Google Drive documents to RAG-ready Markdown with Landing.ai and Supabase cache
 
-> ⚡ **8 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **57 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎯 Job brief analysis with OpenAI to find relevant templates and log in Google Sheets
 
-> ⚡ **111 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **156 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

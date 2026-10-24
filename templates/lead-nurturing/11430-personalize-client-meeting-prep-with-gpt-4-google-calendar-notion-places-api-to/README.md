@@ -1,6 +1,6 @@
 # 💬 Personalize client meeting prep with GPT-4, Google Calendar, Notion & Places API to Slack
 
-> ⚡ **80 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **116 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

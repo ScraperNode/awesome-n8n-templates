@@ -1,6 +1,6 @@
 # 📋 Create, update, and get an issue on Taiga
 
-> ⚡ **1,191 views** · 📋 [Project Management](../)
+> ⚡ **1,225 views** · 📋 [Project Management](../)
 
 ## Description
 

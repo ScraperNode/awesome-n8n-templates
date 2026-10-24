@@ -1,6 +1,6 @@
 # 🎬 Automated blog creation from news to publication using Gemini, Ideogram & Slack
 
-> ⚡ **296 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **449 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

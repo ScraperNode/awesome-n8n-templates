@@ -1,6 +1,6 @@
 # 💬 Voice & text control for Home Assistant using Telegram, Whisper & Gemini
 
-> ⚡ **1,171 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,394 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Send subscription renewal reminders with Email and ClickUp
 
-> ⚡ **33 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **131 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

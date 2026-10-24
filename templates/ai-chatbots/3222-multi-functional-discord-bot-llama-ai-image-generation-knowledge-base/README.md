@@ -1,6 +1,6 @@
 # 🤖 Multi-functional Discord bot: Llama AI, image generation & knowledge base
 
-> ⚡ **1,301 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **1,654 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

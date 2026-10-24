@@ -1,6 +1,6 @@
 # 🎬 Tech news_curator - analyze daily news using AI_agents with Mistral
 
-> ⚡ **2,135 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,304 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

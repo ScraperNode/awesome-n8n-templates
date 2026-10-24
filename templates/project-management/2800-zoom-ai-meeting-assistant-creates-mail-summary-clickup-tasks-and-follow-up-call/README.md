@@ -1,6 +1,6 @@
 # 📋 Zoom AI meeting assistant creates mail summary, ClickUp tasks and follow-up call
 
-> ⚡ **15,952 views** · 📋 [Project Management](../)
+> ⚡ **16,561 views** · 📋 [Project Management](../)
 
 ## Description
 

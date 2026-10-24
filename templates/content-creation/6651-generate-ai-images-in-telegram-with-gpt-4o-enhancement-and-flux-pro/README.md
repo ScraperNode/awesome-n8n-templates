@@ -1,6 +1,6 @@
 # 🎬 Generate AI images in Telegram with GPT-4o enhancement and Flux Pro
 
-> ⚡ **1,727 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,785 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

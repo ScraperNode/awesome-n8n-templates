@@ -1,6 +1,6 @@
 # 🧾 Generate Stripe invoice and send it by email
 
-> ⚡ **2,198 views** · 🧾 [Invoice Processing](../)
+> ⚡ **2,180 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

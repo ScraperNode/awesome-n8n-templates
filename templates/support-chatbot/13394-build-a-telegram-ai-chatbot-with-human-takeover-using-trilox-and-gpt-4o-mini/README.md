@@ -1,6 +1,6 @@
 # 💬 Build a Telegram AI chatbot with human takeover using Trilox and GPT-4o-mini
 
-> ⚡ **257 views** · 💬 [Support Chatbots](../)
+> ⚡ **426 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

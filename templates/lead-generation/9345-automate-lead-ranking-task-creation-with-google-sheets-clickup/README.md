@@ -1,6 +1,6 @@
 # 🎣 Automate lead ranking & task creation with Google Sheets + ClickUp
 
-> ⚡ **193 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **292 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

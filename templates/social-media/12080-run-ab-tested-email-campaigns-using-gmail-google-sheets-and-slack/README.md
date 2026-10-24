@@ -1,6 +1,6 @@
 # 📱 Run A/B-tested email campaigns using Gmail, Google Sheets, and Slack
 
-> ⚡ **45 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **56 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

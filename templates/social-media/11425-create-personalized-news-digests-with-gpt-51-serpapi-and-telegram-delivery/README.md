@@ -1,6 +1,6 @@
 # 📱 Create personalized news digests with GPT-5.1, SerpAPI, and Telegram delivery
 
-> ⚡ **136 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **208 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤝 Analyze customer sentiment with Zoho CRM, Google Gemini & send Gmail alerts
 
-> ⚡ **105 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **128 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

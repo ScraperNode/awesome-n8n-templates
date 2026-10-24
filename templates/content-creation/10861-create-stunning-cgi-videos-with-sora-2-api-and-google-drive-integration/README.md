@@ -1,6 +1,6 @@
 # 🎬 Create stunning CGI videos with Sora 2 API and Google Drive integration
 
-> ⚡ **206 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **278 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

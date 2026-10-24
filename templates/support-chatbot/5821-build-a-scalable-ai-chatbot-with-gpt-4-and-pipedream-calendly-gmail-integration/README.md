@@ -1,6 +1,6 @@
 # 💬 Build a scalable AI chatbot with GPT-4 and Pipedream: Calendly, Gmail integration
 
-> ⚡ **2,029 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,381 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

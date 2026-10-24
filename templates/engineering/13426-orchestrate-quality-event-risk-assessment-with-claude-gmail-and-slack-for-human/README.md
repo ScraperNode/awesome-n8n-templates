@@ -1,6 +1,6 @@
 # ⚒️ Orchestrate quality event risk assessment with Claude, Gmail and Slack for human approval
 
-> ⚡ **9 views** · ⚒️ [Engineering](../)
+> ⚡ **160 views** · ⚒️ [Engineering](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Product ingredient safety analyzer with Google Gemini via WhatsApp
 
-> ⚡ **201 views** · 💬 [Support Chatbots](../)
+> ⚡ **248 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

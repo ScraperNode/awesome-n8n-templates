@@ -1,6 +1,6 @@
 # 🤝 Sync companies from Google Sheets to Salesforce with smart duplicate prevention
 
-> ⚡ **217 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **272 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

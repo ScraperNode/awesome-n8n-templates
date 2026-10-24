@@ -1,6 +1,6 @@
 # 🎬 OpenAI-powered tweet generator
 
-> ⚡ **4,849 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,872 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

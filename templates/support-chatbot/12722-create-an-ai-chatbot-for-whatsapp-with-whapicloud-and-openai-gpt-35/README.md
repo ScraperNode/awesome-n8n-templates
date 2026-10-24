@@ -1,6 +1,6 @@
 # 💬 Create an AI chatbot for WhatsApp with Whapi.Cloud and OpenAI GPT-3.5
 
-> ⚡ **337 views** · 💬 [Support Chatbots](../)
+> ⚡ **883 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

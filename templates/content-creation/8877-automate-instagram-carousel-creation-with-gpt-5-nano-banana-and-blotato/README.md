@@ -1,6 +1,6 @@
 # 🎬 Automate Instagram carousel creation with GPT-5, Nano Banana, and Blotato
 
-> ⚡ **3,467 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,793 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Translate audio using AI
 
-> ⚡ **10,900 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **10,945 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

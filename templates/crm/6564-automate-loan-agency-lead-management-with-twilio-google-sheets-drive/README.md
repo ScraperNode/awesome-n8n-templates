@@ -1,6 +1,6 @@
 # 🤝 Automate loan agency lead management with Twilio, Google Sheets & Drive
 
-> ⚡ **125 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **162 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

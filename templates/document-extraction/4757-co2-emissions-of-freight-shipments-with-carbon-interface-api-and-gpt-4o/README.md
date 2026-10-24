@@ -1,6 +1,6 @@
 # 🔬 🚚 CO2 emissions of freight shipments with Carbon Interface API and GPT-4o
 
-> ⚡ **392 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **404 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Create unique Jira tickets from Splunk alerts
 
-> ⚡ **2,711 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **2,825 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

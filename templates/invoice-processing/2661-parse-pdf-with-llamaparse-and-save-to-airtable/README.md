@@ -1,6 +1,6 @@
 # 🧾 Parse PDF with LlamaParse and save to Airtable
 
-> ⚡ **12,557 views** · 🧾 [Invoice Processing](../)
+> ⚡ **15,827 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

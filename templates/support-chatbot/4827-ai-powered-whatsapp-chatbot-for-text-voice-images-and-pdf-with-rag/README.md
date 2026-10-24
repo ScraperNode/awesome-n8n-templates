@@ -1,6 +1,6 @@
 # 💬 AI-powered WhatsApp chatbot for text, voice, images, and PDF with RAG
 
-> ⚡ **184,235 views** · 💬 [Support Chatbots](../)
+> ⚡ **259,051 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

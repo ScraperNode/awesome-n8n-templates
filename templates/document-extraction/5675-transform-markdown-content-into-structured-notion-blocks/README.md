@@ -1,6 +1,6 @@
 # 🔬 Transform markdown content into structured Notion blocks
 
-> ⚡ **4,766 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,932 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Automated invoice generator from Google Sheets to Google Docs
 
-> ⚡ **1,286 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,561 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

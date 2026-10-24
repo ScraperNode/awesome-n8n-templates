@@ -1,6 +1,6 @@
 # 🎫 Multilingual email auto-replies with DeepL, GPT-4o and Slack human approval
 
-> ⚡ **57 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **80 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

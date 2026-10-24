@@ -1,6 +1,6 @@
 # 🎣 Qualify Meta ads leads with WhatsApp verification, Gemini AI & Zoho CRM
 
-> ⚡ **2,185 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **2,823 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Track Google search rankings with Bright Data, Google Sheets & Gmail
 
-> ⚡ **687 views** · 📊 [Market Research & Insights](../)
+> ⚡ **784 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

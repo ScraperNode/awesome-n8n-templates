@@ -1,6 +1,6 @@
 # 🔬 Telegram chat summarizer with AI - using @telepilotco/n8n-nodes-telepilot
 
-> ⚡ **721 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **904 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

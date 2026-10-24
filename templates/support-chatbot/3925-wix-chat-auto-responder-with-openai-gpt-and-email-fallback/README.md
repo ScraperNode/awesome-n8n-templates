@@ -1,6 +1,6 @@
 # 💬 Wix chat auto-responder with OpenAI GPT and email fallback
 
-> ⚡ **476 views** · 💬 [Support Chatbots](../)
+> ⚡ **496 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

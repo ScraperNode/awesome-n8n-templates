@@ -1,6 +1,6 @@
 # 🎬 🔍 Perplexity research to HTML: AI-powered content creation
 
-> ⚡ **37,451 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **37,174 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

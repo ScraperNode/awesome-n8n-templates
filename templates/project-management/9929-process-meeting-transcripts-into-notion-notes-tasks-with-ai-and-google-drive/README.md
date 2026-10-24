@@ -1,6 +1,6 @@
 # 📋 Process meeting transcripts into Notion notes & tasks with AI and Google Drive
 
-> ⚡ **100 views** · 📋 [Project Management](../)
+> ⚡ **129 views** · 📋 [Project Management](../)
 
 ## Description
 

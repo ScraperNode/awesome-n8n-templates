@@ -1,6 +1,6 @@
 # 💬 Automatically reply to cold emails with GPT-4 & Instantly.ai
 
-> ⚡ **1,642 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,775 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

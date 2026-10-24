@@ -1,6 +1,6 @@
 # 📊 AI-powered research assistant with Perplexity Sonar API
 
-> ⚡ **1,749 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,837 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

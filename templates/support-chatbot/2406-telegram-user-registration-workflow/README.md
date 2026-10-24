@@ -1,6 +1,6 @@
 # 💬 Telegram user registration workflow
 
-> ⚡ **1,811 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,806 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

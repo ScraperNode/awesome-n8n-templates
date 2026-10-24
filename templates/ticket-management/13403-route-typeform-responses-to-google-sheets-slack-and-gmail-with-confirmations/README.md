@@ -1,6 +1,6 @@
 # 🎫 Route Typeform responses to Google Sheets, Slack, and Gmail with confirmations
 
-> ⚡ **2 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **11 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

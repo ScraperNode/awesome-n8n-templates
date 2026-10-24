@@ -1,6 +1,6 @@
 # 🎯 Automatically label Gmail emails with GPT-5 classification
 
-> ⚡ **809 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **863 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

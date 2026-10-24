@@ -1,6 +1,6 @@
 # 🎯 Generate SSL/TLS certificate expiry reports with AWS ACM and AI for Slack & email
 
-> ⚡ **159 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **213 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Automate Chinese to English translation in Google Slides with Openrouter AI
 
-> ⚡ **206 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **362 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

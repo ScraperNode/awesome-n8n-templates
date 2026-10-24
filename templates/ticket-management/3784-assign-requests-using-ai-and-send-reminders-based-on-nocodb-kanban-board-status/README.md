@@ -1,6 +1,6 @@
 # 🎫 Assign Requests Using AI and Send Reminders Based On NocoDB Kanban Board Status
 
-> ⚡ **685 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **751 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

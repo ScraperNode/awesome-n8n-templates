@@ -1,6 +1,6 @@
 # 🔍 Get stats, shorten URLs 🛠️ Yourls Tool MCP Server 💪 all 3 operations
 
-> ⚡ **310 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **314 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

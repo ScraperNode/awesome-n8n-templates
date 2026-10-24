@@ -1,6 +1,6 @@
 # 📱 Personalized email mail merge with Google Sheets and Gmail
 
-> ⚡ **1,485 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,267 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

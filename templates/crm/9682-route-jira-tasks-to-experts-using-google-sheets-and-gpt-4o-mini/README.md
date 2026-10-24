@@ -1,6 +1,6 @@
 # 🤝 Route Jira tasks to experts using Google Sheets and GPT-4o-mini
 
-> ⚡ **85 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **107 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

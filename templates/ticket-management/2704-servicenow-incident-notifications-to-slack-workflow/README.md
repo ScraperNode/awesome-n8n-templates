@@ -1,6 +1,6 @@
 # 🎫 ServiceNow incident notifications to Slack workflow
 
-> ⚡ **3,205 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **3,444 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

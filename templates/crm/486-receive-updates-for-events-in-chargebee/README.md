@@ -1,6 +1,6 @@
 # 🤝 Receive updates for events in Chargebee
 
-> ⚡ **483 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **495 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

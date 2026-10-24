@@ -1,6 +1,6 @@
 # 🤝 Get all contacts from Mautic
 
-> ⚡ **1,684 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,697 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Add a datapoint to Beeminder on Strava activity update
 
-> ⚡ **607 views** · ⚡ [Personal Productivity](../)
+> ⚡ **636 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

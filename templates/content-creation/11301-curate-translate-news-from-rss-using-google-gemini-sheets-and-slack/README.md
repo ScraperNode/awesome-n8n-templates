@@ -1,6 +1,6 @@
 # 🎬 Curate & translate news from RSS using Google Gemini, Sheets, and Slack
 
-> ⚡ **120 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **236 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

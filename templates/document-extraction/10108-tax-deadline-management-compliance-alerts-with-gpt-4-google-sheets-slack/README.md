@@ -1,6 +1,6 @@
 # 🔬 Tax deadline management & compliance alerts with GPT-4, Google Sheets & Slack
 
-> ⚡ **155 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **177 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

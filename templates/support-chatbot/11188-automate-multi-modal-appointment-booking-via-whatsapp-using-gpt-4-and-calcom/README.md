@@ -1,6 +1,6 @@
 # 💬 Automate multi-modal appointment booking via WhatsApp using GPT-4 and Cal.com
 
-> ⚡ **1,870 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,380 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

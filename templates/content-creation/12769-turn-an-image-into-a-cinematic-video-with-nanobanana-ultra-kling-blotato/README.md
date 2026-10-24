@@ -1,6 +1,6 @@
 # 🎬 Turn an image into a cinematic video with NanoBanana Ultra, Kling, Blotato
 
-> ⚡ **1,562 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **3,107 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

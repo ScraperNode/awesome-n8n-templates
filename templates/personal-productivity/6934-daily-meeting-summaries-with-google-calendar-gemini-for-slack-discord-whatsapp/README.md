@@ -1,6 +1,6 @@
 # ⚡ Daily meeting summaries with Google Calendar & Gemini for Slack-Discord-WhatsApp
 
-> ⚡ **81 views** · ⚡ [Personal Productivity](../)
+> ⚡ **299 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

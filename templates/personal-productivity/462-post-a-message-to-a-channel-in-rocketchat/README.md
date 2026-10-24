@@ -1,6 +1,6 @@
 # ⚡ Post a message to a channel in RocketChat
 
-> ⚡ **2,103 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,154 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

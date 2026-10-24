@@ -1,6 +1,6 @@
 # 📋 Automate daily Google Calendar events to Trello cards
 
-> ⚡ **59 views** · 📋 [Project Management](../)
+> ⚡ **87 views** · 📋 [Project Management](../)
 
 ## Description
 

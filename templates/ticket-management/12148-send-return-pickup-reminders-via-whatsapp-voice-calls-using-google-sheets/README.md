@@ -1,6 +1,6 @@
 # 🎫 Send return pickup reminders via WhatsApp & voice calls using Google Sheets
 
-> ⚡ **89 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **215 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

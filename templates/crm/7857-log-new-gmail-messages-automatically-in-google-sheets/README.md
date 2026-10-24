@@ -1,6 +1,6 @@
 # 🤝 Log new Gmail messages automatically in Google Sheets
 
-> ⚡ **355 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **434 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

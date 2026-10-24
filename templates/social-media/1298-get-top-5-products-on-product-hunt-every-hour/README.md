@@ -1,6 +1,6 @@
 # 📱 Get top 5 products on Product Hunt every hour
 
-> ⚡ **5,259 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **5,320 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

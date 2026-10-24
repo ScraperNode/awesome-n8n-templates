@@ -1,6 +1,6 @@
 # 🎫 Automate IT support: Convert emails to Jira tickets with AI resolution
 
-> ⚡ **1,531 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,982 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

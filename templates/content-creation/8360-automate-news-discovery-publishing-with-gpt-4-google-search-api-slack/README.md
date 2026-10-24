@@ -1,6 +1,6 @@
 # 🎬 Automate news discovery & publishing with GPT-4, Google Search API & Slack
 
-> ⚡ **331 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **419 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

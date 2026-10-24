@@ -1,6 +1,6 @@
 # 📱 Automate YouTube community posts with DeepSeek AI & dynamic image generation using Google Sheets
 
-> ⚡ **101 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **126 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

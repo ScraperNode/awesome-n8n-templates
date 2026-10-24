@@ -1,6 +1,6 @@
 # 🎬 Automated IMDB video downloader with Google Drive upload & email alerts
 
-> ⚡ **167 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **409 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

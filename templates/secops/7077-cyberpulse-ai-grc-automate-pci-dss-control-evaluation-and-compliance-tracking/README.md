@@ -1,6 +1,6 @@
 # 🔒 CYBERPULSE AI GRC: automate PCI DSS control evaluation and compliance tracking
 
-> ⚡ **116 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **164 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

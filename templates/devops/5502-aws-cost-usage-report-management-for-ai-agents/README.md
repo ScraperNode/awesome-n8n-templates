@@ -1,6 +1,6 @@
 # ⚙️ Aws cost & usage report management for AI agents
 
-> ⚡ **1,200 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,400 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Analyze domain keyword rankings and summarize with SE Ranking and GPT-4.1-mini
 
-> ⚡ **25 views** · 📊 [Market Research & Insights](../)
+> ⚡ **102 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

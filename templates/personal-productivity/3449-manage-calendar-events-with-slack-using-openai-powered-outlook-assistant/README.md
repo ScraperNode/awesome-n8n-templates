@@ -1,6 +1,6 @@
 # ⚡ Manage calendar events with Slack using OpenAI-powered Outlook assistant
 
-> ⚡ **1,663 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,759 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

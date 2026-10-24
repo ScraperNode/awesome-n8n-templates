@@ -1,6 +1,6 @@
 # 🎬 Create portrait series from single images using Flux Kontext Portrait Series and Replicate
 
-> ⚡ **525 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **563 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

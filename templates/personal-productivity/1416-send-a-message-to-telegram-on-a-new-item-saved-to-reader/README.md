@@ -1,6 +1,6 @@
 # ⚡ Send a message to Telegram on a new item saved to Reader
 
-> ⚡ **3,306 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,438 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

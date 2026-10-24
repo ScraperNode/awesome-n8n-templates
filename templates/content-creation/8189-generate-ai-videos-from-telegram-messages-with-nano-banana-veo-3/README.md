@@ -1,6 +1,6 @@
 # 🎬 Generate AI videos from Telegram messages with Nano Banana & Veo-3
 
-> ⚡ **2,772 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,886 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

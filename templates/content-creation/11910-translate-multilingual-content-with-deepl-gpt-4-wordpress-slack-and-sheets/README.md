@@ -1,6 +1,6 @@
 # 🎬 Translate multilingual content with DeepL, GPT-4, WordPress, Slack and Sheets
 
-> ⚡ **177 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **306 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Generate Japanese Twitter posts with GPT-4, quality control, and Notion
 
-> ⚡ **3 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **44 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >

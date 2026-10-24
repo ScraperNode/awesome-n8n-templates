@@ -1,6 +1,6 @@
 # 👥 Generate verified job offer letters with OpenAI, Gmail and Slack
 
-> ⚡ **31 views** · 👥 [HR & Recruitment](../)
+> ⚡ **94 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

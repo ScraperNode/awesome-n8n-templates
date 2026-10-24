@@ -1,6 +1,6 @@
 # 🔬 AI-driven inventory management with OpenAI forecasting & ERP integration
 
-> ⚡ **4,298 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **8,789 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

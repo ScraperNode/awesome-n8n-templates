@@ -1,6 +1,6 @@
 # 📈 Automate stock trades with AI-driven technical analysis & Alpaca Trading
 
-> ⚡ **1,196 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,586 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Create, update and get a post via Discourse
 
-> ⚡ **634 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **674 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

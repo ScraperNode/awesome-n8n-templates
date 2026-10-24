@@ -1,6 +1,6 @@
 # 💬 Build a personalized shopping assistant with Zep Memory, GPT-4 and Google Sheets
 
-> ⚡ **1,453 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,606 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎯 Digitize business cards with Thai OCR & save to Google Sheets or CRM
 
-> ⚡ **376 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **456 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

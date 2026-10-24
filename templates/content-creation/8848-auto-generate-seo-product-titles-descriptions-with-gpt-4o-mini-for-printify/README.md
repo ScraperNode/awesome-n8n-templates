@@ -1,6 +1,6 @@
 # 🎬 Auto-generate SEO product titles & descriptions with GPT-4o-mini for Printify
 
-> ⚡ **592 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **781 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 HR & IT helpdesk chatbot with audio transcription
 
-> ⚡ **41,169 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **41,702 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

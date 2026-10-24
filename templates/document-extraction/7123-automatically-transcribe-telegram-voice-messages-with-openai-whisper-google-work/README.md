@@ -1,6 +1,6 @@
 # 🔬 Automatically transcribe Telegram voice messages with OpenAI Whisper & Google Workspace
 
-> ⚡ **1,556 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,783 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

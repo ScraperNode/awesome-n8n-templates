@@ -1,6 +1,6 @@
 # ⚡ Upwork job aggregator with OpenAI summaries & multi-channel notifications
 
-> ⚡ **765 views** · ⚡ [Personal Productivity](../)
+> ⚡ **884 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

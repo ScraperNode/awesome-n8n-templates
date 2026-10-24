@@ -1,6 +1,6 @@
 # 💬 WhatsApp support bot with keyword routing & GPT-4.1-mini responses
 
-> ⚡ **1,040 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,551 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

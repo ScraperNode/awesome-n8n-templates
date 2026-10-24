@@ -1,6 +1,6 @@
 # 📱 Manage newsletter signups in Baserow
 
-> ⚡ **1,628 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,646 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

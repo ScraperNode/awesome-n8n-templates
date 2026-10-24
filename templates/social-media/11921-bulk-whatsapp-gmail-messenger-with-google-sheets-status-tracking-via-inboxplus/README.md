@@ -1,6 +1,6 @@
 # 📱 Bulk WhatsApp & Gmail messenger with Google Sheets status tracking via InboxPlus
 
-> ⚡ **187 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **458 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

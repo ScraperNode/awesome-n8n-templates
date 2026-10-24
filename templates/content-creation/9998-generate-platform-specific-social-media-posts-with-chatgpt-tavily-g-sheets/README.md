@@ -1,6 +1,6 @@
 # 🎬 Generate platform-specific social media posts with ChatGPT, Tavily & G-Sheets
 
-> ⚡ **73 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **110 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

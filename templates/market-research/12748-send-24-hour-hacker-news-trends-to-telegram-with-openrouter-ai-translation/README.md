@@ -1,6 +1,6 @@
 # 📊 Send 24-hour Hacker News trends to Telegram with OpenRouter AI translation
 
-> ⚡ **22 views** · 📊 [Market Research & Insights](../)
+> ⚡ **151 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

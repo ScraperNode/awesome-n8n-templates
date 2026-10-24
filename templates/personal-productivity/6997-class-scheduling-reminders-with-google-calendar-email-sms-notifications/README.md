@@ -1,6 +1,6 @@
 # ⚡ Class scheduling & reminders with Google Calendar, email & SMS notifications
 
-> ⚡ **719 views** · ⚡ [Personal Productivity](../)
+> ⚡ **859 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

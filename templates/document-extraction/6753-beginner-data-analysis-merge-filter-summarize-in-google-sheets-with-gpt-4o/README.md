@@ -1,6 +1,6 @@
 # 🔬 Beginner data analysis: merge, filter & summarize in Google Sheets with GPT-4o
 
-> ⚡ **1,904 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,175 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

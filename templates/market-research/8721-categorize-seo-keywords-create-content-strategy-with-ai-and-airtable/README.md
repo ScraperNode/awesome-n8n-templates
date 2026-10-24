@@ -1,6 +1,6 @@
 # 📊 Categorize SEO keywords & create content strategy with AI and Airtable
 
-> ⚡ **4,353 views** · 📊 [Market Research & Insights](../)
+> ⚡ **5,880 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

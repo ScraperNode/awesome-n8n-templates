@@ -1,6 +1,6 @@
 # 🎬 Automate blog content creation from topics to WordPress with AI, Google Drive & Sheets
 
-> ⚡ **616 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **795 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

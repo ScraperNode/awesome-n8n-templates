@@ -1,6 +1,6 @@
 # 📊 Automated job market tracker: Upwork scraper to Google Sheets workflow
 
-> ⚡ **2,097 views** · 📊 [Market Research & Insights](../)
+> ⚡ **2,366 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.
 >

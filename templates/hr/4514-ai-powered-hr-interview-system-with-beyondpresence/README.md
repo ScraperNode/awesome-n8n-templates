@@ -1,6 +1,6 @@
 # 👥 AI-powered HR interview system with BeyondPresence
 
-> ⚡ **3,580 views** · 👥 [HR & Recruitment](../)
+> ⚡ **3,804 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Get a volume and add it to your bookshelf
 
-> ⚡ **610 views** · ⚡ [Personal Productivity](../)
+> ⚡ **651 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

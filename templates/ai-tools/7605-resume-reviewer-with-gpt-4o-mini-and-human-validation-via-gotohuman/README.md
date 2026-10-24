@@ -1,6 +1,6 @@
 # 🎯 Resume reviewer with GPT-4o-mini and human validation via gotoHuman
 
-> ⚡ **776 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **841 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

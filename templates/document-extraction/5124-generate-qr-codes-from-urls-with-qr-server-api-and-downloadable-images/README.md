@@ -1,6 +1,6 @@
 # 🔬 Generate QR codes from URLs with QR Server API and downloadable images
 
-> ⚡ **880 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,116 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

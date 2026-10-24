@@ -1,6 +1,6 @@
 # 📈 Binance SM price-24hrStats-OrderBook-Kline tool
 
-> ⚡ **4,179 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **4,329 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

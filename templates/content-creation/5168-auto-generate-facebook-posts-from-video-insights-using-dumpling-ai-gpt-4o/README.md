@@ -1,6 +1,6 @@
 # 🎬 Auto-generate Facebook posts from video insights using Dumpling AI + GPT-4o
 
-> ⚡ **446 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **539 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

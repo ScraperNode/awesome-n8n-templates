@@ -1,6 +1,6 @@
 # 💬 Auto-reply to 'Where Is My Order?' Emails with Shopify, Gmail and OpenRouter AI
 
-> ⚡ **197 views** · 💬 [Support Chatbots](../)
+> ⚡ **351 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

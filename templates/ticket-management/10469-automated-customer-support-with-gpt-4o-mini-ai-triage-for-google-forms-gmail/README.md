@@ -1,6 +1,6 @@
 # 🎫 Automated customer support with GPT-4o-mini AI triage for Google Forms & Gmail
 
-> ⚡ **132 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **200 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

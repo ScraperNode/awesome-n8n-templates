@@ -1,6 +1,6 @@
-# 📈 KaizenCrypto - smarter crypto decisions with multi-timeframe AI analysis
+# 📈 Analyze crypto markets via Telegram with KuCoin, NewsAPI and Gemini
 
-> ⚡ **382 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,418 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

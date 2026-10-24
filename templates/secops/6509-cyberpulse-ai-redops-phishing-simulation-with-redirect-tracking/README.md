@@ -1,6 +1,6 @@
 # 🔒 CYBERPULSE AI redOps: phishing simulation with redirect tracking
 
-> ⚡ **85 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **103 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

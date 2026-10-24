@@ -1,6 +1,6 @@
 # ⚡ Create literary English/German to Chinese dictionary with GPT-4o-mini & Supabase
 
-> ⚡ **540 views** · ⚡ [Personal Productivity](../)
+> ⚡ **584 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

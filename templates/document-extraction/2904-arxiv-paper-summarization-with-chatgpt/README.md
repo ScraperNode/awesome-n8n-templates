@@ -1,6 +1,6 @@
 # 🔬 Arxiv paper summarization with ChatGPT
 
-> ⚡ **5,383 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **5,641 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

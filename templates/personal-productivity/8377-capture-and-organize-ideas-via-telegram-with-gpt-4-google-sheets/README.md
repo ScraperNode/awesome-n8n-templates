@@ -1,6 +1,6 @@
 # ⚡ Capture and organize ideas via Telegram with GPT-4 & Google Sheets
 
-> ⚡ **422 views** · ⚡ [Personal Productivity](../)
+> ⚡ **562 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

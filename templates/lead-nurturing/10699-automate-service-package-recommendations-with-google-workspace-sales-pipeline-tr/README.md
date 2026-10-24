@@ -1,6 +1,6 @@
 # 💬 Automate service package recommendations with Google Workspace sales pipeline tracking
 
-> ⚡ **22 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **78 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

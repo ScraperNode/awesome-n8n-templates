@@ -1,6 +1,6 @@
 # 🎬 Automate print-on-demand: design to Shopify with AI, mockups & social promotion
 
-> ⚡ **963 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,818 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Convert Form Inputs to Cinematic Videos with GPT-4, Dumpling AI & ElevenLabs Audio
 
-> ⚡ **1,686 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,809 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

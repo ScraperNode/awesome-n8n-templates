@@ -1,6 +1,6 @@
 # 🔬 Extract embedded images from Google Drive documents with VLM run agent
 
-> ⚡ **89 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **119 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

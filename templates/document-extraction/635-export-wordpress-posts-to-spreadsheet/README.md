@@ -1,6 +1,6 @@
 # 🔬 Export WordPress posts to spreadsheet
 
-> ⚡ **2,772 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,765 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

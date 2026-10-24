@@ -1,6 +1,6 @@
 # 🤖 WhatsApp recipe suggestions from pantry items with Gemini AI & FatSecret API
 
-> ⚡ **378 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **467 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

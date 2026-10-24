@@ -1,6 +1,6 @@
 # 📋 Create new Clickup tasks from Slack commands
 
-> ⚡ **2,456 views** · 📋 [Project Management](../)
+> ⚡ **2,468 views** · 📋 [Project Management](../)
 
 ## Description
 

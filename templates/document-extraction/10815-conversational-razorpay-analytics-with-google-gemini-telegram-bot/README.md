@@ -1,6 +1,6 @@
 # 🔬 Conversational Razorpay Analytics with Google Gemini & Telegram Bot
 
-> ⚡ **308 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **405 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

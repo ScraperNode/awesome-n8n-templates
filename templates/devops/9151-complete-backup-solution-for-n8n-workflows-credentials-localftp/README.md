@@ -1,6 +1,6 @@
 # ⚙️ Complete backup solution for n8n workflows & credentials (local/FTP)
 
-> ⚡ **2,118 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **3,007 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Process social media leads with GPT-4.1 summaries, Google Sheets, Jira & Slack
 
-> ⚡ **46 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **106 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

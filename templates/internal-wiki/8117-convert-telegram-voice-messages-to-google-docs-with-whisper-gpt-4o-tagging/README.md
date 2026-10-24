@@ -1,6 +1,6 @@
 # 📖 Convert Telegram voice messages to Google Docs with Whisper & GPT-4o tagging
 
-> ⚡ **359 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **434 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

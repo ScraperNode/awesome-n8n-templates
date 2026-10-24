@@ -1,6 +1,6 @@
 # 🎣 Automate lead qualification & routing with GPT-4o-mini, Google Sheets & HighLevel CRM
 
-> ⚡ **467 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,188 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

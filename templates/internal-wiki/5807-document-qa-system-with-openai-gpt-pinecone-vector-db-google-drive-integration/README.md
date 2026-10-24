@@ -1,6 +1,6 @@
 # 📖 Document Q&A system with OpenAI GPT, Pinecone Vector DB & Google Drive integration
 
-> ⚡ **1,275 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **1,457 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

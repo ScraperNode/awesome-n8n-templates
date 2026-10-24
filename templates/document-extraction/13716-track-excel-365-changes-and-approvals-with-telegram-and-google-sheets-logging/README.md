@@ -1,6 +1,6 @@
 # 🔬 Track Excel 365 changes and approvals with Telegram and Google Sheets logging
 
-> ⚡ **21 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **357 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎣 Batch process domains/companies in Google Sheet with Icypeas (Bulk Search)
 
-> ⚡ **843 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **848 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

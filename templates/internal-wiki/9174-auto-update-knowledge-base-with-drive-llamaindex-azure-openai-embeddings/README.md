@@ -1,14 +1,16 @@
 # 📖 Auto-update knowledge base with Drive, LlamaIndex & Azure OpenAI embeddings
 
-> ⚡ **429 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **505 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 
 This Workflow auto-ingests Google Drive documents, parses them with LlamaIndex, and stores Azure OpenAI embeddings in an in-memory vector store—cutting manual update time from ~30 minutes to under 2 minutes per doc.
 
+*Last updated: September 2026.*
+
 ## Why Use This Workflow?
  
-**Cost Reduction:** Eliminates pays monthly fee on cloud just for store knowledge
+**Cost Reduction:** No monthly cloud fees just to store knowledge.
 
 ## Ideal For
 
@@ -31,19 +33,19 @@ This Workflow auto-ingests Google Drive documents, parses them with LlamaIndex, 
 
 | Requirement | Type | Purpose |
 |-------------|------|---------|
-| n8n instance | Essential | Execute and import the workflow — use the [n8n instance](https://n8n.partnerlinks.io/khmuhtadin) |
+| [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance | Essential | Execute and import the workflow — use the [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin) |
 | Google Drive OAuth2 | Essential | Watch and download documents from Google Drive |
 | LlamaIndex Cloud API | Essential | Parse and convert documents to structured markdown |
 | Azure OpenAI Account | Essential | Generate embeddings (deployment configured to model name "3small") |
-| Persistent Vector DB (e.g., Pinecone) | Optional | Persist embeddings for production-scale search |
+| Persistent Vector DB (e.g., Pinecone) | Optional | Persist embeddings for production-scale search ([docs](https://docs.pinecone.io/)) |
 
 ### Installation Steps
 
-1. Import the workflow JSON into your n8n instance: open your [n8n instance](https://n8n.partnerlinks.io/khmuhtadin) and import the file.
+1. Import the workflow JSON into your [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance: open your [n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin) and import the file.
 2. Configure credentials:
    - Azure OpenAI: Provide Endpoint, API Key and set deployment name.
-   - LlamaIndex API: Create an HTTP Header Auth credential in n8n. Header Name: Authorization. Header Value: Bearer YOUR_API_KEY.
-   - Google Drive OAuth2: Create OAuth 2.0 credentials in Google Cloud Console, enable Drive API, and configure the Google Drive OAuth2 credential in n8n.
+   - LlamaIndex API: Create an HTTP Header Auth credential in [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Header Name: Authorization. Header Value: Bearer YOUR_API_KEY.
+   - Google Drive OAuth2: Create OAuth 2.0 credentials in Google Cloud Console, enable Drive API, and configure the Google Drive OAuth2 credential in [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin).
 3. Update environment-specific values:
    - Replace the workflow's Google Drive fileId with the GUID or folder ID you want to watch (do not commit public IDs).
 4. Customize settings:
@@ -88,7 +90,7 @@ Advanced Enhancements:
 - Summarization: Add an LLM summarization step to generate chunk-level summaries.
 
 Scaling option:
-- Batch uploads and chunking to reduce embedding calls; use a queue (Redis or n8n queue patterns) and horizontal workers for high throughput.
+- Batch uploads and chunking to reduce embedding calls; use a queue (Redis or [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) queue patterns) and horizontal workers for high throughput.
 
 ## Performance & Optimization
 
@@ -102,7 +104,7 @@ Scaling option:
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| Authentication errors | Invalid/missing credentials | Reconfigure n8n Credentials; do not paste API keys directly into nodes |
+| Authentication errors | Invalid/missing credentials | Reconfigure [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) Credentials; do not paste API keys directly into nodes |
 | File not found | Incorrect fileId or permissions | Verify Drive fileId and OAuth scopes; share file with the service account if needed |
 | Parsing stuck in PENDING | LlamaIndex processing delay or rate limit | Increase Wait node interval, monitor LlamaIndex dashboard, add retry limits |
 | Embedding failures | Model/deployment mismatch or quota limits | Confirm Azure deployment name (3small) and subscription quotas |
@@ -113,7 +115,18 @@ Scaling option:
 **Category:** Knowledge Management
 **Tags:** google-drive, llamaindex, azure-openai, embeddings, knowledge-base, vector-store
 
-Need custom workflows? [Contact us](https://khaisa.studio/contact)
+Need custom workflows? [Contact me](https://khmuhtadin.com/contact)
+
+### Quick Answers
+**What triggers an update?**  
+The Google Drive Trigger watching your file or folder. Edit a doc and the pipeline runs.  
+**Where do embeddings live?**  
+In an in-memory vector store, great for prototyping. Swap in Pinecone for production.  
+**Which embedding model?**  
+Azure OpenAI deployment "3small".  
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

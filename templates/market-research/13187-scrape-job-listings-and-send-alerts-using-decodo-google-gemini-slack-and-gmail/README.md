@@ -1,6 +1,6 @@
 # 📊 Scrape job listings and send alerts using Decodo, Google Gemini, Slack, and Gmail
 
-> ⚡ **35 views** · 📊 [Market Research & Insights](../)
+> ⚡ **208 views** · 📊 [Market Research & Insights](../)
 
 > 💡 **Pro Tip** — Job boards are notoriously hard to scrape — CAPTCHAs, rate limits, constantly changing layouts. [ScraperNode](https://scrapernode.com) has maintained scrapers for [Indeed jobs](https://scrapernode.com/indeed/scrapers/jobs), [Glassdoor reviews](https://scrapernode.com/glassdoor/scrapers/reviews), and [Glassdoor jobs](https://scrapernode.com/glassdoor/scrapers/jobs) that handle all of that for you.
 >

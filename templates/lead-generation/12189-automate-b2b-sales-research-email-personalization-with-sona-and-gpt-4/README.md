@@ -1,6 +1,6 @@
 # 🎣 Automate B2B sales research & email personalization with Sona and GPT-4
 
-> ⚡ **204 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **233 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

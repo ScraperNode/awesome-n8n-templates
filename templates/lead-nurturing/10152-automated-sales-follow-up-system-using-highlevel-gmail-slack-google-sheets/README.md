@@ -1,6 +1,6 @@
 # 💬 Automated sales follow-up system using HighLevel, Gmail, Slack & Google Sheets
 
-> ⚡ **753 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,475 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

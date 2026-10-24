@@ -1,6 +1,6 @@
 # ⚒️ Benchmark content safety guardrails with automated test suite & reports
 
-> ⚡ **614 views** · ⚒️ [Engineering](../)
+> ⚡ **769 views** · ⚒️ [Engineering](../)
 
 ## Description
 
@@ -44,6 +44,10 @@ Use this test suite to understand how accurately the Guardrails node identifies 
 ### Example result
 ![image.png](fileId:3279)
 ![image.png](fileId:3280)
+
+&gt; Browse similar workflows:  
+&gt; [AI Enrichment & safety templates](https://www.telosignal.com//explorer/ai-enrichment)  
+&gt; [Monitoring & benchmarking templates](https://www.telosignal.com//explorer/monitoring-alerting)
 
 ## 🔗 Nodes Used
 

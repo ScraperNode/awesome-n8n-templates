@@ -1,6 +1,6 @@
 # 🔬 AI-powered body measurement & clothing size estimator from image with Fal.ai
 
-> ⚡ **541 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,456 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

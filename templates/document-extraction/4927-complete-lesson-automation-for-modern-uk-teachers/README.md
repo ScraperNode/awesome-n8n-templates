@@ -1,11 +1,13 @@
 # 🔬 Complete lesson automation for modern UK teachers
 
-> ⚡ **3,641 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **4,179 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 
 # Why
 Teachers now spend 3-4 hours per lesson creating materials and resources from scratch. With additional/special needs, this makes it difficult to create additional materials. This is unsustainable and takes their time away from teaching. Tailored for UK teachers but can be expanded globally with prompt and form enhancements.
+
+Full breakdown of how teachers are earning from this [automation](automation).
 
 
 ## How it works
@@ -22,6 +24,8 @@ Any LLM API Key (I used OpenAI)
 Google drive integration
 Google calendar integration
 Modify the email id from XXX@gmail.com to your Email id in email component.
+
+
 
 ## Support
 

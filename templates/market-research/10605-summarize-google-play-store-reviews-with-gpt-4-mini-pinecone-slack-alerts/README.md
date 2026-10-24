@@ -1,6 +1,6 @@
 # 📊 Summarize Google Play Store reviews with GPT-4-mini, Pinecone & Slack alerts
 
-> ⚡ **1,296 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,401 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

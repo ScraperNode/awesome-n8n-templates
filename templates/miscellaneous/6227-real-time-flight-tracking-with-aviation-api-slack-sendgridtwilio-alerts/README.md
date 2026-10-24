@@ -1,6 +1,6 @@
 # 🔧 Real-time flight tracking with Aviation API, Slack & SendGrid/Twilio alerts
 
-> ⚡ **588 views** · 🔧 [Miscellaneous](../)
+> ⚡ **740 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

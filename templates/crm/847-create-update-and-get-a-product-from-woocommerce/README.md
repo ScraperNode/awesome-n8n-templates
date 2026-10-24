@@ -1,6 +1,6 @@
 # 🤝 Create, update and get a product from WooCommerce
 
-> ⚡ **9,831 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **10,179 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

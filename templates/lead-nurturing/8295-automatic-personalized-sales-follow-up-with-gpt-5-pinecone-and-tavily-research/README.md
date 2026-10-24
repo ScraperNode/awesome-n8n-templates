@@ -1,6 +1,6 @@
 # 💬 Automatic personalized sales follow-up with GPT-5, Pinecone, and Tavily Research
 
-> ⚡ **462 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **568 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

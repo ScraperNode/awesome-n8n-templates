@@ -1,6 +1,6 @@
 # 📱 Automated RSS to Telegram publisher with Groq AI rewriting
 
-> ⚡ **951 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,687 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

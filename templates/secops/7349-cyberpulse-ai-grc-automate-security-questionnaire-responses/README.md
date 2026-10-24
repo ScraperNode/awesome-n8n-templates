@@ -1,6 +1,6 @@
 # 🔒 Cyberpulse AI GRC: Automate security questionnaire responses
 
-> ⚡ **199 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **293 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

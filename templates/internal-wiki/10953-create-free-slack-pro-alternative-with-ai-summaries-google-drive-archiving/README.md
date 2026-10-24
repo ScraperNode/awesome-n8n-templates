@@ -1,6 +1,6 @@
 # 📖 Create free Slack Pro alternative with AI summaries & Google Drive archiving
 
-> ⚡ **88 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **117 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

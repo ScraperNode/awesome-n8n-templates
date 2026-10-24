@@ -1,6 +1,6 @@
 # 📈 Automate USDC balance between wallet and Aave with 1Shot API & Telegram
 
-> ⚡ **68 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **110 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

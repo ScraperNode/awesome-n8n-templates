@@ -1,6 +1,6 @@
 # 🎣 Automate lead intake & deduplication with Google Forms, Sheets and GoHighLevel CRM
 
-> ⚡ **370 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **508 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

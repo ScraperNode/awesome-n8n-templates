@@ -1,6 +1,6 @@
 # 💬 Create a smart chatbot using OpenAI GPT and Airtable knowledge base
 
-> ⚡ **111 views** · 💬 [Support Chatbots](../)
+> ⚡ **141 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

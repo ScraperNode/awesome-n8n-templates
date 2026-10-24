@@ -1,6 +1,6 @@
 # 🎬 Automate video uploads to thumbnails with FFmpeg and Google Drive
 
-> ⚡ **1,476 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **1,705 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

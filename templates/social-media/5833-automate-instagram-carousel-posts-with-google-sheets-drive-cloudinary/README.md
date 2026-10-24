@@ -1,6 +1,6 @@
 # 📱 Automate Instagram carousel posts with Google Sheets, Drive & Cloudinary
 
-> ⚡ **8,214 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **10,328 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

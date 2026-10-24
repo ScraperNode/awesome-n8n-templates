@@ -1,6 +1,6 @@
 # 🔒 Monitor PKI certificates & CRLs for expiration with Telegram & SMS alerts
 
-> ⚡ **70 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **80 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

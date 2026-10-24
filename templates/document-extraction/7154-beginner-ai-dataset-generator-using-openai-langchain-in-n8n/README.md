@@ -1,6 +1,6 @@
 # 🔬 Beginner AI dataset generator using OpenAI + LangChain in n8n
 
-> ⚡ **2,003 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **2,397 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

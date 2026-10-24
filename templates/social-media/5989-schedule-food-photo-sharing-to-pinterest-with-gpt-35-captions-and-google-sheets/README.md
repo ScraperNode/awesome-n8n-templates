@@ -1,6 +1,6 @@
 # 📱 Schedule food photo sharing to Pinterest with GPT-3.5 captions and Google Sheets
 
-> ⚡ **1,963 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **2,291 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

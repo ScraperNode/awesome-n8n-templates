@@ -1,6 +1,6 @@
 # 📱 Schedule weekly Facebook posts from Google Sheets every Sunday
 
-> ⚡ **68 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **79 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

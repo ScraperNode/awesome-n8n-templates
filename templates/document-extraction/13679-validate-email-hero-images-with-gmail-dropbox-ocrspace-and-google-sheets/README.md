@@ -1,6 +1,6 @@
 # 🔬 Validate email hero images with Gmail, Dropbox, OCR.Space and Google Sheets
 
-> ⚡ **1 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **11 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

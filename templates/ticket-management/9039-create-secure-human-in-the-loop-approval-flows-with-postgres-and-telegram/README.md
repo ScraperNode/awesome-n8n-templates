@@ -1,6 +1,6 @@
 # 🎫 Create secure human-in-the-loop approval flows with Postgres and Telegram
 
-> ⚡ **431 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **678 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

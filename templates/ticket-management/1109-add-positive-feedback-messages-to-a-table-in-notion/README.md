@@ -1,6 +1,6 @@
 # 🎫 Add positive feedback messages to a table in Notion
 
-> ⚡ **1,534 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,550 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

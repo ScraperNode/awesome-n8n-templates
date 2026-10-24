@@ -1,6 +1,6 @@
 # 🎫 Generate and post Google Play review replies with Anthropic Claude and Google Drive
 
-> ⚡ **75 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **226 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

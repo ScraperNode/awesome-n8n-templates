@@ -1,6 +1,6 @@
 # 🤝 Revenue growth strategy with CRO-led multi-agent team using O3 & GPT-4.1-mini
 
-> ⚡ **1,519 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,782 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Create your first AI agent
 
-> ⚡ **175 views** · 💬 [Support Chatbots](../)
+> ⚡ **325 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

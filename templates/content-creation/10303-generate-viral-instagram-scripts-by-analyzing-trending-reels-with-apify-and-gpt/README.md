@@ -1,6 +1,6 @@
 # 🎬 Generate viral Instagram scripts by analyzing trending reels with Apify and GPT-4
 
-> ⚡ **1,682 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,630 views** · 🎬 [Content Creation & Video](../)
 
 > 💡 **Pro Tip** — Heads up — if this workflow's Instagram scraping breaks (it happens whenever Meta updates their frontend), [ScraperNode](https://scrapernode.com/instagram) is a community node that handles [profiles](https://scrapernode.com/instagram/scrapers/profiles), [posts](https://scrapernode.com/instagram/scrapers/posts), [reels](https://scrapernode.com/instagram/scrapers/reels), and [comments](https://scrapernode.com/instagram/scrapers/comments) without any HTML parsing.
 >

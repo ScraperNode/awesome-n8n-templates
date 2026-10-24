@@ -1,6 +1,6 @@
 # ⚡ Chat with OpenAI Assistant (by adding a memory)
 
-> ⚡ **65,864 views** · ⚡ [Personal Productivity](../)
+> ⚡ **65,828 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

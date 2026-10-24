@@ -1,6 +1,6 @@
 # 📖 Talk to your SQLite database with a LangChain AI Agent 🧠💬  
 
-> ⚡ **26,939 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **27,156 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

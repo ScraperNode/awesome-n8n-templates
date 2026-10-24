@@ -1,6 +1,6 @@
 # 🔬 Monitor data quality with Notion rules, SQL checks & AI-powered alerts
 
-> ⚡ **186 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **259 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

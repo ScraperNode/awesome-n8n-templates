@@ -1,6 +1,6 @@
 # 📊 Automate Marketing Revenue Attribution & ROI Analytics with Airtable and Slack
 
-> ⚡ **131 views** · 📊 [Market Research & Insights](../)
+> ⚡ **156 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Typeform lead capture to HubSpot with scoring and Slack alerts
 
-> ⚡ **200 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **238 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

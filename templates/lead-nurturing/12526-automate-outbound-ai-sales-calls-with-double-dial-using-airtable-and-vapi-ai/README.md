@@ -1,6 +1,6 @@
 # 💬 Automate outbound AI sales calls with double-dial using Airtable and Vapi AI
 
-> ⚡ **184 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **335 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

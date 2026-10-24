@@ -1,6 +1,6 @@
 # 🎣 SmartLead Sheet Sync (Airtable Edition)
 
-> ⚡ **132 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **169 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

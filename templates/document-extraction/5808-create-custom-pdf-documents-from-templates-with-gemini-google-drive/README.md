@@ -1,6 +1,6 @@
 # 🔬 Create custom PDF documents from templates with Gemini & Google Drive
 
-> ⚡ **9,888 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **11,268 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

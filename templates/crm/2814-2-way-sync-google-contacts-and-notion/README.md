@@ -1,6 +1,6 @@
 # 🤝 2-way sync Google Contacts and Notion
 
-> ⚡ **1,327 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,295 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

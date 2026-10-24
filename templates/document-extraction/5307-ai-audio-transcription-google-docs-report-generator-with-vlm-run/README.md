@@ -1,6 +1,6 @@
 # 🔬 Ai audio transcription & Google Docs report generator with VLM run
 
-> ⚡ **1,213 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,460 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

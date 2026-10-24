@@ -1,6 +1,6 @@
 # 🤝 Entra contacts to Zammad user sync
 
-> ⚡ **399 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **442 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

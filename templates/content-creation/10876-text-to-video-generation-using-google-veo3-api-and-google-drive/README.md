@@ -1,6 +1,6 @@
 # 🎬 text-to-video generation using Google Veo3 API and Google Drive
 
-> ⚡ **503 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **587 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ AI-powered n8n release notes summary notifications via Gmail with GPT-5-Mini
 
-> ⚡ **55 views** · ⚡ [Personal Productivity](../)
+> ⚡ **104 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

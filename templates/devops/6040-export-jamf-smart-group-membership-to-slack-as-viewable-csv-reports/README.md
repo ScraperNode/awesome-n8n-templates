@@ -1,6 +1,6 @@
 # ⚙️ Export Jamf smart group membership to Slack as viewable CSV reports
 
-> ⚡ **148 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **158 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📋 Daily Trello task tracker with Google Sheets history log
 
-> ⚡ **1,588 views** · 📋 [Project Management](../)
+> ⚡ **2,056 views** · 📋 [Project Management](../)
 
 ## Description
 

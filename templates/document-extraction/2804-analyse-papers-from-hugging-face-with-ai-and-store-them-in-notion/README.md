@@ -1,6 +1,6 @@
 # 🔬 Analyse papers from Hugging Face with AI and store them in Notion
 
-> ⚡ **3,423 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **3,397 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

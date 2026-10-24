@@ -1,6 +1,6 @@
 # 📊 Automate weekly marketing reports with GoMarble MCP, Claude AI & Gmail
 
-> ⚡ **1,220 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,278 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

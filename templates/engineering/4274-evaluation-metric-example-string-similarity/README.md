@@ -1,6 +1,6 @@
 # ⚒️ Evaluation metric example: String similarity
 
-> ⚡ **1,271 views** · ⚒️ [Engineering](../)
+> ⚡ **1,520 views** · ⚒️ [Engineering](../)
 
 ## Description
 

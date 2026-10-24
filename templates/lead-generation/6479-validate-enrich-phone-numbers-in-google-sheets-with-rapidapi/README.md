@@ -1,6 +1,6 @@
 # 🎣 Validate & enrich phone numbers in Google Sheets with RapidAPI
 
-> ⚡ **259 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **346 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

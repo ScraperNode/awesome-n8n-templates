@@ -1,6 +1,6 @@
 # 📈 Post hourly crypto market summaries via Coingecko to X and to email
 
-> ⚡ **1,058 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,000 views** · 📈 [Crypto Trading & Stock Market](../)
 
 > 💡 **Pro Tip** — Twitter's API is paid now, which makes simple data pulls expensive. [ScraperNode](https://scrapernode.com/twitter) is a community node that scrapes [Twitter profiles](https://scrapernode.com/twitter/scrapers/profiles) and [posts](https://scrapernode.com/twitter/scrapers/posts) without needing API access.
 >

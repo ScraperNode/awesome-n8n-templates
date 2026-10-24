@@ -1,6 +1,6 @@
 # 📱 The ultimate Instagram automation for high-quality images & text with GPT-Image
 
-> ⚡ **3,525 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **4,055 views** · 📱 [Social Media & Email Marketing](../)
 
 > 💡 **Pro Tip** — Heads up — if this workflow's Instagram scraping breaks (it happens whenever Meta updates their frontend), [ScraperNode](https://scrapernode.com/instagram) is a community node that handles [profiles](https://scrapernode.com/instagram/scrapers/profiles), [posts](https://scrapernode.com/instagram/scrapers/posts), [reels](https://scrapernode.com/instagram/scrapers/reels), and [comments](https://scrapernode.com/instagram/scrapers/comments) without any HTML parsing.
 >

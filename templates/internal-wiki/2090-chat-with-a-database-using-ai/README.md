@@ -1,6 +1,6 @@
 # 📖 Chat with a database using AI
 
-> ⚡ **252,885 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **350,748 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

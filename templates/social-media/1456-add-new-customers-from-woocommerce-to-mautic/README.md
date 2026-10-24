@@ -1,6 +1,6 @@
 # 📱 Add new customers from WooCommerce to Mautic
 
-> ⚡ **6,519 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **9,316 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

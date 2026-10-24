@@ -1,0 +1,563 @@
+{
+  "meta": {
+    "instanceId": "cb484ba7b742928a2048bf8829668bed5b5ad9787579adea888f05980292a4a7"
+  },
+  "nodes": [
+    {
+      "id": "0bff1b8c-ed35-4673-835a-47f413847ef2",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        1328,
+        352
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "requiredSchema",
+              "type": "object"
+            },
+            {
+              "name": "paramsToValidate",
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "d639a119-f215-41b5-9669-85306a3146bf",
+      "name": "Schema Validation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1664,
+        352
+      ],
+      "parameters": {
+        "jsCode": "/**\n * Lightweight JSON Schema validator with human-readable error messages.\n *\n * Supports: type, const, enum, required, properties, additionalProperties,\n * minLength, maxLength, pattern, minimum, maximum, minItems, maxItems,\n * items, oneOf, anyOf, allOf, not.\n */\n\n// \u2500\u2500\u2500 Schema & Input \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst requiredSchema = $input.first().json.requiredSchema;\nconst jsonToValidate = $input.first().json.paramsToValidate;\n\n// \u2500\u2500\u2500 Helpers \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n/**\n * Creates an error object with a path, message, and optional description.\n * Keeps internal metadata separate from user-facing fields via _meta.\n */\nfunction makeError(path, message, schema = {}, meta = {}) {\n  const error = { path, message };\n  if (schema.description) error.description = schema.description;\n  if (Object.keys(meta).length) error._meta = meta;\n  return error;\n}\n\n/**\n * Returns the human-readable type name for a value.\n * Distinguishes arrays, null, and NaN from generic typeof results.\n */\nfunction getTypeName(value) {\n  if (value === null) return \"null\";\n  if (Array.isArray(value)) return \"array\";\n  if (typeof value === \"number\" && isNaN(value)) return \"NaN\";\n  return typeof value;\n}\n\n/**\n * Checks if a value matches JSON Schema's \"integer\" type.\n * Must be a finite number with no fractional part. NaN fails.\n */\nfunction isInteger(value) {\n  return typeof value === \"number\" && Number.isFinite(value) && Math.floor(value) === value;\n}\n\n/**\n * Checks if a value is a valid, finite number.\n * Rejects NaN, Infinity, and -Infinity \u2014 none are meaningful\n * in the context of JSON Schema numeric constraints.\n */\nfunction isValidNumber(value) {\n  return typeof value === \"number\" && Number.isFinite(value);\n}\n\n/**\n * Checks whether the given value is a plain object (not null, not an array).\n * Used for schema shape validation and internal type guards.\n */\nfunction isPlainObject(value) {\n  return typeof value === \"object\" && value !== null && !Array.isArray(value);\n}\n\n/**\n * Deep equality comparison for JSON-compatible values.\n * Handles primitives, arrays, and plain objects recursively.\n * Used by checkEnum so objects/arrays are compared by structure, not reference.\n */\nfunction deepEqual(a, b) {\n  if (a === b) return true;\n  if (a === null || b === null) return false;\n  if (typeof a !== typeof b) return false;\n\n  if (Array.isArray(a)) {\n    if (!Array.isArray(b) || a.length !== b.length) return false;\n    return a.every((val, i) => deepEqual(val, b[i]));\n  }\n\n  if (typeof a === \"object\") {\n    if (Array.isArray(b)) return false;\n    const keysA = Object.keys(a);\n    const keysB = Object.keys(b);\n    if (keysA.length !== keysB.length) return false;\n    return keysA.every((key) => Object.prototype.hasOwnProperty.call(b, key) && deepEqual(a[key], b[key]));\n  }\n\n  return false;\n}\n\n/**\n * Safely tests a string against a regex pattern.\n * Returns { match: boolean, error?: string }.\n * Catches malformed regex patterns instead of crashing.\n */\nfunction safeRegexTest(pattern, value) {\n  try {\n    return { match: new RegExp(pattern).test(value) };\n  } catch (e) {\n    return { match: false, error: `Invalid regex pattern: ${pattern}` };\n  }\n}\n\n/**\n * Pluralizes \"Field\"/\"is\" based on count for error messages.\n * e.g. formatFieldList([\"a\"]) -> 'Field \"a\" is'\n *      formatFieldList([\"a\",\"b\"]) -> 'Fields \"a\", \"b\" are'\n */\nfunction formatFieldList(fields) {\n  const quoted = fields.map((f) => `\"${f}\"`).join(\", \");\n  return fields.length === 1\n    ? `Field ${quoted} is`\n    : `Fields ${quoted} are`;\n}\n\n/**\n * Extracts const-based context from a oneOf variant schema.\n * Returns a \"when x is y\" clause for enriching error messages.\n *\n * e.g. { properties: { type: { const: \"free_product\" } } }\n *   -> ' when type is \"free_product\"'\n */\nfunction buildWhenClause(variantSchema) {\n  const pairs = [];\n  for (const [key, propSchema] of Object.entries(variantSchema.properties || {})) {\n    if (propSchema.const !== undefined) {\n      pairs.push(`${key} is \"${propSchema.const}\"`);\n    }\n  }\n  return pairs.length ? ` when ${pairs.join(\" and \")}` : \"\";\n}\n\n/**\n * Checks whether a value is explicitly nullable in the schema.\n * Handles both enum and const allowing null.\n */\nfunction isNullAllowed(schema) {\n  if (schema.const === null) return true;\n  if (Array.isArray(schema.enum) && schema.enum.some((v) => deepEqual(v, null))) return true;\n  return false;\n}\n\n/**\n * Builds a child path by appending a property key to a parent path.\n * Handles the root case (empty parent) so we get \"name\" instead of \".name\".\n */\nfunction joinPath(parent, key) {\n  return parent ? `${parent}.${key}` : key;\n}\n\n/**\n * Builds a child path by appending an array index to a parent path.\n * Handles the root case (empty parent) so we get \"[0]\" instead of \".[0]\".\n */\nfunction indexPath(parent, index) {\n  return `${parent}[${index}]`;\n}\n\n// \u2500\u2500\u2500 Type Validators \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n/**\n * Validates that the data's type matches the schema's declared type.\n * Handles the \"integer\" type that JSON Schema supports but JS typeof doesn't.\n * Rejects NaN and Infinity as invalid numbers.\n */\nfunction checkType(schema, data, at) {\n  if (!schema.type) return [];\n\n  const actual = getTypeName(data);\n\n  // \"integer\" is a special case \u2014 typeof returns \"number\" for both ints and floats\n  if (schema.type === \"integer\") {\n    if (!isInteger(data)) {\n      const display = actual === \"number\" ? \"non-integer number\" : actual;\n      return [makeError(at, `Expected type \"integer\" but got \"${display}\"`, schema)];\n    }\n    return [];\n  }\n\n  // NaN technically has typeof \"number\" but is never a valid number\n  if (schema.type === \"number\" && actual === \"NaN\") {\n    return [makeError(at, `Expected type \"number\" but got NaN`, schema)];\n  }\n\n  // Infinity/-Infinity are typeof \"number\" but not finite.\n  // Reject them at the type level so they don't silently pass through.\n  if (schema.type === \"number\" && !Number.isFinite(data)) {\n    return [makeError(at, `Expected a finite number but got ${data}`, schema)];\n  }\n\n  if (actual !== schema.type) {\n    return [makeError(at, `Expected type \"${schema.type}\" but got \"${actual}\"`, schema)];\n  }\n  return [];\n}\n\n/**\n * Validates string-specific constraints: minLength, maxLength, pattern.\n * Falls back to description for pattern errors when available.\n * Catches invalid regex patterns gracefully.\n */\nfunction checkString(schema, data, at) {\n  if (typeof data !== \"string\") return [];\n  const errors = [];\n\n  if (schema.minLength !== undefined && data.length < schema.minLength) {\n    const msg = schema.minLength === 1\n      ? \"Must not be empty\"\n      : `Must be at least ${schema.minLength} character(s) long, got ${data.length}`;\n    errors.push(makeError(at, msg, schema));\n  }\n\n  if (schema.maxLength !== undefined && data.length > schema.maxLength) {\n    errors.push(makeError(at, `Must be at most ${schema.maxLength} character(s) long, got ${data.length}`, schema));\n  }\n\n  // Pattern: use safeRegexTest to avoid crashing on malformed patterns\n  if (schema.pattern) {\n    const result = safeRegexTest(schema.pattern, data);\n    if (result.error) {\n      // Malformed regex in schema \u2014 report as a schema error\n      errors.push(makeError(at, result.error));\n    } else if (!result.match) {\n      // Prefer description over raw regex in the message\n      const msg = schema.description\n        ? `\"${data}\" is not valid \u2014 expected: ${schema.description}`\n        : `\"${data}\" does not match required pattern: ${schema.pattern}`;\n      errors.push(makeError(at, msg));\n    }\n  }\n\n  return errors;\n}\n\n/**\n * Validates number-specific constraints: minimum, maximum,\n * exclusiveMinimum, exclusiveMaximum.\n * Runs for both \"number\" and \"integer\" schema types.\n */\nfunction checkNumber(schema, data, at) {\n  if (!isValidNumber(data)) return [];\n  const errors = [];\n\n  if (schema.minimum !== undefined && data < schema.minimum)\n    errors.push(makeError(at, `Must be at least ${schema.minimum}, got ${data}`, schema));\n  if (schema.maximum !== undefined && data > schema.maximum)\n    errors.push(makeError(at, `Must be at most ${schema.maximum}, got ${data}`, schema));\n  if (schema.exclusiveMinimum !== undefined && data <= schema.exclusiveMinimum)\n    errors.push(makeError(at, `Must be greater than ${schema.exclusiveMinimum}, got ${data}`, schema));\n  if (schema.exclusiveMaximum !== undefined && data >= schema.exclusiveMaximum)\n    errors.push(makeError(at, `Must be less than ${schema.exclusiveMaximum}, got ${data}`, schema));\n\n  return errors;\n}\n\n/**\n * Validates enum constraint \u2014 value must be one of the listed options.\n * Uses deepEqual so objects and arrays are compared by structure, not reference.\n */\nfunction checkEnum(schema, data, at) {\n  if (!schema.enum) return [];\n  if (schema.enum.some((allowed) => deepEqual(allowed, data))) return [];\n  return [makeError(at, `\"${data}\" is not an allowed value. Must be one of: ${schema.enum.join(\", \")}`, schema)];\n}\n\n/**\n * Validates const constraint \u2014 value must exactly equal the specified constant.\n */\nfunction checkConst(schema, data, at) {\n  if (schema.const === undefined) return [];\n  if (data === schema.const) return [];\n  return [makeError(at, `Must be \"${schema.const}\" but got \"${data}\"`, schema)];\n}\n\n// \u2500\u2500\u2500 Composite Validators \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n/**\n * Validates array-specific constraints: minItems, maxItems, and\n * recursively validates each item against the items schema.\n * Attaches the raw value to leaf-level errors for context.\n *\n * Container-level errors (minItems, maxItems) use `label` so root-level\n * arrays get a readable path instead of an empty string.\n * Child item paths still use raw `at` for clean indexing (e.g. \"[0]\").\n */\nfunction checkArray(schema, data, at) {\n  if (!Array.isArray(data)) return [];\n  const errors = [];\n  const label = at || \"root\";\n\n  if (schema.minItems !== undefined && data.length < schema.minItems)\n    errors.push(makeError(label, `Must have at least ${schema.minItems} item(s), got ${data.length}`, schema));\n  if (schema.maxItems !== undefined && data.length > schema.maxItems)\n    errors.push(makeError(label, `Must have at most ${schema.maxItems} item(s), got ${data.length}`, schema));\n\n  if (schema.items) {\n    data.forEach((item, i) => {\n      const itemErrors = validate(schema.items, item, indexPath(at, i));\n      // Attach raw value for non-object items so the final message shows what was received\n      itemErrors.forEach((e) => {\n        if (e.value === undefined && typeof item !== \"object\") e.value = item;\n      });\n      errors.push(...itemErrors);\n    });\n  }\n\n  return errors;\n}\n\n/**\n * Validates object-specific constraints: required fields, property schemas,\n * and additionalProperties.\n *\n * When additionalProperties is false with no properties defined,\n * treats the allowed set as empty (rejects all keys).\n *\n * Validates that schema.required is an array before iterating. A bare string\n * like \"name\" would be iterated character-by-character by for..of, producing\n * nonsensical \"missing field 'n'\" errors.\n */\nfunction checkObject(schema, data, at) {\n  if (typeof data !== \"object\" || data === null || Array.isArray(data)) return [];\n  if (!schema.properties && !schema.required && schema.additionalProperties === undefined) return [];\n\n  const errors = [];\n\n  // Guard against non-array required (e.g. required: \"name\")\n  if (schema.required !== undefined && !Array.isArray(schema.required)) {\n    errors.push(makeError(at || \"root\", `Schema error: \"required\" must be an array, got ${getTypeName(schema.required)}`));\n  } else {\n    // Required fields\n    for (const key of schema.required || []) {\n      if (!(key in data)) {\n        const propSchema = schema.properties?.[key] || {};\n        errors.push(makeError(joinPath(at, key), `Missing required field \"${key}\"`, propSchema));\n      }\n    }\n  }\n\n  // Validate each declared property that exists on the data\n  for (const [key, propSchema] of Object.entries(schema.properties || {})) {\n    if (key in data) {\n      errors.push(...validate(propSchema, data[key], joinPath(at, key)));\n    }\n  }\n\n  // Reject undeclared properties when additionalProperties is false.\n  // If properties is not defined, treat allowed set as empty \u2014 all keys rejected.\n  if (schema.additionalProperties === false) {\n    const allowed = new Set(Object.keys(schema.properties || {}));\n    for (const key of Object.keys(data)) {\n      if (!allowed.has(key)) {\n        errors.push(makeError(joinPath(at, key), `Unknown field \"${key}\" is not allowed`));\n      }\n    }\n  }\n\n  return errors;\n}\n\n// \u2500\u2500\u2500 Logical Combinators \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n/**\n * Validates the \"not\" keyword.\n * The data is valid only if it FAILS the inner schema.\n * Reports which forbidden fields were found.\n * Handles generic \"not\" schemas beyond just \"not.required\".\n */\nfunction checkNot(schema, data, at) {\n  if (!schema.not) return [];\n\n  const innerErrors = validate(schema.not, data, at);\n  const label = at || \"root\";\n\n  // If inner schema produced errors, the \"not\" passes (data doesn't match the forbidden schema)\n  if (innerErrors.length > 0) return [];\n\n  // Data matched the forbidden schema \u2014 figure out what to report\n  const errors = [];\n\n  // Case 1: not.required \u2014 specific forbidden fields present in the data\n  if (Array.isArray(schema.not.required) && typeof data === \"object\" && data !== null) {\n    const present = schema.not.required.filter((k) => k in data);\n    if (present.length) {\n      errors.push(makeError(label, `${formatFieldList(present)} not allowed here`, {}, { forbidden: present }));\n    }\n  }\n\n  // Case 2: generic not (no required, or no forbidden fields found) \u2014 general message\n  if (errors.length === 0) {\n    errors.push(makeError(label, \"Value must not match the excluded schema\"));\n  }\n\n  return errors;\n}\n\n/**\n * Validates the \"oneOf\" keyword using best-match strategy.\n *\n * 1. If exactly one variant matches perfectly, pass.\n * 2. If multiple match, report ambiguity.\n * 3. If none match, pick the closest variant (fewest errors, with a\n *    tiebreaker favoring variants where const fields match the data)\n *    and surface only its errors, enriched with \"when\" context.\n *\n * Handles empty oneOf arrays gracefully.\n */\nfunction checkOneOf(schema, data, at) {\n  if (!schema.oneOf) return [];\n\n  const label = at || \"root\";\n\n  // Edge case: empty oneOf means nothing can match\n  if (schema.oneOf.length === 0) {\n    return [makeError(label, \"No variants defined in oneOf \u2014 nothing can match\")];\n  }\n\n  const results = schema.oneOf.map((sub) => ({\n    schema: sub,\n    errors: validate(sub, data, at),\n  }));\n\n  const perfect = results.filter((r) => r.errors.length === 0);\n\n  // Exactly one match \u2014 valid\n  if (perfect.length === 1) return [];\n\n  // Multiple matches \u2014 ambiguous\n  if (perfect.length > 1) {\n    return [makeError(label, \"Ambiguous \u2014 matches multiple variants when only one is allowed\")];\n  }\n\n  // No match \u2014 find best fit using const-match tiebreaker.\n  // Const matches heavily reduce score so the variant matching\n  // the user's intent always wins ties.\n  const scored = results.map((r) => {\n    let constMatches = 0;\n    for (const [key, propSchema] of Object.entries(r.schema.properties || {})) {\n      if (\n        propSchema.const !== undefined &&\n        typeof data === \"object\" &&\n        data !== null &&\n        data[key] === propSchema.const\n      ) {\n        constMatches++;\n      }\n    }\n    return { ...r, score: r.errors.length - constMatches * (results.length + 1) };\n  });\n  scored.sort((a, b) => a.score - b.score);\n\n  const best = scored[0];\n  const whenClause = buildWhenClause(best.schema);\n\n  // Enrich errors with context and filter out noise (const mismatch errors)\n  const enriched = best.errors\n    .filter((e) => !e.message.startsWith('Must be \"'))\n    .map((e) => {\n      const forbidden = e._meta?.forbidden;\n\n      if (forbidden && whenClause) {\n        // Preserve description from original error if present\n        const enrichedSchema = e.description ? { description: e.description } : {};\n        return makeError(e.path, `${formatFieldList(forbidden)} not allowed${whenClause}`, enrichedSchema);\n      }\n      if (e.message.includes(\"Missing required field\") && whenClause) {\n        const enrichedSchema = e.description ? { description: e.description } : {};\n        return makeError(e.path, `${e.message}${whenClause}`, enrichedSchema);\n      }\n      return e;\n    });\n\n  if (enriched.length) return enriched;\n\n  // Fallback: couldn't isolate clear errors from best match\n  const summary = results.map((r) => {\n    const constEntry = Object.entries(r.schema.properties || {}).find(([, v]) => v.const !== undefined);\n    const name = constEntry ? constEntry[1].const : \"unknown\";\n    return `\"${name}\": ${r.errors.map((e) => e.message).join(\"; \")}`;\n  });\n  return [makeError(label, `Does not match any allowed variant: ${summary.join(\" | \")}`)];\n}\n\n/**\n * Validates \"anyOf\" \u2014 at least one subschema must match.\n */\nfunction checkAnyOf(schema, data, at) {\n  if (!schema.anyOf) return [];\n  const anyMatch = schema.anyOf.some((sub) => validate(sub, data, at).length === 0);\n  if (anyMatch) return [];\n  return [makeError(at || \"root\", \"Does not match any allowed option\", schema)];\n}\n\n/**\n * Validates \"allOf\" \u2014 every subschema must match.\n */\nfunction checkAllOf(schema, data, at) {\n  if (!schema.allOf) return [];\n  return schema.allOf.flatMap((sub) => validate(sub, data, at));\n}\n\n// \u2500\u2500\u2500 Main Validator \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n/**\n * Recursively validates data against a JSON Schema.\n * Returns an array of error objects. Empty array = valid.\n *\n * Path starts as \"\" (root). Child paths are built via joinPath/indexPath\n * so top-level fields appear as \"name\" not \"root.name\", while nested\n * fields read naturally as \"address.street\" or \"tags[0]\".\n * Only true root-level errors (e.g. wrong top-level type) show as \"root\".\n *\n * Handles null/undefined before type checking because typeof null === \"object\" in JS.\n * Allows null/undefined when explicitly permitted by const or enum.\n *\n * Rejects non-plain-object schemas up front instead of silently\n * passing everything or crashing on null.\n *\n * When schema.const is defined, enum is skipped. const is strictly\n * more specific (single value) and subsumes enum.\n */\nfunction validate(schema, data, path = \"\") {\n  const at = path;\n\n  // Schema shape guard \u2014 reject anything that isn't a plain object.\n  // Catches null, undefined, strings, numbers, booleans, and arrays, all of\n  // which would either crash or silently produce zero errors.\n  if (!isPlainObject(schema)) {\n    return [makeError(at || \"root\", `Invalid schema: expected a plain object, got ${getTypeName(schema)}`)];\n  }\n\n  // Null/undefined: allow if schema explicitly permits it via const or enum,\n  // otherwise reject early before type check (typeof null === \"object\" in JS)\n  if (data === null || data === undefined) {\n    if (isNullAllowed(schema)) {\n      // null is explicitly valid here \u2014 still check const/enum but skip everything else\n      const errors = [...checkConst(schema, data, at || \"root\")];\n      // Skip enum when const is defined \u2014 const subsumes enum\n      if (schema.const === undefined) errors.push(...checkEnum(schema, data, at || \"root\"));\n      return errors;\n    }\n    return [makeError(at || \"root\", \"Field is missing or null\", schema)];\n  }\n\n  // Type check (gates further validation \u2014 wrong type means deeper checks are meaningless)\n  const typeErrors = checkType(schema, data, at || \"root\");\n  if (typeErrors.length) return typeErrors;\n\n  // When const is defined, it's the authoritative value check \u2014\n  // enum is redundant and potentially contradictory. Skip it.\n  const enumErrors = schema.const !== undefined ? [] : checkEnum(schema, data, at || \"root\");\n\n  // Run all validators and collect errors\n  return [\n    ...checkConst(schema, data, at || \"root\"),\n    ...checkString(schema, data, at || \"root\"),\n    ...checkNumber(schema, data, at || \"root\"),\n    ...enumErrors,\n    ...checkArray(schema, data, at),\n    ...checkObject(schema, data, at),\n    ...checkNot(schema, data, at),\n    ...checkOneOf(schema, data, at),\n    ...checkAnyOf(schema, data, at),\n    ...checkAllOf(schema, data, at),\n  ];\n}\n\n// \u2500\u2500\u2500 Format & Output \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n/**\n * Formats a single error object into a readable bullet line.\n * Includes the raw value if present, and appends description when\n * it adds context beyond what's already in the message.\n */\nfunction formatError(error) {\n  let line = `\u2022 ${error.path}: ${error.message}`;\n  if (error.value !== undefined) line += ` (got: \"${error.value}\")`;\n  if (error.description && !error.message.includes(error.description)) line += ` \u2014 ${error.description}`;\n  return line;\n}\n\n/**\n * Strips internal metadata (_meta) from error objects\n * so it never leaks into the output.\n */\nfunction cleanErrors(errors) {\n  return errors.map(({ _meta, ...rest }) => rest);\n}\n\n// \u2500\u2500\u2500 Run \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nlet output;\n\ntry {\n  const errors = validate(requiredSchema, jsonToValidate);\n\n  if (errors.length) {\n    const msg = cleanErrors(errors).map(formatError).join(\"\\n\");\n\n    output = {\n      valid: false,\n      validationError: `Validation failed (${errors.length} issue${errors.length > 1 ? \"s\" : \"\"}):\\n${msg}`,\n      requiredSchema: JSON.parse(JSON.stringify(requiredSchema)),\n    };\n  } else {\n    output = {\n      valid: true,\n      validationError: null,\n    };\n  }\n} catch (error) {\n  output = {\n    valid: false,\n    validationError: `Validator error: ${error.message}`,\n  };\n}\n\nreturn output;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "00618ad0-367e-4ca0-9032-8357d3cc87dd",
+      "name": "PLACEHOLDER: Source of your data",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2000,
+        560
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "33c2bdce-dcba-49d5-8964-044eedf7f58a",
+              "name": "body",
+              "type": "object",
+              "value": "{\n  \"email\": \"user@example.com\",\n  \"plan\": \"cloud\",\n  \"seat_count\": 25\n}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "8287706f-d600-42fd-b843-2b13bd106d14",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1920,
+        432
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 528,
+        "height": 320,
+        "content": "## Copy and paste this sticky with the nodes inside of it into your AI prompt\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n_these nodes are just here to give the llm extra context_\n\n## JSON Schema Generator\n\nThe nodes below are part of a reusable n8n subworkflow that validates JSON objects against a JSON Schema. I need you to generate a schema for my use case.\n\nThe schema gets passed into the `requiredSchema` param and the JSON to validate goes into `paramsToValidate`. Both are wrapped in `={{ }}` so n8n treats them as objects.\n\n### What the Validator Supports\n\nYou can use any of these keywords in the schema you generate:\n\n- **Types:** `string`, `number`, `integer`, `boolean`, `array`, `object`, `null`\n- **String:** `minLength`, `maxLength`, `pattern` (regex)\n- **Number:** `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`\n- **Value restrictions:** `enum` (list of allowed values), `const` (exact match)\n- **Arrays:** `minItems`, `maxItems`, `items` (validates each element recursively)\n- **Objects:** `required`, `properties`, `additionalProperties`\n- **Conditional logic:** `oneOf`, `anyOf`, `allOf`, `not`\n- **`description`** \u2014 this is important: the validator pulls descriptions into error messages, so every field needs one\n\n### Rules for Generating the Schema\n\n- Every field MUST have a `description` in plain language \u2014 they appear in validation errors\n- Use `integer` instead of `number` for whole numbers\n- Use `enum` for fields with a fixed set of allowed values\n- Use `oneOf` with `const` and `not: { required: [...] }` for conditional required/forbidden fields\n- Use `additionalProperties: false` if extra fields should be rejected\n- Use `pattern` with regex for formatted strings (emails, URLs, codes, etc.)\n- Use `minimum` / `maximum` for numeric bounds\n- Use `minLength: 1` for strings that must not be empty\n- Use `minItems` for arrays that need at least one entry\n\n### Before Generating\n\nAsk me follow-up questions first to make sure you understand:\n\n- Which fields are required vs optional\n- Any conditional logic (e.g. \"field X is required only when field Y is a certain value\")\n- Valid value ranges, enums, or patterns for each field\n- Whether unknown/extra fields should be rejected\n- Any fields that conflict with each other (e.g. \"don't send A and B together\")\n\n### Output Format\n\nAsk the user whether they want:\n\n1. **Full n8n nodes** (default) \u2014 the complete set of ready-to-paste n8n nodes: the Execute Sub-Workflow node (with the schema already embedded), the If node to check `valid`, and the Respond to Webhook node for returning 400 errors.\n2. **Schema only** \u2014 just the raw JSON Schema object.\n\nOn the **first response**, default to returning the full nodes unless the user says otherwise. On **subsequent changes or revisions**, only return the updated schema \u2014 the user already has the nodes and just needs to swap the schema value.\n\n### How to Embed the Schema in n8n\n\nWhen generating the Execute Sub-Workflow node, the schema must be set correctly in the `requiredSchema` parameter:\n\n- The value must be wrapped in `={{ }}` so n8n evaluates it as a JavaScript expression that returns an object \u2014 not a string.\n- The schema JSON goes directly between `={{ ` and ` }}` with no quotes around the outer object.\n- All regex backslashes inside `pattern` values must be **double-escaped** (`\\\\\\\\`) because the expression is evaluated as a JS string first. For example, the regex `^\\S+@\\S+\\.\\S+$` becomes `\"^\\\\\\\\S+@\\\\\\\\S+\\\\\\\\.\\\\\\\\S+$\"` in the node parameter.\n- The `paramsToValidate` param should be set to `={{ $json.body }}` or wherever the incoming data lives. Remind the user to update this path to match their actual data location.\n- The Execute Sub-Workflow node must point to the ID of the Param Schema Validation workflow. Remind the user to re-select the workflow from the dropdown after importing since workflow IDs differ per instance.\n\n### Generating the Full Nodes\n\nWhen returning full nodes, use the following node structure as a base and only modify the `requiredSchema` value with the generated schema. Keep all other fields, positions, and wiring intact.\n\nThe nodes to include are:\n\n1. **Execute Sub-Workflow node** (`n8n-nodes-base.executeWorkflow`) \u2014 calls the validator with `requiredSchema` and `paramsToValidate`\n\n2. **If node** (`n8n-nodes-base.if`) \u2014 checks `{{ $json.valid }}` is true\n\n3. **Respond to Webhook node** (`n8n-nodes-base.respondToWebhook`) \u2014 returns a 400 with the validation error and schema in the response body\n\nThe Respond to Webhook node MUST use this exact response body format:\n\n```\n\n{\n\n  \"error\": {{ $json.validationError.toJsonString() }},\n\n  \"requestSchema\": {{ $json.requiredSchema.toJsonString() }}\n\n}\n\n```\n\nSet the response code to `400`. This format ensures the caller gets both the human-readable error string and the full schema they violated, which is especially useful for LLM-based callers that can self-correct.\n\nInclude the `connections` object so the nodes are wired: Execute Sub-Workflow \u2192 If \u2192 (true) continues, (false) \u2192 Respond to Webhook with 400.\n\nDo NOT include the Webhook trigger node \u2014 the user will already have their own trigger.\n\n### My JSON\n\nThe user will provide an example of their JSON request separately. If they do not, ask them for it."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "23b82931-8571-4d0f-b4c7-bbfd3dbd6ed2",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        480,
+        224
+      ],
+      "parameters": {
+        "width": 704,
+        "height": 816,
+        "content": "# JSON Schema Validator\n\n## How it works\n\nCall this via an **Execute Sub-Workflow** node with two params:\n\n- **`requiredSchema`** \u2014 your JSON Schema (wrapped in `={{ }}`)\n- **`paramsToValidate`** \u2014 the data to check, e.g. `={{ $json.body }}`\n\nReturns `{ valid: true }` on success. On failure, returns `valid: false` with a `validationError` string and the full `requiredSchema` \u2014 useful for error responses or feeding back into an LLM to self-correct.\n\n## Example error output\n\nValidation failed (3 issues):\n- name: Missing required field \"name\" \u2014 Customer full name\n- email: \"not-an-email\" is not valid \u2014 expected: Contact email address\n- plan: \"premium\" is not an allowed value. Must be one of: starter, pro, enterprise\n\n## Don't know JSON Schema?\n\nCopy the **prompt template sticky note** and its two nodes, paste into any LLM chat with an example of your data, and it'll generate a schema for you.\n\n## Quick start\n\n1. Add an **Execute Sub-Workflow** node pointing to this workflow\n2. Set `requiredSchema` to `={{ your_schema_here }}`\n3. Set `paramsToValidate` to `={{ $json.body }}`\n4. Route on `valid` \u2014 `true` continues, `false` handles the error"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "10948397-947f-4006-95dd-fb9db33f3cf0",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1920,
+        224
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 528,
+        "height": 208,
+        "content": "# Schema Creation\nAIs are great at making schemas. Copy and paste the two nodes below with the entire sticky into your agent of choice with an example of your request.\n\n\n_Out of view in the sticky is a prompt that will help the agent know how to make the schema_"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d2af7f8f-c367-4fc9-a794-ed697ed6e7cd",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2496,
+        224
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 1248,
+        "height": 624,
+        "content": "# Usage Example\nThis is an example showing how to wire the validator into a webhook endpoint"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1375dac8-c6bf-4b76-bb26-8e935e1540bf",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        2576,
+        368
+      ],
+      "webhookId": "19b37d89-d47e-4f90-a945-8a92d61d8d8b",
+      "parameters": {
+        "path": "19b37d89-d47e-4f90-a945-8a92d61d8d8b",
+        "options": {},
+        "responseMode": "responseNode"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "38928989-fd9a-4fac-873f-12dfa4d7dcfd",
+      "name": "If Params Valid",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2992,
+        368
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "12bd4ddc-000b-4e4d-aae0-4a4b0074b027",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": false
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "1aef7e3c-1e25-417d-9ea9-368a2e85c49e",
+      "name": "Return 400 param error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        2992,
+        592
+      ],
+      "parameters": {
+        "options": {
+          "responseCode": 400
+        },
+        "respondWith": "json",
+        "responseBody": "={\n  \"error\": {{ $json.validationError.toJsonString() }},\n  \"requestSchema\": {{ $json.requiredSchema.toJsonString() }}\n} "
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "698fff1b-c266-47e1-81cb-ad252a448889",
+      "name": "Your workflow logic here",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        3248,
+        368
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "93d5b54b-cbc2-4db3-a486-81a8d3e695f3",
+      "name": "Return Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        3456,
+        368
+      ],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true\n} "
+      },
+      "typeVersion": 1.5
+    },
+    {
+      "id": "ccac00e9-f3fd-4345-992f-cee6858c1ebb",
+      "name": "Validate Schema",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "position": [
+        2784,
+        368
+      ],
+      "parameters": {
+        "options": {},
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "O1tkgab3t4olf3AJ",
+          "cachedResultUrl": "/workflow/O1tkgab3t4olf3AJ",
+          "cachedResultName": "Param Schema Validation Template"
+        },
+        "workflowInputs": {
+          "value": {
+            "requiredSchema": "={{ \n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\",\n      \"minLength\": 1,\n      \"description\": \"Customer full name\"\n    },\n    \"email\": {\n      \"type\": \"string\",\n      \"pattern\": \"^\\\\S+@\\\\S+\\\\.\\\\S+$\",\n      \"description\": \"Contact email address\"\n    },\n    \"plan\": {\n      \"type\": \"string\",\n      \"enum\": [\"starter\", \"pro\", \"enterprise\"],\n      \"description\": \"Subscription plan\"\n    },\n    \"seat_count\": {\n      \"type\": \"integer\",\n      \"minimum\": 1,\n      \"maximum\": 500,\n      \"description\": \"Number of licensed seats\"\n    },\n    \"tags\": {\n      \"type\": \"array\",\n      \"minItems\": 1,\n      \"items\": {\n        \"type\": \"string\",\n        \"minLength\": 1,\n        \"description\": \"A tag label\"\n      },\n      \"description\": \"At least one tag for categorization\"\n    }\n  },\n  \"required\": [\"name\", \"email\", \"plan\", \"seat_count\"],\n  \"additionalProperties\": false\n} \n}}",
+            "paramsToValidate": "={{ $json.body }}"
+          },
+          "schema": [
+            {
+              "id": "requiredSchema",
+              "type": "object",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "requiredSchema",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "paramsToValidate",
+              "type": "object",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "paramsToValidate",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "17f5acfd-bb81-4078-bac2-ce995514f128",
+      "name": "Call 'Param Schema Validation Template'",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "position": [
+        2256,
+        560
+      ],
+      "parameters": {
+        "options": {},
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "O1tkgab3t4olf3AJ",
+          "cachedResultUrl": "/workflow/O1tkgab3t4olf3AJ",
+          "cachedResultName": "Param Schema Validation Template"
+        },
+        "workflowInputs": {
+          "value": {
+            "requiredSchema": "={{ {\n  \"type\": \"object\",\n  \"properties\": {\n    \"email\": {\n      \"type\": \"string\",\n      \"pattern\": \"^\\\\S+@\\\\S+\\\\.\\\\S+$\",\n      \"description\": \"Contact email address\"\n    },\n    \"plan\": {\n      \"type\": \"string\",\n      \"enum\": [\"community\", \"cloud\", \"enterprise\"],\n      \"description\": \"Subscription tier\"\n    },\n    \"seat_count\": {\n      \"type\": \"integer\",\n      \"minimum\": 1,\n      \"maximum\": 500,\n      \"description\": \"Number of licensed seats\"\n    }\n  },\n  \"required\": [\"email\", \"plan\"],\n  \"additionalProperties\": false\n} }}",
+            "paramsToValidate": "={{ $json.body }}"
+          },
+          "schema": [
+            {
+              "id": "requiredSchema",
+              "type": "object",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "requiredSchema",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "paramsToValidate",
+              "type": "object",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "paramsToValidate",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "e6e699de-7f68-41cd-a201-5974877bdc5a",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3232,
+        560
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 512,
+        "height": 288,
+        "content": "Then the `error` field gives a detailed readable description of all of the errors:\n\nValidation failed (6 issues):\n\u2022 name: Missing required field \\\"name\\\" \u2014 Customer full name\n\u2022 email: \\\"not-an-email\\\" is not valid \u2014 expected: Contact email address\n\u2022 plan: \\\"premium\\\" is not an allowed value. Must be one of: starter, pro, enterprise \u2014 Subscription plan\n\u2022 seat_count: Expected type \\\"integer\\\" but got \\\"non-integer number\\\" \u2014 Number of licensed seats\n\u2022 tags: Must have at least 1 item(s), got 0 \u2014 At least one tag for categorization\n\u2022 referral_code: Unknown field \\\"referral_code\\\" is not allowed"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5b24fc13-03da-46ec-809c-887c2ad72e86",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1232,
+        224
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 640,
+        "height": 304,
+        "content": "### The Actual Workflow\nThese two nodes are the actual functional part of the template, all of the other nodes on the canvas are just for demonstration. \n\n"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "body": {
+          "plan": "premium",
+          "tags": [],
+          "email": "not-an-email",
+          "seat_count": 3.5,
+          "referral_code": "ABC123"
+        }
+      }
+    ],
+    "Validate Schema": [
+      {
+        "valid": false,
+        "requiredSchema": {
+          "type": "object",
+          "required": [
+            "name",
+            "email",
+            "plan",
+            "seat_count"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Customer full name"
+            },
+            "plan": {
+              "enum": [
+                "starter",
+                "pro",
+                "enterprise"
+              ],
+              "type": "string",
+              "description": "Subscription plan"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A tag label"
+              },
+              "minItems": 1,
+              "description": "At least one tag for categorization"
+            },
+            "email": {
+              "type": "string",
+              "pattern": "^\\S+@\\S+\\.\\S+$",
+              "description": "Contact email address"
+            },
+            "seat_count": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "description": "Number of licensed seats"
+            }
+          },
+          "additionalProperties": false
+        },
+        "validationError": "Validation failed (6 issues):\n\u2022 name: Missing required field \"name\" \u2014 Customer full name\n\u2022 email: \"not-an-email\" is not valid \u2014 expected: Contact email address\n\u2022 plan: \"premium\" is not an allowed value. Must be one of: starter, pro, enterprise \u2014 Subscription plan\n\u2022 seat_count: Expected type \"integer\" but got \"non-integer number\" \u2014 Number of licensed seats\n\u2022 tags: Must have at least 1 item(s), got 0 \u2014 At least one tag for categorization\n\u2022 referral_code: Unknown field \"referral_code\" is not allowed"
+      }
+    ],
+    "Return 400 param error": [
+      {
+        "valid": false,
+        "requiredSchema": {
+          "type": "object",
+          "required": [
+            "name",
+            "email",
+            "plan",
+            "seat_count"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Customer full name"
+            },
+            "plan": {
+              "enum": [
+                "starter",
+                "pro",
+                "enterprise"
+              ],
+              "type": "string",
+              "description": "Subscription plan"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A tag label"
+              },
+              "minItems": 1,
+              "description": "At least one tag for categorization"
+            },
+            "email": {
+              "type": "string",
+              "pattern": "^\\S+@\\S+\\.\\S+$",
+              "description": "Contact email address"
+            },
+            "seat_count": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "description": "Number of licensed seats"
+            }
+          },
+          "additionalProperties": false
+        },
+        "validationError": "Validation failed (6 issues):\n\u2022 name: Missing required field \"name\" \u2014 Customer full name\n\u2022 email: \"not-an-email\" is not valid \u2014 expected: Contact email address\n\u2022 plan: \"premium\" is not an allowed value. Must be one of: starter, pro, enterprise \u2014 Subscription plan\n\u2022 seat_count: Expected type \"integer\" but got \"non-integer number\" \u2014 Number of licensed seats\n\u2022 tags: Must have at least 1 item(s), got 0 \u2014 At least one tag for categorization\n\u2022 referral_code: Unknown field \"referral_code\" is not allowed"
+      }
+    ],
+    "When Executed by Another Workflow": [
+      {
+        "requiredSchema": {
+          "object": true
+        },
+        "paramsToValidate": {
+          "object": true
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Params Valid": {
+      "main": [
+        [
+          {
+            "node": "Your workflow logic here",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return 400 param error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Schema": {
+      "main": [
+        [
+          {
+            "node": "If Params Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Your workflow logic here": {
+      "main": [
+        [
+          {
+            "node": "Return Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PLACEHOLDER: Source of your data": {
+      "main": [
+        [
+          {
+            "node": "Call 'Param Schema Validation Template'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Schema Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

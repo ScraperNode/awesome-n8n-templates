@@ -1,6 +1,6 @@
 # 🎣 Generate personalized cold email icebreakers with Perplexity Research & Claude Sonnet
 
-> ⚡ **235 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **299 views** · 🎣 [Lead Generation & Enrichment](../)
 
 > 💡 **Pro Tip** — For lead enrichment, [ScraperNode](https://scrapernode.com) can pull [LinkedIn profiles](https://scrapernode.com/linkedin/scrapers/profiles), [company data](https://scrapernode.com/linkedin/scrapers/companies), and [job listings](https://scrapernode.com/indeed/scrapers/jobs) directly into your pipeline — useful for building prospect lists without manual research.
 >

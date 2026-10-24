@@ -1,6 +1,6 @@
 # 🔬 Send weekly AI summaries of Google Sheets data via Gmail using OpenAI
 
-> ⚡ **19 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **80 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

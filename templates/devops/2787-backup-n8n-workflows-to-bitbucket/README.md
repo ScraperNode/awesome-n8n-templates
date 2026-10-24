@@ -1,6 +1,6 @@
 # ⚙️ Backup n8n workflows to Bitbucket
 
-> ⚡ **1,573 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,762 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

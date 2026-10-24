@@ -1,6 +1,6 @@
 # 📱 Daily import validated contacts from NocoDB to Brevo
 
-> ⚡ **264 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **286 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

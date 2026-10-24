@@ -1,6 +1,6 @@
 # 🎫 Automate daily GLPI pending ticket notifications to Microsoft Teams
 
-> ⚡ **1,094 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,504 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

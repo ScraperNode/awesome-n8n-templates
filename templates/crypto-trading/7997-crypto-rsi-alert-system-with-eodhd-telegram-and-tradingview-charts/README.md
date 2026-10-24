@@ -1,6 +1,6 @@
 # 📈 Crypto RSI alert system with EODHD, Telegram and TradingView charts
 
-> ⚡ **1,393 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **1,706 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

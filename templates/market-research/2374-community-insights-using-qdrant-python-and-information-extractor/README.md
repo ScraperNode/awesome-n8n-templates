@@ -1,6 +1,6 @@
 # 📊 Community insights using Qdrant, Python and Information Extractor
 
-> ⚡ **55,406 views** · 📊 [Market Research & Insights](../)
+> ⚡ **71,186 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

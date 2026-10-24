@@ -1,6 +1,6 @@
 # 📈 Generate institutional-grade stock price targets and BUY/HOLD/SELL signals with GPT-5, Gemini, Alpha Vantage and Google Sheets
 
-> ⚡ **92 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **240 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

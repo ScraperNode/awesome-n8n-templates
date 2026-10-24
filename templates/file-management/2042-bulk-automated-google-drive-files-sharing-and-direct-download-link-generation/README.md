@@ -1,6 +1,6 @@
 # 📁 Bulk automated Google Drive files sharing and direct download link generation
 
-> ⚡ **5,547 views** · 📁 [File Management](../)
+> ⚡ **5,689 views** · 📁 [File Management](../)
 
 ## Description
 

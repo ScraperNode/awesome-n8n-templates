@@ -1,6 +1,6 @@
 # 🤝 Sync HubSpot contacts with LinkedIn URLs, detect changes & send Gmail alerts
 
-> ⚡ **377 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **379 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

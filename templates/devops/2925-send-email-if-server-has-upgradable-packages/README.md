@@ -1,6 +1,6 @@
 # ⚙️ Send email if server has upgradable packages
 
-> ⚡ **12,018 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **11,990 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

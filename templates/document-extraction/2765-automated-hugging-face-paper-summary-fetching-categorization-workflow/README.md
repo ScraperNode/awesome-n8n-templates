@@ -1,6 +1,6 @@
 # 🔬 Automated Hugging Face paper summary fetching & categorization workflow
 
-> ⚡ **793 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **761 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

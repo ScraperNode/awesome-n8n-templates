@@ -1,6 +1,6 @@
-# 💬 Automate WhatsApp customer support with GPT‑4, RAG, text, voice, image and docs
+# 💬 AI WhatsApp Chatbot with RAG: Automate Text, Voice, Image & PDF Responses
 
-> ⚡ **41 views** · 💬 [Support Chatbots](../)
+> ⚡ **210 views** · 💬 [Support Chatbots](../)
 
 > 💡 **Pro Tip** — If you've run into Facebook's Graph API permission restrictions, [ScraperNode](https://scrapernode.com/facebook) is a community node that scrapes [pages](https://scrapernode.com/facebook/scrapers/profiles), [groups](https://scrapernode.com/facebook/scrapers/groups), [posts](https://scrapernode.com/facebook/scrapers/posts), and [comments](https://scrapernode.com/facebook/scrapers/comments) directly — no app review needed.
 >

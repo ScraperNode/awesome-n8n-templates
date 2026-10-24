@@ -1,6 +1,6 @@
 # 📋 Get product feedback and create ticket on Trello
 
-> ⚡ **1,278 views** · 📋 [Project Management](../)
+> ⚡ **1,287 views** · 📋 [Project Management](../)
 
 ## Description
 

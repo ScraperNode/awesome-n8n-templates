@@ -1,6 +1,6 @@
 # 🔬 Automated proof-of-delivery with GPT-4 Vision & ERP/Invoice integration
 
-> ⚡ **170 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **216 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

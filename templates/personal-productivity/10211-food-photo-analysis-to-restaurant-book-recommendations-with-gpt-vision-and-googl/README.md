@@ -1,6 +1,6 @@
 # ⚡ Food Photo Analysis to Restaurant & Book Recommendations with GPT Vision and Google APIs
 
-> ⚡ **209 views** · ⚡ [Personal Productivity](../)
+> ⚡ **307 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

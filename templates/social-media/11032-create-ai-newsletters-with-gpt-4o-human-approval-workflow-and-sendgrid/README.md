@@ -1,6 +1,6 @@
 # 📱 Create AI newsletters with GPT-4o, human approval workflow, and SendGrid
 
-> ⚡ **103 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **203 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

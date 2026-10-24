@@ -1,6 +1,6 @@
 # 🎬 Translate Chinese audio into multilingual voiceovers with GPT-4o and ElevenLabs
 
-> ⚡ **45 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **68 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

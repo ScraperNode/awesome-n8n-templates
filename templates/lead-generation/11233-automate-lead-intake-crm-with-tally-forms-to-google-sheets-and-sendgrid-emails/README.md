@@ -1,6 +1,6 @@
 # 🎣 Automate lead intake & CRM with Tally Forms to Google Sheets and SendGrid emails
 
-> ⚡ **183 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **316 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

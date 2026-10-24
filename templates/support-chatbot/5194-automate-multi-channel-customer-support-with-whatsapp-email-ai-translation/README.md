@@ -1,6 +1,6 @@
 # 💬 Automate multi-channel customer support with WhatsApp, email & AI translation
 
-> ⚡ **4,012 views** · 💬 [Support Chatbots](../)
+> ⚡ **5,048 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

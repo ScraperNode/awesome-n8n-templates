@@ -1,6 +1,6 @@
 # 📈 AAVE portfolio professional AI agent | Telegram + Email + GPT-4o + Moralis
 
-> ⚡ **790 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **900 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

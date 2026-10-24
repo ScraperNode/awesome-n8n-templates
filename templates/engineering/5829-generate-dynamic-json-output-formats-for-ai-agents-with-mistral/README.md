@@ -1,6 +1,6 @@
 # ⚒️ Generate dynamic JSON output formats for AI agents with Mistral
 
-> ⚡ **1,950 views** · ⚒️ [Engineering](../)
+> ⚡ **2,250 views** · ⚒️ [Engineering](../)
 
 ## Description
 

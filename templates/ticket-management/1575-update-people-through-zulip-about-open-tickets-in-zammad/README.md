@@ -1,6 +1,6 @@
 # 🎫 Update people through Zulip about open tickets in Zammad
 
-> ⚡ **1,621 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **1,663 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

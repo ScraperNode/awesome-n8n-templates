@@ -1,6 +1,6 @@
 # ⚒️ 🐋DeepSeek V3 chat & R1 reasoning quick start
 
-> ⚡ **39,762 views** · ⚒️ [Engineering](../)
+> ⚡ **41,830 views** · ⚒️ [Engineering](../)
 
 ## Description
 

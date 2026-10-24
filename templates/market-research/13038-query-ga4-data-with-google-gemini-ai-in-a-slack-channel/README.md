@@ -1,6 +1,6 @@
 # 📊 Query GA4 data with Google Gemini AI in a Slack channel
 
-> ⚡ **24 views** · 📊 [Market Research & Insights](../)
+> ⚡ **75 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

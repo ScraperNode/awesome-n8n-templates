@@ -1,6 +1,6 @@
 # 💬 AI-powered sales assistant with Airtable CRM, Gmail and web research
 
-> ⚡ **112 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **163 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

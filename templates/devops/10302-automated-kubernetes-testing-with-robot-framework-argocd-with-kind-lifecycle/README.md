@@ -1,6 +1,6 @@
 # ⚙️ Automated Kubernetes testing with Robot Framework, ArgoCD & with KinD lifecycle
 
-> ⚡ **298 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **537 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

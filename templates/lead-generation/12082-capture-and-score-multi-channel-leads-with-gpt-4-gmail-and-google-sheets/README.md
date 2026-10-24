@@ -1,6 +1,6 @@
 # 🎣 Capture and score multi-channel leads with GPT-4, Gmail and Google Sheets
 
-> ⚡ **13 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **22 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

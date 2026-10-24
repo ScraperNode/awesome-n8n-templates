@@ -1,6 +1,6 @@
 # 💬 Conversational Telegram bot with GPT-5/GPT-4o for text and voice messages
 
-> ⚡ **90,705 views** · 💬 [Support Chatbots](../)
+> ⚡ **93,930 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

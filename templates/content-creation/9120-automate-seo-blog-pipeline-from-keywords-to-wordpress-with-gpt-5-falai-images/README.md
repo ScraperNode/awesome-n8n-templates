@@ -1,6 +1,6 @@
 # 🎬 Automate SEO blog pipeline from keywords to WordPress with GPT-5 & fal.ai images
 
-> ⚡ **192 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **249 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

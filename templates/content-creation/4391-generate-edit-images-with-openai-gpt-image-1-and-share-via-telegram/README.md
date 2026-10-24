@@ -1,6 +1,6 @@
 # 🎬 Generate & edit images with OpenAI GPT-Image-1 and share via Telegram
 
-> ⚡ **2,175 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **2,377 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

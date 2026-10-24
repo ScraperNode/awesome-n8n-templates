@@ -1,6 +1,6 @@
 # 🎬 Generate AI descriptions for new Google Sheets entries with GPT-4.1-mini
 
-> ⚡ **738 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **831 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

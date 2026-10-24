@@ -1,6 +1,6 @@
 # 🤝 Resolve and create KlickTipp tags from names with optional prefixes
 
-> ⚡ **0 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **8 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

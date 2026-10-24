@@ -1,6 +1,6 @@
 # ⚡ Send file to kindle with Telegram Bot and Outlook
 
-> ⚡ **1,834 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,914 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

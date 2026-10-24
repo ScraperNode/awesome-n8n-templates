@@ -1,6 +1,6 @@
 # 📖 Ai agent to chat with files in Supabase Storage and Google Drive
 
-> ⚡ **9,074 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **9,397 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

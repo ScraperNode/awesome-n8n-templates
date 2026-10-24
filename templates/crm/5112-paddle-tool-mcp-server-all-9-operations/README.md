@@ -1,6 +1,6 @@
 # 🤝 🛠️ Paddle tool MCP server 💪 all 9 operations
 
-> ⚡ **140 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **148 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

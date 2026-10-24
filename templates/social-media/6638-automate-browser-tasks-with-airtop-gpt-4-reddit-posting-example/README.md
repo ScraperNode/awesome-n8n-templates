@@ -1,6 +1,6 @@
 # 📱 Automate browser tasks with Airtop & GPT-4 - Reddit posting example
 
-> ⚡ **1,533 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,695 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

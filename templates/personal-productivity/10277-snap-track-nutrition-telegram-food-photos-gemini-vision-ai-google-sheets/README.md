@@ -1,6 +1,6 @@
 # ⚡ Snap & track nutrition: Telegram food photos → Gemini Vision AI → Google Sheets
 
-> ⚡ **739 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,047 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

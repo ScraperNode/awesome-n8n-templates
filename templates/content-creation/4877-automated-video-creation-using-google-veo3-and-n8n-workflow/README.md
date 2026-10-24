@@ -1,6 +1,6 @@
 # 🎬 Automated video creation using Google Veo3 and n8n workflow
 
-> ⚡ **11,992 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **13,387 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎯 Parse and create LEDGERS contacts from unstructured data with GPT-4o
 
-> ⚡ **290 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **305 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Automated personalized email outreach with AI, database tracking & scheduling
 
-> ⚡ **421 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **787 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

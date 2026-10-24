@@ -1,6 +1,6 @@
 # 🎬 Generate AI images with text prompts using BananaAPI and Nano Banana Engine
 
-> ⚡ **4,473 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,234 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚙️ Detect AWS Orphaned Resources & Send Cost Reports to Slack, Email, and Sheets
 
-> ⚡ **162 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **315 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Segment WooCommerce customers for targeted marketing with RFM analysis
 
-> ⚡ **1,204 views** · 📊 [Market Research & Insights](../)
+> ⚡ **1,352 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

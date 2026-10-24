@@ -1,6 +1,6 @@
 # ⚡ Telegram fitness bot: Custom workout plans from photo/text using Gemini AI
 
-> ⚡ **325 views** · ⚡ [Personal Productivity](../)
+> ⚡ **422 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

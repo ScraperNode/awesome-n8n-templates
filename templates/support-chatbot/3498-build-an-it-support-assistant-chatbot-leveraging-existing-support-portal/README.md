@@ -1,6 +1,6 @@
 # 💬 Build an IT support assistant chatbot leveraging existing support portal
 
-> ⚡ **6,187 views** · 💬 [Support Chatbots](../)
+> ⚡ **6,549 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

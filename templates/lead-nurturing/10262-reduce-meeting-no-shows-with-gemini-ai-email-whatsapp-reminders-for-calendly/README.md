@@ -1,6 +1,6 @@
 # 💬 Reduce meeting no-shows with Gemini AI, email & WhatsApp reminders for Calendly
 
-> ⚡ **2,186 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,299 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 👥 Automated recruitment process with Slack, DocuSign, Trello & Gmail notifications
 
-> ⚡ **211 views** · 👥 [HR & Recruitment](../)
+> ⚡ **262 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

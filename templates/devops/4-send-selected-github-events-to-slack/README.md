@@ -1,6 +1,6 @@
 # ⚙️ Send selected GitHub events to Slack
 
-> ⚡ **3,651 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **4,597 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

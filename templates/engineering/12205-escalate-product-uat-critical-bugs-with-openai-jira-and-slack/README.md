@@ -1,6 +1,6 @@
 # ⚒️ Escalate product UAT critical bugs with OpenAI, Jira and Slack
 
-> ⚡ **73 views** · ⚒️ [Engineering](../)
+> ⚡ **83 views** · ⚒️ [Engineering](../)
 
 ## Description
 

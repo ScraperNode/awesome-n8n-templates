@@ -1,6 +1,6 @@
 # 💬 Build a text & image responding Telegram bot with Google Gemini 2.5 Flash
 
-> ⚡ **1,812 views** · 💬 [Support Chatbots](../)
+> ⚡ **2,042 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

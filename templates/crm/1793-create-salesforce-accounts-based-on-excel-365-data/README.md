@@ -1,6 +1,6 @@
 # 🤝 Create Salesforce accounts based on Excel 365 data
 
-> ⚡ **3,315 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **3,413 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

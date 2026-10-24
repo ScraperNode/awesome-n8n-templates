@@ -1,6 +1,6 @@
 # 🔬 Generate document summaries & Q&As from PDF/TXT using GPT-4o with Slack alerts
 
-> ⚡ **193 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **232 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

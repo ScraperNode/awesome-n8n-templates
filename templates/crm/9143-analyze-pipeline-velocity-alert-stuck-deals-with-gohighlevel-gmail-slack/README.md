@@ -1,6 +1,6 @@
 # 🤝 Analyze pipeline velocity & alert stuck deals with GoHighLevel, Gmail & Slack
 
-> ⚡ **61 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **78 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

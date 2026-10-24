@@ -1,6 +1,6 @@
 # 🎬 Create Deepfake Videos by Swapping Faces with Fal.ai Wan 2.2 and AWS S3
 
-> ⚡ **277 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **334 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

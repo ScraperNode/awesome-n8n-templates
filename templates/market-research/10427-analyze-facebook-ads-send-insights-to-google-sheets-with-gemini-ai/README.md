@@ -1,6 +1,6 @@
 # 📊 Analyze Facebook Ads & send insights to Google Sheets with Gemini AI
 
-> ⚡ **8,338 views** · 📊 [Market Research & Insights](../)
+> ⚡ **15,308 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

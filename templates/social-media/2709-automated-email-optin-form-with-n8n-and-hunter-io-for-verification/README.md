@@ -1,6 +1,6 @@
 # 📱 Automated email optin form with n8n and Hunter io for verification
 
-> ⚡ **1,224 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,253 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

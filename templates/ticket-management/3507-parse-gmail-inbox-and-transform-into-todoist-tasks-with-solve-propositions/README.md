@@ -1,6 +1,6 @@
 # 🎫 Parse Gmail inbox and transform into Todoist tasks with Solve Propositions
 
-> ⚡ **4,698 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **5,050 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Send Google Sheets data as a message to a Discord channel
 
-> ⚡ **3,356 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,459 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎫 Assign Zammad users to organizations based on email domain
 
-> ⚡ **607 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **664 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

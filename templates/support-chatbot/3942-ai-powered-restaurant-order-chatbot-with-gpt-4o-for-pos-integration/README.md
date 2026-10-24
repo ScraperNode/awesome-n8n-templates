@@ -1,6 +1,6 @@
 # 💬 AI-powered restaurant order chatbot with GPT-4o for POS integration
 
-> ⚡ **16,920 views** · 💬 [Support Chatbots](../)
+> ⚡ **18,539 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

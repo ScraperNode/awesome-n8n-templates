@@ -1,6 +1,6 @@
 # 💬 Automated lead follow-up with Follow Up Boss, Gmail, Twilio & WhatsApp messaging
 
-> ⚡ **1,499 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **2,611 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

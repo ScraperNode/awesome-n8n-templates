@@ -1,6 +1,6 @@
 # 📈 Track portfolio performance and risk using Google Sheets and Alpha Vantage
 
-> ⚡ **160 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **308 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

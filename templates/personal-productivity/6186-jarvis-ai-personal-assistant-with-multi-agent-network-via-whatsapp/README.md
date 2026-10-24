@@ -1,6 +1,6 @@
 # ⚡ Jarvis: AI personal assistant with multi-agent network via WhatsApp
 
-> ⚡ **1,052 views** · ⚡ [Personal Productivity](../)
+> ⚡ **2,396 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Automate meeting summaries from Fireflies transcripts with Gemini & Gmail
 
-> ⚡ **1,753 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,899 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

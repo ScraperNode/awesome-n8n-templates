@@ -1,6 +1,6 @@
 # 🎬 Add text to a downloaded image
 
-> ⚡ **10,973 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **11,258 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

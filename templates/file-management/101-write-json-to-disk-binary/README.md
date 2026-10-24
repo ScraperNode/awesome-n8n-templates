@@ -1,6 +1,6 @@
 # 📁 Write JSON to disk (binary)
 
-> ⚡ **5,549 views** · 📁 [File Management](../)
+> ⚡ **5,709 views** · 📁 [File Management](../)
 
 ## Description
 

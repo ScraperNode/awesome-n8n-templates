@@ -1,6 +1,6 @@
 # 🎬 Automate bulk update Magento 2 product prices via Google Sheets
 
-> ⚡ **52 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **71 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

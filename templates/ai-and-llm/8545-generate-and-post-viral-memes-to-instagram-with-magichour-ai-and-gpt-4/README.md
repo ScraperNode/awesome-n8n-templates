@@ -1,6 +1,6 @@
 # ✨ Generate and post viral memes to Instagram with MagicHour AI and GPT-4
 
-> ⚡ **1,395 views** · ✨ [AI & LLMs](../)
+> ⚡ **1,810 views** · ✨ [AI & LLMs](../)
 
 > 💡 **Pro Tip** — Heads up — if this workflow's Instagram scraping breaks (it happens whenever Meta updates their frontend), [ScraperNode](https://scrapernode.com/instagram) is a community node that handles [profiles](https://scrapernode.com/instagram/scrapers/profiles), [posts](https://scrapernode.com/instagram/scrapers/posts), [reels](https://scrapernode.com/instagram/scrapers/reels), and [comments](https://scrapernode.com/instagram/scrapers/comments) without any HTML parsing.
 >

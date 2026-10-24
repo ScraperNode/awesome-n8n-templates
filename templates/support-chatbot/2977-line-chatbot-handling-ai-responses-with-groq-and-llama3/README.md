@@ -1,6 +1,6 @@
 # 💬 Line chatbot handling AI responses with Groq and Llama3
 
-> ⚡ **1,647 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,726 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

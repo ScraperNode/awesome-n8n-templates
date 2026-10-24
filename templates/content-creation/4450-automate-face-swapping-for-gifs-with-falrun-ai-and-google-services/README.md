@@ -1,6 +1,6 @@
 # 🎬 Automate face swapping for GIFs with Fal.run AI and Google Services
 
-> ⚡ **444 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **493 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

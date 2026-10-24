@@ -1,0 +1,1199 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Reprice gold chain stock daily and announce it on WhatsApp",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "run",
+      "name": "Run it now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        190
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "cron",
+      "name": "Every weekday, 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1-5"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "cfg1",
+      "name": "config",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// GOLD CHAIN CATALOGUE ENGINE \u2014 CONFIG\n// Everything you might want to change lives in this one node. Nothing else in either\n// workflow needs editing.\n//\n// The same config node ships in BOTH workflows (\"01 reprice and announce\" and\n// \"02 WhatsApp enquiries\"). build.js regenerates both from this one file, and validate.js\n// fails if they drift apart, so you never paste it between them by hand.\n//\n// A blank id or key means that step is SKIPPED, never that the run fails. Both workflows run\n// end to end on the built-in demo stock, demo gold rate and demo customers below, which is\n// what lets this be shown on a screen-share before a single credential exists.\n\n// ---------------------------------------------------------------- The business\nconst BUSINESS_NAME   = 'Demo Gold Wholesale';\nconst OWNER_NAME      = 'the owner';\n// The owner's WhatsApp number, international format. Drafts and hand-offs go here.\nconst OWNER_WHATSAPP  = '';\nconst CURRENCY        = 'USD';\nconst CURRENCY_SYMBOL = '$';\n\n// ---------------------------------------------------------------- Pricing\n// Wholesale gold is priced off the day's rate. A chain's price is\n//   weight (g) x purity x today's 24k rate per gram     <- the metal\n// + weight (g) x the style's making charge per gram     <- the work\n// then the wholesale margin on top, rounded.\n// Purity is the fraction of pure gold for each karat. A row whose karat is not in this table\n// is held back rather than priced on a guess.\nconst PURITY = { 24: 0.999, 22: 0.916, 21: 0.875, 18: 0.750, 14: 0.585 };\n\n// One entry per chain style you carry. `words` are what customers type on WhatsApp to mean\n// it. The making charge is per gram, in CURRENCY.\nconst STYLES = {\n  rope:   { label: 'Rope',   making_per_gram: 3.5, words: ['rope', 'twisted'] },\n  cuban:  { label: 'Cuban',  making_per_gram: 4.0, words: ['cuban', 'curb', 'miami'] },\n  figaro: { label: 'Figaro', making_per_gram: 3.0, words: ['figaro'] },\n  box:    { label: 'Box',    making_per_gram: 2.5, words: ['box', 'venetian'] },\n  franco: { label: 'Franco', making_per_gram: 4.5, words: ['franco'] },\n  ball:   { label: 'Ball',   making_per_gram: 2.0, words: ['ball', 'bead'] }\n};\n\nconst WHOLESALE_MARGIN_PCT = 2.0;\nconst ROUND_TO             = 1;      // round every price to this many CURRENCY units\n\n// ---------------------------------------------------------------- The gold rate\n// Today's 24k rate per gram, from goldapi.io (free tier is enough for once a day).\n// Blank -> the demo rate below is used, and every message says so.\nconst GOLD_API_KEY  = '';\nconst GOLD_API_BASE = 'https://www.goldapi.io/api';\n\n// The gate that stops a bad number reaching every customer. Gold rarely moves more than a\n// few percent in a day; a bigger move since the last list is far more likely to be a wrong\n// currency, a stale cache or a typo than the market. Above this, nothing is published and\n// the owner is told why.\nconst MAX_RATE_MOVE_PCT = 3.0;\n\n// ---------------------------------------------------------------- The stock sheet\n// One Google Sheet, two tabs. Blank id -> the demo stock and demo customers below.\n//   Stock:     sku | style | purity_k | length_in | weight_g | qty | price | rate | priced_qty | priced_at\n//   Customers: name | whatsapp | opted_out\n// `price`, `rate`, `priced_qty` and `priced_at` are written by workflow 01: they are what the\n// last published list said, which is how the next run knows what is new or sold out.\nconst SHEET_ID        = '';\nconst STOCK_TAB       = 'Stock';\nconst CUSTOMERS_TAB   = 'Customers';\nconst LOW_STOCK_AT    = 2;           // at or below this many pieces, a chain is \"last few\"\n\n// ---------------------------------------------------------------- WhatsApp (Twilio)\n// Your Twilio WhatsApp sender, international format. Blank -> nothing is sent; every message\n// is built in full and shown on a STOP node instead. The Twilio account itself goes in n8n's\n// credential store, on the nodes named [cred] Twilio.\nconst TWILIO_WHATSAPP_FROM = '';\n\n// How long the owner has to approve a broadcast before it is dropped. An unapproved list is\n// never sent late: prices from the morning are wrong by the evening.\nconst APPROVAL_WAIT_HOURS = 4;\n\n// The hard ceiling on one broadcast, enforced in code.\nconst BROADCAST_CAP = 200;\n\n// ---------------------------------------------------------------- Enquiries (workflow 02)\n// A request for this many pieces or more goes to a human for a price.\nconst HANDOFF_QTY = 10;\n// Words that mean a person should answer, whatever else the message says.\nconst HANDOFF_WORDS = ['order', 'bulk', 'discount', 'best price', 'payment', 'invoice',\n  'credit', 'custom', 'repair', 'return', 'complaint', 'urgent'];\nconst OPT_OUT_WORDS = ['stop', 'unsubscribe', 'remove me'];\n\n// ---------------------------------------------------------------- AI (optional)\n// An OpenAI-compatible chat endpoint reads what the customer wants: style, karat, length and\n// quantity. It never states a price or stock level; those always come from the sheet, in code.\n// Blank key -> keyword rules read the message instead, and the workflow behaves the same.\nconst AI_API_KEY  = '';\nconst AI_BASE_URL = 'https://api.openai.com/v1';\nconst AI_MODEL    = 'gpt-4o-mini';\n\n// ---------------------------------------------------------------- Safety switch\n//   TEST_RUN true,  TEST_WHATSAPP blank (how it ships) -> preview. Nothing is sent, nothing is\n//                                                         written; every message is shown.\n//   TEST_RUN true,  TEST_WHATSAPP set                  -> test. Messages really send, but ALL\n//                                                         of them to TEST_WHATSAPP, at most 3\n//                                                         per broadcast, marked [TEST]. The\n//                                                         sheet is still not written.\n//   TEST_RUN false                                     -> live.\n// Filling in TEST_WHATSAPP can only ever redirect a message, never cause one.\nconst TEST_RUN      = true;\nconst TEST_WHATSAPP = '';\n\nconst MODE = TEST_RUN !== true ? 'live' : (TEST_WHATSAPP.trim() !== '' ? 'test' : 'preview');\n\n// ---------------------------------------------------------------- Demo data\n// Every row, number and person here is invented. The DEMO rate is not a market price.\n// The mix is deliberate: it has to show every decision the engine makes.\n//   * priced last time, still in stock         -> repriced at today's rate\n//   * qty 0, had stock last time               -> sold out\n//   * had 0 last time, stock now               -> back in stock\n//   * qty at or under LOW_STOCK_AT             -> last few\n//   * never priced before                      -> new in\n//   * no weight / a karat not in PURITY        -> held back, with the reason\nconst DEMO_GOLD_RATE      = 110.00;   // 24k per gram, CURRENCY. DEMO, not a market price.\nconst DEMO_STOCK = [\n  { sku: 'R22-20',  style: 'rope',   purity_k: 22, length_in: 20, weight_g: 18.4, qty: 6,  price: 1930, rate: 108.4, priced_qty: 6,  priced_at: '2026-09-18' },\n  { sku: 'R22-24',  style: 'rope',   purity_k: 22, length_in: 24, weight_g: 22.1, qty: 3,  price: 2318, rate: 108.4, priced_qty: 4,  priced_at: '2026-09-18' },\n  { sku: 'C22-22',  style: 'cuban',  purity_k: 22, length_in: 22, weight_g: 35.0, qty: 2,  price: 3710, rate: 108.4, priced_qty: 2,  priced_at: '2026-09-18' },\n  { sku: 'C18-20',  style: 'cuban',  purity_k: 18, length_in: 20, weight_g: 28.6, qty: 0,  price: 2466, rate: 108.4, priced_qty: 3,  priced_at: '2026-09-18' },\n  { sku: 'F18-18',  style: 'figaro', purity_k: 18, length_in: 18, weight_g: 9.8,  qty: 12, price: 842,  rate: 108.4, priced_qty: 12, priced_at: '2026-09-18' },\n  { sku: 'F22-20',  style: 'figaro', purity_k: 22, length_in: 20, weight_g: 12.4, qty: 5,  price: 1296, rate: 108.4, priced_qty: 0,  priced_at: '2026-09-18' },\n  { sku: 'B21-18',  style: 'box',    purity_k: 21, length_in: 18, weight_g: 14.2, qty: 1,  price: 1388, rate: 108.4, priced_qty: 5,  priced_at: '2026-09-18' },\n  { sku: 'FR22-22', style: 'franco', purity_k: 22, length_in: 22, weight_g: 24.0, qty: 4,  price: '',   rate: '',    priced_qty: '', priced_at: '' },\n  { sku: 'BL18-16', style: 'ball',   purity_k: 18, length_in: 16, weight_g: 6.5,  qty: 20, price: '',   rate: '',    priced_qty: '', priced_at: '' },\n  { sku: 'R22-18',  style: 'rope',   purity_k: 22, length_in: 18, weight_g: '',   qty: 2,  price: '',   rate: '',    priced_qty: '', priced_at: '' },\n  { sku: 'C20-20',  style: 'cuban',  purity_k: 20, length_in: 20, weight_g: 30.2, qty: 1,  price: '',   rate: '',    priced_qty: '', priced_at: '' }\n];\nconst DEMO_CUSTOMERS = [\n  { name: 'Northgate Jewellers', whatsapp: '+1234567890', opted_out: '' },\n  { name: 'Al Noor Gold',        whatsapp: '+1234567890', opted_out: '' },\n  { name: 'Riverside Pawn',      whatsapp: '+1234567890', opted_out: 'yes' },\n  { name: 'Sunrise Traders',     whatsapp: '0100',         opted_out: '' },\n  { name: 'Crown & Chain',       whatsapp: '+1234567890', opted_out: '' }\n];\n// What workflow 02 answers when run by hand. The same shape Twilio posts to the webhook.\nconst DEMO_MESSAGES = [\n  { From: 'whatsapp:+1234567890', ProfileName: 'Northgate Jewellers', Body: 'Hi, do you have 22k rope chain 20 inch? price?' },\n  { From: 'whatsapp:+1234567890', ProfileName: 'Al Noor Gold',        Body: 'figaro 18k' },\n  { From: 'whatsapp:+1234567890', ProfileName: 'Crown & Chain',       Body: 'need 40 pcs cuban 22k for my shop, best price?' },\n  { From: 'whatsapp:+1234567890', ProfileName: 'Northgate Jewellers', Body: 'can you do a custom 30 inch rope?' },\n  { From: 'whatsapp:+1234567890', ProfileName: 'Sunrise Traders',     Body: 'STOP' }\n];\n\nconst SETTINGS = {\n  business_name:   BUSINESS_NAME.trim(),\n  owner_name:      OWNER_NAME.trim() || 'the owner',\n  owner_whatsapp:  OWNER_WHATSAPP.trim(),\n  currency:        CURRENCY.trim().toUpperCase(),\n  currency_symbol: CURRENCY_SYMBOL,\n\n  purity:               PURITY,\n  styles:               STYLES,\n  wholesale_margin_pct: Number(WHOLESALE_MARGIN_PCT) || 0,\n  round_to:             Number(ROUND_TO) || 1,\n\n  gold_api_key:      GOLD_API_KEY.trim(),\n  gold_api_base:     GOLD_API_BASE.trim().replace(/\\/+$/, ''),\n  max_rate_move_pct: Number(MAX_RATE_MOVE_PCT) || 3,\n\n  sheet_id:      SHEET_ID.trim(),\n  stock_tab:     STOCK_TAB.trim(),\n  customers_tab: CUSTOMERS_TAB.trim(),\n  low_stock_at:  Number(LOW_STOCK_AT) || 0,\n\n  twilio_whatsapp_from: TWILIO_WHATSAPP_FROM.trim(),\n  approval_wait_hours:  Number(APPROVAL_WAIT_HOURS) || 4,\n  broadcast_cap:        Number(BROADCAST_CAP) || 0,\n\n  handoff_qty:   Number(HANDOFF_QTY) || 10,\n  handoff_words: HANDOFF_WORDS,\n  opt_out_words: OPT_OUT_WORDS,\n\n  ai_api_key:  AI_API_KEY.trim(),\n  ai_base_url: AI_BASE_URL.trim().replace(/\\/+$/, ''),\n  ai_model:    AI_MODEL.trim(),\n\n  test_whatsapp: TEST_WHATSAPP.trim(),\n  test_cap:      3,\n  mode:          MODE,\n\n  demo_gold_rate: DEMO_GOLD_RATE,\n  demo_stock:     DEMO_STOCK,\n  demo_customers: DEMO_CUSTOMERS,\n  demo_messages:  DEMO_MESSAGES,\n\n  // derived flags \u2014 the gates read these, never the raw constants\n  gold_api_enabled: GOLD_API_KEY.trim() !== '',\n  sheet_enabled:    SHEET_ID.trim() !== '',\n  ai_enabled:       AI_API_KEY.trim() !== '',\n  // Sending needs a sender AND a mode that allows it. In test mode the owner number is not\n  // required, because every message is redirected to TEST_WHATSAPP anyway.\n  send_enabled: TWILIO_WHATSAPP_FROM.trim() !== '' && MODE !== 'preview'\n    && (MODE === 'test' || OWNER_WHATSAPP.trim() !== ''),\n  // The sheet is only ever written live. A test run sends real messages and touches nothing.\n  write_enabled: SHEET_ID.trim() !== '' && MODE === 'live'\n};\n\n// config passes the incoming payload through untouched under `incoming`, so whichever\n// trigger fired, the next node reads the payload from the same place. It runs once per item.\nconst incoming = $input.all().length ? $input.all().map((i) => i.json || {}) : [{}];\nreturn incoming.map((payload) => ({ json: Object.assign({}, SETTINGS, { incoming: payload }) }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "stock-on",
+      "name": "stock sheet configured?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "stock-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.sheet_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "stock-read",
+      "name": "[cred] Sheets - read the stock",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        840,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('config').first().json.stock_tab }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('config').first().json.sheet_id }}"
+        }
+      },
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "stock-collect",
+      "name": "collect the stock",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// The sheet hands back one item per row. Collected into one item here so the rest of the run\n// reads the stock the same way it reads the demo stock.\nconst rows = $input.all().map((i) => i.json || {}).filter((r) => String(r.sku || '').trim() !== '');\nreturn [{ json: { source: 'stock sheet', rows } }];"
+      },
+      "executeOnce": false,
+      "typeVersion": 2
+    },
+    {
+      "id": "stock-demo",
+      "name": "use the demo stock",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        840,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// No stock sheet configured, so the built-in demo stock stands in. Same shape the sheet\n// read produces, so everything downstream is identical whichever branch ran.\nconst cfg = $('config').first().json;\nreturn [{ json: { source: 'demo stock (invented)', rows: cfg.demo_stock } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "check",
+      "name": "check the stock rows",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Every row is checked before anything is priced. A row that cannot be priced honestly\n// (no weight, a karat with no purity, a style with no making charge) is HELD BACK with its\n// reason, never priced on a guess and never silently dropped.\nconst cfg = $('config').first().json;\nconst src = $input.first().json || {};\n// ---- shared pricing (build/js/lib-pricing.js, inlined by build.js) ----\n// One definition of \"what a chain costs today\", used by the repricing run and by every\n// WhatsApp answer, so a price quoted in chat can never disagree with the price list.\n\nfunction num(v) {\n  if (v === null || v === undefined) return NaN;\n  const s = String(v).replace(/[^0-9.\\-]/g, '');\n  return s === '' ? NaN : Number(s);\n}\n\n// A row the way a sheet or the demo hands it over, into one typed shape. Nothing is guessed:\n// a value that does not parse stays NaN and the check step says so.\nfunction readRow(r) {\n  return {\n    sku:        String(r.sku || '').trim(),\n    style:      String(r.style || '').trim().toLowerCase(),\n    purity_k:   num(r.purity_k),\n    length_in:  num(r.length_in),\n    weight_g:   num(r.weight_g),\n    qty:        num(r.qty),\n    prev_price: num(r.price),\n    prev_rate:  num(r.rate),\n    prev_qty:   num(r.priced_qty),\n    priced_at:  String(r.priced_at || '').trim()\n  };\n}\n\nfunction priceChain(row, rate24, cfg) {\n  const purity = cfg.purity[row.purity_k];\n  const style = cfg.styles[row.style];\n  const metal = row.weight_g * purity * rate24;\n  const making = row.weight_g * style.making_per_gram;\n  const gross = (metal + making) * (1 + cfg.wholesale_margin_pct / 100);\n  const step = cfg.round_to || 1;\n  return {\n    metal_value: Math.round(metal * 100) / 100,\n    making_value: Math.round(making * 100) / 100,\n    price: Math.round(gross / step) * step\n  };\n}\n\nfunction money(v, cfg) {\n  return cfg.currency_symbol + Number(v).toLocaleString('en-US', { maximumFractionDigits: 2 });\n}\n\nfunction chainLabel(row, cfg) {\n  const style = cfg.styles[row.style];\n  return row.purity_k + 'k ' + (style ? style.label : row.style) + ' ' + row.length_in + 'in';\n}\n// ---- end shared pricing ----\nconst ok = [], held = [];\nfor (const raw of src.rows || []) {\n  const r = readRow(raw);\n  const why = [];\n  if (!r.sku) why.push('no sku');\n  if (!cfg.styles[r.style]) why.push('style \"' + r.style + '\" is not in STYLES');\n  if (!cfg.purity[r.purity_k]) why.push((isNaN(r.purity_k) ? 'no karat' : r.purity_k + 'k') + ' is not in the PURITY table');\n  if (!(r.weight_g > 0)) why.push('no weight');\n  if (!(r.qty >= 0)) why.push('no quantity');\n  if (why.length) held.push({ sku: r.sku || '(blank)', reasons: why.join('; ') });\n  else ok.push(r);\n}\n\n// The rate the last published list was priced at: the median of the rows' `rate` column, so\n// one hand-edited cell cannot move it.\nconst rates = ok.map((r) => r.prev_rate).filter((v) => v > 0).sort((a, b) => a - b);\nconst last_rate = rates.length ? rates[Math.floor(rates.length / 2)] : null;\n\nreturn [{ json: { source: src.source, rows: ok, held, last_rate } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "rate-on",
+      "name": "gold rate configured?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1680,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "rate-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.gold_api_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "rate-http",
+      "name": "Gold rate - today's price",
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "goldapi.io, one call a day. The key comes from config; a blank key means this node never executes and the demo rate stands in.",
+      "onError": "continueErrorOutput",
+      "position": [
+        1960,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $('config').first().json.gold_api_base + '/XAU/' + $('config').first().json.currency }}",
+        "options": {
+          "timeout": 20000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-access-token",
+              "value": "={{ $('config').first().json.gold_api_key }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "rate-read",
+      "name": "read the gold rate",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// goldapi.io answers with the spot price. Only the 24k price per gram is used; purity is\n// applied in code, from the PURITY table, so the maths is the same whichever source the rate\n// came from. goldapi.io has shipped more than one response shape, so this accepts each of them\n// and, failing all, derives the gram price from the troy-ounce `price`. A reply with none of\n// these gives 0, which `price every chain` refuses rather than prices on.\nconst cfg = $('config').first().json;\nconst r = $input.first().json || {};\nconst TROY_OUNCE_G = 31.1034768;\nconst pick = (...vals) => vals.map(Number).find((v) => v > 0) || 0;\nconst perGram = pick(\n  r.price_gram_24k,\n  r.melt_price_per_gram && (r.melt_price_per_gram['24k'] || r.melt_price_per_gram.k24),\n  r.price_per_unit && r.price_per_unit.gram\n) || (Number(r.price) > 0 ? Number(r.price) / TROY_OUNCE_G : 0);\nreturn [{ json: {\n  rate_24k: Math.round(perGram * 100) / 100,\n  currency: String(r.currency || cfg.currency).toUpperCase(),\n  rate_source: 'goldapi.io ' + (r.timestamp ? new Date(r.timestamp * 1000).toISOString() : 'today')\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "rate-fail",
+      "name": "STOP: gold rate unavailable",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2240,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// The gold-rate service refused or failed. Nothing is priced on yesterday's number: a list\n// that looks current but is not is worse than no list. The response is on this node.\nreturn [{ json: {\n  _outcome: 'stopped \u2014 nothing priced, nothing sent',\n  _reason: 'the gold-rate request failed; see the error below',\n  error: $input.first().json\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "rate-demo",
+      "name": "use the demo gold rate",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1960,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// No gold-rate key configured, so the invented demo rate stands in. It is labelled as such\n// everywhere it appears, so a demo list can never be mistaken for a real one.\nconst cfg = $('config').first().json;\nreturn [{ json: { rate_24k: cfg.demo_gold_rate, currency: cfg.currency,\n  rate_source: 'DEMO rate (not a market price)' } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "price",
+      "name": "price every chain",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2520,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Prices every checked row at today's rate and decides what changed since the last list:\n// new in, back in stock, sold out, last few. Also decides whether today's rate is believable\n// at all (see MAX_RATE_MOVE_PCT) \u2014 the gate after this node reads `rate_ok`.\nconst cfg = $('config').first().json;\nconst stock = $('check the stock rows').first().json;\nconst rateIn = $input.first().json || {};\n// ---- shared pricing (build/js/lib-pricing.js, inlined by build.js) ----\n// One definition of \"what a chain costs today\", used by the repricing run and by every\n// WhatsApp answer, so a price quoted in chat can never disagree with the price list.\n\nfunction num(v) {\n  if (v === null || v === undefined) return NaN;\n  const s = String(v).replace(/[^0-9.\\-]/g, '');\n  return s === '' ? NaN : Number(s);\n}\n\n// A row the way a sheet or the demo hands it over, into one typed shape. Nothing is guessed:\n// a value that does not parse stays NaN and the check step says so.\nfunction readRow(r) {\n  return {\n    sku:        String(r.sku || '').trim(),\n    style:      String(r.style || '').trim().toLowerCase(),\n    purity_k:   num(r.purity_k),\n    length_in:  num(r.length_in),\n    weight_g:   num(r.weight_g),\n    qty:        num(r.qty),\n    prev_price: num(r.price),\n    prev_rate:  num(r.rate),\n    prev_qty:   num(r.priced_qty),\n    priced_at:  String(r.priced_at || '').trim()\n  };\n}\n\nfunction priceChain(row, rate24, cfg) {\n  const purity = cfg.purity[row.purity_k];\n  const style = cfg.styles[row.style];\n  const metal = row.weight_g * purity * rate24;\n  const making = row.weight_g * style.making_per_gram;\n  const gross = (metal + making) * (1 + cfg.wholesale_margin_pct / 100);\n  const step = cfg.round_to || 1;\n  return {\n    metal_value: Math.round(metal * 100) / 100,\n    making_value: Math.round(making * 100) / 100,\n    price: Math.round(gross / step) * step\n  };\n}\n\nfunction money(v, cfg) {\n  return cfg.currency_symbol + Number(v).toLocaleString('en-US', { maximumFractionDigits: 2 });\n}\n\nfunction chainLabel(row, cfg) {\n  const style = cfg.styles[row.style];\n  return row.purity_k + 'k ' + (style ? style.label : row.style) + ' ' + row.length_in + 'in';\n}\n// ---- end shared pricing ----\nconst rate = Number(rateIn.rate_24k) || 0;\nconst last = stock.last_rate;\nconst move = last ? ((rate - last) / last) * 100 : null;\n\nlet rate_ok = true, rate_note = '';\nif (!(rate > 0)) { rate_ok = false; rate_note = 'no usable rate came back'; }\nelse if (rateIn.currency && rateIn.currency !== cfg.currency) {\n  rate_ok = false; rate_note = 'rate is in ' + rateIn.currency + ', the price list is in ' + cfg.currency;\n} else if (move !== null && Math.abs(move) > cfg.max_rate_move_pct) {\n  rate_ok = false;\n  rate_note = 'rate moved ' + move.toFixed(1) + '% since the last list (' + last + ' -> ' + rate +\n    '), more than MAX_RATE_MOVE_PCT ' + cfg.max_rate_move_pct + '%';\n} else if (move === null) rate_note = 'first priced list: no earlier rate to compare against';\nelse rate_note = 'rate ' + (move >= 0 ? 'up ' : 'down ') + Math.abs(move).toFixed(1) + '% since the last list';\n\nconst chains = stock.rows.map((r) => {\n  const p = priceChain(r, rate, cfg);\n  let change = '';\n  if (!(r.prev_price > 0) && !r.priced_at) change = 'new';\n  else if (r.qty === 0 && r.prev_qty > 0) change = 'sold out';\n  else if (r.qty > 0 && r.prev_qty === 0) change = 'back in stock';\n  else if (r.qty > 0 && r.qty <= cfg.low_stock_at) change = 'last few';\n  return Object.assign({}, r, p, { label: chainLabel(r, cfg), change });\n});\n\nreturn [{ json: {\n  rate_24k: rate, rate_source: rateIn.rate_source, currency: cfg.currency,\n  last_rate: last, rate_move_pct: move === null ? null : Math.round(move * 10) / 10,\n  rate_ok, rate_note,\n  chains, held: stock.held, stock_source: stock.source\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "rate-ok",
+      "name": "rate looks right?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2800,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "rate-ok-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.rate_ok }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "rate-wrong",
+      "name": "STOP: rate looks wrong",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3080,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// Today's rate failed the plausibility gate. Nothing is published, nothing is written, and\n// no customer sees a price built on it. The owner fixes the source or raises\n// MAX_RATE_MOVE_PCT deliberately, then re-runs.\nconst j = $input.first().json;\nreturn [{ json: {\n  _outcome: 'stopped \u2014 nothing published',\n  _reason: j.rate_note,\n  rate_24k: j.rate_24k, last_rate: j.last_rate, rate_source: j.rate_source\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "catalogue",
+      "name": "build the catalogue",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Three views of one priced stock list, so they can never disagree with each other:\n//   stock_list    every chain, sold-out included: the internal count sheet\n//   stock_csv     the same as CSV, for the accountant or the sheet\n//   catalogue     what a customer sees: in-stock chains only, grouped by style\n// plus the announcement draft, which says only what CHANGED. A customer who has the\n// catalogue does not need the whole list again every morning.\nconst cfg = $('config').first().json;\nconst j = $input.first().json;\n// ---- shared pricing (build/js/lib-pricing.js, inlined by build.js) ----\n// One definition of \"what a chain costs today\", used by the repricing run and by every\n// WhatsApp answer, so a price quoted in chat can never disagree with the price list.\n\nfunction num(v) {\n  if (v === null || v === undefined) return NaN;\n  const s = String(v).replace(/[^0-9.\\-]/g, '');\n  return s === '' ? NaN : Number(s);\n}\n\n// A row the way a sheet or the demo hands it over, into one typed shape. Nothing is guessed:\n// a value that does not parse stays NaN and the check step says so.\nfunction readRow(r) {\n  return {\n    sku:        String(r.sku || '').trim(),\n    style:      String(r.style || '').trim().toLowerCase(),\n    purity_k:   num(r.purity_k),\n    length_in:  num(r.length_in),\n    weight_g:   num(r.weight_g),\n    qty:        num(r.qty),\n    prev_price: num(r.price),\n    prev_rate:  num(r.rate),\n    prev_qty:   num(r.priced_qty),\n    priced_at:  String(r.priced_at || '').trim()\n  };\n}\n\nfunction priceChain(row, rate24, cfg) {\n  const purity = cfg.purity[row.purity_k];\n  const style = cfg.styles[row.style];\n  const metal = row.weight_g * purity * rate24;\n  const making = row.weight_g * style.making_per_gram;\n  const gross = (metal + making) * (1 + cfg.wholesale_margin_pct / 100);\n  const step = cfg.round_to || 1;\n  return {\n    metal_value: Math.round(metal * 100) / 100,\n    making_value: Math.round(making * 100) / 100,\n    price: Math.round(gross / step) * step\n  };\n}\n\nfunction money(v, cfg) {\n  return cfg.currency_symbol + Number(v).toLocaleString('en-US', { maximumFractionDigits: 2 });\n}\n\nfunction chainLabel(row, cfg) {\n  const style = cfg.styles[row.style];\n  return row.purity_k + 'k ' + (style ? style.label : row.style) + ' ' + row.length_in + 'in';\n}\n// ---- end shared pricing ----\nconst today = new Date().toISOString().slice(0, 10);\nconst byStyle = {};\nfor (const c of j.chains) (byStyle[c.style] = byStyle[c.style] || []).push(c);\nconst styleOrder = Object.keys(cfg.styles).filter((s) => byStyle[s]);\nconst sortChains = (a, b) => a.purity_k - b.purity_k || a.length_in - b.length_in || a.weight_g - b.weight_g;\n\n// 22k is what most wholesale buyers quote in, so it is stated as well as 24k.\nconst rate22 = Math.round(j.rate_24k * cfg.purity[22] * 100) / 100;\nconst rateLine = '24k ' + money(j.rate_24k, cfg) + '/g \u00b7 22k ' + money(rate22, cfg) + '/g';\nconst demoTag = /DEMO/.test(j.rate_source) ? ' (DEMO RATE, NOT A MARKET PRICE)' : '';\n\nconst line = (c) => '\u2022 ' + c.purity_k + 'k ' + c.length_in + 'in \u00b7 ' + c.weight_g + ' g \u00b7 ' +\n  money(c.price, cfg) + ' \u00b7 ' + c.qty + (c.qty === 1 ? ' pc' : ' pcs');\n\nconst catalogue = ['*' + cfg.business_name + ', ' + today + '*', rateLine + demoTag, ''];\nfor (const s of styleOrder) {\n  const inStock = byStyle[s].filter((c) => c.qty > 0).sort(sortChains);\n  if (!inStock.length) continue;\n  catalogue.push('*' + cfg.styles[s].label + '*');\n  for (const c of inStock) catalogue.push(line(c));\n  catalogue.push('');\n}\ncatalogue.push(\"Prices at today's rate, valid today. Reply with the chain you want.\");\n\nconst stock_list = j.chains.slice().sort((a, b) => (a.sku < b.sku ? -1 : 1))\n  .map((c) => c.sku.padEnd(8) + ' ' + c.label.padEnd(18) + ' ' + String(c.weight_g).padStart(5) +\n    ' g  ' + String(c.qty).padStart(3) + ' pcs  ' + money(c.price, cfg));\n\nconst csvCell = (v) => (/[\",\\n]/.test(String(v)) ? '\"' + String(v).replace(/\"/g, '\"\"') + '\"' : String(v));\nconst stock_csv = [['sku', 'style', 'purity_k', 'length_in', 'weight_g', 'qty', 'price', 'currency', 'rate_24k', 'priced_on']]\n  .concat(j.chains.map((c) => [c.sku, c.style, c.purity_k, c.length_in, c.weight_g, c.qty, c.price, cfg.currency, j.rate_24k, today]))\n  .map((r) => r.map(csvCell).join(',')).join('\\n');\n\n// The announcement: the rate, then only what changed. Short enough to read on a phone.\nconst pick = (kind) => j.chains.filter((c) => c.change === kind).sort(sortChains);\nconst ann = ['*' + cfg.business_name + \"*: today's rate\", rateLine + demoTag];\nif (j.rate_move_pct !== null) ann.push('(' + (j.rate_move_pct >= 0 ? 'up ' : 'down ') + Math.abs(j.rate_move_pct) + '% since our last list)');\nconst section = (title, list, fmt) => {\n  if (!list.length) return;\n  ann.push('', '*' + title + '*');\n  list.forEach((c) => ann.push(fmt(c)));\n};\nsection('New in', pick('new'), (c) => '\u2022 ' + c.label + ' \u00b7 ' + c.weight_g + ' g \u00b7 ' + money(c.price, cfg));\nsection('Back in stock', pick('back in stock'), (c) => '\u2022 ' + c.label + ' \u00b7 ' + c.weight_g + ' g \u00b7 ' + money(c.price, cfg));\nsection('Last few', pick('last few'), (c) => '\u2022 ' + c.label + ' \u00b7 ' + c.qty + ' left \u00b7 ' + money(c.price, cfg));\nsection('Sold out', pick('sold out'), (c) => '\u2022 ' + c.label);\nann.push('', \"Reply with the chain you want for today's price.\");\nlet announcement = ann.join('\\n');\n// WhatsApp over Twilio caps a message at 1,600 characters. Cut at a line, and say so.\nif (announcement.length > 1500) {\n  announcement = announcement.slice(0, 1450).replace(/\\n[^\\n]*$/, '') + '\\n...and more. Reply for the full list.';\n}\n\nreturn [{ json: Object.assign({}, j, {\n  today, rate_22k: rate22,\n  catalogue: catalogue.join('\\n').trim(),\n  stock_list: stock_list.join('\\n'),\n  stock_csv,\n  announcement,\n  counts: {\n    priced: j.chains.length, in_stock: j.chains.filter((c) => c.qty > 0).length,\n    new: pick('new').length, back_in_stock: pick('back in stock').length,\n    last_few: pick('last few').length, sold_out: pick('sold out').length, held_back: j.held.length\n  }\n}) }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cust-on",
+      "name": "customer list configured?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3360,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cust-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.sheet_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "cust-read",
+      "name": "[cred] Sheets - read the customers",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3640,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('config').first().json.customers_tab }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('config').first().json.sheet_id }}"
+        }
+      },
+      "typeVersion": 4.5,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "cust-collect",
+      "name": "collect the customers",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3920,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// The Customers tab, one item per row, collected into one item in the same shape as the demo.\nconst customers = $input.all().map((i) => i.json || {}).filter((r) => String(r.whatsapp || '').trim() !== '');\nreturn [{ json: { source: 'customers sheet', customers } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "cust-demo",
+      "name": "use the demo customers",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3640,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// No sheet configured, so the invented demo customers stand in, in the same shape as the sheet.\nconst cfg = $('config').first().json;\nreturn [{ json: { source: 'demo customers (invented)', customers: cfg.demo_customers } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "plan",
+      "name": "plan the broadcast",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Decides who receives the announcement, and says why for everyone who does not:\n//   opted out            -> never messaged\n//   not a usable number  -> skipped, listed for someone to fix\n//   duplicate number     -> sent once\n//   over BROADCAST_CAP   -> not sent this time, listed\n// In test mode every message is redirected to TEST_WHATSAPP, at most test_cap of them, and\n// marked [TEST]. The owner's approval request is built here too; the approve link itself is\n// added on the send node, because only n8n knows it at that moment.\nconst cfg = $('config').first().json;\nconst draft = $('build the catalogue').first().json;\nconst list = ($input.first().json || {}).customers || [];\n\nfunction e164(v) {\n  const s = String(v || '').replace(/^whatsapp:/, '').replace(/[\\s()\\-.]/g, '');\n  return /^\\+[1-9]\\d{7,14}$/.test(s) ? s : '';\n}\nconst yes = (v) => /^(y|yes|true|1|x)$/i.test(String(v || '').trim());\n\nconst sends = [], skipped = [], seen = new Set();\nfor (const c of list) {\n  const to = e164(c.whatsapp);\n  if (yes(c.opted_out)) { skipped.push({ name: c.name, why: 'opted out' }); continue; }\n  if (!to) { skipped.push({ name: c.name, why: 'not a usable number: ' + c.whatsapp }); continue; }\n  if (seen.has(to)) { skipped.push({ name: c.name, why: 'duplicate number' }); continue; }\n  if (sends.length >= cfg.broadcast_cap) { skipped.push({ name: c.name, why: 'over BROADCAST_CAP ' + cfg.broadcast_cap }); continue; }\n  seen.add(to);\n  sends.push({ name: c.name, to, body: draft.announcement });\n}\n\nlet planned = sends;\nif (cfg.mode === 'test') {\n  planned = sends.slice(0, cfg.test_cap).map((s) => ({\n    name: s.name, to: e164(cfg.test_whatsapp),\n    body: '[TEST: would go to ' + s.name + ' ' + s.to + ']\\n' + s.body\n  }));\n}\n\nconst owner_to = cfg.mode === 'test' ? e164(cfg.test_whatsapp) : e164(cfg.owner_whatsapp);\nconst owner_message = [\n  (cfg.mode === 'test' ? '[TEST] ' : '') + \"Today's list is ready: \" + draft.counts.in_stock + ' chains in stock, ' +\n    draft.counts.new + ' new, ' + draft.counts.sold_out + ' sold out' +\n    (draft.counts.held_back ? ', ' + draft.counts.held_back + ' held back (see the run)' : '') + '.',\n  'Rate: ' + draft.rate_note + '.',\n  'It goes to ' + planned.length + ' customer(s) when you approve. Nothing is sent without you.',\n  '', '--- the message ---', draft.announcement\n].join('\\n');\n\nreturn [{ json: {\n  mode: cfg.mode, owner_to, owner_message,\n  sends: planned, would_send_live: sends.length, skipped,\n  customers_source: ($input.first().json || {}).source\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "send-on",
+      "name": "sending on?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4480,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "send-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.send_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "preview",
+      "name": "STOP: preview - draft shown",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4760,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// Sending is off (TEST_RUN is true with TEST_WHATSAPP blank, or no Twilio sender). Nothing\n// was sent to anyone. This node IS the result: the catalogue, the stock list, the owner's\n// approval request and every customer message, exactly as they would have gone.\nconst cfg = $('config').first().json;\nconst d = $('build the catalogue').first().json;\nconst p = $input.first().json;\nreturn [{ json: {\n  _outcome: 'preview: nothing sent',\n  _reason: cfg.twilio_whatsapp_from ? 'mode is ' + cfg.mode : 'no TWILIO_WHATSAPP_FROM, preview only',\n  rate: d.rate_24k + ' ' + d.currency + '/g 24k, ' + d.rate_source + ', ' + d.rate_note,\n  counts: d.counts,\n  held_back: d.held,\n  catalogue: d.catalogue,\n  stock_list: d.stock_list,\n  stock_csv: d.stock_csv,\n  owner_approval_request: p.owner_message,\n  broadcast_to: p.sends.map((s) => s.name + ' ' + s.to),\n  not_sent_to: p.skipped\n} }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ask",
+      "name": "[cred] Twilio - ask the owner to approve",
+      "type": "n8n-nodes-base.twilio",
+      "notes": "The owner gets the whole message and an approve link. The link resumes the wait node below; nothing is sent to a customer without it.",
+      "position": [
+        4760,
+        0
+      ],
+      "parameters": {
+        "to": "={{ $json.owner_to }}",
+        "from": "={{ $('config').first().json.twilio_whatsapp_from }}",
+        "message": "={{ $json.owner_message + '\\n\\nApprove and send: ' + $execution.resumeUrl + '?approve=yes\\n(Ignore this to cancel.)' }}",
+        "options": {},
+        "toWhatsapp": true
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "wait",
+      "name": "wait for the owner's approval",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        5040,
+        0
+      ],
+      "webhookId": "gold-catalogue-approve",
+      "parameters": {
+        "resume": "webhook",
+        "options": {},
+        "limitType": "afterTimeInterval",
+        "resumeUnit": "hours",
+        "resumeAmount": "={{ $('config').first().json.approval_wait_hours }}",
+        "limitWaitTime": true
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "approved",
+      "name": "approved?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        5320,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "approved-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ !!($json.query && $json.query.approve === 'yes') }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "not-approved",
+      "name": "STOP: not approved",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5600,
+        380
+      ],
+      "parameters": {
+        "jsCode": "// APPROVAL_WAIT_HOURS passed without the owner opening the approve link. Nothing is sent:\n// a morning price list sent in the evening is a wrong price list.\nconst cfg = $('config').first().json;\nreturn [{ json: { _outcome: 'not sent', _reason: 'no approval within ' + cfg.approval_wait_hours + ' hour(s)' } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "per-customer",
+      "name": "one message per customer",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5600,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// The owner approved. One item per recipient, exactly as planned before the approval was\n// asked for: nothing is re-priced after the owner has seen it.\nconst p = $('plan the broadcast').first().json;\nreturn p.sends.map((s) => ({ json: { name: s.name, to: s.to, body: s.body } }));"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "send",
+      "name": "[cred] Twilio - send the announcement",
+      "type": "n8n-nodes-base.twilio",
+      "notes": "One message per customer, exactly as the owner approved it. BROADCAST_CAP is enforced in plan the broadcast.",
+      "position": [
+        5880,
+        0
+      ],
+      "parameters": {
+        "to": "={{ $json.to }}",
+        "from": "={{ $('config').first().json.twilio_whatsapp_from }}",
+        "message": "={{ $json.body }}",
+        "options": {},
+        "toWhatsapp": true
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sent",
+      "name": "STOP: announcement sent",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        6160,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// The broadcast went out after the owner approved it. Everyone left off, and why, is listed.\nconst n = $input.all().length;\nconst p = $('plan the broadcast').first().json;\nreturn [{ json: { _outcome: 'sent', _reason: n + ' announcement(s) sent after the owner approved',\n  mode: p.mode, not_sent_to: p.skipped } }];"
+      },
+      "executeOnce": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "write-on",
+      "name": "writing on?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        5600,
+        190
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "write-on-c",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('config').first().json.write_enabled }}",
+              "rightValue": "true"
+            }
+          ]
+        },
+        "looseTypeValidation": true
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "rows",
+      "name": "rows for the stock sheet",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5880,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// What gets written back to the Stock tab: today's price, rate and quantity, so the NEXT run\n// can tell what is new and what sold out. Matched on sku; no other column is touched.\nconst j = $('build the catalogue').first().json;\nreturn j.chains.map((c) => ({ json: {\n  sku: c.sku, price: c.price, rate: j.rate_24k, priced_qty: c.qty, priced_at: j.today\n} }));"
+      },
+      "executeOnce": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "write",
+      "name": "[cred] Sheets - write today's prices",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        6160,
+        190
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [
+            "sku"
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "operation": "update",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('config').first().json.stock_tab }}"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('config').first().json.sheet_id }}"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "written",
+      "name": "STOP: prices written",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        6440,
+        190
+      ],
+      "parameters": {
+        "jsCode": "// The Stock tab now carries today's price, rate and quantity for every priced chain.\nconst n = $input.all().length;\nreturn [{ json: { _outcome: 'written', _reason: n + \" stock row(s) updated with today's price and rate\" } }];"
+      },
+      "executeOnce": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "not-written",
+      "name": "STOP: preview - prices not written",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5880,
+        380
+      ],
+      "parameters": {
+        "jsCode": "// The sheet is only written live (TEST_RUN = false and a SHEET_ID set). Nothing was written;\n// this is exactly what would have been.\nconst j = $('build the catalogue').first().json;\nconst cfg = $('config').first().json;\nreturn [{ json: {\n  _outcome: 'preview: sheet not written',\n  _reason: cfg.sheet_enabled ? 'mode is ' + cfg.mode + '; the sheet is only written live'\n                             : 'no SHEET_ID, running on the demo stock',\n  would_write: j.chains.map((c) => ({ sku: c.sku, price: c.price, rate: j.rate_24k, priced_qty: c.qty, priced_at: j.today }))\n} }];"
+      },
+      "executeOnce": true,
+      "typeVersion": 2
+    },
+    {
+      "id": "sticky-00",
+      "name": "Note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -1114
+      ],
+      "parameters": {
+        "color": 4,
+        "width": 760,
+        "height": 774,
+        "content": "## Reprice gold chain stock daily and announce it on WhatsApp\n\n**Who's it for**\nJewellery wholesalers and gold traders who send a daily price list to customers on WhatsApp and rework every price by hand each morning.\n\n**How it works**\nEvery weekday at 08:00, or by hand, it reads the Stock tab and checks every row: a chain with no weight or an unknown karat is held back with its reason. It fetches today's 24k rate from goldapi.io and prices each chain as weight x purity x rate, plus the style's making charge and your margin. If the rate moved more than `MAX_RATE_MOVE_PCT` since the last list, it stops. From the same priced rows it builds the catalogue, the stock list, a CSV and an announcement of what changed. The owner approves on WhatsApp before any customer receives it, then the prices are written back.\n\n**How to set up**\n1. Run **Run it now** first: demo stock, a labelled demo rate, nothing sent.\n2. In `config`, set `PURITY`, `STYLES`, `WHOLESALE_MARGIN_PCT` and `SHEET_ID`.\n3. Add `GOLD_API_KEY` and connect Google Sheets and Twilio on the `[cred]` nodes.\n4. Set `TEST_WHATSAPP` to your number, then `TEST_RUN = false`.\n\n**Requirements**\nA Google Sheet with Stock and Customers tabs, a goldapi.io key, and a Twilio WhatsApp sender. WhatsApp only allows free-form messages within 24 hours of the customer's last message, so the broadcast needs an approved template.\n\n**How to customize**\n`STYLES` holds making charges per gram, `ROUND_TO` and `CURRENCY` shape the prices, and `BROADCAST_CAP` and `APPROVAL_WAIT_HOURS` bound the send. Import the companion enquiries workflow to answer replies at the approved price."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-01",
+      "name": "Note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        560,
+        -264
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1040,
+        "height": 224,
+        "content": "### 1. Read the stock, and check it before pricing\n\n`stock sheet configured?` reads the Stock tab through `[cred] Sheets - read the stock`, or falls back to `use the demo stock` so the whole run works with nothing connected.\n\n`check the stock rows` holds back a chain with no weight, a karat missing from `PURITY` or a style missing from `STYLES`, with its reason. A row is never priced on a guess and never silently dropped."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-02",
+      "name": "Note 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1680,
+        -308
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1320,
+        "height": 268,
+        "content": "### 2. Price every chain at today's rate\n\n`Gold rate - today's price` calls goldapi.io; without a key, `use the demo gold rate` supplies a rate labelled as not a market price everywhere it appears.\n\n`price every chain` applies one formula: weight x purity x 24k rate, plus the making charge, plus margin.\n\n`rate looks right?` refuses a rate that moved more than `MAX_RATE_MOVE_PCT` since the last list. A stale feed or a wrong currency is far likelier than the market, and a wrong price sent to every customer is the expensive failure."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-03",
+      "name": "Note 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3080,
+        -242
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1320,
+        "height": 202,
+        "content": "### 3. Four views of the same priced rows\n\n`build the catalogue` makes the customer catalogue, the internal stock list, a CSV and the announcement from one set of rows, so they cannot disagree. The announcement says only what changed: new in, back in stock, last few, sold out.\n\n`plan the broadcast` skips opted-out, unusable and duplicate numbers with a reason, and enforces `BROADCAST_CAP` in code."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-04",
+      "name": "Note 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4480,
+        -242
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 2160,
+        "height": 202,
+        "content": "### 4. The owner approves, then it sends and writes back\n\n`[cred] Twilio - ask the owner to approve` sends the full message with an approve link, and `wait for the owner's approval` holds the run. Nothing reaches a customer until the owner opens it, and if `APPROVAL_WAIT_HOURS` passes first nothing is sent: a morning price is wrong by the evening.\n\nAfter approval the announcement goes out, and `[cred] Sheets - write today's prices` records price, rate and quantity. That write is how tomorrow's run knows what is new and what sold out."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-05",
+      "name": "Note 6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4760,
+        520
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 1320,
+        "height": 202,
+        "content": "## Nothing is sent until you say so\n\nIt ships with `TEST_RUN = true` and a blank `TEST_WHATSAPP`: every message is built and shown on `STOP: preview - draft shown`, and the sheet is not written.\n\nPut your own number in `TEST_WHATSAPP` and real sends go only to you, at most three, marked [TEST]. Set `TEST_RUN = false` to go live."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "config": {
+      "main": [
+        [
+          {
+            "node": "stock sheet configured?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "approved?": {
+      "main": [
+        [
+          {
+            "node": "one message per customer",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "writing on?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: not approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run it now": {
+      "main": [
+        [
+          {
+            "node": "config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sending on?": {
+      "main": [
+        [
+          {
+            "node": "[cred] Twilio - ask the owner to approve",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: preview - draft shown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "writing on?": {
+      "main": [
+        [
+          {
+            "node": "rows for the stock sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: preview - prices not written",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "collect the stock": {
+      "main": [
+        [
+          {
+            "node": "check the stock rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "price every chain": {
+      "main": [
+        [
+          {
+            "node": "rate looks right?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rate looks right?": {
+      "main": [
+        [
+          {
+            "node": "build the catalogue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: rate looks wrong",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "plan the broadcast": {
+      "main": [
+        [
+          {
+            "node": "sending on?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read the gold rate": {
+      "main": [
+        [
+          {
+            "node": "price every chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "use the demo stock": {
+      "main": [
+        [
+          {
+            "node": "check the stock rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "build the catalogue": {
+      "main": [
+        [
+          {
+            "node": "customer list configured?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every weekday, 08:00": {
+      "main": [
+        [
+          {
+            "node": "config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check the stock rows": {
+      "main": [
+        [
+          {
+            "node": "gold rate configured?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "collect the customers": {
+      "main": [
+        [
+          {
+            "node": "plan the broadcast",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gold rate configured?": {
+      "main": [
+        [
+          {
+            "node": "Gold rate - today's price",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "use the demo gold rate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "use the demo customers": {
+      "main": [
+        [
+          {
+            "node": "plan the broadcast",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "use the demo gold rate": {
+      "main": [
+        [
+          {
+            "node": "price every chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "stock sheet configured?": {
+      "main": [
+        [
+          {
+            "node": "[cred] Sheets - read the stock",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "use the demo stock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "one message per customer": {
+      "main": [
+        [
+          {
+            "node": "[cred] Twilio - send the announcement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rows for the stock sheet": {
+      "main": [
+        [
+          {
+            "node": "[cred] Sheets - write today's prices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gold rate - today's price": {
+      "main": [
+        [
+          {
+            "node": "read the gold rate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "STOP: gold rate unavailable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "customer list configured?": {
+      "main": [
+        [
+          {
+            "node": "[cred] Sheets - read the customers",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "use the demo customers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "wait for the owner's approval": {
+      "main": [
+        [
+          {
+            "node": "approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Sheets - read the stock": {
+      "main": [
+        [
+          {
+            "node": "collect the stock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Sheets - read the customers": {
+      "main": [
+        [
+          {
+            "node": "collect the customers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Sheets - write today's prices": {
+      "main": [
+        [
+          {
+            "node": "STOP: prices written",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Twilio - send the announcement": {
+      "main": [
+        [
+          {
+            "node": "STOP: announcement sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[cred] Twilio - ask the owner to approve": {
+      "main": [
+        [
+          {
+            "node": "wait for the owner's approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # 📊 Automate company research using ProspectLens and Google Sheets
 
-> ⚡ **5,184 views** · 📊 [Market Research & Insights](../)
+> ⚡ **5,341 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

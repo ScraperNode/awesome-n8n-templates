@@ -1,6 +1,6 @@
 # 👥 Prevent employee burnout with AI analysis of Slack and tasks data to Google Sheets
 
-> ⚡ **64 views** · 👥 [HR & Recruitment](../)
+> ⚡ **172 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Convert news headlines to audio newsletters with Claude, GPT-4o & OpenAI TTS
 
-> ⚡ **283 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **328 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

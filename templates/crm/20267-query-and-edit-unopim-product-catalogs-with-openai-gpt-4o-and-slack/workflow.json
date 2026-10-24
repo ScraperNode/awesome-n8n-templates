@@ -1,0 +1,717 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Query and edit UnoPim product catalogs with OpenAI GPT-4o and Slack",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "9767565e-98b7-426a-bf44-419adb8dccbb",
+      "name": "When a message arrives",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "788d4062-bbfc-474b-8439-af0f3e2365d4",
+      "parameters": {
+        "options": {}
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "78cf01ab-7adb-4db2-983b-b2c36690db1e",
+      "name": "Settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9af547d7-fbc8-4715-bca3-21109d40e674",
+              "name": "locale",
+              "type": "string",
+              "value": "en_US"
+            },
+            {
+              "id": "d1809609-02bd-411c-8e74-6ec8c3278e04",
+              "name": "channel",
+              "type": "string",
+              "value": "default"
+            },
+            {
+              "id": "c6b50a68-32fe-473a-a9bf-c9499b680c0f",
+              "name": "allowWrites",
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.5
+    },
+    {
+      "id": "cf08d32d-4ea7-4e96-ac2b-9e377159673b",
+      "name": "Catalog agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        928,
+        0
+      ],
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a catalog assistant for a UnoPim product information system.\n\nYou have six UnoPim tools: List products browses the catalog, Look up a product reads one SKU in full, Update a product writes back to one SKU, List attributes tells you which attribute codes exist, List families tells you which attributes a family requires, and Look up a configurable product reads a product that has variants.\n\nRules you must follow:\n\n- A product is identified by its SKU. Everything else is identified by its code.\n- UnoPim keys an attribute value by scope. Read from values.common first, then values.locale_specific.<locale>, then values.channel_locale_specific.<channel>.<locale>.\n- Use Update Partially, never Update, unless the user explicitly asks you to replace a whole record. Update replaces every field.\n- Before any write, say what you are about to change and wait for the user to confirm.\n- Never guess a price. Ask.\n- Before writing, call List attributes so you use a real attribute code, and Look up a product so you know the current value. Never write a code you have not seen in List attributes.\n- When asked what a product is missing, call List families for its family and compare that against the product.\n- Update a product sends PATCH, so send only the attributes you are changing.\n- Simple products and configurable products live on different endpoints. Look up a product only finds simple products. If a SKU is not found there, try Look up a configurable product with the same value as its code before telling the user it does not exist.\n- Read values for the locale {{ $json.locale }} and the channel {{ $json.channel }} unless the user names a different one.\n- If {{ $json.allowWrites }} is false, answer questions but refuse to write, and say the workflow is in read-only mode.\n\nEnd every reply with a status block on its own lines. The workflow reads it, so the\nlabels must be exact and nothing may follow them:\n\nSTATUS: changed | unresolved | answered\nSKU: the SKU you wrote to, or blank\nFIELD: the attribute code you wrote, or blank\nOLD: the value before the write, or blank\nNEW: the value after the write, or blank\nREASON: one sentence, or blank\n\nUse changed only after a write succeeded, unresolved when the catalog is missing data\nyou cannot infer, and answered for everything else.\n"
+        },
+        "promptType": "auto"
+      },
+      "typeVersion": 3.1
+    },
+    {
+      "id": "879746ac-e011-48f2-af81-7dcf678eac13",
+      "name": "Read the outcome",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1984,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// The agent ends every reply with a STATUS block. Parse it here so the branches\n// below are deterministic instead of trusting the agent to call the right tool.\nconst reply = String($json.output ?? $json.text ?? '');\n\n// [ \\t]* rather than \\s*, so an empty label does not swallow the next line.\nconst field = (label) => {\n  const m = reply.match(new RegExp('^[ \\\\t]*' + label + ':[ \\\\t]*([^\\\\n\\\\r]*)', 'mi'));\n  return m ? m[1].trim() : '';\n};\n\nconst raw = field('STATUS').toLowerCase();\nconst status = ['changed', 'unresolved', 'answered'].includes(raw) ? raw : 'answered';\n\nreturn [{\n  json: {\n    status,\n    sku: field('SKU'),\n    attribute: field('FIELD'),\n    oldValue: field('OLD'),\n    newValue: field('NEW'),\n    reason: field('REASON'),\n    answer: reply.replace(/^[ \\t]*(STATUS|SKU|FIELD|OLD|NEW|REASON):[^\\n\\r]*$/gim, '').trim(),\n  },\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "e063f3bf-60e3-4903-beaf-7e2da462e7ee",
+      "name": "Route the outcome",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        2204,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "changed",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": false,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "bbdad4cd-60e4-4454-9621-f3f7306234ca",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "changed"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "unresolved",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": false,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "7386906f-82b9-4913-93a7-204b154653a2",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "unresolved"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "answered",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": false,
+                  "typeValidation": "loose"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "304e80ec-fa50-4a23-8758-bc49e4a64fe5",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "answered"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "3b1d0e34-fabd-4def-98fa-fbb3d83b3e75",
+      "name": "Re-read the product",
+      "type": "n8n-nodes-unopim.unoPim",
+      "position": [
+        2464,
+        -300
+      ],
+      "parameters": {
+        "resource": "product",
+        "operation": "get",
+        "identifier": "={{ $json.sku }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ee63300d-9a48-4c12-984a-7c821e057781",
+      "name": "Append to the change log",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2684,
+        -300
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "SKU": "={{ $('Read the outcome').item.json.sku }}",
+            "Field": "={{ $('Read the outcome').item.json.attribute }}",
+            "Reason": "={{ $('Read the outcome').item.json.reason }}",
+            "Confirmed": "={{ $json.sku ? \"yes\" : \"not found\" }}",
+            "New Value": "={{ $('Read the outcome').item.json.newValue }}",
+            "Old Value": "={{ $('Read the outcome').item.json.oldValue }}"
+          },
+          "schema": [],
+          "mappingMode": "defineBelow",
+          "matchingColumns": []
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "d1df1f5c-41b7-496e-91d3-39c72be83f21",
+      "name": "Announce the change",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        2904,
+        -300
+      ],
+      "parameters": {
+        "text": "={{ $('Read the outcome').item.json.sku }} - {{ $('Read the outcome').item.json.attribute }} is now \"{{ $('Read the outcome').item.json.newValue }}\" (was \"{{ $('Read the outcome').item.json.oldValue }}\"). {{ $('Read the outcome').item.json.reason }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "otherOptions": {}
+      },
+      "typeVersion": 2.7
+    },
+    {
+      "id": "52db2223-bd03-4af9-ad89-bd936f60cf04",
+      "name": "Open a data quality issue",
+      "type": "n8n-nodes-base.linear",
+      "position": [
+        2464,
+        100
+      ],
+      "parameters": {
+        "title": "={{ $json.sku ? \"Catalog data missing on \" + $json.sku : \"Catalog question the agent could not answer\" }}",
+        "teamId": "",
+        "resource": "issue",
+        "operation": "create",
+        "additionalFields": {
+          "description": "={{ $json.reason }}\n\n{{ $json.answer }}"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "a7025dce-f824-4246-a85c-f233437feea8",
+      "name": "Return the answer",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2464,
+        500
+      ],
+      "parameters": {
+        "mode": "manual",
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fe137dbd-b92f-4e59-b362-8462a7fc18e7",
+              "name": "answer",
+              "type": "string",
+              "value": "={{ $json.answer }}"
+            }
+          ]
+        },
+        "includeOtherFields": false
+      },
+      "typeVersion": 3.5
+    },
+    {
+      "id": "6df1e0d3-41ce-4a95-8227-54bb044c7363",
+      "name": "Answer with GPT-4o",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        480,
+        240
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o"
+        },
+        "options": {}
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "96e2b0cf-6b2a-4f2f-b562-5b40dd6e3768",
+      "name": "Conversation memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        656,
+        240
+      ],
+      "parameters": {
+        "contextWindowLength": 15
+      },
+      "typeVersion": 1.4
+    },
+    {
+      "id": "69b256c5-f5d4-4506-8e76-277d87102697",
+      "name": "List products",
+      "type": "n8n-nodes-unopim.unoPimTool",
+      "position": [
+        832,
+        240
+      ],
+      "parameters": {
+        "limit": 50,
+        "options": {},
+        "resource": "product",
+        "operation": "getMany",
+        "returnAll": false
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ef42ba20-2679-4ca6-aeb0-113e6ab94646",
+      "name": "Look up a product",
+      "type": "n8n-nodes-unopim.unoPimTool",
+      "position": [
+        1008,
+        240
+      ],
+      "parameters": {
+        "resource": "product",
+        "operation": "get",
+        "identifier": "={{ $fromAI('sku', 'The SKU of the product to act on', 'string') }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "23291308-ec7a-4a10-8cec-6e37f8c614cb",
+      "name": "Update a product",
+      "type": "n8n-nodes-unopim.unoPimTool",
+      "position": [
+        1184,
+        240
+      ],
+      "parameters": {
+        "data": "={{ $fromAI('values', 'A JSON object of attribute codes and the new values to write, in the correct UnoPim scope', 'string') }}",
+        "resource": "product",
+        "operation": "patch",
+        "identifier": "={{ $fromAI('sku', 'The SKU of the product to act on', 'string') }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "16d362d3-9363-4c14-9423-7fa59dfae04d",
+      "name": "List attributes",
+      "type": "n8n-nodes-unopim.unoPimTool",
+      "position": [
+        1360,
+        240
+      ],
+      "parameters": {
+        "limit": 100,
+        "options": {},
+        "resource": "attribute",
+        "operation": "getMany",
+        "returnAll": false
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9735348f-ef11-433f-a802-d1ee4f3b1788",
+      "name": "List families",
+      "type": "n8n-nodes-unopim.unoPimTool",
+      "position": [
+        1536,
+        240
+      ],
+      "parameters": {
+        "limit": 50,
+        "options": {},
+        "resource": "family",
+        "operation": "getMany",
+        "returnAll": false
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1fe49e2a-4716-4826-879d-1b936c6b647a",
+      "name": "Look up a configurable product",
+      "type": "n8n-nodes-unopim.unoPimTool",
+      "position": [
+        1712,
+        240
+      ],
+      "parameters": {
+        "resource": "configurableProduct",
+        "operation": "get",
+        "identifier": "={{ $fromAI('code', 'The code of the configurable product to look up', 'string') }}"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "16eaf24e-5afc-4dd0-91cc-ec742b986b16",
+      "name": "Start the chat and set rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -48,
+        -176
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 416,
+        "height": 336,
+        "content": "## Start the chat and set rules\n\nAnyone on the team can ask a question. Settings holds the locale, the channel and a read-only switch, so the rules live in one place rather than inside the prompt."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "84ba1b64-0317-414a-80c0-bf95342ae24f",
+      "name": "Ask the catalog agent",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        432,
+        -128
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1408,
+        "height": 512,
+        "content": "## Ask the catalog agent\n\nGPT-4o reasons over six UnoPim tools: browse, read one SKU, write back with PATCH, and list attributes and families so it only uses codes that exist. The memory window keeps the last fifteen messages."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "57dc08e5-820e-4ff6-ad5c-71b5085ff3b9",
+      "name": "Read and route the outcome",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1936,
+        -176
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 416,
+        "height": 368,
+        "content": "## Read and route the outcome\n\nThe agent ends every reply with a STATUS block. A Code node parses it and a Switch sends the run down one of three paths, so nothing downstream has to guess."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a87dc67a-a68f-46d6-90e8-b969fcc0c991",
+      "name": "Record a confirmed change",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2416,
+        -464
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 640,
+        "height": 320,
+        "content": "## Record a confirmed change\n\nA write is only believed once it reads back. The SKU is fetched again, the before and after values go to a sheet, and the change is announced in Slack."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "de4ae41f-66db-4f60-950e-c9fc07bdb09f",
+      "name": "Hand off what it cannot fix",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2416,
+        -96
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 240,
+        "height": 352,
+        "content": "## Hand off what it cannot fix\n\nMissing data the agent cannot infer becomes a Linear issue instead of a guess."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "cc642db5-b83b-41cd-a11d-ec65d90d9632",
+      "name": "Reply when nothing changed",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2416,
+        304
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 240,
+        "height": 352,
+        "content": "## Reply when nothing changed\n\nA plain question gets a plain answer back in the chat."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e3466903-ba7b-41bc-b705-a5b38e824dfb",
+      "name": "Query and edit UnoPim product catalogs with OpenAI GPT-4o and Slack",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -912,
+        -464
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 780,
+        "height": 1120,
+        "content": "## Query and edit UnoPim product catalogs with OpenAI GPT-4o and Slack\n\n> **Self-hosted n8n only.** This template uses the `n8n-nodes-unopim` community node,\n> and community nodes cannot be installed on n8n Cloud.\n\n### Walk through it\n\nAsk your UnoPim catalogue a question, with an AI agent built in n8n\n\n@[youtube](7pIMSMG45eM)\n\n### Who is it for\n\nMerchandisers who need to answer questions about the catalog and fix product data without\nlearning the PIM admin, and teams who would rather do catalog work in plain language.\n\n### How it works\n\n1. **Chat Trigger** opens a chat window anyone can use. No n8n knowledge needed.\n2. A **Settings** node holds the locale, the channel and a read-only switch, so the rules\n   live in one place rather than buried in the prompt.\n3. An **OpenAI GPT-4o** agent answers the question. Six **UnoPim** tools are attached to\n   it: *List products* browses, *Look up a product* reads one SKU in full, *Update a\n   product* writes back with PATCH, *List attributes* and *List families* are how the\n   agent learns which codes exist and which fields a family requires instead of inventing\n   them, and *Look up a configurable product* covers products with variants, which UnoPim\n   keeps on a separate endpoint keyed by code. **Memory** keeps the thread, so a follow up\n   like \"now do the same for the other three\" works as expected.\n4. The agent ends every reply with a **STATUS block**. *Read the outcome* parses it into\n   real fields, so what happens next is decided by the workflow, not by the model.\n5. **Route the outcome** sends the run down one of three paths.\n6. On *changed*, **Re-read the product** fetches the SKU back from UnoPim. A write is only\n   believed once it reads back. The before and after values are appended to **Google\n   Sheets** and the change is announced in **Slack**.\n7. On *unresolved*, the gap becomes a **Linear** issue instead of an invented value.\n8. On *answered*, the reply goes straight back to the chat.\n\nThe system message is the important part. It teaches the agent how UnoPim scopes an\nattribute value, forces Update Partially instead of Update so a write can never replace a\nwhole record, and requires the agent to confirm before writing.\n\n### Things to ask it\n\n- Which products have no French description?\n- What is SHIRT-01 missing for the linen family?\n- Set the care instructions on SHIRT-01 to \"Wash cold, line dry\".\n- Which attribute codes exist for material?\n- Compare the price of SHIRT-01 across channels and flag the odd one out.\n\n### How to set up\n\n1. Install `n8n-nodes-unopim` from **Settings > Community nodes**.\n2. In UnoPim create a key under **Configuration > Integrations > API Keys**. All four\n   credential values come from the same row.\n3. Add the **UnoPim API** credential, using the application root as the URL.\n4. Add an OpenAI credential, then connect Google Sheets, Linear and Slack.\n5. Read the system message before sharing the chat. It is what keeps writes safe.\n\n### Requirements\n\nSelf-hosted n8n, UnoPim 3.0 or newer with the connector package, and an OpenAI API key.\n\n### How to customize\n\nSwap the model for any chat model n8n supports. Remove *Update a product* and the agent\nbecomes read only. Add a tool for any of the other catalog resources the node supports,\nsuch as categories or channels. Point it at a staging instance first, because the agent\ncan write to a live catalog.\n"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b1372a23-9650-409f-93e4-87c3f71e1be2",
+  "connections": {
+    "Settings": {
+      "main": [
+        [
+          {
+            "node": "Catalog agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Catalog agent": {
+      "main": [
+        [
+          {
+            "node": "Read the outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List families": {
+      "ai_tool": [
+        [
+          {
+            "node": "Catalog agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List products": {
+      "ai_tool": [
+        [
+          {
+            "node": "Catalog agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List attributes": {
+      "ai_tool": [
+        [
+          {
+            "node": "Catalog agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the outcome": {
+      "main": [
+        [
+          {
+            "node": "Route the outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a product": {
+      "ai_tool": [
+        [
+          {
+            "node": "Catalog agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Look up a product": {
+      "ai_tool": [
+        [
+          {
+            "node": "Catalog agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route the outcome": {
+      "main": [
+        [
+          {
+            "node": "Re-read the product",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Open a data quality issue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return the answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer with GPT-4o": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Catalog agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Catalog agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-read the product": {
+      "main": [
+        [
+          {
+            "node": "Append to the change log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When a message arrives": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to the change log": {
+      "main": [
+        [
+          {
+            "node": "Announce the change",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Look up a configurable product": {
+      "ai_tool": [
+        [
+          {
+            "node": "Catalog agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

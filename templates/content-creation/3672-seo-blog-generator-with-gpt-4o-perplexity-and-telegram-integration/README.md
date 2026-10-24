@@ -1,6 +1,6 @@
 # 🎬 Seo blog generator with GPT-4o, Perplexity, and Telegram integration
 
-> ⚡ **5,675 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **5,945 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

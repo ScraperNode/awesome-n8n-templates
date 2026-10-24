@@ -1,6 +1,6 @@
 # 💬 Generate personalized cold emails with GPT-4o-mini and Google Sheets
 
-> ⚡ **965 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **1,023 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

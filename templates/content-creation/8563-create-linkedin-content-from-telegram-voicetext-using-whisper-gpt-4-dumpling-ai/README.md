@@ -1,6 +1,6 @@
 # 🎬 Create LinkedIn content from Telegram voice/text using Whisper, GPT-4 & Dumpling AI
 
-> ⚡ **252 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **276 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

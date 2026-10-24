@@ -1,6 +1,6 @@
 # 💬 Build a WhatsApp AI shopping bot with virtual try-on using Gemini and GPT
 
-> ⚡ **6 views** · 💬 [Support Chatbots](../)
+> ⚡ **553 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

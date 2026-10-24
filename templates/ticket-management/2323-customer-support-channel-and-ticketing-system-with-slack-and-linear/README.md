@@ -1,6 +1,6 @@
 # 🎫 Customer Support Channel and Ticketing System with Slack and Linear
 
-> ⚡ **8,160 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **8,471 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Automate school notice distribution via WhatsApp, email and Excel
 
-> ⚡ **944 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,289 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

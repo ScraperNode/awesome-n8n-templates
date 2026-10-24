@@ -1,6 +1,6 @@
 # 📈 Track CoinMarketCap crypto sector pumps with Gemini AI and send digests to Discord
 
-> ⚡ **31 views** · 📈 [Crypto Trading & Stock Market](../)
+> ⚡ **104 views** · 📈 [Crypto Trading & Stock Market](../)
 
 ## Description
 

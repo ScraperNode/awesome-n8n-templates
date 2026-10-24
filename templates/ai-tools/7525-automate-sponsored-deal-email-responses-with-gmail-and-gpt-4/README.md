@@ -1,6 +1,6 @@
 # 🎯 Automate sponsored deal email responses with Gmail and GPT-4
 
-> ⚡ **472 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **481 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

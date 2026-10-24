@@ -1,6 +1,6 @@
 # 🤝 🛠️ Action Network tool MCP server 💪 all 23 operations
 
-> ⚡ **216 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **257 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

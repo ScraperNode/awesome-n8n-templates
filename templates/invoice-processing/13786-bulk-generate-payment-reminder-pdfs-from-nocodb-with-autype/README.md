@@ -1,6 +1,6 @@
 # 🧾 Bulk generate payment reminder PDFs from NocoDB with Autype
 
-> ⚡ **3 views** · 🧾 [Invoice Processing](../)
+> ⚡ **33 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

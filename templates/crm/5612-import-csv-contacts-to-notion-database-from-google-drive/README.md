@@ -1,6 +1,6 @@
 # 🤝 Import CSV contacts to Notion database from Google Drive
 
-> ⚡ **971 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **1,030 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

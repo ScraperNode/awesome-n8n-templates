@@ -1,6 +1,6 @@
 # 🤝 Create, update, and get a person from Copper
 
-> ⚡ **625 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **645 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

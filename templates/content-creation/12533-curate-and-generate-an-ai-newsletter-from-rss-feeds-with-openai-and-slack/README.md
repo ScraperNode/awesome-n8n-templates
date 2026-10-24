@@ -1,6 +1,6 @@
 # 🎬 Curate and generate an AI newsletter from RSS feeds with OpenAI and Slack
 
-> ⚡ **91 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **295 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

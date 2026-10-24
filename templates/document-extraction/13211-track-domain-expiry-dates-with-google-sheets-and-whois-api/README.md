@@ -1,6 +1,6 @@
 # 🔬 Track domain expiry dates with Google Sheets and WHOIS API
 
-> ⚡ **36 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **77 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

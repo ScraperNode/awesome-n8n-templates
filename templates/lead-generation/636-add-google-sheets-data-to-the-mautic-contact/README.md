@@ -1,6 +1,6 @@
 # 🎣 Add Google Sheets data to the Mautic contact
 
-> ⚡ **1,345 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,353 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

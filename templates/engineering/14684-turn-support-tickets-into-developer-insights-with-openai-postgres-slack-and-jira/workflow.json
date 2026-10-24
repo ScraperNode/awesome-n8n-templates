@@ -1,0 +1,705 @@
+{
+  "meta": {
+    "instanceId": "48aac30adfc5487a33ef16e0e958096f27cef40df3ed0febcbe1ca199e789786"
+  },
+  "nodes": [
+    {
+      "id": "1704f880-f60d-46eb-bf15-0fe496e9d270",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -2672,
+        192
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 2
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "6752e515-67af-4ab2-bb26-ee18633b3a86",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -2448,
+        192
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "timeWindowDays",
+              "type": "number",
+              "value": 7
+            },
+            {
+              "id": "id-2",
+              "name": "similarityThreshold",
+              "type": "number",
+              "value": 0.82
+            },
+            {
+              "id": "id-3",
+              "name": "frequencyWeight",
+              "type": "number",
+              "value": 0.4
+            },
+            {
+              "id": "id-4",
+              "name": "sentimentWeight",
+              "type": "number",
+              "value": 0.2
+            },
+            {
+              "id": "id-5",
+              "name": "churnWeight",
+              "type": "number",
+              "value": 0.2
+            },
+            {
+              "id": "id-6",
+              "name": "tierWeight",
+              "type": "number",
+              "value": 0.2
+            },
+            {
+              "id": "id-7",
+              "name": "enableSlack",
+              "type": "boolean",
+              "value": true
+            },
+            {
+              "id": "id-8",
+              "name": "enableEmail",
+              "type": "boolean",
+              "value": false
+            },
+            {
+              "id": "id-9",
+              "name": "enableJira",
+              "type": "boolean",
+              "value": false
+            }
+          ]
+        },
+        "includeOtherFields": true
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "9bbbc438-ab4c-4ea4-86e4-e8327329f67b",
+      "name": "Fetch Feedback Data",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        -2112,
+        192
+      ],
+      "parameters": {
+        "query": "SELECT ticket_id, category, sentiment, churn_risk, account_tier, translated_text, original_language, original_message FROM support_tickets WHERE category IN ('bug','feature_request') AND created_at >= NOW() - INTERVAL '{{ $('Workflow Configuration').first().json.timeWindowDays }} days'",
+        "options": {},
+        "operation": "executeQuery"
+      },
+      "typeVersion": 2.6
+    },
+    {
+      "id": "5c86878d-8711-42f5-973e-333aacdff9a1",
+      "name": "Preprocess & Deduplicate",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1840,
+        192
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst seen = new Set();\nconst cleaned = [];\n\nfor (const item of items) {\n  const text = item.json.translated_text || '';\n  const cleanText = text.trim().toLowerCase();\n  \n  // Skip empty or duplicate messages\n  if (!cleanText || seen.has(cleanText)) continue;\n  \n  seen.add(cleanText);\n  cleaned.push({\n    json: {\n      ticket_id: item.json.ticket_id,\n      clean_text: cleanText,\n      sentiment: item.json.sentiment || 0,\n      churn_risk: item.json.churn_risk || 0,\n      account_tier: item.json.account_tier || 'free',\n      original_language: item.json.original_language,\n      original_message: item.json.original_message\n    }\n  });\n}\n\nreturn cleaned;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "831b05b7-77c7-4f07-9229-c0d6ddd7d32a",
+      "name": "Generate Embeddings & Cluster",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1568,
+        192
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst threshold = $('Workflow Configuration').first().json.similarityThreshold;\nconst OPENAI_API_KEY = '<__PLACEHOLDER_VALUE__OpenAI API Key__>';\n\n// Function to generate embeddings via OpenAI API\nasync function getEmbedding(text) {\n  const response = await fetch('https://api.openai.com/v1/embeddings', {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/json',\n      'Authorization': `Bearer ${OPENAI_API_KEY}`\n    },\n    body: JSON.stringify({\n      model: 'text-embedding-3-small',\n      input: text\n    })\n  });\n  const data = await response.json();\n  return data.data[0].embedding;\n}\n\n// Generate embeddings for each ticket\nconst ticketsWithEmbeddings = await Promise.all(\n  items.map(async (item) => ({\n    ...item.json,\n    embedding: await getEmbedding(item.json.clean_text)\n  }))\n);\n\n// Cosine similarity function\nfunction cosineSimilarity(a, b) {\n  const dotProduct = a.reduce((sum, val, i) => sum + val * b[i], 0);\n  const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));\n  const magB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));\n  return dotProduct / (magA * magB);\n}\n\n// Cluster tickets by similarity\nconst clusters = [];\nconst assigned = new Set();\n\nfor (let i = 0; i < ticketsWithEmbeddings.length; i++) {\n  if (assigned.has(i)) continue;\n  \n  const cluster = {\n    cluster_id: `cluster_${clusters.length + 1}`,\n    tickets: [ticketsWithEmbeddings[i]]\n  };\n  assigned.add(i);\n  \n  for (let j = i + 1; j < ticketsWithEmbeddings.length; j++) {\n    if (assigned.has(j)) continue;\n    \n    const similarity = cosineSimilarity(\n      ticketsWithEmbeddings[i].embedding,\n      ticketsWithEmbeddings[j].embedding\n    );\n    \n    if (similarity >= threshold) {\n      cluster.tickets.push(ticketsWithEmbeddings[j]);\n      assigned.add(j);\n    }\n  }\n  \n  clusters.push(cluster);\n}\n\n// Return each ticket with its cluster assignment\nreturn clusters.flatMap(cluster => \n  cluster.tickets.map(ticket => ({\n    json: {\n      ticket_id: ticket.ticket_id,\n      clean_text: ticket.clean_text,\n      sentiment: ticket.sentiment,\n      churn_risk: ticket.churn_risk,\n      account_tier: ticket.account_tier,\n      original_language: ticket.original_language,\n      original_message: ticket.original_message,\n      cluster_id: cluster.cluster_id,\n      cluster_size: cluster.tickets.length\n    }\n  }))\n);"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "5c02795f-0176-4e5b-9d06-c2ac6c9d2bc0",
+      "name": "Aggregate Clusters",
+      "type": "n8n-nodes-base.aggregate",
+      "position": [
+        -1312,
+        192
+      ],
+      "parameters": {
+        "options": {},
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "cluster_id"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "763af2ad-6df9-47b3-8dcf-0caa7cb25900",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        -1152,
+        416
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {},
+        "builtInTools": {}
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "ae18969b-aadb-4934-8829-90eaa810ea3c",
+      "name": "Root Cause Schema Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        -1024,
+        416
+      ],
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"root_cause\": {\"type\": \"string\"},\n    \"impacted_module\": {\"type\": \"string\"},\n    \"severity\": {\"type\": \"string\", \"enum\": [\"low\", \"medium\", \"high\", \"critical\"]},\n    \"debug_steps\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n    \"fix_direction\": {\"type\": \"string\"},\n    \"impact_scale\": {\"type\": \"string\", \"enum\": [\"low\", \"medium\", \"high\"]}\n  },\n  \"required\": [\"root_cause\", \"impacted_module\", \"severity\", \"debug_steps\", \"fix_direction\", \"impact_scale\"]\n}"
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "a3e88595-4fda-4439-b905-f07c40e097f5",
+      "name": "Root Cause Analysis Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -1104,
+        192
+      ],
+      "parameters": {
+        "text": "={{ $json.aggregatedData }}",
+        "options": {
+          "systemMessage": "You are a senior product engineer analyzing user feedback clusters.\n\nYour task is to analyze grouped issue reports and provide structured technical analysis.\n\nFor each cluster, you must:\n1. Identify the likely root cause of the issue\n2. Determine which feature/module is impacted\n3. Estimate severity (low/medium/high/critical)\n4. Suggest concrete debugging steps\n5. Propose a potential fix direction\n6. Estimate user impact scale (low/medium/high)\n\nBe technical, precise, and actionable. Focus on engineering insights, not user sentiment."
+        },
+        "promptType": "define",
+        "hasOutputParser": true
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "be601891-9334-487a-be49-7a4db15804cb",
+      "name": "Calculate Severity Scores",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -720,
+        192
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst config = $('Workflow Configuration').first().json;\n\nconst scoredClusters = items.map(item => {\n  const cluster = item.json;\n  const tickets = cluster.aggregatedData || [];\n  \n  // Calculate metrics\n  const ticketCount = tickets.length;\n  const avgSentiment = tickets.reduce((sum, t) => sum + (t.sentiment || 0), 0) / ticketCount;\n  const avgChurnRisk = tickets.reduce((sum, t) => sum + (t.churn_risk || 0), 0) / ticketCount;\n  const enterpriseCount = tickets.filter(t => t.account_tier === 'enterprise').length;\n  const enterpriseRatio = enterpriseCount / ticketCount;\n  \n  // Weighted severity score\n  const severityScore = \n    (config.frequencyWeight * Math.log(ticketCount + 1)) +\n    (config.sentimentWeight * Math.abs(avgSentiment)) +\n    (config.churnWeight * avgChurnRisk) +\n    (config.tierWeight * enterpriseRatio);\n  \n  return {\n    json: {\n      ...cluster,\n      metrics: {\n        ticket_count: ticketCount,\n        avg_sentiment: avgSentiment,\n        avg_churn_risk: avgChurnRisk,\n        enterprise_ratio: enterpriseRatio,\n        severity_score: severityScore\n      }\n    }\n  };\n});\n\n// Sort by severity score descending\nreturn scoredClusters.sort((a, b) => \n  b.json.metrics.severity_score - a.json.metrics.severity_score\n);"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "c055e3d5-6e98-4049-8263-6a6d6c194e4e",
+      "name": "Report Generator Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        -512,
+        416
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {},
+        "builtInTools": {}
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "2505c794-626c-4beb-8a90-628429f299c8",
+      "name": "Developer Report Generator",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -480,
+        192
+      ],
+      "parameters": {
+        "text": "={{ JSON.stringify($input.all().map(i => i.json)) }}",
+        "options": {
+          "systemMessage": "You are a technical report writer generating developer intelligence reports.\n\nYour task is to create a comprehensive, structured developer report from analyzed feedback clusters.\n\nThe report MUST include:\n\n1. **Executive Summary** - High-level overview of findings\n2. **Ranked Recurring Bugs** - Top issues by severity score with:\n   - Root cause\n   - Impacted module\n   - Ticket count\n   - Debug steps\n   - Fix direction\n3. **Feature Requests Grouped** - Categorized feature requests\n4. **Severity Ranking Table** - All issues ranked by score\n5. **Recommended Sprint Priorities** - Top 3-5 items for immediate action\n6. **Risk Assessment** - Churn risk and enterprise impact\n7. **Reproducible Patterns** - Common reproduction steps if identifiable\n\nInclude sample user quotes (with original language noted) to provide context.\n\nFormat: Markdown\nTone: Technical, concise, actionable\nNo fluff or marketing language."
+        },
+        "promptType": "define"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "b6813e29-a67f-418c-bf1d-ef7544129f5c",
+      "name": "Check Delivery Options",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -80,
+        192
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "id-1",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $('Workflow Configuration').first().json.enableSlack }}",
+              "rightValue": "true"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.3
+    },
+    {
+      "id": "f1babdf1-2d65-473f-955c-71641cd18686",
+      "name": "Send to Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        528,
+        32
+      ],
+      "webhookId": "7c212166-0e21-4a0e-8355-071cbc4f91ad",
+      "parameters": {
+        "text": "=*Developer Intelligence Report - {{ new Date().toISOString().split('T')[0] }}*\n\n{{ $json.output }}",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "<__PLACEHOLDER_VALUE__Slack channel ID or name__>"
+        },
+        "otherOptions": {}
+      },
+      "typeVersion": 2.4
+    },
+    {
+      "id": "0cff6643-0f23-4a66-9fe7-bc5f5c417acc",
+      "name": "Send Email Report",
+      "type": "n8n-nodes-base.emailSend",
+      "position": [
+        432,
+        480
+      ],
+      "webhookId": "581886dd-74db-4c8d-abea-636c124609d8",
+      "parameters": {
+        "text": "={{ $json.output }}",
+        "options": {},
+        "subject": "=Developer Intelligence Report - {{ new Date().toISOString().split('T')[0] }}",
+        "toEmail": "<__PLACEHOLDER_VALUE__recipient email addresses__>",
+        "fromEmail": "<__PLACEHOLDER_VALUE__sender email address__>",
+        "emailFormat": "text"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "62e602fa-42b4-4917-b662-00af6ead4b66",
+      "name": "Create Jira Issues",
+      "type": "n8n-nodes-base.jira",
+      "position": [
+        336,
+        144
+      ],
+      "parameters": {
+        "project": {
+          "__rl": true,
+          "mode": "id",
+          "value": "<__PLACEHOLDER_VALUE__Jira project key__>"
+        },
+        "summary": "={{ $json.root_cause }}",
+        "issueType": {
+          "__rl": true,
+          "mode": "id",
+          "value": "Bug"
+        },
+        "additionalFields": {
+          "priority": {
+            "__rl": true,
+            "mode": "id",
+            "value": "={{ $json.metrics.severity === 'critical' ? 'Highest' : $json.metrics.severity === 'high' ? 'High' : $json.metrics.severity === 'medium' ? 'Medium' : 'Low' }}"
+          },
+          "description": "=**Root Cause:** {{ $json.root_cause }}\n\n**Impacted Module:** {{ $json.impacted_module }}\n\n**Debug Steps:**\n{{ $json.debug_steps.map((s, i) => `${i+1}. ${s}`).join('\\n') }}\n\n**Fix Direction:** {{ $json.fix_direction }}\n\n**Ticket Count:** {{ $json.metrics.ticket_count }}\n**Severity Score:** {{ $json.metrics.severity_score.toFixed(2) }}"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d8b8f2dc-a04e-4959-81ca-55cfcfc1c8c1",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3216,
+        -160
+      ],
+      "parameters": {
+        "width": 368,
+        "height": 656,
+        "content": "## How it works\nThis workflow runs on a schedule and analyzes recent support tickets to identify recurring issues and product insights.\n\nIt fetches feedback data from a database, cleans and deduplicates messages, and uses embeddings to group similar tickets into clusters. Each cluster is analyzed by an AI agent to detect root causes, impacted modules, severity, and possible fixes.\n\nThe workflow then calculates a weighted severity score based on frequency, sentiment, churn risk, and customer tier. A final developer report is generated with prioritized issues, recommendations, and technical insights.\n\nResults are automatically delivered to Slack, email, or Jira depending on configuration.\n\n## Setup steps\n- Configure Postgres credentials for ticket data\n- Add OpenAI API key for embeddings and analysis\n- Set Slack, Email, or Jira credentials\n- Adjust weights and thresholds in config node\n- Customize schedule trigger timing"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "988d3776-e000-4c75-912c-a7f66bd18ee5",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2752,
+        96
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 496,
+        "height": 288,
+        "content": "## Trigger & Config\nScheduled run with scoring weights and feature toggles"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "98909170-8491-4044-af33-fab02a23d230",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2176,
+        80
+      ],
+      "parameters": {
+        "color": 7,
+        "height": 304,
+        "content": "## Data Fetching\nQuery recent support tickets from database)"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d7540f45-7224-4a73-b098-93f390574b51",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2320,
+        -288
+      ],
+      "parameters": {
+        "color": 7,
+        "height": 304
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "aab74077-d960-4def-8d54-6ea66d822be4",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1888,
+        64
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 224,
+        "height": 320,
+        "content": "## Data Cleaning\nNormalize, deduplicate, and prepare ticket text"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d8e442f1-36ba-4e80-a2a1-a22282ed99a0",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1616,
+        64
+      ],
+      "parameters": {
+        "color": 7,
+        "height": 320,
+        "content": "## Clustering Engine\nGenerate embeddings and group similar issues"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ac0a37c7-4ccb-4116-958e-0796c7d63c78",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1168,
+        48
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 336,
+        "height": 336,
+        "content": "## Root Cause Analysis\nAI identifies cause, severity, and fix direction"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "5719620a-3649-4ed7-9192-f5c655ec38a6",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -800,
+        80
+      ],
+      "parameters": {
+        "color": 7,
+        "height": 304,
+        "content": "## Severity Scoring\nWeighted scoring using frequency and risk signals"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f6ef0a1e-e926-4627-b175-11f35379ac5d",
+      "name": "Sticky Note8",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -528,
+        48
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 368,
+        "height": 384,
+        "content": "## Report Generation\nGenerate structured developer intelligence report"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c8c5cbb0-78e2-4c7b-8979-ffa2a17e34f1",
+      "name": "Sticky Note9",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        128,
+        -32
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 560,
+        "height": 320,
+        "content": "## Send report via Slack and  create Jira issues"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6bbeafa7-7831-4d0b-ae67-6ac71239dc48",
+      "name": "Sticky Note10",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        208,
+        400
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 432,
+        "height": 224,
+        "content": "## send email report"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "42558450-067e-4201-992c-62c926eefd7f",
+      "name": "Sticky Note11",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -144,
+        80
+      ],
+      "parameters": {
+        "color": 7,
+        "height": 272,
+        "content": "## Delivery Routing"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Root Cause Analysis Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Clusters": {
+      "main": [
+        [
+          {
+            "node": "Root Cause Analysis Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Feedback Data": {
+      "main": [
+        [
+          {
+            "node": "Preprocess & Deduplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Delivery Options": {
+      "main": [
+        [
+          {
+            "node": "Send to Slack",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create Jira Issues",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Email Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report Generator Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Developer Report Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "Fetch Feedback Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preprocess & Deduplicate": {
+      "main": [
+        [
+          {
+            "node": "Generate Embeddings & Cluster",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Root Cause Schema Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Root Cause Analysis Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Severity Scores": {
+      "main": [
+        [
+          {
+            "node": "Developer Report Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Root Cause Analysis Agent": {
+      "main": [
+        [
+          {
+            "node": "Calculate Severity Scores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Developer Report Generator": {
+      "main": [
+        [
+          {
+            "node": "Check Delivery Options",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Embeddings & Cluster": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Clusters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

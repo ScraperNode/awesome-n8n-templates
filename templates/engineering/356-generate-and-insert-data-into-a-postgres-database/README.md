@@ -1,6 +1,6 @@
 # ⚒️ Generate and insert data into a Postgres database
 
-> ⚡ **6,902 views** · ⚒️ [Engineering](../)
+> ⚡ **6,934 views** · ⚒️ [Engineering](../)
 
 ## Description
 

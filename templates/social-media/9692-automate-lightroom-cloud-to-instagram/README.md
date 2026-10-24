@@ -1,6 +1,6 @@
 # 📱 Automate Lightroom Cloud to Instagram
 
-> ⚡ **123 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **163 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

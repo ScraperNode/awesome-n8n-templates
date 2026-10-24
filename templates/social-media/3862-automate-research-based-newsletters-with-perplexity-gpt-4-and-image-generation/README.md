@@ -1,6 +1,6 @@
 # 📱 Automate research-based newsletters with Perplexity, GPT-4, and image generation
 
-> ⚡ **898 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **920 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

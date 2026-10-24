@@ -1,6 +1,6 @@
 # 🔒 Automated DNS records lookup for subdomains with HackerTarget API reports
 
-> ⚡ **335 views** · 🔒 [SecOps & Security Automation](../)
+> ⚡ **393 views** · 🔒 [SecOps & Security Automation](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Verify AI draft answers with Pearl Hybrid Intelligence and OpenAI
 
-> ⚡ **135 views** · 💬 [Support Chatbots](../)
+> ⚡ **221 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

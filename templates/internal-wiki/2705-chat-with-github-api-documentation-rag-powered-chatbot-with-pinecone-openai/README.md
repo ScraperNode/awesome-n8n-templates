@@ -1,6 +1,6 @@
 # 📖 Chat with GitHub API documentation: RAG-powered chatbot with Pinecone & OpenAI
 
-> ⚡ **30,077 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **30,129 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

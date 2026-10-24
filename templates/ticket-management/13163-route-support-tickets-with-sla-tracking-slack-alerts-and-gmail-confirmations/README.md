@@ -1,6 +1,6 @@
 # 🎫 Route support tickets with SLA tracking, Slack alerts, and Gmail confirmations
 
-> ⚡ **1 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **11 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 Chat with Postgresql database
 
-> ⚡ **85,588 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **85,593 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

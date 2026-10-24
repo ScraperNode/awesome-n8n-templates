@@ -1,6 +1,6 @@
 # 🎯 Summarize Gmail support emails with Gemini and post to Slack
 
-> ⚡ **646 views** · 🎯 [AI Summarization & Classification](../)
+> ⚡ **711 views** · 🎯 [AI Summarization & Classification](../)
 
 ## Description
 

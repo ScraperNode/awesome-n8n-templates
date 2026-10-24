@@ -1,6 +1,6 @@
 # 🔬 Automated expense approval system with GPT-4, Airtable & Pinecone Vector DB
 
-> ⚡ **431 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **455 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

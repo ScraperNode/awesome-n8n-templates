@@ -1,6 +1,6 @@
 # 💬 AI-powered RAG Q&A chatbot with OpenAI, Google Sheets, Glide & Supabase
 
-> ⚡ **1,380 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,419 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

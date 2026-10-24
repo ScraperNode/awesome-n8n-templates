@@ -1,6 +1,6 @@
 # 🔧 Create and manage short URLs with Telegram bot, MongoDB and Nginx redirects
 
-> ⚡ **269 views** · 🔧 [Miscellaneous](../)
+> ⚡ **320 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

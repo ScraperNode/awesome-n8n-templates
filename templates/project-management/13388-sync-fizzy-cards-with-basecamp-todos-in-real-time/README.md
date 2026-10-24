@@ -1,6 +1,6 @@
 # 📋 Sync Fizzy cards with Basecamp todos in real time
 
-> ⚡ **28 views** · 📋 [Project Management](../)
+> ⚡ **125 views** · 📋 [Project Management](../)
 
 ## Description
 

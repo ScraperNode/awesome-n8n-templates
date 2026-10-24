@@ -1,6 +1,6 @@
 # 🔬 Create a searchable document archive with Telegram, Drive, OCR and Airtable
 
-> ⚡ **179 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **337 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

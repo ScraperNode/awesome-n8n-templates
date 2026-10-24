@@ -1,6 +1,6 @@
 # 📋 Automated notion task reminders via Slack
 
-> ⚡ **3,197 views** · 📋 [Project Management](../)
+> ⚡ **3,255 views** · 📋 [Project Management](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🎬 Create Shopify products via a Telegram bot with Google Gemini AI
 
-> ⚡ **36 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **65 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

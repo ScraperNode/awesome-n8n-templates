@@ -1,6 +1,6 @@
-# 🎫 Automated customer feedback triage & follow-up with Gemini, Jotform, Gmail, Jira
+# 🎫 Automated customer support & feedback triage with Gemini, Jotform, Gmail, Jira
 
-> ⚡ **128 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **197 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

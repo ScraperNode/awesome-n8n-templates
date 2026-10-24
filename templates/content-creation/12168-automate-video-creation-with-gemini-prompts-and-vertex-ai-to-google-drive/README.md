@@ -1,6 +1,6 @@
 # 🎬 Automate video creation with Gemini Prompts and Vertex AI to Google Drive
 
-> ⚡ **561 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **828 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

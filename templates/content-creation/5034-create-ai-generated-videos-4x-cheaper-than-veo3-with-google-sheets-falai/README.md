@@ -1,6 +1,6 @@
 # 🎬 Create AI generated videos 4x cheaper than veo3 with Google Sheets & Fal.AI
 
-> ⚡ **3,227 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **4,052 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

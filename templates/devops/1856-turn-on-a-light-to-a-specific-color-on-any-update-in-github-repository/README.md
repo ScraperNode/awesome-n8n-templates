@@ -1,6 +1,6 @@
 # ⚙️ Turn on a light to a specific color on any update in GitHub repository
 
-> ⚡ **10,404 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **10,711 views** · ⚙️ [DevOps & CI/CD](../)
 
 > 💡 **Pro Tip** — If you need GitHub data beyond what the REST API gives you, [ScraperNode](https://scrapernode.com/github) has a [repository scraper](https://scrapernode.com/github/scrapers/repositories) that extracts metadata at scale without token rate limits.
 >

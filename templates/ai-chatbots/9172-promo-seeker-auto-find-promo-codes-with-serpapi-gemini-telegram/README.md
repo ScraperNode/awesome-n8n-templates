@@ -1,6 +1,6 @@
 # 🤖 Promo seeker: Auto-find promo codes with SerpAPI, Gemini & Telegram
 
-> ⚡ **359 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **455 views** · 🤖 [AI Chatbots & Agents](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >
@@ -8,32 +8,34 @@
 
 ## Description
 
-Promo Seeker automatically finds, verifies, and delivers active promo codes to users via Telegram or email using SerpAPI + Gemini (OpenRouter). Saves hours of manual searching and deduplicates results into an n8n Data Table for fast reuse.
+Never pay full price from ignorance again. Promo Seeker finds, verifies, and delivers active promo codes via Telegram or email using SerpAPI + Gemini (OpenRouter). A 2-hour manual hunt becomes a 5-minute query, with results deduplicated into an [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) Data Table for instant reuse.
+
+*Last updated: September 2026.*
 
 ## Why Use This Workflow?
 
-**Time Savings:** Reduces manual promo hunting from ~2 hours to ~5 minutes per query.
+**Time Savings:** Manual promo hunting drops from ~2 hours to ~5 minutes per query.
 
-**Cost Reduction:** Cuts reliance on paid scraping tools or manual services — potential savings of $50–$200/month.
+**Cost Reduction:** Less need for paid scraping tools or manual services. Potential savings of $50–$200/month.
 
-**Error Prevention:** Cross-references sources and enforces a 30‑day recency filter to reduce expired-code hits by ~60% vs single-source checks.
+**Error Prevention:** Cross-referenced sources plus a 30-day recency filter cut expired-code hits by ~60% versus single-source checks.
 
-**Scalability:** Handles hundreds of queries per day with Data Table upserts and optional scheduling for continuous discovery.
+**Scalability:** Hundreds of queries per day with Data Table upserts and optional scheduling for continuous discovery.
 
 ## Ideal For
 
-- **Marketing / Growth Managers:** Quickly discover competitor or partner discounts to promote in campaigns.
-- **Customer Support / Operations:** Respond to user requests with verified promo codes via Telegram or email.
-- **Affiliate / Content Teams:** Aggregate and maintain a clean promo feed for newsletters or site widgets.
+- **Marketing / Growth Managers:** Quickly surface competitor or partner discounts to feature in campaigns.
+- **Customer Support / Operations:** Answer code requests with verified promos via Telegram or email.
+- **Affiliate / Content Teams:** Maintain a clean promo feed for newsletters or site widgets.
 
 ## How It Works
 
 1. **Trigger:** Incoming request via Webhook, Telegram message, Google Form submission, or scheduled run.
 2. **Data Collection:** The LangChain agent uses SerpAPI search results and Gemini (OpenRouter) to locate recent promo codes.
 3. **Processing:** Filter for recency (last 30 days), extract code, value, terms, and expiry.
-4. **Intelligence Layer:** Gemini 2.5 Pro (OpenRouter) + LangChain agent structure and verify results, outputting a standardized JSON.
+4. **Intelligence Layer:** Gemini 2.5 Pro (OpenRouter) + LangChain agent structure and verify results, outputting standardized JSON.
 5. **Output & Delivery:** If a code exists in the Data Table, notify the requester via Telegram and Gmail; otherwise, return results and upsert them into the Data Table.
-6. **Storage & Logging:** Results stored/upserted in an n8n Data Table to prevent duplicates and enable fast lookups.
+6. **Storage & Logging:** Results stored and upserted in an [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) Data Table to prevent duplicates and enable fast lookups.
 
 ## Setup Guide
 
@@ -41,23 +43,21 @@ Promo Seeker automatically finds, verifies, and delivers active promo codes to u
 
 | Requirement | Type | Purpose |
 |-------------|------|---------|
-| n8n instance | Essential | Execute the workflow — import JSON to your n8n instance |
+| [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance | Essential | Execute the workflow. Import the JSON and begin configuration |
 | SerpAPI account | Essential | Web search results for promo code discovery |
 | OpenRouter (Gemini) account | Essential | Language model (Gemini 2.5 Pro) for extraction and verification |
 | Telegram Bot (BotFather) | Essential | Receive queries and send promo notifications |
 | Gmail OAuth2 | Essential | Send rich email notifications |
-| n8n Data Tables | Essential | Store and deduplicate promo code records |
-
-Get your n8n instance here: n8n instance — import the JSON and begin configuration. (Repeat link for convenience) n8n instance
+| [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) Data Tables | Essential | Store and deduplicate promo code records |
 
 ### Installation Steps
 
-1. Import the JSON workflow into your n8n instance.
-2. Configure credentials (use n8n's Credentials UI — do NOT paste keys into nodes):
+1. Import the JSON workflow into your [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance.
+2. Configure credentials (use [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin)'s Credentials UI — do NOT paste keys into nodes):
    - SerpAPI: paste your SerpAPI API Key from your SerpAPI dashboard.
    - OpenRouter API: paste your OpenRouter API Key (for Gemini 2.5 Pro).
    - Telegram API: create bot via @BotFather, then add Bot Token to Telegram credentials.
-   - Gmail OAuth2: use n8n's Gmail OAuth2 credential flow and authorize the account.
+   - Gmail OAuth2: use [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin)'s Gmail OAuth2 credential flow and authorize the account.
 3. Update environment-specific values:
    - Webhook path: /v1/promo-seeker (configured in the Webhook node) or replace with your preferred path.
    - Data Table ID: point to your own Data Table
@@ -121,19 +121,30 @@ Get your n8n instance here: n8n instance — import the JSON and begin configura
 | Problem | Cause | Solution |
 |---------|-------|----------|
 | No results returned | Query too vague or rate-limited API | Improve query specificity; check SerpAPI quota |
-| Gmail send fails | OAuth scope not granted or token expired | Reconnect Gmail OAuth2 credential in n8n |
+| Gmail send fails | OAuth scope not granted or token expired | Reconnect Gmail OAuth2 credential in [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) |
 | Telegram webhook not firing | Incorrect bot token or webhook setup | Recreate Telegram credential and check bot permissions |
 | Duplicate rows | Upsert mapping mismatch | Ensure promoCode mapping in Upsert matches structured output |
 | Agent returns malformed JSON | LM prompt too permissive | Tighten the agent system prompt and validate with Structured Output Parser |
 
 ---
 
-**Created by:** [khaisa Studio](https://khaisa.studio)
+### Quick Answers
+**How fresh are the codes?**  
+Results pass a 30-day recency filter, cutting expired-code hits by ~60% versus single-source checks.  
+**Do I get duplicates?**  
+No. Every result is upserted into a Data Table keyed for deduplication and fast lookup.  
+**How do I ask for codes?**  
+Via Telegram message, Google Form, webhook POST, or scheduled runs. Answers come back on Telegram and Gmail.  
+
+**Made by:** [khmuhtadin](https://khmuhtadin.com)
 **Category:** Marketing Automation
 
 **Tags:** promo-codes, coupons, serpapi, telegram, gmail, openrouter, data-tables
 
-Need custom workflows or help adapting this template? [Contact us](https://khaisa.studio/contact)
+Need custom workflows or help adapting this template? [Contact me](https://khmuhtadin.com/contact)
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

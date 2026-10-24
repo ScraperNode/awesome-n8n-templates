@@ -1,6 +1,6 @@
 # 🤝 Convert Squarespace profiles to Shopify customers in Google Sheets
 
-> ⚡ **355 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **376 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🧾 Generate invoices and send AI-powered reminders with Jotform and Xero
 
-> ⚡ **269 views** · 🧾 [Invoice Processing](../)
+> ⚡ **311 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

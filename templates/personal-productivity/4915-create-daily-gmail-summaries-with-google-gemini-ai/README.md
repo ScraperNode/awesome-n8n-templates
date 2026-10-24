@@ -1,6 +1,6 @@
 # ⚡ Create daily Gmail summaries with Google Gemini AI
 
-> ⚡ **1,194 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,518 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

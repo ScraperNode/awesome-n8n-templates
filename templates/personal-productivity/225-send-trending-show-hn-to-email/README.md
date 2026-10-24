@@ -1,6 +1,6 @@
 # ⚡ Send trending "Show HN" to email
 
-> ⚡ **1,709 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,778 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

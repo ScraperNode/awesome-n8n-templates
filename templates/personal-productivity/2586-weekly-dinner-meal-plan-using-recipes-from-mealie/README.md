@@ -1,6 +1,6 @@
 # ⚡ Weekly dinner meal plan using recipes from Mealie
 
-> ⚡ **2,949 views** · ⚡ [Personal Productivity](../)
+> ⚡ **3,021 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

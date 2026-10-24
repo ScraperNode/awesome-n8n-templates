@@ -1,6 +1,6 @@
 # 💬 Classify and respond to Facebook Messenger inquiries with GPT-4, Slack and Sheets
 
-> ⚡ **388 views** · 💬 [Support Chatbots](../)
+> ⚡ **617 views** · 💬 [Support Chatbots](../)
 
 > 💡 **Pro Tip** — If you've run into Facebook's Graph API permission restrictions, [ScraperNode](https://scrapernode.com/facebook) is a community node that scrapes [pages](https://scrapernode.com/facebook/scrapers/profiles), [groups](https://scrapernode.com/facebook/scrapers/groups), [posts](https://scrapernode.com/facebook/scrapers/posts), and [comments](https://scrapernode.com/facebook/scrapers/comments) directly — no app review needed.
 >

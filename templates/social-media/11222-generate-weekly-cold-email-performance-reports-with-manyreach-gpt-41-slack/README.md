@@ -1,6 +1,6 @@
 # 📱 Generate weekly cold email performance reports with ManyReach, GPT-4.1 & Slack
 
-> ⚡ **78 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **108 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

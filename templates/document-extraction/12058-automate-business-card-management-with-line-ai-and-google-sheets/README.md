@@ -1,6 +1,6 @@
 # 🔬 Automate business card management with LINE, AI, and Google Sheets
 
-> ⚡ **94 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **154 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

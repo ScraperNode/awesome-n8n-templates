@@ -1,6 +1,6 @@
 # 💬 Automate sales outreach with OpenAI, Tavily & Google Sheets for prospect research
 
-> ⚡ **490 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **588 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

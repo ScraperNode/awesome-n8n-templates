@@ -1,6 +1,6 @@
 # 🤖 Create a data analyst chatbot for real-time Google Sheets analysis with GPT-5
 
-> ⚡ **1,769 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **2,237 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 👥 AI-powered candidate screening and evaluation workflow using OpenAI and Airtable
 
-> ⚡ **3,805 views** · 👥 [HR & Recruitment](../)
+> ⚡ **3,912 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

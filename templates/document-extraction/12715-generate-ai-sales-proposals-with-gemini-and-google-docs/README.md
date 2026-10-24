@@ -1,6 +1,6 @@
 # 🔬 Generate AI sales proposals with Gemini and Google Docs
 
-> ⚡ **69 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **118 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

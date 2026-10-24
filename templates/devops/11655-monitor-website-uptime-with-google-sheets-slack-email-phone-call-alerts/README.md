@@ -1,6 +1,6 @@
 # ⚙️ Monitor website uptime with Google Sheets, Slack, Email & Phone Call alerts
 
-> ⚡ **167 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **227 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🤖 Automate Gmail tasks with Gemini AI assistant and contact management
 
-> ⚡ **435 views** · 🤖 [AI Chatbots & Agents](../)
+> ⚡ **542 views** · 🤖 [AI Chatbots & Agents](../)
 
 ## Description
 

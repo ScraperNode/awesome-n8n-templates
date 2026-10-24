@@ -1,6 +1,6 @@
 # 🎬 Video transcript search and Q&A with VLM Run, GPT-4 & Google Workspace
 
-> ⚡ **171 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **201 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📊 Automated Google Business reports with GPT insights to Slack & email
 
-> ⚡ **727 views** · 📊 [Market Research & Insights](../)
+> ⚡ **929 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

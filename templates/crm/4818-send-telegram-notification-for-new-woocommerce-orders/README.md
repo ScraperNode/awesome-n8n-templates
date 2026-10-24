@@ -1,6 +1,6 @@
 # 🤝 Send Telegram notification for new WooCommerce orders
 
-> ⚡ **2,501 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **2,825 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

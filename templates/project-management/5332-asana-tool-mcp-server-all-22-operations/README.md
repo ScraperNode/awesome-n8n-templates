@@ -1,6 +1,6 @@
 # 📋 🛠️ Asana tool MCP server 💪 all 22 operations
 
-> ⚡ **189 views** · 📋 [Project Management](../)
+> ⚡ **201 views** · 📋 [Project Management](../)
 
 ## Description
 

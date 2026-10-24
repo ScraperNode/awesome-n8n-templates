@@ -1,6 +1,6 @@
 # 📊 🔥 X & Reddit tech trend analysis with Gemini AI for Notion & Telegram
 
-> ⚡ **64 views** · 📊 [Market Research & Insights](../)
+> ⚡ **83 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

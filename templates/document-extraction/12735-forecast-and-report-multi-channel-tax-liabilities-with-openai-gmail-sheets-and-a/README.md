@@ -1,6 +1,6 @@
 # 🔬 Forecast and report multi-channel tax liabilities with OpenAI, Gmail, Sheets and Airtable
 
-> ⚡ **358 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **387 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

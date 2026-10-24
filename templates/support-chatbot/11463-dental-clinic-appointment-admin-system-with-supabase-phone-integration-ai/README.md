@@ -1,6 +1,6 @@
 # 💬 Dental clinic appointment & admin system with Supabase, phone integration & AI
 
-> ⚡ **1,375 views** · 💬 [Support Chatbots](../)
+> ⚡ **3,182 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

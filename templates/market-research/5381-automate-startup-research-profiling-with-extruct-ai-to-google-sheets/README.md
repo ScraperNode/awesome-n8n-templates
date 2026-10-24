@@ -1,6 +1,6 @@
 # 📊 Automate startup research & profiling with Extruct AI to Google Sheets
 
-> ⚡ **888 views** · 📊 [Market Research & Insights](../)
+> ⚡ **974 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

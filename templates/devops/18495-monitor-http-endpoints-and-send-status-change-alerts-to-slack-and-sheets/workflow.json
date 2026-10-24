@@ -1,0 +1,848 @@
+{
+  "name": "Monitor multiple endpoints with HTTP Request and alert on Slack only when status changes",
+  "nodes": [
+    {
+      "id": "b0000000-0000-4000-8000-000000000001",
+      "name": "Every 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -380,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000002",
+      "name": "Run once now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -380,
+        200
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000003",
+      "name": "Endpoints to watch",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -160,
+        100
+      ],
+      "parameters": {
+        "jsCode": "// The list of things you want to know about. Keep it here, or replace this node\n// with Google Sheets / Airtable / a database if the list lives somewhere else \u2014\n// everything downstream only needs name, url and the field that proves health.\nreturn [\n  { json: { name: 'Public API',      url: 'https://example.com/health',        expect: 'ok' } },\n  { json: { name: 'Internal worker', url: 'https://worker.example.com/health', expect: 'ok' } },\n  { json: { name: 'Website',         url: 'https://example.com/',              expect: null } },\n];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000004",
+      "name": "Split endpoints",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        60,
+        100
+      ],
+      "parameters": {
+        "options": {},
+        "batchSize": 1
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000005",
+      "name": "Ping endpoint",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        280,
+        200
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000006",
+      "name": "Judge response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        500,
+        200
+      ],
+      "parameters": {
+        "jsCode": "// Decide for ourselves what healthy means.\n//\n// The HTTP node runs with Never Error, so a 500, a timeout or an HTML error page\n// all arrive here as ordinary items. Without this check every one of them would\n// count as a success and the workflow would stay green while the service is down.\nconst ziel = $('Split endpoints').item.json;\nconst res  = $json ?? {};\nconst code = Number(res.statusCode ?? 0);\nconst body = res.body ?? res;\n\nlet gesund = code >= 200 && code < 400;\nif (gesund && ziel.expect) {\n  const b = (typeof body === 'string') ? safeParse(body) : body;\n  gesund = !!(b && typeof b === 'object' && b[ziel.expect] === true);\n}\nfunction safeParse(s) { try { return JSON.parse(s); } catch { return null; } }\n\nreturn [{ json: { ...ziel, gesund, statusCode: code, geprueftAm: new Date().toISOString() } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000007",
+      "name": "Healthy?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        720,
+        200
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.gesund }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000008",
+      "name": "Wait 30 seconds",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        940,
+        320
+      ],
+      "parameters": {
+        "unit": "seconds",
+        "amount": 30
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000009",
+      "name": "Second attempt",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1160,
+        320
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000010",
+      "name": "Confirm outage",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1380,
+        320
+      ],
+      "parameters": {
+        "jsCode": "// One failed request is not an outage \u2014 it is a bad second. Only a second failure\n// counts. This single step removes most of the noise that makes people mute alerts.\nconst ziel = $('Judge response').item.json;\nconst res  = $json ?? {};\nconst code = Number(res.statusCode ?? 0);\nconst body = res.body ?? res;\n\nlet gesund = code >= 200 && code < 400;\nif (gesund && ziel.expect) {\n  const b = (typeof body === 'string') ? (() => { try { return JSON.parse(body); } catch { return null; } })() : body;\n  gesund = !!(b && typeof b === 'object' && b[ziel.expect] === true);\n}\nreturn [{ json: { ...ziel, gesund, statusCode: code, bestaetigt: true } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000011",
+      "name": "Track state change",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1600,
+        200
+      ],
+      "parameters": {
+        "jsCode": "// Speak only when the verdict changes, and remember how long it has been broken.\n// Without this you send the same message every five minutes until someone mutes\n// the channel \u2014 and a muted monitor is not a monitor.\nconst j = $json;\nconst store = $getWorkflowStaticData('global');\nstore.hosts ??= {};\nconst s = store.hosts[j.name] ??= { healthy: true, since: null, misses: 0 };\n\nconst vorher = s.healthy;\ns.healthy = j.gesund;\ns.misses  = j.gesund ? 0 : (s.misses + 1);\nif (vorher !== j.gesund) s.since = new Date().toISOString();\n\nconst minutenUnten = s.since && !j.gesund\n  ? Math.round((Date.now() - new Date(s.since).getTime()) / 60000) : 0;\n\nlet ereignis = 'unchanged';\nif (vorher && !j.gesund) ereignis = 'down';\nelse if (!vorher && j.gesund) ereignis = 'recovered';\n\nreturn [{ json: { ...j, ereignis, minutenUnten, fehlversuche: s.misses } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000012",
+      "name": "What happened?",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1820,
+        200
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "down",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.ereignis }}",
+                    "rightValue": "down"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "recovered",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.ereignis }}",
+                    "rightValue": "recovered"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "unchanged",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.ereignis }}",
+                    "rightValue": "unchanged"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000013",
+      "name": "Compose down message",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2060,
+        60
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "m1",
+              "name": "text",
+              "type": "string",
+              "value": "=\ud83d\udd34 {{ $json.name }} is DOWN\\nURL: {{ $json.url }}\\nHTTP {{ $json.statusCode }} \u00b7 confirmed after a retry\\nSince: {{ $json.geprueftAm }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000014",
+      "name": "Alert: went down",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        2280,
+        60
+      ],
+      "parameters": {},
+      "typeVersion": 2.3
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000015",
+      "name": "Compose recovery message",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2060,
+        200
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "m2",
+              "name": "text",
+              "type": "string",
+              "value": "=\ud83d\udfe2 {{ $json.name }} RECOVERED after {{ $json.minutenUnten }} minutes\\nURL: {{ $json.url }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000016",
+      "name": "Alert: recovered",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        2280,
+        200
+      ],
+      "parameters": {},
+      "typeVersion": 2.3
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000017",
+      "name": "Still down long enough to escalate?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2060,
+        340
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "e1",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "leftValue": "={{ $json.fehlversuche }}",
+              "rightValue": 6
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000018",
+      "name": "Escalate to on-call",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        2280,
+        340
+      ],
+      "parameters": {},
+      "typeVersion": 2.3
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000019",
+      "name": "Append to outage log",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2280,
+        480
+      ],
+      "parameters": {},
+      "typeVersion": 4.5
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000020",
+      "name": "Every morning at 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -380,
+        700
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000021",
+      "name": "Read what happened",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -160,
+        700
+      ],
+      "parameters": {
+        "jsCode": "// Read the memory the check loop keeps, and turn it into something a human wants\n// to read at breakfast: what is broken now, what broke and came back yesterday.\nconst store = $getWorkflowStaticData('global');\nconst hosts = store.hosts ?? {};\nconst jetztUnten = Object.entries(hosts).filter(([, s]) => !s.healthy)\n  .map(([name, s]) => ({ name, seit: s.since }));\nreturn [{ json: { gesamt: Object.keys(hosts).length, unten: jetztUnten } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000022",
+      "name": "Build digest",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        60,
+        700
+      ],
+      "parameters": {
+        "jsCode": "const d = $json;\nconst zeilen = d.unten.length\n  ? d.unten.map(h => `\u2022 ${h.name} \u2014 down since ${h.since}`).join('\\n')\n  : 'Everything responded as expected.';\nreturn [{ json: { text: `Daily check \u2014 ${d.gesamt} endpoints watched\\n\\n${zeilen}` , hatAusfaelle: d.unten.length > 0 } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000023",
+      "name": "Anything worth sending?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        280,
+        700
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "d1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.hatAusfaelle }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000024",
+      "name": "Send daily digest",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        500,
+        620
+      ],
+      "parameters": {},
+      "typeVersion": 2.3
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000025",
+      "name": "Quiet day, say nothing",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        500,
+        780
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000026",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -980,
+        -180
+      ],
+      "parameters": {
+        "width": 500,
+        "height": 1180,
+        "content": "## Monitor many endpoints, retry before alerting, and report once a day\n\n**Who's it for**\n\nAnyone running services or automations that other work depends on, who would rather not hear from a customer that something broke on Friday \u2014 and who has stopped reading alert channels because they cry wolf.\n\n### How it works\n\nEvery five minutes the workflow walks a list of endpoints. Each is called with **Never Error** switched on, so a 500, a timeout or a dead tunnel arrives as ordinary data instead of killing the run. A monitor that dies with the thing it watches tells nobody.\n\nA Code node then decides what healthy means \u2014 status code plus, optionally, one field that must be true in the body. Without that check, Never Error would make every response look like a success, including an HTML error page.\n\n**One failed request is not an outage.** A failure waits 30 seconds and asks again. Only a confirmed failure counts, which removes most of the noise that makes people mute channels.\n\nState is kept per endpoint, so you hear about the *change*: one message going down, one coming back with the minutes in between, and an escalation after six failed checks in a row. Each morning a digest reports what is still broken, and stays quiet when nothing is.\n\n### Setup\n\n1. Edit **Endpoints to watch** \u2014 name, url, and the field that proves health (null accepts any 2xx/3xx).\n2. Connect Slack on the three alert nodes and pick channels.\n3. Optional: connect Google Sheets on **Append to outage log** for a history.\n\n### Customization tips\n\nReplace the Endpoints node with Google Sheets if the list lives elsewhere. Swap Slack for Teams, email or your ticket system. The escalation threshold sits in **Still down long enough to escalate?**"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000027",
+      "name": "Section: the loop",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -40,
+        -60
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 900,
+        "height": 420,
+        "content": "## 1. Walk the list and ask\nEach endpoint is called on its own, with Never Error, so an outage arrives as data instead of killing the run."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000028",
+      "name": "Section: confirm",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        880,
+        220
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 680,
+        "height": 300,
+        "content": "## 2. Ask twice before waking anyone\nA single failure waits 30 seconds and is retried. Only a confirmed failure counts as an outage."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000029",
+      "name": "Section: speak on change",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1560,
+        -60
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 900,
+        "height": 700,
+        "content": "## 3. Speak only when something changes\nState is kept per endpoint: one message going down, one coming back, an escalation after six failures in a row."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000030",
+      "name": "Section: digest",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -440,
+        560
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1060,
+        "height": 380,
+        "content": "## 4. One quiet summary a day\nAt 08:00 the digest reports what is still broken. If nothing is, it says nothing at all."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Healthy?": {
+      "main": [
+        [
+          {
+            "node": "Track state change",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 30 seconds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build digest": {
+      "main": [
+        [
+          {
+            "node": "Anything worth sending?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run once now": {
+      "main": [
+        [
+          {
+            "node": "Endpoints to watch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ping endpoint": {
+      "main": [
+        [
+          {
+            "node": "Judge response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm outage": {
+      "main": [
+        [
+          {
+            "node": "Track state change",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Judge response": {
+      "main": [
+        [
+          {
+            "node": "Healthy?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Second attempt": {
+      "main": [
+        [
+          {
+            "node": "Confirm outage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "What happened?": {
+      "main": [
+        [
+          {
+            "node": "Compose down message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Compose recovery message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Split endpoints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Endpoints to watch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split endpoints": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Ping endpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 30 seconds": {
+      "main": [
+        [
+          {
+            "node": "Second attempt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert: recovered": {
+      "main": [
+        [
+          {
+            "node": "Split endpoints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert: went down": {
+      "main": [
+        [
+          {
+            "node": "Split endpoints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Endpoints to watch": {
+      "main": [
+        [
+          {
+            "node": "Split endpoints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read what happened": {
+      "main": [
+        [
+          {
+            "node": "Build digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Track state change": {
+      "main": [
+        [
+          {
+            "node": "What happened?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Still down long enough to escalate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose down message": {
+      "main": [
+        [
+          {
+            "node": "Alert: went down",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Append to outage log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every morning at 08:00": {
+      "main": [
+        [
+          {
+            "node": "Read what happened",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything worth sending?": {
+      "main": [
+        [
+          {
+            "node": "Send daily digest",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Quiet day, say nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose recovery message": {
+      "main": [
+        [
+          {
+            "node": "Alert: recovered",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still down long enough to escalate?": {
+      "main": [
+        [
+          {
+            "node": "Escalate to on-call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

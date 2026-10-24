@@ -1,6 +1,6 @@
 # 💬 Automate email responses with GPT-4o-mini and human review in Gmail
 
-> ⚡ **231 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **422 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

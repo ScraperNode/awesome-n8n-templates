@@ -1,6 +1,6 @@
 # ✨ Create structured Notion workspaces from notes & voice using Gemini & GPT
 
-> ⚡ **104 views** · ✨ [AI & LLMs](../)
+> ⚡ **121 views** · ✨ [AI & LLMs](../)
 
 ## Description
 

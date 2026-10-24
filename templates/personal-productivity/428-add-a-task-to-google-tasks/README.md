@@ -1,6 +1,6 @@
 # ⚡ Add a task to Google Tasks
 
-> ⚡ **4,024 views** · ⚡ [Personal Productivity](../)
+> ⚡ **4,033 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

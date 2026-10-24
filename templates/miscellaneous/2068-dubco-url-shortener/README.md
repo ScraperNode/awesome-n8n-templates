@@ -1,6 +1,6 @@
 # 🔧 dub.co URL shortener
 
-> ⚡ **954 views** · 🔧 [Miscellaneous](../)
+> ⚡ **994 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

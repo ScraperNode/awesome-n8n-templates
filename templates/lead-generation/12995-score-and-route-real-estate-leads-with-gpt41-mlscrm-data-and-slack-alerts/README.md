@@ -1,6 +1,6 @@
 # 🎣 Score and route real estate leads with GPT‑4.1, MLS/CRM data, and Slack alerts
 
-> ⚡ **32 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **77 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

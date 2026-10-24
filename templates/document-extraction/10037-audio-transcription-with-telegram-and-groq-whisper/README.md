@@ -1,6 +1,6 @@
 # 🔬 Audio transcription with Telegram and Groq Whisper
 
-> ⚡ **928 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,687 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

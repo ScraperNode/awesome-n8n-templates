@@ -1,6 +1,6 @@
 # 📱 🛠️ Google Business Profile Tool MCP Server 💪 all 9 operations
 
-> ⚡ **338 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **487 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

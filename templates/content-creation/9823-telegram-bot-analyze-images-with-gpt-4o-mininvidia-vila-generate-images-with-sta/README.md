@@ -1,6 +1,6 @@
 # 🎬 Telegram bot: analyze images with GPT-4o-Mini/NVIDIA Vila & generate images with Stable Diffusion 3
 
-> ⚡ **394 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **501 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

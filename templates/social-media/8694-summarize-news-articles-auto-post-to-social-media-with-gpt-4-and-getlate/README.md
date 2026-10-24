@@ -1,6 +1,6 @@
 # 📱 Summarize news articles & auto-post to social media with GPT-4 and GetLate
 
-> ⚡ **1,253 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **1,470 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📱 Ai-powered restaurant newsletter creator with Mailchimp and Telegram approval
 
-> ⚡ **524 views** · 📱 [Social Media & Email Marketing](../)
+> ⚡ **590 views** · 📱 [Social Media & Email Marketing](../)
 
 ## Description
 

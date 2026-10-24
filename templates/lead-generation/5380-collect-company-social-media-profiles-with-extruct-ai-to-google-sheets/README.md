@@ -1,6 +1,6 @@
 # 🎣 Collect company social media profiles with Extruct AI to Google Sheets
 
-> ⚡ **1,070 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,172 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

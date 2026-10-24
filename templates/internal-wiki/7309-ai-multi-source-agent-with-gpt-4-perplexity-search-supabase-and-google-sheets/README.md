@@ -1,6 +1,6 @@
 # 📖 AI multi-source agent with GPT-4, Perplexity Search, Supabase and Google Sheets
 
-> ⚡ **141 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **170 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 ## Description
 

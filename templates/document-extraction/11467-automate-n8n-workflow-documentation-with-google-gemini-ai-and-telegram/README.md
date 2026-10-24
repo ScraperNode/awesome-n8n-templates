@@ -1,6 +1,6 @@
 # 🔬 Automate n8n workflow documentation with Google Gemini AI and Telegram
 
-> ⚡ **117 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **139 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

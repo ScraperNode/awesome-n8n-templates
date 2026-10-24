@@ -1,6 +1,6 @@
 # 💬 Dual-path customer support system with Google Sheets, vectors & Gemini
 
-> ⚡ **238 views** · 💬 [Support Chatbots](../)
+> ⚡ **305 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

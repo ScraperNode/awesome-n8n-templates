@@ -1,6 +1,6 @@
 # 📋 Automated WhatsApp group weekly team reports with Gemini AI summarization
 
-> ⚡ **1,396 views** · 📋 [Project Management](../)
+> ⚡ **1,612 views** · 📋 [Project Management](../)
 
 ## Description
 

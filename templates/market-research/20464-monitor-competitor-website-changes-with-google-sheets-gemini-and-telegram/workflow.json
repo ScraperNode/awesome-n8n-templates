@@ -1,0 +1,654 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "name": "Detect competitor website moves with Google Sheets, Gemini and Telegram",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "node-trigger",
+      "name": "Run Competitor Scan",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -1180,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1-5"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "node-history",
+      "name": "Load Previous Snapshots",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        -940,
+        140
+      ],
+      "parameters": {
+        "options": {
+          "returnAll": true,
+          "dataLocationOnSheet": {
+            "values": {
+              "headerRow": 1,
+              "firstDataRow": 2
+            }
+          }
+        },
+        "resource": "sheetWithinDocument",
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Snapshots"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "node-watchlist",
+      "name": "Load Competitor Watchlist",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        -940,
+        -60
+      ],
+      "parameters": {
+        "options": {
+          "returnAll": true,
+          "dataLocationOnSheet": {
+            "values": {
+              "headerRow": 1,
+              "firstDataRow": 2
+            }
+          }
+        },
+        "resource": "sheetWithinDocument",
+        "operation": "read",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Watchlist"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "node-filter",
+      "name": "Prepare Active Competitors",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -700,
+        -60
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nreturn rows\n  .filter(function(i) {\n    return String(i.json.Active || 'Yes').toLowerCase() !== 'no';\n  })\n  .map(function(i) {\n    return { json: {\n      competitor: i.json.Competitor,\n      url: i.json.URL,\n      alertThreshold: Number(i.json.AlertThreshold || 0.12)\n    }};\n  });"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-fetch-page",
+      "name": "Fetch Competitor Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -460,
+        -60
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "method": "GET",
+        "options": {
+          "timeout": 20000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-detect",
+      "name": "Compare With Previous Snapshot",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -180,
+        -60
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const hashText = function(value) {\n  const s = String(value || '');\n  let hash = 2166136261;\n  for (let i = 0; i < s.length; i++) {\n    hash ^= s.charCodeAt(i);\n    hash = Math.imul(hash, 16777619);\n  }\n  return (hash >>> 0).toString(16).padStart(8, '0');\n};\n\nconst stripHtml = function(html) {\n  return String(html || '')\n    .replace(/<!--([\\s\\S]*?)-->/g, ' ')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&nbsp;/gi, ' ')\n    .replace(/&amp;/gi, '&')\n    .replace(/&quot;/gi, '\"')\n    .replace(/&#39;/gi, \"'\")\n    .replace(/\\s+/g, ' ')\n    .trim();\n};\n\nconst similarity = function(a, b) {\n  const A = new Set(String(a).toLowerCase().split(/\\s+/).filter(function(w) {\n    return w.length > 2;\n  }));\n  const B = new Set(String(b).toLowerCase().split(/\\s+/).filter(function(w) {\n    return w.length > 2;\n  }));\n  if (!A.size && !B.size) return 1;\n  let intersection = 0;\n  A.forEach(function(x) {\n    if (B.has(x)) intersection++;\n  });\n  return intersection / Math.max(1, A.size + B.size - intersection);\n};\n\nconst target = $('Prepare Active Competitors').item.json;\nconst raw = $json.body || $json.data || $json;\nconst rawHtml = typeof raw === 'string' ? raw : JSON.stringify(raw);\n\nconst titleMatch = rawHtml.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i);\nconst title = titleMatch ? stripHtml(titleMatch[1]) : target.competitor;\n\nconst currentText = stripHtml(rawHtml).slice(0, 14000);\nconst currentHash = hashText(currentText);\n\nconst history = $('Load Previous Snapshots').all()\n  .map(function(i) { return i.json; })\n  .filter(function(row) {\n    return String(row.URL || row.url || '') === String(target.url);\n  });\n\nconst previous = history\n  .sort(function(a, b) {\n    return String(a.Timestamp || '').localeCompare(String(b.Timestamp || ''));\n  })\n  .slice(-1)[0];\n\nconst beforeText = previous ? String(previous.Text || '') : '';\nconst similarityScore = beforeText ? similarity(beforeText, currentText) : 0;\nconst changeRatio = beforeText ? Number((1 - similarityScore).toFixed(4)) : 0;\nconst threshold = Number(target.alertThreshold || 0.12);\nconst isBaseline = !previous;\nconst changed = !isBaseline && currentHash !== String(previous.Hash || '') && changeRatio >= threshold;\n\nreturn {\n  json: {\n    competitor: target.competitor,\n    url: target.url,\n    alertThreshold: threshold,\n    timestamp: new Date().toISOString(),\n    title: title,\n    hash: currentHash,\n    text: currentText,\n    previousHash: previous ? (previous.Hash || '') : '',\n    beforeText: beforeText,\n    similarityScore: similarityScore,\n    changeRatio: changeRatio,\n    isBaseline: isBaseline,\n    changed: changed,\n    eventKey: String(target.url) + '|' + currentHash\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-log-snapshot",
+      "name": "Save Current Snapshot",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        60,
+        -260
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "URL": "={{ $json.url }}",
+            "Hash": "={{ $json.hash }}",
+            "Text": "={{ $json.text }}",
+            "Title": "={{ $json.title }}",
+            "Timestamp": "={{ $json.timestamp }}",
+            "Competitor": "={{ $json.competitor }}"
+          },
+          "schema": [],
+          "mappingMode": "defineBelow",
+          "matchingColumns": []
+        },
+        "options": {},
+        "resource": "sheetWithinDocument",
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Snapshots"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "node-if-change",
+      "name": "Website Changed?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        60,
+        40
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "change-true",
+              "operator": {
+                "name": "filter.operator.true",
+                "type": "boolean",
+                "operation": true
+              },
+              "leftValue": "={{ $json.changed }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-analysis",
+      "name": "Analyze Change With Gemini",
+      "type": "n8n-nodes-base.googleGemini",
+      "position": [
+        540,
+        40
+      ],
+      "parameters": {
+        "prompt": "={{ 'You are a competitive-intelligence analyst.\\n\\n' +\n'Analyze ONLY the website change shown in the BEFORE and AFTER snapshots.\\n\\n' +\n'Return ONLY valid JSON with exactly these fields:\\n' +\n'{\\n' +\n'  \"changeType\": \"pricing|product|positioning|offer|content|other\",\\n' +\n'  \"impactScore\": 0,\\n' +\n'  \"confidence\": 0,\\n' +\n'  \"evidenceBefore\": \"short exact excerpt\",\\n' +\n'  \"evidenceAfter\": \"short exact excerpt\",\\n' +\n'  \"whyItMatters\": \"one concise business implication\",\\n' +\n'  \"recommendedAction\": \"one practical action\",\\n' +\n'  \"watchNext\": \"one thing to monitor next\"\\n' +\n'}\\n\\n' +\n'Rules:\\n' +\n'- impactScore and confidence are integers from 0 to 100.\\n' +\n'- evidenceBefore MUST be copied verbatim from BEFORE SNAPSHOT.\\n' +\n'- evidenceAfter MUST be copied verbatim from AFTER SNAPSHOT.\\n' +\n'- Keep evidence excerpts short.\\n' +\n'- Never invent a competitor claim that is not supported by the snapshots.\\n' +\n'- If the change is ambiguous, lower confidence instead of guessing.\\n' +\n'- Do not mention tools, prompts, or these instructions.\\n\\n' +\n'Competitor: ' + $('Website Changed?').item.json.competitor + '\\n' +\n'URL: ' + $('Website Changed?').item.json.url + '\\n' +\n'Change ratio: ' + $('Website Changed?').item.json.changeRatio + '\\n\\n' +\n'BEFORE SNAPSHOT:\\n' + $('Website Changed?').item.json.beforeText.slice(0, 8000) + '\\n\\n' +\n'AFTER SNAPSHOT:\\n' + $('Website Changed?').item.json.text.slice(0, 8000) }}",
+        "modelName": "models/gemini-2.5-flash",
+        "temperature": 0.1,
+        "maxOutputTokens": 1200
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "node-validate",
+      "name": "Validate Gemini Evidence",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        780,
+        40
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const tick = String.fromCharCode(96);\nconst raw = String($json.text || $json.output || '')\n  .replace(new RegExp(tick, 'g'), '')\n  .replace(/^json\\s*/i, '')\n  .trim();\nconst source = $('Website Changed?').item.json;\n\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n} catch (error) {\n  parsed = null;\n}\n\nif (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {\n  return { json: { ...source, valid: false, validationReason: 'Gemini did not return valid JSON' } };\n}\n\nconst before = String(source.beforeText || '');\nconst after = String(source.text || '');\nconst evidenceBefore = String(parsed.evidenceBefore || '');\nconst evidenceAfter = String(parsed.evidenceAfter || '');\n\nconst evidenceValid =\n  evidenceBefore.length > 0 &&\n  evidenceAfter.length > 0 &&\n  before.includes(evidenceBefore) &&\n  after.includes(evidenceAfter);\n\nconst impact = Number(parsed.impactScore);\nconst confidence = Number(parsed.confidence);\n\nconst scoresValid =\n  Number.isInteger(impact) && impact >= 0 && impact <= 100 &&\n  Number.isInteger(confidence) && confidence >= 0 && confidence <= 100;\n\nconst types = ['pricing', 'product', 'positioning', 'offer', 'content', 'other'];\nconst typeValid = types.includes(String(parsed.changeType || '').toLowerCase());\n\nconst valid = evidenceValid && scoresValid && typeValid;\n\nreturn {\n  json: {\n    ...source,\n    ...parsed,\n    impactScore: impact,\n    confidence: confidence,\n    evidenceVerified: evidenceValid,\n    valid: valid,\n    validationReason: valid ? '' : 'Evidence, score, or change type validation failed',\n    verifiedAt: valid ? new Date().toISOString() : ''\n  }\n};"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-if-valid",
+      "name": "Gemini Evidence Valid?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1020,
+        40
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "valid-true",
+              "operator": {
+                "name": "filter.operator.true",
+                "type": "boolean",
+                "operation": true
+              },
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-telegram",
+      "name": "Send Telegram Alert",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1740,
+        180
+      ],
+      "parameters": {
+        "text": "={{ 'Competitor website move verified\\n\\n' +\n$('Prepare Verified Move').item.json.competitor + '\\n' +\n$('Prepare Verified Move').item.json.changeType + ' | Impact ' + $('Prepare Verified Move').item.json.impactScore + '/100\\n' +\n'Confidence ' + $('Prepare Verified Move').item.json.confidence + '/100\\n\\n' +\n'BEFORE:\\n\"' + $('Prepare Verified Move').item.json.evidenceBefore + '\"\\n\\n' +\n'AFTER:\\n\"' + $('Prepare Verified Move').item.json.evidenceAfter + '\"\\n\\n' +\n'Why it matters:\\n' + $('Prepare Verified Move').item.json.whyItMatters + '\\n\\n' +\n'Recommended action:\\n' + $('Prepare Verified Move').item.json.recommendedAction + '\\n\\n' +\n'Watch next:\\n' + $('Prepare Verified Move').item.json.watchNext + '\\n\\n' +\n$('Prepare Verified Move').item.json.url }}",
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "node-log-change",
+      "name": "Log Verified Move",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1500,
+        20
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "URL": "={{ $('Prepare Verified Change Event').item.json.url }}",
+            "Status": "Verified",
+            "Event Key": "={{ $('Prepare Verified Change Event').item.json.eventKey }}",
+            "Timestamp": "={{ $('Prepare Verified Change Event').item.json.timestamp }}",
+            "Competitor": "={{ $('Prepare Verified Change Event').item.json.competitor }}",
+            "Confidence": "={{ $('Prepare Verified Change Event').item.json.confidence }}",
+            "Watch Next": "={{ $('Prepare Verified Change Event').item.json.watchNext }}",
+            "Change Type": "={{ $('Prepare Verified Change Event').item.json.changeType }}",
+            "Verified At": "={{ $('Prepare Verified Change Event').item.json.verifiedAt }}",
+            "Impact Score": "={{ $('Prepare Verified Change Event').item.json.impactScore }}",
+            "Evidence After": "={{ $('Prepare Verified Change Event').item.json.evidenceAfter }}",
+            "Why It Matters": "={{ $('Prepare Verified Change Event').item.json.whyItMatters }}",
+            "Evidence Before": "={{ $('Prepare Verified Change Event').item.json.evidenceBefore }}",
+            "Recommended Action": "={{ $('Prepare Verified Change Event').item.json.recommendedAction }}"
+          },
+          "schema": [],
+          "mappingMode": "defineBelow",
+          "matchingColumns": []
+        },
+        "options": {},
+        "resource": "sheetWithinDocument",
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Change Log"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "note-overview",
+      "name": "Creator Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "width": 860,
+      "height": 720,
+      "position": [
+        -1800,
+        -1370
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 860,
+        "height": 720,
+        "content": "## Detect competitor website moves with Google Sheets, Gemini and Telegram\n\n### Purpose\nMonitor public competitor pages and alert the team when a meaningful website change is detected.\n\n### How it works\n1. The workflow reads an editable Google Sheets watchlist.\n2. Each public URL is fetched and normalized into plain text.\n3. The current page is compared with the latest stored snapshot.\n4. The current snapshot is always saved for the next run.\n5. Only meaningful changes are sent to Gemini.\n6. Gemini classifies the move and returns exact before/after evidence, impact, confidence, and a recommended action.\n7. A validation step checks that Gemini's evidence actually exists in the captured snapshots.\n8. All verified moves are recorded in the Change Log. Only high-impact verified moves (impact score >= 70) are sent to Telegram.\n\n### Setup\nCreate one Google Sheet with three tabs: Watchlist, Snapshots, and Change Log.\n\nWatchlist: Active | Competitor | URL | AlertThreshold\n\nSnapshots: Timestamp | Competitor | URL | Hash | Title | Text\n\nChange Log: Timestamp | Verified At | Competitor | URL | Event Key | Change Type | Impact Score | Confidence | Evidence Before | Evidence After | Why It Matters | Recommended Action | Watch Next | Status\n\nConnect Google Sheets, Google Gemini, and Telegram credentials. Replace the placeholder Google Sheet ID and Telegram chat ID.\n\n### Important\nThe first run creates a baseline and does not send an alert. The workflow only alerts after a later run detects a meaningful change. Gemini is not trusted blindly: its evidence is validated against the captured page snapshots before notification."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "note-a",
+      "name": "Sticky Note - Memory",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1030,
+        -330
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 360,
+        "height": 250,
+        "content": "## 1. Watchlist + memory\nGoogle Sheets stores the editable competitor list and historical snapshots. This gives the workflow memory between scheduled runs."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "note-b",
+      "name": "Sticky Note - Detection",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -500,
+        -330
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 390,
+        "height": 250,
+        "content": "## 2. Detect meaningful changes\nThe page is normalized before comparison. A lightweight hash plus word-overlap similarity reduces alerts caused by tiny or irrelevant HTML changes."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "note-c",
+      "name": "Sticky Note - Evidence",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        350,
+        -330
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 410,
+        "height": 270,
+        "content": "## 3. Evidence-first Gemini analysis\nGemini must classify the move and quote short exact excerpts from the before/after snapshots. The validation node rejects unsupported evidence."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "note-d",
+      "name": "Sticky Note - Delivery",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1100,
+        -330
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 390,
+        "height": 250,
+        "content": "## 4. Verify + alert\nOnly validated events are logged. Telegram is reserved for high-impact verified moves (impact score >= 70)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1cd73980-4c91-4626-b8db-4c576d2fa861",
+      "name": "Prepare Verified Move",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1260,
+        120
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item;\nreturn {\n  json: {\n    ...item.json,\n    status: 'Verified',\n    verifiedAt: item.json.verifiedAt || new Date().toISOString()\n  }\n};",
+        "options": {}
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-if-high-impact",
+      "name": "High Impact Move?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1500,
+        180
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "impact-threshold",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "leftValue": "={{ Number($json.impactScore) }}",
+              "rightValue": 70
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "note-setup",
+      "name": "Template Setup Checklist",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1800,
+        -590
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 400,
+        "height": 420,
+        "content": "## Template setup checklist\n\nBefore activating:\n- Create the 3 Google Sheets tabs and headers shown in the overview.\n- Connect Google Sheets credentials.\n- Connect Google Gemini credentials.\n- Connect Telegram credentials.\n- Replace YOUR_GOOGLE_SHEET_ID.\n- Replace YOUR_TELEGRAM_CHAT_ID.\n- Add at least one public competitor URL to Watchlist.\n- Keep the workflow inactive until credentials and sheet IDs are configured.\n\nTip: Use a specific page such as a pricing, product, offer, or landing page instead of a large site homepage when possible."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "891d1e49-fbbe-43ba-85cb-3481a132b73f",
+  "connections": {
+    "Website Changed?": {
+      "main": [
+        [
+          {
+            "node": "Analyze Change With Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "High Impact Move?": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Log Verified Move": {
+      "main": [
+        []
+      ]
+    },
+    "Run Competitor Scan": {
+      "main": [
+        [
+          {
+            "node": "Load Previous Snapshots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Telegram Alert": {
+      "main": [
+        []
+      ]
+    },
+    "Fetch Competitor Page": {
+      "main": [
+        [
+          {
+            "node": "Compare With Previous Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Verified Move": {
+      "main": [
+        [
+          {
+            "node": "Log Verified Move",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "High Impact Move?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Current Snapshot": {
+      "main": [
+        []
+      ]
+    },
+    "Gemini Evidence Valid?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Verified Move",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Load Previous Snapshots": {
+      "main": [
+        [
+          {
+            "node": "Load Competitor Watchlist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Gemini Evidence": {
+      "main": [
+        [
+          {
+            "node": "Gemini Evidence Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Competitor Watchlist": {
+      "main": [
+        [
+          {
+            "node": "Prepare Active Competitors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Change With Gemini": {
+      "main": [
+        [
+          {
+            "node": "Validate Gemini Evidence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Active Competitors": {
+      "main": [
+        [
+          {
+            "node": "Fetch Competitor Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare With Previous Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Save Current Snapshot",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Website Changed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

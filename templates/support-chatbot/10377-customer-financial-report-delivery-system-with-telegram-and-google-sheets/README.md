@@ -1,6 +1,6 @@
 # 💬 Customer financial report delivery system with Telegram and Google Sheets
 
-> ⚡ **215 views** · 💬 [Support Chatbots](../)
+> ⚡ **297 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

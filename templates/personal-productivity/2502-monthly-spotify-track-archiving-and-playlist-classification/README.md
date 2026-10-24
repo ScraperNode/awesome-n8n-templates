@@ -1,6 +1,6 @@
 # ⚡ Monthly Spotify track archiving and playlist classification
 
-> ⚡ **1,741 views** · ⚡ [Personal Productivity](../)
+> ⚡ **1,804 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

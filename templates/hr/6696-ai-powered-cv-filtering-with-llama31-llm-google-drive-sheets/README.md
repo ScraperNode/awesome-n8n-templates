@@ -1,6 +1,6 @@
 # 👥 AI-powered CV filtering with Llama3.1 LLM, Google Drive & Sheets
 
-> ⚡ **818 views** · 👥 [HR & Recruitment](../)
+> ⚡ **912 views** · 👥 [HR & Recruitment](../)
 
 ## Description
 

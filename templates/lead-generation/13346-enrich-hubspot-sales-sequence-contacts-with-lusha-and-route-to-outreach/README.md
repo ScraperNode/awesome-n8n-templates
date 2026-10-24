@@ -1,6 +1,6 @@
 # 🎣 Enrich HubSpot sales sequence contacts with Lusha and route to outreach
 
-> ⚡ **1 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **30 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

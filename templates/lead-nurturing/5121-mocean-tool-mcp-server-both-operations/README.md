@@ -1,6 +1,6 @@
 # 💬 🛠️ Mocean tool MCP server 💪 both operations
 
-> ⚡ **130 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **151 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

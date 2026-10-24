@@ -1,6 +1,6 @@
 # ⚒️ Automated Airtable to Postgres migration with n8n
 
-> ⚡ **191 views** · ⚒️ [Engineering](../)
+> ⚡ **248 views** · ⚒️ [Engineering](../)
 
 ## Description
 

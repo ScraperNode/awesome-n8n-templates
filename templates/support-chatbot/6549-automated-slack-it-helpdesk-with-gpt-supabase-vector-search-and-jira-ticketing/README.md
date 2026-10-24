@@ -1,6 +1,6 @@
 # 💬 Automated Slack IT helpdesk with GPT, Supabase vector search, and JIRA ticketing
 
-> ⚡ **1,179 views** · 💬 [Support Chatbots](../)
+> ⚡ **1,509 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

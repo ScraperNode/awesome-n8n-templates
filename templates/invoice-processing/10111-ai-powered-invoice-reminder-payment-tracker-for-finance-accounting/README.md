@@ -1,6 +1,6 @@
 # 🧾 AI-powered invoice reminder & payment tracker for finance & accounting
 
-> ⚡ **4,723 views** · 🧾 [Invoice Processing](../)
+> ⚡ **9,423 views** · 🧾 [Invoice Processing](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔬 Export Dialogflow intents with priority levels to Google Sheets via Telegram
 
-> ⚡ **97 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **104 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

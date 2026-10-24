@@ -1,6 +1,6 @@
 # ⚒️ 🛠️ Google Books tool MCP Server 💪 all 9 operations
 
-> ⚡ **131 views** · ⚒️ [Engineering](../)
+> ⚡ **149 views** · ⚒️ [Engineering](../)
 
 ## Description
 

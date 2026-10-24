@@ -1,6 +1,6 @@
 # ⚙️ Automate website monitoring with GPT-4 Mini, MCP tools & multi-channel alerts
 
-> ⚡ **1,347 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **1,402 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # ⚡ Manage Google Calendar via WhatsApp with GPT-4 virtual assistant
 
-> ⚡ **11,088 views** · ⚡ [Personal Productivity](../)
+> ⚡ **13,789 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

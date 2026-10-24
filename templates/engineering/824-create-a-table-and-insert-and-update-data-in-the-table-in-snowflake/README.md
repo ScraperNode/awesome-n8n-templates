@@ -1,6 +1,6 @@
 # ⚒️ Create a table, and insert and update data in the table in Snowflake
 
-> ⚡ **1,525 views** · ⚒️ [Engineering](../)
+> ⚡ **1,593 views** · ⚒️ [Engineering](../)
 
 ## Description
 

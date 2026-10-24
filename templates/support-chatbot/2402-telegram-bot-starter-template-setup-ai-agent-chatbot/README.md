@@ -1,6 +1,6 @@
 # 💬 Telegram bot starter template setup & AI agent chatbot
 
-> ⚡ **36,914 views** · 💬 [Support Chatbots](../)
+> ⚡ **40,887 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

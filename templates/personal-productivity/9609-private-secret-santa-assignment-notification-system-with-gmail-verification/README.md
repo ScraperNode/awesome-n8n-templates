@@ -1,6 +1,6 @@
 # ⚡ Private secret santa assignment & notification system with Gmail & verification
 
-> ⚡ **177 views** · ⚡ [Personal Productivity](../)
+> ⚡ **222 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

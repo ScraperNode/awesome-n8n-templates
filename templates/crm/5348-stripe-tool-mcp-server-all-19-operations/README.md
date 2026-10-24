@@ -1,6 +1,6 @@
 # 🤝 🛠️ Stripe tool MCP server 💪 all 19 operations
 
-> ⚡ **153 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **160 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

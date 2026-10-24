@@ -1,6 +1,6 @@
 # 🔬 Weekly Facebook ads performance reports with AI-powered analysis & Gmail delivery
 
-> ⚡ **982 views** · 🔬 [Document Extraction & Analysis](../)
+> ⚡ **1,243 views** · 🔬 [Document Extraction & Analysis](../)
 
 ## Description
 

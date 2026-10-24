@@ -1,6 +1,6 @@
 # ⚒️ AI-powered RAG configuration assistant: From form to email recommendations
 
-> ⚡ **84 views** · ⚒️ [Engineering](../)
+> ⚡ **106 views** · ⚒️ [Engineering](../)
 
 ## Description
 

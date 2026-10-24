@@ -1,6 +1,6 @@
 # ⚡ Create AI diary entries from LINE photos with OpenAI Vision and Google Drive
 
-> ⚡ **63 views** · ⚡ [Personal Productivity](../)
+> ⚡ **87 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

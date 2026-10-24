@@ -1,6 +1,6 @@
 # 📊 Automated Disqus forum reports with Gmail HTML tables
 
-> ⚡ **137 views** · 📊 [Market Research & Insights](../)
+> ⚡ **149 views** · 📊 [Market Research & Insights](../)
 
 ## Description
 

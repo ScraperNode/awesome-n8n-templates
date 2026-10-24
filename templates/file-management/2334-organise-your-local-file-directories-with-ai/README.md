@@ -1,6 +1,6 @@
 # 📁 Organise your local file directories with AI
 
-> ⚡ **17,597 views** · 📁 [File Management](../)
+> ⚡ **18,545 views** · 📁 [File Management](../)
 
 ## Description
 

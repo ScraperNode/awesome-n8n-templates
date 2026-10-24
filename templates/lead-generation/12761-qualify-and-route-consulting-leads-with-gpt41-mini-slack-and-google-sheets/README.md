@@ -1,6 +1,6 @@
 # 🎣 Qualify and route consulting leads with GPT‑4.1-mini, Slack and Google Sheets
 
-> ⚡ **9 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **24 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

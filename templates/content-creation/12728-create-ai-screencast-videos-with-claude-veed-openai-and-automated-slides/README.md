@@ -1,6 +1,6 @@
 # 🎬 Create AI screencast videos with Claude, VEED, OpenAI and automated slides
 
-> ⚡ **136 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **304 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

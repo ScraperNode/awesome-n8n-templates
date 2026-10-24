@@ -1,6 +1,6 @@
 # 🎣 Capture and schedule HVAC leads with OpenAI, Google Sheets, Slack and SMS
 
-> ⚡ **1,622 views** · 🎣 [Lead Generation & Enrichment](../)
+> ⚡ **1,798 views** · 🎣 [Lead Generation & Enrichment](../)
 
 ## Description
 

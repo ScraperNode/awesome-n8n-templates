@@ -1,6 +1,6 @@
 # 🤝 🛠️ ActiveCampaign tool MCP server 💪 all 48 operations
 
-> ⚡ **281 views** · 🤝 [CRM & Sales Operations](../)
+> ⚡ **294 views** · 🤝 [CRM & Sales Operations](../)
 
 ## Description
 

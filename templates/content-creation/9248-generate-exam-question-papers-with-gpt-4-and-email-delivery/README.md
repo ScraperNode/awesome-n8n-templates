@@ -1,6 +1,6 @@
 # 🎬 Generate exam question papers with GPT-4 and email delivery
 
-> ⚡ **512 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **605 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 🔧 Insert and update data in Airtable
 
-> ⚡ **2,296 views** · 🔧 [Miscellaneous](../)
+> ⚡ **2,335 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 💬 Build a WhatsApp assistant for text, audio & images using GPT-4o & Evolution API
 
-> ⚡ **3,561 views** · 💬 [Support Chatbots](../)
+> ⚡ **6,432 views** · 💬 [Support Chatbots](../)
 
 ## Description
 

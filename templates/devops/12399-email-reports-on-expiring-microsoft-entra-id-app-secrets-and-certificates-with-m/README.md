@@ -1,6 +1,6 @@
 # ⚙️ Email reports on expiring Microsoft Entra ID app secrets and certificates with Microsoft Graph
 
-> ⚡ **192 views** · ⚙️ [DevOps & CI/CD](../)
+> ⚡ **347 views** · ⚙️ [DevOps & CI/CD](../)
 
 ## Description
 

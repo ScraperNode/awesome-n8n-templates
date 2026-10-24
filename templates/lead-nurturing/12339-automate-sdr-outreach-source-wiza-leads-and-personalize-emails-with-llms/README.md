@@ -1,6 +1,6 @@
 # 💬 Automate SDR Outreach: Source Wiza Leads and Personalize Emails with LLMs
 
-> ⚡ **340 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
+> ⚡ **892 views** · 💬 [Lead Nurturing & AI Sales Agents](../)
 
 ## Description
 

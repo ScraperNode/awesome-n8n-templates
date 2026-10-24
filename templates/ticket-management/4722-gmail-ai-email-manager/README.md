@@ -1,6 +1,6 @@
 # 🎫 Gmail AI Email Manager
 
-> ⚡ **91,991 views** · 🎫 [Ticket Management & Triage](../)
+> ⚡ **112,879 views** · 🎫 [Ticket Management & Triage](../)
 
 ## Description
 

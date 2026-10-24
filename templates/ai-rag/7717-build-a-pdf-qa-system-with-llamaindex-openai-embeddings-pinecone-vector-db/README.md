@@ -1,6 +1,6 @@
 # 🔍 Build a PDF Q&A system with LlamaIndex, OpenAI embeddings & Pinecone vector DB
 
-> ⚡ **637 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **724 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

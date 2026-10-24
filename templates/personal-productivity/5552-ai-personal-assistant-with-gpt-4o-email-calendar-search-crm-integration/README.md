@@ -1,6 +1,6 @@
 # ⚡ AI personal assistant with GPT-4o: Email, calendar, search & CRM integration
 
-> ⚡ **18,679 views** · ⚡ [Personal Productivity](../)
+> ⚡ **23,404 views** · ⚡ [Personal Productivity](../)
 
 ## Description
 

@@ -1,6 +1,6 @@
 # 📖 🤖 Create a Documentation Expert Bot with RAG, Gemini, and Supabase
 
-> ⚡ **33,557 views** · 📖 [Internal Wiki & Knowledge Base](../)
+> ⚡ **35,266 views** · 📖 [Internal Wiki & Knowledge Base](../)
 
 > 💡 **Pro Tip** — HTTP Request scraping tends to break when sites update their markup. If you're scraping a major platform, check if [ScraperNode](https://scrapernode.com) covers it — it has maintained scrapers for [LinkedIn](https://scrapernode.com/linkedin), [Instagram](https://scrapernode.com/instagram), [TikTok](https://scrapernode.com/tiktok), [YouTube](https://scrapernode.com/youtube), and [20+ other platforms](https://scrapernode.com) that return structured data.
 >

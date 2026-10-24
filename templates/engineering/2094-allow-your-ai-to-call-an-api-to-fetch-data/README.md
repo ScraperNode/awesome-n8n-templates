@@ -1,6 +1,6 @@
 # ⚒️ Allow your AI to call an API to fetch data
 
-> ⚡ **23,149 views** · ⚒️ [Engineering](../)
+> ⚡ **23,162 views** · ⚒️ [Engineering](../)
 
 ## Description
 

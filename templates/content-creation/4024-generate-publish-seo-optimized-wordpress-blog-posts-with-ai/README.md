@@ -1,33 +1,34 @@
 # 🎬 Generate & publish SEO-optimized WordPress blog posts with AI
 
-> ⚡ **12,109 views** · 🎬 [Content Creation & Video](../)
+> ⚡ **12,530 views** · 🎬 [Content Creation & Video](../)
 
 ## Description
 
 # Generate and Publish SEO-Optimized Blog Posts to WordPress
 
+BlogBlitz is an [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) workflow that writes and publishes SEO-ready WordPress posts for you. Trigger it from Telegram or let it run on schedule, and it produces 1,500–2,500-word articles on Technology, AI, Tech Facts, History, or Tips, complete with catchy titles, slugs, meta descriptions, and realistic featured images. Made for bloggers and marketers who want a site that stays fresh without writing everything by hand.
 
-This n8n workflow, **BlogBlitz**, automates the creation and publishing of SEO-optimized blog posts for WordPress, saving you hours of content creation time. Triggered via Telegram or a scheduled interval, it generates 1,500–2,500-word articles on Technology, AI, Tech Facts, History, or Tips, complete with catchy titles, slugs, meta descriptions, and realistic featured images. Perfect for bloggers and marketers, BlogBlitz ensures your site stays fresh with high-quality content.
+*Last updated: September 2026.*
 
 ## Who is this for?
-Bloggers, content marketers, and WordPress site owners who want to automate high-quality, SEO-ready blog content creation without manual writing or formatting.
+Bloggers, content marketers, and WordPress site owners who want high-quality, SEO-ready content without manual writing or formatting.
 
 ## What problem is this workflow solving?
-Manually creating engaging, SEO-optimized blog posts is time-consuming and requires expertise. BlogBlitz solves this by automating the entire process—from generating ideas and writing articles to publishing and notifying you—keeping your site active and discoverable.
+Writing good blog posts takes time and skill: ideas, drafts, images, SEO fields, publishing. BlogBlitz automates the whole chain, from topic to published post plus a notification, so your site stays active and easy to find.
 
 ## What this workflow does
-- **Triggers**: Runs every 3 hours via a Schedule Trigger or on-demand with a Telegram command (“generate”).  
+- **Triggers**: Runs every 3 hours via a Schedule Trigger, or on demand with the Telegram command ("generate").  
 - **Generates Content**: Uses OpenRouter to pick a category (e.g., Technology, AI) and create a title, slug, focus keyphrase, and meta description.  
 - **Writes Articles**: OpenAI crafts 1,500–2,500-word posts with SEO-friendly structure, headings, and a call-to-action.  
 - **Adds Visuals**: Generates realistic featured images with OpenAI and uploads them to WordPress.  
-- **SEO Features**: Generate optimized slug, focus keyphrase, meta description
+- **SEO Features**: Generates optimized slug, focus keyphrase, and meta description.  
 - **Publishes**: Posts articles to WordPress with proper categories and featured images.  
 - **Notifies**: Sends publish alerts with links to Discord and Telegram.  
 
 ## Setup
-1. **[n8n instance](https://n8n.partnerlinks.io/khaisastudio) (Cloud or self-hosted)**: Ensure you have a cloud or self-hosted n8n instance.  
+1. **[n8n instance](https://n8n.partnerlinks.io/creator-khmuhtadin) (Cloud or self-hosted)**: Ensure you have a cloud or self-hosted [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) instance.  
 2. **Credentials**:  
-   - WordPress: API access for `wp-json/wp/v2` endpoint.  
+   - WordPress: API access for `wp-json/wp/v2` endpoint ([REST API docs](https://developer.wordpress.org/rest-api/)).  
    - OpenAI: For article and image generation.  
    - OpenRouter: For title and category generation.  
    - Telegram: Bot API for triggers and notifications.  
@@ -48,7 +49,7 @@ Manually creating engaging, SEO-optimized blog posts is time-consuming and requi
 - **Image Style**: Adjust the OpenAI image node for different sizes or styles (e.g., “natural” instead of “vivid”).  
 
 ## Pre-Requirements
-- **n8n Instance**: Cloud or self-hosted.  
+- **[n8n](https://n8n.partnerlinks.io/creator-khmuhtadin) Instance**: Cloud or self-hosted.  
 - **Credentials**:  
   - WordPress API (wp-json/wp/v2 endpoint).  
   - OpenAI API for text and images.  
@@ -60,10 +61,21 @@ Manually creating engaging, SEO-optimized blog posts is time-consuming and requi
 - **Network**: Stable internet for API calls.  
 
 ---
-*Made by: [Khaisa Studio](https://khaisa.studio)*  
-*Tag: youtube, summarizer, telegram, openai*  
-*Category: AI Automation, Video Tools*
-Need a custom? **[Contact Me](https://khmuhtadin.com)**
+*Made by: [khmuhtadin](https://khmuhtadin.com)*  
+*Tag: wordpress, blog, seo, openai, telegram*  
+*Category: AI Automation, Blogging*
+Need a custom? **[Contact Me](https://khmuhtadin.com/contact)**
+
+### Quick Answers
+**How often does it publish?**  
+Every 3 hours by default. Change the Schedule Trigger to any interval you like, or trigger it manually with "generate" on Telegram.  
+**What topics does it cover?**  
+Technology, AI, Tech Facts, History, and Tips. Categories and IDs are configurable in the Edit Fields node.  
+**Where do I get notified?**  
+Publish alerts with post links go to Discord and Telegram automatically.  
+
+## Additional info
+Built with [n8n](https://n8n.partnerlinks.io/creator-khmuhtadin). Need an assessment on your business? Feel free to reach out at [https://khmuhtadin.com/consultation/](https://khmuhtadin.com/consultation/)
 
 ## 🔗 Nodes Used
 

@@ -1,6 +1,6 @@
 # 🔍 Evaluate hybrid search for legal question-answering using Qdrant & BM25/mxbai
 
-> ⚡ **2,075 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
+> ⚡ **2,532 views** · 🔍 [AI RAG & Knowledge Retrieval](../)
 
 ## Description
 

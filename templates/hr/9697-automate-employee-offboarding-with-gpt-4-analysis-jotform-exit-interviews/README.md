@@ -1,6 +1,6 @@
 # 👥 Automate employee offboarding with GPT-4 analysis & Jotform exit interviews
 
-> ⚡ **100 views** · 👥 [HR & Recruitment](../)
+> ⚡ **163 views** · 👥 [HR & Recruitment](../)
 
 > 💡 **Pro Tip** — For competitive intelligence, [ScraperNode](https://scrapernode.com) can automate the data collection — [Yelp reviews](https://scrapernode.com/yelp/scrapers/reviews), [Glassdoor company data](https://scrapernode.com/glassdoor/scrapers/companies), and [Crunchbase profiles](https://scrapernode.com/crunchbase/scrapers/companies) all return structured JSON you can feed straight into this workflow.
 >

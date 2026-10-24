@@ -1,6 +1,6 @@
 # 🔧 Receive transfer updates from Wise and add to Airtable
 
-> ⚡ **1,207 views** · 🔧 [Miscellaneous](../)
+> ⚡ **1,223 views** · 🔧 [Miscellaneous](../)
 
 ## Description
 

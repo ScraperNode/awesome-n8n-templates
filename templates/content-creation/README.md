@@ -1731,3 +1731,5 @@ The [AI copywriting tools](../ai-tools/) category has classification and summari
 ---
 
 📥 **How to use**: Click any template above, then download the `workflow.json` file and import it into n8n via `Workflow menu → Import from File`. See the [importing guide](../../docs/importing-templates.md) for detailed instructions.
+
+[Arcmira: YouTube transcript source shortlist](arcmira-youtube-transcript-source-shortlist/) returns up to three indexed passages with timestamps and source links. It runs on demand with an Arcmira API key.

@@ -139,6 +139,11 @@ Find templates by the tools and services they use. Click any integration to see 
 
 ---
 
+
+## Public Data APIs (Apify)
+
+- [Public Records data workflows](https://github.com/GeminiGeorge22/publicrecords-mcp/tree/main/templates) - 17 ready-to-import n8n workflows (plus Make/Zapier/Pipedream HTTP recipes) that pull public data via Apify: SAM.gov and Grants.gov notices, USAspending awards, EU TED and UK tenders, city council agendas, Ashby/Greenhouse/Lever/SmartRecruiters jobs, Etsy sales, Google Ads Transparency, sports odds, Spotify plays.
+
 ## 🤝 Contributing
 
 Have a useful n8n workflow? We'd love to include it! This collection grows thanks to community contributions.
